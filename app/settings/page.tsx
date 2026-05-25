@@ -1,0 +1,2 @@
+import { Sidebar } from '@/components/sidebar';
+export default function SettingsPage() { return <div className="dashboard-shell"><Sidebar /><main className="main"><h2>Admin Settings</h2><div className="card form"><input className="input" placeholder="Company name" defaultValue="Everitt Property Group" /><input className="input" placeholder="Default region" defaultValue="Dallas, TX" /><button className="btn btn-primary">Save settings</button></div></main></div>; }

@@ -1,0 +1,5 @@
+import { PhotoUpload } from '@/components/photo-upload';
+
+export default function DemoPage() {
+  return <main className="section"><div className="container grid-2"><div><div className="eyebrow">Mobile worker app demo</div><h2>Worker accepts the job, uploads proof, and marks complete.</h2><p>This mobile-first view is what a technician, cleaner, landscaper, inspector, or maintenance worker sees in the field.</p></div><div className="mobile-frame"><div className="mobile-screen"><p>Today · Dallas, TX</p><h2>Unit 214 HVAC inspection</h2><p>Lakeview Residences</p><div className="card"><h3>Assigned by manager</h3><p>Check airflow, document before and after photos, add notes, then mark complete.</p><button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Accept job</button></div><div className="form" style={{ marginTop: 14 }}><PhotoUpload label="Before photo" /><PhotoUpload label="After photo" /><textarea className="input" rows={4} placeholder="Field notes" /><button className="btn btn-primary" style={{ justifyContent: 'center' }}>Mark complete</button></div></div></div></div></main>;
+}
