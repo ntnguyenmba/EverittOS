@@ -1,6 +1,9 @@
-export const supabaseConfig = {
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-};
+import { createClient } from '@supabase/supabase-js'
 
-export const supabaseReady = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(
+  supabaseUrl,
+  supabaseAnonKey
+)
