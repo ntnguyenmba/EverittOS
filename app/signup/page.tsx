@@ -15,7 +15,13 @@ export default function SignupPage() {
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.auth.signUp({
+    if (!businessName || !email || !password) {
+      setLoading(false);
+      setMessage('Please fill in all fields.');
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -25,6 +31,9 @@ export default function SignupPage() {
       }
     });
 
+    console.log('SIGNUP DATA:', data);
+    console.log('SIGNUP ERROR:', error);
+
     setLoading(false);
 
     if (error) {
@@ -32,7 +41,7 @@ export default function SignupPage() {
       return;
     }
 
-    setMessage('Account created. Check your email to confirm your account.');
+    setMessage('Account created successfully.');
   }
 
   return (
@@ -40,7 +49,10 @@ export default function SignupPage() {
       <div className="container grid-2">
         <div>
           <h2>Create your EverittOS account</h2>
-          <p>Start managing jobs, workers, and proof reports from one clean dashboard.</p>
+
+          <p>
+            Start managing jobs, workers, and operations from one dashboard.
+          </p>
         </div>
 
         <div className="card form">
@@ -67,7 +79,11 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button className="btn btn-primary" onClick={createAccount} disabled={loading}>
+          <button
+            className="btn btn-primary"
+            onClick={createAccount}
+            disabled={loading}
+          >
             {loading ? 'Creating...' : 'Create account'}
           </button>
 
