@@ -72,6 +72,10 @@ export default function LoginPage() {
             Create account
           </Link>
 
+          <Link className="btn" href="/forgot-password">
+            Forgot password?
+          </Link>
+
           {message && <p>{message}</p>}
         </div>
       </div>
