@@ -78,6 +78,7 @@ export default function DashboardPage() {
                   <p>Address: {job.address || 'No address'}</p>
                   <p>Notes: {job.notes || 'No notes'}</p>
                   <p>Status: {job.status || 'new'}</p>
+                  <a className="btn btn-primary" href={'/jobs/' + job.id}>Open job</a>
                 </div>
               ))}
             </div>
