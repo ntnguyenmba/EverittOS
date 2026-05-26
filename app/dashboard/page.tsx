@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { DashboardStats } from '@/components/dashboard-stats';
-import { JobCard } from '@/components/job-card';
 import { JobCreator } from '@/components/job-creator';
 import { supabase } from '@/lib/supabase';
 
-type SupabaseJob = {
+type Job = {
   id: string;
   title: string;
   customer_name: string | null;
@@ -19,7 +18,7 @@ type SupabaseJob = {
 };
 
 export default function DashboardPage() {
-  const [jobs, setJobs] = useState<SupabaseJob[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -29,14 +28,13 @@ export default function DashboardPage() {
 
     const { data, error } = await supabase
       .from('jobs')
-      .select('id,title,customer_name,phone,address,notes,status,created_at')
+      .select('*')
       .order('created_at', { ascending: false });
 
     setLoading(false);
 
     if (error) {
       setErrorMessage(error.message);
-      console.error('Supabase load jobs error:', error);
       return;
     }
 
@@ -50,6 +48,7 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-shell">
       <Sidebar />
+
       <main className="main">
         <div className="page-head">
           <div>
@@ -64,21 +63,24 @@ export default function DashboardPage() {
           <JobCreator onJobCreated={loadJobs} />
 
           <div className="workflow">
-            {loading && <div className="card">Loading jobs...</div>}
+            <div className="card">
+              <h3>Live Jobs</h3>
 
-            {errorMessage && (
-              <div className="card" style={{ color: 'var(--red)' }}>
-                {errorMessage}
-              </div>
-            )}
+              {loading && <p>Loading jobs...</p>}
+              {errorMessage && <p>{errorMessage}</p>}
+              {!loading && !errorMessage && jobs.length === 0 && <p>No jobs yet. Create your first job.</p>}
 
-            {!loading && !errorMessage && jobs.length === 0 && (
-              <div className="card">No jobs yet. Create your first job.</div>
-            )}
-
-            {!loading && !errorMessage && jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+              {!loading && !errorMessage && jobs.map((job) => (
+                <div key={job.id} className="card" style={{ marginTop: 12 }}>
+                  <h3>{job.title}</h3>
+                  <p>Customer: {job.customer_name || 'No customer'}</p>
+                  <p>Phone: {job.phone || 'No phone'}</p>
+                  <p>Address: {job.address || 'No address'}</p>
+                  <p>Notes: {job.notes || 'No notes'}</p>
+                  <p>Status: {job.status || 'new'}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>
