@@ -1,0 +1,10 @@
+Supabase setup notes for EverittOS.
+
+Tables needed:
+workers
+jobs
+
+Storage bucket needed:
+job-photos
+
+Use public bucket during MVP testing.
