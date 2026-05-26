@@ -1,85 +1,35 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage('');
-
-    if (!email.trim() || !password.trim()) {
-      setMessage('Enter your email and password.');
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
-    });
-
-    setLoading(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
+  function openDashboard() {
     router.push('/dashboard');
-    router.refresh();
   }
 
   return (
     <main className="section">
       <div className="container grid-2">
         <div>
-          <h2>Welcome back</h2>
-          <p>Log in to manage EverittOS jobs, workers, and operations.</p>
+          <h2>Login</h2>
+          <p>Continue to the EverittOS dashboard.</p>
         </div>
 
-        <form className="card form" onSubmit={handleLogin}>
-          <input
-            className="input"
-            placeholder="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <div className="card form">
+          <input className="input" placeholder="Email" type="email" />
+          <input className="input" placeholder="Password" type="password" />
 
-          <input
-            className="input"
-            placeholder="Password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Signing in...' : 'Continue'}
+          <button className="btn btn-primary" type="button" onClick={openDashboard}>
+            Continue
           </button>
 
-          <Link className="btn" href="/signup">
-            Create account
+          <Link className="btn" href="/dashboard">
+            Open dashboard
           </Link>
-
-          <Link className="btn" href="/forgot-password">
-            Forgot password?
-          </Link>
-
-          {message && <p>{message}</p>}
-        </form>
+        </div>
       </div>
     </main>
   );
