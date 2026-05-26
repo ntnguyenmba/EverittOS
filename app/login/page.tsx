@@ -1,24 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function login() {
-    setLoading(true);
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setMessage('');
 
+    if (!email.trim() || !password.trim()) {
+      setMessage('Enter your email and password.');
+      return;
+    }
+
+    setLoading(true);
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password
     });
 
@@ -30,24 +36,23 @@ export default function LoginPage() {
     }
 
     router.push('/dashboard');
+    router.refresh();
   }
 
   return (
     <main className="section">
       <div className="container grid-2">
         <div>
-          <h2>Login</h2>
-
-          <p>
-            Log in to manage EverittOS jobs, workers, and operations.
-          </p>
+          <h2>Welcome back</h2>
+          <p>Log in to manage EverittOS jobs, workers, and operations.</p>
         </div>
 
-        <div className="card form">
+        <form className="card form" onSubmit={handleLogin}>
           <input
             className="input"
             placeholder="Email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -56,16 +61,13 @@ export default function LoginPage() {
             className="input"
             placeholder="Password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button
-            className="btn btn-primary"
-            onClick={login}
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Log in'}
+          <button className="btn btn-primary" type="submit" disabled={loading}>
+            {loading ? 'Signing in...' : 'Continue'}
           </button>
 
           <Link className="btn" href="/signup">
@@ -77,7 +79,7 @@ export default function LoginPage() {
           </Link>
 
           {message && <p>{message}</p>}
-        </div>
+        </form>
       </div>
     </main>
   );
