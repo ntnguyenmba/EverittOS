@@ -1,10 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { appUrl } from '@/lib/app-url';
 
-export default function SignupPage() {
+function safeNextPath(next: string | null): string {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/dashboard';
+  return next;
+}
+
+function SignupForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNextPath(searchParams.get('next'));
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -25,14 +36,10 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: {
-          business_name: businessName
-        }
+        emailRedirectTo: appUrl('/auth/callback?next=' + encodeURIComponent(next)),
+        data: { business_name: businessName }
       }
     });
-
-    console.log('SIGNUP DATA:', data);
-    console.log('SIGNUP ERROR:', error);
 
     setLoading(false);
 
@@ -41,7 +48,27 @@ export default function SignupPage() {
       return;
     }
 
-    setMessage('Account created successfully.');
+    if (data.user) {
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          email,
+          business_name: businessName,
+          role: 'owner',
+          plan: 'free',
+          subscription_status: 'free'
+        },
+        { onConflict: 'id' }
+      );
+    }
+
+    if (data.session) {
+      router.push(next);
+      router.refresh();
+      return;
+    }
+
+    setMessage('Account created. Check your email to verify your address, then sign in.');
   }
 
   return (
@@ -49,10 +76,7 @@ export default function SignupPage() {
       <div className="container grid-2">
         <div>
           <h2>Create your EverittOS account</h2>
-
-          <p>
-            Start managing jobs, workers, and operations from one dashboard.
-          </p>
+          <p>Start free. Keep jobs, crews, photos, and reports in one place.</p>
         </div>
 
         <div className="card form">
@@ -62,7 +86,6 @@ export default function SignupPage() {
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
           />
-
           <input
             className="input"
             placeholder="Email"
@@ -70,7 +93,6 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
           <input
             className="input"
             placeholder="Password"
@@ -79,15 +101,11 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <button
-            className="btn btn-primary"
-            onClick={createAccount}
-            disabled={loading}
-          >
-            {loading ? 'Creating...' : 'Create account'}
+          <button className="btn btn-primary" type="button" onClick={createAccount} disabled={loading}>
+            {loading ? 'Creating...' : 'Start Free'}
           </button>
 
-          <Link className="btn" href="/login">
+          <Link className="btn" href={`/login?next=${encodeURIComponent(next)}`}>
             Already have an account? Log in
           </Link>
 
@@ -95,5 +113,13 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   );
 }

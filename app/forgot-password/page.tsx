@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { appUrl } from '@/lib/app-url';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -13,16 +15,14 @@ export default function ForgotPasswordPage() {
     setMessage('');
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/reset-password'
+      redirectTo: appUrl('/reset-password')
     });
 
     setLoading(false);
-
     if (error) {
       setMessage(error.message);
       return;
     }
-
     setMessage('Password reset email sent.');
   }
 
@@ -31,7 +31,6 @@ export default function ForgotPasswordPage() {
       <div className="container">
         <div className="card form">
           <h2>Forgot password</h2>
-
           <input
             className="input"
             placeholder="Email"
@@ -39,15 +38,12 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
-          <button
-            className="btn btn-primary"
-            onClick={resetPassword}
-            disabled={loading}
-          >
+          <button className="btn btn-primary" type="button" onClick={resetPassword} disabled={loading}>
             {loading ? 'Sending...' : 'Send reset email'}
           </button>
-
+          <Link className="btn" href="/login">
+            Back to login
+          </Link>
           {message && <p>{message}</p>}
         </div>
       </div>

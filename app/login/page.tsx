@@ -1,13 +1,35 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/dashboard';
 
-  function openDashboard() {
-    router.push('/dashboard');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    setLoading(true);
+    setMessage('');
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    setLoading(false);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    router.push(next);
+    router.refresh();
   }
 
   return (
@@ -15,22 +37,47 @@ export default function LoginPage() {
       <div className="container grid-2">
         <div>
           <h2>Login</h2>
-          <p>Continue to the EverittOS dashboard.</p>
+          <p>Sign in to manage jobs, crews, and field reports.</p>
         </div>
 
         <div className="card form">
-          <input className="input" placeholder="Email" type="email" />
-          <input className="input" placeholder="Password" type="password" />
+          <input
+            className="input"
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-          <button className="btn btn-primary" type="button" onClick={openDashboard}>
-            Continue
+          <button className="btn btn-primary" type="button" onClick={handleLogin} disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <Link className="btn" href="/dashboard">
-            Open dashboard
+          <Link className="btn" href={`/signup?next=${encodeURIComponent(next)}`}>
+            Create account
           </Link>
+          <Link className="btn" href="/forgot-password">
+            Forgot password
+          </Link>
+
+          {message && <p>{message}</p>}
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

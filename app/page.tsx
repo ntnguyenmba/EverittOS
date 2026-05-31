@@ -6,20 +6,20 @@ export default function HomePage() {
       <section className="hero">
         <div className="container hero-grid">
           <div>
-            <div className="eyebrow">AI operating system for home service businesses</div>
-            <h1>Run your service business from one clean dashboard.</h1>
+            <div className="eyebrow">Field operations for service teams</div>
+            <h1>Run your service business from one dashboard.</h1>
             <p className="hero-copy">
-              EverittOS helps small HVAC, cleaning, repair, and property service teams create jobs, assign work, track completion, and keep customer records in one place.
+              EverittOS helps HVAC, cleaning, repair, and property teams create jobs, assign work, track completion, and keep customer records organized.
             </p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/signup">Start free pilot</Link>
+              <Link className="btn btn-primary" href="/signup">Start Free</Link>
               <Link className="btn" href="/login">Login</Link>
             </div>
           </div>
 
           <div className="panel app-preview">
             <div className="preview-top">
-              <span>EverittOS Command Center</span>
+              <span>EverittOS</span>
               <span className="dot" />
             </div>
             <div className="preview-body">
@@ -30,20 +30,9 @@ export default function HomePage() {
               </div>
               <div className="preview-main">
                 <div className="stat-grid">
-                  <div className="stat"><strong>24/7</strong><p>Lead capture</p></div>
-                  <div className="stat"><strong>3 min</strong><p>Job setup</p></div>
-                  <div className="stat"><strong>100%</strong><p>Job records</p></div>
-                </div>
-                <div className="workflow">
-                  {['Create job', 'Assign worker', 'Track progress', 'Send report'].map((item, index) => (
-                    <div className="step" key={item}>
-                      <div className="step-num">{index + 1}</div>
-                      <div>
-                        <h3>{item}</h3>
-                        <p>Simple operations your team can understand fast.</p>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="stat"><strong>Open</strong><p>Live jobs</p></div>
+                  <div className="stat"><strong>Done</strong><p>Completed</p></div>
+                  <div className="stat"><strong>Photos</strong><p>On file</p></div>
                 </div>
               </div>
             </div>
@@ -55,7 +44,7 @@ export default function HomePage() {
         <div className="container grid-3">
           <div className="card"><h3>Built for service teams</h3><p>HVAC, cleaning, repairs, inspections, landscaping, and property maintenance.</p></div>
           <div className="card"><h3>Manager dashboard</h3><p>Create jobs, see status, and keep customer details organized.</p></div>
-          <div className="card"><h3>Simple workflow</h3><p>Keep notes, timestamps, and job history easy to find.</p></div>
+          <div className="card"><h3>Clear workflow</h3><p>Notes, timestamps, and job history in one place.</p></div>
         </div>
       </section>
     </main>

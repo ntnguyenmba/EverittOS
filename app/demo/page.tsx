@@ -1,5 +1,54 @@
-import { PhotoUpload } from '@/components/photo-upload';
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function DemoPage() {
-  return <main className="section"><div className="container grid-2"><div><div className="eyebrow">Mobile worker app demo</div><h2>Worker accepts the job, uploads proof, and marks complete.</h2><p>This mobile-first view is what a technician, cleaner, landscaper, inspector, or maintenance worker sees in the field.</p></div><div className="mobile-frame"><div className="mobile-screen"><p>Today · Dallas, TX</p><h2>Unit 214 HVAC inspection</h2><p>Lakeview Residences</p><div className="card"><h3>Assigned by manager</h3><p>Check airflow, document before and after photos, add notes, then mark complete.</p><button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Accept job</button></div><div className="form" style={{ marginTop: 14 }}><PhotoUpload label="Before photo" /><PhotoUpload label="After photo" /><textarea className="input" rows={4} placeholder="Field notes" /><button className="btn btn-primary" style={{ justifyContent: 'center' }}>Mark complete</button></div></div></div></div></main>;
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    async function check() {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login?next=/demo');
+        return;
+      }
+      setReady(true);
+    }
+    check();
+  }, [router]);
+
+  if (!ready) {
+    return <main className="section"><div className="container"><p>Loading field view...</p></div></main>;
+  }
+
+  return (
+    <main className="section">
+      <div className="container grid-2">
+        <div>
+          <div className="eyebrow">Field view</div>
+          <h2>Assigned jobs on mobile</h2>
+          <p>Open a job from your list to upload photos and update status in the field.</p>
+          <Link className="btn btn-primary" href="/jobs">
+            My jobs
+          </Link>
+        </div>
+        <div className="mobile-frame">
+          <div className="mobile-screen">
+            <p>Sign in required</p>
+            <h2>Your assigned work</h2>
+            <p>Photos and status updates sync to the manager dashboard.</p>
+            <Link className="btn btn-primary" href="/jobs" style={{ justifyContent: 'center' }}>
+              Open jobs
+            </Link>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
