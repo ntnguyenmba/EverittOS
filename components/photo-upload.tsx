@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
+import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everittos-usage';
 
 type PhotoLabel = 'before' | 'during' | 'after' | 'other';
 
@@ -24,7 +26,35 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
     setUploading(true);
     setMessage('');
 
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUploading(false);
+      setMessage('Sign in to upload photos.');
+      return;
+    }
+
+    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+    const plan = normalizePlan(profile?.plan);
+    if (!photoUploadAllowed(plan)) {
+      setUploading(false);
+      setMessage('Photo uploads require Pro or Business.');
+      return;
+    }
+
+    let usage = await fetchUsageCounts(user.id);
+    if (photoLimitReached(plan, usage)) {
+      setUploading(false);
+      setMessage(limitMessage('photos', plan));
+      return;
+    }
+
     for (const file of Array.from(files)) {
+      if (photoLimitReached(plan, usage)) {
+        setMessage(limitMessage('photos', plan));
+        break;
+      }
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `${userId}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
@@ -45,7 +75,11 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
         label
       });
 
-      if (rowError) setMessage(rowError.message);
+      if (rowError) {
+        setMessage(rowError.message);
+        continue;
+      }
+      usage = { ...usage, photos: usage.photos + 1 };
     }
 
     setUploading(false);

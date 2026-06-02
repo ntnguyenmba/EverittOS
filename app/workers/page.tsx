@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -49,6 +50,13 @@ export default function WorkersPage() {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) return;
+
+    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+    const plan = normalizePlan(profile?.plan);
+    if (crewLimitReached(plan, workers.length)) {
+      alert(limitMessage('crewMembers', plan));
+      return;
+    }
 
     const { error } = await supabase.from('workers').insert({
       user_id: user.id,

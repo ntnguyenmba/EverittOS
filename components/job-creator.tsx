@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
+import { normalizePlan } from '@/lib/everittos-plans';
+import { fetchUsageCounts, jobLimitReached, limitMessage } from '@/lib/everittos-usage';
 
 type JobCreatorProps = {
   onJobCreated?: () => void;
@@ -38,10 +40,18 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('role, plan').eq('id', user.id).maybeSingle();
     if (!isOwnerOrAdmin(normalizeRole(profile?.role))) {
       setBlocked(true);
       setLoading(false);
+      return;
+    }
+
+    const plan = normalizePlan(profile?.plan);
+    const usage = await fetchUsageCounts(user.id);
+    if (jobLimitReached(plan, usage)) {
+      setLoading(false);
+      alert(limitMessage('jobs', plan));
       return;
     }
 
