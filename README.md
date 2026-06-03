@@ -29,12 +29,16 @@ Endpoint: `https://<your-app-domain>/api/stripe/webhook`
 
 Events: `checkout.session.completed`
 
-In each Stripe Payment Link, add metadata:
+In each Stripe Payment Link, add metadata (recommended):
 
-- `plan` = `pro` for Pro ($9/mo)
-- `plan` = `business` for Business ($39/mo)
+- Key: `plan`
+- Value: `pro` for Pro ($9/mo) or `business` for Business ($39/mo)
 
-Without metadata, the webhook attempts to infer plan from checkout amount.
+Optional fallback: set Payment Link **Client reference ID** to `pro` or `business`.
+
+The webhook does **not** use Stripe Price IDs or Product IDs. If metadata is missing, it infers plan from `checkout.session.completed` `amount_total` (900 = Pro, 3900 = Business, in cents).
+
+Without metadata or matching amount, the webhook records the event but does not update the user plan.
 
 Manual plan changes are not required after payment when the webhook is configured.
 

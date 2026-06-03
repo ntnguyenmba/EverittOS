@@ -180,9 +180,12 @@ p { color: var(--muted); line-height: 1.65; }
   .preview-body { grid-template-columns: 1fr; }
   .preview-side, .sidebar { display: none; }
   h1 { font-size: 40px; }
-  .main { padding: 18px; }
+  .main { padding: 18px; max-width: 100%; overflow-x: hidden; }
   .page-head { align-items: flex-start; flex-direction: column; }
   .stat-grid { grid-template-columns: 1fr; }
+  .table { display: block; overflow-x: auto; max-width: 100%; }
+  .card { max-width: 100%; }
+  .form .input, .form textarea, .form select { max-width: 100%; }
 }
 
 .photo-grid {

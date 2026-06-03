@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { safeNextPath } from '@/lib/app-url';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/dashboard';
+  const next = safeNextPath(searchParams.get('next'));
+  const authError = searchParams.get('error');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +69,7 @@ function LoginForm() {
             Forgot password
           </Link>
 
+          {authError && <p>{decodeURIComponent(authError)}</p>}
           {message && <p>{message}</p>}
         </div>
       </div>

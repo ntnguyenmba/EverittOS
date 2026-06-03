@@ -4,17 +4,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { appUrl } from '@/lib/app-url';
-
-function safeNextPath(next: string | null): string {
-  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/dashboard';
-  return next;
-}
+import { appUrl, safeNextPath } from '@/lib/app-url';
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeNextPath(searchParams.get('next'));
+  const next = safeNextPath(searchParams.get('next'), '/onboarding');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +31,7 @@ function SignupForm() {
       email,
       password,
       options: {
-        emailRedirectTo: appUrl('/auth/callback?next=' + encodeURIComponent(next)),
+        emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
         data: { business_name: businessName }
       }
     });

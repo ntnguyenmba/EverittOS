@@ -5,8 +5,9 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 
 export const runtime = 'nodejs';
 
+/** Stripe Payment Links: set metadata `plan` = `pro` or `business` on each link (recommended). */
 function planFromSession(session: Stripe.Checkout.Session): EverittosPlan | null {
-  const meta = session.metadata?.plan?.toLowerCase();
+  const meta = (session.metadata?.plan || session.client_reference_id || '').toLowerCase();
   if (meta === 'pro' || meta === 'business') return meta;
 
   const amount = session.amount_total || 0;
