@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { normalizePlan } from '@/lib/everittos-plans';
-import { validatePlanAction, type PlanResource } from '@/lib/plan-validate';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import type { PlanResource } from '@/lib/plan-validate';
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
@@ -21,21 +19,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'resource is required' }, { status: 400 });
   }
 
-  const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
-  const plan = normalizePlan(profile?.plan);
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  const counts = await fetchUsageCounts(user.id, org?.organizationId);
-
-  const countMap = {
-    jobs: counts.jobs,
-    photos: counts.photos,
-    customers: counts.customers,
-    reports: counts.reports,
-    workers: counts.workers,
-    teamMembers: counts.teamMembers,
-    locations: counts.locations
-  };
-
-  const result = validatePlanAction({ plan, resource, currentCount: countMap[resource] });
+  const result = await enforcePlanForUser(supabase, user.id, resource);
   return NextResponse.json(result);
 }

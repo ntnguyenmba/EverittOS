@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
-import type { EverittosPlan } from '@/lib/everittos-plans';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 
 export const runtime = 'nodejs';
 
-/** Stripe Payment Links: set metadata `plan` = `pro` or `business` on each link (recommended). */
 function planFromSession(session: Stripe.Checkout.Session): EverittosPlan | null {
   const meta = (session.metadata?.plan || session.client_reference_id || '').toLowerCase();
   if (meta === 'starter') return 'operations';
@@ -20,6 +19,50 @@ function planFromSession(session: Stripe.Checkout.Session): EverittosPlan | null
   if (amount === 79900 || amount === 799) return 'enterprise';
 
   return null;
+}
+
+function planFromSubscription(sub: Stripe.Subscription): EverittosPlan | null {
+  const meta = (sub.metadata?.plan || '').toLowerCase();
+  if (meta === 'starter') return 'operations';
+  const allowed = ['pro', 'business', 'operations', 'growth', 'enterprise'] as const;
+  if (allowed.includes(meta as (typeof allowed)[number])) return meta as EverittosPlan;
+  return null;
+}
+
+async function updateProfilePlan(
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>,
+  email: string,
+  plan: EverittosPlan,
+  status: string,
+  stripeCustomerId: string | null,
+  stripeSubscriptionId?: string | null
+) {
+  const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
+
+  if (profile?.id) {
+    await admin
+      .from('profiles')
+      .update({
+        plan,
+        subscription_status: status,
+        stripe_customer_id: stripeCustomerId
+      })
+      .eq('id', profile.id);
+  }
+
+  if (stripeSubscriptionId) {
+    await admin.from('everittos_subscriptions').upsert(
+      {
+        user_id: profile?.id || null,
+        email,
+        plan,
+        stripe_customer_id: stripeCustomerId,
+        stripe_subscription_id: stripeSubscriptionId,
+        status: status.startsWith('everittos_') ? 'active' : status
+      },
+      { onConflict: 'stripe_subscription_id' }
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -59,44 +102,56 @@ export async function POST(request: Request) {
     const email = session.customer_details?.email || session.customer_email;
     const plan = planFromSession(session);
 
-    if (!email || !plan) {
-      return NextResponse.json({ received: true, warning: 'missing_email_or_plan' });
+    if (email && plan) {
+      const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
+      const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
+      await updateProfilePlan(admin, email, plan, `everittos_${plan}`, customerId, subId);
+      const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
+      await admin.from('everittos_subscriptions').upsert(
+        {
+          user_id: profile?.id || null,
+          email,
+          plan,
+          stripe_customer_id: customerId,
+          stripe_session_id: session.id,
+          stripe_subscription_id: subId,
+          status: 'active'
+        },
+        { onConflict: 'stripe_session_id' }
+      );
     }
+  }
 
-    const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
-
-    if (profile?.id) {
-      await admin
-        .from('profiles')
-        .update({
-          plan,
-          subscription_status: `everittos_${plan}`,
-          stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id || null
-        })
-        .eq('id', profile.id);
-
-      await admin.from('everittos_subscriptions').upsert(
-        {
-          user_id: profile.id,
-          email,
-          plan,
-          stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id || null,
-          stripe_session_id: session.id,
-          status: 'active'
-        },
-        { onConflict: 'stripe_session_id' }
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object as Stripe.Subscription;
+    const email = sub.metadata?.email;
+    const plan = planFromSubscription(sub);
+    if (email && plan) {
+      const status = sub.status === 'active' || sub.status === 'trialing' ? `everittos_${plan}` : sub.status;
+      await updateProfilePlan(
+        admin,
+        email,
+        sub.status === 'active' || sub.status === 'trialing' ? plan : 'free',
+        status,
+        typeof sub.customer === 'string' ? sub.customer : null,
+        sub.id
       );
-    } else {
-      await admin.from('everittos_subscriptions').upsert(
-        {
-          email,
-          plan,
-          stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id || null,
-          stripe_session_id: session.id,
-          status: 'active'
-        },
-        { onConflict: 'stripe_session_id' }
-      );
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as Stripe.Subscription;
+    const email = sub.metadata?.email;
+    if (email) {
+      await updateProfilePlan(admin, email, 'free', 'cancelled', typeof sub.customer === 'string' ? sub.customer : null, sub.id);
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object as Stripe.Invoice;
+    const email = invoice.customer_email;
+    if (email) {
+      await admin.from('profiles').update({ subscription_status: 'past_due' }).eq('email', email);
     }
   }
 

@@ -20,7 +20,16 @@ function ResetPasswordForm() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          setMessage(error.message);
+          const code = 'code' in error ? String((error as { code?: string }).code) : '';
+          const expired =
+            error.message.toLowerCase().includes('expired') ||
+            error.message.toLowerCase().includes('invalid') ||
+            code === 'otp_expired';
+          setMessage(
+            expired
+              ? 'This reset link has expired. Request a new link from the forgot password page.'
+              : error.message
+          );
           return;
         }
         setSessionReady(true);

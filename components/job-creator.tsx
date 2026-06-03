@@ -5,7 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan } from '@/lib/everittos-plans';
-import { fetchUsageCounts, jobLimitReached, limitMessage } from '@/lib/everittos-usage';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
+import { validatePlanAction } from '@/lib/plan-validate';
 
 type JobCreatorProps = {
   onJobCreated?: () => void;
@@ -47,17 +50,31 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const plan = normalizePlan(profile?.plan);
-    const usage = await fetchUsageCounts(user.id);
-    if (jobLimitReached(plan, usage)) {
+    const org = await fetchOrganizationContext(user.id);
+    const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
+    const usage = await fetchUsageCounts(user.id, org?.organizationId);
+    const check = validatePlanAction({ plan: orgPlan, resource: 'jobs', currentCount: usage.jobs });
+    if (!check.allowed) {
       setLoading(false);
-      alert(limitMessage('jobs', plan));
+      alert(check.message || limitMessage('jobs', orgPlan));
+      return;
+    }
+    const serverCheck = await fetch('/api/plan/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'jobs' })
+    });
+    const serverJson = await serverCheck.json();
+    if (!serverJson.allowed) {
+      setLoading(false);
+      alert(serverJson.message || 'Plan limit reached.');
       return;
     }
 
     const { error } = await supabase.from('jobs').insert([
       {
         user_id: user.id,
+        organization_id: org?.organizationId || null,
         title: title.trim(),
         customer_name: customerName.trim() || null,
         phone: phone.trim() || null,
@@ -87,7 +104,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     return (
       <div className="card">
         <h3>Create a job</h3>
-        <p>Only owners and admins can create new jobs.</p>
+        <p>Only owners and managers can create new jobs.</p>
       </div>
     );
   }

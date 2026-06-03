@@ -14,7 +14,8 @@ const AUTH_PREFIXES = [
   '/activity',
   '/notifications',
   '/billing',
-  '/portal'
+  '/portal',
+  '/admin'
 ];
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
@@ -82,6 +83,7 @@ export const config = {
     '/notifications/:path*',
     '/billing/:path*',
     '/portal/:path*',
+    '/admin/:path*',
     '/login',
     '/signup'
   ]

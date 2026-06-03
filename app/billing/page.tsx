@@ -25,6 +25,8 @@ export default function BillingPage() {
     locations: 0
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,6 +52,19 @@ export default function BillingPage() {
     }
     load();
   }, [router]);
+
+  async function openBillingPortal() {
+    setPortalLoading(true);
+    setMessage('');
+    const res = await fetch('/api/stripe/portal', { method: 'POST' });
+    const json = await res.json();
+    setPortalLoading(false);
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to open billing portal.');
+      return;
+    }
+    window.location.href = json.url;
+  }
 
   if (loading) {
     return (
@@ -78,6 +93,12 @@ export default function BillingPage() {
             <strong>Status:</strong> {subscriptionStatus}
           </p>
           {!canManageBilling(role) && <p className="muted">Contact your company owner to change billing.</p>}
+          {canManageBilling(role) && (
+            <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
+              {portalLoading ? 'Opening...' : 'Manage billing in Stripe'}
+            </button>
+          )}
+          {message && <p>{message}</p>}
         </div>
 
         <div className="card" style={{ marginTop: 18 }}>

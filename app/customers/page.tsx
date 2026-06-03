@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { customerLimitReached, fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
+import { validatePlanAction } from '@/lib/plan-validate';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -73,18 +76,32 @@ export default function CustomersPage() {
     setSaving(true);
     setMessage('');
 
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
-    const userPlan = normalizePlan(profile?.plan);
-    const usage = await fetchUsageCounts(user.id);
+    const org = await fetchOrganizationContext(user.id);
+    const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
+    const usage = await fetchUsageCounts(user.id, org?.organizationId);
+    const check = validatePlanAction({ plan: orgPlan, resource: 'customers', currentCount: usage.customers });
 
-    if (customerLimitReached(userPlan, usage)) {
+    if (!check.allowed) {
       setSaving(false);
-      setMessage(limitMessage('customers', userPlan));
+      setMessage(check.message || limitMessage('customers', orgPlan));
+      return;
+    }
+
+    const serverCheck = await fetch('/api/plan/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'customers' })
+    });
+    const serverJson = await serverCheck.json();
+    if (!serverJson.allowed) {
+      setSaving(false);
+      setMessage(serverJson.message || 'Plan limit reached.');
       return;
     }
 
     const { error } = await supabase.from('customers').insert({
       user_id: user.id,
+      organization_id: org?.organizationId || null,
       name: name.trim(),
       phone: phone.trim() || null,
       email: email.trim() || null,
@@ -96,7 +113,7 @@ export default function CustomersPage() {
 
     if (error) {
       if (error.message.includes('PLAN_LIMIT_CUSTOMERS')) {
-        setMessage(limitMessage('customers', userPlan));
+        setMessage(limitMessage('customers', orgPlan));
       } else {
         setMessage(error.message);
       }
