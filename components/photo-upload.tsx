@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { normalizePlan } from '@/lib/everittos-plans';
+import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
 import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everittos-usage';
 
 type PhotoLabel = 'before' | 'progress' | 'during' | 'after' | 'other';
@@ -38,6 +38,11 @@ export function PhotoUpload({ jobId, userId, organizationId, disabled, onUploade
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     const plan = normalizePlan(profile?.plan);
+    if (!photoUploadAllowed(plan)) {
+      setUploading(false);
+      setMessage('Before and after photos require EverittOS Pro or higher.');
+      return;
+    }
     let usage = await fetchUsageCounts(user.id, organizationId);
     if (photoLimitReached(plan, usage)) {
       setUploading(false);

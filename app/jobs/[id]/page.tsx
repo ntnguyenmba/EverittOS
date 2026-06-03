@@ -20,7 +20,7 @@ import {
   reportLimitReached,
   limitMessage
 } from '@/lib/everittos-usage';
-import { isOwnerOrAdmin, isStaffRole, normalizeRole } from '@/lib/roles';
+import { canViewInternalNotes, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -69,6 +69,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [checklist, setChecklist] = useState<{ id: string; label: string; completed: boolean; sort_order: number }[]>([]);
   const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [userRole, setUserRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
   const [canEditStatus, setCanEditStatus] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -95,10 +96,11 @@ export default function JobDetailPage({ params }: PageProps) {
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const role = normalizeRole(profile?.role);
+    setUserRole(role);
     const userPlan = normalizePlan(profile?.plan);
     setPlan(userPlan);
-    setCanManage(isOwnerOrAdmin(role));
-    setCanEditStatus(isOwnerOrAdmin(role) || isStaffRole(role));
+    setCanManage(isManagerRole(role));
+    setCanEditStatus(isManagerRole(role) || isStaffRole(role));
 
     const org = await fetchOrganizationContext(user.id);
     if (org) setOrgId(org.organizationId);
@@ -320,13 +322,17 @@ export default function JobDetailPage({ params }: PageProps) {
                   <option value="high">High</option>
                   <option value="urgent">Urgent</option>
                 </select>
-                <label>Internal notes</label>
-                <textarea
-                  className="input"
-                  rows={3}
-                  value={job.internal_notes || ''}
-                  onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
-                />
+                {canViewInternalNotes(userRole) && (
+                  <>
+                    <label>Internal notes</label>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      value={job.internal_notes || ''}
+                      onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
+                    />
+                  </>
+                )}
                 <label>Customer notes</label>
                 <textarea
                   className="input"

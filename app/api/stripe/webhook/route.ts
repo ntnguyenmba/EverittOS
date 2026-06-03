@@ -8,12 +8,16 @@ export const runtime = 'nodejs';
 /** Stripe Payment Links: set metadata `plan` = `pro` or `business` on each link (recommended). */
 function planFromSession(session: Stripe.Checkout.Session): EverittosPlan | null {
   const meta = (session.metadata?.plan || session.client_reference_id || '').toLowerCase();
-  const allowed = ['pro', 'business', 'starter', 'growth', 'enterprise'] as const;
+  if (meta === 'starter') return 'operations';
+  const allowed = ['pro', 'business', 'operations', 'growth', 'enterprise'] as const;
   if (allowed.includes(meta as (typeof allowed)[number])) return meta as EverittosPlan;
 
   const amount = session.amount_total || 0;
   if (amount === 900 || amount === 9) return 'pro';
   if (amount === 3900 || amount === 39) return 'business';
+  if (amount === 14900 || amount === 149) return 'operations';
+  if (amount === 39900 || amount === 399) return 'growth';
+  if (amount === 79900 || amount === 799) return 'enterprise';
 
   return null;
 }

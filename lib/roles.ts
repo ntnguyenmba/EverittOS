@@ -1,46 +1,65 @@
-export type UserRole = 'owner' | 'admin' | 'manager' | 'crew_lead' | 'staff' | 'client';
+/** Canonical SaaS roles (stored on organization_members and profiles). */
+export type UserRole = 'owner' | 'manager' | 'employee' | 'contractor' | 'client';
 
 export function normalizeRole(value: string | null | undefined): UserRole {
   const role = (value || 'owner').toLowerCase();
-  if (role === 'admin') return 'admin';
-  if (role === 'manager') return 'manager';
-  if (role === 'crew_lead' || role === 'contractor') return 'crew_lead';
-  if (role === 'staff') return 'staff';
+  if (role === 'owner') return 'owner';
+  if (role === 'manager' || role === 'admin') return 'manager';
+  if (role === 'employee' || role === 'staff') return 'employee';
+  if (role === 'contractor' || role === 'crew_lead') return 'contractor';
   if (role === 'client') return 'client';
   return 'owner';
 }
 
-export function isOwnerOrAdmin(role: UserRole): boolean {
-  return role === 'owner' || role === 'admin';
+/** DB role string for inserts */
+export function roleToDb(role: UserRole): string {
+  return role;
+}
+
+export function isOwner(role: UserRole): boolean {
+  return role === 'owner';
 }
 
 export function isManagerRole(role: UserRole): boolean {
-  return role === 'manager' || isOwnerOrAdmin(role);
+  return role === 'owner' || role === 'manager';
 }
 
-export function isCrewLeadRole(role: UserRole): boolean {
-  return role === 'crew_lead' || isManagerRole(role);
+export function isEmployeeRole(role: UserRole): boolean {
+  return role === 'employee';
 }
 
-export function isStaffRole(role: UserRole): boolean {
-  return role === 'staff' || role === 'crew_lead';
+export function isContractorRole(role: UserRole): boolean {
+  return role === 'contractor';
 }
 
 export function isClientRole(role: UserRole): boolean {
   return role === 'client';
 }
 
+export function isOwnerOrAdmin(role: UserRole): boolean {
+  return isManagerRole(role);
+}
+
+export function isStaffRole(role: UserRole): boolean {
+  return role === 'employee' || role === 'contractor';
+}
+
 export function canManageTeam(role: UserRole): boolean {
-  return isOwnerOrAdmin(role) || role === 'manager';
+  return isManagerRole(role);
 }
 
 export function canAssignJobs(role: UserRole): boolean {
   return isManagerRole(role);
 }
 
-export function dashboardVariant(role: UserRole): 'owner' | 'admin' | 'manager' | 'crew' {
-  if (role === 'owner') return 'owner';
-  if (role === 'admin') return 'admin';
-  if (role === 'manager') return 'manager';
-  return 'crew';
+export function canManageBilling(role: UserRole): boolean {
+  return role === 'owner';
+}
+
+export function canViewInternalNotes(role: UserRole): boolean {
+  return isManagerRole(role) || role === 'employee';
+}
+
+export function dashboardVariant(role: UserRole): 'owner' | 'manager' | 'employee' | 'contractor' | 'client' {
+  return role;
 }

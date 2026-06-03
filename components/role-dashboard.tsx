@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { dashboardVariant, type UserRole } from '@/lib/roles';
+import { dashboardVariant, isClientRole, isContractorRole, type UserRole } from '@/lib/roles';
 
 type JobRow = {
   id: string;
@@ -17,9 +17,19 @@ type RoleDashboardProps = {
   photoCount: number;
   reportCount: number;
   activityCount: number;
+  customerCount?: number;
+  teamCount?: number;
 };
 
-export function RoleDashboard({ role, jobs, photoCount, reportCount, activityCount }: RoleDashboardProps) {
+export function RoleDashboard({
+  role,
+  jobs,
+  photoCount,
+  reportCount,
+  activityCount,
+  customerCount = 0,
+  teamCount = 0
+}: RoleDashboardProps) {
   const variant = dashboardVariant(role);
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const completed = jobs.filter((j) => j.status === 'completed');
@@ -29,11 +39,16 @@ export function RoleDashboard({ role, jobs, photoCount, reportCount, activityCou
     .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
     .slice(0, 5);
 
-  const titles: Record<string, string> = {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  const createdThisMonth = jobs.filter((j) => j.start_date && j.start_date >= monthStart.toISOString().slice(0, 10)).length;
+
+  const titles: Record<UserRole, string> = {
     owner: 'Owner dashboard',
-    admin: 'Admin dashboard',
     manager: 'Manager dashboard',
-    crew: 'Crew dashboard'
+    employee: 'Employee dashboard',
+    contractor: 'Contractor dashboard',
+    client: 'Client dashboard'
   };
 
   return (
@@ -52,6 +67,18 @@ export function RoleDashboard({ role, jobs, photoCount, reportCount, activityCou
           <span>Overdue</span>
           <strong>{overdue.length}</strong>
         </div>
+        {!isClientRole(role) && !isContractorRole(role) && (
+          <>
+            <div className="stat-card">
+              <span>Customers</span>
+              <strong>{customerCount}</strong>
+            </div>
+            <div className="stat-card">
+              <span>Team</span>
+              <strong>{teamCount}</strong>
+            </div>
+          </>
+        )}
         <div className="stat-card">
           <span>Photos</span>
           <strong>{photoCount}</strong>
@@ -60,10 +87,16 @@ export function RoleDashboard({ role, jobs, photoCount, reportCount, activityCou
           <span>Reports</span>
           <strong>{reportCount}</strong>
         </div>
-        {variant !== 'crew' && (
+        {(role === 'owner' || role === 'manager') && (
           <div className="stat-card">
             <span>Team activity</span>
             <strong>{activityCount}</strong>
+          </div>
+        )}
+        {(role === 'owner' || role === 'manager') && (
+          <div className="stat-card">
+            <span>Jobs this month</span>
+            <strong>{createdThisMonth}</strong>
           </div>
         )}
       </div>

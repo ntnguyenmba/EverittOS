@@ -1,18 +1,41 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Sidebar } from '@/components/sidebar';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { normalizePlan, photoUploadAllowed, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
+import { logClientActivity } from '@/lib/activity';
+import { trackProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
+
+const STEPS = [
+  'Create company',
+  'Add first customer',
+  'Create first job',
+  'Upload first photo',
+  'Generate first report',
+  'Invite team'
+] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [businessName, setBusinessName] = useState('');
+  const [step, setStep] = useState(0);
+  const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [orgId, setOrgId] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [teamSize, setTeamSize] = useState('');
   const [phone, setPhone] = useState('');
-  const [serviceType, setServiceType] = useState('');
-  const [bookingUrl, setBookingUrl] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [website, setWebsite] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [jobId, setJobId] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -24,89 +47,292 @@ export default function OnboardingPage() {
         return;
       }
 
-      const { data: biz } = await supabase.from('business_profiles').select('*').eq('user_id', user.id).maybeSingle();
-      if (biz?.onboarding_completed) {
-        router.push('/dashboard');
-        return;
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+      setPlan(normalizePlan(profile?.plan));
+
+      const org = await fetchOrganizationContext(user.id);
+      if (org) {
+        setOrgId(org.organizationId);
+        const { data: settings } = await supabase
+          .from('organization_settings')
+          .select('*')
+          .eq('organization_id', org.organizationId)
+          .maybeSingle();
+        if (settings?.onboarding_completed) {
+          router.push('/dashboard');
+          return;
+        }
+        setStep(settings?.onboarding_step || 0);
+        setIndustry(settings?.industry || '');
+        setTeamSize(settings?.team_size || '');
+        setWebsite(settings?.website || '');
+        setPhone(settings?.company_phone || '');
+        const { data: orgRow } = await supabase.from('organizations').select('name').eq('id', org.organizationId).single();
+        setCompanyName(orgRow?.name || '');
       }
 
-      setBusinessName(biz?.business_name || '');
-      setPhone(biz?.phone || '');
-      setServiceType(biz?.service_type || '');
-      setBookingUrl(biz?.booking_url || '');
       setLoading(false);
     }
-
     load();
   }, [router]);
 
-  async function finish() {
-    if (saving) return;
+  async function saveStep(nextStep: number, completed = false) {
+    if (!orgId) return;
+    await supabase
+      .from('organization_settings')
+      .upsert({
+        organization_id: orgId,
+        onboarding_step: nextStep,
+        onboarding_completed: completed,
+        industry: industry || null,
+        team_size: teamSize || null,
+        website: website || null,
+        company_phone: phone || null
+      });
+    await trackProductEvent('onboarding_step', orgId, { step: nextStep });
+  }
 
+  async function stepCompany() {
+    setBusy(true);
+    setMessage('');
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user || !orgId) return;
+
+    await supabase.from('organizations').update({ name: companyName.trim() || 'My Company' }).eq('id', orgId);
+    await supabase.from('profiles').update({ business_name: companyName.trim() }).eq('id', user.id);
+    await saveStep(1);
+    await trackProductEvent('company_created', orgId);
+    setStep(1);
+    setBusy(false);
+  }
+
+  async function stepCustomer() {
+    setBusy(true);
+    if (!customerName.trim()) {
+      setMessage('Customer name is required.');
+      setBusy(false);
+      return;
+    }
     const {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    setSaving(true);
-    setMessage('');
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({ user_id: user.id, organization_id: orgId, name: customerName.trim() })
+      .select('id')
+      .single();
 
-    const { error } = await supabase.from('business_profiles').upsert({
-      user_id: user.id,
-      business_name: businessName.trim() || null,
-      phone: phone.trim() || null,
-      service_type: serviceType.trim() || null,
-      booking_url: bookingUrl.trim() || null,
-      onboarding_completed: true
-    });
-
-    if (!error) {
-      await supabase.from('profiles').update({ business_name: businessName.trim() || null }).eq('id', user.id);
-    }
-
-    setSaving(false);
-
+    setBusy(false);
     if (error) {
       setMessage(error.message);
       return;
     }
-
-    router.push('/dashboard');
-    router.refresh();
+    if (orgId) await logClientActivity(orgId, 'customer', data.id, 'customer_created', `Customer ${customerName} added`);
+    await trackProductEvent('customer_created', orgId);
+    await saveStep(2);
+    setStep(2);
   }
+
+  async function stepJob() {
+    setBusy(true);
+    if (!jobTitle.trim()) {
+      setMessage('Job title is required.');
+      setBusy(false);
+      return;
+    }
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert({
+        user_id: user.id,
+        organization_id: orgId,
+        title: jobTitle.trim(),
+        customer_name: customerName.trim() || null,
+        status: 'new'
+      })
+      .select('id')
+      .single();
+
+    setBusy(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setJobId(data.id);
+    if (orgId) await logClientActivity(orgId, 'job', data.id, 'job_created', `Job ${jobTitle} created`);
+    await trackProductEvent('job_created', orgId);
+    await saveStep(3);
+    setStep(3);
+  }
+
+  async function stepPhoto() {
+    if (!photoUploadAllowed(plan)) {
+      await saveStep(4);
+      setStep(4);
+      setMessage('Photo uploads start on Pro. Continue to reports.');
+      return;
+    }
+    if (!jobId) {
+      setMessage('Create a job first.');
+      return;
+    }
+    setMessage('Open the job and upload a photo from your device, then return here.');
+    await saveStep(4);
+    setStep(4);
+  }
+
+  async function stepReport() {
+    if (!jobId) {
+      setMessage('Create a job first.');
+      return;
+    }
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('job_reports').insert({
+      user_id: user.id,
+      organization_id: orgId,
+      job_id: jobId,
+      title: `${jobTitle} report`
+    });
+    if (orgId) await logClientActivity(orgId, 'job', jobId, 'report_generated', 'First report created');
+    await trackProductEvent('report_generated', orgId);
+    await saveStep(5);
+    setStep(5);
+  }
+
+  async function stepInvite() {
+    if (!hasTeamManagement(plan)) {
+      await finish();
+      return;
+    }
+    if (!inviteEmail.trim()) {
+      await finish();
+      return;
+    }
+    const res = await fetch('/api/team/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail.trim(), role: 'employee' })
+    });
+    const json = await res.json();
+    if (!res.ok) setMessage(json.error || 'Invite failed');
+    else await trackProductEvent('team_invited', orgId);
+    await finish();
+  }
+
+  async function finish() {
+    await saveStep(STEPS.length, true);
+    router.push('/dashboard');
+  }
+
+  const progress = Math.round((step / STEPS.length) * 100);
 
   if (loading) {
     return (
       <main className="section">
-        <div className="container">
-          <p>Loading...</p>
-        </div>
+        <div className="container card">Loading onboarding...</div>
       </main>
     );
   }
 
   return (
-    <main className="section">
-      <div className="container" style={{ maxWidth: 520 }}>
-        <h2>Set up your business</h2>
-        <p>Add basic details for your EverittOS workspace.</p>
+    <div className="dashboard-shell">
+      <Sidebar plan={plan} />
+      <main className="main">
+        <h2>Company onboarding</h2>
+        <p className="muted">Step {step + 1} of {STEPS.length}: {STEPS[step]}</p>
+        <div className="onboarding-progress">
+          <div className="onboarding-progress-bar" style={{ width: `${progress}%` }} />
+        </div>
 
-        <div className="card form" style={{ marginTop: 24 }}>
-          <input className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-          <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <input className="input" placeholder="Service type" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
-          <input
-            className="input"
-            placeholder="External booking URL (optional)"
-            value={bookingUrl}
-            onChange={(e) => setBookingUrl(e.target.value)}
-          />
-          <button className="btn btn-primary" type="button" onClick={finish} disabled={saving}>
-            {saving ? 'Saving...' : 'Continue to dashboard'}
-          </button>
+        <div className="card form" style={{ marginTop: 18 }}>
+          {step === 0 && (
+            <>
+              <h3>Create company</h3>
+              <input className="input" placeholder="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              <input className="input" placeholder="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+              <input className="input" placeholder="Team size" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
+              <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="input" placeholder="Website (optional)" value={website} onChange={(e) => setWebsite(e.target.value)} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={stepCompany}>
+                Continue
+              </button>
+            </>
+          )}
+          {step === 1 && (
+            <>
+              <h3>Create first customer</h3>
+              <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={stepCustomer}>
+                Continue
+              </button>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <h3>Create first job</h3>
+              <input className="input" placeholder="Job title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={stepJob}>
+                Continue
+              </button>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <h3>Upload first photo</h3>
+              <p>Pro and above include before and after photos.</p>
+              {jobId && (
+                <Link className="btn" href={`/jobs/${jobId}`}>
+                  Open job to upload
+                </Link>
+              )}
+              <button type="button" className="btn btn-primary" onClick={stepPhoto}>
+                Continue
+              </button>
+            </>
+          )}
+          {step === 4 && (
+            <>
+              <h3>Generate first report</h3>
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={stepReport}>
+                Create report
+              </button>
+            </>
+          )}
+          {step === 5 && (
+            <>
+              <h3>Invite team members</h3>
+              {hasTeamManagement(plan) ? (
+                <>
+                  <input className="input" type="email" placeholder="Email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                  <button type="button" className="btn btn-primary" disabled={busy} onClick={stepInvite}>
+                    Send invite and finish
+                  </button>
+                  <button type="button" className="btn" onClick={finish}>
+                    Skip for now
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="btn btn-primary" onClick={finish}>
+                  Finish onboarding
+                </button>
+              )}
+            </>
+          )}
           {message && <p>{message}</p>}
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

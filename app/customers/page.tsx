@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { customerLimitReached, fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
-import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
+import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type Customer = {
@@ -47,7 +47,7 @@ export default function CustomersPage() {
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     setPlan(normalizePlan(profile?.plan));
-    setCanManage(isOwnerOrAdmin(normalizeRole(profile?.role)));
+    setCanManage(isManagerRole(normalizeRole(profile?.role)));
 
     const { data, error } = await supabase
       .from('customers')

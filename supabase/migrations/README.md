@@ -9,6 +9,7 @@ Run in order in the Supabase SQL editor or via CLI:
 5. `202605311600_rbac_roles.sql`
 6. `202605320001_launch_features.sql` - role-based access policies
 7. `202605330001_organizations_platform.sql` - organizations, team, plan_tier_limits, activity, notifications
+8. `202605340001_saas_fundable_platform.sql` - Operations plan, aligned limits, onboarding fields, product_events
 
 ## Auth redirect URLs (Supabase Dashboard > Authentication > URL configuration)
 

@@ -12,8 +12,12 @@ const AUTH_PREFIXES = [
   '/onboarding',
   '/team',
   '/activity',
-  '/notifications'
+  '/notifications',
+  '/billing',
+  '/portal'
 ];
+
+const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 
 function isProtectedPath(pathname: string) {
   return AUTH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -42,13 +46,17 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  if (!isProtectedPath(pathname)) {
-    return response;
-  }
-
   const {
     data: { user }
   } = await supabase.auth.getUser();
+
+  if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  if (!isProtectedPath(pathname)) {
+    return response;
+  }
 
   if (!user) {
     const login = new URL('/login', request.url);
@@ -71,6 +79,10 @@ export const config = {
     '/onboarding/:path*',
     '/team/:path*',
     '/activity/:path*',
-    '/notifications/:path*'
+    '/notifications/:path*',
+    '/billing/:path*',
+    '/portal/:path*',
+    '/login',
+    '/signup'
   ]
 };

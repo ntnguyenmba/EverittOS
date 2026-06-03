@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
+import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
 
@@ -46,7 +46,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     setPlan(normalizePlan(profile?.plan));
-    setCanEdit(isOwnerOrAdmin(normalizeRole(profile?.role)));
+    setCanEdit(isManagerRole(normalizeRole(profile?.role)));
 
     const { data: customer, error } = await supabase.from('customers').select('*').eq('id', customerId).single();
     if (error || !customer) {

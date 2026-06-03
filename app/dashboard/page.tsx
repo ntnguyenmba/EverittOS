@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ActivityFeed } from '@/components/activity-feed';
 import { RoleDashboard } from '@/components/role-dashboard';
 import { Sidebar } from '@/components/sidebar';
-import { UsageStats } from '@/components/usage-stats';
+import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { normalizeRole } from '@/lib/roles';
+import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
 import { supabase } from '@/lib/supabase';
@@ -36,8 +38,12 @@ export default function DashboardPage() {
     teamMembers: 1,
     locations: 0
   });
-  const [role, setRole] = useState<'owner' | 'admin' | 'manager' | 'crew_lead' | 'staff' | 'client'>('owner');
+  const [role, setRole] = useState<UserRole>('owner');
   const [activityCount, setActivityCount] = useState(0);
+  const [activityItems, setActivityItems] = useState<
+    { id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]
+  >([]);
+  const [onboardingPct, setOnboardingPct] = useState(100);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -57,16 +63,23 @@ export default function DashboardPage() {
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const org = await fetchOrganizationContext(user.id);
     setRole(normalizeRole(profile?.role));
-    const { data: biz } = await supabase.from('business_profiles').select('onboarding_completed').eq('user_id', user.id).maybeSingle();
-
-    if (biz && biz.onboarding_completed === false) {
-      router.push('/onboarding');
-      return;
+    if (org?.organizationId) {
+      const { data: settings } = await supabase
+        .from('organization_settings')
+        .select('onboarding_completed, onboarding_step')
+        .eq('organization_id', org.organizationId)
+        .maybeSingle();
+      if (settings && !settings.onboarding_completed) {
+        router.push('/onboarding');
+        return;
+      }
+      setOnboardingPct(settings?.onboarding_completed ? 100 : Math.round(((settings?.onboarding_step || 0) / 6) * 100));
     }
 
     setPlan(normalizePlan(profile?.plan));
 
-    const [jobsRes, counts, activityRes] = await Promise.all([
+    const planNorm = normalizePlan(profile?.plan);
+    const [jobsRes, counts, activityRes, activityListRes] = await Promise.all([
       supabase
         .from('jobs')
         .select('id, title, customer_name, status, start_date, due_date, created_at')
@@ -77,7 +90,15 @@ export default function DashboardPage() {
             .from('activity_logs')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', org.organizationId)
-        : Promise.resolve({ count: 0 })
+        : Promise.resolve({ count: 0 }),
+      org?.organizationId && limitsForPlan(planNorm).activityLog
+        ? supabase
+            .from('activity_logs')
+            .select('id, action, message, entity_type, created_at, actor_name')
+            .eq('organization_id', org.organizationId)
+            .order('created_at', { ascending: false })
+            .limit(8)
+        : Promise.resolve({ data: [] })
     ]);
 
     setLoading(false);
@@ -90,6 +111,11 @@ export default function DashboardPage() {
     setJobs(jobsRes.data || []);
     setUsage(counts);
     setActivityCount(activityRes.count || 0);
+    setActivityItems(activityListRes.data || []);
+
+    if (isClientRole(normalizeRole(profile?.role))) {
+      router.push('/portal/client');
+    }
   }
 
   useEffect(() => {
@@ -105,7 +131,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-shell">
-      <Sidebar plan={plan} />
+      <Sidebar plan={plan} role={role} />
 
       <main className="main">
         <div className="page-head">
@@ -119,7 +145,7 @@ export default function DashboardPage() {
           <div className="card upgrade-banner">
             <div>
               <h3>Upgrade when you need more capacity</h3>
-              <p>Pro adds unlimited jobs, photos, and customers. Business adds crew assignment and team access.</p>
+              <p>Pro adds photos and higher limits. Business adds team management and crew assignment.</p>
             </div>
             <div className="upgrade-banner-actions">
               <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
@@ -132,7 +158,21 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <UsageStats plan={plan} counts={usage} />
+        {onboardingPct < 100 && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>Onboarding progress</h3>
+            <div className="onboarding-progress">
+              <div className="onboarding-progress-bar" style={{ width: `${onboardingPct}%` }} />
+            </div>
+            <Link href="/onboarding" className="btn btn-primary" style={{ marginTop: 12 }}>
+              Continue setup
+            </Link>
+          </div>
+        )}
+
+        <div className="card" style={{ marginTop: 18 }}>
+          <UsageDashboard plan={plan} counts={usage} />
+        </div>
 
         <div className="card" style={{ marginTop: 18 }}>
           <RoleDashboard
@@ -141,8 +181,20 @@ export default function DashboardPage() {
             photoCount={usage.photos}
             reportCount={usage.reports}
             activityCount={activityCount}
+            customerCount={usage.customers}
+            teamCount={usage.teamMembers}
           />
         </div>
+
+        {limitsForPlan(plan).activityLog && activityItems.length > 0 && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>Recent activity</h3>
+            <ActivityFeed items={activityItems} />
+            <Link href="/activity" className="btn" style={{ marginTop: 12 }}>
+              View all activity
+            </Link>
+          </div>
+        )}
 
         <div className="grid-2" style={{ marginTop: 18 }}>
           <JobCreator onJobCreated={loadDashboard} />

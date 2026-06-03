@@ -107,10 +107,13 @@ export function usageLabels(plan: EverittosPlan, counts: UsageCounts) {
 export function limitMessage(resource: keyof PlanLimits, plan: EverittosPlan): string {
   const limits = limitsForPlan(plan);
   if (resource === 'jobs') return `Your plan allows up to ${limits.jobs} active jobs. Upgrade to continue.`;
-  if (resource === 'photos') return `Your plan allows up to ${limits.photos} photos. Upgrade to continue.`;
+  if (resource === 'photos') {
+    if (!limits.photoUpload) return 'Photo uploads require EverittOS Pro or higher.';
+    return `Your plan allows up to ${limits.photos} photos. Upgrade to continue.`;
+  }
   if (resource === 'customers') return `Your plan allows up to ${limits.customers} customers. Upgrade to continue.`;
   if (resource === 'reports') return `Your plan allows up to ${limits.reports} reports. Upgrade to continue.`;
-  if (resource === 'crewMembers') return 'Crew workers require Business, Starter, Growth, or Enterprise.';
+  if (resource === 'crewMembers') return 'Crew workers require Business, Operations, Growth, or Enterprise.';
   if (resource === 'teamMembers') return 'Additional team members require a plan with team management.';
   return 'Plan limit reached. Upgrade to continue.';
 }

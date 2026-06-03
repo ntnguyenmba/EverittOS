@@ -26,7 +26,11 @@ export function validatePlanAction({ plan, resource, currentCount }: PlanValidat
   const limits = limitsForPlan(plan);
 
   if (resource === 'workers' && !limits.crewAssignment) {
-    return { allowed: false, message: 'Crew workers require Business, Starter, Growth, or Enterprise.' };
+    return { allowed: false, message: 'Crew workers require Business, Operations, Growth, or Enterprise.' };
+  }
+
+  if (resource === 'photos' && !limits.photoUpload) {
+    return { allowed: false, message: 'Photo uploads require EverittOS Pro or higher.' };
   }
 
   if (resource === 'teamMembers' && !limits.teamManagement) {

@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
-import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
+import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type Worker = {
@@ -39,7 +39,7 @@ export default function WorkersPage() {
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     setPlan(normalizePlan(profile?.plan));
-    setCanManage(isOwnerOrAdmin(normalizeRole(profile?.role)));
+    setCanManage(isManagerRole(normalizeRole(profile?.role)));
 
     const { data } = await supabase.from('workers').select('id, name, role, phone').order('created_at', { ascending: false });
     setWorkers(data || []);

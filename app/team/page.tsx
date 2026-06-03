@@ -136,14 +136,14 @@ export default function TeamPage() {
 
   return (
     <div className="dashboard-shell">
-      <Sidebar plan={plan} showTeam />
+      <Sidebar plan={plan} role={role} />
       <main className="main">
         <h2>Team</h2>
         <p>Invite members, manage roles, and control access.</p>
 
         {!teamEnabled && (
           <div className="card">
-            <p>Team management requires Business, Starter, Growth, or Enterprise.</p>
+            <p>Team management requires Business, Operations, Growth, or Enterprise.</p>
           </div>
         )}
 
@@ -152,13 +152,16 @@ export default function TeamPage() {
             <h3>Invite by email</h3>
             <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <select className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-              <option value="admin">Admin</option>
               <option value="manager">Manager</option>
-              <option value="crew_lead">Crew lead</option>
-              <option value="staff">Staff</option>
+              <option value="employee">Employee</option>
+              <option value="contractor">Contractor</option>
+              <option value="client">Client</option>
             </select>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={sendInvite}>
               Send invitation
+            </button>
+            <button type="button" className="btn" disabled={busy || !email.trim()} onClick={sendInvite}>
+              Resend invite
             </button>
             {inviteUrl && (
               <p>
@@ -184,14 +187,14 @@ export default function TeamPage() {
                 <div className="inline-actions">
                   <select
                     className="input"
-                    value={m.role}
+                    value={normalizeRole(m.role)}
                     onChange={(e) => updateMember(m.user_id, { role: e.target.value })}
                     disabled={busy}
                   >
-                    <option value="admin">Admin</option>
                     <option value="manager">Manager</option>
-                    <option value="crew_lead">Crew lead</option>
-                    <option value="staff">Staff</option>
+                    <option value="employee">Employee</option>
+                    <option value="contractor">Contractor</option>
+                    <option value="client">Client</option>
                   </select>
                   <button type="button" className="btn" disabled={busy} onClick={() => updateMember(m.user_id, { active: !m.active })}>
                     {m.active ? 'Deactivate' : 'Activate'}

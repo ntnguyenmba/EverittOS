@@ -44,7 +44,7 @@ export function canUploadPhotos(
   subscription?: BillingSubscription | null
 ): boolean {
   const plan = normalizedPlan(profile);
-  return limitsForPlan(plan).photos !== 0 && isPaidPlanActive(profile, subscription);
+  return limitsForPlan(plan).photoUpload && isPaidPlanActive(profile, subscription);
 }
 
 export function canAssignCrew(

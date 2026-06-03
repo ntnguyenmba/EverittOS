@@ -63,7 +63,7 @@ export default function ActivityPage() {
       <Sidebar plan={plan} />
       <main className="main">
         <h2>Activity log</h2>
-        {!enabled && <div className="card">Activity log requires Business, Starter, Growth, or Enterprise.</div>}
+        {!enabled && <div className="card">Activity log requires Business, Operations, Growth, or Enterprise.</div>}
         {enabled && (
           <div className="card" style={{ marginTop: 18 }}>
             <ActivityFeed items={items} loading={loading} />

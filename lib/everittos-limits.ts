@@ -19,6 +19,12 @@ export type PlanLimits = {
   multiLocation: boolean;
   customBranding: boolean;
   pdfReports: boolean;
+  photoUpload: boolean;
+  clientPortal: boolean;
+  contractorPortal: boolean;
+  brandedReports: boolean;
+  apiAccess: boolean;
+  prioritySupport: boolean;
 };
 
 function cap(value: number): number {
@@ -43,7 +49,13 @@ export function limitsForPlan(plan: EverittosPlan): PlanLimits {
     workflowCustomization: row.workflowCustomization,
     multiLocation: row.multiLocation,
     customBranding: row.customBranding,
-    pdfReports: row.pdfReports
+    pdfReports: row.pdfReports,
+    photoUpload: row.photoUpload,
+    clientPortal: row.clientPortal,
+    contractorPortal: row.contractorPortal,
+    brandedReports: row.brandedReports,
+    apiAccess: row.apiAccess,
+    prioritySupport: row.prioritySupport
   };
 }
 
@@ -51,7 +63,7 @@ export const PLAN_LIMITS: Record<EverittosPlan, PlanLimits> = {
   free: limitsForPlan('free'),
   pro: limitsForPlan('pro'),
   business: limitsForPlan('business'),
-  starter: limitsForPlan('starter'),
+  operations: limitsForPlan('operations'),
   growth: limitsForPlan('growth'),
   enterprise: limitsForPlan('enterprise')
 };
