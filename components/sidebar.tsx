@@ -2,20 +2,34 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
 
-const links = [
+const baseLinks = [
   ['Dashboard', '/dashboard'],
   ['Jobs', '/jobs'],
   ['Customers', '/customers'],
   ['Schedule', '/schedule'],
   ['Workers', '/workers'],
+  ['Team', '/team'],
+  ['Activity', '/activity'],
+  ['Notifications', '/notifications'],
   ['Settings', '/settings']
 ] as const;
 
+function planLabel(plan: EverittosPlan): string {
+  if (plan === 'free') return 'Free';
+  if (plan === 'pro') return 'Pro';
+  if (plan === 'business') return 'Business';
+  if (plan === 'starter') return 'Starter';
+  if (plan === 'growth') return 'Growth';
+  if (plan === 'enterprise') return 'Enterprise';
+  return plan;
+}
+
 type SidebarProps = {
   plan?: EverittosPlan | string | null;
+  showTeam?: boolean;
 };
 
 export function Sidebar({ plan = 'free' }: SidebarProps) {
@@ -32,14 +46,17 @@ export function Sidebar({ plan = 'free' }: SidebarProps) {
     <aside className="sidebar">
       <div className="sidebar-plan">
         <span className="sidebar-plan-label">Plan</span>
-        <span className="plan-badge">{normalized === 'free' ? 'Free' : normalized === 'pro' ? 'Pro' : 'Business'}</span>
+        <span className="plan-badge">{planLabel(normalized)}</span>
       </div>
 
-      {links.map(([label, href]) => (
-        <Link key={href} href={href}>
-          {label}
-        </Link>
-      ))}
+      {baseLinks.map(([label, href]) => {
+        if (href === '/team' && !hasTeamManagement(normalized)) return null;
+        return (
+          <Link key={href} href={href}>
+            {label}
+          </Link>
+        );
+      })}
 
       {!isPaidEverittosPlan(normalized) && (
         <div className="sidebar-upgrade">

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
@@ -19,6 +20,12 @@ export default function SettingsPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [orgId, setOrgId] = useState('');
+  const [notifyAssignments, setNotifyAssignments] = useState(true);
+  const [notifyDueDates, setNotifyDueDates] = useState(true);
+  const [notifyCompletions, setNotifyCompletions] = useState(true);
+  const [notifyReports, setNotifyReports] = useState(true);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -39,6 +46,25 @@ export default function SettingsPage() {
       setServiceType(biz?.service_type || '');
       setBookingUrl(biz?.booking_url || '');
       setEmail(user.email || '');
+
+      const org = await fetchOrganizationContext(user.id);
+      if (org) {
+        setOrgId(org.organizationId);
+        const { data: settings } = await supabase
+          .from('organization_settings')
+          .select('*')
+          .eq('organization_id', org.organizationId)
+          .maybeSingle();
+        if (settings) {
+          setServiceType(settings.service_type || serviceType);
+          setBookingUrl(settings.booking_url || bookingUrl);
+          setNotifyAssignments(settings.notification_assignments ?? true);
+          setNotifyDueDates(settings.notification_due_dates ?? true);
+          setNotifyCompletions(settings.notification_completions ?? true);
+          setNotifyReports(settings.notification_reports ?? true);
+        }
+      }
+
       setLoading(false);
     }
 
@@ -76,6 +102,21 @@ export default function SettingsPage() {
       email
     });
 
+    if (orgId) {
+      await supabase.from('organization_settings').upsert({
+        organization_id: orgId,
+        company_phone: phone.trim() || null,
+        company_email: email,
+        service_type: serviceType.trim() || null,
+        booking_url: bookingUrl.trim() || null,
+        notification_assignments: notifyAssignments,
+        notification_due_dates: notifyDueDates,
+        notification_completions: notifyCompletions,
+        notification_reports: notifyReports
+      });
+      await supabase.from('organizations').update({ name: businessName.trim() || 'My Business' }).eq('id', orgId);
+    }
+
     setSaving(false);
     setMessage('Settings saved.');
   }
@@ -89,6 +130,21 @@ export default function SettingsPage() {
     }
     setMessage('Password updated.');
     setPassword('');
+  }
+
+  async function uploadLogo(file: File | null) {
+    if (!file || !orgId) return;
+    setLogoUploading(true);
+    const path = `${orgId}/logo-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+    const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
+    if (error) {
+      setMessage(error.message);
+      setLogoUploading(false);
+      return;
+    }
+    await supabase.from('organization_settings').upsert({ organization_id: orgId, logo_path: path });
+    setLogoUploading(false);
+    setMessage('Logo uploaded.');
   }
 
   async function logout() {
@@ -137,6 +193,21 @@ export default function SettingsPage() {
             onChange={(e) => setBookingUrl(e.target.value)}
           />
           <input className="input" placeholder="Email" value={email} disabled />
+          <h3>Logo</h3>
+          <input type="file" accept="image/*" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />
+          <h3>Notification preferences</h3>
+          <label>
+            <input type="checkbox" checked={notifyAssignments} onChange={(e) => setNotifyAssignments(e.target.checked)} /> Assignments
+          </label>
+          <label>
+            <input type="checkbox" checked={notifyDueDates} onChange={(e) => setNotifyDueDates(e.target.checked)} /> Due dates
+          </label>
+          <label>
+            <input type="checkbox" checked={notifyCompletions} onChange={(e) => setNotifyCompletions(e.target.checked)} /> Completions
+          </label>
+          <label>
+            <input type="checkbox" checked={notifyReports} onChange={(e) => setNotifyReports(e.target.checked)} /> Reports
+          </label>
           <button className="btn btn-primary" type="button" onClick={saveProfile} disabled={saving}>
             {saving ? 'Saving...' : 'Save settings'}
           </button>

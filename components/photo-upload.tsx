@@ -5,18 +5,19 @@ import { supabase } from '@/lib/supabase';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everittos-usage';
 
-type PhotoLabel = 'before' | 'during' | 'after' | 'other';
+type PhotoLabel = 'before' | 'progress' | 'during' | 'after' | 'other';
 
 type PhotoUploadProps = {
   jobId: string;
   userId: string;
+  organizationId?: string | null;
   disabled?: boolean;
   onUploaded?: () => void;
 };
 
-const LABELS: PhotoLabel[] = ['before', 'during', 'after', 'other'];
+const LABELS: PhotoLabel[] = ['before', 'progress', 'after', 'other'];
 
-export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUploadProps) {
+export function PhotoUpload({ jobId, userId, organizationId, disabled, onUploaded }: PhotoUploadProps) {
   const [label, setLabel] = useState<PhotoLabel>('before');
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -37,7 +38,7 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     const plan = normalizePlan(profile?.plan);
-    let usage = await fetchUsageCounts(user.id);
+    let usage = await fetchUsageCounts(user.id, organizationId);
     if (photoLimitReached(plan, usage)) {
       setUploading(false);
       setMessage(limitMessage('photos', plan));
@@ -62,11 +63,13 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
         continue;
       }
 
+      const storageLabel = label === 'progress' ? 'progress' : label;
       const { error: rowError } = await supabase.from('job_photos').insert({
         user_id: userId,
         job_id: jobId,
+        organization_id: organizationId,
         storage_path: path,
-        label
+        label: storageLabel
       });
 
       if (rowError) {
@@ -83,7 +86,7 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
   return (
     <div className="upload-box">
       <div className="form" style={{ marginBottom: 12 }}>
-        <label htmlFor="photo-label">Photo label</label>
+        <label htmlFor="photo-label">Photo category</label>
         <select
           id="photo-label"
           className="input"

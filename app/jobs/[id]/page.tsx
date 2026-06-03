@@ -3,9 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ActivityFeed } from '@/components/activity-feed';
+import { JobAssignments } from '@/components/job-assignments';
+import { JobChecklist } from '@/components/job-checklist';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { PhotoUpload } from '@/components/photo-upload';
 import { Sidebar } from '@/components/sidebar';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { logClientActivity, createNotification } from '@/lib/activity';
 import { StatusPill } from '@/components/status-pill';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -34,6 +39,11 @@ type Job = {
   start_date: string | null;
   due_date: string | null;
   assigned_to: string | null;
+  organization_id: string | null;
+  priority: string | null;
+  internal_notes: string | null;
+  customer_notes: string | null;
+  completion_verified: boolean | null;
   created_at: string | null;
 };
 
@@ -52,6 +62,12 @@ export default function JobDetailPage({ params }: PageProps) {
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [activity, setActivity] = useState<
+    { id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]
+  >([]);
+  const [assignments, setAssignments] = useState<{ id: string; worker_id: string; responsibility: string | null }[]>([]);
+  const [checklist, setChecklist] = useState<{ id: string; label: string; completed: boolean; sort_order: number }[]>([]);
+  const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canManage, setCanManage] = useState(false);
   const [canEditStatus, setCanEditStatus] = useState(false);
@@ -84,12 +100,33 @@ export default function JobDetailPage({ params }: PageProps) {
     setCanManage(isOwnerOrAdmin(role));
     setCanEditStatus(isOwnerOrAdmin(role) || isStaffRole(role));
 
+    const org = await fetchOrganizationContext(user.id);
+    if (org) setOrgId(org.organizationId);
+
     const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
     const { data: notes } = await supabase
       .from('job_timeline')
       .select('id, message, event_type, created_at')
       .eq('job_id', jobId)
       .order('created_at', { ascending: false });
+
+    const [{ data: assignRows }, { data: checklistRows }, { data: activityRows }] = await Promise.all([
+      supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId),
+      supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
+      org?.organizationId && limitsForPlan(userPlan).activityLog
+        ? supabase
+            .from('activity_logs')
+            .select('id, action, message, entity_type, created_at, actor_name')
+            .eq('organization_id', org.organizationId)
+            .eq('entity_id', jobId)
+            .order('created_at', { ascending: false })
+            .limit(30)
+        : Promise.resolve({ data: [] })
+    ]);
+
+    setAssignments(assignRows || []);
+    setChecklist(checklistRows || []);
+    setActivity(activityRows || []);
 
     if (limitsForPlan(userPlan).crewAssignment) {
       const { data: crew } = await supabase.from('workers').select('id, name').order('name');
@@ -116,7 +153,34 @@ export default function JobDetailPage({ params }: PageProps) {
       setMessage(error.message);
       return;
     }
+    if (orgId) {
+      await logClientActivity(orgId, 'job', jobId, 'status_changed', `Status set to ${status}`);
+      if (status === 'completed') {
+        const {
+          data: { user: u }
+        } = await supabase.auth.getUser();
+        if (u) await createNotification(orgId, u.id, 'completion', 'Job completed', job?.title || 'Job marked completed', jobId);
+      }
+    }
     loadJob();
+  }
+
+  async function saveJobFields() {
+    if (!job || !canManage) return;
+    const { error } = await supabase
+      .from('jobs')
+      .update({
+        priority: job.priority,
+        internal_notes: job.internal_notes,
+        customer_notes: job.customer_notes,
+        completion_verified: job.completion_verified
+      })
+      .eq('id', jobId);
+    if (error) setMessage(error.message);
+    else {
+      if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
+      loadJob();
+    }
   }
 
   async function saveSchedule() {
@@ -179,6 +243,10 @@ export default function JobDetailPage({ params }: PageProps) {
       return;
     }
 
+    if (orgId) {
+      await logClientActivity(orgId, 'job', job.id, 'report_generated', 'Proof report created');
+      await createNotification(orgId, user.id, 'report', 'Report generated', job.title, job.id);
+    }
     router.push(`/jobs/${job.id}/report`);
   }
 
@@ -236,6 +304,49 @@ export default function JobDetailPage({ params }: PageProps) {
             <p>
               <strong>Notes:</strong> {job.notes || 'No notes'}
             </p>
+            <p>
+              <strong>Priority:</strong> {job.priority || 'normal'}
+            </p>
+            {canManage && (
+              <div className="form" style={{ marginTop: 12 }}>
+                <label>Priority</label>
+                <select
+                  className="input"
+                  value={job.priority || 'normal'}
+                  onChange={(e) => setJob({ ...job, priority: e.target.value })}
+                >
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+                <label>Internal notes</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  value={job.internal_notes || ''}
+                  onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
+                />
+                <label>Customer notes</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  value={job.customer_notes || ''}
+                  onChange={(e) => setJob({ ...job, customer_notes: e.target.value })}
+                />
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!!job.completion_verified}
+                    onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
+                  />{' '}
+                  Completion verified
+                </label>
+                <button type="button" className="btn" onClick={saveJobFields}>
+                  Save details
+                </button>
+              </div>
+            )}
             <p>
               <strong>Created:</strong> {job.created_at ? new Date(job.created_at).toLocaleString() : 'Just created'}
             </p>
@@ -298,6 +409,33 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
         </div>
 
+        {crewEnabled && orgId && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <JobAssignments
+              jobId={job.id}
+              organizationId={orgId}
+              userId={job.user_id}
+              workers={workers}
+              assignments={assignments}
+              canManage={canManage}
+              onChange={loadJob}
+            />
+          </div>
+        )}
+
+        {orgId && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <JobChecklist
+              jobId={job.id}
+              organizationId={orgId}
+              userId={job.user_id}
+              items={checklist}
+              canEdit={canManage}
+              onChange={loadJob}
+            />
+          </div>
+        )}
+
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Photos</h3>
           <PhotoGallery jobId={job.id} refreshKey={photoRefresh} />
@@ -305,6 +443,7 @@ export default function JobDetailPage({ params }: PageProps) {
             <PhotoUpload
               jobId={job.id}
               userId={job.user_id}
+              organizationId={orgId || job.organization_id}
               onUploaded={() => {
                 setPhotoRefresh((k) => k + 1);
                 loadJob();
@@ -325,14 +464,20 @@ export default function JobDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card" style={{ marginTop: 18 }}>
-          <h3>Activity</h3>
-          {timeline.length === 0 && <p>No timeline entries yet.</p>}
-          {timeline.map((entry) => (
-            <div key={entry.id} style={{ marginTop: 10 }}>
-              <strong>{entry.event_type}</strong>
-              <p>{entry.message || 'Update recorded'}</p>
-            </div>
-          ))}
+          <h3>Activity timeline</h3>
+          {activity.length > 0 ? (
+            <ActivityFeed items={activity} />
+          ) : (
+            <>
+              {timeline.length === 0 && <p>No timeline entries yet.</p>}
+              {timeline.map((entry) => (
+                <div key={entry.id} style={{ marginTop: 10 }}>
+                  <strong>{entry.event_type}</strong>
+                  <p>{entry.message || 'Update recorded'}</p>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </main>
     </div>

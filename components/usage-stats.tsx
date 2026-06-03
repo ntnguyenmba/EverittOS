@@ -29,6 +29,10 @@ export function UsageStats({ plan, counts }: UsageStatsProps) {
         <strong>{labels.reports}</strong>
         <p>Reports</p>
       </div>
+      <div className="stat">
+        <strong>{labels.team}</strong>
+        <p>Team</p>
+      </div>
     </div>
   );
 }

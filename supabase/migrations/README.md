@@ -8,6 +8,7 @@ Run in order in the Supabase SQL editor or via CLI:
 4. `202605311400_everittos_crews_locations.sql` - crews and locations (optional)
 5. `202605311600_rbac_roles.sql`
 6. `202605320001_launch_features.sql` - role-based access policies
+7. `202605330001_organizations_platform.sql` - organizations, team, plan_tier_limits, activity, notifications
 
 ## Auth redirect URLs (Supabase Dashboard > Authentication > URL configuration)
 

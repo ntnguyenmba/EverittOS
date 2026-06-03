@@ -157,6 +157,9 @@ export default function CustomersPage() {
                 <p>{customer.phone || 'No phone'}</p>
                 <p>{customer.email || 'No email'}</p>
                 <p>{customer.address || 'No address'}</p>
+                <Link className="btn" href={`/customers/${customer.id}`}>
+                  View customer
+                </Link>
                 <Link className="btn" href={`/jobs?customer=${customer.id}`}>
                   View jobs
                 </Link>

@@ -1,4 +1,5 @@
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { planTierRow, type PlanTierId, UNLIMITED_CAP } from '@/lib/plan-config';
 import { UNLIMITED } from '@/lib/plan-limit-utils';
 
 export type PlanLimits = {
@@ -8,43 +9,49 @@ export type PlanLimits = {
   reports: number;
   teamMembers: number;
   crewMembers: number;
+  locations: number;
   crewAssignment: boolean;
+  teamManagement: boolean;
+  scheduling: boolean;
+  activityLog: boolean;
+  advancedReporting: boolean;
+  workflowCustomization: boolean;
+  multiLocation: boolean;
+  customBranding: boolean;
   pdfReports: boolean;
 };
 
-export const PLAN_LIMITS: Record<EverittosPlan, PlanLimits> = {
-  free: {
-    jobs: 10,
-    photos: 100,
-    customers: 25,
-    reports: 3,
-    teamMembers: 1,
-    crewMembers: 0,
-    crewAssignment: false,
-    pdfReports: true
-  },
-  pro: {
-    jobs: UNLIMITED,
-    photos: UNLIMITED,
-    customers: UNLIMITED,
-    reports: 25,
-    teamMembers: 1,
-    crewMembers: 0,
-    crewAssignment: false,
-    pdfReports: true
-  },
-  business: {
-    jobs: UNLIMITED,
-    photos: UNLIMITED,
-    customers: UNLIMITED,
-    reports: UNLIMITED,
-    teamMembers: UNLIMITED,
-    crewMembers: 100,
-    crewAssignment: true,
-    pdfReports: true
-  }
-};
+function cap(value: number): number {
+  return value === UNLIMITED_CAP ? UNLIMITED : value;
+}
 
 export function limitsForPlan(plan: EverittosPlan): PlanLimits {
-  return PLAN_LIMITS[plan];
+  const row = planTierRow(plan as PlanTierId);
+  return {
+    jobs: cap(row.jobs),
+    photos: cap(row.photos),
+    customers: cap(row.customers),
+    reports: cap(row.reports),
+    teamMembers: cap(row.teamMembers),
+    crewMembers: cap(row.crewMembers),
+    locations: cap(row.locations),
+    crewAssignment: row.crewAssignment,
+    teamManagement: row.teamManagement,
+    scheduling: row.scheduling,
+    activityLog: row.activityLog,
+    advancedReporting: row.advancedReporting,
+    workflowCustomization: row.workflowCustomization,
+    multiLocation: row.multiLocation,
+    customBranding: row.customBranding,
+    pdfReports: row.pdfReports
+  };
 }
+
+export const PLAN_LIMITS: Record<EverittosPlan, PlanLimits> = {
+  free: limitsForPlan('free'),
+  pro: limitsForPlan('pro'),
+  business: limitsForPlan('business'),
+  starter: limitsForPlan('starter'),
+  growth: limitsForPlan('growth'),
+  enterprise: limitsForPlan('enterprise')
+};

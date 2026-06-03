@@ -1,7 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const AUTH_PREFIXES = ['/dashboard', '/jobs', '/workers', '/settings', '/demo', '/customers', '/schedule', '/onboarding'];
+const AUTH_PREFIXES = [
+  '/dashboard',
+  '/jobs',
+  '/workers',
+  '/settings',
+  '/demo',
+  '/customers',
+  '/schedule',
+  '/onboarding',
+  '/team',
+  '/activity',
+  '/notifications'
+];
 
 function isProtectedPath(pathname: string) {
   return AUTH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -56,6 +68,9 @@ export const config = {
     '/demo/:path*',
     '/customers/:path*',
     '/schedule/:path*',
-    '/onboarding/:path*'
+    '/onboarding/:path*',
+    '/team/:path*',
+    '/activity/:path*',
+    '/notifications/:path*'
   ]
 };

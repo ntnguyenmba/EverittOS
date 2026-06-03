@@ -1,0 +1,91 @@
+import { NextResponse } from 'next/server';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { createAdminSupabase } from '@/lib/supabase-admin';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { canManageTeam, normalizeRole } from '@/lib/roles';
+
+export async function PATCH(request: Request) {
+  const supabase = await createServerSupabase();
+  const admin = createAdminSupabase();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user || !admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  if (!org || !canManageTeam(org.role)) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  }
+
+  const body = (await request.json()) as {
+    memberId?: string;
+    userId?: string;
+    role?: string;
+    active?: boolean;
+  };
+
+  const targetUserId = body.userId;
+  if (!targetUserId) {
+    return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (body.role) updates.role = normalizeRole(body.role);
+  if (typeof body.active === 'boolean') updates.active = body.active;
+
+  const { error } = await admin
+    .from('organization_members')
+    .update(updates)
+    .eq('organization_id', org.organizationId)
+    .eq('user_id', targetUserId)
+    .neq('role', 'owner');
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (updates.role) {
+    await admin.from('profiles').update({ role: updates.role }).eq('id', targetUserId);
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(request: Request) {
+  const supabase = await createServerSupabase();
+  const admin = createAdminSupabase();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user || !admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  if (!org || !canManageTeam(org.role)) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const targetUserId = searchParams.get('userId');
+  if (!targetUserId) {
+    return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+  }
+
+  const { error } = await admin
+    .from('organization_members')
+    .delete()
+    .eq('organization_id', org.organizationId)
+    .eq('user_id', targetUserId)
+    .neq('role', 'owner');
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

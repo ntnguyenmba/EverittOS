@@ -8,7 +8,8 @@ export const runtime = 'nodejs';
 /** Stripe Payment Links: set metadata `plan` = `pro` or `business` on each link (recommended). */
 function planFromSession(session: Stripe.Checkout.Session): EverittosPlan | null {
   const meta = (session.metadata?.plan || session.client_reference_id || '').toLowerCase();
-  if (meta === 'pro' || meta === 'business') return meta;
+  const allowed = ['pro', 'business', 'starter', 'growth', 'enterprise'] as const;
+  if (allowed.includes(meta as (typeof allowed)[number])) return meta as EverittosPlan;
 
   const amount = session.amount_total || 0;
   if (amount === 900 || amount === 9) return 'pro';

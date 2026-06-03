@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { RoleDashboard } from '@/components/role-dashboard';
 import { Sidebar } from '@/components/sidebar';
 import { UsageStats } from '@/components/usage-stats';
 import { JobCreator } from '@/components/job-creator';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { normalizeRole } from '@/lib/roles';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +18,7 @@ type Job = {
   title: string;
   customer_name: string | null;
   status: string | null;
+  start_date: string | null;
   due_date: string | null;
   created_at: string | null;
 };
@@ -23,7 +27,17 @@ export default function DashboardPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
-  const [usage, setUsage] = useState<UsageCounts>({ jobs: 0, photos: 0, customers: 0, reports: 0, workers: 0 });
+  const [usage, setUsage] = useState<UsageCounts>({
+    jobs: 0,
+    photos: 0,
+    customers: 0,
+    reports: 0,
+    workers: 0,
+    teamMembers: 1,
+    locations: 0
+  });
+  const [role, setRole] = useState<'owner' | 'admin' | 'manager' | 'crew_lead' | 'staff' | 'client'>('owner');
+  const [activityCount, setActivityCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -40,7 +54,9 @@ export default function DashboardPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+    const org = await fetchOrganizationContext(user.id);
+    setRole(normalizeRole(profile?.role));
     const { data: biz } = await supabase.from('business_profiles').select('onboarding_completed').eq('user_id', user.id).maybeSingle();
 
     if (biz && biz.onboarding_completed === false) {
@@ -50,12 +66,18 @@ export default function DashboardPage() {
 
     setPlan(normalizePlan(profile?.plan));
 
-    const [jobsRes, counts] = await Promise.all([
+    const [jobsRes, counts, activityRes] = await Promise.all([
       supabase
         .from('jobs')
-        .select('id, title, customer_name, status, due_date, created_at')
+        .select('id, title, customer_name, status, start_date, due_date, created_at')
         .order('created_at', { ascending: false }),
-      fetchUsageCounts(user.id)
+      fetchUsageCounts(user.id, org?.organizationId),
+      org?.organizationId
+        ? supabase
+            .from('activity_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', org.organizationId)
+        : Promise.resolve({ count: 0 })
     ]);
 
     setLoading(false);
@@ -67,6 +89,7 @@ export default function DashboardPage() {
 
     setJobs(jobsRes.data || []);
     setUsage(counts);
+    setActivityCount(activityRes.count || 0);
   }
 
   useEffect(() => {
@@ -110,6 +133,16 @@ export default function DashboardPage() {
         )}
 
         <UsageStats plan={plan} counts={usage} />
+
+        <div className="card" style={{ marginTop: 18 }}>
+          <RoleDashboard
+            role={role}
+            jobs={jobs}
+            photoCount={usage.photos}
+            reportCount={usage.reports}
+            activityCount={activityCount}
+          />
+        </div>
 
         <div className="grid-2" style={{ marginTop: 18 }}>
           <JobCreator onJobCreated={loadDashboard} />

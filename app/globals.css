@@ -227,6 +227,122 @@ p { color: var(--muted); line-height: 1.65; }
   color: var(--muted);
 }
 
+.schedule-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.schedule-calendar-grid,
+.schedule-week-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.schedule-day-cell,
+.schedule-week-col {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 90px;
+}
+
+.schedule-day-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.schedule-job-chip {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: var(--surface);
+  border-radius: 6px;
+}
+
+.schedule-row {
+  align-items: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.stat-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.activity-item {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.activity-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checklist-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .schedule-toolbar .btn,
+  .inline-actions .btn,
+  .inline-actions .input {
+    width: 100%;
+  }
+
+  .dashboard-shell {
+    overflow-x: hidden;
+  }
+
+  .main {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
 @media print {
   .sidebar,
   .no-print,
