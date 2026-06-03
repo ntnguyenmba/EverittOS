@@ -6,7 +6,8 @@ Run in order in the Supabase SQL editor or via CLI:
 2. `202605310003_rls_storage.sql` - RLS and job-photos bucket
 3. `202605311200_everittos_plan_tiers.sql` - plan columns (if not already applied)
 4. `202605311400_everittos_crews_locations.sql` - crews and locations (optional)
-5. `202605311600_rbac_roles.sql` - role-based access policies
+5. `202605311600_rbac_roles.sql`
+6. `202605320001_launch_features.sql` - role-based access policies
 
 ## Auth redirect URLs (Supabase Dashboard > Authentication > URL configuration)
 

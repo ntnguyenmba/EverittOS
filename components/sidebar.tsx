@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 const links = [
   ['Dashboard', '/dashboard'],
   ['Jobs', '/jobs'],
+  ['Customers', '/customers'],
+  ['Schedule', '/schedule'],
   ['Workers', '/workers'],
   ['Settings', '/settings']
 ] as const;
@@ -41,7 +43,7 @@ export function Sidebar({ plan = 'free' }: SidebarProps) {
 
       {!isPaidEverittosPlan(normalized) && (
         <div className="sidebar-upgrade">
-          <p>Need photos, reports, and crew assignment?</p>
+          <p>Need unlimited jobs, photos, and reports?</p>
           <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
             Start Pro
           </a>

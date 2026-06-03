@@ -20,16 +20,16 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'free',
     name: 'Free',
     priceLabel: '$0',
-    headline: 'Organize jobs, customers, and crew in one place.',
-    features: ['Account and dashboard', 'Job and customer records', 'Status updates and basic notes'],
+    headline: 'Organize jobs, customers, and field proof.',
+    features: ['10 active jobs', '100 photos', '25 customers', '3 reports', '1 user account'],
     buttonLabel: 'Start Free'
   },
   {
     id: 'pro',
     name: 'Pro',
     priceLabel: '$9/month',
-    headline: 'Photo proof, crew assignment, and printable reports.',
-    features: ['Everything in Free', 'Before/after photos', 'One crew', 'Professional reports'],
+    headline: 'Unlimited jobs, photos, and customers with proof reports.',
+    features: ['Unlimited jobs and photos', 'Unlimited customers', 'Up to 25 reports', '1 user account'],
     buttonLabel: 'Start Pro',
     featured: true
   },
@@ -37,8 +37,8 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'business',
     name: 'Business',
     priceLabel: '$39/month',
-    headline: 'Multiple crews and locations with grouped dashboards.',
-    features: ['Everything in Pro', 'Multiple crews', 'Location filters', 'Dashboard by crew or site'],
+    headline: 'Teams, crew assignment, and unlimited reports.',
+    features: ['Everything in Pro', 'Unlimited reports', 'Multiple users', 'Crew assignment'],
     buttonLabel: 'Start Business'
   }
 ];
@@ -53,6 +53,6 @@ export function isPaidEverittosPlan(plan: EverittosPlan): boolean {
   return plan === 'pro' || plan === 'business';
 }
 
-export function photoUploadAllowed(plan: EverittosPlan): boolean {
-  return isPaidEverittosPlan(plan);
+export function photoUploadAllowed(_plan: EverittosPlan): boolean {
+  return true;
 }

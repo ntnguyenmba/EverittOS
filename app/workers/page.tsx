@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { isOwnerOrAdmin, normalizeRole } from '@/lib/roles';
@@ -24,6 +25,8 @@ export default function WorkersPage() {
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
   async function loadWorkers() {
     const {
@@ -44,7 +47,7 @@ export default function WorkersPage() {
   }
 
   async function addWorker() {
-    if (!name.trim()) return;
+    if (!name.trim() || saving) return;
 
     const {
       data: { user }
@@ -52,11 +55,18 @@ export default function WorkersPage() {
     if (!user) return;
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
-    const plan = normalizePlan(profile?.plan);
-    if (crewLimitReached(plan, workers.length)) {
-      alert(limitMessage('crewMembers', plan));
+    const userPlan = normalizePlan(profile?.plan);
+    if (!limitsForPlan(userPlan).crewAssignment) {
+      setMessage('Workers and crew assignment require the Business plan.');
       return;
     }
+    if (crewLimitReached(userPlan, workers.length)) {
+      setMessage(limitMessage('crewMembers', userPlan));
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
 
     const { error } = await supabase.from('workers').insert({
       user_id: user.id,
@@ -65,8 +75,14 @@ export default function WorkersPage() {
       phone: phone.trim() || null
     });
 
+    setSaving(false);
+
     if (error) {
-      alert(error.message);
+      if (error.message.includes('PLAN_LIMIT_CREW')) {
+        setMessage('Workers and crew assignment require the Business plan.');
+      } else {
+        setMessage(error.message);
+      }
       return;
     }
 
@@ -87,15 +103,23 @@ export default function WorkersPage() {
         <h2>Workers</h2>
         <p>Crew members linked to your operation.</p>
 
-        {canManage && (
+        {message && <p>{message}</p>}
+
+        {canManage && limitsForPlan(plan).crewAssignment && (
           <div className="card form" style={{ marginTop: 20 }}>
             <h3>Add worker</h3>
             <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
             <input className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
             <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <button className="btn btn-primary" type="button" onClick={addWorker}>
-              Save worker
+            <button className="btn btn-primary" type="button" onClick={addWorker} disabled={saving}>
+              {saving ? 'Saving...' : 'Save worker'}
             </button>
+          </div>
+        )}
+
+        {canManage && !limitsForPlan(plan).crewAssignment && (
+          <div className="card" style={{ marginTop: 20 }}>
+            <p>Workers and crew assignment are available on the Business plan.</p>
           </div>
         )}
 

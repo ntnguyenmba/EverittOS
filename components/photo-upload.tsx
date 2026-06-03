@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
+import { normalizePlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everittos-usage';
 
 type PhotoLabel = 'before' | 'during' | 'after' | 'other';
@@ -37,12 +37,6 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     const plan = normalizePlan(profile?.plan);
-    if (!photoUploadAllowed(plan)) {
-      setUploading(false);
-      setMessage('Photo uploads require Pro or Business.');
-      return;
-    }
-
     let usage = await fetchUsageCounts(user.id);
     if (photoLimitReached(plan, usage)) {
       setUploading(false);
@@ -114,7 +108,7 @@ export function PhotoUpload({ jobId, userId, disabled, onUploaded }: PhotoUpload
       />
       <p>{uploading ? 'Uploading...' : 'Add photos from your phone or computer.'}</p>
       {message && <p>{message}</p>}
-      {disabled && <p>Photo uploads require an active Pro or Business plan.</p>}
+      {disabled && <p>Photo uploads are not available on your current plan.</p>}
     </div>
   );
 }

@@ -63,7 +63,7 @@ function SignupForm() {
     }
 
     if (data.session) {
-      router.push(next);
+      router.push('/onboarding');
       router.refresh();
       return;
     }

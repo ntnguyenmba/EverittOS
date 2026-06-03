@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -12,12 +13,15 @@ type Job = {
   id: string;
   title: string;
   customer_name: string | null;
+  customer_id: string | null;
   address: string | null;
   status: string | null;
 };
 
-export default function JobsPage() {
+function JobsList() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const customerFilter = searchParams.get('customer');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [loading, setLoading] = useState(true);
@@ -35,17 +39,23 @@ export default function JobsPage() {
       const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
 
-      const { data } = await supabase
+      let query = supabase
         .from('jobs')
-        .select('id, title, customer_name, address, status')
+        .select('id, title, customer_name, customer_id, address, status')
         .order('created_at', { ascending: false });
+
+      if (customerFilter) {
+        query = query.eq('customer_id', customerFilter);
+      }
+
+      const { data } = await query;
 
       setJobs(data || []);
       setLoading(false);
     }
 
     load();
-  }, [router]);
+  }, [router, customerFilter]);
 
   return (
     <div className="dashboard-shell">
@@ -79,8 +89,8 @@ export default function JobsPage() {
                 {jobs.map((job) => (
                   <tr key={job.id}>
                     <td>{job.title}</td>
-                    <td>{job.customer_name || '—'}</td>
-                    <td>{job.address || '—'}</td>
+                    <td>{job.customer_name || 'Not set'}</td>
+                    <td>{job.address || 'Not set'}</td>
                     <td>
                       <StatusPill status={job.status} />
                     </td>
@@ -97,5 +107,13 @@ export default function JobsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense>
+      <JobsList />
+    </Suspense>
   );
 }

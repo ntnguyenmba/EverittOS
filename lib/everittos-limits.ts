@@ -1,18 +1,48 @@
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { UNLIMITED } from '@/lib/plan-limit-utils';
 
 export type PlanLimits = {
-  customers: number;
   jobs: number;
   photos: number;
+  customers: number;
+  reports: number;
+  teamMembers: number;
   crewMembers: number;
-  pdfReports: boolean;
   crewAssignment: boolean;
+  pdfReports: boolean;
 };
 
 export const PLAN_LIMITS: Record<EverittosPlan, PlanLimits> = {
-  free: { customers: 25, jobs: 10, photos: 0, crewMembers: 3, pdfReports: false, crewAssignment: false },
-  pro: { customers: 250, jobs: 500, photos: 2000, crewMembers: 15, pdfReports: true, crewAssignment: true },
-  business: { customers: 2000, jobs: 5000, photos: 20000, crewMembers: 100, pdfReports: true, crewAssignment: true }
+  free: {
+    jobs: 10,
+    photos: 100,
+    customers: 25,
+    reports: 3,
+    teamMembers: 1,
+    crewMembers: 0,
+    crewAssignment: false,
+    pdfReports: true
+  },
+  pro: {
+    jobs: UNLIMITED,
+    photos: UNLIMITED,
+    customers: UNLIMITED,
+    reports: 25,
+    teamMembers: 1,
+    crewMembers: 0,
+    crewAssignment: false,
+    pdfReports: true
+  },
+  business: {
+    jobs: UNLIMITED,
+    photos: UNLIMITED,
+    customers: UNLIMITED,
+    reports: UNLIMITED,
+    teamMembers: UNLIMITED,
+    crewMembers: 100,
+    crewAssignment: true,
+    pdfReports: true
+  }
 };
 
 export function limitsForPlan(plan: EverittosPlan): PlanLimits {
