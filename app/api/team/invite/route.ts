@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
-  if (!['manager', 'employee', 'contractor', 'client'].includes(role)) {
+  if (!['admin', 'manager', 'employee', 'contractor', 'client', 'viewer'].includes(role)) {
     return NextResponse.json({ error: 'Invalid role for invitation' }, { status: 400 });
   }
 

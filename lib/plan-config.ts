@@ -79,7 +79,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     customBranding: false,
     pdfReports: true,
     photoUpload: true,
-    clientPortal: false,
+    clientPortal: true,
     contractorPortal: false,
     brandedReports: false,
     apiAccess: false,
