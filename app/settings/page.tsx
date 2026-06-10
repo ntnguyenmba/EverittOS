@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
-import { EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { SettingsShell } from '@/components/settings/settings-shell';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
@@ -16,7 +16,6 @@ export default function SettingsPage() {
   const [serviceType, setServiceType] = useState('');
   const [bookingUrl, setBookingUrl] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -121,17 +120,6 @@ export default function SettingsPage() {
     setMessage('Settings saved.');
   }
 
-  async function changePassword() {
-    if (!password) return;
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-    setMessage('Password updated.');
-    setPassword('');
-  }
-
   async function uploadLogo(file: File | null) {
     if (!file || !orgId) return;
     setLogoUploading(true);
@@ -156,7 +144,6 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="dashboard-shell">
-        <Sidebar plan={plan} />
         <main className="main">
           <p>Loading settings...</p>
         </main>
@@ -165,24 +152,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
-        <h2>Settings</h2>
-        <div className="card form">
-          <p>
-            Current plan: <strong>{plan}</strong>
-          </p>
-          <p>
-            Upgrade:{' '}
-            <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer">
-              Pro
-            </a>
-            {' · '}
-            <a href={EVERITTOS_STRIPE_LINKS.business} target="_blank" rel="noopener noreferrer">
-              Business
-            </a>
-          </p>
+    <SettingsShell plan={plan} title="Company settings" description="Business profile, logo, and notifications.">
+      <div className="settings-card form">
+        <p>
+          Plan: <strong>{plan}</strong>. Manage subscription on{' '}
+          <Link href="/settings/billing">billing settings</Link> or{' '}
+          <Link href="/settings/account">account settings</Link>.
+        </p>
           <input className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
           <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           <input className="input" placeholder="Service type" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
@@ -211,12 +187,6 @@ export default function SettingsPage() {
           <button className="btn btn-primary" type="button" onClick={saveProfile} disabled={saving}>
             {saving ? 'Saving...' : 'Save settings'}
           </button>
-          <hr />
-          <h3>Change password</h3>
-          <input className="input" placeholder="New password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="btn btn-primary" type="button" onClick={changePassword}>
-            Update password
-          </button>
           <button className="btn" type="button" onClick={logout}>
             Log out
           </button>
@@ -225,7 +195,6 @@ export default function SettingsPage() {
           </p>
           {message && <p>{message}</p>}
         </div>
-      </main>
-    </div>
+    </SettingsShell>
   );
 }

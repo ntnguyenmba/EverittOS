@@ -3,43 +3,78 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl, safeNextPath } from '@/lib/app-url';
+import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { supabase } from '@/lib/supabase';
+
+function signupRedirect(plan: EverittosPlan, next: string): string {
+  if (plan !== 'free') {
+    const tier = EVERITTOS_PLANS.find((item) => item.id === plan);
+    if (tier?.stripeLink) return tier.stripeLink;
+    return `/billing?plan=${plan}`;
+  }
+  return safeNextPath(next, '/onboarding');
+}
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'), '/onboarding');
+  const selectedPlan = normalizePlan(searchParams.get('plan'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function createAccount() {
-    setLoading(true);
-    setMessage('');
+  const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
 
-    if (!businessName || !email || !password) {
+  async function createAccount(event: React.FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    if (!businessName.trim() || !email.trim() || !password) {
       setLoading(false);
-      setMessage('Please fill in all fields.');
+      setError('Please fill in all fields.');
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    if (password.length < 6) {
+      setLoading(false);
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setLoading(false);
+      setError('Passwords do not match.');
+      return;
+    }
+
+    const redirectTarget = signupRedirect(selectedPlan, next);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
-        data: { business_name: businessName }
+        emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(redirectTarget.startsWith('http') ? next : redirectTarget)}`),
+        data: {
+          business_name: businessName.trim(),
+          selected_plan: selectedPlan
+        }
       }
     });
 
-    setLoading(false);
-
-    if (error) {
-      setMessage(error.message);
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message);
       return;
     }
 
@@ -48,66 +83,111 @@ function SignupForm() {
         {
           id: data.user.id,
           email,
-          business_name: businessName,
+          business_name: businessName.trim(),
           role: 'owner',
-          plan: 'free',
-          subscription_status: 'free'
+          plan: selectedPlan === 'free' ? 'free' : selectedPlan,
+          subscription_status: selectedPlan === 'free' ? 'free' : 'incomplete',
+          account_status: 'active'
         },
         { onConflict: 'id' }
       );
     }
 
+    setLoading(false);
+
     if (data.session) {
-      router.push('/onboarding');
+      if (redirectTarget.startsWith('http')) {
+        window.location.href = redirectTarget;
+        return;
+      }
+      router.push(redirectTarget);
       router.refresh();
       return;
     }
 
-    setMessage('Account created. Check your email to verify your address, then sign in.');
+    setSuccess('Account created. Check your email to verify your address, then sign in.');
   }
 
   return (
-    <main className="section">
-      <div className="container grid-2">
-        <div>
-          <h2>Create your EverittOS account</h2>
-          <p>Start free. Keep jobs, crews, photos, and reports in one place.</p>
-        </div>
+    <AuthShell
+      eyebrow="Create account"
+      title="Start with EverittOS"
+      description="Set up your workspace for jobs, customers, crews, and reports."
+      aside={<AuthAsidePanel />}
+    >
+      {selectedPlan !== 'free' ? (
+        <p className="auth-plan-note">
+          You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
+        </p>
+      ) : null}
 
-        <div className="card form">
+      <form className="auth-form card" onSubmit={createAccount}>
+        <div className="auth-field">
+          <label htmlFor="business_name">Business name</label>
           <input
+            id="business_name"
             className="input"
-            placeholder="Business name"
+            placeholder="Your company name"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
+            required
           />
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             className="input"
-            placeholder="Email"
+            placeholder="you@company.com"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             className="input"
-            placeholder="Password"
+            placeholder="Minimum 6 characters"
             type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
-
-          <button className="btn btn-primary" type="button" onClick={createAccount} disabled={loading}>
-            {loading ? 'Creating...' : 'Start Free'}
-          </button>
-
-          <Link className="btn" href={`/login?next=${encodeURIComponent(next)}`}>
-            Already have an account? Log in
-          </Link>
-
-          {message && <p>{message}</p>}
         </div>
+
+        <div className="auth-field">
+          <label htmlFor="confirm_password">Confirm password</label>
+          <input
+            id="confirm_password"
+            className="input"
+            placeholder="Repeat password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <AuthMessages error={error} success={success} />
+
+        <button className="btn btn-primary" type="submit" disabled={loading}>
+          {loading ? 'Creating account...' : selectedPlan === 'free' ? 'Start free' : 'Create account'}
+        </button>
+      </form>
+
+      <div className="auth-links">
+        <Link href={loginHref}>Already have an account? Sign in</Link>
+        <Link href="/pricing">Compare plans</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }
 

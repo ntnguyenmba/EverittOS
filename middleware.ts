@@ -1,5 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isAccountActive } from '@/lib/account-status';
+import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
+import { normalizePlan } from '@/lib/everittos-plans';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
 
 const AUTH_PREFIXES = [
   '/dashboard',
@@ -63,6 +67,31 @@ export async function middleware(request: NextRequest) {
     const login = new URL('/login', request.url);
     login.searchParams.set('next', pathname);
     return NextResponse.redirect(login);
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('account_status, plan')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!isAccountActive(profile?.account_status)) {
+    await supabase.auth.signOut();
+    const login = new URL('/login', request.url);
+    login.searchParams.set('error', 'This account is disabled. Contact support to restore access.');
+    return NextResponse.redirect(login);
+  }
+
+  const requiredPlan = minimumPlanForPath(pathname);
+  if (requiredPlan) {
+    const { plan } = await resolveOrganizationPlan(supabase, user.id);
+    const userPlan = normalizePlan(plan || profile?.plan);
+
+    if (!meetsMinimumPlan(userPlan, requiredPlan)) {
+      const billing = new URL('/settings/billing', request.url);
+      billing.searchParams.set('upgrade', requiredPlan);
+      return NextResponse.redirect(billing);
+    }
   }
 
   return response;

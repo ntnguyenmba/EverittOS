@@ -24,7 +24,7 @@ const baseLinks = [
   ['Team', '/team'],
   ['Activity', '/activity'],
   ['Notifications', '/notifications'],
-  ['Billing', '/billing'],
+  ['Billing', '/settings/billing'],
   ['Settings', '/settings']
 ] as const;
 

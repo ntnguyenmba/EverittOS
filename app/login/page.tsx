@@ -3,30 +3,37 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { AuthMessages } from '@/components/auth/auth-messages';
+import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
+import { supabase } from '@/lib/supabase';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const authError = searchParams.get('error');
+  const selectedPlan = normalizePlan(searchParams.get('plan'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin() {
-    setLoading(true);
-    setMessage('');
+  const signupHref = `/signup?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  async function handleLogin(event: React.FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     setLoading(false);
 
-    if (error) {
-      setMessage(error.message);
+    if (signInError) {
+      setError(signInError.message);
       return;
     }
 
@@ -35,45 +42,59 @@ function LoginForm() {
   }
 
   return (
-    <main className="section">
-      <div className="container grid-2">
-        <div>
-          <h2>Login</h2>
-          <p>Sign in to manage jobs, crews, and field reports.</p>
-        </div>
+    <AuthShell
+      eyebrow="Sign in"
+      title="Welcome back to EverittOS"
+      description="Sign in to manage jobs, crews, photos, and field reports."
+      aside={<AuthAsidePanel />}
+    >
+      {selectedPlan !== 'free' ? (
+        <p className="auth-plan-note">
+          Selected plan: <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. Sign in to continue setup.
+        </p>
+      ) : null}
 
-        <div className="card form">
+      <form className="auth-form card" onSubmit={handleLogin}>
+        <div className="auth-field">
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             className="input"
-            placeholder="Email"
+            placeholder="you@company.com"
             type="email"
+            autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             className="input"
-            placeholder="Password"
+            placeholder="Your password"
             type="password"
+            autoComplete="current-password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-
-          <button className="btn btn-primary" type="button" onClick={handleLogin} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-
-          <Link className="btn" href={`/signup?next=${encodeURIComponent(next)}`}>
-            Create account
-          </Link>
-          <Link className="btn" href="/forgot-password">
-            Forgot password
-          </Link>
-
-          {authError && <p>{decodeURIComponent(authError)}</p>}
-          {message && <p>{message}</p>}
         </div>
+
+        <AuthMessages error={authError ? decodeURIComponent(authError) : error} />
+
+        <button className="btn btn-primary" type="submit" disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+
+      <div className="auth-links">
+        <Link href={signupHref}>Create account</Link>
+        <Link href="/forgot-password">Forgot password</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }
 

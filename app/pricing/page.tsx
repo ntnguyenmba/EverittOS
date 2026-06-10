@@ -26,7 +26,7 @@ export default function PricingPage() {
                   {tier.buttonLabel}
                 </a>
               ) : (
-                <Link className="btn btn-primary" href="/signup">
+                <Link className="btn btn-primary" href={`/signup?plan=${tier.id}`}>
                   {tier.buttonLabel}
                 </Link>
               )}

@@ -61,7 +61,10 @@ export function Nav() {
             </>
           ) : (
             <>
-              <Link className="btn" href="/login">
+              <Link className="btn" href="https://everittventures.com/tech">
+            Everitt Ventures
+          </Link>
+          <Link className="btn" href="/login">
                 Login
               </Link>
 

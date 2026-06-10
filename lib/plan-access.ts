@@ -1,0 +1,95 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { limitsForPlan, PLAN_LIMITS, type PlanLimits } from '@/lib/everittos-limits';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+
+export type PlanFeature =
+  | 'photoUpload'
+  | 'teamManagement'
+  | 'crewAssignment'
+  | 'scheduling'
+  | 'activityLog'
+  | 'advancedReporting'
+  | 'workflowCustomization'
+  | 'multiLocation'
+  | 'customBranding'
+  | 'pdfReports'
+  | 'clientPortal'
+  | 'contractorPortal'
+  | 'brandedReports'
+  | 'apiAccess'
+  | 'prioritySupport';
+
+export const PLAN_ORDER: Record<EverittosPlan, number> = {
+  free: 0,
+  pro: 1,
+  business: 2,
+  operations: 3,
+  growth: 4,
+  enterprise: 5
+};
+
+export const planLimits = PLAN_LIMITS;
+
+export function planRank(plan: EverittosPlan): number {
+  return PLAN_ORDER[normalizePlan(plan)] ?? 0;
+}
+
+export function meetsMinimumPlan(userPlan: EverittosPlan, requiredPlan: EverittosPlan): boolean {
+  return planRank(userPlan) >= planRank(requiredPlan);
+}
+
+export function canAccessFeature(plan: EverittosPlan, feature: PlanFeature): boolean {
+  const limits = limitsForPlan(normalizePlan(plan));
+  return Boolean(limits[feature]);
+}
+
+export function limitsForUserPlan(plan: EverittosPlan): PlanLimits {
+  return limitsForPlan(normalizePlan(plan));
+}
+
+export async function getUserPlan(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ plan: EverittosPlan; organizationId: string | null }> {
+  const resolved = await resolveOrganizationPlan(supabase, userId);
+  return { plan: resolved.plan, organizationId: resolved.organizationId };
+}
+
+export type RequirePlanResult =
+  | { ok: true; plan: EverittosPlan }
+  | { ok: false; plan: EverittosPlan; requiredPlan: EverittosPlan; message: string };
+
+export function requirePlan(userPlan: EverittosPlan, requiredPlan: EverittosPlan): RequirePlanResult {
+  const plan = normalizePlan(userPlan);
+  const required = normalizePlan(requiredPlan);
+
+  if (meetsMinimumPlan(plan, required)) {
+    return { ok: true, plan };
+  }
+
+  return {
+    ok: false,
+    plan,
+    requiredPlan: required,
+    message: `${required} or higher is required for this feature.`
+  };
+}
+
+/** Route prefixes that require a minimum plan tier. */
+export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
+  { prefix: '/team', plan: 'business' },
+  { prefix: '/activity', plan: 'business' },
+  { prefix: '/portal/client', plan: 'operations' },
+  { prefix: '/portal/contractor', plan: 'operations' },
+  { prefix: '/admin', plan: 'enterprise' }
+];
+
+export function minimumPlanForPath(pathname: string): EverittosPlan | null {
+  for (const route of ROUTE_MIN_PLAN) {
+    if (pathname === route.prefix || pathname.startsWith(`${route.prefix}/`)) {
+      return route.plan;
+    }
+  }
+  return null;
+}

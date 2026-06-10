@@ -2,51 +2,68 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl } from '@/lib/app-url';
+import { supabase } from '@/lib/supabase';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function resetPassword() {
+  async function resetPassword(event: React.FormEvent) {
+    event.preventDefault();
     setLoading(true);
-    setMessage('');
+    setError('');
+    setSuccess('');
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: appUrl('/reset-password')
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: appUrl('/auth/callback?next=/reset-password')
     });
 
     setLoading(false);
-    if (error) {
-      setMessage(error.message);
+
+    if (resetError) {
+      setError(resetError.message);
       return;
     }
-    setMessage('Password reset email sent.');
+
+    setSuccess('Password reset email sent. Open the link in that message to choose a new password.');
   }
 
   return (
-    <main className="section">
-      <div className="container">
-        <div className="card form">
-          <h2>Forgot password</h2>
+    <AuthShell
+      eyebrow="Account recovery"
+      title="Reset your password"
+      description="Enter the email on your account. We will send a secure link through Supabase."
+    >
+      <form className="auth-form card" onSubmit={resetPassword}>
+        <div className="auth-field">
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             className="input"
-            placeholder="Email"
+            placeholder="you@company.com"
             type="email"
+            autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <button className="btn btn-primary" type="button" onClick={resetPassword} disabled={loading}>
-            {loading ? 'Sending...' : 'Send reset email'}
-          </button>
-          <Link className="btn" href="/login">
-            Back to login
-          </Link>
-          {message && <p>{message}</p>}
         </div>
+
+        <AuthMessages error={error} success={success} />
+
+        <button className="btn btn-primary" type="submit" disabled={loading}>
+          {loading ? 'Sending...' : 'Send reset email'}
+        </button>
+      </form>
+
+      <div className="auth-links">
+        <Link href="/login">Back to sign in</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

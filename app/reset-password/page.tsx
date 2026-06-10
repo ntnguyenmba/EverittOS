@@ -3,13 +3,17 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthMessages } from '@/components/auth/auth-messages';
 import { supabase } from '@/lib/supabase';
 
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
 
@@ -18,17 +22,17 @@ function ResetPasswordForm() {
       const code = searchParams.get('code');
 
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          const code = 'code' in error ? String((error as { code?: string }).code) : '';
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          const codeValue = 'code' in exchangeError ? String((exchangeError as { code?: string }).code) : '';
           const expired =
-            error.message.toLowerCase().includes('expired') ||
-            error.message.toLowerCase().includes('invalid') ||
-            code === 'otp_expired';
-          setMessage(
+            exchangeError.message.toLowerCase().includes('expired') ||
+            exchangeError.message.toLowerCase().includes('invalid') ||
+            codeValue === 'otp_expired';
+          setError(
             expired
               ? 'This reset link has expired. Request a new link from the forgot password page.'
-              : error.message
+              : exchangeError.message
           );
           return;
         }
@@ -45,61 +49,97 @@ function ResetPasswordForm() {
         return;
       }
 
-      setMessage('Open the password reset link from your email to continue.');
+      setError('Open the password reset link from your email to continue.');
     }
 
     establishSession();
   }, [searchParams]);
 
-  async function updatePassword() {
+  async function updatePassword(event: React.FormEvent) {
+    event.preventDefault();
+
     if (!sessionReady || loading) {
-      if (!sessionReady) setMessage('Use the link from your reset email first.');
+      if (!sessionReady) setError('Use the link from your reset email first.');
       return;
     }
 
-    if (!password.trim()) {
-      setMessage('Enter a new password.');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
       return;
     }
 
     setLoading(true);
-    setMessage('');
-    const { error } = await supabase.auth.updateUser({ password });
+    setError('');
+    setSuccess('');
+
+    const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
-    if (error) {
-      setMessage(error.message);
+    if (updateError) {
+      setError(updateError.message);
       return;
     }
 
-    setMessage('Password updated. Redirecting to sign in...');
-    router.push('/login');
-    router.refresh();
+    setSuccess('Password updated. Redirecting to your dashboard...');
+    setTimeout(() => {
+      router.push('/dashboard');
+      router.refresh();
+    }, 900);
   }
 
   return (
-    <main className="section">
-      <div className="container">
-        <div className="card form">
-          <h2>Reset password</h2>
+    <AuthShell
+      eyebrow="New password"
+      title="Choose a new password"
+      description="Enter and confirm a new password for your EverittOS account."
+    >
+      <form className="auth-form card" onSubmit={updatePassword}>
+        <div className="auth-field">
+          <label htmlFor="password">New password</label>
           <input
+            id="password"
             className="input"
-            placeholder="New password"
+            placeholder="Minimum 6 characters"
             type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={!sessionReady || loading}
+            required
           />
-          <button className="btn btn-primary" type="button" onClick={updatePassword} disabled={!sessionReady || loading}>
-            {loading ? 'Updating...' : 'Update password'}
-          </button>
-          <Link className="btn" href="/login">
-            Back to login
-          </Link>
-          {message && <p>{message}</p>}
         </div>
+
+        <div className="auth-field">
+          <label htmlFor="confirm_password">Confirm password</label>
+          <input
+            id="confirm_password"
+            className="input"
+            placeholder="Repeat password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={!sessionReady || loading}
+            required
+          />
+        </div>
+
+        <AuthMessages error={error} success={success} />
+
+        <button className="btn btn-primary" type="submit" disabled={!sessionReady || loading}>
+          {loading ? 'Updating...' : 'Update password'}
+        </button>
+      </form>
+
+      <div className="auth-links">
+        <Link href="/login">Back to sign in</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }
 

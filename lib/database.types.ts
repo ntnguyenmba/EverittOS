@@ -117,6 +117,7 @@ export type Profile = {
   plan?: EverittosPlan | string | null;
   subscription_status?: string | null;
   stripe_customer_id?: string | null;
+  account_status?: string | null;
   business_name?: string | null;
   full_name?: string | null;
   phone?: string | null;
