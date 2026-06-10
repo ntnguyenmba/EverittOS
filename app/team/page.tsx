@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canManageTeam, normalizeRole, type UserRole } from '@/lib/roles';
+import { PERMISSION_LABELS, permissionsForRole } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
 
 type Member = {
@@ -15,12 +16,21 @@ type Member = {
   profiles?: { email: string | null; full_name: string | null } | null;
 };
 
+type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+};
+
 export default function TeamPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
   const [inviteUrl, setInviteUrl] = useState('');
@@ -76,6 +86,16 @@ export default function TeamPage() {
         profiles: profileMap.get(r.user_id) || null
       }))
     );
+
+    if (canManageTeam(org.role)) {
+      const { data: inviteRows } = await supabase
+        .from('organization_invitations')
+        .select('id, email, role, status, created_at')
+        .eq('organization_id', org.organizationId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      setInvitations((inviteRows || []) as Invitation[]);
+    }
   }
 
   useEffect(() => {
@@ -152,9 +172,11 @@ export default function TeamPage() {
             <h3>Invite by email</h3>
             <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <select className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+              <option value="admin">Admin</option>
               <option value="manager">Manager</option>
               <option value="employee">Employee</option>
               <option value="contractor">Contractor</option>
+              <option value="viewer">Viewer</option>
               <option value="client">Client</option>
             </select>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={sendInvite}>
@@ -191,9 +213,11 @@ export default function TeamPage() {
                     onChange={(e) => updateMember(m.user_id, { role: e.target.value })}
                     disabled={busy}
                   >
+                    <option value="admin">Admin</option>
                     <option value="manager">Manager</option>
                     <option value="employee">Employee</option>
                     <option value="contractor">Contractor</option>
+                    <option value="viewer">Viewer</option>
                     <option value="client">Client</option>
                   </select>
                   <button type="button" className="btn" disabled={busy} onClick={() => updateMember(m.user_id, { active: !m.active })}>
@@ -208,7 +232,33 @@ export default function TeamPage() {
           ))}
         </div>
 
-        {message && <p className="card" style={{ marginTop: 12 }}>{message}</p>}
+        {teamEnabled && canManageTeam(role) && invitations.length > 0 && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>Pending invitations</h3>
+            {invitations.map((inv) => (
+              <div key={inv.id} className="list-row">
+                <div>
+                  <strong>{inv.email}</strong>
+                  <p className="muted">{normalizeRole(inv.role)} · {inv.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {teamEnabled && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>Role permissions</h3>
+            <p className="muted">Your role ({normalizeRole(role)}) includes:</p>
+            <ul>
+              {permissionsForRole(role).map((perm) => (
+                <li key={perm}>{PERMISSION_LABELS[perm]}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {message && <p className="card" style={{ marginTop: 12 }} role="alert">{message}</p>}
       </main>
     </div>
   );

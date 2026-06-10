@@ -1,37 +1,123 @@
-import { limitsForPlan } from '@/lib/everittos-limits';
-import type { EverittosPlan } from '@/lib/everittos-plans';
-import {
-  canManageBilling,
-  canManageTeam,
-  canViewInternalNotes,
-  isClientRole,
-  isContractorRole,
-  isManagerRole,
-  type UserRole
-} from '@/lib/roles';
+import type { UserRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, isManagerRole, normalizeRole } from '@/lib/roles';
 
-export function canAccessMainApp(role: UserRole): boolean {
-  return !isClientRole(role);
+export type Permission =
+  | 'view_assigned_tasks'
+  | 'view_assigned_jobs'
+  | 'upload_before_photos'
+  | 'upload_after_photos'
+  | 'add_notes'
+  | 'update_status'
+  | 'view_schedules'
+  | 'view_assigned_customers'
+  | 'view_assigned_projects'
+  | 'manage_team'
+  | 'manage_billing'
+  | 'view_all_org_data';
+
+const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  owner: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'upload_before_photos',
+    'upload_after_photos',
+    'add_notes',
+    'update_status',
+    'view_schedules',
+    'view_assigned_customers',
+    'view_assigned_projects',
+    'manage_team',
+    'manage_billing',
+    'view_all_org_data'
+  ],
+  admin: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'upload_before_photos',
+    'upload_after_photos',
+    'add_notes',
+    'update_status',
+    'view_schedules',
+    'view_assigned_customers',
+    'view_assigned_projects',
+    'manage_team',
+    'view_all_org_data'
+  ],
+  manager: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'upload_before_photos',
+    'upload_after_photos',
+    'add_notes',
+    'update_status',
+    'view_schedules',
+    'view_assigned_customers',
+    'view_assigned_projects',
+    'manage_team',
+    'view_all_org_data'
+  ],
+  employee: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'upload_before_photos',
+    'upload_after_photos',
+    'add_notes',
+    'update_status',
+    'view_schedules',
+    'view_assigned_customers',
+    'view_assigned_projects'
+  ],
+  contractor: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'upload_before_photos',
+    'upload_after_photos',
+    'add_notes',
+    'update_status',
+    'view_schedules'
+  ],
+  viewer: [
+    'view_assigned_tasks',
+    'view_assigned_jobs',
+    'view_schedules',
+    'view_assigned_customers',
+    'view_assigned_projects'
+  ],
+  client: ['view_assigned_jobs', 'view_assigned_projects']
+};
+
+export function permissionsForRole(roleInput: string | null | undefined): Permission[] {
+  const role = normalizeRole(roleInput);
+  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.owner;
 }
 
-export function canAccessClientPortal(role: UserRole, plan: EverittosPlan): boolean {
-  return isClientRole(role) || limitsForPlan(plan).clientPortal;
+export function hasPermission(roleInput: string | null | undefined, permission: Permission): boolean {
+  return permissionsForRole(roleInput).includes(permission);
 }
 
-export function canAccessContractorPortal(role: UserRole, plan: EverittosPlan): boolean {
-  return isContractorRole(role) || (limitsForPlan(plan).contractorPortal && !isClientRole(role));
+/** Contractors and viewers must not browse unrelated org records in the UI. */
+export function requiresAssignmentScope(roleInput: string | null | undefined): boolean {
+  const role = normalizeRole(roleInput);
+  return isContractorRole(role) || role === 'viewer';
 }
 
-export function canCreateJobs(role: UserRole): boolean {
-  return isManagerRole(role);
+export function canSeeOrgWideData(roleInput: string | null | undefined): boolean {
+  const role = normalizeRole(roleInput);
+  if (isClientRole(role)) return false;
+  return hasPermission(role, 'view_all_org_data');
 }
 
-export function canEditCustomers(role: UserRole): boolean {
-  return isManagerRole(role) || role === 'employee';
-}
-
-export function canInviteTeam(role: UserRole, plan: EverittosPlan): boolean {
-  return canManageTeam(role) && limitsForPlan(plan).teamManagement;
-}
-
-export { canManageBilling, canManageTeam, canViewInternalNotes, isManagerRole, isContractorRole, isClientRole };
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  view_assigned_tasks: 'View assigned tasks',
+  view_assigned_jobs: 'View assigned jobs',
+  upload_before_photos: 'Upload before photos',
+  upload_after_photos: 'Upload after photos',
+  add_notes: 'Add notes',
+  update_status: 'Update status',
+  view_schedules: 'View schedules',
+  view_assigned_customers: 'View assigned customers only',
+  view_assigned_projects: 'View assigned projects only',
+  manage_team: 'Manage team',
+  manage_billing: 'Manage billing',
+  view_all_org_data: 'View all organization data'
+};
