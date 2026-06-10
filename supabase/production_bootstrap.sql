@@ -33,6 +33,31 @@ returns boolean language sql stable security definer set search_path = public as
   );
 $$;
 
+-- Adds user_id on a legacy table before any index/policy/trigger references it
+create or replace function public._ensure_user_id_column(p_table text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if public._table_exists(p_table) and not public._col_exists(p_table, 'user_id') then
+    execute format('alter table public.%I add column user_id uuid', p_table);
+    raise notice 'Phase A: added user_id to public.%', p_table;
+  end if;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- PHASE A — add user_id FIRST (before indexes, policies, or backfills)
+-- ---------------------------------------------------------------------------
+do $phase_a$
+declare t text;
+begin
+  foreach t in array array[
+    'customers', 'jobs', 'workers', 'job_photos', 'invoices',
+    'technicians', 'activity_events', 'ai_generations', 'companies'
+  ] loop
+    perform public._ensure_user_id_column(t);
+  end loop;
+end $phase_a$;
+
 -- ---------------------------------------------------------------------------
 -- 0. Legacy preflight (existing old-schema tables — never dropped)
 -- ---------------------------------------------------------------------------
@@ -431,13 +456,13 @@ do $legacy$
 declare
   t text;
   alt text;
-  alt_cols text[] := array['owner_id', 'profile_id', 'created_by', 'account_id', 'member_id'];
+  alt_cols text[] := array[
+    'owner_id', 'profile_id', 'created_by', 'account_id', 'member_id',
+    'auth_user_id', 'uid', 'account_owner_id', 'created_by_user_id'
+  ];
 begin
   foreach t in array array['customers', 'jobs', 'workers', 'job_photos', 'invoices'] loop
-    if public._table_exists(t) and not public._col_exists(t, 'user_id') then
-      execute format('alter table public.%I add column user_id uuid', t);
-      raise notice 'Added user_id column to public.%', t;
-    end if;
+    perform public._ensure_user_id_column(t);
     if public._table_exists(t) and public._col_exists(t, 'user_id') then
       foreach alt in array alt_cols loop
         if public._col_exists(t, alt) then
@@ -545,8 +570,6 @@ begin
       end;
     end if;
   end loop;
-exception when others then
-  raise notice 'Legacy user_id alignment skipped: %', sqlerrm;
 end $legacy$;
 
 do $$
@@ -843,23 +866,45 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- 5. Normalize legacy data before check constraints
 -- ---------------------------------------------------------------------------
-update public.profiles set plan = 'free' where plan is null;
-update public.profiles set plan = 'operations' where lower(plan) = 'starter';
-update public.profiles set plan = 'free'
-where plan not in ('free', 'pro', 'business', 'operations', 'growth', 'enterprise');
-update public.profiles set role = 'owner' where role is null;
-update public.profiles set role = 'owner'
-where role not in ('owner', 'admin', 'manager', 'employee', 'contractor', 'crew_lead', 'staff', 'client');
-update public.profiles set subscription_status = coalesce(subscription_status, 'free');
-update public.profiles set account_status = 'active' where account_status is null;
-
-update public.jobs set priority = 'normal' where priority is null;
-update public.jobs set status = 'new' where status is null;
-update public.jobs set priority = 'normal'
-where priority not in ('low', 'normal', 'high', 'urgent');
-
 do $norm$
 begin
+  if public._table_exists('profiles') then
+    if public._col_exists('profiles', 'plan') then
+      execute $sql$ update public.profiles set plan = 'free' where plan is null $sql$;
+      execute $sql$ update public.profiles set plan = 'operations' where lower(plan) = 'starter' $sql$;
+      execute $sql$
+        update public.profiles set plan = 'free'
+        where plan not in ('free', 'pro', 'business', 'operations', 'growth', 'enterprise')
+      $sql$;
+    end if;
+    if public._col_exists('profiles', 'role') then
+      execute $sql$ update public.profiles set role = 'owner' where role is null $sql$;
+      execute $sql$
+        update public.profiles set role = 'owner'
+        where role not in ('owner', 'admin', 'manager', 'employee', 'contractor', 'crew_lead', 'staff', 'client', 'viewer')
+      $sql$;
+    end if;
+    if public._col_exists('profiles', 'subscription_status') then
+      execute $sql$ update public.profiles set subscription_status = coalesce(subscription_status, 'free') $sql$;
+    end if;
+    if public._col_exists('profiles', 'account_status') then
+      execute $sql$ update public.profiles set account_status = 'active' where account_status is null $sql$;
+    end if;
+  end if;
+
+  if public._table_exists('jobs') then
+    if public._col_exists('jobs', 'priority') then
+      execute $sql$ update public.jobs set priority = 'normal' where priority is null $sql$;
+      execute $sql$
+        update public.jobs set priority = 'normal'
+        where priority not in ('low', 'normal', 'high', 'urgent')
+      $sql$;
+    end if;
+    if public._col_exists('jobs', 'status') then
+      execute $sql$ update public.jobs set status = 'new' where status is null $sql$;
+    end if;
+  end if;
+
   if public._col_exists('job_photos', 'label') then
     execute $sql$ update public.job_photos set label = 'other' where label is null $sql$;
     execute $sql$
@@ -904,9 +949,14 @@ alter table public.notifications drop constraint if exists notifications_type_ch
 alter table public.notifications add constraint notifications_type_check
   check (type in ('assignment', 'due_date', 'completion', 'report'));
 
-alter table public.jobs drop constraint if exists jobs_priority_check;
-alter table public.jobs add constraint jobs_priority_check
-  check (priority in ('low', 'normal', 'high', 'urgent'));
+do $jc$
+begin
+  if public._col_exists('jobs', 'priority') then
+    alter table public.jobs drop constraint if exists jobs_priority_check;
+    alter table public.jobs add constraint jobs_priority_check
+      check (priority in ('low', 'normal', 'high', 'urgent'));
+  end if;
+end $jc$;
 
 do $lbl$
 begin
@@ -1297,9 +1347,16 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 10. Triggers
 -- ---------------------------------------------------------------------------
-drop trigger if exists customers_updated_at on public.customers;
-create trigger customers_updated_at before update on public.customers
-for each row execute function public.set_updated_at();
+do $trg$
+begin
+  if public._table_exists('customers') and public._col_exists('customers', 'updated_at') then
+    execute 'drop trigger if exists customers_updated_at on public.customers';
+    execute $sql$
+      create trigger customers_updated_at before update on public.customers
+      for each row execute function public.set_updated_at()
+    $sql$;
+  end if;
+end $trg$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
@@ -1450,42 +1507,85 @@ create policy organization_invitations_manage on public.organization_invitations
   for all using (public.member_role_in_org(organization_id) in ('owner', 'admin', 'manager'))
   with check (public.member_role_in_org(organization_id) in ('owner', 'admin', 'manager'));
 
--- org-scoped tenant data
-drop policy if exists customers_org on public.customers;
-create policy customers_org on public.customers for all using (
-  (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
-) with check (
-  (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
-);
+-- org-scoped tenant data (policies adapt to which columns exist)
+do $rls$
+begin
+  drop policy if exists customers_org on public.customers;
+  if public._table_exists('customers') then
+    if public._col_exists('customers', 'user_id') and public._col_exists('customers', 'organization_id') then
+      execute $sql$
+        create policy customers_org on public.customers for all using (
+          (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
+        ) with check (
+          (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
+        )
+      $sql$;
+    elsif public._col_exists('customers', 'user_id') then
+      execute $sql$
+        create policy customers_org on public.customers for all
+        using (auth.uid() = user_id) with check (auth.uid() = user_id)
+      $sql$;
+    elsif public._col_exists('customers', 'organization_id') then
+      execute $sql$
+        create policy customers_org on public.customers for all using (
+          public.is_org_member(organization_id)
+        ) with check (
+          public.can_manage_organization(organization_id)
+        )
+      $sql$;
+    end if;
+  end if;
 
-drop policy if exists workers_org on public.workers;
-create policy workers_org on public.workers for all using (
-  (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id or auth.uid() = auth_user_id
-) with check (
-  (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
-);
+  drop policy if exists workers_org on public.workers;
+  if public._table_exists('workers') then
+    if public._col_exists('workers', 'user_id') and public._col_exists('workers', 'auth_user_id') and public._col_exists('workers', 'organization_id') then
+      execute $sql$
+        create policy workers_org on public.workers for all using (
+          (organization_id is not null and public.is_org_member(organization_id))
+          or auth.uid() = user_id or auth.uid() = auth_user_id
+        ) with check (
+          (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
+        )
+      $sql$;
+    elsif public._col_exists('workers', 'user_id') then
+      execute $sql$
+        create policy workers_org on public.workers for all
+        using (auth.uid() = user_id) with check (auth.uid() = user_id)
+      $sql$;
+    end if;
+  end if;
 
-drop policy if exists jobs_org_select on public.jobs;
-create policy jobs_org_select on public.jobs for select using (
-  (organization_id is not null and public.is_org_member(organization_id))
-  or auth.uid() = user_id
-  or public.is_assigned_to_job(id)
-  or public.client_can_view_job(id)
-);
+  drop policy if exists jobs_org_select on public.jobs;
+  drop policy if exists jobs_org_write on public.jobs;
+  if public._table_exists('jobs') and public._col_exists('jobs', 'user_id') then
+    execute $sql$
+      create policy jobs_org_select on public.jobs for select using (
+        (organization_id is not null and public.is_org_member(organization_id))
+        or auth.uid() = user_id
+        or public.is_assigned_to_job(id)
+        or public.client_can_view_job(id)
+      )
+    $sql$;
+    execute $sql$
+      create policy jobs_org_write on public.jobs for all using (
+        (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
+      ) with check (
+        (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
+      )
+    $sql$;
+  end if;
 
-drop policy if exists jobs_org_write on public.jobs;
-create policy jobs_org_write on public.jobs for all using (
-  (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
-) with check (
-  (organization_id is not null and public.can_manage_organization(organization_id)) or auth.uid() = user_id
-);
-
-drop policy if exists job_photos_org on public.job_photos;
-create policy job_photos_org on public.job_photos for all using (
-  (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
-) with check (
-  (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
-);
+  drop policy if exists job_photos_org on public.job_photos;
+  if public._table_exists('job_photos') and public._col_exists('job_photos', 'user_id') then
+    execute $sql$
+      create policy job_photos_org on public.job_photos for all using (
+        (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
+      ) with check (
+        (organization_id is not null and public.is_org_member(organization_id)) or auth.uid() = user_id
+      )
+    $sql$;
+  end if;
+end $rls$;
 
 drop policy if exists job_assignments_own on public.job_assignments;
 drop policy if exists job_assignments_select_role on public.job_assignments;

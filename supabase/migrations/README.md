@@ -4,7 +4,9 @@
 
 **Project:** Everitt OS — `wxtatzlirexrwjehqgak`
 
-Run **once** in Supabase SQL Editor:
+If bootstrap fails, run [`../diagnose_schema.sql`](../diagnose_schema.sql) first and see [`../RUN_BOOTSTRAP.md`](../RUN_BOOTSTRAP.md).
+
+Run **once** in Supabase SQL Editor (entire file, top to bottom):
 
 - [`../production_bootstrap.sql`](../production_bootstrap.sql) — full idempotent upgrade from the original schema to current production requirements. See [`../../docs/PRODUCTION_SCHEMA_AUDIT.md`](../../docs/PRODUCTION_SCHEMA_AUDIT.md).
 
