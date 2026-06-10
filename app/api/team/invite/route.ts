@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { sendTeamInviteEmail } from '@/lib/email';
 import { canManageTeam, normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts, canAddTeamMember } from '@/lib/everittos-usage';
 import { normalizePlan } from '@/lib/everittos-plans';
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as { email?: string; role?: string };
   const email = (body.email || '').trim().toLowerCase();
-  const role = normalizeRole(body.role || 'staff');
+  const role = normalizeRole(body.role || 'employee');
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
@@ -57,5 +58,18 @@ export async function POST(request: Request) {
   }
 
   const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
-  return NextResponse.json({ ok: true, acceptUrl, invitationId: invite.id });
+  const emailResult = await sendTeamInviteEmail({
+    to: email,
+    organizationName: org.organizationName,
+    acceptUrl,
+    role
+  });
+
+  return NextResponse.json({
+    ok: true,
+    acceptUrl,
+    invitationId: invite.id,
+    emailSent: emailResult.sent,
+    message: emailResult.sent ? 'Email sent.' : 'Email not configured. Copy this invite link.'
+  });
 }

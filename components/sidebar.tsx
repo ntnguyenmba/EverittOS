@@ -23,6 +23,7 @@ const baseLinks = [
   ['Workers', '/workers'],
   ['Team', '/team'],
   ['Activity', '/activity'],
+  ['Workflows', '/workflows'],
   ['Notifications', '/notifications'],
   ['Billing', '/settings/billing'],
   ['Settings', '/settings']
@@ -83,6 +84,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
         baseLinks.map(([label, href]) => {
           if (href === '/team' && !hasTeamManagement(normalized)) return null;
           if (href === '/activity' && !limitsForPlan(normalized).activityLog) return null;
+          if (href === '/workflows' && !limitsForPlan(normalized).workflowCustomization) return null;
           return (
             <Link key={href} href={href}>
               {label}

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/sidebar';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
 
@@ -24,6 +25,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [properties, setProperties] = useState<{ id: string; name: string; address: string | null }[]>([]);
   const [jobs, setJobs] = useState<{ id: string; title: string; status: string | null }[]>([]);
   const [reports, setReports] = useState<{ id: string; title: string; job_id: string }[]>([]);
+  const [portalAccess, setPortalAccess] = useState<
+    { job_id: string; client_user_id: string; portal_token: string | null; profiles?: { email: string | null } | null }[]
+  >([]);
   const [propName, setPropName] = useState('');
   const [propAddress, setPropAddress] = useState('');
   const [message, setMessage] = useState('');
@@ -83,6 +87,25 @@ export default function CustomerDetailPage({ params }: PageProps) {
     setProperties(props || []);
     setJobs(jobRows || []);
     setReports(reportRows || []);
+
+    if (jobIds.length) {
+      const { data: accessRows } = await supabase
+        .from('job_client_access')
+        .select('job_id, client_user_id, portal_token, profiles:profiles(email)')
+        .in('job_id', jobIds);
+      setPortalAccess(
+        (accessRows || []).map((row) => {
+          const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+          return {
+            job_id: row.job_id as string,
+            client_user_id: row.client_user_id as string,
+            portal_token: (row.portal_token as string | null) || null,
+            profiles: profile ? { email: (profile as { email: string | null }).email } : null
+          };
+        })
+      );
+    }
+
     setLoading(false);
   }
 
@@ -188,6 +211,40 @@ export default function CustomerDetailPage({ params }: PageProps) {
               <span>{j.status}</span>
             </div>
           ))}
+        </div>
+
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Client portal access</h3>
+          {!limitsForPlan(plan).clientPortal ? (
+            <p className="muted">Client portal requires Operations plan or higher.</p>
+          ) : portalAccess.length === 0 ? (
+            <p className="muted">No client portal access granted for this customer&apos;s jobs yet. Grant access from a job detail page.</p>
+          ) : (
+            portalAccess.map((row) => (
+              <div key={`${row.job_id}-${row.client_user_id}`} className="list-row">
+                <div>
+                  <strong>{row.profiles?.email || row.client_user_id}</strong>
+                  <p className="muted">Job: {jobs.find((j) => j.id === row.job_id)?.title || row.job_id}</p>
+                </div>
+                {canEdit ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={async () => {
+                      await fetch('/api/clients/revoke-access', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ jobId: row.job_id, clientUserId: row.client_user_id })
+                      });
+                      load();
+                    }}
+                  >
+                    Revoke
+                  </button>
+                ) : null}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="card" style={{ marginTop: 18 }}>

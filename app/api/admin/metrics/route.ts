@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
+const PLAN_MRR: Record<string, number> = {
+  pro: 9,
+  business: 39,
+  operations: 149,
+  growth: 399,
+  enterprise: 799
+};
+
 function isPlatformAdmin(email: string | undefined): boolean {
   const list = (process.env.ADMIN_EMAILS || '')
     .split(',')
@@ -25,6 +33,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Server configuration incomplete.' }, { status: 503 });
   }
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+
   const [
     orgs,
     users,
@@ -33,7 +43,11 @@ export async function GET() {
     reports,
     photos,
     subs,
-    events
+    events,
+    profiles,
+    pastDue,
+    freeAccounts,
+    newestOrgs
   ] = await Promise.all([
     admin.from('organizations').select('id', { count: 'exact', head: true }),
     admin.from('profiles').select('id', { count: 'exact', head: true }),
@@ -41,9 +55,15 @@ export async function GET() {
     admin.from('customers').select('id', { count: 'exact', head: true }),
     admin.from('job_reports').select('id', { count: 'exact', head: true }),
     admin.from('job_photos').select('id', { count: 'exact', head: true }),
-    admin.from('everittos_subscriptions').select('plan, status'),
-    admin.from('product_events').select('event_name').gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString())
+    admin.from('everittos_subscriptions').select('plan, status, email'),
+    admin.from('product_events').select('event_name, created_at').gte('created_at', thirtyDaysAgo),
+    admin.from('profiles').select('id, email, plan, subscription_status, created_at').order('created_at', { ascending: false }).limit(10),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'past_due'),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('plan', 'free'),
+    admin.from('organizations').select('id, name, created_at').order('created_at', { ascending: false }).limit(8)
   ]);
+
+  const { count: teamMembers } = await admin.from('organization_members').select('id', { count: 'exact', head: true });
 
   const activeJobs = await admin
     .from('jobs')
@@ -54,11 +74,16 @@ export async function GET() {
   const signups30d = (events.data || []).filter((e) => e.event_name === 'signup').length;
   const jobsCreated30d = (events.data || []).filter((e) => e.event_name === 'job_created').length;
 
-  const revenueByPlan: Record<string, number> = {};
+  const activeSubscriptionsByPlan: Record<string, number> = {};
+  let mrrEstimate = 0;
+  let trialingCount = 0;
+
   (subs.data || []).forEach((s) => {
-    if (s.status === 'active') {
-      revenueByPlan[s.plan] = (revenueByPlan[s.plan] || 0) + 1;
+    if (s.status === 'active' || String(s.status).startsWith('everittos_')) {
+      activeSubscriptionsByPlan[s.plan] = (activeSubscriptionsByPlan[s.plan] || 0) + 1;
+      mrrEstimate += PLAN_MRR[s.plan] || 0;
     }
+    if (s.status === 'trialing') trialingCount += 1;
   });
 
   return NextResponse.json({
@@ -69,7 +94,14 @@ export async function GET() {
     totalCustomers: customers.count || 0,
     totalReports: reports.count || 0,
     totalPhotos: photos.count || 0,
-    activeSubscriptionsByPlan: revenueByPlan,
+    totalTeamMembers: teamMembers || 0,
+    activeSubscriptionsByPlan,
+    mrrEstimateUsd: mrrEstimate,
+    trialingAccounts: trialingCount,
+    freeAccounts: freeAccounts.count || 0,
+    pastDueAccounts: pastDue.count || 0,
+    latestSignups: profiles.data || [],
+    newestOrganizations: newestOrgs.data || [],
     last30Days: {
       productEvents: events.data?.length || 0,
       signupsTracked: signups30d,

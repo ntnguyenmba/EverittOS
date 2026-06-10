@@ -14,6 +14,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const authError = searchParams.get('error');
+  const verified = searchParams.get('verified');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
 
   const [email, setEmail] = useState('');
@@ -83,7 +84,10 @@ function LoginForm() {
           />
         </div>
 
-        <AuthMessages error={authError ? decodeURIComponent(authError) : error} />
+        <AuthMessages
+          error={authError ? decodeURIComponent(authError) : error}
+          success={verified ? 'Email verified. You can sign in now.' : undefined}
+        />
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}

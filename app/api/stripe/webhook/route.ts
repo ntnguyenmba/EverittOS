@@ -29,6 +29,23 @@ function planFromSubscription(sub: Stripe.Subscription): EverittosPlan | null {
   return null;
 }
 
+async function logSubscriptionEvent(
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>,
+  email: string,
+  eventType: string,
+  plan: string | null,
+  stripeEventId: string,
+  payload: Record<string, unknown>
+) {
+  await admin.from('subscription_events').insert({
+    email,
+    event_type: eventType,
+    plan,
+    stripe_event_id: stripeEventId,
+    payload
+  });
+}
+
 async function updateProfilePlan(
   admin: NonNullable<ReturnType<typeof createAdminSupabase>>,
   email: string,
@@ -141,9 +158,23 @@ export async function POST(request: Request) {
 
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object as Stripe.Subscription;
-    const email = sub.metadata?.email;
+    let email = sub.metadata?.email || null;
+    if (!email && typeof sub.customer === 'string') {
+      try {
+        const customer = await stripe.customers.retrieve(sub.customer);
+        if (!customer.deleted && 'email' in customer) email = customer.email || null;
+      } catch {
+        /* ignore */
+      }
+    }
     if (email) {
-      await updateProfilePlan(admin, email, 'free', 'cancelled', typeof sub.customer === 'string' ? sub.customer : null, sub.id);
+      await updateProfilePlan(admin, email, 'free', 'free', typeof sub.customer === 'string' ? sub.customer : null, sub.id);
+      await admin.from('profiles').update({ subscription_status: 'canceled', plan: 'free' }).eq('email', email);
+      await admin
+        .from('everittos_subscriptions')
+        .update({ status: 'canceled', cancelled_at: new Date().toISOString() })
+        .eq('stripe_subscription_id', sub.id);
+      await logSubscriptionEvent(admin, email, 'subscription.deleted', 'free', event.id, { subscription_id: sub.id });
     }
   }
 
@@ -152,6 +183,8 @@ export async function POST(request: Request) {
     const email = invoice.customer_email;
     if (email) {
       await admin.from('profiles').update({ subscription_status: 'past_due' }).eq('email', email);
+      await admin.from('everittos_subscriptions').update({ last_payment_status: 'past_due' }).eq('email', email);
+      await logSubscriptionEvent(admin, email, 'invoice.payment_failed', null, event.id, { invoice_id: invoice.id });
     }
   }
 

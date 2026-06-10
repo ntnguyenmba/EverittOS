@@ -8,7 +8,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { logClientActivity, createNotification } from '@/lib/activity';
+import { logClientActivity } from '@/lib/activity';
 import { supabase } from '@/lib/supabase';
 
 export default function SchedulePage() {
@@ -41,7 +41,7 @@ export default function SchedulePage() {
 
     const { data, error: fetchError } = await supabase
       .from('jobs')
-      .select('id, title, customer_name, status, start_date, due_date, assigned_to')
+      .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
       .not('status', 'eq', 'cancelled')
       .order('due_date', { ascending: true, nullsFirst: false });
 
@@ -66,21 +66,41 @@ export default function SchedulePage() {
   }, []);
 
   async function assignWorker(jobId: string, workerId: string | null) {
-    const { error } = await supabase.from('jobs').update({ assigned_to: workerId }).eq('id', jobId);
-    if (error) {
-      setError(error.message);
+    const res = await fetch('/api/schedule/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, assigned_to: workerId })
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      setError(json.error || 'Unable to update assignment.');
       return;
     }
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', workerId ? 'Worker assigned on schedule' : 'Worker unassigned');
-      if (workerId) {
-        const {
-          data: { user }
-        } = await supabase.auth.getUser();
-        if (user) {
-          await createNotification(orgId, user.id, 'assignment', 'Job assignment updated', 'A job assignment was updated from the schedule.', jobId);
-        }
-      }
+    }
+    load();
+  }
+
+  async function rescheduleJob(jobId: string, dateKey: string) {
+    const res = await fetch('/api/schedule/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jobId,
+        start_date: dateKey,
+        due_date: dateKey,
+        scheduled_start: `${dateKey}T09:00:00.000Z`,
+        scheduled_end: `${dateKey}T17:00:00.000Z`
+      })
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      setError(json.error || 'Unable to reschedule job.');
+      return;
+    }
+    if (orgId) {
+      await logClientActivity(orgId, 'job', jobId, 'schedule_changed', `Moved to ${dateKey}`);
     }
     load();
   }
@@ -96,7 +116,13 @@ export default function SchedulePage() {
         {error && <div className="card">{error}</div>}
         {!loading && !error && (
           <div className="card" style={{ marginTop: 18 }}>
-            <ScheduleViews jobs={jobs} workerNames={workerNames} canAssign={canAssign} onAssign={assignWorker} />
+            <ScheduleViews
+              jobs={jobs}
+              workerNames={workerNames}
+              canAssign={canAssign}
+              onAssign={assignWorker}
+              onReschedule={canAssign ? rescheduleJob : undefined}
+            />
           </div>
         )}
       </main>

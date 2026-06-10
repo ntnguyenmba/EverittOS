@@ -38,6 +38,7 @@ function BillingSettingsContent() {
     locations: 0
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState('free');
+  const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -56,7 +57,7 @@ function BillingSettingsContent() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('plan, role, subscription_status')
+        .select('plan, role, subscription_status, stripe_customer_id')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -64,6 +65,7 @@ function BillingSettingsContent() {
       setPlan(resolvedPlan);
       setRole(normalizeRole(profile?.role));
       setSubscriptionStatus(profile?.subscription_status || 'free');
+      setStripeCustomerId(profile?.stripe_customer_id || '');
 
       const org = await fetchOrganizationContext(user.id);
       const counts = await fetchUsageCounts(user.id, org?.organizationId);
@@ -156,9 +158,13 @@ function BillingSettingsContent() {
 
         {canBilling ? (
           <div className="settings-actions">
-            <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-              {portalLoading ? 'Opening...' : 'Stripe customer portal'}
-            </button>
+            {stripeCustomerId ? (
+              <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
+                {portalLoading ? 'Opening...' : 'Stripe customer portal'}
+              </button>
+            ) : (
+              <p className="muted">No Stripe customer on file yet. Choose a paid plan below to start checkout.</p>
+            )}
             {canCancelSubscription(subscriptionStatus) ? (
               <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
                 {cancelLoading ? 'Working...' : 'Cancel subscription'}

@@ -12,7 +12,14 @@ type Metrics = {
   totalCustomers: number;
   totalReports: number;
   totalPhotos: number;
+  totalTeamMembers: number;
   activeSubscriptionsByPlan: Record<string, number>;
+  mrrEstimateUsd: number;
+  trialingAccounts: number;
+  freeAccounts: number;
+  pastDueAccounts: number;
+  latestSignups: { id: string; email: string | null; plan: string | null; created_at: string | null }[];
+  newestOrganizations: { id: string; name: string; created_at: string | null }[];
   last30Days: {
     productEvents: number;
     signupsTracked: number;
@@ -80,6 +87,10 @@ export default function PlatformMetricsPage() {
             <strong>{metrics.totalUsers}</strong>
           </div>
           <div className="stat-card">
+            <span>Team members</span>
+            <strong>{metrics.totalTeamMembers}</strong>
+          </div>
+          <div className="stat-card">
             <span>Total jobs</span>
             <strong>{metrics.totalJobs}</strong>
           </div>
@@ -99,6 +110,22 @@ export default function PlatformMetricsPage() {
             <span>Photos</span>
             <strong>{metrics.totalPhotos}</strong>
           </div>
+          <div className="stat-card">
+            <span>MRR estimate</span>
+            <strong>${metrics.mrrEstimateUsd}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Free accounts</span>
+            <strong>{metrics.freeAccounts}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Past due</span>
+            <strong>{metrics.pastDueAccounts}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Trialing</span>
+            <strong>{metrics.trialingAccounts}</strong>
+          </div>
         </div>
 
         <div className="card" style={{ marginTop: 24 }}>
@@ -107,6 +134,24 @@ export default function PlatformMetricsPage() {
           {Object.entries(metrics.activeSubscriptionsByPlan).map(([plan, count]) => (
             <p key={plan}>
               {plan}: {count}
+            </p>
+          ))}
+        </div>
+
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Latest signups</h3>
+          {(metrics.latestSignups || []).map((signup) => (
+            <p key={signup.id}>
+              {signup.email || signup.id} · {signup.plan || 'free'} · {signup.created_at ? new Date(signup.created_at).toLocaleDateString() : ''}
+            </p>
+          ))}
+        </div>
+
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Newest organizations</h3>
+          {(metrics.newestOrganizations || []).map((org) => (
+            <p key={org.id}>
+              {org.name} · {org.created_at ? new Date(org.created_at).toLocaleDateString() : ''}
             </p>
           ))}
         </div>

@@ -18,6 +18,7 @@ const AUTH_PREFIXES = [
   '/activity',
   '/notifications',
   '/billing',
+  '/workflows',
   '/portal',
   '/admin'
 ];
@@ -111,6 +112,7 @@ export const config = {
     '/activity/:path*',
     '/notifications/:path*',
     '/billing/:path*',
+    '/workflows/:path*',
     '/portal/:path*',
     '/admin/:path*',
     '/login',

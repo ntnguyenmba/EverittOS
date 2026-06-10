@@ -64,5 +64,19 @@ export async function POST(request: Request) {
     .update({ organization_id: invite.organization_id, role: invite.role })
     .eq('id', user.id);
 
+  if (invite.role === 'client' && invite.job_id) {
+    await admin.from('job_client_access').upsert(
+      {
+        job_id: invite.job_id,
+        client_user_id: user.id,
+        owner_user_id: (await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle()).data
+          ?.owner_user_id,
+        organization_id: invite.organization_id,
+        granted_at: new Date().toISOString()
+      },
+      { onConflict: 'job_id,client_user_id' }
+    );
+  }
+
   return NextResponse.json({ ok: true, organizationId: invite.organization_id });
 }

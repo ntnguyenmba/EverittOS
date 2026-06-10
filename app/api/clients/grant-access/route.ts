@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canManageTeam, normalizeRole } from '@/lib/roles';
+import { clientPortalUrl, sendClientInviteEmail } from '@/lib/email';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { canManageTeam } from '@/lib/roles';
 import { appUrl } from '@/lib/app-url';
 
 export async function POST(request: Request) {
@@ -36,6 +37,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'email and jobId are required' }, { status: 400 });
   }
 
+  const { data: job } = await admin
+    .from('jobs')
+    .select('id, title, organization_id')
+    .eq('id', jobId)
+    .eq('organization_id', org.organizationId)
+    .maybeSingle();
+
+  if (!job) {
+    return NextResponse.json({ error: 'Job not found in your organization.' }, { status: 404 });
+  }
+
   const { data: invite, error: inviteError } = await admin
     .from('organization_invitations')
     .insert({
@@ -43,7 +55,8 @@ export async function POST(request: Request) {
       email,
       role: 'client',
       invited_by: user.id,
-      status: 'pending'
+      status: 'pending',
+      job_id: jobId
     })
     .select('token')
     .single();
@@ -52,24 +65,48 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: inviteError.message }, { status: 400 });
   }
 
+  const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
+  let portalUrl: string | undefined;
+  let portalToken: string | undefined;
+
   const { data: clientProfile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
 
   if (clientProfile?.id) {
-    await admin.from('job_client_access').upsert(
-      {
-        job_id: jobId,
-        client_user_id: clientProfile.id,
-        owner_user_id: org.ownerUserId
-      },
-      { onConflict: 'job_id,client_user_id' }
-    );
+    const { data: access } = await admin
+      .from('job_client_access')
+      .upsert(
+        {
+          job_id: jobId,
+          client_user_id: clientProfile.id,
+          owner_user_id: org.ownerUserId,
+          organization_id: org.organizationId,
+          granted_at: new Date().toISOString()
+        },
+        { onConflict: 'job_id,client_user_id' }
+      )
+      .select('portal_token')
+      .single();
+
+    portalToken = access?.portal_token as string | undefined;
+    if (portalToken) portalUrl = clientPortalUrl(portalToken);
   }
+
+  const emailResult = await sendClientInviteEmail({
+    to: email,
+    organizationName: org.organizationName,
+    acceptUrl,
+    jobTitle: job.title,
+    portalUrl
+  });
 
   return NextResponse.json({
     ok: true,
-    acceptUrl: appUrl(`/team/accept?token=${invite.token}`),
-    note: clientProfile?.id
-      ? 'Client linked to job. They can sign in and open the client portal.'
-      : 'Share the accept link. After signup, grant job access again if needed.'
+    acceptUrl,
+    portalUrl,
+    portalToken,
+    emailSent: emailResult.sent,
+    message: emailResult.sent
+      ? 'Email sent. Client can accept the invite and open the portal.'
+      : 'Email not configured. Copy the invite link below.'
   });
 }

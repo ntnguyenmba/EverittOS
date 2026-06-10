@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -18,7 +18,17 @@ type ClientJob = {
 };
 
 export default function ClientPortalPage() {
+  return (
+    <Suspense>
+      <ClientPortalContent />
+    </Suspense>
+  );
+}
+
+function ClientPortalContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const portalToken = searchParams.get('token');
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [reports, setReports] = useState<{ id: string; title: string; job_id: string }[]>([]);
@@ -45,7 +55,15 @@ export default function ClientPortalPage() {
         return;
       }
 
-      const { data: access } = await supabase.from('job_client_access').select('job_id').eq('client_user_id', user.id);
+      const { data: access } = portalToken
+        ? await supabase.from('job_client_access').select('job_id, client_user_id').eq('portal_token', portalToken)
+        : await supabase.from('job_client_access').select('job_id, client_user_id').eq('client_user_id', user.id);
+
+      if (portalToken && access?.[0]?.client_user_id && access[0].client_user_id !== user.id) {
+        setMessage('This portal link belongs to a different client account.');
+        setLoading(false);
+        return;
+      }
 
       const jobIds = (access || []).map((a) => a.job_id);
       if (jobIds.length === 0) {

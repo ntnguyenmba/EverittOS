@@ -1,0 +1,181 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Sidebar } from '@/components/sidebar';
+import { PlanLockedMessage } from '@/components/plan-locked-message';
+import { limitsForPlan } from '@/lib/everittos-limits';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { supabase } from '@/lib/supabase';
+
+type Workflow = {
+  id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  workflow_steps?: { id: string; title: string; sort_order: number; step_type: string }[];
+};
+
+export default function WorkflowsPage() {
+  const router = useRouter();
+  const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [canManage, setCanManage] = useState(false);
+  const [name, setName] = useState('');
+  const [stepTitle, setStepTitle] = useState('');
+  const [selectedId, setSelectedId] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+    setPlan(normalizePlan(profile?.plan));
+    const res = await fetch('/api/workflows');
+    const json = await res.json();
+    setCanManage(Boolean(json.canManage));
+    setWorkflows(json.workflows || []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+  }, [router]);
+
+  async function createWorkflow() {
+    const res = await fetch('/api/workflows', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        steps: stepTitle ? [{ title: stepTitle, step_type: 'checklist' }] : []
+      })
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to create workflow.');
+      return;
+    }
+    setName('');
+    setStepTitle('');
+    load();
+  }
+
+  async function toggleActive(id: string, active: boolean) {
+    await fetch(`/api/workflows/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !active })
+    });
+    load();
+  }
+
+  async function addStep(workflowId: string) {
+    const title = prompt('Step title');
+    if (!title?.trim()) return;
+    await fetch(`/api/workflows/${workflowId}/steps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title })
+    });
+    load();
+  }
+
+  async function reorderStep(workflowId: string, stepId: string, direction: 'up' | 'down') {
+    await fetch(`/api/workflows/${workflowId}/steps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reorder: [{ stepId, direction }] })
+    });
+    load();
+  }
+
+  if (loading) {
+    return (
+      <div className="dashboard-shell">
+        <Sidebar plan={plan} />
+        <main className="main">
+          <p>Loading workflows...</p>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-shell">
+      <Sidebar plan={plan} />
+      <main className="main">
+        <h2>Workflows</h2>
+        <p className="muted">Custom job workflows for Growth and Enterprise.</p>
+
+        {!limitsForPlan(plan).workflowCustomization ? (
+          <PlanLockedMessage feature="Custom workflows" requiredPlan="Growth" />
+        ) : (
+          <>
+            {canManage ? (
+              <div className="settings-card form">
+                <h3>Create workflow</h3>
+                <input className="input" placeholder="Workflow name" value={name} onChange={(e) => setName(e.target.value)} />
+                <input className="input" placeholder="First step (optional)" value={stepTitle} onChange={(e) => setStepTitle(e.target.value)} />
+                <button type="button" className="btn btn-primary" onClick={createWorkflow}>
+                  Create workflow
+                </button>
+              </div>
+            ) : null}
+
+            {workflows.map((wf) => (
+              <div key={wf.id} className="settings-card">
+                <div className="list-row">
+                  <div>
+                    <strong>{wf.name}</strong>
+                    <p className="muted">{wf.description || 'No description'}</p>
+                  </div>
+                  {canManage ? (
+                    <button type="button" className="btn" onClick={() => toggleActive(wf.id, wf.active)}>
+                      {wf.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                  ) : null}
+                </div>
+                {(wf.workflow_steps || [])
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .map((step) => (
+                    <div key={step.id} className="checklist-row">
+                      <span>{step.title}</span>
+                      <span className="muted">{step.step_type}</span>
+                      {canManage ? (
+                        <span className="inline-actions">
+                          <button type="button" className="btn" onClick={() => reorderStep(wf.id, step.id, 'up')}>
+                            Up
+                          </button>
+                          <button type="button" className="btn" onClick={() => reorderStep(wf.id, step.id, 'down')}>
+                            Down
+                          </button>
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                {canManage ? (
+                  <button type="button" className="btn" onClick={() => addStep(wf.id)}>
+                    Add step
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </>
+        )}
+
+        <Link href="/settings" className="btn">
+          Back to settings
+        </Link>
+        {message ? <p>{message}</p> : null}
+      </main>
+    </div>
+  );
+}

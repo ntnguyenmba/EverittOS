@@ -15,6 +15,8 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [bookingUrl, setBookingUrl] = useState('');
+  const [website, setWebsite] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,9 @@ export default function SettingsPage() {
         if (settings) {
           setServiceType(settings.service_type || serviceType);
           setBookingUrl(settings.booking_url || bookingUrl);
+          setWebsite(settings.website || '');
+          setCompanyAddress(settings.company_address || '');
+          setPhone(settings.company_phone || phone);
           setNotifyAssignments(settings.notification_assignments ?? true);
           setNotifyDueDates(settings.notification_due_dates ?? true);
           setNotifyCompletions(settings.notification_completions ?? true);
@@ -106,6 +111,8 @@ export default function SettingsPage() {
         organization_id: orgId,
         company_phone: phone.trim() || null,
         company_email: email,
+        website: website.trim() || null,
+        company_address: companyAddress.trim() || null,
         service_type: serviceType.trim() || null,
         booking_url: bookingUrl.trim() || null,
         notification_assignments: notifyAssignments,
@@ -168,6 +175,8 @@ export default function SettingsPage() {
             value={bookingUrl}
             onChange={(e) => setBookingUrl(e.target.value)}
           />
+          <input className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          <input className="input" placeholder="Company address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
           <input className="input" placeholder="Email" value={email} disabled />
           <h3>Logo</h3>
           <input type="file" accept="image/*" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />

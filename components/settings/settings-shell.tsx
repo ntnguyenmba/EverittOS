@@ -9,7 +9,9 @@ const SETTINGS_LINKS = [
   { href: '/settings', label: 'Company' },
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Billing' },
-  { href: '/settings/security', label: 'Security' }
+  { href: '/settings/security', label: 'Security' },
+  { href: '/settings/api', label: 'API' },
+  { href: '/settings/departments', label: 'Departments' }
 ] as const;
 
 type SettingsShellProps = {

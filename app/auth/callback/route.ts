@@ -43,9 +43,19 @@ export async function GET(request: Request) {
 
   if (error) {
     const login = new URL('/login', origin);
-    login.searchParams.set('error', error.message);
+    const expired =
+      error.message.toLowerCase().includes('expired') ||
+      error.message.toLowerCase().includes('invalid') ||
+      error.message.toLowerCase().includes('otp');
+    login.searchParams.set(
+      'error',
+      expired ? 'This link has expired or is invalid. Request a new one.' : error.message
+    );
     return NextResponse.redirect(login);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  const verified = searchParams.get('type') === 'signup' || next.includes('onboarding');
+  const destination = verified ? `${next}${next.includes('?') ? '&' : '?'}verified=1` : next;
+
+  return NextResponse.redirect(`${origin}${destination}`);
 }

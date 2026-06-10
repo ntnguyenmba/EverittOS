@@ -9,6 +9,8 @@ export type ScheduleJob = {
   status: string | null;
   start_date: string | null;
   due_date: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
   assigned_to: string | null;
   customer_name: string | null;
 };
@@ -18,6 +20,7 @@ type ScheduleViewsProps = {
   workerNames: Record<string, string>;
   canAssign: boolean;
   onAssign?: (jobId: string, workerId: string | null) => void;
+  onReschedule?: (jobId: string, dateKey: string) => void;
 };
 
 type ViewMode = 'calendar' | 'day' | 'week' | 'list';
@@ -26,14 +29,27 @@ function dateKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: ScheduleViewsProps) {
+function jobDateKey(job: ScheduleJob): string | null {
+  if (job.start_date) return job.start_date;
+  if (job.due_date) return job.due_date;
+  if (job.scheduled_start) return job.scheduled_start.slice(0, 10);
+  return null;
+}
+
+export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onReschedule }: ScheduleViewsProps) {
   const [view, setView] = useState<ViewMode>('week');
   const [anchor, setAnchor] = useState(() => new Date());
+  const [dragJobId, setDragJobId] = useState<string | null>(null);
 
   const scheduled = useMemo(
-    () => jobs.filter((j) => j.start_date || j.due_date).sort((a, b) => (a.due_date || a.start_date || '').localeCompare(b.due_date || b.start_date || '')),
+    () =>
+      jobs
+        .filter((j) => jobDateKey(j))
+        .sort((a, b) => (jobDateKey(a) || '').localeCompare(jobDateKey(b) || '')),
     [jobs]
   );
+
+  const unscheduled = useMemo(() => jobs.filter((j) => !jobDateKey(j)), [jobs]);
 
   const weekDays = useMemo(() => {
     const start = new Date(anchor);
@@ -46,8 +62,26 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: Schedu
   }, [anchor]);
 
   const dayKey = dateKey(anchor);
+  const jobsForDay = scheduled.filter((j) => jobDateKey(j) === dayKey);
 
-  const jobsForDay = scheduled.filter((j) => j.start_date === dayKey || j.due_date === dayKey);
+  function handleDrop(targetKey: string) {
+    if (!dragJobId || !onReschedule) return;
+    onReschedule(dragJobId, targetKey);
+    setDragJobId(null);
+  }
+
+  function JobChip({ job }: { job: ScheduleJob }) {
+    return (
+      <div
+        className="schedule-job-chip"
+        draggable={canAssign && Boolean(onReschedule)}
+        onDragStart={() => setDragJobId(job.id)}
+        onDragEnd={() => setDragJobId(null)}
+      >
+        <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="schedule-views">
@@ -64,29 +98,52 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: Schedu
         <button type="button" className={`btn ${view === 'list' ? 'btn-primary' : ''}`} onClick={() => setView('list')}>
           Upcoming
         </button>
-        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() - 86400000))}>
+        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() - 86400000 * 7))}>
           Prev
         </button>
         <button type="button" className="btn" onClick={() => setAnchor(new Date())}>
           Today
         </button>
-        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() + 86400000))}>
+        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() + 86400000 * 7))}>
           Next
         </button>
       </div>
+
+      {unscheduled.length > 0 ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h4>Unscheduled jobs</h4>
+          <p className="muted">Drag a job onto a day below, or set dates on the job detail page.</p>
+          <div className="inline-actions">
+            {unscheduled.map((j) => (
+              <div
+                key={j.id}
+                className="schedule-job-chip"
+                draggable={canAssign && Boolean(onReschedule)}
+                onDragStart={() => setDragJobId(j.id)}
+                onDragEnd={() => setDragJobId(null)}
+              >
+                <Link href={`/jobs/${j.id}`}>{j.title}</Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {view === 'calendar' && (
         <div className="schedule-calendar-grid">
           {weekDays.map((d) => {
             const key = dateKey(d);
-            const dayJobs = scheduled.filter((j) => j.start_date === key || j.due_date === key);
+            const dayJobs = scheduled.filter((j) => jobDateKey(j) === key);
             return (
-              <div key={key} className="schedule-day-cell">
+              <div
+                key={key}
+                className="schedule-day-cell"
+                onDragOver={(e) => canAssign && e.preventDefault()}
+                onDrop={() => handleDrop(key)}
+              >
                 <div className="schedule-day-label">{d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                 {dayJobs.map((j) => (
-                  <Link key={j.id} href={`/jobs/${j.id}`} className="schedule-job-chip">
-                    {j.title}
-                  </Link>
+                  <JobChip key={j.id} job={j} />
                 ))}
               </div>
             );
@@ -99,7 +156,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: Schedu
           <h4>{anchor.toLocaleDateString()}</h4>
           {jobsForDay.length === 0 && <p>No jobs scheduled this day.</p>}
           {jobsForDay.map((j) => (
-            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} />
+            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}
         </div>
       )}
@@ -108,14 +165,17 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: Schedu
         <div className="schedule-week-grid">
           {weekDays.map((d) => {
             const key = dateKey(d);
-            const dayJobs = scheduled.filter((j) => j.start_date === key || j.due_date === key);
+            const dayJobs = scheduled.filter((j) => jobDateKey(j) === key);
             return (
-              <div key={key} className="schedule-week-col">
+              <div
+                key={key}
+                className="schedule-week-col"
+                onDragOver={(e) => canAssign && e.preventDefault()}
+                onDrop={() => handleDrop(key)}
+              >
                 <strong>{d.toLocaleDateString(undefined, { weekday: 'short' })}</strong>
                 {dayJobs.map((j) => (
-                  <Link key={j.id} href={`/jobs/${j.id}`} className="schedule-job-chip">
-                    {j.title}
-                  </Link>
+                  <JobChip key={j.id} job={j} />
                 ))}
               </div>
             );
@@ -128,7 +188,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign }: Schedu
           <h4>Upcoming jobs</h4>
           {scheduled.length === 0 && <p>No scheduled jobs.</p>}
           {scheduled.slice(0, 20).map((j) => (
-            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} />
+            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}
         </div>
       )}
@@ -140,37 +200,50 @@ function ScheduleRow({
   job,
   workerNames,
   canAssign,
-  onAssign
+  onAssign,
+  onReschedule
 }: {
   job: ScheduleJob;
   workerNames: Record<string, string>;
   canAssign: boolean;
   onAssign?: (jobId: string, workerId: string | null) => void;
+  onReschedule?: (jobId: string, dateKey: string) => void;
 }) {
   return (
     <div className="list-row schedule-row">
       <div>
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
         <p className="muted">
-          {job.start_date || 'No start'} to {job.due_date || 'No due'} · {job.customer_name || 'No customer'}
+          {job.start_date || job.scheduled_start?.slice(0, 10) || 'No start'} to{' '}
+          {job.due_date || job.scheduled_end?.slice(0, 10) || 'No due'} · {job.customer_name || 'No customer'}
         </p>
       </div>
-      {canAssign && onAssign ? (
-        <select
-          className="input"
-          value={job.assigned_to || ''}
-          onChange={(e) => onAssign(job.id, e.target.value || null)}
-        >
-          <option value="">Unassigned</option>
-          {Object.entries(workerNames).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <span>{job.assigned_to ? workerNames[job.assigned_to] || 'Assigned' : 'Unassigned'}</span>
-      )}
+      <div className="inline-actions">
+        {canAssign && onReschedule ? (
+          <input
+            className="input"
+            type="date"
+            defaultValue={jobDateKey(job) || ''}
+            onChange={(e) => onReschedule(job.id, e.target.value)}
+          />
+        ) : null}
+        {canAssign && onAssign ? (
+          <select
+            className="input"
+            value={job.assigned_to || ''}
+            onChange={(e) => onAssign(job.id, e.target.value || null)}
+          >
+            <option value="">Unassigned</option>
+            {Object.entries(workerNames).map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>{job.assigned_to ? workerNames[job.assigned_to] || 'Assigned' : 'Unassigned'}</span>
+        )}
+      </div>
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ActivityFeed } from '@/components/activity-feed';
 import { JobAssignments } from '@/components/job-assignments';
 import { JobChecklist } from '@/components/job-checklist';
+import { ClientAccessPanel } from '@/components/client-access-panel';
+import { JobWorkflow } from '@/components/job-workflow';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { PhotoUpload } from '@/components/photo-upload';
 import { Sidebar } from '@/components/sidebar';
@@ -441,6 +443,15 @@ export default function JobDetailPage({ params }: PageProps) {
             />
           </div>
         )}
+
+        <JobWorkflow
+          jobId={job.id}
+          canManage={canManage}
+          canComplete={canManage || canEditStatus}
+          hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
+        />
+
+        <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
 
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Photos</h3>
