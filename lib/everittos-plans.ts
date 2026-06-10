@@ -51,6 +51,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'Before and after photos',
       'Professional job records',
       'Standard reports',
+      'Customer portal',
       'Expanded customer and job management'
     ],
     limits: ['25 active jobs', '100 customers', '3 users'],
@@ -85,7 +86,6 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     features: [
       'Everything in Business',
       'Contractor portal',
-      'Client portal',
       'Role-based permissions',
       'Workforce activity tracking',
       'Branded reports',

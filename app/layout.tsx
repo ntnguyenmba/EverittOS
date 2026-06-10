@@ -8,7 +8,15 @@ const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500'
 
 export const metadata: Metadata = {
   title: 'EverittOS | Field Operations Platform',
-  description: 'Run your field team from one clean dashboard.'
+  description: 'Run your field team from one clean dashboard.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' }
+    ],
+    apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
+    shortcut: '/favicon.ico'
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -80,7 +80,7 @@ export function requirePlan(userPlan: EverittosPlan, requiredPlan: EverittosPlan
 export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
   { prefix: '/team', plan: 'business' },
   { prefix: '/activity', plan: 'business' },
-  { prefix: '/portal/client', plan: 'operations' },
+  { prefix: '/portal/client', plan: 'pro' },
   { prefix: '/portal/contractor', plan: 'operations' },
   { prefix: '/admin', plan: 'enterprise' }
 ];

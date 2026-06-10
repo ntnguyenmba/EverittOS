@@ -1,13 +1,15 @@
 /** Canonical SaaS roles (stored on organization_members and profiles). */
-export type UserRole = 'owner' | 'manager' | 'employee' | 'contractor' | 'client';
+export type UserRole = 'owner' | 'admin' | 'manager' | 'employee' | 'contractor' | 'client' | 'viewer';
 
 export function normalizeRole(value: string | null | undefined): UserRole {
   const role = (value || 'owner').toLowerCase();
   if (role === 'owner') return 'owner';
-  if (role === 'manager' || role === 'admin') return 'manager';
+  if (role === 'admin') return 'admin';
+  if (role === 'manager') return 'manager';
   if (role === 'employee' || role === 'staff') return 'employee';
   if (role === 'contractor' || role === 'crew_lead') return 'contractor';
   if (role === 'client') return 'client';
+  if (role === 'viewer') return 'viewer';
   return 'owner';
 }
 
@@ -20,8 +22,12 @@ export function isOwner(role: UserRole): boolean {
   return role === 'owner';
 }
 
+export function isAdminRole(role: UserRole): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
 export function isManagerRole(role: UserRole): boolean {
-  return role === 'owner' || role === 'manager';
+  return role === 'owner' || role === 'admin' || role === 'manager';
 }
 
 export function isEmployeeRole(role: UserRole): boolean {
@@ -36,12 +42,16 @@ export function isClientRole(role: UserRole): boolean {
   return role === 'client';
 }
 
+export function isViewerRole(role: UserRole): boolean {
+  return role === 'viewer';
+}
+
 export function isOwnerOrAdmin(role: UserRole): boolean {
-  return isManagerRole(role);
+  return isAdminRole(role) || role === 'manager';
 }
 
 export function isStaffRole(role: UserRole): boolean {
-  return role === 'employee' || role === 'contractor';
+  return role === 'employee' || role === 'contractor' || role === 'viewer';
 }
 
 export function canManageTeam(role: UserRole): boolean {
@@ -61,5 +71,7 @@ export function canViewInternalNotes(role: UserRole): boolean {
 }
 
 export function dashboardVariant(role: UserRole): 'owner' | 'manager' | 'employee' | 'contractor' | 'client' {
+  if (role === 'admin') return 'manager';
+  if (role === 'viewer') return 'employee';
   return role;
 }

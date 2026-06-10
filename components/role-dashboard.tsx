@@ -45,10 +45,12 @@ export function RoleDashboard({
 
   const titles: Record<UserRole, string> = {
     owner: 'Owner dashboard',
+    admin: 'Admin dashboard',
     manager: 'Manager dashboard',
     employee: 'Employee dashboard',
     contractor: 'Contractor dashboard',
-    client: 'Client dashboard'
+    client: 'Client dashboard',
+    viewer: 'Viewer dashboard'
   };
 
   return (

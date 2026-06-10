@@ -11,6 +11,17 @@ Optional demo data after creating a demo auth user: [`../demo_seed.sql`](../demo
 ## Incremental migrations
 
 If you already applied some migrations, run remaining files in order via SQL editor or CLI:
+## Production launch (existing legacy database)
+
+**Project:** Everitt OS — `wxtatzlirexrwjehqgak`
+
+If bootstrap fails, run [`../diagnose_schema.sql`](../diagnose_schema.sql) first and see [`../RUN_BOOTSTRAP.md`](../RUN_BOOTSTRAP.md).
+
+Run **once** in Supabase SQL Editor (entire file, top to bottom):
+
+- [`../production_bootstrap.sql`](../production_bootstrap.sql) — full idempotent upgrade from the original schema to current production requirements. See [`../../docs/PRODUCTION_SCHEMA_AUDIT.md`](../../docs/PRODUCTION_SCHEMA_AUDIT.md).
+
+## Incremental migrations (new projects only)
 
 1. `202605310001_platform_core.sql` - tables, triggers
 2. `202605310003_rls_storage.sql` - RLS and job-photos bucket
