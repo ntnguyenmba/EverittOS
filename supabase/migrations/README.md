@@ -13,6 +13,17 @@ This idempotent script preserves legacy tables, adds all current production sche
 ## Incremental migrations (new projects or partial upgrades)
 
 Run in order in the Supabase SQL editor or via CLI:
+## Fresh project (recommended)
+
+Run **once** in the Supabase SQL Editor:
+
+- [`../everittos_full_setup.sql`](../everittos_full_setup.sql) — full idempotent schema (profiles, business_profiles, organizations, plan limits, launch tables, RLS, storage). Safe on empty projects and projects with a broken partial `business_profiles` table missing `user_id`.
+
+Optional demo data after creating a demo auth user: [`../demo_seed.sql`](../demo_seed.sql) (see [`../../docs/DEMO_SEED.md`](../../docs/DEMO_SEED.md)).
+
+## Incremental migrations
+
+If you already applied some migrations, run remaining files in order via SQL editor or CLI:
 ## Production launch (existing legacy database)
 
 **Project:** Everitt OS — `wxtatzlirexrwjehqgak`
