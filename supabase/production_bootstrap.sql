@@ -13,21 +13,8 @@
 
 create extension if not exists "pgcrypto";
 
--- Helper: create RLS policy only when it does not already exist
-create or replace function public._ensure_policy(
-  p_policy text,
-  p_table text,
-  p_definition text
-) returns void language plpgsql as $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = p_table and policyname = p_policy
-  ) then
-    execute format('create policy %I on public.%I %s', p_policy, p_table, p_definition);
-  end if;
-end;
-$$;
+-- Remove helper if a previous partial run created it
+drop function if exists public._ensure_policy(text, text, text);
 
 -- ---------------------------------------------------------------------------
 -- 0. Legacy preflight (existing old-schema tables — never dropped)
@@ -1392,59 +1379,74 @@ create policy department_memberships_org on public.department_memberships
   with check (public.can_manage_organization(organization_id));
 
 -- Client read access to reports for shared jobs
-select public._ensure_policy(
-  'job_reports_client_select',
-  'job_reports',
-  $$for select using (
-    public.client_can_view_job(job_id)
-    and exists (
-      select 1 from public.job_client_access jca
-      where jca.job_id = job_reports.job_id
-        and jca.client_user_id = auth.uid()
-        and jca.can_view_reports = true
-    )
-  )$$
-);
+do $pol$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'job_reports' and policyname = 'job_reports_client_select'
+  ) then
+    create policy job_reports_client_select on public.job_reports
+      for select using (
+        public.client_can_view_job(job_id)
+        and exists (
+          select 1 from public.job_client_access jca
+          where jca.job_id = job_reports.job_id
+            and jca.client_user_id = auth.uid()
+            and jca.can_view_reports = true
+        )
+      );
+  end if;
+end $pol$;
 
 -- Clients may read customer records linked to shared jobs only
-select public._ensure_policy(
-  'customers_client_select',
-  'customers',
-  $$for select using (
-    exists (
-      select 1 from public.job_client_access jca
-      join public.jobs j on j.id = jca.job_id
-      where jca.client_user_id = auth.uid()
-        and j.customer_id = customers.id
-    )
-  )$$
-);
+do $pol$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'customers' and policyname = 'customers_client_select'
+  ) then
+    create policy customers_client_select on public.customers
+      for select using (
+        exists (
+          select 1 from public.job_client_access jca
+          join public.jobs j on j.id = jca.job_id
+          where jca.client_user_id = auth.uid()
+            and j.customer_id = customers.id
+        )
+      );
+  end if;
+end $pol$;
 
 -- Legacy invoices: org managers + owning clients
-do $$
+do $inv$
 begin
-  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'invoices') then
-    perform public._ensure_policy(
-      'invoices_org_manage',
-      'invoices',
-      $$for all using (
-        organization_id is not null and public.can_manage_organization(organization_id)
-      ) with check (
-        organization_id is not null and public.can_manage_organization(organization_id)
-      )$$
-    );
-    perform public._ensure_policy(
-      'invoices_client_select',
-      'invoices',
-      $$for select using (
-        client_user_id = auth.uid()
-        or (
-          job_id is not null and public.client_can_view_job(job_id)
-        )
-      )$$
-    );
+  if exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'invoices'
+  ) then
+    if not exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = 'invoices' and policyname = 'invoices_org_manage'
+    ) then
+      create policy invoices_org_manage on public.invoices
+        for all using (
+          organization_id is not null and public.can_manage_organization(organization_id)
+        ) with check (
+          organization_id is not null and public.can_manage_organization(organization_id)
+        );
+    end if;
+    if not exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = 'invoices' and policyname = 'invoices_client_select'
+    ) then
+      create policy invoices_client_select on public.invoices
+        for select using (
+          client_user_id = auth.uid()
+          or (job_id is not null and public.client_can_view_job(job_id))
+        );
+    end if;
   end if;
-end $$;
+end $inv$;
 
 -- ---------------------------------------------------------------------------
 -- 12. Storage buckets and policies
