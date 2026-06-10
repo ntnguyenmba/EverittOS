@@ -16,6 +16,23 @@ create extension if not exists "pgcrypto";
 -- Remove helper if a previous partial run created it
 drop function if exists public._ensure_policy(text, text, text);
 
+-- Schema introspection helpers (safe on legacy databases)
+create or replace function public._col_exists(p_table text, p_column text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = p_table and column_name = p_column
+  );
+$$;
+
+create or replace function public._table_exists(p_table text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = p_table
+  );
+$$;
+
 -- ---------------------------------------------------------------------------
 -- 0. Legacy preflight (existing old-schema tables — never dropped)
 -- ---------------------------------------------------------------------------
@@ -46,6 +63,7 @@ begin
   alter table public.job_photos add column if not exists storage_path text;
   alter table public.job_photos add column if not exists label text default 'other';
   alter table public.job_photos add column if not exists organization_id uuid;
+  alter table public.job_photos add column if not exists user_id uuid;
 
   if exists (
     select 1 from information_schema.columns
@@ -314,6 +332,7 @@ create table if not exists public.customers (
 alter table public.customers add column if not exists organization_id uuid references public.organizations (id) on delete cascade;
 alter table public.customers add column if not exists department_id uuid;
 alter table public.customers add column if not exists updated_at timestamptz default now();
+alter table public.customers add column if not exists user_id uuid;
 
 create table if not exists public.customer_properties (
   id uuid primary key default gen_random_uuid(),
@@ -352,6 +371,7 @@ create table if not exists public.workers (
 alter table public.workers add column if not exists organization_id uuid references public.organizations (id) on delete cascade;
 alter table public.workers add column if not exists department_id uuid;
 alter table public.workers add column if not exists auth_user_id uuid references auth.users (id) on delete set null;
+alter table public.workers add column if not exists user_id uuid;
 
 create table if not exists public.jobs (
   id uuid primary key default gen_random_uuid(),
@@ -402,6 +422,132 @@ alter table public.jobs add column if not exists priority text default 'normal';
 alter table public.jobs add column if not exists internal_notes text;
 alter table public.jobs add column if not exists customer_notes text;
 alter table public.jobs add column if not exists completion_verified boolean default false;
+alter table public.jobs add column if not exists user_id uuid;
+
+-- ---------------------------------------------------------------------------
+-- 4b. Legacy owner columns: ensure user_id exists before indexes/policies
+-- ---------------------------------------------------------------------------
+do $legacy$
+declare
+  t text;
+  alt text;
+  alt_cols text[] := array['owner_id', 'profile_id', 'created_by', 'account_id', 'member_id'];
+begin
+  foreach t in array array['customers', 'jobs', 'workers', 'job_photos', 'invoices'] loop
+    if public._table_exists(t) and not public._col_exists(t, 'user_id') then
+      execute format('alter table public.%I add column user_id uuid', t);
+      raise notice 'Added user_id column to public.%', t;
+    end if;
+    if public._table_exists(t) and public._col_exists(t, 'user_id') then
+      foreach alt in array alt_cols loop
+        if public._col_exists(t, alt) then
+          execute format(
+            'update public.%I set user_id = %I where user_id is null and %I is not null',
+            t, alt, alt
+          );
+          raise notice 'Backfilled public.%.user_id from %', t, alt;
+          exit;
+        end if;
+      end loop;
+    end if;
+  end loop;
+
+  if public._col_exists('jobs', 'user_id') and public._col_exists('jobs', 'customer_id') and public._col_exists('customers', 'user_id') then
+    execute $sql$
+      update public.jobs j
+      set user_id = c.user_id
+      from public.customers c
+      where j.customer_id = c.id and j.user_id is null and c.user_id is not null
+    $sql$;
+  end if;
+
+  if public._col_exists('jobs', 'user_id') and public._col_exists('jobs', 'company_id') and public._table_exists('companies') then
+    if public._col_exists('companies', 'user_id') then
+      execute $sql$
+        update public.jobs j
+        set user_id = c.user_id
+        from public.companies c
+        where j.company_id = c.id and j.user_id is null and c.user_id is not null
+      $sql$;
+    elsif public._col_exists('companies', 'owner_id') then
+      execute $sql$
+        update public.jobs j
+        set user_id = c.owner_id
+        from public.companies c
+        where j.company_id = c.id and j.user_id is null and c.owner_id is not null
+      $sql$;
+    end if;
+  end if;
+
+  if public._col_exists('customers', 'user_id') and public._col_exists('customers', 'company_id') and public._table_exists('companies') then
+    if public._col_exists('companies', 'user_id') then
+      execute $sql$
+        update public.customers cu
+        set user_id = c.user_id
+        from public.companies c
+        where cu.company_id = c.id and cu.user_id is null and c.user_id is not null
+      $sql$;
+    elsif public._col_exists('companies', 'owner_id') then
+      execute $sql$
+        update public.customers cu
+        set user_id = c.owner_id
+        from public.companies c
+        where cu.company_id = c.id and cu.user_id is null and c.owner_id is not null
+      $sql$;
+    end if;
+  end if;
+
+  if public._col_exists('workers', 'user_id') and public._col_exists('workers', 'company_id') and public._table_exists('companies') then
+    if public._col_exists('companies', 'owner_id') then
+      execute $sql$
+        update public.workers w
+        set user_id = c.owner_id
+        from public.companies c
+        where w.company_id = c.id and w.user_id is null and c.owner_id is not null
+      $sql$;
+    elsif public._col_exists('companies', 'user_id') then
+      execute $sql$
+        update public.workers w
+        set user_id = c.user_id
+        from public.companies c
+        where w.company_id = c.id and w.user_id is null and c.user_id is not null
+      $sql$;
+    end if;
+  end if;
+
+  if public._col_exists('job_photos', 'user_id') and public._col_exists('job_photos', 'job_id') and public._col_exists('jobs', 'user_id') then
+    execute $sql$
+      update public.job_photos jp
+      set user_id = j.user_id
+      from public.jobs j
+      where jp.job_id = j.id and jp.user_id is null and j.user_id is not null
+    $sql$;
+  end if;
+
+  if public._col_exists('invoices', 'user_id') and public._col_exists('invoices', 'client_user_id') then
+    execute $sql$
+      update public.invoices
+      set client_user_id = user_id
+      where client_user_id is null and user_id is not null
+    $sql$;
+  end if;
+
+  foreach t in array array['customers', 'jobs', 'workers', 'job_photos'] loop
+    if public._col_exists(t, 'user_id') then
+      begin
+        execute format(
+          'alter table public.%I add constraint %I foreign key (user_id) references auth.users(id) on delete cascade',
+          t, t || '_user_id_fkey'
+        );
+      exception
+        when duplicate_object then null;
+        when others then raise notice 'user_id FK skipped on %: %', t, sqlerrm;
+      end;
+    end if;
+  end loop;
+exception when others then
+  raise notice 'Legacy user_id alignment skipped: %', sqlerrm;
+end $legacy$;
 
 do $$
 begin
@@ -454,6 +600,7 @@ create table if not exists public.job_photos (
 );
 
 alter table public.job_photos add column if not exists organization_id uuid references public.organizations (id) on delete cascade;
+alter table public.job_photos add column if not exists user_id uuid;
 
 create table if not exists public.job_timeline (
   id uuid primary key default gen_random_uuid(),
@@ -651,6 +798,7 @@ begin
     alter table public.invoices add column if not exists job_id uuid;
     alter table public.invoices add column if not exists customer_id uuid;
     alter table public.invoices add column if not exists client_user_id uuid;
+    alter table public.invoices add column if not exists user_id uuid;
     alter table public.invoices add column if not exists amount numeric(12, 2);
     alter table public.invoices add column if not exists status text default 'draft';
     alter table public.invoices add column if not exists due_date date;
@@ -710,9 +858,16 @@ update public.jobs set status = 'new' where status is null;
 update public.jobs set priority = 'normal'
 where priority not in ('low', 'normal', 'high', 'urgent');
 
-update public.job_photos set label = 'other' where label is null;
-update public.job_photos set label = 'other'
-where label not in ('before', 'progress', 'during', 'after', 'other');
+do $norm$
+begin
+  if public._col_exists('job_photos', 'label') then
+    execute $sql$ update public.job_photos set label = 'other' where label is null $sql$;
+    execute $sql$
+      update public.job_photos set label = 'other'
+      where label not in ('before', 'progress', 'during', 'after', 'other')
+    $sql$;
+  end if;
+end $norm$;
 
 -- ---------------------------------------------------------------------------
 -- 6. Check constraints (drop + recreate for idempotency)
@@ -753,61 +908,154 @@ alter table public.jobs drop constraint if exists jobs_priority_check;
 alter table public.jobs add constraint jobs_priority_check
   check (priority in ('low', 'normal', 'high', 'urgent'));
 
-alter table public.job_photos drop constraint if exists job_photos_label_check;
-alter table public.job_photos add constraint job_photos_label_check
-  check (label in ('before', 'progress', 'during', 'after', 'other'));
+do $lbl$
+begin
+  if public._col_exists('job_photos', 'label') then
+    alter table public.job_photos drop constraint if exists job_photos_label_check;
+    alter table public.job_photos add constraint job_photos_label_check
+      check (label in ('before', 'progress', 'during', 'after', 'other'));
+  end if;
+end $lbl$;
 
 alter table public.workflow_steps drop constraint if exists workflow_steps_step_type_check;
 alter table public.workflow_steps add constraint workflow_steps_step_type_check
   check (step_type in ('checklist', 'photo', 'note', 'approval'));
 
 -- ---------------------------------------------------------------------------
--- 7. Indexes
+-- 7. Indexes (only when referenced columns exist)
 -- ---------------------------------------------------------------------------
-create index if not exists customers_user_id_idx on public.customers (user_id);
-create index if not exists customers_organization_id_idx on public.customers (organization_id);
-create index if not exists customers_department_idx on public.customers (department_id);
-create index if not exists workers_user_id_idx on public.workers (user_id);
-create index if not exists workers_auth_user_id_idx on public.workers (auth_user_id);
-create index if not exists jobs_user_id_idx on public.jobs (user_id);
-create index if not exists jobs_organization_id_idx on public.jobs (organization_id);
-create index if not exists jobs_status_idx on public.jobs (status);
-create index if not exists jobs_scheduled_at_idx on public.jobs (scheduled_at);
-create index if not exists jobs_scheduled_start_idx on public.jobs (scheduled_start);
-create index if not exists jobs_due_date_idx on public.jobs (due_date);
-create index if not exists jobs_crew_id_idx on public.jobs (crew_id);
-create index if not exists jobs_department_idx on public.jobs (department_id);
-create index if not exists jobs_workflow_template_idx on public.jobs (workflow_template_id);
-create index if not exists job_photos_job_id_idx on public.job_photos (job_id);
-create index if not exists job_photos_organization_id_idx on public.job_photos (organization_id);
-create index if not exists job_assignments_job_id_idx on public.job_assignments (job_id);
-create index if not exists job_reports_user_id_idx on public.job_reports (user_id);
-create index if not exists job_reports_job_id_idx on public.job_reports (job_id);
-create index if not exists job_reports_organization_id_idx on public.job_reports (organization_id);
-create index if not exists job_client_access_client_idx on public.job_client_access (client_user_id);
-create index if not exists job_client_access_job_idx on public.job_client_access (job_id);
-create index if not exists job_client_access_token_idx on public.job_client_access (portal_token);
-create index if not exists organization_members_org_idx on public.organization_members (organization_id);
-create index if not exists organization_members_user_idx on public.organization_members (user_id);
-create index if not exists organization_invitations_email_idx on public.organization_invitations (email);
-create index if not exists organization_invitations_status_idx on public.organization_invitations (status);
-create index if not exists activity_logs_org_idx on public.activity_logs (organization_id, created_at desc);
-create index if not exists activity_logs_created_at_idx on public.activity_logs (created_at desc);
-create index if not exists notifications_user_idx on public.notifications (user_id, read_at);
-create index if not exists product_events_org_idx on public.product_events (organization_id, created_at desc);
-create index if not exists product_events_event_name_idx on public.product_events (event_name);
-create index if not exists subscription_events_email_idx on public.subscription_events (email);
-create index if not exists profiles_account_status_idx on public.profiles (account_status);
-create index if not exists api_keys_org_idx on public.api_keys (organization_id);
-create index if not exists api_keys_prefix_idx on public.api_keys (key_prefix);
-create index if not exists api_keys_hash_idx on public.api_keys (key_hash);
-create index if not exists workflow_templates_org_idx on public.workflow_templates (organization_id);
-create index if not exists workflow_steps_workflow_idx on public.workflow_steps (workflow_id, sort_order);
-create index if not exists job_workflow_progress_job_idx on public.job_workflow_progress (job_id);
-create index if not exists departments_org_idx on public.departments (organization_id);
-create index if not exists department_memberships_user_idx on public.department_memberships (user_id);
-create index if not exists department_memberships_dept_idx on public.department_memberships (department_id);
-create index if not exists crews_user_id_idx on public.crews (user_id);
+do $idx$
+begin
+  if public._col_exists('customers', 'user_id') then
+    execute 'create index if not exists customers_user_id_idx on public.customers (user_id)';
+  end if;
+  if public._col_exists('customers', 'organization_id') then
+    execute 'create index if not exists customers_organization_id_idx on public.customers (organization_id)';
+  end if;
+  if public._col_exists('customers', 'department_id') then
+    execute 'create index if not exists customers_department_idx on public.customers (department_id)';
+  end if;
+  if public._col_exists('workers', 'user_id') then
+    execute 'create index if not exists workers_user_id_idx on public.workers (user_id)';
+  end if;
+  if public._col_exists('workers', 'auth_user_id') then
+    execute 'create index if not exists workers_auth_user_id_idx on public.workers (auth_user_id)';
+  end if;
+  if public._col_exists('jobs', 'user_id') then
+    execute 'create index if not exists jobs_user_id_idx on public.jobs (user_id)';
+  end if;
+  if public._col_exists('jobs', 'organization_id') then
+    execute 'create index if not exists jobs_organization_id_idx on public.jobs (organization_id)';
+  end if;
+  if public._col_exists('jobs', 'status') then
+    execute 'create index if not exists jobs_status_idx on public.jobs (status)';
+  end if;
+  if public._col_exists('jobs', 'scheduled_at') then
+    execute 'create index if not exists jobs_scheduled_at_idx on public.jobs (scheduled_at)';
+  end if;
+  if public._col_exists('jobs', 'scheduled_start') then
+    execute 'create index if not exists jobs_scheduled_start_idx on public.jobs (scheduled_start)';
+  end if;
+  if public._col_exists('jobs', 'due_date') then
+    execute 'create index if not exists jobs_due_date_idx on public.jobs (due_date)';
+  end if;
+  if public._col_exists('jobs', 'crew_id') then
+    execute 'create index if not exists jobs_crew_id_idx on public.jobs (crew_id)';
+  end if;
+  if public._col_exists('jobs', 'department_id') then
+    execute 'create index if not exists jobs_department_idx on public.jobs (department_id)';
+  end if;
+  if public._col_exists('jobs', 'workflow_template_id') then
+    execute 'create index if not exists jobs_workflow_template_idx on public.jobs (workflow_template_id)';
+  end if;
+  if public._col_exists('job_photos', 'job_id') then
+    execute 'create index if not exists job_photos_job_id_idx on public.job_photos (job_id)';
+  end if;
+  if public._col_exists('job_photos', 'organization_id') then
+    execute 'create index if not exists job_photos_organization_id_idx on public.job_photos (organization_id)';
+  end if;
+  if public._col_exists('job_photos', 'user_id') then
+    execute 'create index if not exists job_photos_user_id_idx on public.job_photos (user_id)';
+  end if;
+  if public._table_exists('job_assignments') and public._col_exists('job_assignments', 'job_id') then
+    execute 'create index if not exists job_assignments_job_id_idx on public.job_assignments (job_id)';
+  end if;
+  if public._table_exists('job_reports') and public._col_exists('job_reports', 'user_id') then
+    execute 'create index if not exists job_reports_user_id_idx on public.job_reports (user_id)';
+  end if;
+  if public._table_exists('job_reports') and public._col_exists('job_reports', 'job_id') then
+    execute 'create index if not exists job_reports_job_id_idx on public.job_reports (job_id)';
+  end if;
+  if public._table_exists('job_reports') and public._col_exists('job_reports', 'organization_id') then
+    execute 'create index if not exists job_reports_organization_id_idx on public.job_reports (organization_id)';
+  end if;
+  if public._table_exists('job_client_access') and public._col_exists('job_client_access', 'client_user_id') then
+    execute 'create index if not exists job_client_access_client_idx on public.job_client_access (client_user_id)';
+  end if;
+  if public._table_exists('job_client_access') and public._col_exists('job_client_access', 'job_id') then
+    execute 'create index if not exists job_client_access_job_idx on public.job_client_access (job_id)';
+  end if;
+  if public._table_exists('job_client_access') and public._col_exists('job_client_access', 'portal_token') then
+    execute 'create index if not exists job_client_access_token_idx on public.job_client_access (portal_token)';
+  end if;
+  if public._table_exists('organization_members') and public._col_exists('organization_members', 'organization_id') then
+    execute 'create index if not exists organization_members_org_idx on public.organization_members (organization_id)';
+  end if;
+  if public._table_exists('organization_members') and public._col_exists('organization_members', 'user_id') then
+    execute 'create index if not exists organization_members_user_idx on public.organization_members (user_id)';
+  end if;
+  if public._table_exists('organization_invitations') and public._col_exists('organization_invitations', 'email') then
+    execute 'create index if not exists organization_invitations_email_idx on public.organization_invitations (email)';
+  end if;
+  if public._table_exists('organization_invitations') and public._col_exists('organization_invitations', 'status') then
+    execute 'create index if not exists organization_invitations_status_idx on public.organization_invitations (status)';
+  end if;
+  if public._table_exists('activity_logs') and public._col_exists('activity_logs', 'organization_id') then
+    execute 'create index if not exists activity_logs_org_idx on public.activity_logs (organization_id, created_at desc)';
+    execute 'create index if not exists activity_logs_created_at_idx on public.activity_logs (created_at desc)';
+  end if;
+  if public._table_exists('notifications') and public._col_exists('notifications', 'user_id') then
+    execute 'create index if not exists notifications_user_idx on public.notifications (user_id, read_at)';
+  end if;
+  if public._table_exists('product_events') and public._col_exists('product_events', 'organization_id') then
+    execute 'create index if not exists product_events_org_idx on public.product_events (organization_id, created_at desc)';
+  end if;
+  if public._table_exists('product_events') and public._col_exists('product_events', 'event_name') then
+    execute 'create index if not exists product_events_event_name_idx on public.product_events (event_name)';
+  end if;
+  if public._table_exists('subscription_events') and public._col_exists('subscription_events', 'email') then
+    execute 'create index if not exists subscription_events_email_idx on public.subscription_events (email)';
+  end if;
+  if public._col_exists('profiles', 'account_status') then
+    execute 'create index if not exists profiles_account_status_idx on public.profiles (account_status)';
+  end if;
+  if public._table_exists('api_keys') and public._col_exists('api_keys', 'organization_id') then
+    execute 'create index if not exists api_keys_org_idx on public.api_keys (organization_id)';
+    execute 'create index if not exists api_keys_prefix_idx on public.api_keys (key_prefix)';
+    execute 'create index if not exists api_keys_hash_idx on public.api_keys (key_hash)';
+  end if;
+  if public._table_exists('workflow_templates') and public._col_exists('workflow_templates', 'organization_id') then
+    execute 'create index if not exists workflow_templates_org_idx on public.workflow_templates (organization_id)';
+  end if;
+  if public._table_exists('workflow_steps') and public._col_exists('workflow_steps', 'workflow_id') then
+    execute 'create index if not exists workflow_steps_workflow_idx on public.workflow_steps (workflow_id, sort_order)';
+  end if;
+  if public._table_exists('job_workflow_progress') and public._col_exists('job_workflow_progress', 'job_id') then
+    execute 'create index if not exists job_workflow_progress_job_idx on public.job_workflow_progress (job_id)';
+  end if;
+  if public._table_exists('departments') and public._col_exists('departments', 'organization_id') then
+    execute 'create index if not exists departments_org_idx on public.departments (organization_id)';
+  end if;
+  if public._table_exists('department_memberships') and public._col_exists('department_memberships', 'user_id') then
+    execute 'create index if not exists department_memberships_user_idx on public.department_memberships (user_id)';
+  end if;
+  if public._table_exists('department_memberships') and public._col_exists('department_memberships', 'department_id') then
+    execute 'create index if not exists department_memberships_dept_idx on public.department_memberships (department_id)';
+  end if;
+  if public._table_exists('crews') and public._col_exists('crews', 'user_id') then
+    execute 'create index if not exists crews_user_id_idx on public.crews (user_id)';
+  end if;
+end $idx$;
 
 -- ---------------------------------------------------------------------------
 -- 8. Seed plan_tier_limits (matches lib/plan-config.ts)
@@ -1477,17 +1725,30 @@ create policy job_photos_storage_select on storage.objects for select using (
 );
 
 drop policy if exists job_photos_storage_insert on storage.objects;
-create policy job_photos_storage_insert on storage.objects for insert with check (
-  bucket_id = 'job-photos' and (
-    auth.uid()::text = (storage.foldername(name))[1]
-    or exists (
-      select 1 from public.jobs j
-      where j.user_id::text = (storage.foldername(name))[1]
-        and j.id::text = (storage.foldername(name))[2]
-        and public.is_assigned_to_job(j.id)
-    )
-  )
-);
+do $st$
+begin
+  if public._col_exists('jobs', 'user_id') then
+    execute $sql$
+      create policy job_photos_storage_insert on storage.objects for insert with check (
+        bucket_id = 'job-photos' and (
+          auth.uid()::text = (storage.foldername(name))[1]
+          or exists (
+            select 1 from public.jobs j
+            where j.user_id::text = (storage.foldername(name))[1]
+              and j.id::text = (storage.foldername(name))[2]
+              and public.is_assigned_to_job(j.id)
+          )
+        )
+      )
+    $sql$;
+  else
+    execute $sql$
+      create policy job_photos_storage_insert on storage.objects for insert with check (
+        bucket_id = 'job-photos' and auth.uid()::text = (storage.foldername(name))[1]
+      )
+    $sql$;
+  end if;
+end $st$;
 
 drop policy if exists job_photos_storage_update on storage.objects;
 create policy job_photos_storage_update on storage.objects for update using (
@@ -1528,7 +1789,7 @@ from public.profiles p
 where not exists (select 1 from public.business_profiles bp where bp.user_id = p.id)
 on conflict (user_id) do nothing;
 
-do $$
+do $bf$
 declare r record; oid uuid;
 begin
   for r in
@@ -1542,38 +1803,78 @@ begin
     values (oid, r.uid, 'owner', true) on conflict (organization_id, user_id) do nothing;
     insert into public.organization_settings (organization_id) values (oid) on conflict (organization_id) do nothing;
     update public.profiles set organization_id = oid where id = r.uid;
-    update public.customers set organization_id = oid where user_id = r.uid and organization_id is null;
-    update public.workers set organization_id = oid where user_id = r.uid and organization_id is null;
-    update public.jobs set organization_id = oid where user_id = r.uid and organization_id is null;
-    update public.crews set organization_id = oid where user_id = r.uid and organization_id is null;
+
+    if public._col_exists('customers', 'user_id') and public._col_exists('customers', 'organization_id') then
+      execute format(
+        'update public.customers set organization_id = %L where user_id = %L and organization_id is null',
+        oid, r.uid
+      );
+    end if;
+    if public._col_exists('workers', 'user_id') and public._col_exists('workers', 'organization_id') then
+      execute format(
+        'update public.workers set organization_id = %L where user_id = %L and organization_id is null',
+        oid, r.uid
+      );
+    end if;
+    if public._col_exists('jobs', 'user_id') and public._col_exists('jobs', 'organization_id') then
+      execute format(
+        'update public.jobs set organization_id = %L where user_id = %L and organization_id is null',
+        oid, r.uid
+      );
+    end if;
+    if public._table_exists('crews') and public._col_exists('crews', 'user_id') and public._col_exists('crews', 'organization_id') then
+      execute format(
+        'update public.crews set organization_id = %L where user_id = %L and organization_id is null',
+        oid, r.uid
+      );
+    end if;
   end loop;
-end $$;
+end $bf$;
 
--- Propagate organization_id to child rows from jobs
-update public.job_photos jp
-set organization_id = j.organization_id
-from public.jobs j
-where jp.job_id = j.id and jp.organization_id is null and j.organization_id is not null;
-
-update public.job_timeline jt
-set organization_id = j.organization_id
-from public.jobs j
-where jt.job_id = j.id and jt.organization_id is null and j.organization_id is not null;
-
-update public.job_assignments ja
-set organization_id = j.organization_id
-from public.jobs j
-where ja.job_id = j.id and ja.organization_id is null and j.organization_id is not null;
-
-update public.job_reports jr
-set organization_id = j.organization_id
-from public.jobs j
-where jr.job_id = j.id and jr.organization_id is null and j.organization_id is not null;
-
-update public.job_client_access jca
-set organization_id = j.organization_id
-from public.jobs j
-where jca.job_id = j.id and jca.organization_id is null and j.organization_id is not null;
+-- Propagate organization_id to child rows from jobs (when columns exist)
+do $orgprop$
+begin
+  if public._col_exists('job_photos', 'organization_id') and public._col_exists('jobs', 'organization_id') and public._col_exists('job_photos', 'job_id') then
+    execute $sql$
+      update public.job_photos jp
+      set organization_id = j.organization_id
+      from public.jobs j
+      where jp.job_id = j.id and jp.organization_id is null and j.organization_id is not null
+    $sql$;
+  end if;
+  if public._table_exists('job_timeline') and public._col_exists('job_timeline', 'organization_id') then
+    execute $sql$
+      update public.job_timeline jt
+      set organization_id = j.organization_id
+      from public.jobs j
+      where jt.job_id = j.id and jt.organization_id is null and j.organization_id is not null
+    $sql$;
+  end if;
+  if public._table_exists('job_assignments') and public._col_exists('job_assignments', 'organization_id') then
+    execute $sql$
+      update public.job_assignments ja
+      set organization_id = j.organization_id
+      from public.jobs j
+      where ja.job_id = j.id and ja.organization_id is null and j.organization_id is not null
+    $sql$;
+  end if;
+  if public._table_exists('job_reports') and public._col_exists('job_reports', 'organization_id') then
+    execute $sql$
+      update public.job_reports jr
+      set organization_id = j.organization_id
+      from public.jobs j
+      where jr.job_id = j.id and jr.organization_id is null and j.organization_id is not null
+    $sql$;
+  end if;
+  if public._table_exists('job_client_access') and public._col_exists('job_client_access', 'organization_id') then
+    execute $sql$
+      update public.job_client_access jca
+      set organization_id = j.organization_id
+      from public.jobs j
+      where jca.job_id = j.id and jca.organization_id is null and j.organization_id is not null
+    $sql$;
+  end if;
+end $orgprop$;
 
 -- Done — legacy tables (invoices, technicians, activity_events, ai_generations, companies) preserved
 select 'EverittOS production bootstrap complete' as status;
