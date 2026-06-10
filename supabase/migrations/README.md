@@ -1,6 +1,16 @@
 # EverittOS Supabase migrations
 
-Run in order in the Supabase SQL editor or via CLI:
+## Fresh project (recommended)
+
+Run **once** in the Supabase SQL Editor:
+
+- [`../everittos_full_setup.sql`](../everittos_full_setup.sql) — full idempotent schema (profiles, business_profiles, organizations, plan limits, launch tables, RLS, storage). Safe on empty projects and projects with a broken partial `business_profiles` table missing `user_id`.
+
+Optional demo data after creating a demo auth user: [`../demo_seed.sql`](../demo_seed.sql) (see [`../../docs/DEMO_SEED.md`](../../docs/DEMO_SEED.md)).
+
+## Incremental migrations
+
+If you already applied some migrations, run remaining files in order via SQL editor or CLI:
 
 1. `202605310001_platform_core.sql` - tables, triggers
 2. `202605310003_rls_storage.sql` - RLS and job-photos bucket
@@ -11,6 +21,8 @@ Run in order in the Supabase SQL editor or via CLI:
 7. `202605330001_organizations_platform.sql` - organizations, team, plan_tier_limits, activity, notifications
 8. `202605340001_saas_fundable_platform.sql` - Operations plan, aligned limits, onboarding fields, product_events
 9. `202605350001_launch_audit.sql` - indexes, subscription_events, launch audit support
+10. `202605360001_account_status.sql` - account disable support
+11. `202605370001_launch_growth_features.sql` - API keys, workflows, departments, portal tokens
 
 ## Auth redirect URLs (Supabase Dashboard > Authentication > URL configuration)
 
