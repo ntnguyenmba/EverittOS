@@ -1,5 +1,18 @@
 # EverittOS Supabase migrations
 
+## Upgrading the original EverittOS schema (recommended)
+
+If your project still has the **original** tables only (`profiles`, `jobs`, `customers`, `invoices`, `workers`, `technicians`, `job_photos`, `activity_events`, `ai_generations`, `companies`) and newer migrations fail because `business_profiles`, `organizations`, etc. do not exist:
+
+Run **once** in the Supabase SQL Editor:
+
+- [`../everittos_legacy_bootstrap.sql`](../everittos_legacy_bootstrap.sql)
+
+This idempotent script preserves legacy tables, adds all current production schema objects, backfills organizations from existing users, and applies RLS/storage policies. Does not assume any prior migrations were applied.
+
+## Incremental migrations (new projects or partial upgrades)
+
+Run in order in the Supabase SQL editor or via CLI:
 ## Fresh project (recommended)
 
 Run **once** in the Supabase SQL Editor:
