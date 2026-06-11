@@ -48,8 +48,8 @@ export function OnboardingChecklist({ organizationId, step, completed }: Onboard
         <div>
           <h3>Getting started</h3>
           <p className="muted">
-            Optional setup for freelancers and solo operators. Finish anytime from Settings — nothing here blocks your
-            work.
+            A quick, optional walkthrough for freelancers, solo operators, and small teams. Finish anytime from
+            Settings — nothing here blocks your work.
           </p>
         </div>
         <button type="button" className="btn" onClick={dismiss} aria-label="Dismiss getting started checklist">
@@ -75,7 +75,7 @@ export function OnboardingChecklist({ organizationId, step, completed }: Onboard
           Continue setup
         </Link>
         <Link href="/settings" className="btn">
-          Company settings
+          Workspace settings
         </Link>
       </div>
     </div>

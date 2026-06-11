@@ -188,7 +188,7 @@ export default function AccountSettingsPage() {
           </Link>
           {canBilling ? (
             <Link href="/settings" className="btn">
-              Company settings
+              Workspace settings
             </Link>
           ) : null}
         </div>

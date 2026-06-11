@@ -240,7 +240,7 @@ function ClientPortalContent() {
                 <p>Name: {profile?.full_name || 'Not set'}</p>
                 <p>Email: {profile?.email || 'Not set'}</p>
                 <p>Phone: {profile?.phone || 'Not set'}</p>
-                <p>Company: {profile?.business_name || 'Not set'}</p>
+                <p>Business: {profile?.business_name || 'Not set'}</p>
                 {customers.length > 0 && (
                   <>
                     <h4 style={{ marginTop: 16 }}>Customer records</h4>

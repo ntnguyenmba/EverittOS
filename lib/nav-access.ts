@@ -16,7 +16,7 @@ export type SettingsNavLink = {
 };
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
-  { href: '/settings', label: 'Company' },
+  { href: '/settings', label: 'Workspace' },
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Billing' },
   { href: '/settings/security', label: 'Security' },

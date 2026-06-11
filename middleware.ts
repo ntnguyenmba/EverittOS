@@ -242,7 +242,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/settings/billing')
         ? 'Billing is limited to workspace owners and admins.'
         : pathname === '/settings' || pathname.startsWith('/settings?')
-          ? 'Company settings are limited to workspace owners and admins.'
+          ? 'Workspace settings are limited to workspace owners and admins.'
           : `Your role (${role}) cannot access ${pathname}.`;
     return roleBlockedRedirect(request, supabaseResponse, pathname, detail);
   }

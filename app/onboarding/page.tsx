@@ -11,12 +11,12 @@ import { trackProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
 const STEPS = [
-  'Create company',
-  'Add first customer',
-  'Create first job',
-  'Upload first photo',
-  'Generate first report',
-  'Invite team'
+  'Set up your workspace',
+  'Add your first customer',
+  'Create your first job',
+  'Upload your first photo',
+  'Generate your first report',
+  'Invite a team member'
 ] as const;
 
 export default function OnboardingPage() {
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <main className="section">
-        <div className="container card">Loading onboarding...</div>
+        <div className="container card">Loading your setup...</div>
       </main>
     );
   }
@@ -259,14 +259,14 @@ export default function OnboardingPage() {
       <main className="main">
         <div className="page-head">
           <div>
-            <h2>Company setup (optional)</h2>
+            <h2>Workspace setup</h2>
             <p className="muted">
-              Step {step + 1} of {STEPS.length}: {STEPS[step]}. You can finish later from Settings — your dashboard stays
-              available.
+              Step {step + 1} of {STEPS.length}: {STEPS[step]}. Optional — finish anytime from Settings. Your dashboard is
+              always available.
             </p>
           </div>
           <Link href="/dashboard" className="btn">
-            Back to dashboard
+            Go to dashboard
           </Link>
         </div>
         <div className="onboarding-progress">
@@ -276,9 +276,12 @@ export default function OnboardingPage() {
         <div className="card form" style={{ marginTop: 18 }}>
           {step === 0 && (
             <>
-              <h3>Company details (optional)</h3>
-              <p className="muted">Solo operator or freelancer? Skip this — we already created a personal workspace for you.</p>
-              <input className="input" placeholder="Company or display name (optional)" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              <h3>Workspace details</h3>
+              <p className="muted">
+                Your workspace is ready. You can start creating jobs, customers, and schedules right away. Add business
+                details later if needed.
+              </p>
+              <input className="input" placeholder="Business or display name (optional)" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
               <input className="input" placeholder="Industry (optional)" value={industry} onChange={(e) => setIndustry(e.target.value)} />
               <input className="input" placeholder="Team size (optional)" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
               <input className="input" placeholder="Phone (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -298,14 +301,14 @@ export default function OnboardingPage() {
                     setBusy(false);
                   }}
                 >
-                  Skip for now
+                  Skip and start using EverittOS
                 </button>
               </div>
             </>
           )}
           {step === 1 && (
             <>
-              <h3>Create first customer</h3>
+              <h3>Add your first customer</h3>
               <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
               <button type="button" className="btn btn-primary" disabled={busy} onClick={stepCustomer}>
                 Continue
@@ -314,7 +317,7 @@ export default function OnboardingPage() {
           )}
           {step === 2 && (
             <>
-              <h3>Create first job</h3>
+              <h3>Create your first job</h3>
               <input className="input" placeholder="Job title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
               <button type="button" className="btn btn-primary" disabled={busy} onClick={stepJob}>
                 Continue
@@ -323,8 +326,8 @@ export default function OnboardingPage() {
           )}
           {step === 3 && (
             <>
-              <h3>Upload first photo</h3>
-              <p>Pro and above include before and after photos.</p>
+              <h3>Upload your first photo</h3>
+              <p className="muted">Pro and above include before and after photos.</p>
               {jobId && (
                 <Link className="btn" href={`/jobs/${jobId}`}>
                   Open job to upload
@@ -337,7 +340,7 @@ export default function OnboardingPage() {
           )}
           {step === 4 && (
             <>
-              <h3>Generate first report</h3>
+              <h3>Generate your first report</h3>
               <button type="button" className="btn btn-primary" disabled={busy} onClick={stepReport}>
                 Create report
               </button>
@@ -345,7 +348,7 @@ export default function OnboardingPage() {
           )}
           {step === 5 && (
             <>
-              <h3>Invite team members</h3>
+              <h3>Invite a team member (optional)</h3>
               {hasTeamManagement(plan) ? (
                 <>
                   <input className="input" type="email" placeholder="Email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
@@ -353,12 +356,12 @@ export default function OnboardingPage() {
                     Send invite and finish
                   </button>
                   <button type="button" className="btn" onClick={finish}>
-                    Skip for now
+                    Skip and start using EverittOS
                   </button>
                 </>
               ) : (
                 <button type="button" className="btn btn-primary" onClick={finish}>
-                  Finish onboarding
+                  Go to dashboard
                 </button>
               )}
             </>

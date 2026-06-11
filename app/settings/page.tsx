@@ -173,8 +173,8 @@ export default function SettingsPage() {
   return (
     <SettingsShell
       plan={plan}
-      title="Company settings"
-      description="Optional business profile, logo, and notifications. Solo operators can skip company details."
+      title="Workspace settings"
+      description="Optional business profile, logo, and notifications. Add details when you're ready — solo operators can keep it simple."
     >
       <div className="settings-card form">
         <p>
@@ -189,7 +189,7 @@ export default function SettingsPage() {
           <label htmlFor="org-website">Website</label>
           <input id="org-website" className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
           <label htmlFor="org-address">Address</label>
-          <input id="org-address" className="input" placeholder="Company address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
+          <input id="org-address" className="input" placeholder="Business address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
           <label htmlFor="org-industry">Business type</label>
           <input id="org-industry" className="input" placeholder="e.g. Landscaping, HVAC" value={industry} onChange={(e) => setIndustry(e.target.value)} />
           <label htmlFor="org-team-size">Employee count</label>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
             Log out
           </button>
           <p style={{ marginTop: 16 }}>
-            <Link href="/onboarding">Complete optional company setup</Link>
+            <Link href="/onboarding">Continue getting started</Link>
           </p>
           <p style={{ marginTop: 16 }}>
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}

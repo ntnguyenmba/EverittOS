@@ -88,7 +88,7 @@ export default function ContractorPortalPage() {
     <main className="section">
       <div className="container">
         <h2>Contractor portal</h2>
-        <p className="muted">Assigned jobs, due dates, and field updates. Company-wide data is not shown.</p>
+        <p className="muted">Assigned jobs, due dates, and field updates. Organization-wide data is not shown.</p>
 
         {loading && <div className="card">Loading...</div>}
         {message && <div className="card">{message}</div>}

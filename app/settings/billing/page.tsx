@@ -207,7 +207,7 @@ function BillingSettingsContent() {
         ) : null}
         <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
 
-        {!canBilling ? <p className="muted">Contact your company owner to change billing.</p> : null}
+        {!canBilling ? <p className="muted">Contact your workspace owner to change billing.</p> : null}
 
         {canBilling ? (
           <div className="settings-actions">

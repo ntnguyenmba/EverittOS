@@ -1,7 +1,7 @@
 export const ONBOARDING_STEP_COUNT = 6;
 
 export const ONBOARDING_STEP_LABELS = [
-  'Add company details (optional)',
+  'Set up your workspace (optional)',
   'Add your first customer',
   'Create your first job',
   'Upload your first photo',
