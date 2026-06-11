@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BrandLogo } from '@/components/brand-logo';
 
 type AuthShellProps = {
   eyebrow: string;
@@ -41,20 +42,9 @@ const authBrandStyles = `
     margin-bottom: clamp(42px, 8vw, 104px);
   }
 
-  .auth-shell-header .logo {
-    color: #25272c;
-    font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
-    font-size: 30px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-  }
-
-  .auth-shell-header .logo-mark {
-    width: 38px;
-    height: 38px;
+  .auth-shell-header .brand-logo-image {
     border-radius: 12px;
-    background: #2d3748;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), 0 18px 42px rgba(45,55,72,.18);
+    box-shadow: 0 12px 28px rgba(45,55,72,.14);
   }
 
   .auth-ventures-link,
@@ -290,12 +280,9 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
       <main className="auth-shell">
         <div className="auth-shell-main">
           <header className="auth-shell-header">
-            <Link href="/" className="logo">
-              <span className="logo-mark" />
-              EverittOS
-            </Link>
+            <BrandLogo href="/" size={40} />
             <Link href="https://everittventures.com/tech" className="auth-ventures-link">
-              Everitt Ventures Tech
+              Everitt Ventures
             </Link>
           </header>
 

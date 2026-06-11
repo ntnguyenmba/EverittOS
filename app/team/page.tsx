@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canManageTeam, normalizeRole, type UserRole } from '@/lib/roles';
@@ -141,6 +143,7 @@ export default function TeamPage() {
   }
 
   async function removeMember(userId: string) {
+    if (!window.confirm('Remove this member from the organization? They will lose access immediately.')) return;
     setBusy(true);
     const res = await fetch(`/api/team/members?userId=${userId}`, { method: 'DELETE' });
     const json = await res.json();
@@ -155,11 +158,9 @@ export default function TeamPage() {
   const teamEnabled = hasTeamManagement(plan);
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} role={role} />
-      <main className="main">
-        <h2>Team</h2>
-        <p>Invite members, manage roles, and control access.</p>
+    <AppShell plan={plan} role={role}>
+        <h1>Team</h1>
+        <p className="muted">Invite members, manage roles, and control access.</p>
 
         {!teamEnabled && (
           <div className="card">
@@ -170,8 +171,10 @@ export default function TeamPage() {
         {teamEnabled && canManageTeam(role) && (
           <div className="card form" style={{ marginTop: 18 }}>
             <h3>Invite by email</h3>
-            <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <select className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+            <label htmlFor="invite-email">Email</label>
+            <input id="invite-email" className="input" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label htmlFor="invite-role">Role</label>
+            <select id="invite-role" className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
               <option value="admin">Admin</option>
               <option value="manager">Manager</option>
               <option value="employee">Employee</option>
@@ -179,11 +182,8 @@ export default function TeamPage() {
               <option value="viewer">Viewer</option>
               <option value="client">Client</option>
             </select>
-            <button type="button" className="btn btn-primary" disabled={busy} onClick={sendInvite}>
-              Send invitation
-            </button>
-            <button type="button" className="btn" disabled={busy || !email.trim()} onClick={sendInvite}>
-              Resend invite
+            <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={sendInvite}>
+              {busy ? 'Sending…' : 'Send invitation'}
             </button>
             {inviteUrl && (
               <p>
@@ -195,8 +195,10 @@ export default function TeamPage() {
 
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Member directory</h3>
-          {loading && <p>Loading team...</p>}
-          {!loading && members.length === 0 && <p>No members yet.</p>}
+          {loading ? <p className="loading-state" role="status">Loading team…</p> : null}
+          {!loading && members.length === 0 ? (
+            <EmptyState title="No members yet" description="Invite teammates to share access to jobs and customers." />
+          ) : null}
           {members.map((m) => (
             <div key={m.user_id} className="list-row">
               <div>
@@ -258,8 +260,11 @@ export default function TeamPage() {
           </div>
         )}
 
-        {message && <p className="card" style={{ marginTop: 12 }} role="alert">{message}</p>}
-      </main>
-    </div>
+        {message ? (
+          <p className="auth-message auth-message-error" style={{ marginTop: 12 }} role="alert">
+            {friendlyErrorMessage(message)}
+          </p>
+        ) : null}
+    </AppShell>
   );
 }

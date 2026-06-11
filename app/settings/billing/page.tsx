@@ -188,8 +188,14 @@ function BillingSettingsContent() {
         {canBilling ? (
           <div className="settings-actions">
             {stripeCustomerId ? (
-              <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-                {portalLoading ? 'Opening...' : 'Stripe customer portal'}
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={portalLoading}
+                onClick={openBillingPortal}
+                aria-label="Open Stripe customer portal in a new tab"
+              >
+                {portalLoading ? 'Opening…' : 'Manage billing in Stripe'}
               </button>
             ) : (
               <p className="muted">No Stripe customer on file yet. Choose a paid plan below to start checkout.</p>
@@ -223,7 +229,13 @@ function BillingSettingsContent() {
               <p>{tier.priceLabel}</p>
               <p className="muted">{tier.limits.join(' · ')}</p>
               {tier.stripeLink && canBilling ? (
-                <a className="btn btn-primary" href={tier.stripeLink} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btn-primary"
+                  href={tier.stripeLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${tier.buttonLabel} (opens Stripe in a new tab)`}
+                >
                   {tier.buttonLabel}
                 </a>
               ) : null}

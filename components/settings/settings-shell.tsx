@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
 const SETTINGS_LINKS = [
@@ -25,9 +25,7 @@ export function SettingsShell({ plan, title, description, children }: SettingsSh
   const pathname = usePathname();
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan}>
         <div className="page-head">
           <div>
             <h2>{title}</h2>
@@ -50,7 +48,6 @@ export function SettingsShell({ plan, title, description, children }: SettingsSh
         </nav>
 
         {children}
-      </main>
-    </div>
+    </AppShell>
   );
 }

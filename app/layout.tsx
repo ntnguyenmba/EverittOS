@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
-import { Nav } from '@/components/nav';
+import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -25,7 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
       <body>
         <SupabaseRuntimeConfig />
-        <Nav />
+        <SkipToMain />
+        <SiteChrome />
         {children}
       </body>
     </html>

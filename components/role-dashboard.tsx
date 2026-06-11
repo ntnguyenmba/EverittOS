@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { dashboardVariant, isClientRole, isContractorRole, type UserRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, type UserRole } from '@/lib/roles';
 
 type JobRow = {
   id: string;
@@ -30,7 +30,6 @@ export function RoleDashboard({
   customerCount = 0,
   teamCount = 0
 }: RoleDashboardProps) {
-  const variant = dashboardVariant(role);
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const completed = jobs.filter((j) => j.status === 'completed');
   const overdue = active.filter((j) => j.due_date && j.due_date < new Date().toISOString().slice(0, 10));
@@ -43,19 +42,9 @@ export function RoleDashboard({
   monthStart.setDate(1);
   const createdThisMonth = jobs.filter((j) => j.start_date && j.start_date >= monthStart.toISOString().slice(0, 10)).length;
 
-  const titles: Record<UserRole, string> = {
-    owner: 'Owner dashboard',
-    admin: 'Admin dashboard',
-    manager: 'Manager dashboard',
-    employee: 'Employee dashboard',
-    contractor: 'Contractor dashboard',
-    client: 'Client dashboard',
-    viewer: 'Viewer dashboard'
-  };
-
   return (
     <div className="role-dashboard">
-      <h3>{titles[variant]}</h3>
+      <h3>Your workspace</h3>
       <div className="stats-grid">
         <div className="stat-card">
           <span>Active jobs</span>

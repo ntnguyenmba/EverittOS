@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
@@ -97,20 +99,25 @@ export default function WorkersPage() {
   }, []);
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
-        <h2>Workers</h2>
-        <p>Crew members linked to your operation.</p>
+    <AppShell plan={plan}>
+        <h1>Workers</h1>
+        <p className="muted">Crew members linked to your operation.</p>
 
-        {message && <p>{message}</p>}
+        {message ? (
+          <p className="auth-message auth-message-error" role="alert">
+            {friendlyErrorMessage(message)}
+          </p>
+        ) : null}
 
         {canManage && limitsForPlan(plan).crewAssignment && (
           <div className="card form" style={{ marginTop: 20 }}>
             <h3>Add worker</h3>
-            <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-            <input className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
-            <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <label htmlFor="worker-name">Name</label>
+            <input id="worker-name" className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <label htmlFor="worker-role">Role</label>
+            <input id="worker-role" className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
+            <label htmlFor="worker-phone">Phone</label>
+            <input id="worker-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <button className="btn btn-primary" type="button" onClick={addWorker} disabled={saving}>
               {saving ? 'Saving...' : 'Save worker'}
             </button>
@@ -124,8 +131,13 @@ export default function WorkersPage() {
         )}
 
         <div className="grid-3" style={{ marginTop: 20 }}>
-          {loading && <p>Loading workers...</p>}
-          {!loading && workers.length === 0 && <p>No workers yet.</p>}
+          {loading ? <p className="loading-state" role="status">Loading workers…</p> : null}
+          {!loading && workers.length === 0 ? (
+            <EmptyState
+              title="No workers yet"
+              description="Add crew members so you can assign jobs and track field work."
+            />
+          ) : null}
           {!loading &&
             workers.map((worker) => (
               <div className="card" key={worker.id}>
@@ -135,7 +147,6 @@ export default function WorkersPage() {
               </div>
             ))}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

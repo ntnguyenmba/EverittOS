@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -58,9 +59,7 @@ function JobsList() {
   }, [router, customerFilter]);
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan}>
         <div className="page-head">
           <div>
             <h2>Jobs</h2>
@@ -72,8 +71,18 @@ function JobsList() {
         </div>
 
         <div className="card">
-          {loading && <p>Loading jobs...</p>}
-          {!loading && jobs.length === 0 && <p>No jobs found.</p>}
+          {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
+          {!loading && jobs.length === 0 ? (
+            <EmptyState
+              title="No jobs yet"
+              description="Create a job from the dashboard to start tracking work."
+              action={
+                <Link className="btn btn-primary" href="/dashboard">
+                  Go to dashboard
+                </Link>
+              }
+            />
+          ) : null}
           {!loading && jobs.length > 0 && (
             <table className="table">
               <thead>
@@ -105,8 +114,7 @@ function JobsList() {
             </table>
           )}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
 

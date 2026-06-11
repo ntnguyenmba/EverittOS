@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { mapAuthError } from '@/lib/auth-errors';
 import { supabase } from '@/lib/supabase';
@@ -104,7 +104,8 @@ function ResetPasswordForm() {
     <AuthShell
       eyebrow="New password"
       title="Choose a new password"
-      description="Enter and confirm a new password for your EverittOS account."
+      description="Enter and confirm a new password for your account."
+      aside={<AuthAsidePanel />}
     >
       {checkingSession ? <p className="muted">Verifying reset link...</p> : null}
 

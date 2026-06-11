@@ -7,6 +7,8 @@ import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl, safeNextPath } from '@/lib/app-url';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { mapAuthError } from '@/lib/auth-errors';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
 
 function signupRedirect(plan: EverittosPlan, next: string): string {
@@ -74,7 +76,8 @@ function SignupForm() {
 
     if (signUpError) {
       setLoading(false);
-      setError(signUpError.message);
+      const mapped = mapAuthError(signUpError.message);
+      setError(mapped.message || friendlyErrorMessage(signUpError.message));
       return;
     }
 
@@ -111,7 +114,7 @@ function SignupForm() {
   return (
     <AuthShell
       eyebrow="Create account"
-      title="Start with EverittOS"
+      title="Start your workspace"
       description="Set up your workspace for jobs, customers, crews, and reports."
       aside={<AuthAsidePanel />}
     >

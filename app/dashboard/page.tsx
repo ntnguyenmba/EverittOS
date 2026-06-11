@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
 import { RoleDashboard } from '@/components/role-dashboard';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
 import { mapAccessError } from '@/lib/auth-errors';
@@ -146,20 +148,51 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [jobs]);
 
-  return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} role={role} />
+  const openJobs = useMemo(
+    () => jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled').length,
+    [jobs]
+  );
 
-      <main className="main">
+  const dueSoon = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const weekAhead = new Date();
+    weekAhead.setDate(weekAhead.getDate() + 7);
+    const end = weekAhead.toISOString().slice(0, 10);
+    return jobs.filter(
+      (j) => j.due_date && j.due_date >= today && j.due_date <= end && j.status !== 'completed' && j.status !== 'cancelled'
+    ).length;
+  }, [jobs]);
+
+  return (
+    <AppShell plan={plan} role={role}>
         <Suspense>
           <DashboardAccessNotice />
         </Suspense>
         <div className="page-head">
           <div>
-            <h2>Dashboard</h2>
-            <p>Plan usage, upcoming work, and recent jobs.</p>
+            <h1>Dashboard</h1>
+            <p>What needs attention right now.</p>
           </div>
         </div>
+
+        <section className="dashboard-glance" aria-label="Operations summary">
+          <div className="dashboard-glance-card">
+            <span>Open jobs</span>
+            <strong>{loading ? '—' : openJobs}</strong>
+          </div>
+          <div className="dashboard-glance-card">
+            <span>Due in 7 days</span>
+            <strong>{loading ? '—' : dueSoon}</strong>
+          </div>
+          <div className="dashboard-glance-card">
+            <span>Reports on file</span>
+            <strong>{loading ? '—' : usage.reports}</strong>
+          </div>
+          <div className="dashboard-glance-card">
+            <span>Team members</span>
+            <strong>{loading ? '—' : usage.teamMembers}</strong>
+          </div>
+        </section>
 
         {!isPaidEverittosPlan(plan) && (
           <div className="card upgrade-banner">
@@ -222,8 +255,18 @@ export default function DashboardPage() {
           <div className="workflow">
             <div className="card">
               <h3>Upcoming jobs</h3>
-              {loading && <p>Loading...</p>}
-              {!loading && upcoming.length === 0 && <p>No upcoming due dates. Set due dates on job details.</p>}
+              {loading ? <p className="loading-state" role="status">Loading upcoming jobs…</p> : null}
+              {!loading && upcoming.length === 0 ? (
+                <EmptyState
+                  title="No upcoming due dates"
+                  description="Add due dates on job details to see scheduled work here."
+                  action={
+                    <Link className="btn" href="/schedule">
+                      Open schedule
+                    </Link>
+                  }
+                />
+              ) : null}
               {!loading &&
                 upcoming.map((job) => (
                   <div key={job.id} className="card" style={{ marginTop: 12 }}>
@@ -241,9 +284,18 @@ export default function DashboardPage() {
 
             <div className="card" style={{ marginTop: 18 }}>
               <h3>Recent jobs</h3>
-              {loading && <p>Loading jobs...</p>}
-              {errorMessage && <p>{errorMessage}</p>}
-              {!loading && !errorMessage && jobs.length === 0 && <p>No jobs yet. Create your first job.</p>}
+              {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
+              {errorMessage ? (
+                <p className="auth-message auth-message-error" role="alert">
+                  {friendlyErrorMessage(errorMessage)}
+                </p>
+              ) : null}
+              {!loading && !errorMessage && jobs.length === 0 ? (
+                <EmptyState
+                  title="No jobs yet"
+                  description="Create your first job to start tracking field work."
+                />
+              ) : null}
               {!loading &&
                 !errorMessage &&
                 jobs.slice(0, 5).map((job) => (
@@ -259,7 +311,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

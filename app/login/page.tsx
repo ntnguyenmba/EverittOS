@@ -104,7 +104,7 @@ function LoginForm() {
   return (
     <AuthShell
       eyebrow="Sign in"
-      title="Welcome back to EverittOS"
+      title="Welcome back"
       description="Sign in to manage jobs, crews, photos, and field reports."
       aside={<AuthAsidePanel />}
     >

@@ -75,11 +75,12 @@ export function buildLoginClientError(input: {
   title: string;
   message: string;
   debug: AuthRequestDebug;
+  includeEndpointSummary?: boolean;
 }): LoginClientError {
   const summary = endpointSummary(input.debug);
   return {
     title: input.title,
-    message: `${summary}\n\n${input.message}`,
+    message: input.includeEndpointSummary ? `${summary}\n\n${input.message}` : input.message,
     debug: input.debug,
     details: formatDebugBlock(input.debug)
   };
@@ -99,10 +100,10 @@ export function parseFetchFailure(
     raw.includes('Network request failed');
 
   return buildLoginClientError({
-    title: isNetworkFailure ? 'Sign-in request did not complete' : 'Sign-in request failed',
+    title: isNetworkFailure ? 'Connection problem' : 'Sign-in request failed',
     message: isNetworkFailure
-      ? `No HTTP response was received. The browser reported: "${raw}". This usually means the API route crashed, was blocked, or the URL is wrong for this deployment.`
-      : raw || 'An unexpected error occurred during sign-in.',
+      ? 'Unable to connect to the server. Check your connection and try again.'
+      : raw || 'Sign-in could not be completed. Try again.',
     debug: {
       endpoint: path,
       requestedUrl,

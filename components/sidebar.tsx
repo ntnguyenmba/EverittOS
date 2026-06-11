@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
@@ -36,6 +36,7 @@ type SidebarProps = {
 
 export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const normalized = normalizePlan(plan);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
@@ -66,18 +67,26 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
     router.refresh();
   }
 
+  function linkClass(href: string) {
+    return pathname === href || pathname.startsWith(`${href}/`) ? 'active' : undefined;
+  }
+
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" aria-label="App navigation">
       <div className="sidebar-plan">
         <span className="sidebar-plan-label">Plan</span>
         <span className="plan-badge">{planDisplayName(normalized)}</span>
       </div>
 
       {isClientRole(role) && limitsForPlan(normalized).clientPortal && (
-        <Link href="/portal/client">Client portal</Link>
+        <Link href="/portal/client" aria-current={linkClass('/portal/client') ? 'page' : undefined}>
+          Client portal
+        </Link>
       )}
       {isContractorRole(role) && limitsForPlan(normalized).contractorPortal && (
-        <Link href="/portal/contractor">Contractor portal</Link>
+        <Link href="/portal/contractor" aria-current={linkClass('/portal/contractor') ? 'page' : undefined}>
+          Contractor portal
+        </Link>
       )}
 
       {!isClientRole(role) &&
@@ -86,7 +95,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
           if (href === '/activity' && !limitsForPlan(normalized).activityLog) return null;
           if (href === '/workflows' && !limitsForPlan(normalized).workflowCustomization) return null;
           return (
-            <Link key={href} href={href}>
+            <Link key={href} href={href} aria-current={linkClass(href) ? 'page' : undefined}>
               {label}
               {href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
             </Link>

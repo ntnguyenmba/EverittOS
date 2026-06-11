@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/empty-state';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
 
 type PhotoRow = {
@@ -56,9 +58,22 @@ export function PhotoGallery({ jobId, refreshKey = 0 }: PhotoGalleryProps) {
     load();
   }, [jobId, refreshKey]);
 
-  if (loading) return <p>Loading photos...</p>;
-  if (error) return <p>{error}</p>;
-  if (photos.length === 0) return <p>No photos yet. Upload before and after proof below.</p>;
+  if (loading) return <p className="loading-state" role="status">Loading photos…</p>;
+  if (error) {
+    return (
+      <p className="auth-message auth-message-error" role="alert">
+        {friendlyErrorMessage(error)}
+      </p>
+    );
+  }
+  if (photos.length === 0) {
+    return (
+      <EmptyState
+        title="No photos yet"
+        description="Upload before and after photos below to document completed work."
+      />
+    );
+  }
 
   return (
     <div className="photo-grid">

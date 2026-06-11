@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { BrandLogo } from '@/components/brand-logo';
 import { supabase } from '@/lib/supabase';
 
 export function Nav() {
@@ -36,12 +37,9 @@ export function Nav() {
   return (
     <header className="nav">
       <div className="container nav-inner">
-        <Link href="/" className="logo">
-          <span className="logo-mark" />
-          EverittOS
-        </Link>
+        <BrandLogo href="/" showName />
 
-        <nav className="nav-links">
+        <nav className="nav-links" aria-label="Marketing">
           <Link href="/product">Product</Link>
           <Link href="/industries">Industries</Link>
           <Link href="/pricing">Pricing</Link>
@@ -54,22 +52,17 @@ export function Nav() {
               <Link className="btn btn-primary" href="/dashboard">
                 Dashboard
               </Link>
-
-              <button className="btn" onClick={logout}>
-                Logout
+              <button className="btn" type="button" onClick={logout}>
+                Log out
               </button>
             </>
           ) : (
             <>
-              <Link className="btn" href="https://everittventures.com/tech">
-            Everitt Ventures
-          </Link>
-          <Link className="btn" href="/login">
-                Login
+              <Link className="btn" href="/login">
+                Sign in
               </Link>
-
               <Link className="btn btn-primary" href="/signup">
-                Create account
+                Start free
               </Link>
             </>
           )}
