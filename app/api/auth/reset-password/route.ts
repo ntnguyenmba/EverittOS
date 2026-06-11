@@ -12,6 +12,10 @@ export const runtime = 'nodejs';
 
 const ROUTE = 'reset_password';
 
+function secureResetPayload(body: Record<string, unknown>): Record<string, unknown> {
+  return sanitizeErrorPayload(body);
+}
+
 export async function POST(request: Request) {
   const diagnostics = supabaseConfigDiagnostics();
 
@@ -23,12 +27,12 @@ export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
     const { json } = await createRouteHandlerSupabase();
     return json(
-      {
+      secureResetPayload({
         error: 'Authentication is not configured on the server.',
         title: 'Configuration required',
         code: 'config_error',
         diagnostics
-      },
+      }),
       { status: 503 }
     );
   }
@@ -38,14 +42,14 @@ export async function POST(request: Request) {
   if (!connectivity.ok) {
     const { json } = await createRouteHandlerSupabase();
     return json(
-      {
+      secureResetPayload({
         error: 'Cannot reach Supabase from this deployment. Check NEXT_PUBLIC_SUPABASE_URL and redeploy.',
         title: 'Supabase unreachable',
         code: 'supabase_unreachable',
         supabaseMessage: connectivity.error,
         diagnostics,
         connectivity
-      },
+      }),
       { status: 503 }
     );
   }
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
     logAuthEvent('reset_password_failed', { reason: error.message, host: diagnostics.urlHost || 'unknown' });
     const mapped = mapAuthError(error.message);
     return json(
-      {
+      secureResetPayload({
         error: isFetchFailure
           ? 'Supabase password reset request failed from the server. Verify Supabase URL/key in Vercel.'
           : mapped.message,
@@ -89,17 +93,19 @@ export async function POST(request: Request) {
         supabaseMessage: error.message,
         diagnostics,
         connectivity
-      },
+      }),
       { status: isFetchFailure ? 503 : 400 }
     );
   }
 
   logAuthEvent('reset_password_sent', { host: diagnostics.urlHost || 'unknown' });
 
-  return json({
-    ok: true,
-    message: 'If an account exists for that email, a reset link is on its way.',
-    diagnostics,
-    connectivity
-  });
+  return json(
+    secureResetPayload({
+      ok: true,
+      message: 'If an account exists for that email, a reset link is on its way.',
+      diagnostics,
+      connectivity
+    })
+  );
 }

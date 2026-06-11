@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { mapAuthError } from '@/lib/auth-errors';
+import { defaultPathForRole } from '@/lib/role-routes';
 import { supabase } from '@/lib/supabase';
 
 function ResetPasswordForm() {
@@ -94,9 +95,19 @@ function ResetPasswordForm() {
       return;
     }
 
-    setSuccess('Password updated. Redirecting to your dashboard...');
+    setSuccess('Password updated. Redirecting...');
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    let destination = '/dashboard';
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      destination = defaultPathForRole(profile?.role);
+    }
+
     setTimeout(() => {
-      window.location.href = '/dashboard';
+      window.location.href = destination;
     }, 900);
   }
 

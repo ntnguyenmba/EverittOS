@@ -14,6 +14,10 @@ export const runtime = 'nodejs';
 
 const ROUTE = 'login';
 
+function secureLoginPayload(body: Record<string, unknown>): Record<string, unknown> {
+  return sanitizeErrorPayload(body);
+}
+
 export async function POST(request: Request) {
   const configDiagnostics = supabaseConfigDiagnostics();
 
@@ -29,14 +33,14 @@ export async function POST(request: Request) {
       const mapped = mapAuthError('config_error', 'config_error');
       const { json } = await createRouteHandlerSupabase();
       return json(
-        {
+        secureLoginPayload({
           error: mapped.message,
           title: mapped.title,
           details: mapped.details,
           code: 'config_error',
           diagnostics: workspaceDiagnostics({ authStep: 'config_check', sessionVerified: false }),
           config: configDiagnostics
-        },
+        }),
         { status: 503 }
       );
     }
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
     if (!connectivity.ok) {
       const { json } = await createRouteHandlerSupabase();
       return json(
-        {
+        secureLoginPayload({
           error: 'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, then redeploy.',
           title: 'Supabase unreachable',
           details: connectivity.error,
@@ -55,7 +59,7 @@ export async function POST(request: Request) {
           diagnostics: workspaceDiagnostics({ authStep: 'connectivity', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         { status: 503 }
       );
     }
@@ -103,7 +107,7 @@ export async function POST(request: Request) {
 
       const mapped = mapAuthError(error.message);
       return json(
-        {
+        secureLoginPayload({
           error: isFetchFailure
             ? 'Supabase auth request failed from the server. Verify Supabase URL/key in Vercel and that the project is active.'
             : mapped.message,
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         { status: isFetchFailure ? 503 : 401 }
       );
     }
@@ -124,14 +128,14 @@ export async function POST(request: Request) {
     const user = data.user;
     if (!user) {
       return json(
-        {
+        secureLoginPayload({
           error: 'Sign in did not return a user session.',
           title: 'Session missing',
           code: 'no_user',
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         { status: 500 }
       );
     }
@@ -145,7 +149,7 @@ export async function POST(request: Request) {
     if (verifyError || !verifiedUser) {
       logAuthEvent('session_verify_failed', { userId: user.id, reason: verifyError?.message || 'no user' });
       return json(
-        {
+        secureLoginPayload({
           error: 'Supabase accepted your credentials but the session cookie was not saved. Try again or contact support.',
           title: 'Session not persisted',
           details: verifyError?.message || 'getUser() returned no session after signInWithPassword.',
@@ -158,7 +162,7 @@ export async function POST(request: Request) {
           }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         { status: 500 }
       );
     }
@@ -176,7 +180,7 @@ export async function POST(request: Request) {
             : 'Workspace setup required';
 
       return json(
-        {
+        secureLoginPayload({
           error: bootstrap.message,
           title: bootstrapTitle,
           details: bootstrap.details,
@@ -193,7 +197,7 @@ export async function POST(request: Request) {
           }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         {
           status:
             bootstrap.code === 'bootstrap_unavailable' || bootstrap.code === 'schema_mismatch' ? 503 : 409
@@ -208,7 +212,7 @@ export async function POST(request: Request) {
       logAuthEvent('login_blocked_disabled', { userId: user.id });
       const mapped = mapAuthError('account_disabled', 'account_disabled');
       return json(
-        {
+        secureLoginPayload({
           error: mapped.message,
           title: mapped.title,
           details: mapped.details,
@@ -224,7 +228,7 @@ export async function POST(request: Request) {
           }),
           config: configDiagnostics,
           connectivity
-        },
+        }),
         { status: 403 }
       );
     }
@@ -238,25 +242,27 @@ export async function POST(request: Request) {
       host: configDiagnostics.urlHost || 'unknown'
     });
 
-    return jsonWithAuthSession({
-      ok: true,
-      redirectTo,
-      role: profile.role,
-      plan: profile.plan,
-      subscriptionStatus: profile.subscription_status,
-      workspaceCreated: bootstrap.created,
-      diagnostics: workspaceDiagnostics({
-        authStep: 'complete',
-        userId: verifiedUser.id,
-        sessionVerified: true,
-        profile,
-        hasMembership: Boolean(profile.organization_id),
-        profileLookupRan: true,
-        membershipLookupRan: true
-      }),
-      config: configDiagnostics,
-      connectivity
-    });
+    return jsonWithAuthSession(
+      secureLoginPayload({
+        ok: true,
+        redirectTo,
+        role: profile.role,
+        plan: profile.plan,
+        subscriptionStatus: profile.subscription_status,
+        workspaceCreated: bootstrap.created,
+        diagnostics: workspaceDiagnostics({
+          authStep: 'complete',
+          userId: verifiedUser.id,
+          sessionVerified: true,
+          profile,
+          hasMembership: Boolean(profile.organization_id),
+          profileLookupRan: true,
+          membershipLookupRan: true
+        }),
+        config: configDiagnostics,
+        connectivity
+      })
+    );
   } catch (err) {
     logAuthEvent('login_route_exception', { reason: err instanceof Error ? err.message : String(err) });
     const { json } = await createRouteHandlerSupabase();

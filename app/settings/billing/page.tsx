@@ -17,11 +17,7 @@ import {
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import {
-  canCancelSubscription,
-  canResumeSubscription,
-  subscriptionStatusMessage
-} from '@/lib/stripe-subscription';
+import { canCancelSubscription, canResumeSubscription } from '@/lib/stripe-subscription';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { supabase } from '@/lib/supabase';
 
@@ -172,6 +168,7 @@ function BillingSettingsContent() {
   }
 
   const canBilling = canManageBilling(role);
+  const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus);
 
   return (
     <SettingsShell plan={plan} role={role} title="Billing" description="Subscription status, usage, and plan changes.">
@@ -205,7 +202,10 @@ function BillingSettingsContent() {
             </span>
           </div>
         ) : null}
-        <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
+        <p className="muted">{subscriptionInfo.message}</p>
+        {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
+          <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
+        ) : null}
 
         {!canBilling ? <p className="muted">Contact your workspace owner to change billing.</p> : null}
 

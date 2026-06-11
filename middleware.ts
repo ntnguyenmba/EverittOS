@@ -18,6 +18,7 @@ import {
 } from '@/lib/profile-query';
 import { enforceIdleSession } from '@/lib/session-server';
 import { enforceRateLimit } from '@/lib/rate-limit-middleware';
+import { defaultPathForRole } from '@/lib/role-routes';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 const AUTH_PREFIXES = [
@@ -114,7 +115,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return redirectWithCookies(new URL('/dashboard', request.url), supabaseResponse);
+    const profileRead = await fetchProfileByUserId(supabase, user.id);
+    const destination = defaultPathForRole(profileRead.profile?.role);
+    return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
   }
 
   if (isSessionApiPath(pathname)) {
