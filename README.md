@@ -35,6 +35,8 @@ Optional:
 
 See **docs/LAUNCH_AUTH_CHECKLIST.md** for Supabase Auth URLs, Stripe webhook setup, and step-by-step test procedures.
 
+To grant yourself owner/admin access in Supabase SQL Editor, run `supabase/grant_owner_access.sql` (replace the email placeholder first).
+
 ## Supabase
 
 Apply migrations in `supabase/migrations/` in filename order via Supabase SQL editor or CLI.

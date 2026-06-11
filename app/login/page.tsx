@@ -64,7 +64,7 @@ function LoginForm() {
       if (!res.ok) {
         logAuthEvent('login_client_failed', { status: res.status, code: json.code || 'unknown' });
         setError({
-          title: json.title || 'Sign in failed',
+          title: json.title || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
           message: json.error || 'Unable to sign in.',
           details: json.details || json.code
         });

@@ -104,8 +104,13 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
     },
     profile: {
       title: 'Profile setup required',
-      message: 'Your account profile is incomplete. Finish onboarding or contact support.',
-      details: 'No profiles row found for authenticated user.'
+      message: 'Your sign-in worked, but the workspace profile is incomplete. Sign in again to finish setup, or contact support.',
+      details: 'Missing profiles row or organization membership.'
+    },
+    profile_setup: {
+      title: 'Workspace setup required',
+      message: 'Your account exists in Supabase Auth but EverittOS could not finish workspace setup. Try signing in again or contact support.',
+      details: 'Profile or organization bootstrap failed on the server.'
     },
     session: {
       title: 'Sign in required',

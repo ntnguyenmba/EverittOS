@@ -1,10 +1,11 @@
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { isAccountActive } from '@/lib/account-status';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { mapAuthError } from '@/lib/auth-errors';
 import { defaultPathForRole } from '@/lib/role-routes';
+import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
 import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from '@/lib/supabase-config';
 
 export async function POST(request: Request) {
@@ -62,39 +63,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Sign in did not return a user session.', code: 'no_user' }, { status: 500 });
   }
 
-  let { data: profile } = await supabase
-    .from('profiles')
-    .select('role, plan, account_status, subscription_status')
-    .eq('id', user.id)
-    .maybeSingle();
+  const bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined);
 
-  if (!profile) {
-    const businessName = (user.user_metadata?.business_name as string | undefined) || email.split('@')[0] || 'Workspace';
-    const selectedPlan = (user.user_metadata?.selected_plan as string | undefined) || 'free';
-    const { data: created, error: createError } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: user.id,
-          email,
-          business_name: businessName,
-          role: 'owner',
-          plan: selectedPlan,
-          subscription_status: selectedPlan === 'free' ? 'free' : 'incomplete',
-          account_status: 'active'
-        },
-        { onConflict: 'id' }
-      )
-      .select('role, plan, account_status, subscription_status')
-      .maybeSingle();
-
-    if (createError) {
-      logAuthEvent('profile_bootstrap_failed', { userId: user.id, reason: createError.message });
-    }
-    profile = created || null;
+  if (!bootstrap.ok) {
+    await supabase.auth.signOut();
+    return NextResponse.json(
+      {
+        error: bootstrap.message,
+        title: 'Workspace setup required',
+        details: bootstrap.details,
+        code: bootstrap.code,
+        setupRequired: true
+      },
+      { status: 409 }
+    );
   }
 
-  if (!isAccountActive(profile?.account_status)) {
+  const profile = bootstrap.profile;
+
+  if (!isAccountActive(profile.account_status)) {
     await supabase.auth.signOut();
     logAuthEvent('login_blocked_disabled', { userId: user.id });
     const mapped = mapAuthError('account_disabled', 'account_disabled');
@@ -104,14 +91,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const redirectTo = defaultPathForRole(profile?.role, next);
-  logAuthEvent('login_success', { userId: user.id, role: profile?.role || 'owner' });
+  let redirectTo = defaultPathForRole(profile.role, next);
+  if (bootstrap.created && redirectTo === '/dashboard') {
+    redirectTo = '/onboarding?setup=1';
+  }
+
+  logAuthEvent('login_success', { userId: user.id, role: profile.role, bootstrapped: bootstrap.created ? 1 : 0 });
 
   return NextResponse.json({
     ok: true,
     redirectTo,
-    role: profile?.role || 'owner',
-    plan: profile?.plan || 'free',
-    subscriptionStatus: profile?.subscription_status || 'free'
+    role: profile.role,
+    plan: profile.plan,
+    subscriptionStatus: profile.subscription_status,
+    workspaceCreated: bootstrap.created
   });
 }
