@@ -8,6 +8,11 @@ import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
+import {
+  fetchProfileByUserId,
+  resolveProfilePlan,
+  resolveProfileSubscriptionStatus
+} from '@/lib/profile-query';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 const AUTH_PREFIXES = [
@@ -90,11 +95,18 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies(login, supabaseResponse);
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_status, plan, role, subscription_status, organization_id')
-    .eq('id', user.id)
-    .maybeSingle();
+  const profileRead = await fetchProfileByUserId(supabase, user.id);
+  const profile = profileRead.profile;
+
+  if (profileRead.error) {
+    const onboarding = new URL('/onboarding', request.url);
+    onboarding.searchParams.set(
+      'reason',
+      profileRead.error.toLowerCase().includes('does not exist') ? 'schema' : 'profile'
+    );
+    onboarding.searchParams.set('detail', profileRead.error);
+    return redirectWithCookies(onboarding, supabaseResponse);
+  }
 
   if (!profile) {
     if (pathname.startsWith('/onboarding')) {
@@ -138,12 +150,13 @@ export async function middleware(request: NextRequest) {
   }
 
   const role = normalizeRole(profile.role);
-  const userPlan = normalizePlan(profile.plan);
+  const userPlan = normalizePlan(await resolveProfilePlan(supabase, user.id, profile));
+  const subscriptionStatus = await resolveProfileSubscriptionStatus(supabase, user.id, profile);
 
-  if (subscriptionBlocksPaidAccess(userPlan, profile.subscription_status)) {
+  if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
     const billing = new URL('/settings/billing', request.url);
     billing.searchParams.set('reason', 'subscription');
-    billing.searchParams.set('status', profile.subscription_status || 'unknown');
+    billing.searchParams.set('status', subscriptionStatus || 'unknown');
     if (pathname !== '/settings/billing' && !pathname.startsWith('/settings/account')) {
       return redirectWithCookies(billing, supabaseResponse);
     }
@@ -180,7 +193,7 @@ export async function middleware(request: NextRequest) {
   const requiredPlan = minimumPlanForPath(pathname);
   if (requiredPlan) {
     const { plan } = await resolveOrganizationPlan(supabase, user.id);
-    const effectivePlan = normalizePlan(plan || profile.plan);
+    const effectivePlan = normalizePlan(plan || userPlan);
 
     if (!meetsMinimumPlan(effectivePlan, requiredPlan)) {
       const billing = new URL('/settings/billing', request.url);

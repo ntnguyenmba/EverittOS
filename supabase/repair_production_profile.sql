@@ -1,35 +1,47 @@
--- Grant owner (or admin) access for an existing Supabase Auth user.
+-- Repair production profile/workspace bootstrap for an existing auth user.
 -- Run in Supabase Dashboard → SQL Editor.
 --
--- Ensures billing columns exist on older production profiles tables.
-alter table public.profiles add column if not exists plan text default 'free';
-alter table public.profiles add column if not exists subscription_status text default 'free';
-alter table public.profiles add column if not exists account_status text not null default 'active';
+-- 1. Adds missing billing columns when an older profiles table is in production.
+-- 2. Creates or repairs profile, organization, and active organization membership.
 --
--- 1. Replace YOUR_EMAIL@DOMAIN.COM below with your sign-in email (lowercase recommended).
--- 2. Run the entire script once.
--- 3. Sign out of EverittOS and sign in again.
---
--- For admin instead of owner: change v_role to 'admin' (keeps org owner_user_id unchanged).
+-- Default user from production incident (change v_user_id if needed):
+-- 271db5bf-ac35-4478-b3f4-94f5740563c5
+
+alter table public.profiles
+  add column if not exists plan text default 'free';
+
+alter table public.profiles
+  add column if not exists subscription_status text default 'free';
+
+alter table public.profiles
+  add column if not exists account_status text not null default 'active';
+
+alter table public.profiles
+  add column if not exists organization_id uuid;
+
+alter table public.profiles
+  add column if not exists role text default 'owner';
+
+alter table public.profiles
+  add column if not exists business_name text;
+
+alter table public.profiles
+  add column if not exists email text;
 
 do $$
 declare
-  v_email text := lower(trim('YOUR_EMAIL@DOMAIN.COM')); -- <<< CHANGE THIS
-  v_role text := 'owner'; -- or 'admin'
-  v_user_id uuid;
+  v_user_id uuid := '271db5bf-ac35-4478-b3f4-94f5740563c5';
+  v_email text;
+  v_role text := 'owner';
   v_org_id uuid;
   v_business_name text;
 begin
-  if v_email = 'your_email@domain.com' then
-    raise exception 'Replace YOUR_EMAIL@DOMAIN.COM with your real sign-in email before running.';
-  end if;
-
-  select id into v_user_id
+  select lower(trim(email)) into v_email
   from auth.users
-  where lower(email) = v_email;
+  where id = v_user_id;
 
-  if v_user_id is null then
-    raise exception 'No auth.users row for %. Create the account in EverittOS signup or Supabase Auth first.', v_email;
+  if v_email is null then
+    raise exception 'No auth.users row for %', v_user_id;
   end if;
 
   v_business_name := coalesce(
@@ -51,14 +63,16 @@ begin
     v_user_id,
     v_email,
     v_role,
-    coalesce((select plan from public.profiles where id = v_user_id), 'free'),
-    coalesce((select subscription_status from public.profiles where id = v_user_id), 'free'),
+    'free',
+    'free',
     'active',
     v_business_name
   )
   on conflict (id) do update set
     email = excluded.email,
-    role = v_role,
+    role = coalesce(nullif(trim(public.profiles.role), ''), excluded.role),
+    plan = coalesce(public.profiles.plan, excluded.plan, 'free'),
+    subscription_status = coalesce(public.profiles.subscription_status, excluded.subscription_status, 'free'),
     account_status = 'active',
     business_name = coalesce(nullif(trim(public.profiles.business_name), ''), excluded.business_name);
 
@@ -78,7 +92,7 @@ begin
     insert into public.organizations (name, owner_user_id)
     values (v_business_name, v_user_id)
     returning id into v_org_id;
-  elsif v_role = 'owner' then
+  else
     update public.organizations
     set owner_user_id = v_user_id
     where id = v_org_id;
@@ -105,11 +119,21 @@ begin
     business_name = excluded.business_name,
     email = excluded.email;
 
-  raise notice 'Done. User % (id %) is % of organization %', v_email, v_user_id, v_role, v_org_id;
+  raise notice 'Repaired user %, organization %', v_user_id, v_org_id;
 end $$;
 
--- Verify (optional):
--- select p.id, p.email, p.role, p.organization_id, om.role as member_role, om.active
--- from public.profiles p
--- left join public.organization_members om on om.user_id = p.id and om.organization_id = p.organization_id
--- where lower(p.email) = lower('YOUR_EMAIL@DOMAIN.COM');
+-- Verify:
+select
+  p.id,
+  p.email,
+  p.role,
+  p.plan,
+  p.account_status,
+  p.organization_id,
+  om.role as member_role,
+  om.active as membership_active
+from public.profiles p
+left join public.organization_members om
+  on om.user_id = p.id
+ and om.organization_id = p.organization_id
+where p.id = '271db5bf-ac35-4478-b3f4-94f5740563c5';

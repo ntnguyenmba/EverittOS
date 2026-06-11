@@ -40,6 +40,12 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
     message: 'Authentication is not configured for this environment. Contact your administrator.',
     details: 'Missing or placeholder Supabase environment variables.'
   },
+  schema_mismatch: {
+    title: 'Database schema out of date',
+    message:
+      'Sign-in succeeded but the production database is missing required profile columns. Run the latest Supabase migration, then sign in again.',
+    details: 'A profiles column referenced by the app does not exist in Supabase.'
+  },
   supabase_unreachable: {
     title: 'Supabase connection failed',
     message: 'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, confirm the Supabase project is active, then redeploy.',
@@ -119,6 +125,16 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
       title: 'Workspace setup required',
       message: 'Your account exists in Supabase Auth but EverittOS could not finish workspace setup. Try signing in again or contact support.',
       details: 'Profile or organization bootstrap failed on the server.'
+    },
+    schema: {
+      title: 'Database schema out of date',
+      message: 'Your session is valid but the database schema is missing columns required by EverittOS. Run the latest Supabase migration.',
+      details: 'Profile query referenced a column that does not exist.'
+    },
+    organization: {
+      title: 'Organization access required',
+      message: 'Your profile exists but organization access is not active yet. Complete workspace setup to continue.',
+      details: 'Missing or inactive organization membership.'
     },
     session: {
       title: 'Sign in required',

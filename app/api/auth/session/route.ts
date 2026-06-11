@@ -1,4 +1,10 @@
 import { logAuthStep } from '@/lib/auth-diagnostics';
+import {
+  fetchProfileByUserId,
+  isMissingColumnError,
+  resolveProfilePlan,
+  resolveProfileSubscriptionStatus
+} from '@/lib/profile-query';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
@@ -67,29 +73,33 @@ export async function GET() {
   }
 
   logAuthStep(ROUTE, 'profile_lookup', { userId: user.id });
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role, plan, account_status, subscription_status, organization_id')
-    .eq('id', user.id)
-    .maybeSingle();
+  const profileRead = await fetchProfileByUserId(supabase, user.id);
 
-  if (profileError) {
+  if (profileRead.error) {
+    const code = isMissingColumnError(profileRead.error) ? 'schema_mismatch' : 'profile_read_failed';
     return json(
       {
         authenticated: true,
         userId: user.id,
         email: user.email,
-        error: 'Profile lookup failed.',
-        code: 'profile_read_failed',
-        supabaseMessage: profileError.message,
+        error: code === 'schema_mismatch' ? 'Profile schema mismatch.' : 'Profile lookup failed.',
+        code,
+        supabaseMessage: profileRead.error,
         diagnostics,
         connectivity,
         session: { verified: true },
-        profile: { present: false, lookupRan: true, error: profileError.message }
+        profile: { present: false, lookupRan: true, error: profileRead.error },
+        organization: { lookupRan: false, skipped: true, reason: 'Profile lookup failed first.' }
       },
-      { status: 500 }
+      { status: code === 'schema_mismatch' ? 503 : 500 }
     );
   }
+
+  const profile = profileRead.profile;
+  const plan = profile ? await resolveProfilePlan(supabase, user.id, profile) : 'free';
+  const subscriptionStatus = profile
+    ? await resolveProfileSubscriptionStatus(supabase, user.id, profile)
+    : 'free';
 
   logAuthStep(ROUTE, 'membership_lookup', { userId: user.id });
   const { data: membership, error: membershipError } = await supabase
@@ -117,9 +127,9 @@ export async function GET() {
               present: true,
               lookupRan: true,
               role: profile.role,
-              plan: profile.plan,
+              plan,
               accountStatus: profile.account_status,
-              subscriptionStatus: profile.subscription_status,
+              subscriptionStatus,
               organizationId: profile.organization_id
             }
           : { present: false, lookupRan: true },
@@ -141,10 +151,11 @@ export async function GET() {
           present: true,
           lookupRan: true,
           role: profile.role,
-          plan: profile.plan,
+          plan,
           accountStatus: profile.account_status,
-          subscriptionStatus: profile.subscription_status,
-          organizationId: profile.organization_id
+          subscriptionStatus,
+          organizationId: profile.organization_id,
+          schemaFallback: profileRead.usedCoreSelect || undefined
         }
       : { present: false, lookupRan: true },
     organization: {

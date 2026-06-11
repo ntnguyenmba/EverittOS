@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchProfileByUserId, resolveProfilePlan } from '@/lib/profile-query';
 
 /** Billing limits follow the organization owner's subscription plan. */
 export async function resolveOrganizationPlan(
@@ -9,22 +10,18 @@ export async function resolveOrganizationPlan(
 ): Promise<{ plan: EverittosPlan; organizationId: string | null; ownerUserId: string | null }> {
   const org = await fetchOrganizationContextForUser(supabase, userId);
   if (!org) {
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', userId).maybeSingle();
+    const { profile } = await fetchProfileByUserId(supabase, userId);
     return {
-      plan: normalizePlan(profile?.plan),
+      plan: await resolveProfilePlan(supabase, userId, profile),
       organizationId: null,
       ownerUserId: userId
     };
   }
 
-  const { data: ownerProfile } = await supabase
-    .from('profiles')
-    .select('plan, subscription_status')
-    .eq('id', org.ownerUserId)
-    .maybeSingle();
+  const { profile: ownerProfile } = await fetchProfileByUserId(supabase, org.ownerUserId);
 
   return {
-    plan: normalizePlan(ownerProfile?.plan),
+    plan: await resolveProfilePlan(supabase, org.ownerUserId, ownerProfile),
     organizationId: org.organizationId,
     ownerUserId: org.ownerUserId
   };

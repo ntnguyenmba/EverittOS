@@ -156,13 +156,20 @@ export async function POST(request: Request) {
 
     if (!bootstrap.ok) {
       await supabase.auth.signOut();
+      const bootstrapTitle =
+        bootstrap.code === 'schema_mismatch'
+          ? 'Database schema out of date'
+          : bootstrap.code === 'bootstrap_unavailable'
+            ? 'Workspace setup unavailable'
+            : 'Workspace setup required';
+
       return json(
         {
           error: bootstrap.message,
-          title: 'Workspace setup required',
+          title: bootstrapTitle,
           details: bootstrap.details,
           code: bootstrap.code,
-          setupRequired: true,
+          setupRequired: bootstrap.code !== 'schema_mismatch',
           diagnostics: workspaceDiagnostics({
             authStep: 'workspace_bootstrap',
             userId: user.id,
@@ -170,12 +177,15 @@ export async function POST(request: Request) {
             profile: bootstrap.profileSnapshot ?? null,
             hasMembership: bootstrap.hasMembership,
             profileLookupRan: true,
-            membershipLookupRan: true
+            membershipLookupRan: bootstrap.code !== 'profile_read_failed'
           }),
           config: configDiagnostics,
           connectivity
         },
-        { status: bootstrap.code === 'bootstrap_unavailable' ? 503 : 409 }
+        {
+          status:
+            bootstrap.code === 'bootstrap_unavailable' || bootstrap.code === 'schema_mismatch' ? 503 : 409
+        }
       );
     }
 

@@ -2,6 +2,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isAccountActive } from '@/lib/account-status';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { normalizePlan } from '@/lib/everittos-plans';
+import {
+  fetchProfileByUserId,
+  isMissingColumnError,
+  resolveProfilePlan,
+  resolveProfileSubscriptionStatus,
+  type ProfileRow,
+  updateProfileLink,
+  upsertProfileRow
+} from '@/lib/profile-query';
 import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -11,15 +20,6 @@ export type WorkspaceProfile = {
   account_status: string;
   subscription_status: string;
   organization_id: string | null;
-};
-
-type ProfileRow = {
-  role?: string | null;
-  plan?: string | null;
-  account_status?: string | null;
-  subscription_status?: string | null;
-  organization_id?: string | null;
-  business_name?: string | null;
 };
 
 type MembershipRow = {
@@ -46,41 +46,39 @@ export type BootstrapResult =
 
 function profileNeedsSetup(profile: {
   role?: string | null;
-  plan?: string | null;
   account_status?: string | null;
 } | null): boolean {
   if (!profile) return true;
   if (!profile.role?.trim()) return true;
-  if (!profile.plan?.trim()) return true;
   if (!profile.account_status?.trim()) return true;
   return false;
 }
 
-function toWorkspaceProfile(profile: ProfileRow, orgId?: string | null): WorkspaceProfile {
+async function toWorkspaceProfile(
+  client: SupabaseClient,
+  userId: string,
+  profile: ProfileRow,
+  orgId?: string | null
+): Promise<WorkspaceProfile> {
+  const [plan, subscriptionStatus] = await Promise.all([
+    resolveProfilePlan(client, userId, profile),
+    resolveProfileSubscriptionStatus(client, userId, profile)
+  ]);
+
   return {
     role: profile.role || 'owner',
-    plan: profile.plan || 'free',
+    plan,
     account_status: profile.account_status || 'active',
-    subscription_status: profile.subscription_status || 'free',
+    subscription_status: subscriptionStatus,
     organization_id: profile.organization_id || orgId || null
   };
 }
 
-async function readWorkspace(
+async function readMembership(
   client: SupabaseClient,
   userId: string
-): Promise<{ profile: ProfileRow | null; membership: MembershipRow | null; readError?: string }> {
-  const { data: profile, error: readError } = await client
-    .from('profiles')
-    .select('role, plan, account_status, subscription_status, organization_id, business_name')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (readError) {
-    return { profile: null, membership: null, readError: readError.message };
-  }
-
-  const { data: membership } = await client
+): Promise<{ membership: MembershipRow | null; error?: string }> {
+  const { data: membership, error } = await client
     .from('organization_members')
     .select('organization_id, role, active')
     .eq('user_id', userId)
@@ -88,7 +86,46 @@ async function readWorkspace(
     .limit(1)
     .maybeSingle();
 
-  return { profile: profile ?? null, membership: membership ?? null };
+  if (error) {
+    return { membership: null, error: error.message };
+  }
+
+  return { membership: membership ?? null };
+}
+
+async function readWorkspace(
+  client: SupabaseClient,
+  userId: string
+): Promise<{
+  profile: ProfileRow | null;
+  membership: MembershipRow | null;
+  readError?: string;
+  schemaMismatch?: { column: string; message: string };
+}> {
+  const profileRead = await fetchProfileByUserId(client, userId);
+  if (profileRead.error) {
+    return {
+      profile: null,
+      membership: null,
+      readError: profileRead.error,
+      schemaMismatch: profileRead.schemaMismatch
+    };
+  }
+
+  const membershipRead = await readMembership(client, userId);
+  if (membershipRead.error) {
+    return {
+      profile: profileRead.profile,
+      membership: null,
+      readError: membershipRead.error
+    };
+  }
+
+  return {
+    profile: profileRead.profile,
+    membership: membershipRead.membership,
+    schemaMismatch: profileRead.schemaMismatch
+  };
 }
 
 export function isWorkspaceComplete(profile: WorkspaceProfile | null, hasMembership: boolean): boolean {
@@ -104,6 +141,41 @@ function workspaceIsReady(profile: ProfileRow | null, membership: MembershipRow 
   if (!orgId) return false;
   if (!membership?.active && !profile.organization_id) return false;
   return true;
+}
+
+function schemaMismatchFailure(
+  message: string,
+  profileSnapshot?: ProfileRow | null,
+  hasMembership?: boolean
+): BootstrapResult {
+  return {
+    ok: false,
+    code: 'schema_mismatch',
+    message:
+      'Your account signed in, but the database schema is missing required profile columns. Run the latest Supabase migration, then sign in again.',
+    details: message,
+    profileSnapshot,
+    hasMembership
+  };
+}
+
+function profileReadFailure(
+  message: string,
+  profileSnapshot?: ProfileRow | null,
+  hasMembership?: boolean
+): BootstrapResult {
+  if (isMissingColumnError(message)) {
+    return schemaMismatchFailure(message, profileSnapshot, hasMembership);
+  }
+
+  return {
+    ok: false,
+    code: 'profile_read_failed',
+    message: 'We could not load your account profile. Try again or contact support.',
+    details: message,
+    profileSnapshot,
+    hasMembership
+  };
 }
 
 /**
@@ -126,8 +198,17 @@ export async function ensureUserWorkspace(
 
     if (sessionRead.readError) {
       logAuthEvent('profile_read_session_failed', { userId, reason: sessionRead.readError });
-    } else if (workspaceIsReady(existing, membership)) {
-      const profile = toWorkspaceProfile(existing!, existing!.organization_id || membership?.organization_id);
+      return profileReadFailure(sessionRead.readError, existing, Boolean(membership?.active));
+    }
+
+    if (workspaceIsReady(existing, membership)) {
+      const profile = await toWorkspaceProfile(
+        sessionClient,
+        userId,
+        existing!,
+        existing!.organization_id || membership?.organization_id
+      );
+
       if (!isAccountActive(profile.account_status)) {
         return {
           ok: false,
@@ -163,14 +244,7 @@ export async function ensureUserWorkspace(
     const adminRead = await readWorkspace(admin, userId);
     if (adminRead.readError) {
       logAuthEvent('profile_read_failed', { userId, reason: adminRead.readError });
-      return {
-        ok: false,
-        code: 'profile_read_failed',
-        message: 'We could not load your account profile. Try again or contact support.',
-        details: adminRead.readError,
-        profileSnapshot: null,
-        hasMembership: false
-      };
+      return profileReadFailure(adminRead.readError, adminRead.profile, Boolean(adminRead.membership?.active));
     }
     existing = adminRead.profile;
     membership = adminRead.membership;
@@ -183,33 +257,36 @@ export async function ensureUserWorkspace(
     'My Business';
 
   const selectedPlan = normalizePlan(
-    (typeof metadata?.selected_plan === 'string' ? metadata.selected_plan : null) || existing?.plan || 'free'
+    (typeof metadata?.selected_plan === 'string' ? metadata.selected_plan : null) ||
+      existing?.plan ||
+      (await resolveProfilePlan(admin, userId, existing))
   );
 
   const role = normalizeRole(existing?.role || membership?.role || 'owner');
   let orgId = existing?.organization_id || membership?.organization_id || null;
   let created = profileNeedsSetup(existing) || !orgId || !membership;
 
-  const { error: profileUpsertError } = await admin.from('profiles').upsert(
-    {
-      id: userId,
-      email: normalizedEmail,
-      business_name: businessName,
-      role: roleToDb(role),
-      plan: selectedPlan,
-      subscription_status: existing?.subscription_status || (selectedPlan === 'free' ? 'free' : 'incomplete'),
-      account_status: existing?.account_status || 'active'
-    },
-    { onConflict: 'id' }
-  );
+  const upsertResult = await upsertProfileRow(admin, {
+    id: userId,
+    email: normalizedEmail,
+    business_name: businessName,
+    role: roleToDb(role),
+    account_status: existing?.account_status || 'active',
+    plan: selectedPlan,
+    subscription_status:
+      existing?.subscription_status || (selectedPlan === 'free' ? 'free' : 'incomplete')
+  });
 
-  if (profileUpsertError) {
-    logAuthEvent('profile_bootstrap_failed', { userId, reason: profileUpsertError.message });
+  if (upsertResult.error) {
+    logAuthEvent('profile_bootstrap_failed', { userId, reason: upsertResult.error });
+    if (upsertResult.schemaMismatch) {
+      return schemaMismatchFailure(upsertResult.schemaMismatch.message, existing, Boolean(membership));
+    }
     return {
       ok: false,
       code: 'profile_upsert_failed',
       message: 'We could not create your account profile. Contact support with your sign-in email.',
-      details: profileUpsertError.message,
+      details: upsertResult.error,
       profileSnapshot: existing ?? null,
       hasMembership: Boolean(membership)
     };
@@ -272,23 +349,32 @@ export async function ensureUserWorkspace(
     { onConflict: 'user_id' }
   );
 
-  const { data: finalProfile, error: linkError } = await admin
-    .from('profiles')
-    .update({ organization_id: orgId, role: memberRole })
-    .eq('id', userId)
-    .select('role, plan, account_status, subscription_status, organization_id')
-    .single();
-
-  if (linkError || !finalProfile) {
+  if (!orgId) {
     return {
       ok: false,
-      code: 'profile_link_failed',
-      message: 'Workspace setup did not finish linking your organization. Try signing in again.',
-      details: linkError?.message || 'Profile update returned no row.',
+      code: 'org_create_failed',
+      message: 'Workspace organization was not created. Try signing in again.',
+      details: 'Organization id missing after bootstrap.',
       profileSnapshot: existing ?? null,
       hasMembership: Boolean(membership)
     };
   }
+
+  const linkResult = await updateProfileLink(admin, userId, orgId, memberRole);
+  if (linkResult.error || !linkResult.profile) {
+    return {
+      ok: false,
+      code: linkResult.schemaMismatch ? 'schema_mismatch' : 'profile_link_failed',
+      message: linkResult.schemaMismatch
+        ? 'Workspace setup finished but billing profile columns are missing in Supabase. Run the latest migration, then sign in again.'
+        : 'Workspace setup did not finish linking your organization. Try signing in again.',
+      details: linkResult.error || linkResult.schemaMismatch?.message || 'Profile update returned no row.',
+      profileSnapshot: existing ?? null,
+      hasMembership: Boolean(membership)
+    };
+  }
+
+  const finalProfile = await toWorkspaceProfile(admin, userId, linkResult.profile, orgId);
 
   if (!isAccountActive(finalProfile.account_status)) {
     return {
@@ -296,7 +382,7 @@ export async function ensureUserWorkspace(
       code: 'account_disabled',
       message: 'This account is deactivated. Contact support to restore access.',
       details: `account_status=${finalProfile.account_status}`,
-      profileSnapshot: finalProfile,
+      profileSnapshot: linkResult.profile,
       hasMembership: true
     };
   }
@@ -306,13 +392,7 @@ export async function ensureUserWorkspace(
   return {
     ok: true,
     created,
-    profile: {
-      role: finalProfile.role || memberRole,
-      plan: finalProfile.plan || selectedPlan,
-      account_status: finalProfile.account_status || 'active',
-      subscription_status: finalProfile.subscription_status || 'free',
-      organization_id: finalProfile.organization_id || orgId
-    }
+    profile: finalProfile
   };
 }
 
