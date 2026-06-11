@@ -9,7 +9,7 @@ Set in **Project Settings → Environment Variables** for Production (and Previe
 | Variable | Required | Notes |
 |----------|----------|--------|
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://everitt-os.vercel.app` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Must be `https://<project-ref>.supabase.co` (not `.supabase.com`) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only; never expose to browser |
 | `STRIPE_SECRET_KEY` | Yes | For billing portal, cancel/resume |
@@ -106,7 +106,7 @@ Email templates use the redirect URL from the app (`/auth/callback?next=/reset-p
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| `Supabase: fetch failed` on login | Wrong/missing URL or key, paused project, or placeholder config | Check `/api/auth/config`, fix Vercel env, redeploy |
+| `Supabase: fetch failed` on login | Wrong URL (often `.supabase.com` instead of `.supabase.co`), missing service role key, or paused project | Check `/api/auth/config` (`urlCorrected: true` means URL was auto-fixed); set `SUPABASE_SERVICE_ROLE_KEY`; redeploy |
 | Instant “configuration” error | Missing `NEXT_PUBLIC_SUPABASE_*` at runtime | Set env vars, redeploy |
 | Invalid credentials for valid user | Wrong password or unverified email | Reset password / verify email |
 | Login succeeds then kicks out | `account_status = disabled` | Restore account in Supabase |

@@ -9,6 +9,8 @@ export type SupabasePublicConfig = {
 export type SupabaseConfigDiagnostics = {
   configured: boolean;
   urlHost: string | null;
+  rawUrlHost: string | null;
+  urlCorrected: boolean;
   anonKeyPresent: boolean;
   serviceRolePresent: boolean;
   usingPlaceholder: boolean;
@@ -22,7 +24,12 @@ function trim(value: string | undefined | null): string {
 export function normalizeSupabaseUrl(raw: string | undefined | null): string {
   const value = trim(raw);
   if (!value) return '';
-  return value.replace(/\/+$/, '');
+  let normalized = value.replace(/\/+$/, '');
+  // Common Vercel misconfiguration: *.supabase.com does not resolve; projects use *.supabase.co
+  if (/\.supabase\.com$/i.test(normalized)) {
+    normalized = normalized.replace(/\.supabase\.com$/i, '.supabase.co');
+  }
+  return normalized;
 }
 
 export function getSupabaseUrl(): string {
@@ -54,7 +61,7 @@ export function isSupabaseConfigured(): boolean {
   if (isPlaceholderConfig(url, anonKey)) return false;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && parsed.hostname.includes('supabase');
+    return parsed.protocol === 'https:' && /\.supabase\.co$/i.test(parsed.hostname);
   } catch {
     return false;
   }
@@ -91,17 +98,25 @@ export function readRuntimeConfigFromDom(): { url: string; anonKey: string; conf
 }
 
 export function supabaseConfigDiagnostics(): SupabaseConfigDiagnostics {
+  const rawUrl = trim(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const { url, anonKey } = getPublicSupabaseConfig();
   let urlHost: string | null = null;
+  let rawUrlHost: string | null = null;
   try {
     urlHost = url ? new URL(url).host : null;
+    rawUrlHost = rawUrl ? new URL(rawUrl).host : null;
   } catch {
     urlHost = null;
+    rawUrlHost = null;
   }
+
+  const urlCorrected = Boolean(rawUrl && url && rawUrl !== url);
 
   return {
     configured: isSupabaseConfigured(),
     urlHost,
+    rawUrlHost,
+    urlCorrected,
     anonKeyPresent: Boolean(anonKey),
     serviceRolePresent: Boolean(getServiceRoleKey()),
     usingPlaceholder: isPlaceholderConfig(url, anonKey),
