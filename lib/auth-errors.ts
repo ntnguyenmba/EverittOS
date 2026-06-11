@@ -40,6 +40,11 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
     message: 'Authentication is not configured for this environment. Contact your administrator.',
     details: 'Missing or placeholder Supabase environment variables.'
   },
+  supabase_unreachable: {
+    title: 'Supabase connection failed',
+    message: 'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, confirm the Supabase project is active, then redeploy.',
+    details: 'Supabase auth client returned fetch failed.'
+  },
   session_missing: {
     title: 'Session expired',
     message: 'Your session expired. Sign in again to continue.',
@@ -56,6 +61,9 @@ function normalizeKey(raw: string): string {
   const lower = raw.toLowerCase();
   if (lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
     return 'invalid_credentials';
+  }
+  if (lower.includes('fetch failed') || lower.includes('failed to fetch') || lower.includes('networkerror')) {
+    return 'supabase_unreachable';
   }
   if (lower.includes('email not confirmed')) return 'email_not_confirmed';
   if (lower.includes('user banned')) return 'user_banned';

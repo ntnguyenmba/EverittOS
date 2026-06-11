@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
+import { authApiFetch } from '@/lib/auth-fetch';
 import { mapAuthError } from '@/lib/auth-errors';
-import { appUrl } from '@/lib/app-url';
+import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
+import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
-import { supabase } from '@/lib/supabase';
+
+const RESET_API_PATH = '/api/auth/reset-password';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -15,6 +18,7 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const configError = isBrowserSupabaseMisconfigured();
+  const resetUrl = resolveClientApiUrl(RESET_API_PATH);
 
   async function resetPassword(event: React.FormEvent) {
     event.preventDefault();
@@ -24,26 +28,48 @@ export default function ForgotPasswordPage() {
 
     if (configError) {
       const mapped = mapAuthError('config_error', 'config_error');
-      setError({ title: mapped.title, message: mapped.message, details: mapped.details });
+      setError({
+        title: mapped.title,
+        message: mapped.message,
+        details: `Requested URL: ${resetUrl}\n${mapped.details || ''}`
+      });
       setLoading(false);
       return;
     }
 
-    const redirectTo = appUrl('/auth/callback?next=/reset-password&type=recovery');
+    try {
+      const { response, url, method } = await authApiFetch(RESET_API_PATH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() })
+      });
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo
-    });
+      const parsed = await parseLoginApiResponse(response, RESET_API_PATH, url, method);
 
-    setLoading(false);
+      if (!parsed.ok) {
+        setError({
+          title: parsed.error.title,
+          message: parsed.error.message,
+          details: parsed.error.details
+        });
+        setLoading(false);
+        return;
+      }
 
-    if (resetError) {
-      const mapped = mapAuthError(resetError.message);
-      setError({ title: mapped.title, message: mapped.message, details: resetError.message });
-      return;
+      setSuccess(
+        (parsed.json.message as string) ||
+          'If an account exists for that email, a reset link is on its way. Open the link to choose a new password.'
+      );
+      setLoading(false);
+    } catch (err) {
+      const failure = parseFetchFailure(err, RESET_API_PATH, resetUrl, 'POST');
+      setError({
+        title: failure.title,
+        message: failure.message,
+        details: failure.details
+      });
+      setLoading(false);
     }
-
-    setSuccess('If an account exists for that email, a reset link is on its way. Open the link to choose a new password.');
   }
 
   return (

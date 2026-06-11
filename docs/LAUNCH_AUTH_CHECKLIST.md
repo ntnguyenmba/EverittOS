@@ -19,7 +19,14 @@ Set in **Project Settings → Environment Variables** for Production (and Previe
 | `EMAIL_FROM` | Optional | Sender for invite email |
 | `AUTH_DEBUG` | Optional | Set to `1` on server to log auth events (no secrets) |
 
-After changing variables, **redeploy** the latest `main` deployment so `NEXT_PUBLIC_*` values are baked into the client bundle.
+**Critical:** Set all `NEXT_PUBLIC_*` variables for **Production** before deploying. The app also injects runtime Supabase config from the server (`SupabaseRuntimeConfig` in layout), but Vercel server routes still read env at runtime.
+
+After changing variables, **redeploy** the latest `main` deployment.
+
+### Verify deployment config (no secrets)
+
+- `GET https://everitt-os.vercel.app/api/auth/config` — should show `configured: true` and your Supabase host
+- `GET https://everitt-os.vercel.app/api/auth/session` — should show `connectivity.ok: true` when logged out
 
 ## Supabase Auth URL settings
 
@@ -99,7 +106,8 @@ Email templates use the redirect URL from the app (`/auth/callback?next=/reset-p
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Instant “configuration” error | Missing `NEXT_PUBLIC_SUPABASE_*` at build | Set env vars, redeploy |
+| `Supabase: fetch failed` on login | Wrong/missing URL or key, paused project, or placeholder config | Check `/api/auth/config`, fix Vercel env, redeploy |
+| Instant “configuration” error | Missing `NEXT_PUBLIC_SUPABASE_*` at runtime | Set env vars, redeploy |
 | Invalid credentials for valid user | Wrong password or unverified email | Reset password / verify email |
 | Login succeeds then kicks out | `account_status = disabled` | Restore account in Supabase |
 | Redirect loop | Missing profile row | Complete onboarding; login API bootstraps profile |
