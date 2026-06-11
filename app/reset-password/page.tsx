@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { Suspense, useEffect, useState } from 'react';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { mapAuthError } from '@/lib/auth-errors';
 import { defaultPathForRole } from '@/lib/role-routes';
@@ -112,12 +112,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <AuthShell
-      eyebrow="New password"
-      title="Choose a new password"
-      description="Enter and confirm a new password for your account."
-      aside={<AuthAsidePanel />}
-    >
+    <AuthShell title="Choose a new password">
       {checkingSession ? <p className="muted">Verifying reset link...</p> : null}
 
       <form className="auth-form card" onSubmit={updatePassword}>

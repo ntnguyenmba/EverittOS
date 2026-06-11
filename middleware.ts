@@ -139,16 +139,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (pathname === '/') {
-    if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url));
+    if (user) {
+      const profileRead = await fetchProfileByUserId(supabase, user.id);
+      const onboardingCompleted = await resolveOnboardingCompleted(
+        supabase,
+        profileRead.profile?.organization_id
+      );
+      const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboardingCompleted);
+      return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
     }
-    const profileRead = await fetchProfileByUserId(supabase, user.id);
-    const onboardingCompleted = await resolveOnboardingCompleted(
-      supabase,
-      profileRead.profile?.organization_id
-    );
-    const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboardingCompleted);
-    return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
+    return supabaseResponse;
   }
 
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {

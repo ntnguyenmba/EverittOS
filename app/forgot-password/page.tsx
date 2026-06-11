@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { mapAuthError } from '@/lib/auth-errors';
@@ -73,12 +73,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell
-      eyebrow="Account recovery"
-      title="Reset your password"
-      description="Enter the email on your account. We will send a secure reset link."
-      aside={<AuthAsidePanel />}
-    >
+    <AuthShell title="Reset password">
       <form className="auth-form card" onSubmit={resetPassword}>
         <div className="auth-field">
           <label htmlFor="email">Email</label>

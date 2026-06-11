@@ -49,6 +49,7 @@ export function touchActivityTimestamp(now = Date.now()): string {
 
 /** Routes where session enforcement should not run (auth flows stay usable). */
 export const SESSION_EXEMPT_PREFIXES = [
+  '/',
   '/login',
   '/signup',
   '/forgot-password',

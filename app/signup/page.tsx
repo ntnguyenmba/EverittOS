@@ -3,10 +3,9 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl, safeNextPath } from '@/lib/app-url';
-import { MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -124,12 +123,7 @@ function SignupForm() {
   }
 
   return (
-    <AuthShell
-      eyebrow="Create account"
-      title="Start your workspace"
-      description="Manage jobs, customers, crews, and reports."
-      aside={<AuthAsidePanel />}
-    >
+    <AuthShell title="Create account">
       {selectedPlan !== 'free' ? (
         <p className="auth-plan-note">
           You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
@@ -193,15 +187,12 @@ function SignupForm() {
         <AuthMessages error={error} success={success} />
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Creating account...' : selectedPlan === 'free' ? 'Start free' : 'Create account'}
+          {loading ? 'Creating account...' : selectedPlan === 'free' ? 'Start free trial' : 'Create account'}
         </button>
       </form>
 
       <div className="auth-links">
         <Link href={loginHref}>Already have an account? Sign in</Link>
-        <a href={MARKETING_SITE_URL} target="_blank" rel="noopener noreferrer">
-          Plan details on everittventures.com
-        </a>
       </div>
     </AuthShell>
   );

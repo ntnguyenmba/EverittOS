@@ -3,6 +3,7 @@ import { defaultPathForRole } from '@/lib/role-routes';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 const ONBOARDING_EXEMPT_PREFIXES = [
+  '/',
   '/onboarding',
   '/settings/account',
   '/settings/security',

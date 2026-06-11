@@ -356,6 +356,66 @@ p { color: var(--muted); line-height: 1.7; }
 
 .footer { border-top: 1px solid var(--line); padding: 40px 0; color: var(--muted); background: var(--surface); }
 
+.auth-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.auth-gateway {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background:
+    radial-gradient(circle at 14% 12%, rgba(45, 55, 72, 0.06), transparent 26%),
+    linear-gradient(135deg, #f7f6f3 0%, #ffffff 62%, #ffffff 100%);
+}
+
+.auth-gateway-inner {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 24px;
+}
+
+.auth-gateway-title {
+  font-size: clamp(22px, 4vw, 28px);
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+
+.auth-gateway-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.auth-gateway-actions .btn {
+  min-width: 148px;
+  justify-content: center;
+}
+
+.auth-gateway-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-gateway-footer a {
+  border-bottom: 1px solid var(--line);
+}
+
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -376,6 +436,10 @@ p { color: var(--muted); line-height: 1.7; }
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 40px;
+}
+
+.auth-shell-header-centered {
+  justify-content: center;
 }
 
 .auth-ventures-link {

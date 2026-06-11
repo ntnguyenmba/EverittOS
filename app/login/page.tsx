@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
-import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch, LOGIN_API_PATH } from '@/lib/auth-fetch';
 import { mapAccessError, mapAuthError } from '@/lib/auth-errors';
@@ -107,12 +107,7 @@ function LoginForm() {
   }
 
   return (
-    <AuthShell
-      eyebrow="Sign in"
-      title="Welcome back"
-      description="Sign in to manage jobs, workers, photos, and reports."
-      aside={<AuthAsidePanel />}
-    >
+    <AuthShell title="Sign in">
       {configError ? (
         <AuthMessages
           errorTitle="Configuration required"
@@ -177,8 +172,8 @@ function LoginForm() {
       </form>
 
       <div className="auth-links">
-        <Link href={signupHref}>Create account</Link>
         <Link href="/forgot-password">Forgot password</Link>
+        <Link href={signupHref}>Create account</Link>
       </div>
     </AuthShell>
   );
