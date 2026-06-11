@@ -12,6 +12,7 @@ import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everitt
 import { normalizeRole, isManagerRole } from '@/lib/roles';
 import { logClientActivity } from '@/lib/activity';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { supabase } from '@/lib/supabase';
 
 type JobPhotosSectionProps = {
@@ -131,9 +132,20 @@ export function JobPhotosSection({
         break;
       }
 
+      const validation = validateImageUpload(rawFile);
+      if (!validation.ok) {
+        setMessage(validation.error);
+        continue;
+      }
+
       const file = await compressImageFile(rawFile);
-      const ext = file.type === 'image/png' ? 'png' : 'jpg';
-      const path = `${user.id}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const revalidation = validateImageUpload(file);
+      if (!revalidation.ok) {
+        setMessage(revalidation.error);
+        continue;
+      }
+
+      const path = buildSafePhotoStoragePath(user.id, jobId, revalidation.extension);
 
       const { error: uploadError } = await supabase.storage.from('job-photos').upload(path, file, {
         cacheControl: '3600',

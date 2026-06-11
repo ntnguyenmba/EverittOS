@@ -17,6 +17,7 @@ import {
   resolveProfileSubscriptionStatus
 } from '@/lib/profile-query';
 import { enforceIdleSession } from '@/lib/session-server';
+import { enforceRateLimit } from '@/lib/rate-limit-middleware';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 const AUTH_PREFIXES = [
@@ -46,6 +47,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/auth/setup',
   '/api/auth/session',
   '/api/auth/sign-out',
+  '/api/auth/signup-rate-limit',
   '/api/stripe/webhook',
   '/api/team/accept'
 ];
@@ -83,6 +85,9 @@ function roleBlockedRedirect(request: NextRequest, source: NextResponse, pathnam
 }
 
 export async function middleware(request: NextRequest) {
+  const rateLimited = enforceRateLimit(request);
+  if (rateLimited) return rateLimited;
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {

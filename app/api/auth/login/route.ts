@@ -2,6 +2,8 @@ import { isAccountActive } from '@/lib/account-status';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
+import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
+import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { defaultPathForRole } from '@/lib/role-routes';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
@@ -66,13 +68,23 @@ export async function POST(request: Request) {
       return json({ error: 'Invalid request body.', code: 'bad_request' }, { status: 400 });
     }
 
-    const email = (body.email || '').trim().toLowerCase();
+    const email = normalizeEmail(body.email || '');
     const password = body.password || '';
     const next = body.next;
 
     if (!email || !password) {
       const { json } = await createRouteHandlerSupabase();
       return json({ error: 'Email and password are required.', code: 'validation' }, { status: 400 });
+    }
+
+    if (!isValidEmail(email)) {
+      const { json } = await createRouteHandlerSupabase();
+      return json({ error: 'Enter a valid email address.', code: 'validation' }, { status: 400 });
+    }
+
+    if (!validatePasswordLength(password)) {
+      const { json } = await createRouteHandlerSupabase();
+      return json({ error: 'Password must be between 6 and 128 characters.', code: 'validation' }, { status: 400 });
     }
 
     const { supabase, json, jsonWithAuthSession } = await createRouteHandlerSupabase();
@@ -249,14 +261,14 @@ export async function POST(request: Request) {
     logAuthEvent('login_route_exception', { reason: err instanceof Error ? err.message : String(err) });
     const { json } = await createRouteHandlerSupabase();
     return json(
-      {
+      sanitizeErrorPayload({
         error: 'Sign-in failed due to a server error.',
         title: 'Server error',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorMessage(err, 'Sign-in failed due to a server error.'),
         code: 'login_route_exception',
         diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
         config: configDiagnostics
-      },
+      }),
       { status: 500 }
     );
   }

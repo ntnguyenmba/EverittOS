@@ -60,6 +60,17 @@ function SignupForm() {
       return;
     }
 
+    try {
+      const rateRes = await fetch('/api/auth/signup-rate-limit', { method: 'POST' });
+      if (rateRes.status === 429) {
+        setLoading(false);
+        setError('Too many signup attempts. Wait an hour and try again.');
+        return;
+      }
+    } catch {
+      /* continue; Supabase still enforces auth limits */
+    }
+
     const redirectTarget = signupRedirect(selectedPlan, next);
 
     const { data, error: signUpError } = await supabase.auth.signUp({

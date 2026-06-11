@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { isValidUuid } from '@/lib/input-validation';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
 const CONFIRMATION_PHRASE = 'DELETE MY ACCOUNT';

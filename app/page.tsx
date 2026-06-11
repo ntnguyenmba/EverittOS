@@ -85,6 +85,7 @@ export default function HomePage() {
             <Link href="/terms">Terms</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/cookies">Cookies</Link>
+            <Link href="/security">Security</Link>
             <Link href="/login">Sign in</Link>
           </nav>
         </div>

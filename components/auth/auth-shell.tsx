@@ -302,7 +302,8 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
               . Field operations for service and maintenance teams.
             </p>
             <p>
-              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link>
+              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+              <Link href="/security">Security</Link>
             </p>
           </footer>
         </div>

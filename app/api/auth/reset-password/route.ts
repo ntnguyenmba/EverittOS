@@ -1,4 +1,6 @@
 import { mapAuthError } from '@/lib/auth-errors';
+import { isValidEmail, normalizeEmail } from '@/lib/input-validation';
+import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep } from '@/lib/auth-diagnostics';
 import { appUrl } from '@/lib/app-url';
@@ -56,10 +58,15 @@ export async function POST(request: Request) {
     return json({ error: 'Invalid request body.', code: 'bad_request' }, { status: 400 });
   }
 
-  const email = (body.email || '').trim().toLowerCase();
+  const email = normalizeEmail(body.email || '');
   if (!email) {
     const { json } = await createRouteHandlerSupabase();
     return json({ error: 'Email is required.', code: 'validation' }, { status: 400 });
+  }
+
+  if (!isValidEmail(email)) {
+    const { json } = await createRouteHandlerSupabase();
+    return json({ error: 'Enter a valid email address.', code: 'validation' }, { status: 400 });
   }
 
   const { supabase, json } = await createRouteHandlerSupabase();

@@ -4,6 +4,14 @@ export const SESSION_TAB_STORAGE_KEY = 'everittos_tab_session';
 export const TAB_SESSION_COOKIE = 'everittos_tab';
 export const LAST_ACTIVITY_COOKIE = 'everittos_last_activity';
 
+/** Warn users this many milliseconds before idle logout (default 5 minutes). */
+export function sessionIdleWarningBeforeMs(): number {
+  const raw = process.env.NEXT_PUBLIC_SESSION_IDLE_WARNING_MINUTES || process.env.SESSION_IDLE_WARNING_MINUTES;
+  const minutes = raw ? parseInt(raw, 10) : 5;
+  if (!Number.isFinite(minutes) || minutes < 1) return 5 * 60 * 1000;
+  return minutes * 60 * 1000;
+}
+
 /** Default: 30 minutes of inactivity signs the user out. */
 export function sessionIdleTimeoutMs(): number {
   const raw =
@@ -15,6 +23,10 @@ export function sessionIdleTimeoutMs(): number {
 
 export function sessionIdleTimeoutMinutes(): number {
   return Math.round(sessionIdleTimeoutMs() / 60_000);
+}
+
+export function sessionIdleWarningBeforeMinutes(): number {
+  return Math.round(sessionIdleWarningBeforeMs() / 60_000);
 }
 
 export function createTabSessionId(): string {
@@ -48,6 +60,7 @@ export const SESSION_EXEMPT_PREFIXES = [
   '/terms',
   '/cookies',
   '/disclaimer',
+  '/security',
   '/',
   '/api/auth/login',
   '/api/auth/reset-password',

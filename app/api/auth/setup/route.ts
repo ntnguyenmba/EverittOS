@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
+import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
@@ -50,11 +51,11 @@ export async function POST() {
   } catch (err) {
     const { json } = await createRouteHandlerSupabase();
     return json(
-      {
+      sanitizeErrorPayload({
         error: 'Workspace setup failed due to a server error.',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorMessage(err, 'Workspace setup failed due to a server error.'),
         code: 'setup_route_exception'
-      },
+      }),
       { status: 500 }
     );
   }

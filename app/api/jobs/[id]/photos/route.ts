@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { isValidUuid } from '@/lib/input-validation';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -8,6 +9,9 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { id: jobId } = await params;
+  if (!isValidUuid(jobId)) {
+    return NextResponse.json({ error: 'Invalid job id' }, { status: 400 });
+  }
   const supabase = await createServerSupabase();
   const {
     data: { user }
@@ -18,7 +22,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   }
 
   const photoId = new URL(request.url).searchParams.get('photoId');
-  if (!photoId) {
+  if (!photoId || !isValidUuid(photoId)) {
     return NextResponse.json({ error: 'photoId is required' }, { status: 400 });
   }
 

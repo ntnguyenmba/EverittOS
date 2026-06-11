@@ -1,13 +1,20 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { SessionIdleWarning } from '@/components/session-idle-warning';
 import { clearTabSessionId, readTabSessionId, storeTabSessionId } from '@/lib/session-client';
-import { isSessionExemptPath, sessionIdleTimeoutMs } from '@/lib/session-policy';
+import {
+  isSessionExemptPath,
+  sessionIdleTimeoutMs,
+  sessionIdleWarningBeforeMs
+} from '@/lib/session-policy';
 import { supabase } from '@/lib/supabase';
 
-const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'] as const;
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'] as const;
 const TOUCH_INTERVAL_MS = 60_000;
+const MOUSEMOVE_THROTTLE_MS = 2_000;
+const COUNTDOWN_INTERVAL_MS = 1000;
 
 async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
   clearTabSessionId();
@@ -25,18 +32,32 @@ export function SessionGuard() {
   const router = useRouter();
   const lastActivityRef = useRef(Date.now());
   const lastTouchRef = useRef(0);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMouseMoveRef = useRef(0);
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const checkingRef = useRef(false);
+  const warningOpenRef = useRef(false);
 
-  const scheduleIdleTimer = useCallback(() => {
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    const remaining = sessionIdleTimeoutMs() - (Date.now() - lastActivityRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      void signOutToLogin(
-        'idle',
-        'You were signed out after a period of inactivity. Sign in again to continue.'
-      );
-    }, Math.max(remaining, 0));
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
+
+  const clearTimers = useCallback(() => {
+    if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    logoutTimerRef.current = null;
+    warningTimerRef.current = null;
+    countdownTimerRef.current = null;
+  }, []);
+
+  const closeWarning = useCallback(() => {
+    warningOpenRef.current = false;
+    setWarningOpen(false);
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
   }, []);
 
   const touchSession = useCallback(async () => {
@@ -50,11 +71,54 @@ export function SessionGuard() {
     }
   }, []);
 
+  const scheduleIdleTimers = useCallback(() => {
+    clearTimers();
+    closeWarning();
+
+    const idleMs = sessionIdleTimeoutMs();
+    const warningBeforeMs = Math.min(sessionIdleWarningBeforeMs(), idleMs - 60_000);
+    const warningAtMs = idleMs - warningBeforeMs;
+    const elapsed = Date.now() - lastActivityRef.current;
+    const untilWarning = Math.max(warningAtMs - elapsed, 0);
+    const untilLogout = Math.max(idleMs - elapsed, 0);
+
+    warningTimerRef.current = setTimeout(() => {
+      const remainingMs = sessionIdleTimeoutMs() - (Date.now() - lastActivityRef.current);
+      if (remainingMs <= 0) return;
+
+      warningOpenRef.current = true;
+      setWarningOpen(true);
+      setSecondsRemaining(Math.ceil(remainingMs / 1000));
+
+      countdownTimerRef.current = setInterval(() => {
+        const nextRemaining = Math.ceil(
+          (sessionIdleTimeoutMs() - (Date.now() - lastActivityRef.current)) / 1000
+        );
+        setSecondsRemaining(Math.max(nextRemaining, 0));
+        if (nextRemaining <= 0 && countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
+      }, COUNTDOWN_INTERVAL_MS);
+    }, untilWarning);
+
+    logoutTimerRef.current = setTimeout(() => {
+      void signOutToLogin(
+        'idle',
+        'You were signed out after a period of inactivity. Sign in again to continue.'
+      );
+    }, untilLogout);
+  }, [clearTimers, closeWarning]);
+
   const recordActivity = useCallback(() => {
     lastActivityRef.current = Date.now();
-    scheduleIdleTimer();
+    scheduleIdleTimers();
     void touchSession();
-  }, [scheduleIdleTimer, touchSession]);
+  }, [scheduleIdleTimers, touchSession]);
+
+  const handleStaySignedIn = useCallback(() => {
+    recordActivity();
+  }, [recordActivity]);
 
   useEffect(() => {
     if (isSessionExemptPath(pathname)) return;
@@ -93,7 +157,7 @@ export function SessionGuard() {
         if (cancelled) return;
 
         lastActivityRef.current = Date.now();
-        scheduleIdleTimer();
+        scheduleIdleTimers();
         void touchSession();
       } finally {
         checkingRef.current = false;
@@ -102,7 +166,15 @@ export function SessionGuard() {
 
     void verifySession();
 
-    const onActivity = () => recordActivity();
+    const onActivity = (event: Event) => {
+      if (event.type === 'mousemove') {
+        const now = Date.now();
+        if (now - lastMouseMoveRef.current < MOUSEMOVE_THROTTLE_MS) return;
+        lastMouseMoveRef.current = now;
+      }
+      recordActivity();
+    };
+
     ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity, { passive: true }));
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') recordActivity();
@@ -111,9 +183,16 @@ export function SessionGuard() {
     return () => {
       cancelled = true;
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity));
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      clearTimers();
+      closeWarning();
     };
-  }, [pathname, recordActivity, router, scheduleIdleTimer, touchSession]);
+  }, [pathname, recordActivity, router, scheduleIdleTimers, touchSession, clearTimers, closeWarning]);
 
-  return null;
+  return (
+    <SessionIdleWarning
+      open={warningOpen}
+      secondsRemaining={secondsRemaining}
+      onStaySignedIn={handleStaySignedIn}
+    />
+  );
 }
