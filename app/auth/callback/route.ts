@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { mapAuthError } from '@/lib/auth-errors';
 import { safeNextPath } from '@/lib/app-url';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
