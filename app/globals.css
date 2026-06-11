@@ -1171,6 +1171,54 @@ p { color: var(--muted); line-height: 1.7; }
   max-width: 320px;
 }
 
+/* Production contrast guardrails — light cards use charcoal text; dark surfaces use light text */
+.card:not(.surface-dark),
+.stat-card:not(.surface-dark),
+.dashboard-glance-card,
+.settings-card,
+.empty-state.card,
+.panel:not(.surface-dark),
+.stat:not(.surface-dark),
+.pricing-grid .card,
+.card .card:not(.surface-dark) {
+  background-color: var(--card);
+  color: var(--text);
+}
+
+.card:not(.surface-dark) h1,
+.card:not(.surface-dark) h2,
+.card:not(.surface-dark) h3,
+.card:not(.surface-dark) h4,
+.stat-card:not(.surface-dark) strong,
+.dashboard-glance-card strong,
+.list-row strong {
+  color: var(--charcoal);
+}
+
+.card:not(.surface-dark) p,
+.stat-card:not(.surface-dark) span,
+.dashboard-glance-card span {
+  color: var(--muted);
+}
+
+.surface-dark,
+.btn-primary,
+.skip-link {
+  color: var(--text-on-dark);
+}
+
+.surface-dark h1,
+.surface-dark h2,
+.surface-dark h3,
+.surface-dark h4,
+.surface-dark strong,
+.surface-dark p,
+.surface-dark span,
+.surface-dark .muted,
+.btn-primary:hover {
+  color: var(--text-on-dark);
+}
+
 @media print {
   .sidebar,
   .no-print,

@@ -34,6 +34,7 @@ In **Supabase Dashboard → Authentication → URL Configuration**:
 
 - **Site URL:** `https://everitt-os.vercel.app`
 - **Redirect URLs** (add each):
+  - `https://everitt-os.vercel.app/**`
   - `https://everitt-os.vercel.app/auth/callback`
   - `https://everitt-os.vercel.app/auth/callback/**`
   - `https://everitt-os.vercel.app/reset-password`

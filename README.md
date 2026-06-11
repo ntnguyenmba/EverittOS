@@ -18,17 +18,18 @@ Copy `.env.example` to `.env.local` for local development.
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_APP_URL` | Auth redirects, password reset, Stripe return URLs |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_APP_URL` | Auth redirects, password reset, Stripe return URLs (`https://everitt-os.vercel.app`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (`https://<ref>.supabase.co`) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only account disable, webhooks, admin |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only bootstrap, webhooks, team APIs, admin |
 | `STRIPE_SECRET_KEY` | Billing portal, cancel/resume subscription |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
-| `ADMIN_EMAILS` | Platform admin access |
+| `RESEND_API_KEY` | Team invite email delivery |
+| `EMAIL_FROM` | Sender address for invite email (e.g. `EverittOS <notifications@yourdomain.com>`) |
+| `ADMIN_EMAILS` | Comma-separated emails for `/admin/launch-status` and platform metrics |
 
 Optional:
 
-- `RESEND_API_KEY`, `EMAIL_FROM` — team/client invite email
 - `AUTH_DEBUG=1` — server auth event logging (no secrets)
 
 **Important:** `NEXT_PUBLIC_*` variables are embedded at build time. After adding or changing them in Vercel, redeploy `main`.
@@ -43,8 +44,11 @@ Apply migrations in `supabase/migrations/` in filename order via Supabase SQL ed
 
 ### Auth redirect URLs (production)
 
-- Site URL: `https://everitt-os.vercel.app`
-- Redirect URLs:
+In **Supabase Dashboard → Authentication → URL Configuration**:
+
+- **Site URL:** `https://everitt-os.vercel.app`
+- **Redirect URLs:**
+  - `https://everitt-os.vercel.app/**`
   - `https://everitt-os.vercel.app/auth/callback`
   - `https://everitt-os.vercel.app/auth/callback/**`
   - `https://everitt-os.vercel.app/reset-password`

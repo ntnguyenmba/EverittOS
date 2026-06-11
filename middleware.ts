@@ -169,7 +169,7 @@ export async function middleware(request: NextRequest) {
       .eq('organization_id', resolvedOrgId)
       .maybeSingle();
 
-    if (orgSettings && orgSettings.onboarding_completed === false) {
+    if (!orgSettings || orgSettings.onboarding_completed === false) {
       const onboarding = new URL('/onboarding', request.url);
       onboarding.searchParams.set('reason', 'setup');
       return redirectWithCookies(onboarding, supabaseResponse);

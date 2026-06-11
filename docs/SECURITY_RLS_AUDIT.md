@@ -44,16 +44,16 @@ Row Level Security (RLS) is enabled on all customer-facing tables in `supabase/p
 
 1. **Admin billing** — Admins can now manage billing (aligned with product spec).
 2. **Manager team access** — Managers have `view_team` only; invite/edit restricted to owner/admin.
-3. **Onboarding bypass** — Middleware now enforces `onboarding_completed` before app routes.
+3. **Onboarding bypass** — Middleware enforces `onboarding_completed` (missing row treated as incomplete).
 4. **Ownership transfer** — New API with owner-only guard; owner row cannot be deleted/deactivated via members API.
 5. **Stripe period end** — Webhook persists `current_period_end` for renewal display.
+6. **organization_settings RLS** — Split policies: all members `SELECT`; `INSERT`/`UPDATE`/`DELETE` owner/admin only (`202606110001_organization_settings_owner_admin_write.sql`).
 
 ## Recommended follow-ups
 
 1. Add automated RLS integration tests against a staging Supabase project.
-2. Restrict `organization_settings` updates to owner/admin at the DB policy level (currently broader for managers).
-3. Audit `storage` bucket policies for `org-logos` and job photo buckets.
-4. Enable Supabase Auth leaked password protection and MFA for admin accounts.
+2. Audit `storage` bucket policies for `org-logos` and job photo buckets.
+3. Enable Supabase Auth leaked password protection and MFA for admin accounts.
 
 ## Required SQL (production)
 
