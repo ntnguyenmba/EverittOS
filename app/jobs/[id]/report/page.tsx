@@ -195,14 +195,14 @@ export default function JobReportPage({ params }: PageProps) {
           </section>
 
           {showPhotos ? (
-            <section>
-              <h3>Photos</h3>
-              <PhotoGallery jobId={job.id} />
+            <section className="report-photos-section">
+              <h3>Before &amp; after photos</h3>
+              <PhotoGallery jobId={job.id} showComparison showMetadata />
             </section>
           ) : (
             <section>
               <h3>Photos</h3>
-              <p className="muted">Photo documentation requires Pro or higher.</p>
+              <p className="muted">Photo documentation is not available on this plan.</p>
             </section>
           )}
 

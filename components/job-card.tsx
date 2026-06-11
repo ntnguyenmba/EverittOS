@@ -10,6 +10,7 @@ export type SupabaseJobCard = {
   notes?: string | null;
   status?: string | null;
   created_at?: string | null;
+  photo_count?: number;
 };
 
 export function JobCard({ job }: { job: SupabaseJobCard }) {
@@ -24,7 +25,10 @@ export function JobCard({ job }: { job: SupabaseJobCard }) {
         <StatusPill status={status} />
       </div>
       <p>{subtitle}</p>
-      <p>{job.customer_name || 'No customer'} - {created}</p>
+      <p>
+        {job.customer_name || 'No customer'} · {created}
+        {typeof job.photo_count === 'number' ? ` · ${job.photo_count} photo${job.photo_count === 1 ? '' : 's'}` : ''}
+      </p>
     </Link>
   );
 }

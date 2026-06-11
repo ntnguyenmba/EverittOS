@@ -19,6 +19,7 @@ import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
+import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -29,6 +30,7 @@ type Job = {
   start_date: string | null;
   due_date: string | null;
   created_at: string | null;
+  photo_count?: number;
 };
 
 function DashboardAccessNotice() {
@@ -131,7 +133,9 @@ export default function DashboardPage() {
       return;
     }
 
-    setJobs(jobsRes.data || []);
+    const jobRows = jobsRes.data || [];
+    const photoCounts = await fetchPhotoCountsByJobIds(jobRows.map((j) => j.id));
+    setJobs(jobRows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
     setUsage(counts);
     setActivityCount(activityRes.count || 0);
     setActivityItems(activityListRes.data || []);
@@ -224,7 +228,7 @@ export default function DashboardPage() {
           <div className="card upgrade-banner card-elevated">
             <div>
               <h3>Upgrade when you need more capacity</h3>
-              <p>Pro adds photos and higher limits. Business adds team management and crew assignment.</p>
+              <p>Every plan includes photo documentation. Upgrade for higher limits, team management, and crew assignment.</p>
             </div>
             <div className="upgrade-banner-actions">
               <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
@@ -321,7 +325,10 @@ export default function DashboardPage() {
                   <div key={job.id} className="card" style={{ marginTop: 12 }}>
                     <h3>{job.title}</h3>
                     <p>Customer: {job.customer_name || 'Not set'}</p>
-                    <p>Status: {job.status || 'new'}</p>
+                    <p>
+                      Status: {job.status || 'new'}
+                      {job.photo_count ? ` · ${job.photo_count} photo${job.photo_count === 1 ? '' : 's'}` : ''}
+                    </p>
                     <Link className="btn btn-primary" href={`/jobs/${job.id}`}>
                       Open job
                     </Link>

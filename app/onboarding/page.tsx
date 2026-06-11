@@ -327,7 +327,7 @@ export default function OnboardingPage() {
           {step === 3 && (
             <>
               <h3>Upload your first photo</h3>
-              <p className="muted">Pro and above include before and after photos.</p>
+              <p className="muted">Add before, progress, and after photos from your phone or computer.</p>
               {jobId && (
                 <Link className="btn" href={`/jobs/${jobId}`}>
                   Open job to upload

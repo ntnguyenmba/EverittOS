@@ -30,7 +30,7 @@ export function validatePlanAction({ plan, resource, currentCount }: PlanValidat
   }
 
   if (resource === 'photos' && !limits.photoUpload) {
-    return { allowed: false, message: 'Photo uploads require EverittOS Pro or higher.' };
+    return { allowed: false, message: 'Photo uploads are not available on your plan.' };
   }
 
   if (resource === 'teamMembers' && !limits.teamManagement) {

@@ -934,10 +934,173 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .photo-thumb figcaption {
-  padding: 6px 10px;
+  padding: 8px 10px;
   font-size: 12px;
   color: var(--muted);
-  text-transform: capitalize;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.photo-tag-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.photo-meta-line {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.photo-delete-btn {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  align-self: flex-start;
+}
+
+.job-photos-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.photo-dropzone {
+  border: 2px dashed rgba(45, 55, 72, 0.22);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  text-align: center;
+  background: var(--bg);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.photo-dropzone-active {
+  border-color: rgba(45, 55, 72, 0.45);
+  background: rgba(45, 55, 72, 0.04);
+}
+
+.photo-dropzone-title {
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.photo-capture-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.photo-capture-btn {
+  min-height: 44px;
+  min-width: 88px;
+}
+
+.photo-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo-upload-status {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.photo-tag-group h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.before-after-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.before-after-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.before-after-panel img {
+  width: 100%;
+  height: min(42vw, 220px);
+  object-fit: cover;
+  display: block;
+}
+
+.before-after-label {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.before-after-meta {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.before-after-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.photo-comparison-section h4 {
+  margin: 0 0 10px;
+}
+
+@media (max-width: 640px) {
+  .before-after-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-capture-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .photo-capture-btn {
+    width: 100%;
+  }
+
+  .photo-thumb img {
+    height: 160px;
+  }
+}
+
+@media print {
+  .photo-delete-btn,
+  .photo-dropzone,
+  .photo-capture-buttons {
+    display: none !important;
+  }
+
+  .before-after-panel img {
+    height: auto;
+    max-height: 280px;
+  }
 }
 
 .report-document h1 {

@@ -38,7 +38,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
   {
     id: 'free',
     jobs: 3,
-    photos: 0,
+    photos: 20,
     customers: 10,
     reports: 10,
     teamMembers: 1,
@@ -53,7 +53,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     multiLocation: false,
     customBranding: false,
     pdfReports: true,
-    photoUpload: false,
+    photoUpload: true,
     clientPortal: false,
     contractorPortal: false,
     brandedReports: false,

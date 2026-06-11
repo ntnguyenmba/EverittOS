@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/empty-state';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -18,6 +19,7 @@ type Job = {
   customer_id: string | null;
   address: string | null;
   status: string | null;
+  photo_count?: number;
 };
 
 function JobsList() {
@@ -51,8 +53,9 @@ function JobsList() {
       }
 
       const { data } = await query;
-
-      setJobs(data || []);
+      const rows = data || [];
+      const photoCounts = await fetchPhotoCountsByJobIds(rows.map((j) => j.id));
+      setJobs(rows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
       setLoading(false);
     }
 
@@ -98,7 +101,14 @@ function JobsList() {
               <tbody>
                 {jobs.map((job) => (
                   <tr key={job.id}>
-                    <td>{job.title}</td>
+                    <td>
+                      {job.title}
+                      {job.photo_count ? (
+                        <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
+                          {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
+                        </span>
+                      ) : null}
+                    </td>
                     <td>{job.customer_name || 'Not set'}</td>
                     <td>{job.address || 'Not set'}</td>
                     <td>
