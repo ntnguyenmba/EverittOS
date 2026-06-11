@@ -77,8 +77,8 @@ export default function SecurityPage() {
 
         <LegalNotice />
 
-        <Link className="btn" href="/">
-          Back to home
+        <Link className="btn" href="/login">
+          Sign in
         </Link>
       </div>
     </main>

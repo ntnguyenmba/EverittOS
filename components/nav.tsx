@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
+import { MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { supabase } from '@/lib/supabase';
 
+/** Minimal chrome for legal and policy pages only. */
 export function Nav() {
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState(false);
@@ -37,19 +39,21 @@ export function Nav() {
   return (
     <header className="nav">
       <div className="container nav-inner">
-        <BrandLogo href="/" showName />
+        <BrandLogo href="/login" showName />
 
-        <nav className="nav-links" aria-label="Marketing">
-          <Link href="/product">Product</Link>
-          <Link href="/industries">Industries</Link>
-          <Link href="/pricing">Pricing</Link>
+        <nav className="nav-links" aria-label="Legal">
+          <a href={MARKETING_SITE_URL} target="_blank" rel="noopener noreferrer">
+            Everitt Ventures
+          </a>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
         </nav>
 
         <div className="nav-actions">
           {loggedIn ? (
             <>
               <Link className="btn btn-primary" href="/dashboard">
-                Dashboard
+                Open app
               </Link>
               <button className="btn" type="button" onClick={logout}>
                 Log out
@@ -61,7 +65,7 @@ export function Nav() {
                 Sign in
               </Link>
               <Link className="btn btn-primary" href="/signup">
-                Start free
+                Create account
               </Link>
             </>
           )}

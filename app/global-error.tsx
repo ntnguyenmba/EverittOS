@@ -13,13 +13,13 @@ export default function GlobalError({
     <html lang="en">
       <body style={{ fontFamily: 'system-ui, sans-serif', padding: 32, maxWidth: 520 }}>
         <h2>Something went wrong</h2>
-        <p>We hit an unexpected error. Try again or return to the home page.</p>
+        <p>We hit an unexpected error. Try again or return to sign in.</p>
         <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
           <button type="button" onClick={() => reset()} style={{ padding: '8px 16px' }}>
             Try again
           </button>
-          <Link href="/" style={{ padding: '8px 16px' }}>
-            Home
+          <Link href="/login" style={{ padding: '8px 16px' }}>
+            Sign in
           </Link>
         </div>
       </body>

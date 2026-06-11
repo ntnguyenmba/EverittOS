@@ -113,9 +113,6 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
           <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
             Start Pro
           </a>
-          <Link href="/pricing" className="btn">
-            Compare plans
-          </Link>
         </div>
       )}
 

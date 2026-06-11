@@ -11,19 +11,18 @@ export default function CookiesPage() {
           use the application.
         </p>
         <p>
-          Public marketing pages may use analytics or performance cookies (for example Google Analytics) to understand
-          how visitors use our site. You can control non-essential cookies through your browser settings.
-        </p>
-        <p>
-          The authenticated EverittOS app does not load marketing analytics scripts by default. Stripe checkout and billing
-          portal pages may set their own cookies when you manage payments.
+          Plan and product information is published on{' '}
+          <a href="https://everittventures.com/tech" target="_blank" rel="noopener noreferrer">
+            everittventures.com/tech
+          </a>
+          . The EverittOS app does not load marketing analytics scripts.
         </p>
         <LegalNotice />
         <p>
           <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link>
         </p>
-        <Link className="btn" href="/">
-          Back to home
+        <Link className="btn" href="/login">
+          Sign in
         </Link>
       </div>
     </main>

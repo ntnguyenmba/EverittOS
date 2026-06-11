@@ -54,22 +54,19 @@ export const SESSION_EXEMPT_PREFIXES = [
   '/forgot-password',
   '/reset-password',
   '/auth/callback',
-  '/pricing',
-  '/product',
   '/privacy',
   '/terms',
   '/cookies',
   '/disclaimer',
   '/security',
-  '/',
+  '/docs/api',
   '/api/auth/login',
   '/api/auth/reset-password',
   '/api/auth/config'
 ] as const;
 
 export function isSessionExemptPath(pathname: string): boolean {
-  if (pathname === '/') return true;
   return SESSION_EXEMPT_PREFIXES.some(
-    (prefix) => prefix !== '/' && (pathname === prefix || pathname.startsWith(`${prefix}/`))
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 }

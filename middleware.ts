@@ -18,7 +18,8 @@ import {
 } from '@/lib/profile-query';
 import { enforceIdleSession } from '@/lib/session-server';
 import { enforceRateLimit } from '@/lib/rate-limit-middleware';
-import { defaultPathForRole } from '@/lib/role-routes';
+import { isLegacyMarketingAppPath, MARKETING_SITE_URL } from '@/lib/marketing-site';
+import { postAuthRedirectPath, shouldRedirectToOnboarding } from '@/lib/post-auth-redirect';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 const AUTH_PREFIXES = [
@@ -87,9 +88,32 @@ function roleBlockedRedirect(request: NextRequest, source: NextResponse, pathnam
   return redirectWithCookies(dashboard, source);
 }
 
+async function resolveOnboardingCompleted(
+  supabase: ReturnType<typeof createServerClient>,
+  organizationId: string | null | undefined
+): Promise<boolean> {
+  if (!organizationId) return true;
+  const { data } = await supabase
+    .from('organization_settings')
+    .select('onboarding_completed')
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  return Boolean(data?.onboarding_completed);
+}
+
 export async function middleware(request: NextRequest) {
   const rateLimited = enforceRateLimit(request);
   if (rateLimited) return rateLimited;
+
+  const pathname = request.nextUrl.pathname;
+
+  if (isLegacyMarketingAppPath(pathname)) {
+    return NextResponse.redirect(MARKETING_SITE_URL);
+  }
+
+  if (pathname === '/demo') {
+    return NextResponse.redirect(new URL('/signup?next=/onboarding', request.url));
+  }
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -110,15 +134,30 @@ export async function middleware(request: NextRequest) {
     })
   });
 
-  const pathname = request.nextUrl.pathname;
-
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
+  if (pathname === '/') {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    const profileRead = await fetchProfileByUserId(supabase, user.id);
+    const onboardingCompleted = await resolveOnboardingCompleted(
+      supabase,
+      profileRead.profile?.organization_id
+    );
+    const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboardingCompleted);
+    return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
+  }
+
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const profileRead = await fetchProfileByUserId(supabase, user.id);
-    const destination = defaultPathForRole(profileRead.profile?.role);
+    const onboardingCompleted = await resolveOnboardingCompleted(
+      supabase,
+      profileRead.profile?.organization_id
+    );
+    const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboardingCompleted);
     return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
   }
 
@@ -155,6 +194,15 @@ export async function middleware(request: NextRequest) {
 
   const profileRead = await fetchProfileByUserId(supabase, user.id);
   const profile = profileRead.profile;
+
+  const onboardingCompleted = await resolveOnboardingCompleted(supabase, profile?.organization_id);
+  if (
+    shouldRedirectToOnboarding(profile?.role, onboardingCompleted, pathname) &&
+    pathname !== '/onboarding' &&
+    !pathname.startsWith('/onboarding/')
+  ) {
+    return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
+  }
 
   if (!isAccountActive(profile?.account_status)) {
     await supabase.auth.signOut();
@@ -297,7 +345,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
+    '/product',
+    '/pricing',
+    '/industries',
+    '/demo',
     '/api/:path*',
+    '/dashboard',
     '/dashboard/:path*',
     '/jobs/:path*',
     '/workers/:path*',

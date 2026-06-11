@@ -6,6 +6,7 @@ import { Suspense, useState } from 'react';
 import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl, safeNextPath } from '@/lib/app-url';
+import { MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -17,13 +18,13 @@ function signupRedirect(plan: EverittosPlan, next: string): string {
     if (tier?.stripeLink) return tier.stripeLink;
     return `/billing?plan=${plan}`;
   }
-  return safeNextPath(next, '/dashboard');
+  return safeNextPath(next, '/onboarding');
 }
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeNextPath(searchParams.get('next'), '/dashboard');
+  const next = safeNextPath(searchParams.get('next'), '/onboarding');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
 
   const [email, setEmail] = useState('');
@@ -198,7 +199,9 @@ function SignupForm() {
 
       <div className="auth-links">
         <Link href={loginHref}>Already have an account? Sign in</Link>
-        <Link href="/pricing">Compare plans</Link>
+        <a href={MARKETING_SITE_URL} target="_blank" rel="noopener noreferrer">
+          Plan details on everittventures.com
+        </a>
       </div>
     </AuthShell>
   );

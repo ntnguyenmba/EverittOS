@@ -280,7 +280,7 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
       <main className="auth-shell">
         <div className="auth-shell-main">
           <header className="auth-shell-header">
-            <BrandLogo href="/" size={40} />
+            <BrandLogo href="/login" size={40} />
             <Link href="https://everittventures.com/tech" className="auth-ventures-link">
               Everitt Ventures
             </Link>
@@ -330,23 +330,9 @@ export function AuthAsidePanel() {
         </li>
         <li>
           <span className="auth-aside-dot" />
-          Keep clients updated on job status
+          Share reports with clients
         </li>
       </ul>
-      <div className="auth-aside-plans">
-        <div>
-          <span>Free</span>
-          <strong>Get started</strong>
-        </div>
-        <div>
-          <span>Pro</span>
-          <strong>$9/month</strong>
-        </div>
-        <div>
-          <span>Business</span>
-          <strong>$39/month</strong>
-        </div>
-      </div>
       <p className="auth-aside-caption">
         For owners, office staff, and field crews who need one place for jobs, customers, and photos.
       </p>

@@ -6,7 +6,7 @@ import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
 import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
-import { defaultPathForRole } from '@/lib/role-routes';
+import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
@@ -244,7 +244,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const redirectTo = defaultPathForRole(profile.role, next);
+    let onboardingCompleted = true;
+    if (profile.organization_id) {
+      const { data: settings } = await supabase
+        .from('organization_settings')
+        .select('onboarding_completed')
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle();
+      onboardingCompleted = Boolean(settings?.onboarding_completed);
+    }
+
+    const redirectTo = postAuthRedirectPath(profile.role, next, onboardingCompleted);
 
     logAuthEvent('login_success', {
       userId: user.id,

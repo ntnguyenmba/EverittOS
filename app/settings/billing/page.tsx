@@ -267,9 +267,6 @@ function BillingSettingsContent() {
           ))}
         </div>
         <div className="settings-actions">
-          <Link href="/pricing" className="btn">
-            Full pricing page
-          </Link>
           {canBilling && plan === 'free' ? (
             <a className="btn btn-primary" href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer">
               Start Pro

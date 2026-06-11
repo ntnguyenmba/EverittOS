@@ -16,8 +16,12 @@ export default function PrivacyPage() {
           organization. Access is limited by role and row-level security policies in the database.
         </p>
         <p>
-          Public marketing pages may use analytics (for example Google Analytics). Authenticated app pages do not load
-          marketing analytics by default. See our <Link href="/cookies">cookie notice</Link> for details.
+          Product and plan information is on{' '}
+          <a href="https://everittventures.com/tech" target="_blank" rel="noopener noreferrer">
+            everittventures.com/tech
+          </a>
+          . Authenticated app pages do not load marketing analytics. See our <Link href="/cookies">cookie notice</Link>{' '}
+          for details.
         </p>
         <p>
           You may deactivate your account from settings or request permanent deletion. Deactivation blocks sign-in;
