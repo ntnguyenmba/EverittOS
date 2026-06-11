@@ -12,6 +12,7 @@ import { parseFetchFailure, parseLoginApiResponse, type LoginClientError } from 
 import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
+import { storeTabSessionId } from '@/lib/session-client';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 
 function LoginForm() {
@@ -93,6 +94,10 @@ function LoginForm() {
 
       const json = parsed.json;
       const redirectTo = (json.redirectTo as string) || next;
+
+      if (typeof json.tabSessionId === 'string' && json.tabSessionId) {
+        storeTabSessionId(json.tabSessionId);
+      }
 
       window.location.assign(redirectTo);
     } catch (err) {

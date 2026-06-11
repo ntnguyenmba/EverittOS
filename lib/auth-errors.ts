@@ -141,6 +141,11 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
       message: 'Sign in to access this page.',
       details: 'No authenticated Supabase session.'
     },
+    idle: {
+      title: 'Session timed out',
+      message: 'You were signed out after a period of inactivity. Sign in again to continue.',
+      details: 'Session idle timeout exceeded.'
+    },
     disabled: FRIENDLY.account_disabled
   };
 

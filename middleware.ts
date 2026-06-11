@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { clearSessionMarkers, createSupabaseCookieAdapter } from '@/lib/auth-cookies';
 import { isAccountActive } from '@/lib/account-status';
 import { mapAccessError } from '@/lib/auth-errors';
 import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
@@ -15,6 +16,7 @@ import {
   resolveProfilePlan,
   resolveProfileSubscriptionStatus
 } from '@/lib/profile-query';
+import { enforceIdleSession } from '@/lib/session-server';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 const AUTH_PREFIXES = [
@@ -65,7 +67,7 @@ export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
+    cookies: createSupabaseCookieAdapter({
       getAll() {
         return request.cookies.getAll();
       },
@@ -78,7 +80,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse.cookies.set(name, value, options);
         });
       }
-    }
+    })
   });
 
   const pathname = request.nextUrl.pathname;
@@ -101,6 +103,11 @@ export async function middleware(request: NextRequest) {
     login.searchParams.set('reason', 'session');
     login.searchParams.set('detail', mapAccessError('session').message);
     return redirectWithCookies(login, supabaseResponse);
+  }
+
+  const idleRedirect = await enforceIdleSession(request, supabase, supabaseResponse);
+  if (idleRedirect) {
+    return idleRedirect;
   }
 
   const profileRead = await fetchProfileByUserId(supabase, user.id);
@@ -154,7 +161,9 @@ export async function middleware(request: NextRequest) {
     const login = new URL('/login', request.url);
     login.searchParams.set('reason', 'disabled');
     login.searchParams.set('detail', mapAccessError('disabled').message);
-    return redirectWithCookies(login, supabaseResponse);
+    const disabledRedirect = redirectWithCookies(login, supabaseResponse);
+    clearSessionMarkers(disabledRedirect);
+    return disabledRedirect;
   }
 
   const organizationId = profile.organization_id || null;

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createSupabaseCookieAdapter } from '@/lib/auth-cookies';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
@@ -17,7 +18,7 @@ export async function createServerSupabase() {
   const cookieStore = await cookies();
 
   return createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
+    cookies: createSupabaseCookieAdapter({
       getAll() {
         return cookieStore.getAll();
       },
@@ -30,7 +31,7 @@ export async function createServerSupabase() {
           /* Server Components may not set cookies */
         }
       }
-    }
+    })
   });
 }
 

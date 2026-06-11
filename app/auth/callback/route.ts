@@ -38,11 +38,11 @@ export async function GET(request: Request) {
   }
 
   if (flowType === 'recovery' || next === '/reset-password') {
-    return redirect(new URL('/reset-password', origin));
+    return redirect(new URL('/reset-password', origin), { establishSession: true });
   }
 
   const verified = searchParams.get('type') === 'signup' || next.includes('onboarding');
   const destination = verified ? `${next}${next.includes('?') ? '&' : '?'}verified=1` : next;
 
-  return redirect(new URL(`${origin}${destination}`));
+  return redirect(new URL(`${origin}${destination}`), { establishSession: true });
 }

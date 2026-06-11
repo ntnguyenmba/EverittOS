@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       return json({ error: 'Email and password are required.', code: 'validation' }, { status: 400 });
     }
 
-    const { supabase, json } = await createRouteHandlerSupabase();
+    const { supabase, json, jsonWithAuthSession } = await createRouteHandlerSupabase();
 
     logAuthStep(ROUTE, 'sign_in', { host: configDiagnostics.urlHost || 'unknown' });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
       host: configDiagnostics.urlHost || 'unknown'
     });
 
-    return json({
+    return jsonWithAuthSession({
       ok: true,
       redirectTo,
       role: profile.role,
