@@ -212,7 +212,7 @@ export function JobPhotosSection({
   }));
 
   return (
-    <section className="job-photos-section" aria-label="Job photo documentation">
+    <section className="job-photos-section" aria-label="Job photos">
       {showComparison && photos.length > 0 ? <PhotoComparisonSection photos={photos} /> : null}
 
       {uploadEnabled ? (
@@ -226,7 +226,7 @@ export function JobPhotosSection({
           onDrop={onDrop}
         >
           <p className="photo-dropzone-title">Add photos</p>
-          <p className="muted">Drag and drop images here, or use the buttons below — works on phone and desktop.</p>
+          <p className="muted">Drag and drop images here, or tap a button below. Works on phone and desktop.</p>
 
           <div className="photo-capture-buttons" role="group" aria-label="Photo category">
             {JOB_PHOTO_TAGS.map((tag) => (

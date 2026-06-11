@@ -10,7 +10,7 @@ export type AuthFetchResult = {
   method: string;
 };
 
-/** Logged fetch for auth API routes — always uses an absolute same-origin URL. */
+/** Logged fetch for auth API routes. Always uses an absolute same-origin URL. */
 export async function authApiFetch(path: string, init: RequestInit = {}): Promise<AuthFetchResult> {
   const url = resolveClientApiUrl(path);
   const method = (init.method || 'GET').toUpperCase();

@@ -299,7 +299,7 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
               <a href="https://everittventures.com/tech" target="_blank" rel="noopener noreferrer">
                 Everitt Ventures
               </a>
-              . Field operations for asset care teams.
+              . Field operations for service and maintenance teams.
             </p>
             <p>
               <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link>
@@ -316,26 +316,26 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
 export function AuthAsidePanel() {
   return (
     <div className="auth-aside-panel">
-      <p className="auth-aside-label">Private operations board</p>
-      <h2>Field work, asset care, and reporting without the clutter.</h2>
+      <p className="auth-aside-label">Field operations</p>
+      <h2>Manage jobs, track crews, and send reports.</h2>
       <ul className="auth-aside-list">
         <li>
           <span className="auth-aside-dot" />
-          Track jobs, clients, photos, and crew activity
+          Create jobs and assign workers
         </li>
         <li>
           <span className="auth-aside-dot" />
-          Keep service work organized from intake to report
+          Upload before and after photos
         </li>
         <li>
           <span className="auth-aside-dot" />
-          Built for operators, owners, and portfolio care
+          Keep clients updated on job status
         </li>
       </ul>
       <div className="auth-aside-plans">
         <div>
           <span>Free</span>
-          <strong>Start organized</strong>
+          <strong>Get started</strong>
         </div>
         <div>
           <span>Pro</span>
@@ -347,7 +347,7 @@ export function AuthAsidePanel() {
         </div>
       </div>
       <p className="auth-aside-caption">
-        A cleaner operating layer for service teams that need simple job control, client history, and polished field reporting.
+        For owners, office staff, and field crews who need one place for jobs, customers, and photos.
       </p>
     </div>
   );

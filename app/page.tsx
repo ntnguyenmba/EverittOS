@@ -10,7 +10,8 @@ export default function HomePage() {
             <div className="eyebrow">Field operations</div>
             <h1>Run your service business from one dashboard.</h1>
             <p className="hero-copy">
-              Create jobs, assign crews, track completion, and keep customer records organized — built for HVAC, cleaning, repair, and property teams.
+              Manage jobs, assign crews, track completion, and keep customer records in one place. Built for HVAC,
+              cleaning, repair, and property teams.
             </p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/signup">
@@ -50,7 +51,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
-                  Every account starts with a clean workspace — add real jobs as you go.
+                  Every account starts empty. Add your own jobs when you are ready.
                 </p>
               </div>
             </div>
@@ -70,7 +71,7 @@ export default function HomePage() {
           </div>
           <div className="card">
             <h3>Reports that ship</h3>
-            <p>Turn completed work into polished PDF reports for clients.</p>
+            <p>Print PDF reports with job details and photos for clients.</p>
           </div>
         </div>
       </section>

@@ -223,7 +223,7 @@ export async function middleware(request: NextRequest) {
       request,
       supabaseResponse,
       pathname,
-      'Your role only includes assigned work — not full customer or worker lists.'
+      'Your role only includes assigned work, not full customer or worker lists.'
     );
   }
 

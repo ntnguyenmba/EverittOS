@@ -115,7 +115,7 @@ function SignupForm() {
     <AuthShell
       eyebrow="Create account"
       title="Start your workspace"
-      description="Set up your workspace for jobs, customers, crews, and reports."
+      description="Manage jobs, customers, crews, and reports."
       aside={<AuthAsidePanel />}
     >
       {selectedPlan !== 'free' ? (

@@ -458,7 +458,7 @@ export default function JobDetailPage({ params }: PageProps) {
         <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
 
         <div className="card" style={{ marginTop: 18 }}>
-          <h3>Photo documentation</h3>
+          <h3>Photos</h3>
           <p className="muted">Before, progress, and after photos for this job. Drag and drop on desktop or capture from your phone.</p>
           <JobPhotosSection
             jobId={job.id}

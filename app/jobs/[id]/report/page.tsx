@@ -202,7 +202,7 @@ export default function JobReportPage({ params }: PageProps) {
           ) : (
             <section>
               <h3>Photos</h3>
-              <p className="muted">Photo documentation is not available on this plan.</p>
+              <p className="muted">Photos are not available on this plan.</p>
             </section>
           )}
 

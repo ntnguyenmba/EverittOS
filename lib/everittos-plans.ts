@@ -29,30 +29,31 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'free',
     name: 'Free',
     priceLabel: '$0',
-    headline: 'Get organized and stop losing track of work.',
+    headline: 'Track jobs and customers without spreadsheets.',
     features: [
       'Account and login',
       'Dashboard',
       'Customer management',
       'Basic job tracking',
       'Status updates and notes',
-      'Basic reports'
+      'Basic reports',
+      'Before and after photos (limited)'
     ],
-    limits: ['3 active jobs', '10 customers', '1 user'],
+    limits: ['3 active jobs', '10 customers', '20 photos', '1 user'],
     buttonLabel: 'Start Free'
   },
   {
     id: 'pro',
     name: 'EverittOS Pro',
     priceLabel: '$9/month',
-    headline: 'Run a more professional operation.',
+    headline: 'Add photos, reports, and a client portal.',
     features: [
       'Everything in Free',
       'Before and after photos',
-      'Professional job records',
+      'Job records with notes',
       'Standard reports',
       'Customer portal',
-      'Expanded customer and job management'
+      'More customers and jobs'
     ],
     limits: ['25 active jobs', '100 customers', '3 users'],
     buttonLabel: 'Start Pro',
@@ -63,7 +64,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'business',
     name: 'EverittOS Business',
     priceLabel: '$39/month',
-    headline: 'Scale without losing control.',
+    headline: 'Add team members, assign jobs, and manage crews.',
     features: [
       'Everything in Pro',
       'Team management',
@@ -71,8 +72,8 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'Crew management',
       'Internal notes',
       'Customer history',
-      'Advanced reporting',
-      'Workforce visibility'
+      'Activity log',
+      'See who is on each job'
     ],
     limits: ['150 active jobs', '1,000 customers', '15 users'],
     buttonLabel: 'Start Business',
@@ -82,12 +83,12 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'operations',
     name: 'EverittOS Operations',
     priceLabel: '$149/month',
-    headline: 'Coordinate contractors, clients, and field teams.',
+    headline: 'Run contractor and client portals with role controls.',
     features: [
       'Everything in Business',
       'Contractor portal',
       'Role-based permissions',
-      'Workforce activity tracking',
+      'Activity log',
       'Branded reports',
       'Priority support'
     ],
@@ -99,15 +100,14 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'growth',
     name: 'EverittOS Growth',
     priceLabel: '$399/month',
-    headline: 'Operate at scale with deeper visibility.',
+    headline: 'For larger teams with departments and API access.',
     features: [
       'Everything in Operations',
-      'Advanced workforce management',
-      'Department-level visibility',
-      'Operational dashboards',
+      'Departments',
+      'Dashboard totals by team',
       'API access',
       'Custom workflows',
-      'Advanced reporting'
+      'Extra reporting'
     ],
     limits: ['2,500 active jobs', '25,000 customers', '250 users'],
     buttonLabel: 'Start Growth',
@@ -117,13 +117,13 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'enterprise',
     name: 'EverittOS Enterprise',
     priceLabel: '$799/month',
-    headline: 'High-touch operations for strategic accounts.',
+    headline: 'For large teams that need custom support and unlimited use.',
     features: [
       'Everything in Growth',
       'Enterprise permissions',
-      'Dedicated onboarding',
+      'Onboarding help from our team',
       'Dedicated support',
-      'Advanced security controls',
+      'Role-based access controls',
       'Custom reporting',
       'Unlimited jobs, customers, and users'
     ],

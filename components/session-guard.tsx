@@ -46,7 +46,7 @@ export function SessionGuard() {
     try {
       await fetch('/api/auth/session-touch', { method: 'POST' });
     } catch {
-      /* network blip — server middleware still tracks activity on navigation */
+      /* network blip; server middleware still tracks activity on navigation */
     }
   }, []);
 

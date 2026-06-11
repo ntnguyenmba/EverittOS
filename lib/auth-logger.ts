@@ -11,7 +11,7 @@ const ALWAYS_LOG = new Set([
   'profile_read_failed'
 ]);
 
-/** Console-safe auth logging — never log passwords, tokens, or keys. */
+/** Console-safe auth logging. Never log passwords, tokens, or keys. */
 export function logAuthEvent(event: string, meta?: Record<string, string | number | boolean | null | undefined>) {
   const shouldLog = ALWAYS_LOG.has(event) || process.env.AUTH_DEBUG === '1' || process.env.NODE_ENV !== 'production';
   if (!shouldLog) return;

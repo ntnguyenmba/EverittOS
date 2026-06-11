@@ -108,7 +108,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
 
       {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) && (
         <div className="sidebar-upgrade">
-          <p>Need more jobs, photos, and team capacity?</p>
+          <p>Need more jobs, photos, or team members?</p>
           <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
             Start Pro
           </a>

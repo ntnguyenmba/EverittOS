@@ -261,7 +261,7 @@ export default function OnboardingPage() {
           <div>
             <h2>Workspace setup</h2>
             <p className="muted">
-              Step {step + 1} of {STEPS.length}: {STEPS[step]}. Optional — finish anytime from Settings. Your dashboard is
+              Step {step + 1} of {STEPS.length}: {STEPS[step]}. Optional. Finish anytime from Settings. Your dashboard is
               always available.
             </p>
           </div>

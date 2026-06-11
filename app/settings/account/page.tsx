@@ -234,7 +234,7 @@ export default function AccountSettingsPage() {
         </p>
         {isOwner(role) ? (
           <div className="settings-warning">
-            You are the workspace owner. Deactivating only blocks your account — it does not delete the organization.
+            You are the workspace owner. Deactivating only blocks your account. It does not delete the organization.
             Transfer ownership on the <Link href="/team">Team</Link> page before deactivating if someone else should
             manage billing and settings.
           </div>

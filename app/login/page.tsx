@@ -110,7 +110,7 @@ function LoginForm() {
     <AuthShell
       eyebrow="Sign in"
       title="Welcome back"
-      description="Sign in to manage jobs, crews, photos, and field reports."
+      description="Sign in to manage jobs, workers, photos, and reports."
       aside={<AuthAsidePanel />}
     >
       {configError ? (

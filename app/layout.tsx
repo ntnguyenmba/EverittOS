@@ -13,7 +13,7 @@ const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500'
 
 export const metadata: Metadata = {
   title: 'EverittOS | Field Operations Platform',
-  description: 'Run your field team from one clean dashboard.',
+  description: 'Manage jobs, workers, and schedules from one dashboard.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

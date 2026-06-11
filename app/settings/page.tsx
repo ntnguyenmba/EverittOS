@@ -174,7 +174,7 @@ export default function SettingsPage() {
     <SettingsShell
       plan={plan}
       title="Workspace settings"
-      description="Optional business profile, logo, and notifications. Add details when you're ready — solo operators can keep it simple."
+      description="Optional business profile, logo, and notifications. Add details when you are ready. Solo operators can keep it simple."
     >
       <div className="settings-card form">
         <p>

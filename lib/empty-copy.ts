@@ -26,7 +26,7 @@ export const EMPTY_COPY = {
   },
   workflows: {
     title: 'No workflows yet',
-    description: 'Create a checklist workflow when you are ready to standardize jobs.'
+    description: 'Create a checklist when you want the same steps on every job.'
   },
   photos: {
     title: 'No photos yet',

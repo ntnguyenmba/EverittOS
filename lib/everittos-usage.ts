@@ -108,7 +108,7 @@ export function limitMessage(resource: keyof PlanLimits, plan: EverittosPlan): s
   const limits = limitsForPlan(plan);
   if (resource === 'jobs') return `Your plan allows up to ${limits.jobs} active jobs. Upgrade to continue.`;
   if (resource === 'photos') {
-    if (!limits.photoUpload) return 'Photo uploads require EverittOS Pro or higher.';
+    if (!limits.photoUpload) return 'Upgrade to Pro to upload photos.';
     return `Your plan allows up to ${limits.photos} photos. Upgrade to continue.`;
   }
   if (resource === 'customers') return `Your plan allows up to ${limits.customers} customers. Upgrade to continue.`;

@@ -20,7 +20,7 @@ export function subscriptionAccess(
     return {
       ok: true,
       status: 'free',
-      message: 'Free plan — upgrade when you need more capacity.',
+      message: 'Free plan. Upgrade when you need higher limits.',
       billingRequired: false
     };
   }
@@ -33,7 +33,7 @@ export function subscriptionAccess(
       return {
         ok: true,
         status,
-        message: 'Subscription canceled — access continues until the billing period ends.',
+        message: 'Subscription canceled. Access continues until the billing period ends.',
         billingRequired: false
       };
     case 'past_due':

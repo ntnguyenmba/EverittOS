@@ -204,31 +204,31 @@ export default function DashboardPage() {
         <section className="dashboard-glance" aria-label="Operations summary">
           <div className="dashboard-glance-card">
             <span>Open jobs</span>
-            <strong>{loading ? '—' : openJobs}</strong>
+            <strong>{loading ? '...' : openJobs}</strong>
           </div>
           <div className="dashboard-glance-card">
             <span>Completed jobs</span>
-            <strong>{loading ? '—' : jobs.filter((j) => j.status === 'completed').length}</strong>
+            <strong>{loading ? '...' : jobs.filter((j) => j.status === 'completed').length}</strong>
           </div>
           <div className="dashboard-glance-card">
             <span>Due in 7 days</span>
-            <strong>{loading ? '—' : dueSoon}</strong>
+            <strong>{loading ? '...' : dueSoon}</strong>
           </div>
           <div className="dashboard-glance-card">
             <span>Reports on file</span>
-            <strong>{loading ? '—' : usage.reports}</strong>
+            <strong>{loading ? '...' : usage.reports}</strong>
           </div>
           <div className="dashboard-glance-card">
             <span>Team members</span>
-            <strong>{loading ? '—' : usage.teamMembers}</strong>
+            <strong>{loading ? '...' : usage.teamMembers}</strong>
           </div>
         </section>
 
         {!isPaidEverittosPlan(plan) && (
           <div className="card upgrade-banner card-elevated">
             <div>
-              <h3>Upgrade when you need more capacity</h3>
-              <p>Every plan includes photo documentation. Upgrade for higher limits, team management, and crew assignment.</p>
+              <h3>Upgrade when you hit your limits</h3>
+              <p>Every plan includes photos. Upgrade for higher limits, team management, and crew assignment.</p>
             </div>
             <div className="upgrade-banner-actions">
               <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">

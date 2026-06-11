@@ -69,7 +69,7 @@ export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
       </div>
       {nearLimit && link && (
         <div className="card upgrade-banner" style={{ marginTop: 16 }}>
-          <p>You are nearing your plan limit. Upgrade to add more capacity.</p>
+          <p>You are nearing your plan limit. Upgrade for higher limits.</p>
           <Link href="/billing" className="btn">
             View billing
           </Link>

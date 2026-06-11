@@ -29,7 +29,7 @@ type Invitation = {
 };
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return '—';
+  if (!value) return 'N/A';
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 

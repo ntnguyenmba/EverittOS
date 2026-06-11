@@ -37,7 +37,7 @@ export function subscriptionStatusMessage(status: string | null | undefined): st
 
   switch (normalized) {
     case 'free':
-      return 'You are on the free plan. Upgrade when you need more capacity.';
+      return 'You are on the free plan. Upgrade when you need higher limits.';
     case 'active':
       return 'Your subscription is active.';
     case 'trialing':
