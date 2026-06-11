@@ -22,18 +22,24 @@ export function isOnboardingExemptPath(pathname: string): boolean {
   return ONBOARDING_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-/** Whether an authenticated user should be sent to onboarding before other app pages. */
+/** Whether middleware should block app routes until onboarding completes. Always false — onboarding is optional. */
 export function shouldRedirectToOnboarding(
+  _roleInput: string | null | undefined,
+  _onboardingCompleted: boolean | null | undefined,
+  _pathname: string
+): boolean {
+  return false;
+}
+
+/** Suggest onboarding after sign-in when setup is incomplete and not skipped. */
+export function shouldSuggestOnboarding(
   roleInput: string | null | undefined,
   onboardingCompleted: boolean | null | undefined,
-  pathname: string
+  onboardingSkipped: boolean | null | undefined
 ): boolean {
-  if (onboardingCompleted) return false;
-  if (isOnboardingExemptPath(pathname)) return false;
-
+  if (onboardingCompleted || onboardingSkipped) return false;
   const role = normalizeRole(roleInput);
   if (isClientRole(role) || isContractorRole(role)) return false;
-
   return true;
 }
 
@@ -41,13 +47,16 @@ export function shouldRedirectToOnboarding(
 export function postAuthRedirectPath(
   roleInput: string | null | undefined,
   next: string | null | undefined,
-  onboardingCompleted: boolean | null | undefined
+  onboardingCompleted: boolean | null | undefined,
+  onboardingSkipped?: boolean | null | undefined
 ): string {
   const role = normalizeRole(roleInput);
   const nextPath = safeNextPath(next);
 
-  if (shouldRedirectToOnboarding(role, onboardingCompleted, nextPath)) {
-    return '/onboarding';
+  if (shouldSuggestOnboarding(role, onboardingCompleted, onboardingSkipped)) {
+    if (nextPath === '/dashboard' || nextPath === '/' || nextPath === '/onboarding') {
+      return '/onboarding';
+    }
   }
 
   return defaultPathForRole(role, nextPath);

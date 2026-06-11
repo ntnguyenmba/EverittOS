@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
-import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
@@ -76,17 +75,7 @@ function JobsList() {
 
         <div className="card">
           {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
-          {!loading && jobs.length === 0 ? (
-            <EmptyState
-              title={EMPTY_COPY.jobs.title}
-              description={EMPTY_COPY.jobs.description}
-              action={
-                <Link className="btn btn-primary" href="/dashboard">
-                  Create a job
-                </Link>
-              }
-            />
-          ) : null}
+          {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
           {!loading && jobs.length > 0 && (
             <table className="table">
               <thead>

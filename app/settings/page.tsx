@@ -7,6 +7,8 @@ import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { useTranslation } from '@/components/locale-provider';
+import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
@@ -32,6 +34,30 @@ export default function SettingsPage() {
   const [teamSize, setTeamSize] = useState('');
   const [industry, setIndustry] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [restartBusy, setRestartBusy] = useState(false);
+  const { t } = useTranslation();
+
+  async function restartOnboarding() {
+    if (!window.confirm(t('onboarding.settings.restartConfirm'))) return;
+    setRestartBusy(true);
+    setMessage('');
+    const res = await fetch('/api/onboarding/restart', { method: 'POST' });
+    setRestartBusy(false);
+    if (!res.ok) {
+      const json = await res.json();
+      setMessage(json.error || 'Unable to restart onboarding.');
+      setSaveSuccess(false);
+      return;
+    }
+    try {
+      if (orgId) localStorage.removeItem(onboardingDismissStorageKey(orgId));
+    } catch {
+      /* ignore */
+    }
+    setMessage(t('onboarding.settings.restartSuccess'));
+    setSaveSuccess(true);
+    router.push('/onboarding');
+  }
 
   useEffect(() => {
     async function load() {
@@ -239,8 +265,15 @@ export default function SettingsPage() {
           <button className="btn" type="button" onClick={logout}>
             Log out
           </button>
+          <div className="settings-card" style={{ marginTop: 18 }}>
+            <h3>{t('onboarding.settings.restart')}</h3>
+            <p className="muted">{t('onboarding.settings.restartDescription')}</p>
+            <button type="button" className="btn" onClick={restartOnboarding} disabled={restartBusy}>
+              {t('onboarding.settings.restart')}
+            </button>
+          </div>
           <p style={{ marginTop: 16 }}>
-            <Link href="/onboarding">Continue getting started</Link>
+            <Link href="/onboarding">{t('onboarding.checklist.continue')}</Link>
           </p>
           <p style={{ marginTop: 16 }}>
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}

@@ -245,16 +245,18 @@ export async function POST(request: Request) {
     }
 
     let onboardingCompleted = true;
+    let onboardingSkipped = false;
     if (profile.organization_id) {
       const { data: settings } = await supabase
         .from('organization_settings')
-        .select('onboarding_completed')
+        .select('onboarding_completed, onboarding_skipped')
         .eq('organization_id', profile.organization_id)
         .maybeSingle();
       onboardingCompleted = Boolean(settings?.onboarding_completed);
+      onboardingSkipped = Boolean(settings?.onboarding_skipped);
     }
 
-    const redirectTo = postAuthRedirectPath(profile.role, next, onboardingCompleted);
+    const redirectTo = postAuthRedirectPath(profile.role, next, onboardingCompleted, onboardingSkipped);
 
     logAuthEvent('login_success', {
       userId: user.id,

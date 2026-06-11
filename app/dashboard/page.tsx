@@ -69,6 +69,7 @@ export default function DashboardPage() {
   >([]);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [onboardingSkipped, setOnboardingSkipped] = useState(false);
   const [organizationId, setOrganizationId] = useState('');
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -93,10 +94,11 @@ export default function DashboardPage() {
       setOrganizationId(org.organizationId);
       const { data: settings } = await supabase
         .from('organization_settings')
-        .select('onboarding_completed, onboarding_step')
+        .select('onboarding_completed, onboarding_skipped, onboarding_step')
         .eq('organization_id', org.organizationId)
         .maybeSingle();
       setOnboardingCompleted(Boolean(settings?.onboarding_completed));
+      setOnboardingSkipped(Boolean(settings?.onboarding_skipped));
       setOnboardingStep(settings?.onboarding_step || 0);
     } else {
       await fetch('/api/auth/setup', { method: 'POST' });
@@ -247,6 +249,7 @@ export default function DashboardPage() {
             organizationId={organizationId}
             step={onboardingStep}
             completed={onboardingCompleted}
+            skipped={onboardingSkipped}
           />
         ) : null}
 

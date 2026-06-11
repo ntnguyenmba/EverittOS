@@ -343,7 +343,8 @@ export async function ensureUserWorkspace(
     {
       organization_id: orgId,
       onboarding_step: 0,
-      onboarding_completed: false
+      onboarding_completed: false,
+      onboarding_skipped: false
     },
     { onConflict: 'organization_id' }
   );

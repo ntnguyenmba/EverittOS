@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -175,7 +174,7 @@ export default function CustomersPage() {
             </p>
           )}
           {!loading && customers.length === 0 && (
-            <EmptyState title={EMPTY_COPY.customers.title} description={EMPTY_COPY.customers.description} />
+            <LocalizedEmptyState emptyKey="customers" />
           )}
           {!loading &&
             customers.map((customer) => (

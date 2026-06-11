@@ -11,6 +11,11 @@ export type ProductEventName =
   | 'team_member_added'
   | 'subscription_upgraded'
   | 'onboarding_step'
+  | 'onboarding_started'
+  | 'onboarding_step_completed'
+  | 'onboarding_step_skipped'
+  | 'onboarding_completed'
+  | 'onboarding_abandoned'
   | 'client_portal_view'
   | 'billing_activity'
   | 'feature_adoption';

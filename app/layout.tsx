@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { LocaleProvider } from '@/components/locale-provider';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
@@ -33,12 +34,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SupabaseRuntimeConfig />
         <SuppressVercelToolbar />
-        <SessionGuard />
-        <WorkspaceBootstrap />
-        <SkipToMain />
-        <SiteChrome />
-        <AnalyticsGate />
-        {children}
+        <LocaleProvider>
+          <SessionGuard />
+          <WorkspaceBootstrap />
+          <SkipToMain />
+          <SiteChrome />
+          <AnalyticsGate />
+          {children}
+        </LocaleProvider>
       </body>
     </html>
   );

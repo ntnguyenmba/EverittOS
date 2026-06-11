@@ -36,7 +36,7 @@ export async function GET() {
   });
 
   const adoptionMetrics = [
-    { label: 'Onboarding completion', value: settings.data?.onboarding_completed ? 100 : Math.round(((settings.data?.onboarding_step || 0) / 6) * 100) },
+    { label: 'Onboarding completion', value: settings.data?.onboarding_completed ? 100 : Math.round(((settings.data?.onboarding_step || 0) / 7) * 100) },
     { label: 'Jobs created (30d)', value: jobs.data?.length || 0 },
     { label: 'Reports generated (30d)', value: reports.data?.length || 0 },
     { label: 'Active team members', value: members.data?.length || 0 },

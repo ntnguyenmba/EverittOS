@@ -2,19 +2,22 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import {
-  ONBOARDING_STEP_LABELS,
+  ONBOARDING_STEP_COUNT,
   onboardingDismissStorageKey,
   onboardingProgressPercent
-} from '@/lib/onboarding-checklist';
+} from '@/lib/onboarding/constants';
 
 type OnboardingChecklistProps = {
   organizationId: string;
   step: number;
   completed: boolean;
+  skipped?: boolean;
 };
 
-export function OnboardingChecklist({ organizationId, step, completed }: OnboardingChecklistProps) {
+export function OnboardingChecklist({ organizationId, step, completed, skipped }: OnboardingChecklistProps) {
+  const { t, messages } = useTranslation();
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -27,11 +30,12 @@ export function OnboardingChecklist({ organizationId, step, completed }: Onboard
     }
   }, [organizationId]);
 
-  if (completed || dismissed) {
+  if (completed || skipped || dismissed) {
     return null;
   }
 
   const progress = onboardingProgressPercent(step, completed);
+  const steps = messages.onboarding.checklist.steps;
 
   function dismiss() {
     try {
@@ -46,21 +50,18 @@ export function OnboardingChecklist({ organizationId, step, completed }: Onboard
     <div className="card onboarding-checklist" style={{ marginTop: 18 }}>
       <div className="onboarding-checklist-head">
         <div>
-          <h3>Getting started</h3>
-          <p className="muted">
-            A quick, optional walkthrough for freelancers, solo operators, and small teams. Finish anytime from
-            Settings. Nothing here blocks your work.
-          </p>
+          <h3>{t('onboarding.checklist.title')}</h3>
+          <p className="muted">{t('onboarding.checklist.description')}</p>
         </div>
-        <button type="button" className="btn" onClick={dismiss} aria-label="Dismiss getting started checklist">
-          Dismiss
+        <button type="button" className="btn" onClick={dismiss} aria-label={t('onboarding.checklist.dismiss')}>
+          {t('onboarding.checklist.dismiss')}
         </button>
       </div>
       <div className="onboarding-progress">
         <div className="onboarding-progress-bar" style={{ width: `${progress}%` }} />
       </div>
       <ol className="onboarding-checklist-steps">
-        {ONBOARDING_STEP_LABELS.map((label, index) => {
+        {(steps as string[]).slice(0, ONBOARDING_STEP_COUNT).map((label: string, index: number) => {
           const done = completed || index < step;
           return (
             <li key={label} className={done ? 'done' : undefined}>
@@ -72,10 +73,10 @@ export function OnboardingChecklist({ organizationId, step, completed }: Onboard
       </ol>
       <div className="settings-actions" style={{ marginTop: 12 }}>
         <Link href="/onboarding" className="btn btn-primary">
-          Continue setup
+          {t('onboarding.checklist.continue')}
         </Link>
         <Link href="/settings" className="btn">
-          Workspace settings
+          {t('onboarding.checklist.settings')}
         </Link>
       </div>
     </div>
