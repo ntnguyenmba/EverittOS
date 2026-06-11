@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 const vercelEnv = process.env.VERCEL_ENV || (process.env.NODE_ENV === 'development' ? 'development' : 'production');
 
 function buildSecurityHeaders() {
@@ -59,6 +63,7 @@ const securityHeaders = Object.entries(buildSecurityHeaders()).map(([key, value]
   value
 }));
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
     NEXT_PUBLIC_VERCEL_ENV: vercelEnv,
@@ -75,4 +80,4 @@ const nextConfig = {
   }
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

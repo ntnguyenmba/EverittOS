@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PhotoComparisonSection } from '@/components/before-after-comparison';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { compressImageFile } from '@/lib/image-compress';
 import { JOB_PHOTO_TAGS, photoTagLabel, type JobPhotoTag } from '@/lib/job-photo-tags';
 import type { JobPhotoView } from '@/lib/job-photos-types';
@@ -41,6 +41,7 @@ export function JobPhotosSection({
   readOnly = false,
   showComparison = true
 }: JobPhotosSectionProps) {
+  const emptyCopy = useEmptyCopy();
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -275,7 +276,7 @@ export function JobPhotosSection({
       {loading ? <p className="loading-state" role="status">Loading photos…</p> : null}
 
       {!loading && photos.length === 0 ? (
-        <EmptyState title={EMPTY_COPY.photos.title} description={EMPTY_COPY.photos.description} />
+        <EmptyState title={emptyCopy.photos.title} description={emptyCopy.photos.description} />
       ) : null}
 
       {!loading &&

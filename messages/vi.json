@@ -1,0 +1,480 @@
+{
+  "common": {
+    "loading": "Đang tải…",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "continue": "Tiếp tục",
+    "skip": "Bỏ qua",
+    "dismiss": "Đóng",
+    "close": "Đóng",
+    "menu": "Menu",
+    "closeMenu": "Đóng menu",
+    "back": "Quay lại",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "create": "Tạo",
+    "update": "Cập nhật",
+    "send": "Gửi",
+    "open": "Mở",
+    "view": "Xem",
+    "search": "Tìm kiếm",
+    "yes": "Có",
+    "no": "Không",
+    "optional": "tùy chọn",
+    "required": "bắt buộc",
+    "terms": "Điều khoản",
+    "privacy": "Quyền riêng tư",
+    "cookies": "Cookie",
+    "security": "Bảo mật",
+    "plan": "Gói",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "status": "Trạng thái",
+    "actions": "Thao tác",
+    "name": "Tên",
+    "address": "Địa chỉ",
+    "phone": "Điện thoại",
+    "website": "Website",
+    "language": "Ngôn ngữ",
+    "languageSaved": "Đã lưu ngôn ngữ.",
+    "languageSaveFailed": "Không thể lưu ngôn ngữ. Vui lòng thử lại.",
+    "somethingWrong": "Đã xảy ra lỗi. Vui lòng thử lại.",
+    "questionsContact": "Có thắc mắc? Liên hệ {email}"
+  },
+  "locale": {
+    "label": "Ngôn ngữ",
+    "en": "English",
+    "es": "Español",
+    "vi": "Tiếng Việt"
+  },
+  "gateway": {
+    "title": "Phần mềm vận hành cho đội ngũ dịch vụ hiện trường.",
+    "signIn": "Đăng nhập",
+    "startTrial": "Dùng thử miễn phí"
+  },
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "jobs": "Công việc",
+    "customers": "Khách hàng",
+    "schedule": "Lịch",
+    "workers": "Nhân viên",
+    "team": "Đội ngũ",
+    "activity": "Hoạt động",
+    "analytics": "Phân tích",
+    "workflows": "Quy trình",
+    "notifications": "Thông báo",
+    "billing": "Thanh toán",
+    "settings": "Cài đặt",
+    "clientPortal": "Cổng khách hàng",
+    "contractorPortal": "Cổng nhà thầu",
+    "workspace": "Không gian làm việc",
+    "branding": "Thương hiệu",
+    "integrations": "Tích hợp",
+    "account": "Tài khoản",
+    "security": "Bảo mật",
+    "api": "API",
+    "departments": "Phòng ban",
+    "logout": "Đăng xuất",
+    "upgradePrompt": "Cần thêm công việc, ảnh hoặc thành viên?",
+    "startPro": "Bắt đầu Pro",
+    "skipToMain": "Chuyển đến nội dung chính",
+    "appNavigation": "Điều hướng ứng dụng"
+  },
+  "auth": {
+    "signIn": "Đăng nhập",
+    "signInAction": "Đăng nhập",
+    "signingIn": "Đang đăng nhập…",
+    "createAccount": "Tạo tài khoản",
+    "creatingAccount": "Đang tạo tài khoản…",
+    "startFreeTrial": "Dùng thử miễn phí",
+    "forgotPassword": "Quên mật khẩu",
+    "backToSignIn": "Quay lại đăng nhập",
+    "alreadyHaveAccount": "Đã có tài khoản? Đăng nhập",
+    "resetPassword": "Đặt lại mật khẩu",
+    "sendResetEmail": "Gửi email đặt lại",
+    "sending": "Đang gửi…",
+    "chooseNewPassword": "Chọn mật khẩu mới",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "updatePassword": "Cập nhật mật khẩu",
+    "updating": "Đang cập nhật…",
+    "requestNewResetLink": "Yêu cầu liên kết mới",
+    "verifyingResetLink": "Đang xác minh liên kết…",
+    "passwordUpdatedRedirect": "Đã cập nhật mật khẩu. Đang chuyển hướng…",
+    "emailVerified": "Email đã xác minh. Bạn có thể đăng nhập.",
+    "accountCreatedVerify": "Tài khoản đã tạo. Kiểm tra email để xác minh, sau đó đăng nhập.",
+    "businessNameOptional": "Tên doanh nghiệp hoặc hiển thị (tùy chọn)",
+    "businessNamePlaceholder": "Để trống nếu dùng không gian cá nhân",
+    "emailPlaceholder": "ban@congty.com",
+    "passwordPlaceholder": "Mật khẩu của bạn",
+    "passwordMinPlaceholder": "Tối thiểu 6 ký tự",
+    "repeatPassword": "Nhập lại mật khẩu",
+    "selectedPlanSignIn": "Gói đã chọn: {plan}. Đăng nhập để tiếp tục thiết lập.",
+    "selectedPlanSignup": "Bạn đã chọn {plan}. Sau khi đăng ký, bạn có thể hoàn tất thanh toán gói đó.",
+    "configRequiredTitle": "Cần cấu hình",
+    "configRequiredBody": "Xác thực chưa được cấu hình trên môi trường này. Thiết lập biến Supabase và triển khai lại.",
+    "resetLinkOpenFromEmail": "Mở liên kết đặt lại mật khẩu từ email, hoặc yêu cầu liên kết mới bên dưới.",
+    "passwordTooShortTitle": "Mật khẩu quá ngắn",
+    "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự.",
+    "passwordsNoMatchTitle": "Mật khẩu không khớp",
+    "passwordsNoMatch": "Nhập cùng một mật khẩu ở cả hai ô.",
+    "emailPasswordRequired": "Email và mật khẩu là bắt buộc.",
+    "tooManySignups": "Quá nhiều lần đăng ký. Vui lòng đợi một giờ rồi thử lại."
+  },
+  "errors": {
+    "auth": {
+      "invalid_credentials": {
+        "title": "Đăng nhập thất bại",
+        "message": "Email hoặc mật khẩu không đúng. Kiểm tra lại và thử lại."
+      },
+      "email_not_confirmed": {
+        "title": "Email chưa xác minh",
+        "message": "Xác minh email trước khi đăng nhập. Kiểm tra hộp thư của bạn."
+      },
+      "user_banned": {
+        "title": "Tài khoản bị hạn chế",
+        "message": "Tài khoản này không thể đăng nhập. Liên hệ hỗ trợ nếu bạn cho rằng đây là nhầm lẫn."
+      },
+      "too_many_requests": {
+        "title": "Quá nhiều lần thử",
+        "message": "Vui lòng đợi một phút rồi thử lại."
+      },
+      "missing_auth_code": {
+        "title": "Liên kết không đầy đủ",
+        "message": "Liên kết đăng nhập thiếu thông tin. Yêu cầu liên kết mới và thử lại."
+      },
+      "account_disabled": {
+        "title": "Tài khoản bị vô hiệu hóa",
+        "message": "Tài khoản này đã bị vô hiệu hóa. Liên hệ hỗ trợ để khôi phục quyền truy cập."
+      },
+      "config_error": {
+        "title": "Dịch vụ không khả dụng",
+        "message": "Xác thực chưa được cấu hình trên môi trường này. Liên hệ quản trị viên."
+      },
+      "schema_mismatch": {
+        "title": "Lược đồ cơ sở dữ liệu lỗi thời",
+        "message": "Đăng nhập thành công nhưng cơ sở dữ liệu thiếu cột hồ sơ. Chạy migration Supabase mới nhất rồi đăng nhập lại."
+      },
+      "supabase_unreachable": {
+        "title": "Không kết nối được Supabase",
+        "message": "Triển khai này không thể kết nối Supabase. Kiểm tra biến môi trường và triển khai lại."
+      },
+      "session_missing": {
+        "title": "Phiên đã hết hạn",
+        "message": "Phiên của bạn đã hết hạn. Đăng nhập lại để tiếp tục."
+      },
+      "reset_link_expired": {
+        "title": "Liên kết đã hết hạn",
+        "message": "Liên kết đặt lại mật khẩu đã hết hạn. Yêu cầu liên kết mới từ trang quên mật khẩu."
+      },
+      "generic": {
+        "title": "Đã xảy ra lỗi",
+        "message": "Không thể hoàn tất đăng nhập. Thử lại hoặc dùng quên mật khẩu."
+      }
+    },
+    "access": {
+      "plan": {
+        "title": "Cần nâng cấp gói",
+        "message": "Gói hiện tại không bao gồm tính năng này. Mở thanh toán để nâng cấp."
+      },
+      "subscription": {
+        "title": "Vấn đề đăng ký",
+        "message": "Đăng ký cần được xử lý trước khi dùng tính năng trả phí. Cập nhật thanh toán để tiếp tục."
+      },
+      "role": {
+        "title": "Quyền truy cập bị hạn chế",
+        "message": "Vai trò của bạn không có quyền truy cập trang này. Liên hệ chủ sở hữu không gian làm việc."
+      },
+      "profile": {
+        "title": "Cần thiết lập hồ sơ",
+        "message": "Đăng nhập thành công nhưng hồ sơ không gian làm việc chưa đầy đủ. Đăng nhập lại hoặc liên hệ hỗ trợ."
+      },
+      "profile_setup": {
+        "title": "Cần thiết lập không gian làm việc",
+        "message": "Tài khoản tồn tại nhưng EverittOS chưa hoàn tất thiết lập. Thử đăng nhập lại hoặc liên hệ hỗ trợ."
+      },
+      "schema": {
+        "title": "Lược đồ cơ sở dữ liệu lỗi thời",
+        "message": "Phiên hợp lệ nhưng cơ sở dữ liệu thiếu cột bắt buộc. Chạy migration Supabase mới nhất."
+      },
+      "organization": {
+        "title": "Cần quyền truy cập tổ chức",
+        "message": "Hồ sơ tồn tại nhưng quyền truy cập tổ chức chưa kích hoạt. Hoàn tất thiết lập không gian làm việc."
+      },
+      "session": {
+        "title": "Cần đăng nhập",
+        "message": "Đăng nhập để truy cập trang này."
+      },
+      "idle": {
+        "title": "Phiên đã hết hạn do không hoạt động",
+        "message": "Bạn đã bị đăng xuất do không hoạt động. Đăng nhập lại để tiếp tục."
+      },
+      "disabled": {
+        "title": "Tài khoản bị vô hiệu hóa",
+        "message": "Tài khoản này đã bị vô hiệu hóa. Liên hệ hỗ trợ để khôi phục quyền truy cập."
+      },
+      "generic": {
+        "title": "Truy cập bị chặn",
+        "message": "Bạn không có quyền truy cập trang này."
+      }
+    },
+    "api": {
+      "network": "Không thể kết nối máy chủ. Kiểm tra kết nối và thử lại.",
+      "userExists": "Email này đã có tài khoản. Đăng nhập hoặc đặt lại mật khẩu.",
+      "permission": "Bạn không có quyền thực hiện thao tác này.",
+      "sessionExpired": "Phiên đã hết hạn. Đăng nhập lại để tiếp tục."
+    }
+  },
+  "session": {
+    "expiringTitle": "Phiên sắp hết hạn",
+    "expiringBody": "Bạn sẽ bị đăng xuất sau {time} do không hoạt động. Di chuyển chuột, gõ phím hoặc nhấn Duy trì đăng nhập để tiếp tục.",
+    "staySignedIn": "Duy trì đăng nhập",
+    "seconds": "{count} giây"
+  },
+  "empty": {
+    "workers": {
+      "title": "Chưa có nhân viên",
+      "description": "Thêm thành viên đầu tiên vào đội ngũ."
+    },
+    "customers": {
+      "title": "Chưa có khách hàng",
+      "description": "Tạo khách hàng đầu tiên."
+    },
+    "jobs": {
+      "title": "Chưa có công việc",
+      "description": "Tạo công việc đầu tiên."
+    },
+    "schedule": {
+      "title": "Chưa có lịch công việc",
+      "description": "Tạo công việc và thêm ngày để xem trên lịch."
+    },
+    "activity": {
+      "title": "Chưa có hoạt động",
+      "description": "Cập nhật về công việc, đội ngũ và báo cáo sẽ hiển thị tại đây."
+    },
+    "notifications": {
+      "title": "Chưa có thông báo",
+      "description": "Phân công, lời mời và cập nhật thanh toán sẽ hiển thị tại đây."
+    },
+    "workflows": {
+      "title": "Chưa có quy trình",
+      "description": "Tạo checklist khi bạn muốn các bước giống nhau cho mọi công việc."
+    },
+    "photos": {
+      "title": "Chưa có ảnh",
+      "description": "Tải ảnh trước và sau để ghi lại công việc đã hoàn thành."
+    }
+  },
+  "onboarding": {
+    "gettingStarted": "Bắt đầu",
+    "gettingStartedBody": "Hướng dẫn nhanh, tùy chọn cho freelancer, cá nhân và nhóm nhỏ. Hoàn tất bất cứ lúc nào từ Cài đặt. Không có gì ở đây chặn công việc của bạn.",
+    "continueSetup": "Tiếp tục thiết lập",
+    "workspaceSettings": "Cài đặt không gian làm việc",
+    "dismissChecklist": "Đóng danh sách bắt đầu",
+    "workspaceSetup": "Thiết lập không gian làm việc",
+    "stepOf": "Bước {current}/{total}: {label}. Tùy chọn. Hoàn tất bất cứ lúc nào từ Cài đặt. Bảng điều khiển luôn sẵn sàng.",
+    "goToDashboard": "Đến bảng điều khiển",
+    "loadingSetup": "Đang tải thiết lập…",
+    "workspaceDetails": "Chi tiết không gian làm việc",
+    "workspaceDetailsBody": "Không gian làm việc đã sẵn sàng. Bạn có thể tạo công việc, khách hàng và lịch ngay. Thêm thông tin doanh nghiệp sau nếu cần.",
+    "businessNameOptional": "Tên doanh nghiệp hoặc hiển thị (tùy chọn)",
+    "industryOptional": "Ngành (tùy chọn)",
+    "teamSizeOptional": "Quy mô đội (tùy chọn)",
+    "phoneOptional": "Điện thoại (tùy chọn)",
+    "websiteOptional": "Website (tùy chọn)",
+    "saveAndContinue": "Lưu và tiếp tục",
+    "skipAndStart": "Bỏ qua và bắt đầu dùng EverittOS",
+    "addFirstCustomer": "Thêm khách hàng đầu tiên",
+    "customerName": "Tên khách hàng",
+    "createFirstJob": "Tạo công việc đầu tiên",
+    "jobTitle": "Tiêu đề công việc",
+    "uploadFirstPhoto": "Tải ảnh đầu tiên",
+    "uploadPhotoBody": "Thêm ảnh trước, tiến độ và sau từ điện thoại hoặc máy tính.",
+    "openJobToUpload": "Mở công việc để tải ảnh",
+    "generateFirstReport": "Tạo báo cáo đầu tiên",
+    "createReport": "Tạo báo cáo",
+    "inviteTeamOptional": "Mời thành viên (tùy chọn)",
+    "sendInviteFinish": "Gửi lời mời và hoàn tất",
+    "customerNameRequired": "Tên khách hàng là bắt buộc.",
+    "jobTitleRequired": "Tiêu đề công việc là bắt buộc.",
+    "createJobFirst": "Hãy tạo công việc trước.",
+    "photosProOnly": "Tải ảnh bắt đầu từ gói Pro. Tiếp tục đến báo cáo.",
+    "openJobUploadReturn": "Mở công việc và tải ảnh từ thiết bị, sau đó quay lại đây.",
+    "inviteFailed": "Gửi lời mời thất bại",
+    "steps": {
+      "workspace": "Thiết lập không gian làm việc (tùy chọn)",
+      "customer": "Thêm khách hàng đầu tiên",
+      "job": "Tạo công việc đầu tiên",
+      "photo": "Tải ảnh đầu tiên",
+      "report": "Tạo báo cáo đầu tiên",
+      "invite": "Mời thành viên (tùy chọn)"
+    },
+    "stepsShort": {
+      "workspace": "Thiết lập không gian làm việc",
+      "customer": "Thêm khách hàng đầu tiên",
+      "job": "Tạo công việc đầu tiên",
+      "photo": "Tải ảnh đầu tiên",
+      "report": "Tạo báo cáo đầu tiên",
+      "invite": "Mời thành viên"
+    }
+  },
+  "dashboard": {
+    "title": "Bảng điều khiển",
+    "subtitle": "Tổng quan công việc, hoạt động và mức sử dụng của không gian làm việc.",
+    "newJob": "Công việc mới",
+    "recentJobs": "Công việc gần đây",
+    "viewAllJobs": "Xem tất cả công việc",
+    "noRecentJobs": "Không có công việc gần đây",
+    "createFirstJob": "Tạo công việc đầu tiên",
+    "activity": "Hoạt động",
+    "viewActivity": "Xem hoạt động",
+    "usage": "Mức sử dụng",
+    "executiveMetrics": "Chỉ số điều hành",
+    "loadFailed": "Không thể tải dữ liệu bảng điều khiển."
+  },
+  "jobs": {
+    "title": "Công việc",
+    "subtitle": "Tất cả công việc bạn có thể truy cập theo vai trò.",
+    "newJob": "Công việc mới",
+    "createJob": "Tạo công việc",
+    "loading": "Đang tải công việc…",
+    "jobColumn": "Công việc",
+    "customerColumn": "Khách hàng",
+    "addressColumn": "Địa chỉ",
+    "statusColumn": "Trạng thái",
+    "photosColumn": "Ảnh",
+    "viewJob": "Xem công việc"
+  },
+  "customers": {
+    "title": "Khách hàng",
+    "subtitle": "Quản lý hồ sơ khách hàng và lịch sử công việc.",
+    "addCustomer": "Thêm khách hàng",
+    "loading": "Đang tải khách hàng…"
+  },
+  "workers": {
+    "title": "Nhân viên",
+    "subtitle": "Nhân sự hiện trường và thành viên đội trong không gian làm việc.",
+    "addWorker": "Thêm nhân viên",
+    "loading": "Đang tải nhân viên…"
+  },
+  "schedule": {
+    "title": "Lịch",
+    "subtitle": "Xem lịch các công việc đã lên lịch.",
+    "loading": "Đang tải lịch…"
+  },
+  "team": {
+    "title": "Đội ngũ",
+    "subtitle": "Mời thành viên và quản lý vai trò.",
+    "loading": "Đang tải đội ngũ…"
+  },
+  "activity": {
+    "title": "Hoạt động",
+    "subtitle": "Thay đổi gần đây trong không gian làm việc.",
+    "loading": "Đang tải hoạt động…"
+  },
+  "analytics": {
+    "title": "Phân tích",
+    "subtitle": "Chỉ số sử dụng và hiệu suất.",
+    "loading": "Đang tải phân tích…"
+  },
+  "workflows": {
+    "title": "Quy trình",
+    "subtitle": "Checklist tái sử dụng cho công việc.",
+    "loading": "Đang tải quy trình…"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "subtitle": "Phân công, lời mời và cập nhật thanh toán.",
+    "loading": "Đang tải thông báo…",
+    "markRead": "Đánh dấu đã đọc"
+  },
+  "reports": {
+    "title": "Báo cáo",
+    "generate": "Tạo báo cáo",
+    "download": "Tải báo cáo",
+    "share": "Chia sẻ báo cáo",
+    "loading": "Đang tải báo cáo…",
+    "notFound": "Không tìm thấy báo cáo.",
+    "beforePhotos": "Ảnh trước",
+    "afterPhotos": "Ảnh sau",
+    "progressPhotos": "Ảnh tiến độ",
+    "summary": "Tóm tắt",
+    "jobDetails": "Chi tiết công việc"
+  },
+  "settings": {
+    "accountTitle": "Tài khoản",
+    "accountSubtitle": "Hồ sơ, ngôn ngữ, đăng ký và trạng thái tài khoản.",
+    "languageSection": "Ngôn ngữ",
+    "languageSectionBody": "Chọn ngôn ngữ cho điều hướng, biểu mẫu và thông báo trong EverittOS.",
+    "emailLabel": "Email",
+    "roleLabel": "Vai trò",
+    "planLabel": "Gói",
+    "subscriptionLabel": "Đăng ký",
+    "accountStatusLabel": "Trạng thái tài khoản",
+    "deactivateTitle": "Vô hiệu hóa tài khoản",
+    "deactivateBody": "Vô hiệu hóa sẽ đăng xuất và chặn truy cập cho đến khi hỗ trợ khôi phục tài khoản.",
+    "deactivateConfirm": "Nhập \"deactivate my account\" để xác nhận.",
+    "deactivateAction": "Vô hiệu hóa tài khoản",
+    "deleteTitle": "Xóa tài khoản",
+    "deleteBody": "Yêu cầu xóa vĩnh viễn tài khoản và dữ liệu liên quan.",
+    "deleteConfirm": "Nhập \"DELETE MY ACCOUNT\" để xác nhận.",
+    "deleteAction": "Yêu cầu xóa",
+    "billingTitle": "Thanh toán",
+    "securityTitle": "Bảo mật",
+    "workspaceTitle": "Không gian làm việc",
+    "loading": "Đang tải cài đặt…"
+  },
+  "plans": {
+    "free": "Free",
+    "pro": "EverittOS Pro",
+    "business": "EverittOS Business",
+    "operations": "EverittOS Operations",
+    "growth": "EverittOS Growth",
+    "enterprise": "EverittOS Enterprise"
+  },
+  "roles": {
+    "owner": "Chủ sở hữu",
+    "admin": "Quản trị viên",
+    "manager": "Quản lý",
+    "employee": "Nhân viên",
+    "contractor": "Nhà thầu",
+    "client": "Khách hàng"
+  },
+  "emails": {
+    "welcomeTitle": "Chào mừng đến EverittOS",
+    "welcomePreheader": "Không gian làm việc đã sẵn sàng.",
+    "welcomeBody": "Xin chào {name}, tài khoản EverittOS của bạn đã kích hoạt. Tạo công việc đầu tiên, mời đội ngũ và bắt đầu quản lý công việc hiện trường từ một bảng điều khiển.",
+    "openDashboard": "Mở bảng điều khiển",
+    "teamInviteTitle": "Tham gia {organization}",
+    "teamInviteBody": "Bạn được mời tham gia {organization} với vai trò {role}. Chấp nhận lời mời để truy cập công việc, lịch và báo cáo.",
+    "acceptInvitation": "Chấp nhận lời mời",
+    "clientInviteTitle": "Quyền truy cập cổng khách hàng",
+    "clientInviteBodyJob": "Bạn được cấp quyền khách hàng cho công việc {job} với {organization}.",
+    "clientInviteBodyGeneral": "Bạn được cấp quyền khách hàng cho một công việc với {organization}.",
+    "acceptAndSignIn": "Chấp nhận và đăng nhập",
+    "memberJoinedTitle": "Thành viên đã tham gia",
+    "memberJoinedBody": "{email} đã chấp nhận lời mời và tham gia {organization}.",
+    "trialEndingTitle": "Thời gian dùng thử sắp kết thúc",
+    "trialEndingBody": "Thời gian dùng thử EverittOS còn {days} ngày. Nâng cấp để giữ quản lý đội ngũ, nhật ký hoạt động và báo cáo nâng cao.",
+    "viewBilling": "Xem thanh toán",
+    "paymentFailedTitle": "Thanh toán thất bại",
+    "paymentFailedBody": "Chúng tôi không thể xử lý khoản thanh toán đăng ký gần nhất. Cập nhật thông tin thanh toán để không mất quyền truy cập tính năng trả phí.",
+    "updateBilling": "Cập nhật thanh toán",
+    "subscriptionActivatedTitle": "Đăng ký đã kích hoạt",
+    "subscriptionActivatedBody": "Gói {plan} của bạn đã kích hoạt. Cảm ơn bạn đã chọn EverittOS.",
+    "subscriptionCanceledTitle": "Đăng ký đã hủy",
+    "subscriptionCanceledBody": "Đăng ký sẽ hủy vào cuối kỳ thanh toán. Bạn có thể tiếp tục bất cứ lúc nào từ cài đặt thanh toán.",
+    "manageBilling": "Quản lý thanh toán",
+    "reportAvailableTitle": "Báo cáo sẵn sàng",
+    "reportAvailableBody": "Báo cáo cho {job} đã sẵn sàng để xem.",
+    "viewReport": "Xem báo cáo",
+    "jobAssignedTitle": "Đã phân công công việc",
+    "jobAssignedBody": "Bạn được phân công {job}.",
+    "viewJob": "Xem công việc",
+    "poweredBy": "Được vận hành bởi EverittOS"
+  },
+  "permission": {
+    "deniedTitle": "Truy cập bị từ chối",
+    "deniedBody": "Bạn không có quyền xem trang này."
+  }
+}

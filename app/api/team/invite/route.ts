@@ -59,14 +59,15 @@ export async function POST(request: Request) {
   }
 
   const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
+  const { data: actorProfile } = await admin.from('profiles').select('full_name, email, locale').eq('id', user.id).maybeSingle();
   const emailResult = await sendTeamInviteEmail({
     to: email,
     organizationName: org.organizationName,
     acceptUrl,
-    role
+    role,
+    locale: actorProfile?.locale
   });
 
-  const { data: actorProfile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
   const actorName = actorProfile?.full_name || actorProfile?.email || user.email || 'Team member';
   await admin.from('activity_logs').insert({
     organization_id: org.organizationId,

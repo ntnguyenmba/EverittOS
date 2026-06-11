@@ -1,4 +1,4 @@
-type AuthErrorResult = {
+export type AuthErrorResult = {
   title: string;
   message: string;
   details?: string;

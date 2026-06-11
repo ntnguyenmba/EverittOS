@@ -3,32 +3,20 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
   normalizePlan,
-  planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { canAccessNavHref } from '@/lib/nav-access';
+import { APP_NAV_LINKS } from '@/lib/nav-links';
+import { useTranslatedPlanName } from '@/lib/i18n-client';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-
-const baseLinks = [
-  ['Dashboard', '/dashboard'],
-  ['Jobs', '/jobs'],
-  ['Customers', '/customers'],
-  ['Schedule', '/schedule'],
-  ['Workers', '/workers'],
-  ['Team', '/team'],
-  ['Activity', '/activity'],
-  ['Analytics', '/analytics'],
-  ['Workflows', '/workflows'],
-  ['Notifications', '/notifications'],
-  ['Billing', '/settings/billing'],
-  ['Settings', '/settings']
-] as const;
+import { LocaleSwitcher } from '@/components/locale-switcher';
 
 type SidebarProps = {
   plan?: EverittosPlan | string | null;
@@ -39,6 +27,9 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const normalized = normalizePlan(plan);
+  const t = useTranslations('nav');
+  const commonT = useTranslations('common');
+  const planName = useTranslatedPlanName();
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
 
@@ -79,29 +70,33 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
   }
 
   return (
-    <aside className="sidebar" aria-label="App navigation">
+    <aside className="sidebar" aria-label={t('appNavigation')}>
+      <div className="sidebar-locale">
+        <LocaleSwitcher compact showLabel={false} />
+      </div>
+
       <div className="sidebar-plan">
-        <span className="sidebar-plan-label">Plan</span>
-        <span className="plan-badge">{planDisplayName(normalized)}</span>
+        <span className="sidebar-plan-label">{commonT('plan')}</span>
+        <span className="plan-badge">{planName(normalized)}</span>
       </div>
 
       {isClientRole(role) && limitsForPlan(normalized).clientPortal && (
         <Link href="/portal/client" aria-current={linkClass('/portal/client') ? 'page' : undefined}>
-          Client portal
+          {t('clientPortal')}
         </Link>
       )}
       {isContractorRole(role) && limitsForPlan(normalized).contractorPortal && (
         <Link href="/portal/contractor" aria-current={linkClass('/portal/contractor') ? 'page' : undefined}>
-          Contractor portal
+          {t('contractorPortal')}
         </Link>
       )}
 
       {!isClientRole(role) &&
-        baseLinks.map(([label, href]) => {
+        APP_NAV_LINKS.map(({ key, href }) => {
           if (!canAccessNavHref(role, href, normalized)) return null;
           return (
             <Link key={href} href={href} aria-current={linkClass(href) ? 'page' : undefined}>
-              {label}
+              {t(key)}
               {href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
             </Link>
           );
@@ -109,15 +104,15 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
 
       {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) && (
         <div className="sidebar-upgrade">
-          <p>Need more jobs, photos, or team members?</p>
+          <p>{t('upgradePrompt')}</p>
           <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-            Start Pro
+            {t('startPro')}
           </a>
         </div>
       )}
 
       <button className="btn sidebar-logout" type="button" onClick={logout}>
-        Log out
+        {t('logout')}
       </button>
     </aside>
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -20,6 +20,7 @@ type Worker = {
 };
 
 export default function WorkersPage() {
+  const emptyCopy = useEmptyCopy();
   const router = useRouter();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -134,7 +135,7 @@ export default function WorkersPage() {
         <div className="grid-3" style={{ marginTop: 20 }}>
           {loading ? <p className="loading-state" role="status">Loading workers…</p> : null}
           {!loading && workers.length === 0 ? (
-            <EmptyState title={EMPTY_COPY.workers.title} description={EMPTY_COPY.workers.description} />
+            <EmptyState title={emptyCopy.workers.title} description={emptyCopy.workers.description} />
           ) : null}
           {!loading &&
             workers.map((worker) => (

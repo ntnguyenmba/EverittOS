@@ -3,32 +3,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
   normalizePlan,
-  planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { canAccessNavHref } from '@/lib/nav-access';
+import { APP_NAV_LINKS } from '@/lib/nav-links';
+import { useTranslatedPlanName } from '@/lib/i18n-client';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-
-const baseLinks = [
-  ['Dashboard', '/dashboard'],
-  ['Jobs', '/jobs'],
-  ['Customers', '/customers'],
-  ['Schedule', '/schedule'],
-  ['Workers', '/workers'],
-  ['Team', '/team'],
-  ['Activity', '/activity'],
-  ['Analytics', '/analytics'],
-  ['Workflows', '/workflows'],
-  ['Notifications', '/notifications'],
-  ['Billing', '/settings/billing'],
-  ['Settings', '/settings']
-] as const;
+import { LocaleSwitcher } from '@/components/locale-switcher';
 
 type MobileNavProps = {
   plan?: EverittosPlan | string | null;
@@ -39,6 +27,9 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const normalized = normalizePlan(plan);
+  const t = useTranslations('nav');
+  const commonT = useTranslations('common');
+  const planName = useTranslatedPlanName();
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
 
   useEffect(() => {
@@ -73,44 +64,47 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const links = baseLinks.filter(([, href]) => canAccessNavHref(role, href, normalized));
+  const links = APP_NAV_LINKS.filter(({ href }) => canAccessNavHref(role, href, normalized));
 
   return (
     <div className="mobile-nav">
-      <button
-        type="button"
-        className="btn mobile-nav-toggle"
-        aria-expanded={open}
-        aria-controls="mobile-nav-panel"
-        onClick={() => setOpen((value) => !value)}
-      >
-        {open ? 'Close menu' : 'Menu'}
-      </button>
+      <div className="mobile-nav-bar">
+        <LocaleSwitcher compact showLabel={false} />
+        <button
+          type="button"
+          className="btn mobile-nav-toggle"
+          aria-expanded={open}
+          aria-controls="mobile-nav-panel"
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? commonT('closeMenu') : commonT('menu')}
+        </button>
+      </div>
 
       {open ? (
-        <nav id="mobile-nav-panel" className="mobile-nav-panel" aria-label="App navigation">
+        <nav id="mobile-nav-panel" className="mobile-nav-panel" aria-label={t('appNavigation')}>
           <p className="mobile-nav-plan">
-            Plan: <strong>{planDisplayName(normalized)}</strong>
+            {commonT('plan')}: <strong>{planName(normalized)}</strong>
           </p>
           {isClientRole(role) && limitsForPlan(normalized).clientPortal ? (
             <Link href="/portal/client" className={pathname.startsWith('/portal/client') ? 'active' : ''}>
-              Client portal
+              {t('clientPortal')}
             </Link>
           ) : null}
           {isContractorRole(role) && limitsForPlan(normalized).contractorPortal ? (
             <Link href="/portal/contractor" className={pathname.startsWith('/portal/contractor') ? 'active' : ''}>
-              Contractor portal
+              {t('contractorPortal')}
             </Link>
           ) : null}
           {!isClientRole(role) &&
-            links.map(([label, href]) => (
+            links.map(({ key, href }) => (
               <Link key={href} href={href} className={pathname === href || pathname.startsWith(`${href}/`) ? 'active' : ''}>
-                {label}
+                {t(key)}
               </Link>
             ))}
           {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) ? (
             <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-              Start Pro
+              {t('startPro')}
             </a>
           ) : null}
         </nav>

@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 import {
   canCancelSubscription,
   canResumeSubscription,
   subscriptionStatusMessage
 } from '@/lib/stripe-subscription';
-import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { useTranslatedPlanName, useTranslatedRoleName } from '@/lib/i18n-client';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, isOwner, normalizeRole } from '@/lib/roles';
-import { roleDisplayName } from '@/lib/role-routes';
 import { normalizeAccountStatus } from '@/lib/account-status';
 import { SUPPORT_EMAIL } from '@/lib/support';
 import { AuthMessages } from '@/components/auth/auth-messages';
@@ -22,6 +24,10 @@ const DELETE_CONFIRMATION = 'DELETE MY ACCOUNT';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
+  const t = useTranslations('settings');
+  const commonT = useTranslations('common');
+  const planName = useTranslatedPlanName();
+  const roleName = useTranslatedRoleName();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [email, setEmail] = useState('');
@@ -142,7 +148,7 @@ export default function AccountSettingsPage() {
     return (
       <div className="dashboard-shell">
         <main className="main">
-          <p>Loading account...</p>
+          <p>{t('loading')}</p>
         </main>
       </div>
     );
@@ -153,29 +159,35 @@ export default function AccountSettingsPage() {
   const deleteReady = confirmDeleteText.trim() === DELETE_CONFIRMATION;
 
   return (
-    <SettingsShell plan={plan} role={role} title="Account" description="Email, role, subscription, and account status.">
+    <SettingsShell plan={plan} role={role} title={t('accountTitle')} description={t('accountSubtitle')}>
       <div className="settings-card">
-        <h3>Profile</h3>
+        <h3>{t('languageSection')}</h3>
+        <p className="muted">{t('languageSectionBody')}</p>
+        <LocaleSwitcher />
+      </div>
+
+      <div className="settings-card">
+        <h3>{t('accountTitle')}</h3>
         <div className="settings-row">
-          <span className="settings-row-label">Email</span>
+          <span className="settings-row-label">{t('emailLabel')}</span>
           <span className="settings-row-value">{email}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Role</span>
-          <span className="settings-row-value">{roleDisplayName(role)}</span>
+          <span className="settings-row-label">{t('roleLabel')}</span>
+          <span className="settings-row-value">{roleName(role)}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Current plan</span>
-          <span className="settings-row-value">{planDisplayName(plan)}</span>
+          <span className="settings-row-label">{t('planLabel')}</span>
+          <span className="settings-row-value">{planName(plan)}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Subscription status</span>
+          <span className="settings-row-label">{t('subscriptionLabel')}</span>
           <span className="settings-row-value">{subscriptionStatus}</span>
         </div>
         <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
         <div className="settings-row">
-          <span className="settings-row-label">Account status</span>
-          <span className="settings-row-value">{accountStatus === 'active' ? 'Active' : 'Disabled'}</span>
+          <span className="settings-row-label">{t('accountStatusLabel')}</span>
+          <span className="settings-row-value">{accountStatus === 'active' ? commonT('yes') : commonT('no')}</span>
         </div>
         <div className="settings-actions">
           {canBilling ? (

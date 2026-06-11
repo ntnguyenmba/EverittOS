@@ -19,6 +19,7 @@ export type EmailTemplateInput = {
   supportEmail?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  locale?: string;
 };
 
 export function renderEmailTemplate(input: EmailTemplateInput): string {
@@ -32,8 +33,10 @@ export function renderEmailTemplate(input: EmailTemplateInput): string {
       ? `<p style="margin:24px 0;"><a href="${input.ctaUrl}" style="background:${primary};color:#F7F6F3;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block;">${input.ctaLabel}</a></p>`
       : '';
 
+  const lang = input.locale || 'en';
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head><meta charset="utf-8"><title>${input.title}</title></head>
 <body style="margin:0;background:${BRAND.background};font-family:Inter,Segoe UI,sans-serif;color:${BRAND.text};">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
@@ -45,7 +48,7 @@ export function renderEmailTemplate(input: EmailTemplateInput): string {
       ${cta}
     </div>
     <p style="font-size:12px;color:${BRAND.muted};margin:24px 0 0;">Questions? Contact <a href="mailto:${support}" style="color:${secondary};">${support}</a></p>
-    <p style="font-size:11px;color:${BRAND.muted};margin:8px 0 0;">Powered by EverittOS · ${appUrl('/')}</p>
+    <p style="font-size:11px;color:${BRAND.muted};margin:8px 0 0;">EverittOS · ${appUrl('/')}</p>
   </div>
 </body>
 </html>`;

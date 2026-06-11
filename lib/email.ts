@@ -1,5 +1,11 @@
+import { normalizeAppLocale, type AppLocale } from '@/i18n/routing';
 import { appUrl } from '@/lib/app-url';
-import { clientInviteEmailHtml, teamInviteEmailHtml } from '@/lib/email-templates';
+import {
+  localizedClientInviteEmailHtml,
+  localizedClientInviteSubject,
+  localizedTeamInviteEmailHtml,
+  localizedTeamInviteSubject
+} from '@/lib/email-i18n';
 
 export type EmailResult = { sent: boolean; message: string };
 
@@ -36,13 +42,15 @@ export async function sendTeamInviteEmail(input: {
   organizationName: string;
   acceptUrl: string;
   role: string;
+  locale?: string | null;
 }): Promise<EmailResult> {
   if (!resendConfigured()) {
     return { sent: false, message: 'Email not configured. Copy the invite link below.' };
   }
 
-  const subject = `You are invited to ${input.organizationName} on EverittOS`;
-  const html = teamInviteEmailHtml({
+  const locale = normalizeAppLocale(input.locale);
+  const subject = localizedTeamInviteSubject(locale, input.organizationName);
+  const html = localizedTeamInviteEmailHtml(locale, {
     organizationName: input.organizationName,
     role: input.role,
     acceptUrl: input.acceptUrl
@@ -57,13 +65,15 @@ export async function sendClientInviteEmail(input: {
   acceptUrl: string;
   jobTitle?: string;
   portalUrl?: string;
+  locale?: string | null;
 }): Promise<EmailResult> {
   if (!resendConfigured()) {
     return { sent: false, message: 'Email not configured. Copy the client link below.' };
   }
 
-  const subject = `Client access to ${input.organizationName} on EverittOS`;
-  const html = clientInviteEmailHtml({
+  const locale = normalizeAppLocale(input.locale);
+  const subject = localizedClientInviteSubject(locale, input.organizationName);
+  const html = localizedClientInviteEmailHtml(locale, {
     organizationName: input.organizationName,
     acceptUrl: input.acceptUrl,
     jobTitle: input.jobTitle,
@@ -88,3 +98,14 @@ export {
   jobAssignedEmailHtml,
   EMAIL_TEMPLATE_CATALOG
 } from '@/lib/email-templates';
+
+export {
+  localizedWelcomeEmailHtml,
+  localizedInvitationAcceptedEmailHtml,
+  localizedTrialEndingEmailHtml,
+  localizedPaymentFailedEmailHtml,
+  localizedSubscriptionActivatedEmailHtml,
+  localizedSubscriptionCanceledEmailHtml,
+  localizedReportAvailableEmailHtml,
+  localizedJobAssignedEmailHtml
+} from '@/lib/email-i18n';

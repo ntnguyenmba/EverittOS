@@ -1,0 +1,480 @@
+{
+  "common": {
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "skip": "Omitir",
+    "dismiss": "Cerrar",
+    "close": "Cerrar",
+    "menu": "Menú",
+    "closeMenu": "Cerrar menú",
+    "back": "Volver",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "send": "Enviar",
+    "open": "Abrir",
+    "view": "Ver",
+    "search": "Buscar",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "opcional",
+    "required": "obligatorio",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "cookies": "Cookies",
+    "security": "Seguridad",
+    "plan": "Plan",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "status": "Estado",
+    "actions": "Acciones",
+    "name": "Nombre",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "website": "Sitio web",
+    "language": "Idioma",
+    "languageSaved": "Preferencia de idioma guardada.",
+    "languageSaveFailed": "No se pudo guardar el idioma. Inténtelo de nuevo.",
+    "somethingWrong": "Algo salió mal. Inténtelo de nuevo.",
+    "questionsContact": "¿Preguntas? Contacte {email}"
+  },
+  "locale": {
+    "label": "Idioma",
+    "en": "English",
+    "es": "Español",
+    "vi": "Tiếng Việt"
+  },
+  "gateway": {
+    "title": "Software operativo para equipos de servicio en campo.",
+    "signIn": "Iniciar sesión",
+    "startTrial": "Comenzar prueba gratis"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "jobs": "Trabajos",
+    "customers": "Clientes",
+    "schedule": "Calendario",
+    "workers": "Trabajadores",
+    "team": "Equipo",
+    "activity": "Actividad",
+    "analytics": "Analítica",
+    "workflows": "Flujos de trabajo",
+    "notifications": "Notificaciones",
+    "billing": "Facturación",
+    "settings": "Configuración",
+    "clientPortal": "Portal de clientes",
+    "contractorPortal": "Portal de contratistas",
+    "workspace": "Espacio de trabajo",
+    "branding": "Marca",
+    "integrations": "Integraciones",
+    "account": "Cuenta",
+    "security": "Seguridad",
+    "api": "API",
+    "departments": "Departamentos",
+    "logout": "Cerrar sesión",
+    "upgradePrompt": "¿Necesita más trabajos, fotos o miembros del equipo?",
+    "startPro": "Comenzar Pro",
+    "skipToMain": "Ir al contenido principal",
+    "appNavigation": "Navegación de la aplicación"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signInAction": "Iniciar sesión",
+    "signingIn": "Iniciando sesión…",
+    "createAccount": "Crear cuenta",
+    "creatingAccount": "Creando cuenta…",
+    "startFreeTrial": "Comenzar prueba gratis",
+    "forgotPassword": "Olvidé mi contraseña",
+    "backToSignIn": "Volver a iniciar sesión",
+    "alreadyHaveAccount": "¿Ya tiene cuenta? Inicie sesión",
+    "resetPassword": "Restablecer contraseña",
+    "sendResetEmail": "Enviar correo de restablecimiento",
+    "sending": "Enviando…",
+    "chooseNewPassword": "Elija una nueva contraseña",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "updatePassword": "Actualizar contraseña",
+    "updating": "Actualizando…",
+    "requestNewResetLink": "Solicitar nuevo enlace",
+    "verifyingResetLink": "Verificando enlace…",
+    "passwordUpdatedRedirect": "Contraseña actualizada. Redirigiendo…",
+    "emailVerified": "Correo verificado. Ya puede iniciar sesión.",
+    "accountCreatedVerify": "Cuenta creada. Revise su correo para verificar su dirección e inicie sesión.",
+    "businessNameOptional": "Nombre comercial o de visualización (opcional)",
+    "businessNamePlaceholder": "Deje en blanco para un espacio personal",
+    "emailPlaceholder": "usted@empresa.com",
+    "passwordPlaceholder": "Su contraseña",
+    "passwordMinPlaceholder": "Mínimo 6 caracteres",
+    "repeatPassword": "Repita la contraseña",
+    "selectedPlanSignIn": "Plan seleccionado: {plan}. Inicie sesión para continuar la configuración.",
+    "selectedPlanSignup": "Seleccionó {plan}. Después del registro podrá completar el pago de ese plan.",
+    "configRequiredTitle": "Configuración requerida",
+    "configRequiredBody": "La autenticación no está configurada en este entorno. Configure las variables de Supabase y vuelva a desplegar.",
+    "resetLinkOpenFromEmail": "Abra el enlace de restablecimiento de su correo o solicite uno nuevo abajo.",
+    "passwordTooShortTitle": "Contraseña demasiado corta",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+    "passwordsNoMatchTitle": "Las contraseñas no coinciden",
+    "passwordsNoMatch": "Escriba la misma contraseña en ambos campos.",
+    "emailPasswordRequired": "El correo y la contraseña son obligatorios.",
+    "tooManySignups": "Demasiados intentos de registro. Espere una hora e inténtelo de nuevo."
+  },
+  "errors": {
+    "auth": {
+      "invalid_credentials": {
+        "title": "Error al iniciar sesión",
+        "message": "El correo o la contraseña son incorrectos. Revise ambos campos e inténtelo de nuevo."
+      },
+      "email_not_confirmed": {
+        "title": "Correo no verificado",
+        "message": "Confirme su correo antes de iniciar sesión. Revise su bandeja de entrada."
+      },
+      "user_banned": {
+        "title": "Cuenta restringida",
+        "message": "Esta cuenta no puede iniciar sesión. Contacte a soporte si cree que es un error."
+      },
+      "too_many_requests": {
+        "title": "Demasiados intentos",
+        "message": "Espere un minuto e inténtelo de nuevo."
+      },
+      "missing_auth_code": {
+        "title": "Enlace incompleto",
+        "message": "A este enlace le falta información. Solicite uno nuevo e inténtelo de nuevo."
+      },
+      "account_disabled": {
+        "title": "Cuenta desactivada",
+        "message": "Esta cuenta fue desactivada. Contacte a soporte para restaurar el acceso."
+      },
+      "config_error": {
+        "title": "Servicio no disponible",
+        "message": "La autenticación no está configurada en este entorno. Contacte a su administrador."
+      },
+      "schema_mismatch": {
+        "title": "Esquema de base de datos desactualizado",
+        "message": "El inicio de sesión funcionó, pero faltan columnas en la base de datos. Ejecute la última migración de Supabase e inicie sesión de nuevo."
+      },
+      "supabase_unreachable": {
+        "title": "Error de conexión con Supabase",
+        "message": "Este despliegue no puede conectarse a Supabase. Verifique las variables de entorno y vuelva a desplegar."
+      },
+      "session_missing": {
+        "title": "Sesión expirada",
+        "message": "Su sesión expiró. Inicie sesión de nuevo para continuar."
+      },
+      "reset_link_expired": {
+        "title": "Enlace expirado",
+        "message": "Este enlace de restablecimiento expiró. Solicite uno nuevo desde la página de contraseña olvidada."
+      },
+      "generic": {
+        "title": "Algo salió mal",
+        "message": "No pudimos completar el inicio de sesión. Inténtelo de nuevo o use contraseña olvidada."
+      }
+    },
+    "access": {
+      "plan": {
+        "title": "Se requiere actualizar el plan",
+        "message": "Su plan actual no incluye esta función. Abra facturación para actualizar."
+      },
+      "subscription": {
+        "title": "Problema con la suscripción",
+        "message": "Su suscripción necesita atención antes de usar funciones de pago. Actualice la facturación para continuar."
+      },
+      "role": {
+        "title": "Acceso restringido",
+        "message": "Su rol no incluye permiso para esta página. Contacte al propietario del espacio de trabajo."
+      },
+      "profile": {
+        "title": "Configuración de perfil requerida",
+        "message": "El inicio de sesión funcionó, pero el perfil del espacio está incompleto. Inicie sesión de nuevo o contacte a soporte."
+      },
+      "profile_setup": {
+        "title": "Configuración del espacio requerida",
+        "message": "Su cuenta existe pero EverittOS no pudo completar la configuración. Intente iniciar sesión de nuevo o contacte a soporte."
+      },
+      "schema": {
+        "title": "Esquema de base de datos desactualizado",
+        "message": "Su sesión es válida pero faltan columnas requeridas. Ejecute la última migración de Supabase."
+      },
+      "organization": {
+        "title": "Se requiere acceso a la organización",
+        "message": "Su perfil existe pero el acceso a la organización aún no está activo. Complete la configuración del espacio."
+      },
+      "session": {
+        "title": "Inicio de sesión requerido",
+        "message": "Inicie sesión para acceder a esta página."
+      },
+      "idle": {
+        "title": "Sesión cerrada por inactividad",
+        "message": "Se cerró su sesión por inactividad. Inicie sesión de nuevo para continuar."
+      },
+      "disabled": {
+        "title": "Cuenta desactivada",
+        "message": "Esta cuenta fue desactivada. Contacte a soporte para restaurar el acceso."
+      },
+      "generic": {
+        "title": "Acceso bloqueado",
+        "message": "No tiene acceso a esta página."
+      }
+    },
+    "api": {
+      "network": "No se pudo conectar al servidor. Revise su conexión e inténtelo de nuevo.",
+      "userExists": "Ya existe una cuenta con este correo. Inicie sesión o restablezca su contraseña.",
+      "permission": "No tiene permiso para realizar esta acción.",
+      "sessionExpired": "Su sesión expiró. Inicie sesión de nuevo para continuar."
+    }
+  },
+  "session": {
+    "expiringTitle": "La sesión expirará pronto",
+    "expiringBody": "Se cerrará su sesión en {time} por inactividad. Mueva el mouse, escriba o pulse Permanecer conectado para continuar.",
+    "staySignedIn": "Permanecer conectado",
+    "seconds": "{count} segundos"
+  },
+  "empty": {
+    "workers": {
+      "title": "Aún no hay trabajadores",
+      "description": "Agregue su primer miembro del equipo."
+    },
+    "customers": {
+      "title": "Aún no hay clientes",
+      "description": "Cree su primer cliente."
+    },
+    "jobs": {
+      "title": "Aún no hay trabajos",
+      "description": "Cree su primer trabajo."
+    },
+    "schedule": {
+      "title": "Aún no hay trabajo programado",
+      "description": "Cree un trabajo y agregue fechas para verlo en el calendario."
+    },
+    "activity": {
+      "title": "Aún no hay actividad",
+      "description": "Las actualizaciones de trabajos, equipo e informes aparecerán aquí."
+    },
+    "notifications": {
+      "title": "Aún no hay notificaciones",
+      "description": "Las asignaciones, invitaciones y actualizaciones de facturación aparecerán aquí."
+    },
+    "workflows": {
+      "title": "Aún no hay flujos de trabajo",
+      "description": "Cree una lista de verificación cuando quiera los mismos pasos en cada trabajo."
+    },
+    "photos": {
+      "title": "Aún no hay fotos",
+      "description": "Suba fotos de antes y después para documentar el trabajo completado."
+    }
+  },
+  "onboarding": {
+    "gettingStarted": "Primeros pasos",
+    "gettingStartedBody": "Un recorrido rápido y opcional para freelancers, operadores independientes y equipos pequeños. Termine cuando quiera desde Configuración. Nada aquí bloquea su trabajo.",
+    "continueSetup": "Continuar configuración",
+    "workspaceSettings": "Configuración del espacio",
+    "dismissChecklist": "Cerrar lista de primeros pasos",
+    "workspaceSetup": "Configuración del espacio de trabajo",
+    "stepOf": "Paso {current} de {total}: {label}. Opcional. Termine cuando quiera desde Configuración. Su panel siempre está disponible.",
+    "goToDashboard": "Ir al panel",
+    "loadingSetup": "Cargando su configuración…",
+    "workspaceDetails": "Detalles del espacio",
+    "workspaceDetailsBody": "Su espacio está listo. Puede empezar a crear trabajos, clientes y calendarios de inmediato. Agregue detalles comerciales más tarde si lo necesita.",
+    "businessNameOptional": "Nombre comercial o de visualización (opcional)",
+    "industryOptional": "Industria (opcional)",
+    "teamSizeOptional": "Tamaño del equipo (opcional)",
+    "phoneOptional": "Teléfono (opcional)",
+    "websiteOptional": "Sitio web (opcional)",
+    "saveAndContinue": "Guardar y continuar",
+    "skipAndStart": "Omitir y empezar a usar EverittOS",
+    "addFirstCustomer": "Agregue su primer cliente",
+    "customerName": "Nombre del cliente",
+    "createFirstJob": "Cree su primer trabajo",
+    "jobTitle": "Título del trabajo",
+    "uploadFirstPhoto": "Suba su primera foto",
+    "uploadPhotoBody": "Agregue fotos de antes, progreso y después desde su teléfono o computadora.",
+    "openJobToUpload": "Abrir trabajo para subir",
+    "generateFirstReport": "Genere su primer informe",
+    "createReport": "Crear informe",
+    "inviteTeamOptional": "Invite a un miembro del equipo (opcional)",
+    "sendInviteFinish": "Enviar invitación y terminar",
+    "customerNameRequired": "El nombre del cliente es obligatorio.",
+    "jobTitleRequired": "El título del trabajo es obligatorio.",
+    "createJobFirst": "Cree un trabajo primero.",
+    "photosProOnly": "Las fotos están disponibles desde Pro. Continúe a informes.",
+    "openJobUploadReturn": "Abra el trabajo y suba una foto desde su dispositivo, luego regrese aquí.",
+    "inviteFailed": "Error al enviar la invitación",
+    "steps": {
+      "workspace": "Configure su espacio de trabajo (opcional)",
+      "customer": "Agregue su primer cliente",
+      "job": "Cree su primer trabajo",
+      "photo": "Suba su primera foto",
+      "report": "Genere su primer informe",
+      "invite": "Invite a un miembro del equipo (opcional)"
+    },
+    "stepsShort": {
+      "workspace": "Configure su espacio de trabajo",
+      "customer": "Agregue su primer cliente",
+      "job": "Cree su primer trabajo",
+      "photo": "Suba su primera foto",
+      "report": "Genere su primer informe",
+      "invite": "Invite a un miembro del equipo"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "subtitle": "Resumen de trabajos, actividad y uso de su espacio de trabajo.",
+    "newJob": "Nuevo trabajo",
+    "recentJobs": "Trabajos recientes",
+    "viewAllJobs": "Ver todos los trabajos",
+    "noRecentJobs": "No hay trabajos recientes",
+    "createFirstJob": "Cree su primer trabajo",
+    "activity": "Actividad",
+    "viewActivity": "Ver actividad",
+    "usage": "Uso",
+    "executiveMetrics": "Métricas ejecutivas",
+    "loadFailed": "No se pudieron cargar los datos del panel."
+  },
+  "jobs": {
+    "title": "Trabajos",
+    "subtitle": "Todos los trabajos a los que puede acceder según su rol.",
+    "newJob": "Nuevo trabajo",
+    "createJob": "Crear un trabajo",
+    "loading": "Cargando trabajos…",
+    "jobColumn": "Trabajo",
+    "customerColumn": "Cliente",
+    "addressColumn": "Dirección",
+    "statusColumn": "Estado",
+    "photosColumn": "Fotos",
+    "viewJob": "Ver trabajo"
+  },
+  "customers": {
+    "title": "Clientes",
+    "subtitle": "Administre registros de clientes e historial de trabajos.",
+    "addCustomer": "Agregar cliente",
+    "loading": "Cargando clientes…"
+  },
+  "workers": {
+    "title": "Trabajadores",
+    "subtitle": "Personal de campo y miembros de cuadrilla en su espacio.",
+    "addWorker": "Agregar trabajador",
+    "loading": "Cargando trabajadores…"
+  },
+  "schedule": {
+    "title": "Calendario",
+    "subtitle": "Vista de calendario de trabajos programados.",
+    "loading": "Cargando calendario…"
+  },
+  "team": {
+    "title": "Equipo",
+    "subtitle": "Invite miembros y administre roles.",
+    "loading": "Cargando equipo…"
+  },
+  "activity": {
+    "title": "Actividad",
+    "subtitle": "Cambios recientes en su espacio de trabajo.",
+    "loading": "Cargando actividad…"
+  },
+  "analytics": {
+    "title": "Analítica",
+    "subtitle": "Métricas de uso y rendimiento.",
+    "loading": "Cargando analítica…"
+  },
+  "workflows": {
+    "title": "Flujos de trabajo",
+    "subtitle": "Listas de verificación reutilizables para sus trabajos.",
+    "loading": "Cargando flujos de trabajo…"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Asignaciones, invitaciones y actualizaciones de facturación.",
+    "loading": "Cargando notificaciones…",
+    "markRead": "Marcar como leída"
+  },
+  "reports": {
+    "title": "Informe",
+    "generate": "Generar informe",
+    "download": "Descargar informe",
+    "share": "Compartir informe",
+    "loading": "Cargando informe…",
+    "notFound": "Informe no encontrado.",
+    "beforePhotos": "Fotos de antes",
+    "afterPhotos": "Fotos de después",
+    "progressPhotos": "Fotos de progreso",
+    "summary": "Resumen",
+    "jobDetails": "Detalles del trabajo"
+  },
+  "settings": {
+    "accountTitle": "Cuenta",
+    "accountSubtitle": "Perfil, idioma, suscripción y estado de la cuenta.",
+    "languageSection": "Idioma",
+    "languageSectionBody": "Elija el idioma para la navegación, formularios y notificaciones en EverittOS.",
+    "emailLabel": "Correo electrónico",
+    "roleLabel": "Rol",
+    "planLabel": "Plan",
+    "subscriptionLabel": "Suscripción",
+    "accountStatusLabel": "Estado de la cuenta",
+    "deactivateTitle": "Desactivar cuenta",
+    "deactivateBody": "Desactivar cierra su sesión y bloquea el acceso hasta que soporte restaure la cuenta.",
+    "deactivateConfirm": "Escriba \"deactivate my account\" para confirmar.",
+    "deactivateAction": "Desactivar cuenta",
+    "deleteTitle": "Eliminar cuenta",
+    "deleteBody": "Solicite la eliminación permanente de su cuenta y datos asociados.",
+    "deleteConfirm": "Escriba \"DELETE MY ACCOUNT\" para confirmar.",
+    "deleteAction": "Solicitar eliminación",
+    "billingTitle": "Facturación",
+    "securityTitle": "Seguridad",
+    "workspaceTitle": "Espacio de trabajo",
+    "loading": "Cargando configuración…"
+  },
+  "plans": {
+    "free": "Free",
+    "pro": "EverittOS Pro",
+    "business": "EverittOS Business",
+    "operations": "EverittOS Operations",
+    "growth": "EverittOS Growth",
+    "enterprise": "EverittOS Enterprise"
+  },
+  "roles": {
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "manager": "Gerente",
+    "employee": "Empleado",
+    "contractor": "Contratista",
+    "client": "Cliente"
+  },
+  "emails": {
+    "welcomeTitle": "Bienvenido a EverittOS",
+    "welcomePreheader": "Su espacio de trabajo está listo.",
+    "welcomeBody": "Hola {name}, su cuenta de EverittOS está activa. Cree su primer trabajo, invite a su equipo y comience a gestionar el trabajo de campo desde un solo panel.",
+    "openDashboard": "Abrir panel",
+    "teamInviteTitle": "Únase a {organization}",
+    "teamInviteBody": "Le invitaron a unirse a {organization} como {role}. Acepte la invitación para acceder a trabajos, calendarios e informes.",
+    "acceptInvitation": "Aceptar invitación",
+    "clientInviteTitle": "Acceso al portal de clientes",
+    "clientInviteBodyJob": "Se le otorgó acceso de cliente al trabajo {job} con {organization}.",
+    "clientInviteBodyGeneral": "Se le otorgó acceso de cliente a un trabajo con {organization}.",
+    "acceptAndSignIn": "Aceptar e iniciar sesión",
+    "memberJoinedTitle": "Miembro del equipo se unió",
+    "memberJoinedBody": "{email} aceptó su invitación y se unió a {organization}.",
+    "trialEndingTitle": "Su prueba termina pronto",
+    "trialEndingBody": "Su prueba de EverittOS termina en {days} día(s). Actualice para conservar gestión de equipo, registros de actividad e informes avanzados.",
+    "viewBilling": "Ver facturación",
+    "paymentFailedTitle": "Pago fallido",
+    "paymentFailedBody": "No pudimos procesar su último pago de suscripción. Actualice sus datos de facturación para no perder acceso a funciones de pago.",
+    "updateBilling": "Actualizar facturación",
+    "subscriptionActivatedTitle": "Suscripción activada",
+    "subscriptionActivatedBody": "Su suscripción {plan} ya está activa. Gracias por elegir EverittOS.",
+    "subscriptionCanceledTitle": "Suscripción cancelada",
+    "subscriptionCanceledBody": "Su suscripción se cancelará al final del periodo de facturación. Puede reanudarla en cualquier momento desde facturación.",
+    "manageBilling": "Administrar facturación",
+    "reportAvailableTitle": "Informe disponible",
+    "reportAvailableBody": "Un informe de {job} está listo para ver.",
+    "viewReport": "Ver informe",
+    "jobAssignedTitle": "Trabajo asignado",
+    "jobAssignedBody": "Se le asignó {job}.",
+    "viewJob": "Ver trabajo",
+    "poweredBy": "Con tecnología de EverittOS"
+  },
+  "permission": {
+    "deniedTitle": "Acceso denegado",
+    "deniedBody": "No tiene permiso para ver esta página."
+  }
+}

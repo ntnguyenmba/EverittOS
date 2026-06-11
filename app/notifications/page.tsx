@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
@@ -27,6 +27,7 @@ function formatWhen(value: string | null) {
 }
 
 export default function NotificationsPage() {
+  const emptyCopy = useEmptyCopy();
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -114,7 +115,7 @@ export default function NotificationsPage() {
           </p>
         ) : null}
         {!loading && !error && items.length === 0 ? (
-          <EmptyState title={EMPTY_COPY.notifications.title} description={EMPTY_COPY.notifications.description} />
+          <EmptyState title={emptyCopy.notifications.title} description={emptyCopy.notifications.description} />
         ) : null}
         {items.map((n) => (
           <div key={n.id} className={`list-row${!n.read_at ? ' list-row-unread' : ''}`}>

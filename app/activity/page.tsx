@@ -6,7 +6,7 @@ import { ActivityFeed } from '@/components/activity-feed';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
 import { ACTIVITY_EVENT_LABELS } from '@/lib/activity-server';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -25,6 +25,7 @@ type ActivityItem = {
 
 export default function ActivityPage() {
   const router = useRouter();
+  const emptyCopy = useEmptyCopy();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [items, setItems] = useState<ActivityItem[]>([]);
@@ -159,7 +160,7 @@ export default function ActivityPage() {
                 Loading activity…
               </p>
             ) : filtered.length === 0 ? (
-              <EmptyState title={EMPTY_COPY.activity.title} description={EMPTY_COPY.activity.description} />
+              <EmptyState title={emptyCopy.activity.title} description={emptyCopy.activity.description} />
             ) : (
               <ActivityFeed items={filtered} loading={loading} />
             )}

@@ -1,0 +1,480 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "skip": "Skip",
+    "dismiss": "Dismiss",
+    "close": "Close",
+    "menu": "Menu",
+    "closeMenu": "Close menu",
+    "back": "Back",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "send": "Send",
+    "open": "Open",
+    "view": "View",
+    "search": "Search",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "optional",
+    "required": "required",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "security": "Security",
+    "plan": "Plan",
+    "email": "Email",
+    "password": "Password",
+    "status": "Status",
+    "actions": "Actions",
+    "name": "Name",
+    "address": "Address",
+    "phone": "Phone",
+    "website": "Website",
+    "language": "Language",
+    "languageSaved": "Language preference saved.",
+    "languageSaveFailed": "Could not save language preference. Try again.",
+    "somethingWrong": "Something went wrong. Try again.",
+    "questionsContact": "Questions? Contact {email}"
+  },
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "es": "Español",
+    "vi": "Tiếng Việt"
+  },
+  "gateway": {
+    "title": "Operations software for field service teams.",
+    "signIn": "Sign in",
+    "startTrial": "Start free trial"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "customers": "Customers",
+    "schedule": "Schedule",
+    "workers": "Workers",
+    "team": "Team",
+    "activity": "Activity",
+    "analytics": "Analytics",
+    "workflows": "Workflows",
+    "notifications": "Notifications",
+    "billing": "Billing",
+    "settings": "Settings",
+    "clientPortal": "Client portal",
+    "contractorPortal": "Contractor portal",
+    "workspace": "Workspace",
+    "branding": "Branding",
+    "integrations": "Integrations",
+    "account": "Account",
+    "security": "Security",
+    "api": "API",
+    "departments": "Departments",
+    "logout": "Log out",
+    "upgradePrompt": "Need more jobs, photos, or team members?",
+    "startPro": "Start Pro",
+    "skipToMain": "Skip to main content",
+    "appNavigation": "App navigation"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInAction": "Sign in",
+    "signingIn": "Signing in…",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account…",
+    "startFreeTrial": "Start free trial",
+    "forgotPassword": "Forgot password",
+    "backToSignIn": "Back to sign in",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "resetPassword": "Reset password",
+    "sendResetEmail": "Send reset email",
+    "sending": "Sending…",
+    "chooseNewPassword": "Choose a new password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "updatePassword": "Update password",
+    "updating": "Updating…",
+    "requestNewResetLink": "Request new reset link",
+    "verifyingResetLink": "Verifying reset link…",
+    "passwordUpdatedRedirect": "Password updated. Redirecting…",
+    "emailVerified": "Email verified. You can sign in now.",
+    "accountCreatedVerify": "Account created. Check your email to verify your address, then sign in.",
+    "businessNameOptional": "Business or display name (optional)",
+    "businessNamePlaceholder": "Leave blank for a personal workspace",
+    "emailPlaceholder": "you@company.com",
+    "passwordPlaceholder": "Your password",
+    "passwordMinPlaceholder": "Minimum 6 characters",
+    "repeatPassword": "Repeat password",
+    "selectedPlanSignIn": "Selected plan: {plan}. Sign in to continue setup.",
+    "selectedPlanSignup": "You selected {plan}. After signup you can finish checkout for that plan.",
+    "configRequiredTitle": "Configuration required",
+    "configRequiredBody": "Authentication is not configured for this deployment. Set Supabase environment variables in Vercel and redeploy.",
+    "resetLinkOpenFromEmail": "Open the password reset link from your email, or request a new link below.",
+    "passwordTooShortTitle": "Password too short",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordsNoMatchTitle": "Passwords do not match",
+    "passwordsNoMatch": "Enter the same password in both fields.",
+    "emailPasswordRequired": "Email and password are required.",
+    "tooManySignups": "Too many signup attempts. Wait an hour and try again."
+  },
+  "errors": {
+    "auth": {
+      "invalid_credentials": {
+        "title": "Sign in failed",
+        "message": "The email or password is incorrect. Check both fields and try again."
+      },
+      "email_not_confirmed": {
+        "title": "Email not verified",
+        "message": "Confirm your email address before signing in. Check your inbox for the verification link."
+      },
+      "user_banned": {
+        "title": "Account restricted",
+        "message": "This account cannot sign in. Contact support if you believe this is a mistake."
+      },
+      "too_many_requests": {
+        "title": "Too many attempts",
+        "message": "Wait a minute and try again."
+      },
+      "missing_auth_code": {
+        "title": "Link incomplete",
+        "message": "This sign-in link is missing required information. Request a new link and try again."
+      },
+      "account_disabled": {
+        "title": "Account disabled",
+        "message": "This account has been deactivated. Contact support to restore access."
+      },
+      "config_error": {
+        "title": "Service unavailable",
+        "message": "Authentication is not configured for this environment. Contact your administrator."
+      },
+      "schema_mismatch": {
+        "title": "Database schema out of date",
+        "message": "Sign-in succeeded but the production database is missing required profile columns. Run the latest Supabase migration, then sign in again."
+      },
+      "supabase_unreachable": {
+        "title": "Supabase connection failed",
+        "message": "This deployment cannot reach Supabase. Verify environment variables, confirm the Supabase project is active, then redeploy."
+      },
+      "session_missing": {
+        "title": "Session expired",
+        "message": "Your session expired. Sign in again to continue."
+      },
+      "reset_link_expired": {
+        "title": "Reset link expired",
+        "message": "This password reset link has expired. Request a new one from the forgot password page."
+      },
+      "generic": {
+        "title": "Something went wrong",
+        "message": "We could not complete sign in. Try again or use forgot password."
+      }
+    },
+    "access": {
+      "plan": {
+        "title": "Plan upgrade required",
+        "message": "Your current plan does not include this feature. Open billing to upgrade."
+      },
+      "subscription": {
+        "title": "Subscription issue",
+        "message": "Your subscription needs attention before you can use paid features. Update billing to continue."
+      },
+      "role": {
+        "title": "Access restricted",
+        "message": "Your role does not include permission for this page. Contact your workspace owner."
+      },
+      "profile": {
+        "title": "Profile setup required",
+        "message": "Your sign-in worked, but the workspace profile is incomplete. Sign in again to finish setup, or contact support."
+      },
+      "profile_setup": {
+        "title": "Workspace setup required",
+        "message": "Your account exists but EverittOS could not finish workspace setup. Try signing in again or contact support."
+      },
+      "schema": {
+        "title": "Database schema out of date",
+        "message": "Your session is valid but the database schema is missing columns required by EverittOS. Run the latest Supabase migration."
+      },
+      "organization": {
+        "title": "Organization access required",
+        "message": "Your profile exists but organization access is not active yet. Complete workspace setup to continue."
+      },
+      "session": {
+        "title": "Sign in required",
+        "message": "Sign in to access this page."
+      },
+      "idle": {
+        "title": "Session timed out",
+        "message": "You were signed out after a period of inactivity. Sign in again to continue."
+      },
+      "disabled": {
+        "title": "Account disabled",
+        "message": "This account has been deactivated. Contact support to restore access."
+      },
+      "generic": {
+        "title": "Access blocked",
+        "message": "You do not have access to this page."
+      }
+    },
+    "api": {
+      "network": "Unable to connect to the server. Check your connection and try again.",
+      "userExists": "An account with this email already exists. Sign in or reset your password.",
+      "permission": "You do not have permission to perform this action.",
+      "sessionExpired": "Your session expired. Sign in again to continue."
+    }
+  },
+  "session": {
+    "expiringTitle": "Session expiring soon",
+    "expiringBody": "You will be signed out in {time} due to inactivity. Move your mouse, type, or tap Stay signed in to continue working.",
+    "staySignedIn": "Stay signed in",
+    "seconds": "{count} seconds"
+  },
+  "empty": {
+    "workers": {
+      "title": "No workers yet",
+      "description": "Add your first team member."
+    },
+    "customers": {
+      "title": "No customers yet",
+      "description": "Create your first customer."
+    },
+    "jobs": {
+      "title": "No jobs yet",
+      "description": "Create your first job."
+    },
+    "schedule": {
+      "title": "No scheduled work yet",
+      "description": "Create a job and add dates to see it on your calendar."
+    },
+    "activity": {
+      "title": "No activity yet",
+      "description": "Updates to jobs, team, and reports will show up here."
+    },
+    "notifications": {
+      "title": "No notifications yet",
+      "description": "Assignments, invites, and billing updates will appear here."
+    },
+    "workflows": {
+      "title": "No workflows yet",
+      "description": "Create a checklist when you want the same steps on every job."
+    },
+    "photos": {
+      "title": "No photos yet",
+      "description": "Upload before and after photos to document completed work."
+    }
+  },
+  "onboarding": {
+    "gettingStarted": "Getting started",
+    "gettingStartedBody": "A quick, optional walkthrough for freelancers, solo operators, and small teams. Finish anytime from Settings. Nothing here blocks your work.",
+    "continueSetup": "Continue setup",
+    "workspaceSettings": "Workspace settings",
+    "dismissChecklist": "Dismiss getting started checklist",
+    "workspaceSetup": "Workspace setup",
+    "stepOf": "Step {current} of {total}: {label}. Optional. Finish anytime from Settings. Your dashboard is always available.",
+    "goToDashboard": "Go to dashboard",
+    "loadingSetup": "Loading your setup…",
+    "workspaceDetails": "Workspace details",
+    "workspaceDetailsBody": "Your workspace is ready. You can start creating jobs, customers, and schedules right away. Add business details later if needed.",
+    "businessNameOptional": "Business or display name (optional)",
+    "industryOptional": "Industry (optional)",
+    "teamSizeOptional": "Team size (optional)",
+    "phoneOptional": "Phone (optional)",
+    "websiteOptional": "Website (optional)",
+    "saveAndContinue": "Save and continue",
+    "skipAndStart": "Skip and start using EverittOS",
+    "addFirstCustomer": "Add your first customer",
+    "customerName": "Customer name",
+    "createFirstJob": "Create your first job",
+    "jobTitle": "Job title",
+    "uploadFirstPhoto": "Upload your first photo",
+    "uploadPhotoBody": "Add before, progress, and after photos from your phone or computer.",
+    "openJobToUpload": "Open job to upload",
+    "generateFirstReport": "Generate your first report",
+    "createReport": "Create report",
+    "inviteTeamOptional": "Invite a team member (optional)",
+    "sendInviteFinish": "Send invite and finish",
+    "customerNameRequired": "Customer name is required.",
+    "jobTitleRequired": "Job title is required.",
+    "createJobFirst": "Create a job first.",
+    "photosProOnly": "Photo uploads start on Pro. Continue to reports.",
+    "openJobUploadReturn": "Open the job and upload a photo from your device, then return here.",
+    "inviteFailed": "Invite failed",
+    "steps": {
+      "workspace": "Set up your workspace (optional)",
+      "customer": "Add your first customer",
+      "job": "Create your first job",
+      "photo": "Upload your first photo",
+      "report": "Generate your first report",
+      "invite": "Invite a team member (optional)"
+    },
+    "stepsShort": {
+      "workspace": "Set up your workspace",
+      "customer": "Add your first customer",
+      "job": "Create your first job",
+      "photo": "Upload your first photo",
+      "report": "Generate your first report",
+      "invite": "Invite a team member"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of jobs, activity, and usage for your workspace.",
+    "newJob": "New job",
+    "recentJobs": "Recent jobs",
+    "viewAllJobs": "View all jobs",
+    "noRecentJobs": "No recent jobs",
+    "createFirstJob": "Create your first job",
+    "activity": "Activity",
+    "viewActivity": "View activity",
+    "usage": "Usage",
+    "executiveMetrics": "Executive metrics",
+    "loadFailed": "Could not load dashboard data."
+  },
+  "jobs": {
+    "title": "Jobs",
+    "subtitle": "All jobs you can access based on your role.",
+    "newJob": "New job",
+    "createJob": "Create a job",
+    "loading": "Loading jobs…",
+    "jobColumn": "Job",
+    "customerColumn": "Customer",
+    "addressColumn": "Address",
+    "statusColumn": "Status",
+    "photosColumn": "Photos",
+    "viewJob": "View job"
+  },
+  "customers": {
+    "title": "Customers",
+    "subtitle": "Manage customer records and job history.",
+    "addCustomer": "Add customer",
+    "loading": "Loading customers…"
+  },
+  "workers": {
+    "title": "Workers",
+    "subtitle": "Field staff and crew members in your workspace.",
+    "addWorker": "Add worker",
+    "loading": "Loading workers…"
+  },
+  "schedule": {
+    "title": "Schedule",
+    "subtitle": "Calendar view of scheduled jobs.",
+    "loading": "Loading schedule…"
+  },
+  "team": {
+    "title": "Team",
+    "subtitle": "Invite members and manage roles.",
+    "loading": "Loading team…"
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Recent changes across your workspace.",
+    "loading": "Loading activity…"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Usage and performance metrics.",
+    "loading": "Loading analytics…"
+  },
+  "workflows": {
+    "title": "Workflows",
+    "subtitle": "Reusable checklists for your jobs.",
+    "loading": "Loading workflows…"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Assignments, invites, and billing updates.",
+    "loading": "Loading notifications…",
+    "markRead": "Mark as read"
+  },
+  "reports": {
+    "title": "Report",
+    "generate": "Generate report",
+    "download": "Download report",
+    "share": "Share report",
+    "loading": "Loading report…",
+    "notFound": "Report not found.",
+    "beforePhotos": "Before photos",
+    "afterPhotos": "After photos",
+    "progressPhotos": "Progress photos",
+    "summary": "Summary",
+    "jobDetails": "Job details"
+  },
+  "settings": {
+    "accountTitle": "Account",
+    "accountSubtitle": "Profile, language, subscription, and account status.",
+    "languageSection": "Language",
+    "languageSectionBody": "Choose the language for navigation, forms, and notifications in EverittOS.",
+    "emailLabel": "Email",
+    "roleLabel": "Role",
+    "planLabel": "Plan",
+    "subscriptionLabel": "Subscription",
+    "accountStatusLabel": "Account status",
+    "deactivateTitle": "Deactivate account",
+    "deactivateBody": "Deactivating signs you out and blocks access until support restores the account.",
+    "deactivateConfirm": "Type \"deactivate my account\" to confirm.",
+    "deactivateAction": "Deactivate account",
+    "deleteTitle": "Delete account",
+    "deleteBody": "Request permanent deletion of your account and associated data.",
+    "deleteConfirm": "Type \"DELETE MY ACCOUNT\" to confirm.",
+    "deleteAction": "Request deletion",
+    "billingTitle": "Billing",
+    "securityTitle": "Security",
+    "workspaceTitle": "Workspace",
+    "loading": "Loading settings…"
+  },
+  "plans": {
+    "free": "Free",
+    "pro": "EverittOS Pro",
+    "business": "EverittOS Business",
+    "operations": "EverittOS Operations",
+    "growth": "EverittOS Growth",
+    "enterprise": "EverittOS Enterprise"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "manager": "Manager",
+    "employee": "Employee",
+    "contractor": "Contractor",
+    "client": "Client"
+  },
+  "emails": {
+    "welcomeTitle": "Welcome to EverittOS",
+    "welcomePreheader": "Your workspace is ready.",
+    "welcomeBody": "Hi {name}, your EverittOS account is active. Create your first job, invite your team, and start tracking field work from one dashboard.",
+    "openDashboard": "Open dashboard",
+    "teamInviteTitle": "Join {organization}",
+    "teamInviteBody": "You have been invited to join {organization} as {role}. Accept the invitation to access jobs, schedules, and reports.",
+    "acceptInvitation": "Accept invitation",
+    "clientInviteTitle": "Client portal access",
+    "clientInviteBodyJob": "You have been granted client access to job {job} with {organization}.",
+    "clientInviteBodyGeneral": "You have been granted client access to a job with {organization}.",
+    "acceptAndSignIn": "Accept and sign in",
+    "memberJoinedTitle": "Team member joined",
+    "memberJoinedBody": "{email} accepted your invitation and joined {organization}.",
+    "trialEndingTitle": "Your trial is ending soon",
+    "trialEndingBody": "Your EverittOS trial ends in {days} day(s). Upgrade to keep team management, activity logs, and advanced reporting.",
+    "viewBilling": "View billing",
+    "paymentFailedTitle": "Payment failed",
+    "paymentFailedBody": "We could not process your latest subscription payment. Update your billing details to avoid losing access to paid features.",
+    "updateBilling": "Update billing",
+    "subscriptionActivatedTitle": "Subscription activated",
+    "subscriptionActivatedBody": "Your {plan} subscription is now active. Thank you for choosing EverittOS.",
+    "subscriptionCanceledTitle": "Subscription canceled",
+    "subscriptionCanceledBody": "Your subscription is set to cancel at the end of the billing period. You can resume anytime from billing settings.",
+    "manageBilling": "Manage billing",
+    "reportAvailableTitle": "Report available",
+    "reportAvailableBody": "A report for {job} is ready to view.",
+    "viewReport": "View report",
+    "jobAssignedTitle": "Job assigned",
+    "jobAssignedBody": "You were assigned to {job}.",
+    "viewJob": "View job",
+    "poweredBy": "Powered by EverittOS"
+  },
+  "permission": {
+    "deniedTitle": "Access denied",
+    "deniedBody": "You do not have permission to view this page."
+  }
+}

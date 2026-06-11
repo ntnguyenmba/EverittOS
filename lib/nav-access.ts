@@ -1,6 +1,7 @@
 import { canManageDepartments } from '@/lib/departments';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { hasTeamManagement, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { SETTINGS_NAV_KEYS, type SettingsNavKey } from '@/lib/nav-links';
 import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import {
   canManageBilling,
@@ -12,20 +13,10 @@ import {
 
 export type SettingsNavLink = {
   href: string;
-  label: string;
+  key: SettingsNavKey;
 };
 
-export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
-  { href: '/settings', label: 'Workspace' },
-  { href: '/settings/team', label: 'Team' },
-  { href: '/settings/branding', label: 'Branding' },
-  { href: '/settings/integrations', label: 'Integrations' },
-  { href: '/settings/account', label: 'Account' },
-  { href: '/settings/billing', label: 'Billing' },
-  { href: '/settings/security', label: 'Security' },
-  { href: '/settings/api', label: 'API' },
-  { href: '/settings/departments', label: 'Departments' }
-];
+export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [...SETTINGS_NAV_KEYS];
 
 /** Whether a main app nav href is allowed for this role and plan. */
 export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPlan): boolean {

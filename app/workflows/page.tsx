@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +20,7 @@ type Workflow = {
 };
 
 export default function WorkflowsPage() {
+  const emptyCopy = useEmptyCopy();
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -134,7 +135,7 @@ export default function WorkflowsPage() {
 
             {workflows.length === 0 ? (
               <div className="settings-card">
-                <EmptyState title={EMPTY_COPY.workflows.title} description={EMPTY_COPY.workflows.description} />
+                <EmptyState title={emptyCopy.workflows.title} description={emptyCopy.workflows.description} />
               </div>
             ) : null}
 

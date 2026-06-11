@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { appUrl, safeNextPath } from '@/lib/app-url';
-import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { EVERITTOS_PLANS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
+import { useTranslatedPlanName } from '@/lib/i18n-client';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
 
@@ -25,6 +27,9 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'), '/onboarding');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
+  const t = useTranslations('auth');
+  const commonT = useTranslations('common');
+  const planName = useTranslatedPlanName();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,19 +49,19 @@ function SignupForm() {
 
     if (!email.trim() || !password) {
       setLoading(false);
-      setError('Email and password are required.');
+      setError(t('emailPasswordRequired'));
       return;
     }
 
     if (password.length < 6) {
       setLoading(false);
-      setError('Password must be at least 6 characters.');
+      setError(t('passwordTooShort'));
       return;
     }
 
     if (password !== confirmPassword) {
       setLoading(false);
-      setError('Passwords do not match.');
+      setError(t('passwordsNoMatch'));
       return;
     }
 
@@ -64,7 +69,7 @@ function SignupForm() {
       const rateRes = await fetch('/api/auth/signup-rate-limit', { method: 'POST' });
       if (rateRes.status === 429) {
         setLoading(false);
-        setError('Too many signup attempts. Wait an hour and try again.');
+        setError(t('tooManySignups'));
         return;
       }
     } catch {
@@ -101,7 +106,8 @@ function SignupForm() {
           role: 'owner',
           plan: selectedPlan === 'free' ? 'free' : selectedPlan,
           subscription_status: selectedPlan === 'free' ? 'free' : 'incomplete',
-          account_status: 'active'
+          account_status: 'active',
+          locale: document.documentElement.lang || 'en'
         },
         { onConflict: 'id' }
       );
@@ -119,35 +125,35 @@ function SignupForm() {
       return;
     }
 
-    setSuccess('Account created. Check your email to verify your address, then sign in.');
+    setSuccess(t('accountCreatedVerify'));
   }
 
   return (
-    <AuthShell title="Create account">
+    <AuthShell title={t('createAccount')}>
       {selectedPlan !== 'free' ? (
         <p className="auth-plan-note">
-          You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
+          {t('selectedPlanSignup', { plan: planName(selectedPlan) })}
         </p>
       ) : null}
 
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
-          <label htmlFor="business_name">Business or display name (optional)</label>
+          <label htmlFor="business_name">{t('businessNameOptional')}</label>
           <input
             id="business_name"
             className="input"
-            placeholder="Leave blank for a personal workspace"
+            placeholder={t('businessNamePlaceholder')}
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
           />
         </div>
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{commonT('email')}</label>
           <input
             id="email"
             className="input"
-            placeholder="you@company.com"
+            placeholder={t('emailPlaceholder')}
             type="email"
             autoComplete="email"
             value={email}
@@ -157,11 +163,11 @@ function SignupForm() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{commonT('password')}</label>
           <input
             id="password"
             className="input"
-            placeholder="Minimum 6 characters"
+            placeholder={t('passwordMinPlaceholder')}
             type="password"
             autoComplete="new-password"
             value={password}
@@ -171,11 +177,11 @@ function SignupForm() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="confirm_password">Confirm password</label>
+          <label htmlFor="confirm_password">{t('confirmPassword')}</label>
           <input
             id="confirm_password"
             className="input"
-            placeholder="Repeat password"
+            placeholder={t('repeatPassword')}
             type="password"
             autoComplete="new-password"
             value={confirmPassword}
@@ -187,12 +193,12 @@ function SignupForm() {
         <AuthMessages error={error} success={success} />
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Creating account...' : selectedPlan === 'free' ? 'Start free trial' : 'Create account'}
+          {loading ? t('creatingAccount') : selectedPlan === 'free' ? t('startFreeTrial') : t('createAccount')}
         </button>
       </form>
 
       <div className="auth-links">
-        <Link href={loginHref}>Already have an account? Sign in</Link>
+        <Link href={loginHref}>{t('alreadyHaveAccount')}</Link>
       </div>
     </AuthShell>
   );

@@ -280,6 +280,72 @@ p { color: var(--muted); line-height: 1.7; }
 
 .main { grid-area: main; }
 
+.dashboard-shell-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 24px 0;
+  gap: 12px;
+}
+
+.app-header-spacer {
+  flex: 1;
+}
+
+.locale-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.locale-switcher-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.locale-switcher-select {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.locale-switcher-select-compact {
+  min-height: 36px;
+  min-width: 132px;
+  padding: 6px 10px;
+}
+
+.locale-switcher-message {
+  font-size: 12px;
+  margin: 0;
+}
+
+.sidebar-locale {
+  margin-bottom: 16px;
+}
+
+.auth-shell-header-with-locale {
+  justify-content: space-between;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto 40px;
+}
+
+.mobile-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
 .sidebar a { display: block; padding: 10px 12px; color: var(--muted); border-radius: var(--radius-sm); margin-bottom: 4px; font-size: 14px; transition: background 0.18s ease, color 0.18s ease; }
 .sidebar a:hover,
 .sidebar a.active { background: var(--hover); color: var(--text); }

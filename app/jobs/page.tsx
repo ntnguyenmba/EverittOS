@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
@@ -25,6 +25,9 @@ type Job = {
 function JobsList() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('jobs');
+  const commonT = useTranslations('common');
+  const emptyCopy = useEmptyCopy();
   const customerFilter = searchParams.get('customer');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -66,23 +69,23 @@ function JobsList() {
     <AppShell plan={plan}>
         <div className="page-head">
           <div>
-            <h2>Jobs</h2>
-            <p>All jobs you can access based on your role.</p>
+            <h2>{t('title')}</h2>
+            <p>{t('subtitle')}</p>
           </div>
           <Link className="btn btn-primary" href="/dashboard">
-            New job
+            {t('newJob')}
           </Link>
         </div>
 
         <div className="card">
-          {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
+          {loading ? <p className="loading-state" role="status">{t('loading')}</p> : null}
           {!loading && jobs.length === 0 ? (
             <EmptyState
-              title={EMPTY_COPY.jobs.title}
-              description={EMPTY_COPY.jobs.description}
+              title={emptyCopy.jobs.title}
+              description={emptyCopy.jobs.description}
               action={
                 <Link className="btn btn-primary" href="/dashboard">
-                  Create a job
+                  {t('createJob')}
                 </Link>
               }
             />
@@ -91,10 +94,10 @@ function JobsList() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Job</th>
-                  <th>Customer</th>
-                  <th>Address</th>
-                  <th>Status</th>
+                  <th>{t('jobColumn')}</th>
+                  <th>{t('customerColumn')}</th>
+                  <th>{t('addressColumn')}</th>
+                  <th>{t('statusColumn')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -116,7 +119,7 @@ function JobsList() {
                     </td>
                     <td>
                       <Link className="btn" href={`/jobs/${job.id}`}>
-                        Open
+                        {t('viewJob')}
                       </Link>
                     </td>
                   </tr>

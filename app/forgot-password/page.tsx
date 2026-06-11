@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
@@ -13,6 +14,8 @@ import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 const RESET_API_PATH = '/api/auth/reset-password';
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth');
+  const commonT = useTranslations('common');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(null);
   const [success, setSuccess] = useState('');
@@ -29,8 +32,8 @@ export default function ForgotPasswordPage() {
     if (configError) {
       const mapped = mapAuthError('config_error', 'config_error');
       setError({
-        title: mapped.title,
-        message: mapped.message,
+        title: t('configRequiredTitle'),
+        message: t('configRequiredBody'),
         details: `Requested URL: ${resetUrl}\n${mapped.details || ''}`
       });
       setLoading(false);
@@ -73,14 +76,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell title="Reset password">
+    <AuthShell title={t('resetPassword')}>
       <form className="auth-form card" onSubmit={resetPassword}>
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{commonT('email')}</label>
           <input
             id="email"
             className="input"
-            placeholder="you@company.com"
+            placeholder={t('emailPlaceholder')}
             type="email"
             autoComplete="email"
             required
@@ -97,12 +100,12 @@ export default function ForgotPasswordPage() {
         />
 
         <button className="btn btn-primary" type="submit" disabled={loading || configError}>
-          {loading ? 'Sending...' : 'Send reset email'}
+          {loading ? t('sending') : t('sendResetEmail')}
         </button>
       </form>
 
       <div className="auth-links">
-        <Link href="/login">Back to sign in</Link>
+        <Link href="/login">{t('backToSignIn')}</Link>
       </div>
     </AuthShell>
   );

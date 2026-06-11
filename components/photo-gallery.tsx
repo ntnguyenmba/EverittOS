@@ -2,7 +2,7 @@
 
 import { PhotoComparisonSection } from '@/components/before-after-comparison';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import { photoTagLabel } from '@/lib/job-photo-tags';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -27,6 +27,7 @@ export function PhotoGallery({
   showComparison = true,
   showMetadata = true
 }: PhotoGalleryProps) {
+  const emptyCopy = useEmptyCopy();
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,7 +73,7 @@ export function PhotoGallery({
     );
   }
   if (photos.length === 0) {
-    return <EmptyState title={EMPTY_COPY.photos.title} description={EMPTY_COPY.photos.description} />;
+    return <EmptyState title={emptyCopy.photos.title} description={emptyCopy.photos.description} />;
   }
 
   return (

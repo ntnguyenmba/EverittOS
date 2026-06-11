@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useEmptyCopy } from '@/lib/i18n-client';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -26,6 +26,7 @@ type Customer = {
 };
 
 export default function CustomersPage() {
+  const emptyCopy = useEmptyCopy();
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -175,7 +176,7 @@ export default function CustomersPage() {
             </p>
           )}
           {!loading && customers.length === 0 && (
-            <EmptyState title={EMPTY_COPY.customers.title} description={EMPTY_COPY.customers.description} />
+            <EmptyState title={emptyCopy.customers.title} description={emptyCopy.customers.description} />
           )}
           {!loading &&
             customers.map((customer) => (

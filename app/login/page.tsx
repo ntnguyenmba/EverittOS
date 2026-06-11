@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch, LOGIN_API_PATH } from '@/lib/auth-fetch';
-import { mapAccessError, mapAuthError } from '@/lib/auth-errors';
+import { mapAuthError } from '@/lib/auth-errors';
+import { useAuthErrors, useTranslatedPlanName } from '@/lib/i18n-client';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { parseFetchFailure, parseLoginApiResponse, type LoginClientError } from '@/lib/auth-request-error';
 import { resolveClientApiUrl } from '@/lib/client-api-url';
-import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
 import { storeTabSessionId } from '@/lib/session-client';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
@@ -20,6 +22,10 @@ function LoginForm() {
   const next = safeNextPath(searchParams.get('next'));
   const selectedPlan = normalizePlan(searchParams.get('plan'));
   const loginUrl = resolveClientApiUrl(LOGIN_API_PATH);
+  const t = useTranslations('auth');
+  const commonT = useTranslations('common');
+  const { mapAccessError, mapAuthError: mapAuthErrorI18n } = useAuthErrors();
+  const planName = useTranslatedPlanName();
 
   const accessBlock = useMemo(() => {
     const reason = searchParams.get('reason');
@@ -27,13 +33,13 @@ function LoginForm() {
     if (!reason) return null;
     const mapped = mapAccessError(reason);
     return { ...mapped, details: detail || mapped.details };
-  }, [searchParams]);
+  }, [searchParams, mapAccessError]);
 
   const authErrorParam = searchParams.get('error');
   const authErrorMapped = useMemo(() => {
     if (!authErrorParam) return null;
-    return mapAuthError(decodeURIComponent(authErrorParam));
-  }, [authErrorParam]);
+    return mapAuthErrorI18n(decodeURIComponent(authErrorParam));
+  }, [authErrorParam, mapAuthErrorI18n]);
 
   const verified = searchParams.get('verified');
   const configError = isBrowserSupabaseMisconfigured();
@@ -62,8 +68,8 @@ function LoginForm() {
     if (configError) {
       const mapped = mapAuthError('config_error', 'config_error');
       showError({
-        title: mapped.title,
-        message: `${mapped.message}`,
+        title: t('configRequiredTitle'),
+        message: t('configRequiredBody'),
         details: `Requested URL: ${loginUrl}\nMethod: POST\nAPI code: config_error\n${mapped.details || ''}`,
         debug: {
           endpoint: LOGIN_API_PATH,
@@ -107,11 +113,11 @@ function LoginForm() {
   }
 
   return (
-    <AuthShell title="Sign in">
+    <AuthShell title={t('signIn')}>
       {configError ? (
         <AuthMessages
-          errorTitle="Configuration required"
-          error={`POST ${loginUrl}\n\nAuthentication is not configured for this deployment. Set Supabase environment variables in Vercel and redeploy.`}
+          errorTitle={t('configRequiredTitle')}
+          error={t('configRequiredBody')}
           errorDetails={`Requested URL: ${loginUrl}\nMissing: NEXT_PUBLIC_SUPABASE_URL and/or NEXT_PUBLIC_SUPABASE_ANON_KEY`}
         />
       ) : null}
@@ -126,17 +132,17 @@ function LoginForm() {
 
       {selectedPlan !== 'free' ? (
         <p className="auth-plan-note">
-          Selected plan: <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. Sign in to continue setup.
+          {t('selectedPlanSignIn', { plan: planName(selectedPlan as EverittosPlan) })}
         </p>
       ) : null}
 
       <form className="auth-form card" onSubmit={handleLogin}>
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{commonT('email')}</label>
           <input
             id="email"
             className="input"
-            placeholder="you@company.com"
+            placeholder={t('emailPlaceholder')}
             type="email"
             autoComplete="email"
             required
@@ -146,11 +152,11 @@ function LoginForm() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{commonT('password')}</label>
           <input
             id="password"
             className="input"
-            placeholder="Your password"
+            placeholder={t('passwordPlaceholder')}
             type="password"
             autoComplete="current-password"
             required
@@ -163,17 +169,17 @@ function LoginForm() {
           error={error?.message || authErrorMapped?.message}
           errorTitle={error?.title || authErrorMapped?.title}
           errorDetails={error?.details || authErrorMapped?.details}
-          success={verified ? 'Email verified. You can sign in now.' : undefined}
+          success={verified ? t('emailVerified') : undefined}
         />
 
         <button className="btn btn-primary" type="submit" disabled={loading || configError}>
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? t('signingIn') : t('signInAction')}
         </button>
       </form>
 
       <div className="auth-links">
-        <Link href="/forgot-password">Forgot password</Link>
-        <Link href={signupHref}>Create account</Link>
+        <Link href="/forgot-password">{t('forgotPassword')}</Link>
+        <Link href={signupHref}>{t('createAccount')}</Link>
       </div>
     </AuthShell>
   );

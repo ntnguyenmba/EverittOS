@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHeader } from '@/components/app-header';
 import { MobileNav } from '@/components/mobile-nav';
 import { Sidebar } from '@/components/sidebar';
 import type { EverittosPlan } from '@/lib/everittos-plans';
@@ -18,9 +19,12 @@ export function AppShell({ plan, role, children }: AppShellProps) {
         <MobileNav plan={plan} role={role} />
       </div>
       <Sidebar plan={plan} role={role} />
-      <main id="main-content" className="main">
-        {children}
-      </main>
+      <div className="dashboard-shell-main">
+        <AppHeader />
+        <main id="main-content" className="main">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

@@ -9,12 +9,11 @@ import { RoleDashboard } from '@/components/role-dashboard';
 import { AppShell } from '@/components/app-shell';
 import { OnboardingChecklist } from '@/components/onboarding-checklist';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
-import { friendlyErrorMessage } from '@/lib/user-errors';
+import { useAuthErrors, useEmptyCopy, useFriendlyErrorMessage } from '@/lib/i18n-client';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
 import { ExecutiveMetricsPanel } from '@/components/dashboard/executive-metrics';
-import { mapAccessError } from '@/lib/auth-errors';
+import { useTranslations } from 'next-intl';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isClientRole, canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -36,6 +35,7 @@ type Job = {
 
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
+  const { mapAccessError } = useAuthErrors();
   const reason = searchParams.get('reason');
   const detail = searchParams.get('detail');
   if (!reason) return null;
@@ -51,6 +51,8 @@ function DashboardAccessNotice() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const emptyCopy = useEmptyCopy();
+  const friendlyError = useFriendlyErrorMessage();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [usage, setUsage] = useState<UsageCounts>({
@@ -130,7 +132,7 @@ export default function DashboardPage() {
     setLoading(false);
 
     if (jobsRes.error) {
-      setErrorMessage(jobsRes.error.message);
+      setErrorMessage(friendlyError(jobsRes.error.message));
       return;
     }
 
@@ -320,11 +322,11 @@ export default function DashboardPage() {
               {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
               {errorMessage ? (
                 <p className="auth-message auth-message-error" role="alert">
-                  {friendlyErrorMessage(errorMessage)}
+                  {friendlyError(errorMessage)}
                 </p>
               ) : null}
               {!loading && !errorMessage && jobs.length === 0 ? (
-                <EmptyState title={EMPTY_COPY.jobs.title} description={EMPTY_COPY.jobs.description} />
+                <EmptyState title={emptyCopy.jobs.title} description={emptyCopy.jobs.description} />
               ) : null}
               {!loading &&
                 !errorMessage &&

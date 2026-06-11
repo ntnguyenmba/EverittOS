@@ -1,10 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
+import { LocaleBootstrap } from '@/components/locale-bootstrap';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
@@ -25,20 +28,25 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const deployment = vercelDeploymentEnv();
+  const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
-    <html lang="en" data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang={locale} data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}>
       <body>
-        <SupabaseRuntimeConfig />
-        <SuppressVercelToolbar />
-        <SessionGuard />
-        <WorkspaceBootstrap />
-        <SkipToMain />
-        <SiteChrome />
-        <AnalyticsGate />
-        {children}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <SupabaseRuntimeConfig />
+          <SuppressVercelToolbar />
+          <SessionGuard />
+          <LocaleBootstrap />
+          <WorkspaceBootstrap />
+          <SkipToMain />
+          <SiteChrome />
+          <AnalyticsGate />
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -3,14 +3,17 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
-import { mapAuthError } from '@/lib/auth-errors';
+import { useAuthErrors } from '@/lib/i18n-client';
 import { defaultPathForRole } from '@/lib/role-routes';
 import { supabase } from '@/lib/supabase';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
+  const t = useTranslations('auth');
+  const { mapAuthError } = useAuthErrors();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(null);
@@ -52,14 +55,14 @@ function ResetPasswordForm() {
       const mapped = mapAuthError('reset_link_expired', 'reset_link_expired');
       setError({
         title: mapped.title,
-        message: 'Open the password reset link from your email, or request a new link below.',
+        message: t('resetLinkOpenFromEmail'),
         details: mapped.details
       });
       setCheckingSession(false);
     }
 
     establishSession();
-  }, [searchParams]);
+  }, [searchParams, mapAuthError, t]);
 
   async function updatePassword(event: React.FormEvent) {
     event.preventDefault();
@@ -73,12 +76,12 @@ function ResetPasswordForm() {
     }
 
     if (password.length < 6) {
-      setError({ title: 'Password too short', message: 'Password must be at least 6 characters.' });
+      setError({ title: t('passwordTooShortTitle'), message: t('passwordTooShort') });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError({ title: 'Passwords do not match', message: 'Enter the same password in both fields.' });
+      setError({ title: t('passwordsNoMatchTitle'), message: t('passwordsNoMatch') });
       return;
     }
 
@@ -95,7 +98,7 @@ function ResetPasswordForm() {
       return;
     }
 
-    setSuccess('Password updated. Redirecting...');
+    setSuccess(t('passwordUpdatedRedirect'));
 
     const {
       data: { user }
@@ -112,16 +115,16 @@ function ResetPasswordForm() {
   }
 
   return (
-    <AuthShell title="Choose a new password">
-      {checkingSession ? <p className="muted">Verifying reset link...</p> : null}
+    <AuthShell title={t('chooseNewPassword')}>
+      {checkingSession ? <p className="muted">{t('verifyingResetLink')}</p> : null}
 
       <form className="auth-form card" onSubmit={updatePassword}>
         <div className="auth-field">
-          <label htmlFor="password">New password</label>
+          <label htmlFor="password">{t('newPassword')}</label>
           <input
             id="password"
             className="input"
-            placeholder="Minimum 6 characters"
+            placeholder={t('passwordMinPlaceholder')}
             type="password"
             autoComplete="new-password"
             value={password}
@@ -132,11 +135,11 @@ function ResetPasswordForm() {
         </div>
 
         <div className="auth-field">
-          <label htmlFor="confirm_password">Confirm password</label>
+          <label htmlFor="confirm_password">{t('confirmPassword')}</label>
           <input
             id="confirm_password"
             className="input"
-            placeholder="Repeat password"
+            placeholder={t('repeatPassword')}
             type="password"
             autoComplete="new-password"
             value={confirmPassword}
@@ -154,13 +157,13 @@ function ResetPasswordForm() {
         />
 
         <button className="btn btn-primary" type="submit" disabled={!sessionReady || loading}>
-          {loading ? 'Updating...' : 'Update password'}
+          {loading ? t('updating') : t('updatePassword')}
         </button>
       </form>
 
       <div className="auth-links">
-        <Link href="/forgot-password">Request new reset link</Link>
-        <Link href="/login">Back to sign in</Link>
+        <Link href="/forgot-password">{t('requestNewResetLink')}</Link>
+        <Link href="/login">{t('backToSignIn')}</Link>
       </div>
     </AuthShell>
   );
