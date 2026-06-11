@@ -26,6 +26,8 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Billing' },
   { href: '/settings/security', label: 'Security' },
+  { href: '/settings/privacy', label: 'Privacy' },
+  { href: '/settings/notifications', label: 'Notifications' },
   { href: '/settings/api', label: 'API' },
   { href: '/settings/departments', label: 'Departments' }
 ];
@@ -82,7 +84,12 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
 
 function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
   if (isClientRole(role)) {
-    return path.startsWith('/settings/account') || path.startsWith('/settings/security');
+    return (
+      path.startsWith('/settings/account') ||
+      path.startsWith('/settings/security') ||
+      path.startsWith('/settings/privacy') ||
+      path.startsWith('/settings/notifications')
+    );
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
   if (path.startsWith('/settings/team')) return canViewTeam(role);
@@ -194,7 +201,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 
   if (isClientRole(role)) {
     return SETTINGS_NAV_LINKS.filter((link) =>
-      ['/settings/account', '/settings/security'].includes(link.href)
+      ['/settings/account', '/settings/security', '/settings/privacy', '/settings/notifications'].includes(link.href)
     );
   }
 
@@ -214,7 +221,12 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
   const normalizedPlan = normalizePlan(plan);
 
   if (isClientRole(role)) {
-    return path.startsWith('/settings/account') || path.startsWith('/settings/security');
+    return (
+      path.startsWith('/settings/account') ||
+      path.startsWith('/settings/security') ||
+      path.startsWith('/settings/privacy') ||
+      path.startsWith('/settings/notifications')
+    );
   }
 
   if (path.startsWith('/settings/billing') && !canManageBilling(role)) return false;

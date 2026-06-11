@@ -1,5 +1,6 @@
 'use client';
 
+import { AppFooter } from '@/components/app-footer';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
@@ -26,6 +27,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       <main id="main-content" className="main">
         <AppPageTop role={role} showBackButton={showBackButton} />
         {children}
+        <AppFooter />
       </main>
     </div>
   );

@@ -1,4 +1,5 @@
-import { isAccountActive } from '@/lib/account-status';
+import { isAccountActive, isAccountDeleted } from '@/lib/account-status';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
 import { logActivityServer } from '@/lib/activity-server';
 import { logAuthEvent } from '@/lib/auth-logger';
@@ -218,6 +219,32 @@ export async function POST(request: Request) {
 
     const profile = bootstrap.profile;
 
+    if (isAccountDeleted(profile.deleted_at)) {
+      await supabase.auth.signOut();
+      logAuthEvent('login_blocked_deleted', { userId: user.id });
+      const mapped = mapAuthError('account_deleted', 'account_deleted');
+      return json(
+        secureLoginPayload({
+          error: mapped.message,
+          title: mapped.title,
+          details: mapped.details,
+          code: 'account_deleted',
+          diagnostics: workspaceDiagnostics({
+            authStep: 'workspace_bootstrap',
+            userId: user.id,
+            sessionVerified: true,
+            profile,
+            hasMembership: true,
+            profileLookupRan: true,
+            membershipLookupRan: true
+          }),
+          config: configDiagnostics,
+          connectivity
+        }),
+        { status: 403 }
+      );
+    }
+
     if (!isAccountActive(profile.account_status)) {
       await supabase.auth.signOut();
       logAuthEvent('login_blocked_disabled', { userId: user.id });
@@ -284,6 +311,11 @@ export async function POST(request: Request) {
         message: 'User signed in'
       });
     }
+
+    await trackProductEventServer(supabase, 'login', {
+      organizationId: profile.organization_id,
+      userId: user.id
+    });
 
     return jsonWithAuthSession(
       secureLoginPayload({

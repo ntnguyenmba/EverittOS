@@ -1,7 +1,9 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { LocaleProvider } from '@/components/locale-provider';
+import { LocaleSync } from '@/components/locale-sync';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
@@ -13,9 +15,25 @@ import { vercelDeploymentEnv } from '@/lib/deployment-env';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-display' });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#2D3748'
+};
+
 export const metadata: Metadata = {
   title: 'EverittOS | Field Operations Platform',
   description: 'Manage jobs, workers, and schedules from one dashboard.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'EverittOS',
+    statusBarStyle: 'default'
+  },
+  other: {
+    'mobile-web-app-capable': 'yes'
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -35,11 +53,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SupabaseRuntimeConfig />
         <SuppressVercelToolbar />
         <LocaleProvider>
+          <LocaleSync />
           <SessionGuard />
           <WorkspaceBootstrap />
           <SkipToMain />
           <SiteChrome />
           <AnalyticsGate />
+          <CookieConsentBanner />
           {children}
         </LocaleProvider>
       </body>

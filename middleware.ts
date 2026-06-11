@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { clearSessionMarkers, createSupabaseCookieAdapter } from '@/lib/auth-cookies';
-import { isAccountActive } from '@/lib/account-status';
+import { isAccountActive, isAccountDeleted } from '@/lib/account-status';
 import { mapAccessError } from '@/lib/auth-errors';
 import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
 import { normalizePlan } from '@/lib/everittos-plans';
@@ -174,6 +174,10 @@ export async function middleware(request: NextRequest) {
     }
 
     const profileRead = await fetchProfileByUserId(supabase, user.id);
+    if (isAccountDeleted(profileRead.profile?.deleted_at)) {
+      await supabase.auth.signOut();
+      return NextResponse.json({ error: 'Account has been deleted.' }, { status: 403 });
+    }
     if (!isAccountActive(profileRead.profile?.account_status)) {
       await supabase.auth.signOut();
       return NextResponse.json({ error: 'Account is disabled.' }, { status: 403 });
@@ -209,6 +213,19 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith('/onboarding/')
   ) {
     return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
+  }
+
+  if (isAccountDeleted(profile?.deleted_at)) {
+    await supabase.auth.signOut();
+    const login = new URL('/login', request.url);
+    login.searchParams.set('reason', 'deleted');
+    login.searchParams.set(
+      'detail',
+      'This account has been deleted. Contact support if you need to recover it during the grace period.'
+    );
+    const deletedRedirect = redirectWithCookies(login, supabaseResponse);
+    clearSessionMarkers(deletedRedirect);
+    return deletedRedirect;
   }
 
   if (!isAccountActive(profile?.account_status)) {

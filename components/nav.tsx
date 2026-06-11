@@ -30,10 +30,9 @@ export function Nav() {
   }, []);
 
   async function logout() {
-    await supabase.auth.signOut();
+    const { performClientLogout } = await import('@/lib/client-logout');
+    await performClientLogout(router);
     setLoggedIn(false);
-    router.push('/login');
-    router.refresh();
   }
 
   return (

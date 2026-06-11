@@ -3,6 +3,7 @@ import { clearSessionMarkers } from '@/lib/auth-cookies';
 import { logActivityServer } from '@/lib/activity-server';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
@@ -34,6 +35,11 @@ export async function POST(request: Request) {
         message: 'User signed out'
       });
     }
+
+    await trackProductEventServer(supabase, 'logout', {
+      organizationId: org?.organizationId,
+      userId: user.id
+    });
   }
 
   await supabase.auth.signOut();

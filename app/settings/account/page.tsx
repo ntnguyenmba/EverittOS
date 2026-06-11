@@ -86,7 +86,7 @@ export default function AccountSettingsPage() {
     setDeleteBusy(true);
     setMessage(null);
 
-    const res = await fetch('/api/account/request-deletion', {
+    const res = await fetch('/api/account/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ confirmation: confirmDeleteText.trim() })
@@ -96,15 +96,16 @@ export default function AccountSettingsPage() {
 
     if (!res.ok) {
       setMessage({
-        title: 'Deletion request failed',
-        body: json.error || 'Unable to submit deletion request.',
+        title: 'Deletion failed',
+        body: json.error || 'Unable to delete account.',
         details: json.code
       });
       return;
     }
 
-    setMessage({ body: json.message || 'Deletion request submitted.' });
-    setConfirmDeleteText('');
+    window.location.href = '/login?reason=deleted&detail=' + encodeURIComponent(
+      `Your account is scheduled for deletion. Contact support within ${json.recoveryDays || 14} days to recover.`
+    );
   }
 
   async function cancelSubscription() {
@@ -260,10 +261,10 @@ export default function AccountSettingsPage() {
       </div>
 
       <div className="settings-card">
-        <h3>Request account deletion</h3>
+        <h3>Delete account</h3>
         <p className="muted">
-          Permanent deletion is handled by our team after review. We will confirm by email before removing personal data.
-          Organization records may be retained where required for billing, legal, or backup obligations.
+          Your account is soft-deleted immediately and signed out. A 14-day recovery window applies before permanent
+          removal. Organization records may be retained where required for billing, legal, or backup obligations.
         </p>
         <label className="auth-field">
           <span className="muted">Type &quot;{DELETE_CONFIRMATION}&quot; to submit a deletion request</span>
@@ -277,7 +278,7 @@ export default function AccountSettingsPage() {
         </label>
         <div className="settings-actions">
           <button type="button" className="btn" disabled={!deleteReady || deleteBusy} onClick={requestDeletion}>
-            {deleteBusy ? 'Submitting...' : 'Request account deletion'}
+            {deleteBusy ? 'Deleting...' : 'Delete account'}
           </button>
         </div>
         <p className="muted">

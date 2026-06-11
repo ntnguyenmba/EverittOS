@@ -1,0 +1,38 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.everittventures.everittos",
+        "paths": [
+          "/dashboard",
+          "/dashboard/*",
+          "/jobs",
+          "/jobs/*",
+          "/customers",
+          "/customers/*",
+          "/schedule",
+          "/schedule/*",
+          "/workers",
+          "/workers/*",
+          "/notifications",
+          "/notifications/*",
+          "/settings",
+          "/settings/*",
+          "/onboarding",
+          "/onboarding/*",
+          "/portal/client",
+          "/portal/client/*",
+          "/portal/contractor",
+          "/portal/contractor/*",
+          "/auth/callback",
+          "/reset-password",
+          "/team/accept"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.everittventures.everittos"]
+  }
+}

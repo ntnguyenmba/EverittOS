@@ -18,7 +18,15 @@ export function LanguageSwitcher({ className, id = 'app-language' }: LanguageSwi
         id={id}
         className="input language-switcher-select"
         value={locale}
-        onChange={(event) => setLocale(event.target.value as Locale)}
+        onChange={(event) => {
+          const next = event.target.value as Locale;
+          setLocale(next);
+          void fetch('/api/account/privacy', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preferred_locale: next })
+          });
+        }}
         aria-label={t('common.language')}
       >
         {LOCALES.map((code) => (

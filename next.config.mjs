@@ -43,7 +43,7 @@ function buildSecurityHeaders() {
     "frame-ancestors 'none'"
   ].join('; ');
 
-  return {
+  const headers = {
     'Content-Security-Policy': csp,
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
@@ -52,6 +52,12 @@ function buildSecurityHeaders() {
       'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")',
     'X-DNS-Prefetch-Control': 'on'
   };
+
+  if (vercelEnv === 'production') {
+    headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload';
+  }
+
+  return headers;
 }
 
 const securityHeaders = Object.entries(buildSecurityHeaders()).map(([key, value]) => ({

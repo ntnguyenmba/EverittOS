@@ -68,9 +68,8 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   }, [open]);
 
   async function logout() {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    const { performClientLogout } = await import('@/lib/client-logout');
+    await performClientLogout(router);
   }
 
   const showBillingLink = canManageBilling(role);

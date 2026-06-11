@@ -37,9 +37,26 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     config: RATE_LIMITS.authSetup
   },
   {
-    match: (pathname, method) => pathname === '/api/account/request-deletion' && method === 'POST',
+    match: (pathname, method) =>
+      (pathname === '/api/account/request-deletion' || pathname === '/api/account/delete') && method === 'POST',
     prefix: 'account-deletion',
     config: RATE_LIMITS.accountDeletion
+  },
+  {
+    match: (pathname, method) => pathname === '/api/account/export' && method === 'GET',
+    prefix: 'account-export',
+    config: RATE_LIMITS.accountExport
+  },
+  {
+    match: (pathname, method) =>
+      pathname === '/api/account/privacy' && (method === 'GET' || method === 'PATCH'),
+    prefix: 'account-privacy',
+    config: RATE_LIMITS.accountPrivacy
+  },
+  {
+    match: (pathname, method) => pathname === '/api/account/consent' && method === 'POST',
+    prefix: 'account-consent',
+    config: RATE_LIMITS.accountConsent
   },
   {
     match: (pathname, method) => pathname === '/api/team/invite' && method === 'POST',

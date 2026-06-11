@@ -61,6 +61,88 @@ export type MessageTree = {
     workflows: { title: string; description: string };
     photos: { title: string; description: string };
   };
+  legal: {
+    terms: string;
+    privacy: string;
+    cookies: string;
+    security: string;
+    footerLabel: string;
+    footerNav: string;
+  };
+  cookies: {
+    banner: {
+      title: string;
+      description: string;
+      policy: string;
+      privacy: string;
+      acceptAll: string;
+      reject: string;
+      manage: string;
+      save: string;
+    };
+    categories: {
+      necessary: string;
+      necessaryDesc: string;
+      analytics: string;
+      analyticsDesc: string;
+      marketing: string;
+      marketingDesc: string;
+    };
+  };
+  settings: {
+    privacy: {
+      title: string;
+      description: string;
+      disclosureTitle: string;
+      disclosureBody: string;
+      collectProfile: string;
+      collectOperations: string;
+      collectActivity: string;
+      retention: string;
+      preferencesTitle: string;
+      marketingEmails: string;
+      productUpdates: string;
+      operationalNotifications: string;
+      doNotSell: string;
+      doNotSellDesc: string;
+      save: string;
+      saved: string;
+      saveError: string;
+      languageTitle: string;
+      exportTitle: string;
+      exportDescription: string;
+      exportButton: string;
+      exportSuccess: string;
+      exportError: string;
+      consentTitle: string;
+      termsAccepted: string;
+      privacyAccepted: string;
+      termsNotRecorded: string;
+      privacyNotRecorded: string;
+    };
+    notifications: {
+      title: string;
+      description: string;
+      email: string;
+      operational: string;
+      push: string;
+      pushFuture: string;
+      sms: string;
+      smsFuture: string;
+      save: string;
+      saved: string;
+      saveError: string;
+    };
+    nav: {
+      privacy: string;
+      notifications: string;
+    };
+  };
+  auth: {
+    acceptTerms: string;
+    acceptPrivacy: string;
+    consentRequired: string;
+  };
 };
 
 export type Messages = MessageTree;

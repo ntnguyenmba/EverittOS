@@ -21,6 +21,7 @@ export type WorkspaceProfile = {
   account_status: string;
   subscription_status: string;
   organization_id: string | null;
+  deleted_at: string | null;
 };
 
 type MembershipRow = {
@@ -71,7 +72,8 @@ async function toWorkspaceProfile(
     plan,
     account_status: profile.account_status || 'active',
     subscription_status: subscriptionStatus,
-    organization_id: profile.organization_id || orgId || null
+    organization_id: profile.organization_id || orgId || null,
+    deleted_at: profile.deleted_at || null
   };
 }
 

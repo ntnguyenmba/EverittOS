@@ -160,5 +160,88 @@ export const messages: Messages = {
       title: 'No photos yet',
       description: 'Upload before and after photos to document completed work.'
     }
+  },
+  legal: {
+    terms: 'Terms',
+    privacy: 'Privacy',
+    cookies: 'Cookies',
+    security: 'Security',
+    footerLabel: 'Legal and policies',
+    footerNav: 'Legal links'
+  },
+  cookies: {
+    banner: {
+      title: 'Cookie preferences',
+      description:
+        'We use essential cookies for sign-in and session security. Analytics cookies are optional and only load if you allow them.',
+      policy: 'Cookie policy',
+      privacy: 'Privacy policy',
+      acceptAll: 'Accept all',
+      reject: 'Reject non-essential',
+      manage: 'Manage preferences',
+      save: 'Save preferences'
+    },
+    categories: {
+      necessary: 'Necessary',
+      necessaryDesc: 'Required for authentication and core app functionality.',
+      analytics: 'Analytics',
+      analyticsDesc: 'Helps us understand signup and marketing page usage.',
+      marketing: 'Marketing',
+      marketingDesc: 'Reserved for future promotional communications.'
+    }
+  },
+  settings: {
+    privacy: {
+      title: 'Privacy & data',
+      description: 'Control your data, communications, and compliance preferences.',
+      disclosureTitle: 'What we collect',
+      disclosureBody: 'EverittOS collects only what is needed to operate your workspace.',
+      collectProfile: 'Account profile: email, role, business name, and workspace settings.',
+      collectOperations: 'Operational data: jobs, customers, workers, schedules, and photos you create.',
+      collectActivity: 'Activity logs: actions taken in your workspace for audit and support.',
+      retention: 'Data is retained while your account is active and deleted per your account deletion request.',
+      preferencesTitle: 'Communication preferences',
+      marketingEmails: 'Marketing emails',
+      productUpdates: 'Product updates',
+      operationalNotifications: 'Operational notifications',
+      doNotSell: 'Do Not Sell or Share My Information',
+      doNotSellDesc: 'EverittOS does not sell personal data. Enable this to record your CCPA preference.',
+      save: 'Save preferences',
+      saved: 'Privacy preferences saved.',
+      saveError: 'Unable to save preferences.',
+      languageTitle: 'Language',
+      exportTitle: 'Download your data',
+      exportDescription: 'Export your profile, jobs, customers, workers, and activity as JSON.',
+      exportButton: 'Download data export',
+      exportSuccess: 'Your data export has started.',
+      exportError: 'Unable to export data right now.',
+      consentTitle: 'Legal acceptance',
+      termsAccepted: 'Terms accepted',
+      privacyAccepted: 'Privacy accepted',
+      termsNotRecorded: 'Terms acceptance not yet recorded.',
+      privacyNotRecorded: 'Privacy acceptance not yet recorded.'
+    },
+    notifications: {
+      title: 'Notifications',
+      description: 'Choose how EverittOS reaches you.',
+      email: 'Email notifications',
+      operational: 'Operational alerts (assignments, due dates, invites)',
+      push: 'Push notifications',
+      pushFuture: 'Coming soon for mobile apps.',
+      sms: 'SMS notifications',
+      smsFuture: 'Coming soon where supported.',
+      save: 'Save notification settings',
+      saved: 'Notification settings saved.',
+      saveError: 'Unable to save notification settings.'
+    },
+    nav: {
+      privacy: 'Privacy',
+      notifications: 'Notifications'
+    }
+  },
+  auth: {
+    acceptTerms: 'I agree to the Terms of Service',
+    acceptPrivacy: 'I agree to the Privacy Policy',
+    consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.'
   }
 };

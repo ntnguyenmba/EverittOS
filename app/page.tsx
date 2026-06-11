@@ -20,6 +20,8 @@ export default function HomePage() {
           <Link href="/terms">Terms</Link>
           <span aria-hidden="true">·</span>
           <Link href="/privacy">Privacy</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/cookies">Cookies</Link>
         </footer>
       </div>
     </main>

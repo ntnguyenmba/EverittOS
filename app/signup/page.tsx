@@ -9,6 +9,7 @@ import { appUrl, safeNextPath } from '@/lib/app-url';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { useTranslation } from '@/components/locale-provider';
 import { supabase } from '@/lib/supabase';
 
 function signupRedirect(plan: EverittosPlan, next: string): string {
@@ -33,6 +34,9 @@ function SignupForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const { t } = useTranslation();
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
 
@@ -57,6 +61,12 @@ function SignupForm() {
     if (password !== confirmPassword) {
       setLoading(false);
       setError('Passwords do not match.');
+      return;
+    }
+
+    if (!acceptTerms || !acceptPrivacy) {
+      setLoading(false);
+      setError(t('auth.consentRequired'));
       return;
     }
 
@@ -110,6 +120,11 @@ function SignupForm() {
     setLoading(false);
 
     if (data.session) {
+      await fetch('/api/account/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true })
+      });
       if (redirectTarget.startsWith('http')) {
         window.location.href = redirectTarget;
         return;
@@ -183,6 +198,19 @@ function SignupForm() {
             required
           />
         </div>
+
+        <label className="auth-consent">
+          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} required />
+          <span>
+            {t('auth.acceptTerms')} (<Link href="/terms">{t('legal.terms')}</Link>)
+          </span>
+        </label>
+        <label className="auth-consent">
+          <input type="checkbox" checked={acceptPrivacy} onChange={(e) => setAcceptPrivacy(e.target.checked)} required />
+          <span>
+            {t('auth.acceptPrivacy')} (<Link href="/privacy">{t('legal.privacy')}</Link>)
+          </span>
+        </label>
 
         <AuthMessages error={error} success={success} />
 

@@ -182,9 +182,8 @@ export default function SettingsPage() {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    const { performClientLogout } = await import('@/lib/client-logout');
+    await performClientLogout(router);
   }
 
   if (loading) {

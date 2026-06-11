@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 
 export const PROFILE_CORE_SELECT =
-  'id, role, account_status, organization_id, business_name, email' as const;
+  'id, role, account_status, organization_id, business_name, email, deleted_at' as const;
 
 export const PROFILE_BILLING_SELECT = 'plan, subscription_status' as const;
 
@@ -15,6 +15,7 @@ export type ProfileRow = {
   organization_id?: string | null;
   business_name?: string | null;
   email?: string | null;
+  deleted_at?: string | null;
 };
 
 export function isMissingColumnError(message: string): boolean {

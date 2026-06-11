@@ -160,5 +160,88 @@ export const messages: Messages = {
       title: 'Chưa có ảnh',
       description: 'Tải ảnh trước và sau để ghi lại công việc đã hoàn thành.'
     }
+  },
+  legal: {
+    terms: 'Điều khoản',
+    privacy: 'Quyền riêng tư',
+    cookies: 'Cookie',
+    security: 'Bảo mật',
+    footerLabel: 'Pháp lý và chính sách',
+    footerNav: 'Liên kết pháp lý'
+  },
+  cookies: {
+    banner: {
+      title: 'Tùy chọn cookie',
+      description:
+        'Chúng tôi dùng cookie thiết yếu cho đăng nhập và bảo mật phiên. Cookie phân tích là tùy chọn.',
+      policy: 'Chính sách cookie',
+      privacy: 'Chính sách quyền riêng tư',
+      acceptAll: 'Chấp nhận tất cả',
+      reject: 'Từ chối không thiết yếu',
+      manage: 'Quản lý tùy chọn',
+      save: 'Lưu tùy chọn'
+    },
+    categories: {
+      necessary: 'Thiết yếu',
+      necessaryDesc: 'Bắt buộc cho xác thực và chức năng cốt lõi.',
+      analytics: 'Phân tích',
+      analyticsDesc: 'Giúp hiểu cách dùng trang đăng ký và marketing.',
+      marketing: 'Marketing',
+      marketingDesc: 'Dành cho thông báo khuyến mãi trong tương lai.'
+    }
+  },
+  settings: {
+    privacy: {
+      title: 'Quyền riêng tư & dữ liệu',
+      description: 'Kiểm soát dữ liệu, thông báo và tùy chọn tuân thủ.',
+      disclosureTitle: 'Dữ liệu chúng tôi thu thập',
+      disclosureBody: 'EverittOS chỉ thu thập những gì cần để vận hành không gian làm việc.',
+      collectProfile: 'Hồ sơ: email, vai trò, tên doanh nghiệp và cài đặt.',
+      collectOperations: 'Dữ liệu vận hành: công việc, khách hàng, nhân viên, lịch và ảnh.',
+      collectActivity: 'Nhật ký hoạt động: hành động trong không gian làm việc.',
+      retention: 'Dữ liệu được giữ khi tài khoản hoạt động và xóa theo yêu cầu của bạn.',
+      preferencesTitle: 'Tùy chọn liên lạc',
+      marketingEmails: 'Email marketing',
+      productUpdates: 'Cập nhật sản phẩm',
+      operationalNotifications: 'Thông báo vận hành',
+      doNotSell: 'Không bán hoặc chia sẻ thông tin của tôi',
+      doNotSellDesc: 'EverittOS không bán dữ liệu cá nhân. Bật để ghi nhận tùy chọn CCPA.',
+      save: 'Lưu tùy chọn',
+      saved: 'Đã lưu tùy chọn quyền riêng tư.',
+      saveError: 'Không thể lưu tùy chọn.',
+      languageTitle: 'Ngôn ngữ',
+      exportTitle: 'Tải dữ liệu của bạn',
+      exportDescription: 'Xuất hồ sơ, công việc, khách hàng, nhân viên và hoạt động dạng JSON.',
+      exportButton: 'Tải xuất dữ liệu',
+      exportSuccess: 'Đã bắt đầu xuất dữ liệu.',
+      exportError: 'Không thể xuất dữ liệu lúc này.',
+      consentTitle: 'Chấp nhận pháp lý',
+      termsAccepted: 'Đã chấp nhận điều khoản',
+      privacyAccepted: 'Đã chấp nhận quyền riêng tư',
+      termsNotRecorded: 'Chưa ghi nhận chấp nhận điều khoản.',
+      privacyNotRecorded: 'Chưa ghi nhận chấp nhận quyền riêng tư.'
+    },
+    notifications: {
+      title: 'Thông báo',
+      description: 'Chọn cách EverittOS liên hệ với bạn.',
+      email: 'Thông báo email',
+      operational: 'Cảnh báo vận hành (phân công, hạn, lời mời)',
+      push: 'Thông báo đẩy',
+      pushFuture: 'Sắp có trên ứng dụng di động.',
+      sms: 'Thông báo SMS',
+      smsFuture: 'Sắp có khi được hỗ trợ.',
+      save: 'Lưu cài đặt thông báo',
+      saved: 'Đã lưu cài đặt thông báo.',
+      saveError: 'Không thể lưu cài đặt.'
+    },
+    nav: {
+      privacy: 'Quyền riêng tư',
+      notifications: 'Thông báo'
+    }
+  },
+  auth: {
+    acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
+    acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
+    consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.'
   }
 };

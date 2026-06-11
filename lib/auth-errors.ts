@@ -35,6 +35,11 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
     message: 'This account has been deactivated. Contact support to restore access.',
     details: 'profiles.account_status is disabled.'
   },
+  account_deleted: {
+    title: 'Account deleted',
+    message: 'This account has been deleted. Contact support during the recovery window to restore access.',
+    details: 'profiles.deleted_at is set.'
+  },
   config_error: {
     title: 'Service unavailable',
     message: 'Authentication is not configured for this environment. Contact your administrator.',
@@ -146,7 +151,8 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
       message: 'You were signed out after a period of inactivity. Sign in again to continue.',
       details: 'Session idle timeout exceeded.'
     },
-    disabled: FRIENDLY.account_disabled
+    disabled: FRIENDLY.account_disabled,
+    deleted: FRIENDLY.account_deleted
   };
 
   return ACCESS[code || ''] || {
