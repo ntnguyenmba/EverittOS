@@ -17,7 +17,12 @@ export async function POST() {
       return json({ error: 'Sign in required.', code: 'unauthorized' }, { status: 401 });
     }
 
-    const bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined);
+    const bootstrap = await ensureUserWorkspace(
+      user.id,
+      user.email || '',
+      user.user_metadata || undefined,
+      supabase
+    );
 
     if (!bootstrap.ok) {
       return json(

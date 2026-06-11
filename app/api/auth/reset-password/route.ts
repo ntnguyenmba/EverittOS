@@ -1,5 +1,6 @@
 import { mapAuthError } from '@/lib/auth-errors';
 import { logAuthEvent } from '@/lib/auth-logger';
+import { logAuthStep } from '@/lib/auth-diagnostics';
 import { appUrl } from '@/lib/app-url';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
@@ -7,8 +8,15 @@ import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
 
+const ROUTE = 'reset_password';
+
 export async function POST(request: Request) {
   const diagnostics = supabaseConfigDiagnostics();
+
+  logAuthStep(ROUTE, 'config_check', {
+    configured: diagnostics.configured ? 1 : 0,
+    host: diagnostics.urlHost || 'missing'
+  });
 
   if (!isSupabaseConfigured()) {
     const { json } = await createRouteHandlerSupabase();
@@ -23,6 +31,7 @@ export async function POST(request: Request) {
     );
   }
 
+  logAuthStep(ROUTE, 'connectivity', { host: diagnostics.urlHost || 'unknown' });
   const connectivity = await checkSupabaseConnectivity();
   if (!connectivity.ok) {
     const { json } = await createRouteHandlerSupabase();
@@ -56,21 +65,25 @@ export async function POST(request: Request) {
   const { supabase, json } = await createRouteHandlerSupabase();
   const redirectTo = appUrl('/auth/callback?next=/reset-password&type=recovery');
 
+  logAuthStep(ROUTE, 'sign_in', { host: diagnostics.urlHost || 'unknown', redirectHost: new URL(redirectTo).host });
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
   if (error) {
+    const isFetchFailure = error.message.toLowerCase().includes('fetch failed');
     logAuthEvent('reset_password_failed', { reason: error.message, host: diagnostics.urlHost || 'unknown' });
     const mapped = mapAuthError(error.message);
     return json(
       {
-        error: mapped.message,
-        title: mapped.title,
+        error: isFetchFailure
+          ? 'Supabase password reset request failed from the server. Verify Supabase URL/key in Vercel.'
+          : mapped.message,
+        title: isFetchFailure ? 'Supabase connection failed' : mapped.title,
         code: error.message,
         supabaseMessage: error.message,
         diagnostics,
         connectivity
       },
-      { status: 400 }
+      { status: isFetchFailure ? 503 : 400 }
     );
   }
 

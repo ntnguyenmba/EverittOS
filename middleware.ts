@@ -100,10 +100,10 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/onboarding')) {
       return supabaseResponse;
     }
-    const login = new URL('/login', request.url);
-    login.searchParams.set('reason', 'profile');
-    login.searchParams.set('detail', mapAccessError('profile').message);
-    return redirectWithCookies(login, supabaseResponse);
+    const onboarding = new URL('/onboarding', request.url);
+    onboarding.searchParams.set('reason', 'profile');
+    onboarding.searchParams.set('detail', mapAccessError('profile').message);
+    return redirectWithCookies(onboarding, supabaseResponse);
   }
 
   if (!profile.organization_id) {
@@ -116,13 +116,16 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (!membership) {
-      const login = new URL('/login', request.url);
-      login.searchParams.set('reason', 'profile');
-      login.searchParams.set(
+      if (pathname.startsWith('/onboarding')) {
+        return supabaseResponse;
+      }
+      const onboarding = new URL('/onboarding', request.url);
+      onboarding.searchParams.set('reason', 'organization');
+      onboarding.searchParams.set(
         'detail',
-        'Organization access is missing for this account. Sign in again to complete workspace setup.'
+        'Organization access is missing for this account. Complete workspace setup to continue.'
       );
-      return redirectWithCookies(login, supabaseResponse);
+      return redirectWithCookies(onboarding, supabaseResponse);
     }
   }
 

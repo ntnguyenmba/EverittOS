@@ -10,12 +10,14 @@ export type AuthRequestDebug = {
   responseBody?: string;
   profile?: {
     present: boolean;
+    skipped?: boolean;
     role?: string | null;
     organizationId?: string | null;
     accountStatus?: string | null;
   };
   organization?: {
     present: boolean;
+    skipped?: boolean;
     membershipActive?: boolean;
   };
   session?: {
@@ -54,10 +56,14 @@ function formatDebugBlock(debug: AuthRequestDebug): string {
       ? `Session: ${debug.session.verified ? 'verified' : 'missing'}${debug.session.userId ? ` (user ${debug.session.userId})` : ''}`
       : null,
     debug.profile
-      ? `Profile: ${debug.profile.present ? 'yes' : 'no'}${debug.profile.role ? ` · role=${debug.profile.role}` : ''}${debug.profile.organizationId ? ` · org=${debug.profile.organizationId}` : debug.profile.present ? ' · org=missing' : ''}${debug.profile.accountStatus ? ` · status=${debug.profile.accountStatus}` : ''}`
+      ? debug.profile.skipped
+        ? 'Profile: skipped (auth did not complete)'
+        : `Profile: ${debug.profile.present ? 'yes' : 'no'}${debug.profile.role ? ` · role=${debug.profile.role}` : ''}${debug.profile.organizationId ? ` · org=${debug.profile.organizationId}` : debug.profile.present ? ' · org=missing' : ''}${debug.profile.accountStatus ? ` · status=${debug.profile.accountStatus}` : ''}`
       : null,
     debug.organization
-      ? `Organization access: ${debug.organization.present ? 'yes' : 'no'}${debug.organization.membershipActive === false ? ' (membership inactive)' : ''}`
+      ? debug.organization.skipped
+        ? 'Organization access: skipped (auth did not complete)'
+        : `Organization access: ${debug.organization.present ? 'yes' : 'no'}${debug.organization.membershipActive === false ? ' (membership inactive)' : ''}`
       : null,
     debug.responseBody ? `Response body: ${debug.responseBody}` : null
   ].filter(Boolean) as string[];
@@ -187,18 +193,22 @@ export async function parseLoginApiResponse(
         supabaseMessage: (json.supabaseMessage as string) || undefined,
         responseBody: responseText.slice(0, 1200),
         profile: profileDiag
-          ? {
-              present: Boolean(profileDiag.present),
-              role: (profileDiag.role as string | null) ?? null,
-              organizationId: (profileDiag.organizationId as string | null) ?? null,
-              accountStatus: (profileDiag.accountStatus as string | null) ?? null
-            }
+          ? profileDiag.skipped
+            ? { present: false, skipped: true }
+            : {
+                present: Boolean(profileDiag.present),
+                role: (profileDiag.role as string | null) ?? null,
+                organizationId: (profileDiag.organizationId as string | null) ?? null,
+                accountStatus: (profileDiag.accountStatus as string | null) ?? null
+              }
           : undefined,
         organization: orgDiag
-          ? {
-              present: Boolean(orgDiag.present),
-              membershipActive: orgDiag.membershipActive as boolean | undefined
-            }
+          ? orgDiag.skipped
+            ? { present: false, skipped: true }
+            : {
+                present: Boolean(orgDiag.present),
+                membershipActive: orgDiag.membershipActive as boolean | undefined
+              }
           : undefined,
         session: sessionDiag
           ? {

@@ -1,5 +1,6 @@
 import { isAccountActive } from '@/lib/account-status';
 import { logAuthEvent } from '@/lib/auth-logger';
+import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { defaultPathForRole } from '@/lib/role-routes';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
@@ -9,39 +10,13 @@ import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
 
-function loginDiagnostics(input: {
-  userId?: string;
-  profile?: {
-    role?: string | null;
-    organization_id?: string | null;
-    account_status?: string | null;
-  } | null;
-  hasMembership?: boolean;
-  sessionVerified?: boolean;
-}) {
-  return {
-    session: {
-      verified: Boolean(input.sessionVerified),
-      userId: input.userId || null
-    },
-    profile: {
-      present: Boolean(input.profile),
-      role: input.profile?.role ?? null,
-      organizationId: input.profile?.organization_id ?? null,
-      accountStatus: input.profile?.account_status ?? null
-    },
-    organization: {
-      present: Boolean(input.profile?.organization_id || input.hasMembership),
-      membershipActive: input.hasMembership ?? false
-    }
-  };
-}
+const ROUTE = 'login';
 
 export async function POST(request: Request) {
   const configDiagnostics = supabaseConfigDiagnostics();
 
   try {
-    logAuthEvent('login_route_start', {
+    logAuthStep(ROUTE, 'config_check', {
       configured: configDiagnostics.configured ? 1 : 0,
       host: configDiagnostics.urlHost || 'missing',
       serviceRole: configDiagnostics.serviceRolePresent ? 1 : 0
@@ -57,13 +32,14 @@ export async function POST(request: Request) {
           title: mapped.title,
           details: mapped.details,
           code: 'config_error',
-          diagnostics: loginDiagnostics({ sessionVerified: false }),
+          diagnostics: workspaceDiagnostics({ authStep: 'config_check', sessionVerified: false }),
           config: configDiagnostics
         },
         { status: 503 }
       );
     }
 
+    logAuthStep(ROUTE, 'connectivity', { host: configDiagnostics.urlHost || 'unknown' });
     const connectivity = await checkSupabaseConnectivity();
     if (!connectivity.ok) {
       const { json } = await createRouteHandlerSupabase();
@@ -74,7 +50,7 @@ export async function POST(request: Request) {
           details: connectivity.error,
           code: 'supabase_unreachable',
           supabaseMessage: connectivity.error,
-          diagnostics: loginDiagnostics({ sessionVerified: false }),
+          diagnostics: workspaceDiagnostics({ authStep: 'connectivity', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
         },
@@ -101,6 +77,7 @@ export async function POST(request: Request) {
 
     const { supabase, json } = await createRouteHandlerSupabase();
 
+    logAuthStep(ROUTE, 'sign_in', { host: configDiagnostics.urlHost || 'unknown' });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -124,7 +101,7 @@ export async function POST(request: Request) {
             : mapped.details,
           code: error.message,
           supabaseMessage: error.message,
-          diagnostics: loginDiagnostics({ sessionVerified: false }),
+          diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
         },
@@ -139,7 +116,7 @@ export async function POST(request: Request) {
           error: 'Sign in did not return a user session.',
           title: 'Session missing',
           code: 'no_user',
-          diagnostics: loginDiagnostics({ sessionVerified: false }),
+          diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
           connectivity
         },
@@ -147,6 +124,7 @@ export async function POST(request: Request) {
       );
     }
 
+    logAuthStep(ROUTE, 'session_verify', { userId: user.id });
     const {
       data: { user: verifiedUser },
       error: verifyError
@@ -161,7 +139,11 @@ export async function POST(request: Request) {
           details: verifyError?.message || 'getUser() returned no session after signInWithPassword.',
           code: 'session_not_persisted',
           supabaseMessage: verifyError?.message,
-          diagnostics: loginDiagnostics({ userId: user.id, sessionVerified: false }),
+          diagnostics: workspaceDiagnostics({
+            authStep: 'session_verify',
+            userId: user.id,
+            sessionVerified: false
+          }),
           config: configDiagnostics,
           connectivity
         },
@@ -169,7 +151,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined);
+    logAuthStep(ROUTE, 'workspace_bootstrap', { userId: user.id });
+    const bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
 
     if (!bootstrap.ok) {
       await supabase.auth.signOut();
@@ -180,16 +163,19 @@ export async function POST(request: Request) {
           details: bootstrap.details,
           code: bootstrap.code,
           setupRequired: true,
-          diagnostics: loginDiagnostics({
+          diagnostics: workspaceDiagnostics({
+            authStep: 'workspace_bootstrap',
             userId: user.id,
             sessionVerified: true,
             profile: bootstrap.profileSnapshot ?? null,
-            hasMembership: bootstrap.hasMembership
+            hasMembership: bootstrap.hasMembership,
+            profileLookupRan: true,
+            membershipLookupRan: true
           }),
           config: configDiagnostics,
           connectivity
         },
-        { status: 409 }
+        { status: bootstrap.code === 'bootstrap_unavailable' ? 503 : 409 }
       );
     }
 
@@ -205,11 +191,14 @@ export async function POST(request: Request) {
           title: mapped.title,
           details: mapped.details,
           code: 'account_disabled',
-          diagnostics: loginDiagnostics({
+          diagnostics: workspaceDiagnostics({
+            authStep: 'workspace_bootstrap',
             userId: user.id,
             sessionVerified: true,
             profile,
-            hasMembership: true
+            hasMembership: true,
+            profileLookupRan: true,
+            membershipLookupRan: true
           }),
           config: configDiagnostics,
           connectivity
@@ -237,11 +226,14 @@ export async function POST(request: Request) {
       plan: profile.plan,
       subscriptionStatus: profile.subscription_status,
       workspaceCreated: bootstrap.created,
-      diagnostics: loginDiagnostics({
+      diagnostics: workspaceDiagnostics({
+        authStep: 'complete',
         userId: verifiedUser.id,
         sessionVerified: true,
         profile,
-        hasMembership: Boolean(profile.organization_id)
+        hasMembership: Boolean(profile.organization_id),
+        profileLookupRan: true,
+        membershipLookupRan: true
       }),
       config: configDiagnostics,
       connectivity
@@ -255,7 +247,7 @@ export async function POST(request: Request) {
         title: 'Server error',
         details: err instanceof Error ? err.message : String(err),
         code: 'login_route_exception',
-        diagnostics: loginDiagnostics({ sessionVerified: false }),
+        diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
         config: configDiagnostics
       },
       { status: 500 }

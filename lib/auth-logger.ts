@@ -1,11 +1,14 @@
 const ALWAYS_LOG = new Set([
+  'auth_step',
   'login_config_missing',
   'login_failed',
   'login_route_exception',
   'supabase_connectivity_failed',
   'supabase_admin_unconfigured',
   'reset_password_failed',
-  'session_verify_failed'
+  'session_verify_failed',
+  'profile_read_session_failed',
+  'profile_read_failed'
 ]);
 
 /** Console-safe auth logging — never log passwords, tokens, or keys. */
