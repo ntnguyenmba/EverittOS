@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
@@ -323,9 +324,9 @@ function ClientPortalContent() {
           </>
         )}
 
-        <Link href="/dashboard" className="btn" style={{ marginTop: 24 }}>
+        <GoToDashboardLink role="client" className="btn" style={{ marginTop: 24 }}>
           Back to dashboard
-        </Link>
+        </GoToDashboardLink>
       </div>
     </main>
   );

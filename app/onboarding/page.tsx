@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
 import { Sidebar } from '@/components/sidebar';
+import { dashboardPathForRole, loginUrlWithDashboardNext } from '@/lib/dashboard-nav';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, photoUploadAllowed, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { logClientActivity } from '@/lib/activity';
 import { trackProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
+import type { UserRole } from '@/lib/roles';
 
 const STEPS = [
   'Set up your workspace',
@@ -36,6 +39,7 @@ export default function OnboardingPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [role, setRole] = useState<UserRole | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -43,7 +47,7 @@ export default function OnboardingPage() {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login');
+        router.push(loginUrlWithDashboardNext());
         return;
       }
 
@@ -57,13 +61,14 @@ export default function OnboardingPage() {
       }
       if (org) {
         setOrgId(org.organizationId);
+        setRole(org.role);
         const { data: settings } = await supabase
           .from('organization_settings')
           .select('*')
           .eq('organization_id', org.organizationId)
           .maybeSingle();
         if (settings?.onboarding_completed) {
-          router.push('/dashboard');
+          router.push(dashboardPathForRole(org.role));
           return;
         }
         setStep(settings?.onboarding_step || 0);
@@ -240,7 +245,7 @@ export default function OnboardingPage() {
 
   async function finish() {
     await saveStep(STEPS.length, true);
-    router.push('/dashboard');
+    router.push(dashboardPathForRole(role));
   }
 
   const progress = Math.round((step / STEPS.length) * 100);
@@ -265,9 +270,9 @@ export default function OnboardingPage() {
               always available.
             </p>
           </div>
-          <Link href="/dashboard" className="btn">
+          <GoToDashboardLink role={role} className="btn">
             Go to dashboard
-          </Link>
+          </GoToDashboardLink>
         </div>
         <div className="onboarding-progress">
           <div className="onboarding-progress-bar" style={{ width: `${progress}%` }} />

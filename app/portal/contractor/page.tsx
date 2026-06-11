@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PhotoUpload } from '@/components/photo-upload';
@@ -118,9 +119,9 @@ export default function ContractorPortalPage() {
           </div>
         ))}
 
-        <Link href="/dashboard" className="btn" style={{ marginTop: 24 }}>
+        <GoToDashboardLink role="contractor" className="btn" style={{ marginTop: 24 }}>
           Back to dashboard
-        </Link>
+        </GoToDashboardLink>
       </div>
     </main>
   );

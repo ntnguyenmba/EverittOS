@@ -4,6 +4,7 @@ import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 const ONBOARDING_EXEMPT_PREFIXES = [
   '/',
+  '/dashboard',
   '/onboarding',
   '/settings/account',
   '/settings/security',
