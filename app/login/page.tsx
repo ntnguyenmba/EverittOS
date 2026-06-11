@@ -13,6 +13,7 @@ import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
 import { storeTabSessionId } from '@/lib/session-client';
+import { useTranslation } from '@/components/locale-provider';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 
 function LoginForm() {
@@ -44,6 +45,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const signupHref = `/signup?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
+  const { t } = useTranslation();
 
   function showError(nextError: LoginClientError) {
     setError(nextError);
@@ -129,6 +131,8 @@ function LoginForm() {
           Selected plan: <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. Sign in to continue setup.
         </p>
       ) : null}
+
+      <p className="auth-methods-note">{t('auth.signInMethods')}</p>
 
       <form className="auth-form card" onSubmit={handleLogin}>
         <div className="auth-field">

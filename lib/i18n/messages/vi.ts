@@ -199,6 +199,8 @@ export const messages: Messages = {
       collectProfile: 'Hồ sơ: email, vai trò, tên doanh nghiệp và cài đặt.',
       collectOperations: 'Dữ liệu vận hành: công việc, khách hàng, nhân viên, lịch và ảnh.',
       collectActivity: 'Nhật ký hoạt động: hành động trong không gian làm việc.',
+      collectPasskeys:
+        'Passkey (tùy chọn): thông tin xác thực mã hóa trên thiết bị hoặc trình quản lý mật khẩu. EverittOS không nhận hoặc lưu dữ liệu sinh trắc học.',
       retention: 'Dữ liệu được giữ khi tài khoản hoạt động và xóa theo yêu cầu của bạn.',
       preferencesTitle: 'Tùy chọn liên lạc',
       marketingEmails: 'Email marketing',
@@ -237,11 +239,18 @@ export const messages: Messages = {
     nav: {
       privacy: 'Quyền riêng tư',
       notifications: 'Thông báo'
+    },
+    security: {
+      passkeysTitle: 'Passkey',
+      passkeysBody:
+        'Passkey cho phép bạn đăng nhập bằng thiết bị, trình duyệt, trình quản lý mật khẩu, mở khóa sinh trắc học hoặc khóa bảo mật. EverittOS không nhận hoặc lưu dữ liệu sinh trắc học.',
+      compromised: 'Nếu bạn cho rằng tài khoản hoặc thiết bị bị xâm phạm, hãy liên hệ'
     }
   },
   auth: {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
-    consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.'
+    consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
+    signInMethods: 'Đăng nhập bằng email, Google hoặc passkey.'
   }
 };

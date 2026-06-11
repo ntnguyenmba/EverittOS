@@ -24,7 +24,8 @@ export function AuthShell({ title, children }: AuthShellProps) {
 
           <footer className="auth-shell-footer">
             <p>
-              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link>
+              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+              <Link href="/security">Security</Link>
             </p>
           </footer>
         </div>

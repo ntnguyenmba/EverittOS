@@ -9,7 +9,7 @@ export default function SecurityPage() {
 
   return (
     <main className="section" id="main-content">
-      <div className="container" style={{ maxWidth: 720 }}>
+      <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Security</h2>
         <p>
           EverittOS is built for field service teams that handle customer data, job photos, and billing. This page
@@ -18,9 +18,14 @@ export default function SecurityPage() {
 
         <h3>Authentication</h3>
         <p>
-          Accounts use Supabase Auth with email and password. Sessions are stored in secure HTTP-only cookies. After{' '}
+          You can sign in with email, Google, or passkey. Sessions are stored in secure HTTP-only cookies. After{' '}
           {idleMinutes} minutes of inactivity, users are signed out automatically. A warning appears{' '}
           {warningMinutes} minutes before logout. Mouse movement, keyboard input, touch, and navigation reset the timer.
+        </p>
+        <p>
+          Passkeys let you sign in with your device, browser, password manager, biometric unlock, or security key.
+          EverittOS does not receive or store biometric data. If you use a passkey, your device, browser, operating
+          system, or password manager stores a cryptographic credential used to verify your sign-in.
         </p>
         <p>
           Password reset and email verification links expire per Supabase settings. Disabled accounts cannot access the

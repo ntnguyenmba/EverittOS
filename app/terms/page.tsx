@@ -6,7 +6,7 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 export default function TermsPage() {
   return (
     <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
+      <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Terms of Service</h2>
         <p className="muted">Version {TERMS_VERSION} · Last updated June 2026</p>
 
@@ -27,6 +27,11 @@ export default function TermsPage() {
         <p>
           You must provide accurate information and keep credentials secure. You may deactivate your account at any time
           from Settings. Deletion requests follow the process described in our Privacy Policy.
+        </p>
+        <p>
+          You are responsible for keeping your devices, passkeys, passwords, and authentication methods secure. If you
+          believe your account or device has been compromised, contact us right away at{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>
 
         <h3>Billing</h3>

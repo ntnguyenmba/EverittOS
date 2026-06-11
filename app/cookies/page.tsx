@@ -4,31 +4,37 @@ import { LegalNotice } from '@/components/legal-notice';
 export default function CookiesPage() {
   return (
     <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
+      <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Cookie Policy</h2>
         <p className="muted">Last updated June 2026</p>
 
         <h3>What are cookies?</h3>
         <p>
           Cookies are small text files stored on your device. We use cookies and similar technologies to operate
-          EverittOS, remember preferences, and—only with your consent—understand how marketing pages are used.
+          EverittOS, remember preferences, and, only with your consent, understand how marketing pages are used.
         </p>
 
         <h3>Categories</h3>
         <ul>
           <li>
-            <strong>Necessary</strong> — Required for authentication, session management, and security. These cannot be
+            <strong>Necessary</strong>: Required for authentication, session management, and security. These cannot be
             disabled while using the app.
           </li>
           <li>
-            <strong>Analytics</strong> — Optional. Helps us understand signup and marketing page usage. Loaded only if you
+            <strong>Analytics</strong>: Optional. Helps us understand signup and marketing page usage. Loaded only if you
             accept analytics cookies.
           </li>
           <li>
-            <strong>Marketing</strong> — Optional. Reserved for future campaign measurement. Not loaded unless you
+            <strong>Marketing</strong>: Optional. Reserved for future campaign measurement. Not loaded unless you
             accept marketing cookies.
           </li>
         </ul>
+
+        <h3>Passkeys</h3>
+        <p>
+          If you use passkey sign-in, your device, browser, or password manager stores the credential. EverittOS does
+          not receive or store biometric data such as fingerprint or face scan data.
+        </p>
 
         <h3>Authenticated app</h3>
         <p>

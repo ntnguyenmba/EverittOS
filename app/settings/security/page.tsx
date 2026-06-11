@@ -8,6 +8,8 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchRecentSecurityEvents } from '@/lib/security-events';
+import { useTranslation } from '@/components/locale-provider';
+import { SUPPORT_EMAIL } from '@/lib/support';
 import { supabase } from '@/lib/supabase';
 
 type SecurityEventRow = {
@@ -20,6 +22,7 @@ type SecurityEventRow = {
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [password, setPassword] = useState('');
@@ -102,7 +105,16 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Security" description="Password and session controls.">
+    <SettingsShell plan={plan} title="Security" description="Password, passkeys, and session controls.">
+      <div className="settings-card">
+        <h3>{t('settings.security.passkeysTitle')}</h3>
+        <p className="muted">{t('settings.security.passkeysBody')}</p>
+        <p className="muted">
+          {t('settings.security.compromised')}{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+        </p>
+      </div>
+
       <div className="settings-card">
         <h3>Change password</h3>
         <form className="form" onSubmit={changePassword}>

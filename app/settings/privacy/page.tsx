@@ -136,6 +136,7 @@ export default function PrivacySettingsPage() {
           <li>{t('settings.privacy.collectProfile')}</li>
           <li>{t('settings.privacy.collectOperations')}</li>
           <li>{t('settings.privacy.collectActivity')}</li>
+          <li>{t('settings.privacy.collectPasskeys')}</li>
           <li>{t('settings.privacy.retention')}</li>
         </ul>
       </div>

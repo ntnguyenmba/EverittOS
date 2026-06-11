@@ -6,7 +6,7 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 export default function PrivacyPage() {
   return (
     <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
+      <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Privacy Policy</h2>
         <p className="muted">Version {PRIVACY_VERSION} · Last updated June 2026</p>
 
@@ -49,6 +49,13 @@ export default function PrivacyPage() {
           To deactivate or delete your account, use Settings → Account. Contact{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> for data access requests or recovery during the grace
           period.
+        </p>
+
+        <h3>Passkeys and WebAuthn</h3>
+        <p>
+          EverittOS may support passkey authentication through WebAuthn. If you choose to use a passkey, your device,
+          browser, operating system, or password manager may store a cryptographic credential used to verify your
+          sign-in. EverittOS does not receive or store your biometric data, such as fingerprint or face scan data.
         </p>
 
         <h3>Security</h3>

@@ -199,6 +199,8 @@ export const messages: Messages = {
       collectProfile: 'Account profile: email, role, business name, and workspace settings.',
       collectOperations: 'Operational data: jobs, customers, workers, schedules, and photos you create.',
       collectActivity: 'Activity logs: actions taken in your workspace for audit and support.',
+      collectPasskeys:
+        'Passkeys (optional): cryptographic credentials stored on your device or password manager. EverittOS does not receive or store biometric data.',
       retention: 'Data is retained while your account is active and deleted per your account deletion request.',
       preferencesTitle: 'Communication preferences',
       marketingEmails: 'Marketing emails',
@@ -237,11 +239,18 @@ export const messages: Messages = {
     nav: {
       privacy: 'Privacy',
       notifications: 'Notifications'
+    },
+    security: {
+      passkeysTitle: 'Passkeys',
+      passkeysBody:
+        'Passkeys let you sign in with your device, browser, password manager, biometric unlock, or security key. EverittOS does not receive or store biometric data.',
+      compromised: 'If you believe your account or device has been compromised, contact us at'
     }
   },
   auth: {
     acceptTerms: 'I agree to the Terms of Service',
     acceptPrivacy: 'I agree to the Privacy Policy',
-    consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.'
+    consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.',
+    signInMethods: 'Sign in with email, Google, or passkey.'
   }
 };

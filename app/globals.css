@@ -634,6 +634,33 @@ p { color: var(--muted); line-height: 1.7; }
   color: var(--accent);
 }
 
+.auth-methods-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+
+.legal-document h3 {
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.legal-document ul {
+  padding-left: 1.25rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.legal-document li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.legal-document p {
+  line-height: 1.65;
+}
+
 .auth-links {
   display: flex;
   flex-wrap: wrap;
@@ -2217,6 +2244,14 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 @media (max-width: 640px) {
+  .legal-document {
+    width: calc(100% - 32px);
+  }
+
+  .legal-document h2 {
+    font-size: 1.75rem;
+  }
+
   .cookie-banner-inner {
     width: calc(100% - 24px);
   }

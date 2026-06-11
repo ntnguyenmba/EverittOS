@@ -145,6 +145,8 @@ function SignupForm() {
         </p>
       ) : null}
 
+      <p className="auth-methods-note">{t('auth.signInMethods')}</p>
+
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
           <label htmlFor="business_name">Business or display name (optional)</label>

@@ -22,6 +22,8 @@ export default function HomePage() {
           <Link href="/privacy">Privacy</Link>
           <span aria-hidden="true">·</span>
           <Link href="/cookies">Cookies</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/security">Security</Link>
         </footer>
       </div>
     </main>

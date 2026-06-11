@@ -98,6 +98,7 @@ export type MessageTree = {
       collectProfile: string;
       collectOperations: string;
       collectActivity: string;
+      collectPasskeys: string;
       retention: string;
       preferencesTitle: string;
       marketingEmails: string;
@@ -137,11 +138,17 @@ export type MessageTree = {
       privacy: string;
       notifications: string;
     };
+    security: {
+      passkeysTitle: string;
+      passkeysBody: string;
+      compromised: string;
+    };
   };
   auth: {
     acceptTerms: string;
     acceptPrivacy: string;
     consentRequired: string;
+    signInMethods: string;
   };
 };
 
