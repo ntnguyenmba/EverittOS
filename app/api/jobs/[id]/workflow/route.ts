@@ -4,6 +4,7 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { isManagerRole, isStaffRole, normalizeRole } from '@/lib/roles';
+import { workflowBelongsToOrg, workflowStepBelongsToOrg } from '@/lib/org-validation';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -72,12 +73,22 @@ export async function POST(request: Request, { params }: RouteParams) {
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
 
-  const { data: job } = await admin.from('jobs').select('organization_id').eq('id', jobId).maybeSingle();
+  const { data: job } = await admin
+    .from('jobs')
+    .select('organization_id, workflow_template_id')
+    .eq('id', jobId)
+    .maybeSingle();
   if (!job || job.organization_id !== org.organizationId) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
   if (body.workflowTemplateId !== undefined && isManagerRole(role)) {
+    if (body.workflowTemplateId) {
+      const validTemplate = await workflowBelongsToOrg(admin, body.workflowTemplateId, org.organizationId);
+      if (!validTemplate) {
+        return NextResponse.json({ error: 'Workflow template not found' }, { status: 404 });
+      }
+    }
     await admin.from('jobs').update({ workflow_template_id: body.workflowTemplateId }).eq('id', jobId);
     if (body.workflowTemplateId) {
       const { data: steps } = await admin
@@ -101,7 +112,23 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   if (!body.stepId) return NextResponse.json({ error: 'stepId is required' }, { status: 400 });
 
-  const { data: step } = await admin.from('workflow_steps').select('step_type, required').eq('id', body.stepId).maybeSingle();
+  const workflowId = job.workflow_template_id;
+  if (!workflowId) {
+    return NextResponse.json({ error: 'Job has no workflow template' }, { status: 400 });
+  }
+
+  const stepInWorkflow = await workflowStepBelongsToOrg(admin, body.stepId, workflowId, org.organizationId);
+  if (!stepInWorkflow) {
+    return NextResponse.json({ error: 'Step not found' }, { status: 404 });
+  }
+
+  const { data: step } = await admin
+    .from('workflow_steps')
+    .select('step_type, required')
+    .eq('id', body.stepId)
+    .eq('workflow_id', workflowId)
+    .eq('organization_id', org.organizationId)
+    .maybeSingle();
   if (!step) return NextResponse.json({ error: 'Step not found' }, { status: 404 });
 
   if (step.step_type === 'note' && body.completed && !body.note?.trim()) {

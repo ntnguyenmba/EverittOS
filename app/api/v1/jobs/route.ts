@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticateApiRequest, hasScope, jsonError } from '@/lib/api-auth';
+import { ALLOWED_JOB_STATUSES, customerBelongsToOrg } from '@/lib/org-validation';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 
 export async function GET(request: Request) {
@@ -18,7 +19,12 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (status) query = query.eq('status', status);
+  if (status) {
+    if (!ALLOWED_JOB_STATUSES.has(status)) {
+      return jsonError('Invalid status filter.', 400);
+    }
+    query = query.eq('status', status);
+  }
 
   const { data, error } = await query;
   if (error) return jsonError(error.message, 500);
@@ -42,6 +48,17 @@ export async function POST(request: Request) {
   };
 
   if (!body.title?.trim()) return jsonError('title is required.', 400);
+
+  if (body.status && !ALLOWED_JOB_STATUSES.has(body.status)) {
+    return jsonError('Invalid job status.', 400);
+  }
+
+  if (body.customer_id) {
+    const validCustomer = await customerBelongsToOrg(auth.admin, body.customer_id, auth.organizationId);
+    if (!validCustomer) {
+      return jsonError('Customer not found in organization.', 400);
+    }
+  }
 
   const { data: org } = await auth.admin.from('organizations').select('owner_user_id').eq('id', auth.organizationId).maybeSingle();
   if (!org?.owner_user_id) return jsonError('Organization not found.', 404);

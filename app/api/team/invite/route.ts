@@ -3,7 +3,8 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { sendTeamInviteEmail } from '@/lib/email';
-import { canManageTeam, normalizeRole } from '@/lib/roles';
+import { canManageTeam } from '@/lib/roles';
+import { parseAssignableMemberRole } from '@/lib/role-assignment';
 import { fetchUsageCounts, canAddTeamMember } from '@/lib/everittos-usage';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { appUrl } from '@/lib/app-url';
@@ -26,11 +27,11 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as { email?: string; role?: string };
   const email = (body.email || '').trim().toLowerCase();
-  const role = normalizeRole(body.role || 'employee');
+  const role = parseAssignableMemberRole(body.role || 'employee');
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
-  if (!['admin', 'manager', 'employee', 'contractor', 'client', 'viewer'].includes(role)) {
+  if (!role) {
     return NextResponse.json({ error: 'Invalid role for invitation' }, { status: 400 });
   }
 

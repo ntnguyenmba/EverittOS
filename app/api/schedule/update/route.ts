@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canAssignJobs, isManagerRole, normalizeRole } from '@/lib/roles';
+import { canAssignJobs, normalizeRole } from '@/lib/roles';
+import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export async function POST(request: Request) {
@@ -39,6 +40,20 @@ export async function POST(request: Request) {
 
   if (!job || job.organization_id !== org.organizationId) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+  }
+
+  if (body.assigned_to) {
+    const validWorker = await workerBelongsToOrg(admin, body.assigned_to, org.organizationId);
+    if (!validWorker) {
+      return NextResponse.json({ error: 'Worker not found in organization' }, { status: 400 });
+    }
+  }
+
+  if (body.department_id) {
+    const validDepartment = await departmentBelongsToOrg(admin, body.department_id, org.organizationId);
+    if (!validDepartment) {
+      return NextResponse.json({ error: 'Department not found in organization' }, { status: 400 });
+    }
   }
 
   const update: Record<string, unknown> = {};

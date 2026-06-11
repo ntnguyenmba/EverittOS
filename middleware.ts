@@ -39,6 +39,26 @@ const AUTH_PREFIXES = [
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 
+/** Session-authenticated API routes that skip disabled-account enforcement in middleware. */
+const PUBLIC_API_PREFIXES = [
+  '/api/auth/login',
+  '/api/auth/reset-password',
+  '/api/auth/config',
+  '/api/auth/setup',
+  '/api/auth/session',
+  '/api/auth/sign-out',
+  '/api/stripe/webhook',
+  '/api/team/accept'
+];
+
+function isPublicApiPath(pathname: string) {
+  return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function isSessionApiPath(pathname: string) {
+  return pathname.startsWith('/api/') && !pathname.startsWith('/api/v1/') && !isPublicApiPath(pathname);
+}
+
 const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
   { prefix: '/team', permission: 'view_team' },
   { prefix: '/settings/billing', permission: 'manage_billing' }
@@ -91,6 +111,20 @@ export async function middleware(request: NextRequest) {
 
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return redirectWithCookies(new URL('/dashboard', request.url), supabaseResponse);
+  }
+
+  if (isSessionApiPath(pathname)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const profileRead = await fetchProfileByUserId(supabase, user.id);
+    if (!isAccountActive(profileRead.profile?.account_status)) {
+      await supabase.auth.signOut();
+      return NextResponse.json({ error: 'Account is disabled.' }, { status: 403 });
+    }
+
+    return supabaseResponse;
   }
 
   if (!isProtectedPath(pathname)) {
@@ -253,6 +287,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/:path*',
     '/dashboard/:path*',
     '/jobs/:path*',
     '/workers/:path*',

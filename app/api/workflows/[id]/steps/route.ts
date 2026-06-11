@@ -4,6 +4,7 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { isManagerRole } from '@/lib/roles';
+import { workflowBelongsToOrg } from '@/lib/org-validation';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -38,6 +39,10 @@ export async function POST(request: Request, { params }: RouteParams) {
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
 
+  if (!(await workflowBelongsToOrg(admin, workflowId, org.organizationId))) {
+    return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+  }
+
   if (body.reorder?.length) {
     for (const item of body.reorder) {
       const { data: step } = await admin
@@ -45,8 +50,11 @@ export async function POST(request: Request, { params }: RouteParams) {
         .select('sort_order')
         .eq('id', item.stepId)
         .eq('workflow_id', workflowId)
+        .eq('organization_id', org.organizationId)
         .maybeSingle();
-      if (!step) continue;
+      if (!step) {
+        return NextResponse.json({ error: 'Step not found in workflow' }, { status: 404 });
+      }
       const delta = item.direction === 'up' ? -1 : 1;
       await admin
         .from('workflow_steps')
@@ -100,6 +108,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+
+  if (!(await workflowBelongsToOrg(admin, workflowId, org.organizationId))) {
+    return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+  }
 
   const { error } = await admin
     .from('workflow_steps')

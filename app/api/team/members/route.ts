@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canManageTeam, normalizeRole } from '@/lib/roles';
+import { canManageTeam } from '@/lib/roles';
+import { parseAssignableMemberRole } from '@/lib/role-assignment';
 
 export async function PATCH(request: Request) {
   const supabase = await createServerSupabase();
@@ -33,7 +34,13 @@ export async function PATCH(request: Request) {
   }
 
   const updates: Record<string, unknown> = {};
-  if (body.role) updates.role = normalizeRole(body.role);
+  if (body.role) {
+    const role = parseAssignableMemberRole(body.role);
+    if (!role) {
+      return NextResponse.json({ error: 'Invalid role. Owner must use transfer ownership.' }, { status: 400 });
+    }
+    updates.role = role;
+  }
   if (typeof body.active === 'boolean') updates.active = body.active;
 
   const { error } = await admin

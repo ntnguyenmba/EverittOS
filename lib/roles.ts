@@ -2,7 +2,7 @@
 export type UserRole = 'owner' | 'admin' | 'manager' | 'employee' | 'contractor' | 'client' | 'viewer';
 
 export function normalizeRole(value: string | null | undefined): UserRole {
-  const role = (value || 'owner').toLowerCase();
+  const role = (value || 'employee').toLowerCase();
   if (role === 'owner') return 'owner';
   if (role === 'admin') return 'admin';
   if (role === 'manager') return 'manager';
@@ -10,7 +10,7 @@ export function normalizeRole(value: string | null | undefined): UserRole {
   if (role === 'contractor' || role === 'crew_lead') return 'contractor';
   if (role === 'client') return 'client';
   if (role === 'viewer') return 'viewer';
-  return 'owner';
+  return 'employee';
 }
 
 /** DB role string for inserts */

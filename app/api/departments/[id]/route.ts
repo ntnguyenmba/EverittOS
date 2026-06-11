@@ -4,6 +4,7 @@ import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canManageDepartments } from '@/lib/departments';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
+import { departmentBelongsToOrg, userBelongsToOrg } from '@/lib/org-validation';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -88,6 +89,10 @@ export async function POST(request: Request, { params }: RouteParams) {
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
 
+  if (!(await departmentBelongsToOrg(admin, departmentId, org.organizationId))) {
+    return NextResponse.json({ error: 'Department not found' }, { status: 404 });
+  }
+
   if (body.action === 'remove' && body.userId) {
     await admin
       .from('department_memberships')
@@ -99,6 +104,10 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   if (!body.userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+
+  if (!(await userBelongsToOrg(admin, body.userId, org.organizationId))) {
+    return NextResponse.json({ error: 'User is not an active member of this organization' }, { status: 400 });
+  }
 
   const { error } = await admin.from('department_memberships').upsert(
     {
