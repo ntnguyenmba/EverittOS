@@ -102,24 +102,10 @@ function SignupForm() {
       return;
     }
 
-    if (data.user) {
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          email,
-          business_name: businessName.trim(),
-          role: 'owner',
-          plan: selectedPlan === 'free' ? 'free' : selectedPlan,
-          subscription_status: selectedPlan === 'free' ? 'free' : 'incomplete',
-          account_status: 'active'
-        },
-        { onConflict: 'id' }
-      );
-    }
-
     setLoading(false);
 
     if (data.session) {
+      await fetch('/api/auth/setup', { method: 'POST' });
       await fetch('/api/account/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -134,7 +120,9 @@ function SignupForm() {
       return;
     }
 
-    setSuccess('Account created. Check your email to verify your address, then sign in.');
+    setSuccess(
+      'Account created. Check your email and click the confirmation link, then sign in with your email and password.'
+    );
   }
 
   return (

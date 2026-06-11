@@ -1,5 +1,12 @@
 const ALWAYS_LOG = new Set([
   'auth_step',
+  'auth_callback_error',
+  'auth_callback_missing_code',
+  'auth_callback_exchange_failed',
+  'auth_callback_no_user',
+  'auth_callback_bootstrap_failed',
+  'auth_callback_consent_failed',
+  'auth_callback_success',
   'login_config_missing',
   'login_failed',
   'login_route_exception',
@@ -8,7 +15,11 @@ const ALWAYS_LOG = new Set([
   'reset_password_failed',
   'session_verify_failed',
   'profile_read_session_failed',
-  'profile_read_failed'
+  'profile_read_failed',
+  'profile_bootstrap_failed',
+  'org_bootstrap_failed',
+  'membership_bootstrap_failed',
+  'org_settings_bootstrap_failed'
 ]);
 
 /** Console-safe auth logging. Never log passwords, tokens, or keys. */

@@ -177,7 +177,16 @@ export async function parseLoginApiResponse(
   const profileDiag = diagnostics.profile as Record<string, unknown> | undefined;
   const orgDiag = diagnostics.organization as Record<string, unknown> | undefined;
   const sessionDiag = diagnostics.session as Record<string, unknown> | undefined;
-  const apiMessage = (json.error as string) || 'Sign-in was rejected by the server.';
+  const apiMessage =
+    (json.supabaseMessage as string) ||
+    (json.error as string) ||
+    (json.code as string) ||
+    'Sign-in was rejected by the server.';
+  const detailMessage =
+    (json.details as string) ||
+    (json.supabaseMessage as string) ||
+    (json.code as string) ||
+    undefined;
 
   return {
     ok: false,
@@ -191,7 +200,8 @@ export async function parseLoginApiResponse(
         httpStatus,
         httpStatusText,
         apiCode: (json.code as string) || undefined,
-        supabaseMessage: (json.supabaseMessage as string) || undefined,
+        supabaseMessage: (json.supabaseMessage as string) || (json.error as string) || undefined,
+        rawError: detailMessage,
         responseBody: responseText.slice(0, 1200),
         profile: profileDiag
           ? profileDiag.skipped

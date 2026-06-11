@@ -2,69 +2,90 @@ type AuthErrorResult = {
   title: string;
   message: string;
   details?: string;
+  code?: string;
 };
 
 const FRIENDLY: Record<string, AuthErrorResult> = {
   invalid_credentials: {
     title: 'Sign in failed',
     message: 'The email or password is incorrect. Check both fields and try again.',
-    details: 'Supabase returned invalid login credentials.'
+    details: 'Supabase returned invalid login credentials.',
+    code: 'invalid_credentials'
   },
   email_not_confirmed: {
     title: 'Email not verified',
     message: 'Confirm your email address before signing in. Check your inbox for the verification link.',
-    details: 'Supabase requires email confirmation for this account.'
+    details: 'Supabase requires email confirmation for this account.',
+    code: 'email_not_confirmed'
   },
   user_banned: {
     title: 'Account restricted',
     message: 'This account cannot sign in. Contact support if you believe this is a mistake.',
-    details: 'Supabase marked the user as banned.'
+    details: 'Supabase marked the user as banned.',
+    code: 'user_banned'
   },
   too_many_requests: {
     title: 'Too many attempts',
     message: 'Wait a minute and try again.',
-    details: 'Supabase rate-limited sign-in attempts.'
+    details: 'Supabase rate-limited sign-in attempts.',
+    code: 'too_many_requests'
   },
   missing_auth_code: {
     title: 'Link incomplete',
     message: 'This sign-in link is missing required information. Request a new link and try again.',
-    details: 'No auth code was present in the callback URL.'
+    details: 'No auth code was present in the callback URL.',
+    code: 'missing_auth_code'
   },
   account_disabled: {
     title: 'Account disabled',
     message: 'This account has been deactivated. Contact support to restore access.',
-    details: 'profiles.account_status is disabled.'
+    details: 'profiles.account_status is disabled.',
+    code: 'account_disabled'
   },
   account_deleted: {
     title: 'Account deleted',
     message: 'This account has been deleted. Contact support during the recovery window to restore access.',
-    details: 'profiles.deleted_at is set.'
+    details: 'profiles.deleted_at is set.',
+    code: 'account_deleted'
   },
   config_error: {
     title: 'Service unavailable',
     message: 'Authentication is not configured for this environment. Contact your administrator.',
-    details: 'Missing or placeholder Supabase environment variables.'
+    details: 'Missing or placeholder Supabase environment variables.',
+    code: 'config_error'
   },
   schema_mismatch: {
     title: 'Database schema out of date',
     message:
       'Sign-in succeeded but the production database is missing required profile columns. Run the latest Supabase migration, then sign in again.',
-    details: 'A profiles column referenced by the app does not exist in Supabase.'
+    details: 'A profiles column referenced by the app does not exist in Supabase.',
+    code: 'schema_mismatch'
   },
   supabase_unreachable: {
     title: 'Supabase connection failed',
-    message: 'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, confirm the Supabase project is active, then redeploy.',
-    details: 'Supabase auth client returned fetch failed.'
+    message:
+      'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, confirm the Supabase project is active, then redeploy.',
+    details: 'Supabase auth client returned fetch failed.',
+    code: 'supabase_unreachable'
   },
   session_missing: {
     title: 'Session expired',
     message: 'Your session expired. Sign in again to continue.',
-    details: 'No valid Supabase session was found.'
+    details: 'No valid Supabase session was found.',
+    code: 'session_missing'
   },
   reset_link_expired: {
     title: 'Reset link expired',
     message: 'This password reset link has expired. Request a new one from the forgot password page.',
-    details: 'Auth code exchange failed or OTP expired.'
+    details: 'Auth code exchange failed or OTP expired.',
+    code: 'reset_link_expired'
+  },
+  pkce_flow_expired: {
+    title: 'Confirmation link expired',
+    message:
+      'This email confirmation link expired or was opened in a different browser. Sign in with your email and password instead.',
+    details: 'PKCE flow state was missing or expired during code exchange.',
+    code: 'pkce_flow_expired'
   }
 };
 
@@ -76,31 +97,43 @@ function normalizeKey(raw: string): string {
   if (lower.includes('fetch failed') || lower.includes('failed to fetch') || lower.includes('networkerror')) {
     return 'supabase_unreachable';
   }
-  if (lower.includes('email not confirmed')) return 'email_not_confirmed';
+  if (lower.includes('email not confirmed') || lower.includes('email_not_confirmed')) return 'email_not_confirmed';
   if (lower.includes('user banned')) return 'user_banned';
   if (lower.includes('rate limit') || lower.includes('too many')) return 'too_many_requests';
   if (lower.includes('disabled')) return 'account_disabled';
   if (lower.includes('placeholder') || lower.includes('not configured')) return 'config_error';
-  if (lower.includes('expired') || lower.includes('invalid') && lower.includes('link')) {
+  if (
+    lower.includes('flow state') ||
+    lower.includes('flow_state') ||
+    lower.includes('pkce') ||
+    lower.includes('code verifier') ||
+    lower.includes('invalid grant')
+  ) {
+    return 'pkce_flow_expired';
+  }
+  if (lower.includes('expired') && (lower.includes('link') || lower.includes('otp') || lower.includes('token'))) {
     return 'reset_link_expired';
   }
   return '';
 }
 
+/** Prefer the raw Supabase message for display when no friendly mapping exists. */
 export function mapAuthError(raw: string | null | undefined, fallbackKey?: keyof typeof FRIENDLY): AuthErrorResult {
   if (!raw) {
     return FRIENDLY[fallbackKey || 'invalid_credentials'];
   }
 
-  const key = normalizeKey(raw);
+  const trimmed = raw.trim();
+  const key = normalizeKey(trimmed);
   if (key && FRIENDLY[key]) {
-    return { ...FRIENDLY[key], details: raw };
+    return { ...FRIENDLY[key], details: trimmed, code: FRIENDLY[key].code || key };
   }
 
   return {
-    title: 'Something went wrong',
-    message: 'We could not complete sign in. Try again or use forgot password.',
-    details: raw
+    title: 'Sign in failed',
+    message: trimmed,
+    details: trimmed,
+    code: trimmed
   };
 }
 
@@ -152,7 +185,13 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
       details: 'Session idle timeout exceeded.'
     },
     disabled: FRIENDLY.account_disabled,
-    deleted: FRIENDLY.account_deleted
+    deleted: FRIENDLY.account_deleted,
+    auth: {
+      title: 'Email confirmation failed',
+      message: 'We could not finish confirming your email. Sign in with your password or request a new confirmation email.',
+      details: 'Auth callback returned an error.'
+    },
+    reset: FRIENDLY.reset_link_expired
   };
 
   return ACCESS[code || ''] || {

@@ -341,15 +341,42 @@ export async function ensureUserWorkspace(
     };
   }
 
-  await admin.from('organization_settings').upsert(
-    {
-      organization_id: orgId,
-      onboarding_step: 0,
-      onboarding_completed: false,
-      onboarding_skipped: false
-    },
-    { onConflict: 'organization_id' }
-  );
+  const settingsPayload: Record<string, unknown> = {
+    organization_id: orgId,
+    onboarding_step: 0,
+    onboarding_completed: false
+  };
+
+  const { error: settingsFullError } = await admin
+    .from('organization_settings')
+    .upsert({ ...settingsPayload, onboarding_skipped: false }, { onConflict: 'organization_id' });
+
+  if (settingsFullError && isMissingColumnError(settingsFullError.message)) {
+    const { error: settingsCoreError } = await admin
+      .from('organization_settings')
+      .upsert(settingsPayload, { onConflict: 'organization_id' });
+    if (settingsCoreError) {
+      logAuthEvent('org_settings_bootstrap_failed', { userId, reason: settingsCoreError.message });
+      return {
+        ok: false,
+        code: 'org_settings_upsert_failed',
+        message: 'Workspace organization was created but settings could not be saved. Try signing in again.',
+        details: settingsCoreError.message,
+        profileSnapshot: existing ?? null,
+        hasMembership: Boolean(membership)
+      };
+    }
+  } else if (settingsFullError) {
+    logAuthEvent('org_settings_bootstrap_failed', { userId, reason: settingsFullError.message });
+    return {
+      ok: false,
+      code: 'org_settings_upsert_failed',
+      message: 'Workspace organization was created but settings could not be saved. Try signing in again.',
+      details: settingsFullError.message,
+      profileSnapshot: existing ?? null,
+      hasMembership: Boolean(membership)
+    };
+  }
 
   await admin.from('business_profiles').upsert(
     {

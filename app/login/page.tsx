@@ -31,10 +31,19 @@ function LoginForm() {
   }, [searchParams]);
 
   const authErrorParam = searchParams.get('error');
+  const authErrorCode = searchParams.get('error_code');
   const authErrorMapped = useMemo(() => {
     if (!authErrorParam) return null;
-    return mapAuthError(decodeURIComponent(authErrorParam));
-  }, [authErrorParam]);
+    const decoded = decodeURIComponent(authErrorParam);
+    const mapped = mapAuthError(authErrorCode || decoded);
+    return {
+      ...mapped,
+      message: decoded,
+      details: authErrorCode
+        ? `Supabase: ${authErrorCode}`
+        : mapped.details
+    };
+  }, [authErrorParam, authErrorCode]);
 
   const verified = searchParams.get('verified');
   const configError = isBrowserSupabaseMisconfigured();

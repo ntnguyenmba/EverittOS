@@ -6,7 +6,7 @@ import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
-import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
+import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
@@ -18,7 +18,7 @@ export const runtime = 'nodejs';
 const ROUTE = 'login';
 
 function secureLoginPayload(body: Record<string, unknown>): Record<string, unknown> {
-  return sanitizeErrorPayload(body);
+  return sanitizeAuthErrorPayload(body);
 }
 
 export async function POST(request: Request) {
@@ -118,16 +118,18 @@ export async function POST(request: Request) {
       });
 
       const mapped = mapAuthError(error.message);
+      const displayError = isFetchFailure
+        ? error.message ||
+          'Supabase auth request failed from the server. Verify Supabase URL/key in Vercel and that the project is active.'
+        : mapped.message;
       return json(
         secureLoginPayload({
-          error: isFetchFailure
-            ? 'Supabase auth request failed from the server. Verify Supabase URL/key in Vercel and that the project is active.'
-            : mapped.message,
+          error: displayError,
           title: isFetchFailure ? 'Supabase connection failed' : mapped.title,
           details: isFetchFailure
             ? `${error.message}. Host: ${configDiagnostics.urlHost || 'unknown'}. Connectivity: ${connectivity.latencyMs}ms.`
             : mapped.details,
-          code: error.message,
+          code: mapped.code || error.message,
           supabaseMessage: error.message,
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
@@ -193,10 +195,11 @@ export async function POST(request: Request) {
 
       return json(
         secureLoginPayload({
-          error: bootstrap.message,
+          error: bootstrap.details || bootstrap.message,
           title: bootstrapTitle,
           details: bootstrap.details,
           code: bootstrap.code,
+          supabaseMessage: bootstrap.details || bootstrap.message,
           setupRequired: bootstrap.code !== 'schema_mismatch',
           diagnostics: workspaceDiagnostics({
             authStep: 'workspace_bootstrap',
@@ -342,11 +345,12 @@ export async function POST(request: Request) {
     logAuthEvent('login_route_exception', { reason: err instanceof Error ? err.message : String(err) });
     const { json } = await createRouteHandlerSupabase();
     return json(
-      sanitizeErrorPayload({
-        error: 'Sign-in failed due to a server error.',
+      sanitizeAuthErrorPayload({
+        error: safeErrorMessage(err, 'Sign-in failed due to a server error.'),
         title: 'Server error',
         details: safeErrorMessage(err, 'Sign-in failed due to a server error.'),
         code: 'login_route_exception',
+        supabaseMessage: err instanceof Error ? err.message : String(err),
         diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
         config: configDiagnostics
       }),
