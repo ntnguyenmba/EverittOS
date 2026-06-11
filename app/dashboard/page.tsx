@@ -217,7 +217,7 @@ export default function DashboardPage() {
         </section>
 
         {!isPaidEverittosPlan(plan) && (
-          <div className="card upgrade-banner">
+          <div className="card upgrade-banner card-elevated">
             <div>
               <h3>Upgrade when you need more capacity</h3>
               <p>Pro adds photos and higher limits. Business adds team management and crew assignment.</p>

@@ -92,9 +92,9 @@ export function RoleDashboard({
         )}
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
         <h4>Upcoming jobs</h4>
-        {upcoming.length === 0 && <p>No upcoming due dates.</p>}
+        {upcoming.length === 0 && <p className="muted">No upcoming due dates.</p>}
         {upcoming.map((job) => (
           <div key={job.id} className="list-row">
             <Link href={`/jobs/${job.id}`}>{job.title}</Link>

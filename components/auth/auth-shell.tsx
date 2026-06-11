@@ -14,9 +14,9 @@ const authBrandStyles = `
   .auth-page {
     min-height: 100vh;
     background:
-      radial-gradient(circle at 14% 12%, rgba(45, 55, 72, 0.08), transparent 26%),
-      linear-gradient(135deg, #fbfaf7 0%, #f4f1eb 46%, #ffffff 100%);
-    color: #25272c;
+      radial-gradient(circle at 14% 12%, rgba(45, 55, 72, 0.06), transparent 26%),
+      linear-gradient(135deg, #f7f6f3 0%, #ffffff 62%, #ffffff 100%);
+    color: #2a2a2a;
   }
 
   .auth-shell {
@@ -70,7 +70,7 @@ const authBrandStyles = `
   }
 
   .auth-title {
-    color: #25272c;
+    color: #2a2a2a;
     font-size: clamp(52px, 7.5vw, 82px);
     letter-spacing: -0.045em;
     line-height: 0.96;
@@ -79,7 +79,7 @@ const authBrandStyles = `
 
   .auth-description {
     max-width: 460px;
-    color: rgba(37, 39, 44, 0.66);
+    color: #6b7280;
     font-size: 16px;
     line-height: 1.7;
     margin-bottom: 28px;
@@ -95,7 +95,7 @@ const authBrandStyles = `
   }
 
   .auth-field label {
-    color: rgba(37, 39, 44, 0.7);
+    color: #6b7280;
     font-size: 13px;
     letter-spacing: 0.02em;
   }
@@ -103,7 +103,7 @@ const authBrandStyles = `
   .auth-form .input {
     border: 1px solid rgba(45, 55, 72, 0.14);
     background: #ffffff;
-    color: #25272c;
+    color: #2a2a2a;
     border-radius: 16px;
     min-height: 56px;
     padding: 14px 16px;
@@ -111,7 +111,7 @@ const authBrandStyles = `
   }
 
   .auth-form .input::placeholder {
-    color: rgba(37, 39, 44, 0.36);
+    color: rgba(107, 114, 128, 0.72);
   }
 
   .auth-form .input:focus {
@@ -153,12 +153,12 @@ const authBrandStyles = `
 
   .auth-links {
     margin-top: 20px;
-    color: rgba(37, 39, 44, 0.66);
+    color: #6b7280;
   }
 
   .auth-shell-footer {
     margin-top: auto;
-    color: rgba(37, 39, 44, 0.54);
+    color: #6b7280;
   }
 
   .auth-shell-aside {
