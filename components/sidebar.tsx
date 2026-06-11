@@ -3,32 +3,17 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { AppNavItems } from '@/components/app-nav-items';
 import {
-  EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
   normalizePlan,
   planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
-import { limitsForPlan } from '@/lib/everittos-limits';
+import { canManageBilling } from '@/lib/roles';
 import { canAccessNavHref } from '@/lib/nav-access';
-import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-
-const baseLinks = [
-  ['Dashboard', '/dashboard'],
-  ['Jobs', '/jobs'],
-  ['Customers', '/customers'],
-  ['Schedule', '/schedule'],
-  ['Workers', '/workers'],
-  ['Team', '/team'],
-  ['Activity', '/activity'],
-  ['Analytics', '/analytics'],
-  ['Workflows', '/workflows'],
-  ['Notifications', '/notifications'],
-  ['Billing', '/settings/billing'],
-  ['Settings', '/settings']
-] as const;
 
 type SidebarProps = {
   plan?: EverittosPlan | string | null;
@@ -74,45 +59,34 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
     router.refresh();
   }
 
-  function linkClass(href: string) {
-    return pathname === href || pathname.startsWith(`${href}/`) ? 'active' : undefined;
-  }
+  const planBadge = <span className="plan-badge">{planDisplayName(normalized)}</span>;
+  const showBillingLink = canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
 
   return (
     <aside className="sidebar" aria-label="App navigation">
       <div className="sidebar-plan">
         <span className="sidebar-plan-label">Plan</span>
-        <span className="plan-badge">{planDisplayName(normalized)}</span>
+        {showBillingLink ? (
+          <Link
+            href="/settings/billing"
+            className={`sidebar-plan-link${pathname.startsWith('/settings/billing') ? ' active' : ''}`}
+            aria-current={pathname.startsWith('/settings/billing') ? 'page' : undefined}
+          >
+            {planBadge}
+          </Link>
+        ) : (
+          planBadge
+        )}
       </div>
 
-      {isClientRole(role) && limitsForPlan(normalized).clientPortal && (
-        <Link href="/portal/client" aria-current={linkClass('/portal/client') ? 'page' : undefined}>
-          Client portal
-        </Link>
-      )}
-      {isContractorRole(role) && limitsForPlan(normalized).contractorPortal && (
-        <Link href="/portal/contractor" aria-current={linkClass('/portal/contractor') ? 'page' : undefined}>
-          Contractor portal
-        </Link>
-      )}
+      <AppNavItems plan={normalized} role={role} unread={unread} />
 
-      {!isClientRole(role) &&
-        baseLinks.map(([label, href]) => {
-          if (!canAccessNavHref(role, href, normalized)) return null;
-          return (
-            <Link key={href} href={href} aria-current={linkClass(href) ? 'page' : undefined}>
-              {label}
-              {href === '/notifications' && unread > 0 ? ` (${unread})` : ''}
-            </Link>
-          );
-        })}
-
-      {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) && (
+      {!isPaidEverittosPlan(normalized) && canManageBilling(role) && (
         <div className="sidebar-upgrade">
           <p>Need more jobs, photos, or team members?</p>
-          <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+          <Link href="/settings/billing?upgrade=pro" className="btn btn-primary">
             Start Pro
-          </a>
+          </Link>
         </div>
       )}
 

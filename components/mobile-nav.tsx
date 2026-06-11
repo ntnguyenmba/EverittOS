@@ -1,34 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { AppNavItems } from '@/components/app-nav-items';
 import {
-  EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
   normalizePlan,
   planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
-import { limitsForPlan } from '@/lib/everittos-limits';
-import { canAccessNavHref } from '@/lib/nav-access';
-import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
+import { isNavLinkActive } from '@/lib/nav-access';
+import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-
-const baseLinks = [
-  ['Dashboard', '/dashboard'],
-  ['Jobs', '/jobs'],
-  ['Customers', '/customers'],
-  ['Schedule', '/schedule'],
-  ['Workers', '/workers'],
-  ['Team', '/team'],
-  ['Activity', '/activity'],
-  ['Analytics', '/analytics'],
-  ['Workflows', '/workflows'],
-  ['Notifications', '/notifications'],
-  ['Billing', '/settings/billing'],
-  ['Settings', '/settings']
-] as const;
 
 type MobileNavProps = {
   plan?: EverittosPlan | string | null;
@@ -36,10 +21,12 @@ type MobileNavProps = {
 };
 
 export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() || '/';
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const normalized = normalizePlan(plan);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     if (roleProp) {
@@ -48,16 +35,23 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   }, [roleProp]);
 
   useEffect(() => {
-    async function loadRole() {
-      if (roleProp) return;
+    async function load() {
       const {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-      setRole(normalizeRole(profile?.role));
+      if (!roleProp) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+        setRole(normalizeRole(profile?.role));
+      }
+      const { count } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .is('read_at', null);
+      setUnread(count || 0);
     }
-    loadRole();
+    load();
   }, [roleProp]);
 
   useEffect(() => {
@@ -73,7 +67,13 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const links = baseLinks.filter(([, href]) => canAccessNavHref(role, href, normalized));
+  async function logout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
+
+  const showBillingLink = canManageBilling(role);
 
   return (
     <div className="mobile-nav">
@@ -90,28 +90,36 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
       {open ? (
         <nav id="mobile-nav-panel" className="mobile-nav-panel" aria-label="App navigation">
           <p className="mobile-nav-plan">
-            Plan: <strong>{planDisplayName(normalized)}</strong>
-          </p>
-          {isClientRole(role) && limitsForPlan(normalized).clientPortal ? (
-            <Link href="/portal/client" className={pathname.startsWith('/portal/client') ? 'active' : ''}>
-              Client portal
-            </Link>
-          ) : null}
-          {isContractorRole(role) && limitsForPlan(normalized).contractorPortal ? (
-            <Link href="/portal/contractor" className={pathname.startsWith('/portal/contractor') ? 'active' : ''}>
-              Contractor portal
-            </Link>
-          ) : null}
-          {!isClientRole(role) &&
-            links.map(([label, href]) => (
-              <Link key={href} href={href} className={pathname === href || pathname.startsWith(`${href}/`) ? 'active' : ''}>
-                {label}
+            Plan:{' '}
+            {showBillingLink ? (
+              <Link
+                href="/settings/billing"
+                className={isNavLinkActive(pathname, '/settings/billing') ? 'active' : undefined}
+              >
+                <strong>{planDisplayName(normalized)}</strong>
               </Link>
-            ))}
-          {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) ? (
-            <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            ) : (
+              <strong>{planDisplayName(normalized)}</strong>
+            )}
+          </p>
+
+          <AppNavItems
+            plan={normalized}
+            role={role}
+            unread={unread}
+            onNavigate={() => setOpen(false)}
+          />
+
+          {!isPaidEverittosPlan(normalized) && canManageBilling(role) ? (
+            <Link href="/settings/billing?upgrade=pro" className="btn btn-primary" onClick={() => setOpen(false)}>
               Start Pro
-            </a>
+            </Link>
+          ) : null}
+
+          {!isClientRole(role) ? (
+            <button className="btn mobile-nav-logout" type="button" onClick={logout}>
+              Log out
+            </button>
           ) : null}
         </nav>
       ) : null}
