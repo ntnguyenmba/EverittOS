@@ -5,19 +5,20 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
+import { authApiFetch, LOGIN_API_PATH } from '@/lib/auth-fetch';
 import { mapAccessError, mapAuthError } from '@/lib/auth-errors';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { parseFetchFailure, parseLoginApiResponse, type LoginClientError } from '@/lib/auth-request-error';
+import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
-
-const LOGIN_ENDPOINT = '/api/auth/login';
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const selectedPlan = normalizePlan(searchParams.get('plan'));
+  const loginUrl = resolveClientApiUrl(LOGIN_API_PATH);
 
   const accessBlock = useMemo(() => {
     const reason = searchParams.get('reason');
@@ -46,7 +47,7 @@ function LoginForm() {
   function showError(nextError: LoginClientError) {
     setError(nextError);
     logAuthEvent('login_client_error', {
-      endpoint: nextError.debug.endpoint,
+      endpoint: nextError.debug.requestedUrl,
       status: nextError.debug.httpStatus || 0,
       code: nextError.debug.apiCode || 'client'
     });
@@ -61,10 +62,11 @@ function LoginForm() {
       const mapped = mapAuthError('config_error', 'config_error');
       showError({
         title: mapped.title,
-        message: mapped.message,
-        details: `Endpoint: POST ${LOGIN_ENDPOINT}\nAPI code: config_error\n${mapped.details || ''}`,
+        message: `${mapped.message}`,
+        details: `Requested URL: ${loginUrl}\nMethod: POST\nAPI code: config_error\n${mapped.details || ''}`,
         debug: {
-          endpoint: LOGIN_ENDPOINT,
+          endpoint: LOGIN_API_PATH,
+          requestedUrl: loginUrl,
           method: 'POST',
           apiCode: 'config_error',
           rawError: mapped.details
@@ -75,15 +77,13 @@ function LoginForm() {
     }
 
     try {
-      const res = await fetch(LOGIN_ENDPOINT, {
+      const { response, url, method } = await authApiFetch(LOGIN_API_PATH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        cache: 'no-store',
         body: JSON.stringify({ email, password, next })
       });
 
-      const parsed = await parseLoginApiResponse(res, LOGIN_ENDPOINT, 'POST');
+      const parsed = await parseLoginApiResponse(response, LOGIN_API_PATH, url, method);
 
       if (!parsed.ok) {
         showError(parsed.error);
@@ -96,7 +96,7 @@ function LoginForm() {
 
       window.location.assign(redirectTo);
     } catch (err) {
-      showError(parseFetchFailure(err, LOGIN_ENDPOINT, 'POST'));
+      showError(parseFetchFailure(err, LOGIN_API_PATH, loginUrl, 'POST'));
       setLoading(false);
     }
   }
@@ -111,8 +111,8 @@ function LoginForm() {
       {configError ? (
         <AuthMessages
           errorTitle="Configuration required"
-          error="Authentication is not configured for this deployment. Set Supabase environment variables in Vercel and redeploy."
-          errorDetails={`Endpoint: POST ${LOGIN_ENDPOINT}\nMissing: NEXT_PUBLIC_SUPABASE_URL and/or NEXT_PUBLIC_SUPABASE_ANON_KEY`}
+          error={`POST ${loginUrl}\n\nAuthentication is not configured for this deployment. Set Supabase environment variables in Vercel and redeploy.`}
+          errorDetails={`Requested URL: ${loginUrl}\nMissing: NEXT_PUBLIC_SUPABASE_URL and/or NEXT_PUBLIC_SUPABASE_ANON_KEY`}
         />
       ) : null}
 

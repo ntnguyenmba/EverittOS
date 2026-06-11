@@ -346,6 +346,8 @@ p { color: var(--muted); line-height: 1.7; }
 .auth-message-body {
   margin: 0;
   line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .auth-message-details-toggle {

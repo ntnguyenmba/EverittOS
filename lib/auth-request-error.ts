@@ -1,5 +1,6 @@
 export type AuthRequestDebug = {
   endpoint: string;
+  requestedUrl: string;
   method: string;
   httpStatus?: number;
   httpStatusText?: string;
@@ -30,13 +31,25 @@ export type LoginClientError = {
   debug: AuthRequestDebug;
 };
 
+function endpointSummary(debug: AuthRequestDebug): string {
+  const target = debug.requestedUrl || debug.endpoint;
+  if (debug.httpStatus !== undefined) {
+    const statusLabel = debug.httpStatusText ? `${debug.httpStatus} ${debug.httpStatusText}` : String(debug.httpStatus);
+    return `${debug.method} ${target} → HTTP ${statusLabel}`;
+  }
+  return `${debug.method} ${target}`;
+}
+
 function formatDebugBlock(debug: AuthRequestDebug): string {
   const lines: string[] = [
-    `Endpoint: ${debug.method} ${debug.endpoint}`,
-    debug.httpStatus !== undefined ? `HTTP status: ${debug.httpStatus}${debug.httpStatusText ? ` ${debug.httpStatusText}` : ''}` : null,
+    `Requested URL: ${debug.requestedUrl || debug.endpoint}`,
+    `Method: ${debug.method}`,
+    debug.httpStatus !== undefined
+      ? `HTTP status: ${debug.httpStatus}${debug.httpStatusText ? ` ${debug.httpStatusText}` : ''}`
+      : null,
     debug.apiCode ? `API code: ${debug.apiCode}` : null,
     debug.supabaseMessage ? `Supabase: ${debug.supabaseMessage}` : null,
-    debug.rawError ? `Error: ${debug.rawError}` : null,
+    debug.rawError ? `Browser error: ${debug.rawError}` : null,
     debug.session
       ? `Session: ${debug.session.verified ? 'verified' : 'missing'}${debug.session.userId ? ` (user ${debug.session.userId})` : ''}`
       : null,
@@ -57,36 +70,47 @@ export function buildLoginClientError(input: {
   message: string;
   debug: AuthRequestDebug;
 }): LoginClientError {
+  const summary = endpointSummary(input.debug);
   return {
     title: input.title,
-    message: input.message,
+    message: `${summary}\n\n${input.message}`,
     debug: input.debug,
     details: formatDebugBlock(input.debug)
   };
 }
 
-export function parseFetchFailure(err: unknown, endpoint: string, method = 'POST'): LoginClientError {
+export function parseFetchFailure(
+  err: unknown,
+  path: string,
+  requestedUrl: string,
+  method = 'POST'
+): LoginClientError {
   const raw = err instanceof Error ? err.message : String(err);
-  const isLoadFailed = raw === 'Load failed' || raw === 'Failed to fetch';
-  const isSafariBlock = isLoadFailed || raw.includes('NetworkError');
+  const isNetworkFailure =
+    raw === 'Load failed' ||
+    raw === 'Failed to fetch' ||
+    raw.includes('NetworkError') ||
+    raw.includes('Network request failed');
 
   return buildLoginClientError({
-    title: isSafariBlock ? 'Request blocked or unreachable' : 'Sign-in request failed',
-    message: isSafariBlock
-      ? 'The browser could not complete the sign-in request. This often means the API route crashed, returned a non-JSON response, or was blocked before a response arrived.'
+    title: isNetworkFailure ? 'Sign-in request did not complete' : 'Sign-in request failed',
+    message: isNetworkFailure
+      ? `No HTTP response was received. The browser reported: "${raw}". This usually means the API route crashed, was blocked, or the URL is wrong for this deployment.`
       : raw || 'An unexpected error occurred during sign-in.',
     debug: {
-      endpoint,
+      endpoint: path,
+      requestedUrl,
       method,
       rawError: raw,
-      apiCode: isSafariBlock ? 'fetch_failed' : 'client_exception'
+      apiCode: isNetworkFailure ? 'fetch_failed' : 'client_exception'
     }
   });
 }
 
 export async function parseLoginApiResponse(
   res: Response,
-  endpoint: string,
+  path: string,
+  requestedUrl: string,
   method = 'POST'
 ): Promise<{ ok: true; json: Record<string, unknown> } | { ok: false; error: LoginClientError }> {
   const httpStatus = res.status;
@@ -102,7 +126,8 @@ export async function parseLoginApiResponse(
         title: 'Empty API response',
         message: 'The sign-in endpoint returned no readable response body.',
         debug: {
-          endpoint,
+          endpoint: path,
+          requestedUrl,
           method,
           httpStatus,
           httpStatusText,
@@ -124,7 +149,8 @@ export async function parseLoginApiResponse(
           title: 'Invalid API response',
           message: 'The sign-in endpoint returned a non-JSON response (often an HTML error page from a server crash).',
           debug: {
-            endpoint,
+            endpoint: path,
+            requestedUrl,
             method,
             httpStatus,
             httpStatusText,
@@ -144,14 +170,16 @@ export async function parseLoginApiResponse(
   const profileDiag = diagnostics.profile as Record<string, unknown> | undefined;
   const orgDiag = diagnostics.organization as Record<string, unknown> | undefined;
   const sessionDiag = diagnostics.session as Record<string, unknown> | undefined;
+  const apiMessage = (json.error as string) || 'Sign-in was rejected by the server.';
 
   return {
     ok: false,
     error: buildLoginClientError({
       title: (json.title as string) || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
-      message: (json.error as string) || `Sign-in failed with HTTP ${httpStatus}.`,
+      message: apiMessage,
       debug: {
-        endpoint,
+        endpoint: path,
+        requestedUrl,
         method,
         httpStatus,
         httpStatusText,
