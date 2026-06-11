@@ -13,9 +13,10 @@ import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
+import { ExecutiveMetricsPanel } from '@/components/dashboard/executive-metrics';
 import { mapAccessError } from '@/lib/auth-errors';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isClientRole, canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
@@ -247,6 +248,12 @@ export default function DashboardPage() {
             step={onboardingStep}
             completed={onboardingCompleted}
           />
+        ) : null}
+
+        {canManageOrganizationSettings(role) ? (
+          <div className="card" style={{ marginTop: 18 }}>
+            <ExecutiveMetricsPanel />
+          </div>
         ) : null}
 
         <div className="card" style={{ marginTop: 18 }}>

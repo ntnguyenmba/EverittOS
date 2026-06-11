@@ -1,4 +1,6 @@
 import { isAccountActive } from '@/lib/account-status';
+import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
+import { logActivityServer } from '@/lib/activity-server';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
@@ -98,6 +100,15 @@ export async function POST(request: Request) {
 
     if (error) {
       const isFetchFailure = error.message.toLowerCase().includes('fetch failed');
+      const meta = requestClientMeta(request);
+      await logSecurityEvent({
+        eventType: isFetchFailure ? 'suspicious_activity' : 'login_failed',
+        severity: 'warn',
+        message: `Login failed for ${email.split('@')[1] || 'unknown domain'}`,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+        metadata: { code: error.message }
+      });
       logAuthEvent('login_failed', {
         emailDomain: email.split('@')[1] || 'unknown',
         reason: error.message,
@@ -241,6 +252,26 @@ export async function POST(request: Request) {
       bootstrapped: bootstrap.created ? 1 : 0,
       host: configDiagnostics.urlHost || 'unknown'
     });
+
+    const meta = requestClientMeta(request);
+    await logSecurityEvent({
+      organizationId: profile.organization_id,
+      userId: user.id,
+      eventType: 'login_success',
+      message: 'User signed in',
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent
+    });
+    if (profile.organization_id) {
+      await logActivityServer({
+        organizationId: profile.organization_id,
+        userId: user.id,
+        actorName: email,
+        entityType: 'auth',
+        action: 'login',
+        message: 'User signed in'
+      });
+    }
 
     return jsonWithAuthSession(
       secureLoginPayload({

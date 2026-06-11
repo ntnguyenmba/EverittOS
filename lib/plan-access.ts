@@ -79,7 +79,9 @@ export function requirePlan(userPlan: EverittosPlan, requiredPlan: EverittosPlan
 /** Route prefixes that require a minimum plan tier. */
 export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
   { prefix: '/team', plan: 'business' },
+  { prefix: '/settings/team', plan: 'business' },
   { prefix: '/activity', plan: 'business' },
+  { prefix: '/analytics', plan: 'business' },
   { prefix: '/portal/client', plan: 'pro' },
   { prefix: '/portal/contractor', plan: 'operations' },
   { prefix: '/admin', plan: 'enterprise' }

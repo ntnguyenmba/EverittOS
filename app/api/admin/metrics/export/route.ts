@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchPlatformMetrics } from '@/lib/platform-metrics';
+import { fetchPlatformMetrics, platformMetricsToCsv } from '@/lib/platform-metrics';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -18,5 +18,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Server configuration incomplete.' }, { status: 503 });
   }
 
-  return NextResponse.json(metrics);
+  const csv = platformMetricsToCsv(metrics);
+
+  return new NextResponse(csv, {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="everittos-investor-metrics.csv"'
+    }
+  });
 }

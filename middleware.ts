@@ -31,6 +31,7 @@ const AUTH_PREFIXES = [
   '/onboarding',
   '/team',
   '/activity',
+  '/analytics',
   '/notifications',
   '/billing',
   '/workflows',
@@ -63,6 +64,7 @@ function isSessionApiPath(pathname: string) {
 
 const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
   { prefix: '/team', permission: 'view_team' },
+  { prefix: '/settings/team', permission: 'view_team' },
   { prefix: '/settings/billing', permission: 'manage_billing' }
 ];
 
@@ -262,6 +264,7 @@ export async function middleware(request: NextRequest) {
     '/workers',
     '/team',
     '/activity',
+    '/analytics',
     '/workflows',
     '/notifications'
   ];
@@ -304,6 +307,7 @@ export const config = {
     '/onboarding/:path*',
     '/team/:path*',
     '/activity/:path*',
+    '/analytics/:path*',
     '/notifications/:path*',
     '/billing/:path*',
     '/workflows/:path*',

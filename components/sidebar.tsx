@@ -23,6 +23,7 @@ const baseLinks = [
   ['Workers', '/workers'],
   ['Team', '/team'],
   ['Activity', '/activity'],
+  ['Analytics', '/analytics'],
   ['Workflows', '/workflows'],
   ['Notifications', '/notifications'],
   ['Billing', '/settings/billing'],

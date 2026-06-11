@@ -10,7 +10,10 @@ export type ProductEventName =
   | 'team_invited'
   | 'team_member_added'
   | 'subscription_upgraded'
-  | 'onboarding_step';
+  | 'onboarding_step'
+  | 'client_portal_view'
+  | 'billing_activity'
+  | 'feature_adoption';
 
 export async function trackProductEvent(
   eventName: ProductEventName,

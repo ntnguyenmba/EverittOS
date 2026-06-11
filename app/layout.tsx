@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
+import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WorkspaceBootstrap />
         <SkipToMain />
         <SiteChrome />
+        <AnalyticsGate />
         {children}
       </body>
     </html>

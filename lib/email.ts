@@ -1,4 +1,5 @@
 import { appUrl } from '@/lib/app-url';
+import { clientInviteEmailHtml, teamInviteEmailHtml } from '@/lib/email-templates';
 
 export type EmailResult = { sent: boolean; message: string };
 
@@ -41,12 +42,11 @@ export async function sendTeamInviteEmail(input: {
   }
 
   const subject = `You are invited to ${input.organizationName} on EverittOS`;
-  const html = `
-    <p>You have been invited to join <strong>${input.organizationName}</strong> on EverittOS as ${input.role}.</p>
-    <p><a href="${input.acceptUrl}">Accept invitation</a></p>
-    <p>If the link does not open, paste this URL in your browser:</p>
-    <p>${input.acceptUrl}</p>
-  `;
+  const html = teamInviteEmailHtml({
+    organizationName: input.organizationName,
+    role: input.role,
+    acceptUrl: input.acceptUrl
+  });
 
   return sendViaResend(input.to, subject, html);
 }
@@ -63,12 +63,12 @@ export async function sendClientInviteEmail(input: {
   }
 
   const subject = `Client access to ${input.organizationName} on EverittOS`;
-  const html = `
-    <p>You have been granted client access to ${input.jobTitle ? `job <strong>${input.jobTitle}</strong>` : 'a job'} with ${input.organizationName}.</p>
-    <p><a href="${input.acceptUrl}">Accept and sign in</a></p>
-    ${input.portalUrl ? `<p>After sign in, open your portal: <a href="${input.portalUrl}">${input.portalUrl}</a></p>` : ''}
-    <p>Accept URL: ${input.acceptUrl}</p>
-  `;
+  const html = clientInviteEmailHtml({
+    organizationName: input.organizationName,
+    acceptUrl: input.acceptUrl,
+    jobTitle: input.jobTitle,
+    portalUrl: input.portalUrl
+  });
 
   return sendViaResend(input.to, subject, html);
 }
@@ -76,3 +76,15 @@ export async function sendClientInviteEmail(input: {
 export function clientPortalUrl(portalToken: string): string {
   return appUrl(`/portal/client?token=${portalToken}`);
 }
+
+export {
+  welcomeEmailHtml,
+  invitationAcceptedEmailHtml,
+  trialEndingEmailHtml,
+  paymentFailedEmailHtml,
+  subscriptionActivatedEmailHtml,
+  subscriptionCanceledEmailHtml,
+  reportAvailableEmailHtml,
+  jobAssignedEmailHtml,
+  EMAIL_TEMPLATE_CATALOG
+} from '@/lib/email-templates';

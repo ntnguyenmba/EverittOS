@@ -17,6 +17,8 @@ export type SettingsNavLink = {
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings', label: 'Workspace' },
+  { href: '/settings/team', label: 'Team' },
+  { href: '/settings/branding', label: 'Branding' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Billing' },
@@ -44,8 +46,10 @@ export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPl
     case '/customers':
     case '/workers':
     case '/activity':
+    case '/analytics':
       return canSeeOrgWideData(role);
     case '/team':
+    case '/settings/team':
       return canViewTeam(role) && hasTeamManagement(plan);
     case '/workflows':
       return canSeeOrgWideData(role) && limitsForPlan(plan).workflowCustomization;
@@ -76,6 +80,8 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   return SETTINGS_NAV_LINKS.filter((link) => {
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
+    if (link.href === '/settings/team' && !canViewTeam(role)) return false;
+    if (link.href === '/settings/branding' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
     if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
@@ -91,6 +97,8 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
   }
 
   if (path.startsWith('/settings/billing') && !canManageBilling(role)) return false;
+  if (path.startsWith('/settings/team') && !canViewTeam(role)) return false;
+  if (path.startsWith('/settings/branding') && !canManageOrganizationSettings(role)) return false;
   if ((path === '/settings' || path.startsWith('/settings?')) && !canManageOrganizationSettings(role)) {
     return false;
   }

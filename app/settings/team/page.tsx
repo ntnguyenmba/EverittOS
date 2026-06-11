@@ -1,6 +1,6 @@
 'use client';
 
-import { AppShell } from '@/components/app-shell';
+import { SettingsShell } from '@/components/settings/settings-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function TeamPage() {
+export default function SettingsTeamPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -20,7 +20,7 @@ export default function TeamPage() {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login');
+        router.push('/login?next=/settings/team');
         return;
       }
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
@@ -33,17 +33,22 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <AppShell plan={plan} role={role}>
-        <p className="loading-state">Loading team…</p>
-      </AppShell>
+      <div className="dashboard-shell">
+        <main className="main">
+          <p>Loading team settings...</p>
+        </main>
+      </div>
     );
   }
 
   return (
-    <AppShell plan={plan} role={role}>
-      <h1>Team</h1>
-      <p className="muted">Invite members, manage roles, and control access. Also available under Settings → Team.</p>
-      <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />
-    </AppShell>
+    <SettingsShell
+      plan={plan}
+      role={role}
+      title="Team"
+      description="Invite members, manage roles, and review team audit history."
+    >
+      <TeamManagementPanel showPermissionMatrix showAuditHistory />
+    </SettingsShell>
   );
 }

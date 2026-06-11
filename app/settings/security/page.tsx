@@ -4,15 +4,28 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { fetchRecentSecurityEvents } from '@/lib/security-events';
 import { supabase } from '@/lib/supabase';
+
+type SecurityEventRow = {
+  id: string;
+  event_type: string;
+  severity: string;
+  message: string;
+  created_at: string;
+};
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState(normalizeRole('owner'));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [securityEvents, setSecurityEvents] = useState<SecurityEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -26,8 +39,16 @@ export default function SecuritySettingsPage() {
         return;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
+      setRole(normalizeRole(profile?.role));
+
+      const org = await fetchOrganizationContext(user.id);
+      if (org && canManageOrganizationSettings(normalizeRole(profile?.role))) {
+        const events = await fetchRecentSecurityEvents(supabase, org.organizationId, 20);
+        setSecurityEvents(events as SecurityEventRow[]);
+      }
+
       setLoading(false);
     }
 
@@ -125,6 +146,24 @@ export default function SecuritySettingsPage() {
           </button>
         </div>
       </div>
+
+      {canManageOrganizationSettings(role) ? (
+        <div className="settings-card">
+          <h3>Security audit review</h3>
+          <p className="muted">Recent sign-in, sign-out, and failed login events for your organization.</p>
+          {securityEvents.length === 0 ? <p className="muted">No security events recorded yet.</p> : null}
+          {securityEvents.map((event) => (
+            <div key={event.id} className="list-row compact">
+              <div>
+                <strong>{event.event_type}</strong>
+                <p className="muted">
+                  {event.message} · {new Date(event.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </SettingsShell>
   );
 }
