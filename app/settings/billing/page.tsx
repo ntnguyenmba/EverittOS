@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { UsageDashboard } from '@/components/usage-dashboard';
+import { mapAccessError } from '@/lib/auth-errors';
 import {
   EVERITTOS_PLANS,
   EVERITTOS_STRIPE_LINKS,
@@ -20,12 +22,32 @@ import {
   canResumeSubscription,
   subscriptionStatusMessage
 } from '@/lib/stripe-subscription';
+import { subscriptionAccess } from '@/lib/subscription-access';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const upgradePlan = normalizePlan(searchParams.get('upgrade'));
+
+  const accessNotice = useMemo(() => {
+    const reason = searchParams.get('reason');
+    const detail = searchParams.get('detail');
+    const status = searchParams.get('status');
+    if (reason === 'plan') {
+      const mapped = mapAccessError('plan');
+      return { ...mapped, details: detail || mapped.details };
+    }
+    if (reason === 'subscription') {
+      const mapped = mapAccessError('subscription');
+      return {
+        ...mapped,
+        message: status ? subscriptionAccess(upgradePlan, status).message : mapped.message,
+        details: detail || status || mapped.details
+      };
+    }
+    return null;
+  }, [searchParams, upgradePlan]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [usage, setUsage] = useState({
@@ -137,6 +159,13 @@ function BillingSettingsContent() {
 
   return (
     <SettingsShell plan={plan} title="Billing" description="Subscription status, usage, and plan changes.">
+      {accessNotice ? (
+        <AccessBlockedBanner
+          title={accessNotice.title}
+          message={accessNotice.message}
+          details={accessNotice.details}
+        />
+      ) : null}
       {searchParams.get('upgrade') ? (
         <div className="settings-warning" style={{ marginBottom: 18 }}>
           {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.

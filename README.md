@@ -4,77 +4,72 @@ Field operations app for Everitt Ventures. Next.js 15, Supabase Auth, Postgres, 
 
 ## Production source of truth
 
-Use one branch for launch work:
-
-- GitHub repository: `ntnguyenmba/EverittOS`
+- GitHub repository: https://github.com/ntnguyenmba/EverittOS
 - Production branch: `main`
-- Production app: `https://everitt-os.vercel.app`
+- Production app: https://everitt-os.vercel.app
 
-If production does not match GitHub, check Vercel Project Settings > Git and confirm it is connected to this repository and deploying from `main`.
+If production does not match GitHub, check Vercel Project Settings → Git and confirm it deploys from `main`.
 
 ## Environment
 
 Copy `.env.example` to `.env.local` for local development.
 
-Required in Vercel Production:
+### Required in Vercel Production
 
-- `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `ADMIN_EMAILS`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_APP_URL` | Auth redirects, password reset, Stripe return URLs |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only account disable, webhooks, admin |
+| `STRIPE_SECRET_KEY` | Billing portal, cancel/resume subscription |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
+| `ADMIN_EMAILS` | Platform admin access |
 
-Optional for live email invites:
+Optional:
 
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
+- `RESEND_API_KEY`, `EMAIL_FROM` — team/client invite email
+- `AUTH_DEBUG=1` — server auth event logging (no secrets)
 
-After adding or changing Vercel environment variables, redeploy the latest `main` deployment.
+**Important:** `NEXT_PUBLIC_*` variables are embedded at build time. After adding or changing them in Vercel, redeploy `main`.
+
+See **docs/LAUNCH_AUTH_CHECKLIST.md** for Supabase Auth URLs, Stripe webhook setup, and step-by-step test procedures.
 
 ## Supabase
 
 Apply migrations in `supabase/migrations/` in filename order via Supabase SQL editor or CLI.
 
-Add Auth redirect URLs for the production app origin:
+### Auth redirect URLs (production)
 
-- `https://everitt-os.vercel.app/auth/callback`
-- `https://everitt-os.vercel.app/reset-password`
-
-Set the Supabase Auth Site URL to:
-
-- `https://everitt-os.vercel.app`
+- Site URL: `https://everitt-os.vercel.app`
+- Redirect URLs:
+  - `https://everitt-os.vercel.app/auth/callback`
+  - `https://everitt-os.vercel.app/auth/callback/**`
+  - `https://everitt-os.vercel.app/reset-password`
 
 Ensure Storage bucket `job-photos` exists. See `202605310003_rls_storage.sql`.
 
 ## Stripe webhook
 
-Endpoint:
+Endpoint: `https://everitt-os.vercel.app/api/stripe/webhook`
 
-`https://everitt-os.vercel.app/api/stripe/webhook`
+Required: `checkout.session.completed`
 
-Required event:
+Recommended: `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
 
-- `checkout.session.completed`
+Payment Link metadata: `plan=pro` or `plan=business`
 
-Recommended additional events:
+Enable **Stripe Customer Portal** for payment method self-service.
 
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
-- `invoice.payment_failed`
+## Auth architecture
 
-In each Stripe Payment Link, add metadata:
+- **Sign in:** `POST /api/auth/login` (server sets HttpOnly session cookies)
+- **Password reset:** `/forgot-password` → email link → `/auth/callback` → `/reset-password`
+- **Protected routes:** `middleware.ts` (session, account status, plan, role, subscription)
+- **Account controls:** `/settings/account` (deactivate, cancel/resume subscription for owners)
+- **Billing:** `/settings/billing` (Stripe portal, usage, upgrades)
 
-- Key: `plan`
-- Value: `pro` for Pro ($9/month)
-- Value: `business` for Business ($39/month)
-
-Optional fallback: set Payment Link Client reference ID to `pro` or `business`.
-
-The webhook does not use Stripe Price IDs or Product IDs. If metadata is missing, it infers plan from `checkout.session.completed` `amount_total`.
-
-Without metadata or matching amount, the webhook records the event but does not update the user plan.
+Service role key is used only in server API routes (`lib/supabase-admin.ts`), never in client code.
 
 ## Local development
 
@@ -85,41 +80,29 @@ npm run build
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open http://localhost:3000
 
 ## Launch test checklist
 
-- [ ] Vercel deploys from `main`
-- [ ] Production environment variables are set
-- [ ] Supabase migrations are applied
-- [ ] Supabase Auth URLs are configured
-- [ ] Stripe webhook is configured
-- [ ] Sign up
-- [ ] Verify email
-- [ ] Log in
-- [ ] Complete onboarding
-- [ ] Create customer
-- [ ] Create job
-- [ ] Set start date, due date, and assigned worker
-- [ ] Upload before photo
-- [ ] Upload after photo
-- [ ] Create proof report and print
-- [ ] Hit Free plan limit
-- [ ] Upgrade plan through Stripe Payment Link
-- [ ] Confirm `profiles.plan` updates via webhook
-- [ ] Log out
-- [ ] Reset password
+Full checklist with Vercel, Supabase, Stripe, and manual test steps: **docs/LAUNCH_AUTH_CHECKLIST.md**
+
+Quick smoke test:
+
+- [ ] Sign up / verify email
+- [ ] Log in / log out
+- [ ] Forgot password / reset password
+- [ ] Role-appropriate dashboard or portal
+- [ ] Cancel / resume subscription (owner, paid plan)
+- [ ] Deactivate account
 
 ## Design direction
 
-Keep the current app structure for launch. Refine the visual layer rather than rebuilding everything:
+Crisp editorial aesthetic aligned with Everitt Ventures:
 
-- Everitt navy and warm white palette
-- Clean cards and tables
-- Clear mobile spacing
-- Minimal marketing copy
-- Login, signup, pricing, and dashboard polish first
+- Background `#F7F6F3`, cards `#FFFFFF`, accent `#2D3748`
+- Cormorant Garamond headings, Inter body
+- No beige gradients, glassmorphism, or generic SaaS styling
 
 ## Plans
 
-Limits are defined in `lib/everittos-limits.ts`. Server triggers in `202605320001_launch_features.sql` enforce inserts.
+Limits: `lib/everittos-limits.ts`. Server triggers: `202605320001_launch_features.sql`.

@@ -1,42 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
+import { mapAuthError } from '@/lib/auth-errors';
 import { supabase } from '@/lib/supabase';
 
 function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(null);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     async function establishSession() {
+      setCheckingSession(true);
+      setError(null);
+
       const code = searchParams.get('code');
 
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          const codeValue = 'code' in exchangeError ? String((exchangeError as { code?: string }).code) : '';
-          const expired =
-            exchangeError.message.toLowerCase().includes('expired') ||
-            exchangeError.message.toLowerCase().includes('invalid') ||
-            codeValue === 'otp_expired';
-          setError(
-            expired
-              ? 'This reset link has expired. Request a new link from the forgot password page.'
-              : exchangeError.message
-          );
+          const mapped = mapAuthError(exchangeError.message, 'reset_link_expired');
+          setError({ title: mapped.title, message: mapped.message, details: exchangeError.message });
+          setCheckingSession(false);
           return;
         }
         setSessionReady(true);
+        setCheckingSession(false);
         return;
       }
 
@@ -46,10 +44,17 @@ function ResetPasswordForm() {
 
       if (session) {
         setSessionReady(true);
+        setCheckingSession(false);
         return;
       }
 
-      setError('Open the password reset link from your email to continue.');
+      const mapped = mapAuthError('reset_link_expired', 'reset_link_expired');
+      setError({
+        title: mapped.title,
+        message: 'Open the password reset link from your email, or request a new link below.',
+        details: mapped.details
+      });
+      setCheckingSession(false);
     }
 
     establishSession();
@@ -59,36 +64,39 @@ function ResetPasswordForm() {
     event.preventDefault();
 
     if (!sessionReady || loading) {
-      if (!sessionReady) setError('Use the link from your reset email first.');
+      if (!sessionReady) {
+        const mapped = mapAuthError('reset_link_expired', 'reset_link_expired');
+        setError({ title: mapped.title, message: mapped.message, details: mapped.details });
+      }
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError({ title: 'Password too short', message: 'Password must be at least 6 characters.' });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError({ title: 'Passwords do not match', message: 'Enter the same password in both fields.' });
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError(null);
     setSuccess('');
 
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      const mapped = mapAuthError(updateError.message);
+      setError({ title: mapped.title, message: mapped.message, details: updateError.message });
       return;
     }
 
     setSuccess('Password updated. Redirecting to your dashboard...');
     setTimeout(() => {
-      router.push('/dashboard');
-      router.refresh();
+      window.location.href = '/dashboard';
     }, 900);
   }
 
@@ -98,6 +106,8 @@ function ResetPasswordForm() {
       title="Choose a new password"
       description="Enter and confirm a new password for your EverittOS account."
     >
+      {checkingSession ? <p className="muted">Verifying reset link...</p> : null}
+
       <form className="auth-form card" onSubmit={updatePassword}>
         <div className="auth-field">
           <label htmlFor="password">New password</label>
@@ -129,7 +139,12 @@ function ResetPasswordForm() {
           />
         </div>
 
-        <AuthMessages error={error} success={success} />
+        <AuthMessages
+          error={error?.message}
+          errorTitle={error?.title}
+          errorDetails={error?.details}
+          success={success}
+        />
 
         <button className="btn btn-primary" type="submit" disabled={!sessionReady || loading}>
           {loading ? 'Updating...' : 'Update password'}
@@ -137,6 +152,7 @@ function ResetPasswordForm() {
       </form>
 
       <div className="auth-links">
+        <Link href="/forgot-password">Request new reset link</Link>
         <Link href="/login">Back to sign in</Link>
       </div>
     </AuthShell>

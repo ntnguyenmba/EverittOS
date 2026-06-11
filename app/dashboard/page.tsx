@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
 import { RoleDashboard } from '@/components/role-dashboard';
 import { Sidebar } from '@/components/sidebar';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
+import { mapAccessError } from '@/lib/auth-errors';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -24,6 +26,21 @@ type Job = {
   due_date: string | null;
   created_at: string | null;
 };
+
+function DashboardAccessNotice() {
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason');
+  const detail = searchParams.get('detail');
+  if (!reason) return null;
+  const mapped = mapAccessError(reason);
+  return (
+    <AccessBlockedBanner
+      title={mapped.title}
+      message={mapped.message}
+      details={detail || mapped.details}
+    />
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -134,6 +151,9 @@ export default function DashboardPage() {
       <Sidebar plan={plan} role={role} />
 
       <main className="main">
+        <Suspense>
+          <DashboardAccessNotice />
+        </Suspense>
         <div className="page-head">
           <div>
             <h2>Dashboard</h2>

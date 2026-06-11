@@ -2,18 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
-
-function supabaseUrl() {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-}
-
-function anonKey() {
-  return (
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    ''
-  );
-}
+import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 
 export type Profile = {
   id: string;
@@ -27,7 +16,7 @@ export type Profile = {
 export async function createServerSupabase() {
   const cookieStore = await cookies();
 
-  return createServerClient(supabaseUrl(), anonKey(), {
+  return createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
         return cookieStore.getAll();

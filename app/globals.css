@@ -337,6 +337,63 @@ p { color: var(--muted); line-height: 1.7; }
   color: #7A3E3E;
 }
 
+.auth-message-title {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.auth-message-body {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.auth-message-details-toggle {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.auth-message-details {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(45, 55, 72, 0.06);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgba(42, 42, 42, 0.75);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.access-blocked-banner {
+  border: 1px solid rgba(160, 70, 70, 0.22);
+  background: rgba(160, 70, 70, 0.05);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  color: #5c3a3a;
+}
+
+.access-blocked-banner p {
+  margin: 8px 0 0;
+  color: inherit;
+}
+
+.access-blocked-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 .auth-message-success {
   border: 1px solid rgba(74, 99, 84, 0.25);
   background: var(--success-soft);
