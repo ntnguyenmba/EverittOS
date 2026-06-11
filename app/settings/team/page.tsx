@@ -1,5 +1,6 @@
 'use client';
 
+import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -33,11 +34,9 @@ export default function SettingsTeamPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <main className="main">
-          <p>Loading team settings...</p>
-        </main>
-      </div>
+      <AppShell plan={plan} role={role}>
+        <p>Loading team settings...</p>
+      </AppShell>
     );
   }
 

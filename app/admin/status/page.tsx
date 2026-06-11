@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PermissionDenied } from '@/components/permission-denied';
 
 type StatusPayload = {
@@ -43,27 +44,24 @@ export default function AdminStatusPage() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container card">Loading platform status...</div>
-      </main>
+      <AuthenticatedSection>
+        <div className="card">Loading platform status...</div>
+      </AuthenticatedSection>
     );
   }
 
   if (error) {
     return (
-      <main className="section">
-        <div className="container">
-          <PermissionDenied message={error} />
-        </div>
-      </main>
+      <AuthenticatedSection>
+        <PermissionDenied message={error} />
+      </AuthenticatedSection>
     );
   }
 
   if (!data) return null;
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection>
         <h1>Platform status</h1>
         <p className="muted">Operational health for database, API, storage, and security events.</p>
 
@@ -113,7 +111,6 @@ export default function AdminStatusPage() {
           Generated {new Date(data.generatedAt).toLocaleString()} · <Link href="/admin/launch-status">Launch readiness</Link> ·{' '}
           <Link href="/admin/metrics">Investor metrics</Link>
         </p>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

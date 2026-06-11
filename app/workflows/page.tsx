@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -101,20 +101,15 @@ export default function WorkflowsPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <p>Loading workflows...</p>
-        </main>
-      </div>
+      <AppShell plan={plan}>
+        <p>Loading workflows...</p>
+      </AppShell>
     );
   }
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
-        <h2>Workflows</h2>
+    <AppShell plan={plan}>
+      <h2>Workflows</h2>
         <p className="muted">Custom job workflows for Growth and Enterprise.</p>
 
         {!limitsForPlan(plan).workflowCustomization ? (
@@ -183,7 +178,6 @@ export default function WorkflowsPage() {
           Back to settings
         </Link>
         {message ? <p>{message}</p> : null}
-      </main>
-    </div>
+    </AppShell>
   );
 }

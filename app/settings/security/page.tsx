@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
@@ -94,11 +95,9 @@ export default function SecuritySettingsPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <main className="main">
-          <p>Loading security settings...</p>
-        </main>
-      </div>
+      <AppShell plan={plan} role={role}>
+        <p>Loading security settings...</p>
+      </AppShell>
     );
   }
 

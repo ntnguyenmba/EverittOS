@@ -1,5 +1,6 @@
 'use client';
 
+import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -108,11 +109,9 @@ export default function BrandingSettingsPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <main className="main">
-          <p>Loading branding...</p>
-        </main>
-      </div>
+      <AppShell plan={plan} role={role}>
+        <p>Loading branding...</p>
+      </AppShell>
     );
   }
 

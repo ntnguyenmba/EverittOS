@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PermissionDenied } from '@/components/permission-denied';
 
 type LaunchStatus = {
@@ -49,27 +50,24 @@ export default function LaunchStatusPage() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container card">Loading launch readiness…</div>
-      </main>
+      <AuthenticatedSection>
+        <div className="card">Loading launch readiness…</div>
+      </AuthenticatedSection>
     );
   }
 
   if (error) {
     return (
-      <main className="section">
-        <div className="container">
-          <PermissionDenied message={error} />
-        </div>
-      </main>
+      <AuthenticatedSection>
+        <PermissionDenied message={error} />
+      </AuthenticatedSection>
     );
   }
 
   if (!data) return null;
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection>
         <h1>Launch readiness</h1>
         <p className="muted">Internal checklist for production launch. Admin access only.</p>
 
@@ -103,7 +101,6 @@ export default function LaunchStatusPage() {
         <p className="muted" style={{ marginTop: 24 }}>
           See <code>docs/SECURITY_RLS_AUDIT.md</code> for RLS policy details.
         </p>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

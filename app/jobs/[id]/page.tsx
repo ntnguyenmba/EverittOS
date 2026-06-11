@@ -9,7 +9,7 @@ import { JobChecklist } from '@/components/job-checklist';
 import { ClientAccessPanel } from '@/components/client-access-panel';
 import { JobWorkflow } from '@/components/job-workflow';
 import { JobPhotosSection } from '@/components/job-photos-section';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { logClientActivity, createNotification } from '@/lib/activity';
 import { StatusPill } from '@/components/status-pill';
@@ -264,32 +264,24 @@ export default function JobDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <div className="card">Loading job...</div>
-        </main>
-      </div>
+      <AppShell plan={plan} role={userRole}>
+        <div className="card">Loading job...</div>
+      </AppShell>
     );
   }
 
   if (!job) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <div className="card">{message || 'Job not found or access denied.'}</div>
-        </main>
-      </div>
+      <AppShell plan={plan} role={userRole}>
+        <div className="card">{message || 'Job not found or access denied.'}</div>
+      </AppShell>
     );
   }
 
   const crewEnabled = limitsForPlan(plan).crewAssignment;
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan} role={userRole}>
         <div className="page-head">
           <div>
             <h2>{job.title}</h2>
@@ -500,7 +492,6 @@ export default function JobDetailPage({ params }: PageProps) {
             </>
           )}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

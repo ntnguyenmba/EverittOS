@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import {
   canCancelSubscription,
@@ -140,11 +141,9 @@ export default function AccountSettingsPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <main className="main">
-          <p>Loading account...</p>
-        </main>
-      </div>
+      <AppShell plan={plan} role={role}>
+        <p>Loading account...</p>
+      </AppShell>
     );
   }
 

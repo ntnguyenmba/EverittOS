@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PermissionDenied } from '@/components/permission-denied';
 import type { PlatformMetrics } from '@/lib/platform-metrics';
 
@@ -32,27 +33,24 @@ export default function AdminMetricsPage() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container card">Loading investor metrics...</div>
-      </main>
+      <AuthenticatedSection>
+        <div className="card">Loading investor metrics...</div>
+      </AuthenticatedSection>
     );
   }
 
   if (error) {
     return (
-      <main className="section">
-        <div className="container">
-          <PermissionDenied message={error} />
-        </div>
-      </main>
+      <AuthenticatedSection>
+        <PermissionDenied message={error} />
+      </AuthenticatedSection>
     );
   }
 
   if (!metrics) return null;
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection>
         <div className="page-head-inline">
           <div>
             <h1>Investor metrics</h1>
@@ -122,7 +120,6 @@ export default function AdminMetricsPage() {
         <p className="muted" style={{ marginTop: 24 }}>
           Also see <Link href="/admin/platform">platform overview</Link> · <Link href="/admin/status">status center</Link>
         </p>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

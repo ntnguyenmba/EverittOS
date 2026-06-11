@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -145,19 +145,14 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <div className="card">Loading customer...</div>
-        </main>
-      </div>
+      <AppShell plan={plan}>
+        <div className="card">Loading customer...</div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan}>
         <div className="page-head">
           <h2>{name}</h2>
           <Link className="btn" href="/customers">
@@ -256,7 +251,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

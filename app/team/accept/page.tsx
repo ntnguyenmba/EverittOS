@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { supabase } from '@/lib/supabase';
 
 function AcceptInviteForm() {
@@ -42,8 +43,7 @@ function AcceptInviteForm() {
   }
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection>
         <div className="card form">
           <h2>Accept team invitation</h2>
           <p>Sign in with the email that received the invite, then accept to join the organization.</p>
@@ -53,14 +53,13 @@ function AcceptInviteForm() {
           {message && <p>{message}</p>}
           <Link href="/login">Sign in</Link>
         </div>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }
 
 export default function AcceptInvitePage() {
   return (
-    <Suspense fallback={<main className="section"><div className="container card">Loading...</div></main>}>
+    <Suspense fallback={<AuthenticatedSection><div className="card">Loading...</div></AuthenticatedSection>}>
       <AcceptInviteForm />
     </Suspense>
   );

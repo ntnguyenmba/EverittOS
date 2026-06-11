@@ -323,6 +323,47 @@ p { color: var(--muted); line-height: 1.7; }
 
 .main { padding: 36px 40px; max-width: 1200px; width: 100%; }
 .page-head { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-bottom: 28px; }
+
+.app-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 18px;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.app-back-button:hover {
+  background: var(--hover);
+  border-color: rgba(45, 55, 72, 0.18);
+  color: var(--charcoal);
+}
+
+.app-back-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-back-arrow {
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.75;
+  transform: translateY(-0.5px);
+}
+
+.section > .container > .app-back-button {
+  margin-bottom: 22px;
+}
+
 .page-head h1,
 .page-head h2 { margin: 0; }
 .page-head h1 { font-size: clamp(32px, 4vw, 40px); }
@@ -1033,6 +1074,11 @@ p { color: var(--muted); line-height: 1.7; }
   }
   h1 { font-size: 40px; }
   .main { padding: 24px 20px; max-width: 100%; overflow-x: hidden; }
+  .app-back-button {
+    min-height: 44px;
+    padding: 9px 16px 9px 13px;
+    margin-bottom: 16px;
+  }
   .page-head { align-items: flex-start; flex-direction: column; }
   .stat-grid { grid-template-columns: 1fr; }
   .table { display: block; overflow-x: auto; max-width: 100%; }

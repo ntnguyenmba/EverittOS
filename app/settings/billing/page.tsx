@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
+import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
@@ -159,11 +160,9 @@ function BillingSettingsContent() {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <main className="main">
-          <p>Loading billing...</p>
-        </main>
-      </div>
+      <AppShell plan={plan} role={role}>
+        <p>Loading billing...</p>
+      </AppShell>
     );
   }
 

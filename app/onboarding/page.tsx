@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import { dashboardPathForRole, loginUrlWithDashboardNext } from '@/lib/dashboard-nav';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, photoUploadAllowed, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
@@ -252,16 +252,14 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container card">Loading your setup...</div>
-      </main>
+      <AppShell plan={plan} role={role}>
+        <div className="card">Loading your setup...</div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan} role={role}>
         <div className="page-head">
           <div>
             <h2>Workspace setup</h2>
@@ -373,7 +371,6 @@ export default function OnboardingPage() {
           )}
           {message && <p>{message}</p>}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

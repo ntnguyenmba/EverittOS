@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
+import { AppShell } from '@/components/app-shell';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
-import { Sidebar } from '@/components/sidebar';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
@@ -109,10 +109,8 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
-        <h2>Schedule</h2>
+    <AppShell plan={plan}>
+      <h2>Schedule</h2>
         <p>
           Calendar, daily, weekly, and upcoming job views.{' '}
           <Link href="/settings/integrations">Connect Google Calendar</Link> to sync scheduled jobs.
@@ -136,7 +134,6 @@ export default function SchedulePage() {
             />
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

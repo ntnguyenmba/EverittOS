@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
@@ -174,19 +175,16 @@ function ClientPortalContent() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container">
-          <div className="card" role="status" aria-live="polite">
-            Loading your client portal...
-          </div>
+      <AuthenticatedSection role="client">
+        <div className="card" role="status" aria-live="polite">
+          Loading your client portal...
         </div>
-      </main>
+      </AuthenticatedSection>
     );
   }
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection role="client">
         <header style={{ marginBottom: 20 }}>
           <h2>Client portal</h2>
           <p className="muted">Your jobs, invoices, photos, and activity. Only data shared with your account is visible.</p>
@@ -327,7 +325,6 @@ function ClientPortalContent() {
         <GoToDashboardLink role="client" className="btn" style={{ marginTop: 24 }}>
           Back to dashboard
         </GoToDashboardLink>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

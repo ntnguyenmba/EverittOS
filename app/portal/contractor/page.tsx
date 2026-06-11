@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PhotoUpload } from '@/components/photo-upload';
@@ -86,8 +87,7 @@ export default function ContractorPortalPage() {
   }
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection role="contractor">
         <h2>Contractor portal</h2>
         <p className="muted">Assigned jobs, due dates, and field updates. Organization-wide data is not shown.</p>
 
@@ -122,7 +122,6 @@ export default function ContractorPortalPage() {
         <GoToDashboardLink role="contractor" className="btn" style={{ marginTop: 24 }}>
           Back to dashboard
         </GoToDashboardLink>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

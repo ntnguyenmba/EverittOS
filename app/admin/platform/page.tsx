@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PermissionDenied } from '@/components/permission-denied';
 
 type Metrics = {
@@ -53,27 +54,24 @@ export default function PlatformMetricsPage() {
 
   if (loading) {
     return (
-      <main className="section">
-        <div className="container card">Loading platform metrics...</div>
-      </main>
+      <AuthenticatedSection>
+        <div className="card">Loading platform metrics...</div>
+      </AuthenticatedSection>
     );
   }
 
   if (error) {
     return (
-      <main className="section">
-        <div className="container">
-          <PermissionDenied message={error} />
-        </div>
-      </main>
+      <AuthenticatedSection>
+        <PermissionDenied message={error} />
+      </AuthenticatedSection>
     );
   }
 
   if (!metrics) return null;
 
   return (
-    <main className="section">
-      <div className="container">
+    <AuthenticatedSection>
         <h2>Platform metrics</h2>
         <p className="muted">Internal view for investor and operator reporting. Not visible to customers.</p>
 
@@ -162,7 +160,6 @@ export default function PlatformMetricsPage() {
           <p>Signups tracked: {metrics.last30Days.signupsTracked}</p>
           <p>Jobs created tracked: {metrics.last30Days.jobsCreatedTracked}</p>
         </div>
-      </div>
-    </main>
+    </AuthenticatedSection>
   );
 }

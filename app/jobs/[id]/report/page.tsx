@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { PhotoGallery } from '@/components/photo-gallery';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -129,30 +129,22 @@ export default function JobReportPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <p>Loading report...</p>
-        </main>
-      </div>
+      <AppShell plan={plan}>
+        <p>Loading report...</p>
+      </AppShell>
     );
   }
 
   if (!job) {
     return (
-      <div className="dashboard-shell">
-        <Sidebar plan={plan} />
-        <main className="main">
-          <p>{message || 'Job not found.'}</p>
-        </main>
-      </div>
+      <AppShell plan={plan}>
+        <p>{message || 'Job not found.'}</p>
+      </AppShell>
     );
   }
 
   return (
-    <div className="dashboard-shell report-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan} className="report-shell">
         <div className="page-head no-print">
           <div>
             <h2>Job proof report</h2>
@@ -221,7 +213,6 @@ export default function JobReportPage({ params }: PageProps) {
             <p>Generated {new Date().toLocaleString()}</p>
           </footer>
         </article>
-      </main>
-    </div>
+    </AppShell>
   );
 }
