@@ -357,7 +357,16 @@ p { color: var(--muted); line-height: 1.7; }
   font-size: 13px;
   text-decoration: underline;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.9;
+  list-style: none;
+}
+
+.auth-message-details-panel summary {
+  cursor: pointer;
+}
+
+.auth-message-details-panel summary::-webkit-details-marker {
+  display: none;
 }
 
 .auth-message-details {

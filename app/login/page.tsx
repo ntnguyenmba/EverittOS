@@ -7,9 +7,12 @@ import { AuthAsidePanel, AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { mapAccessError, mapAuthError } from '@/lib/auth-errors';
 import { logAuthEvent } from '@/lib/auth-logger';
+import { parseFetchFailure, parseLoginApiResponse, type LoginClientError } from '@/lib/auth-request-error';
 import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { safeNextPath } from '@/lib/app-url';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
+
+const LOGIN_ENDPOINT = '/api/auth/login';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -35,10 +38,19 @@ function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(null);
+  const [error, setError] = useState<LoginClientError | null>(null);
   const [loading, setLoading] = useState(false);
 
   const signupHref = `/signup?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
+
+  function showError(nextError: LoginClientError) {
+    setError(nextError);
+    logAuthEvent('login_client_error', {
+      endpoint: nextError.debug.endpoint,
+      status: nextError.debug.httpStatus || 0,
+      code: nextError.debug.apiCode || 'client'
+    });
+  }
 
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
@@ -47,39 +59,44 @@ function LoginForm() {
 
     if (configError) {
       const mapped = mapAuthError('config_error', 'config_error');
-      setError({ title: mapped.title, message: mapped.message, details: mapped.details });
+      showError({
+        title: mapped.title,
+        message: mapped.message,
+        details: `Endpoint: POST ${LOGIN_ENDPOINT}\nAPI code: config_error\n${mapped.details || ''}`,
+        debug: {
+          endpoint: LOGIN_ENDPOINT,
+          method: 'POST',
+          apiCode: 'config_error',
+          rawError: mapped.details
+        }
+      });
       setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(LOGIN_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
         body: JSON.stringify({ email, password, next })
       });
 
-      const json = await res.json();
+      const parsed = await parseLoginApiResponse(res, LOGIN_ENDPOINT, 'POST');
 
-      if (!res.ok) {
-        logAuthEvent('login_client_failed', { status: res.status, code: json.code || 'unknown' });
-        setError({
-          title: json.title || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
-          message: json.error || 'Unable to sign in.',
-          details: json.details || json.code
-        });
+      if (!parsed.ok) {
+        showError(parsed.error);
         setLoading(false);
         return;
       }
 
-      window.location.href = json.redirectTo || next;
+      const json = parsed.json;
+      const redirectTo = (json.redirectTo as string) || next;
+
+      window.location.assign(redirectTo);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Network error';
-      setError({
-        title: 'Connection error',
-        message: 'Could not reach the sign-in service. Check your connection and try again.',
-        details: message
-      });
+      showError(parseFetchFailure(err, LOGIN_ENDPOINT, 'POST'));
       setLoading(false);
     }
   }
@@ -95,7 +112,7 @@ function LoginForm() {
         <AuthMessages
           errorTitle="Configuration required"
           error="Authentication is not configured for this deployment. Set Supabase environment variables in Vercel and redeploy."
-          errorDetails="NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are missing or placeholder values."
+          errorDetails={`Endpoint: POST ${LOGIN_ENDPOINT}\nMissing: NEXT_PUBLIC_SUPABASE_URL and/or NEXT_PUBLIC_SUPABASE_ANON_KEY`}
         />
       ) : null}
 

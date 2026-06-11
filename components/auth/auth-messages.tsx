@@ -11,7 +11,7 @@ type AuthMessagesProps = {
 
 export function AuthMessages({ error, errorTitle, errorDetails, success }: AuthMessagesProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const details = errorDetails || error;
+  const hasDetails = Boolean(errorDetails?.trim());
 
   return (
     <>
@@ -19,7 +19,7 @@ export function AuthMessages({ error, errorTitle, errorDetails, success }: AuthM
         <div className="auth-message auth-message-error" role="alert">
           {errorTitle ? <strong className="auth-message-title">{errorTitle}</strong> : null}
           <p className="auth-message-body">{error}</p>
-          {details && details !== error ? (
+          {hasDetails ? (
             <>
               <button
                 type="button"
@@ -27,11 +27,9 @@ export function AuthMessages({ error, errorTitle, errorDetails, success }: AuthM
                 onClick={() => setShowDetails((open) => !open)}
                 aria-expanded={showDetails}
               >
-                {showDetails ? 'Hide details' : 'Details'}
+                {showDetails ? '▾ Hide details' : '▸ Details'}
               </button>
-              {showDetails ? (
-                <pre className="auth-message-details">{details}</pre>
-              ) : null}
+              {showDetails ? <pre className="auth-message-details">{errorDetails}</pre> : null}
             </>
           ) : null}
         </div>

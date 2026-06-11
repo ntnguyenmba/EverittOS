@@ -1,9 +1,8 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { mapAuthError } from '@/lib/auth-errors';
 import { safeNextPath } from '@/lib/app-url';
-import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
+import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -26,20 +25,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(login);
   }
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
-      }
-    }
-  });
-
+  const { supabase, redirect } = await createRouteHandlerSupabase();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -51,11 +37,11 @@ export async function GET(request: Request) {
   }
 
   if (flowType === 'recovery' || next === '/reset-password') {
-    return NextResponse.redirect(`${origin}/reset-password`);
+    return redirect(new URL('/reset-password', origin));
   }
 
   const verified = searchParams.get('type') === 'signup' || next.includes('onboarding');
   const destination = verified ? `${next}${next.includes('?') ? '&' : '?'}verified=1` : next;
 
-  return NextResponse.redirect(`${origin}${destination}`);
+  return redirect(new URL(`${origin}${destination}`));
 }

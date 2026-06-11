@@ -1,52 +1,56 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
-import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
+import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+
+export const runtime = 'nodejs';
 
 /** Repair profile + organization access for the current session (e.g. legacy auth users). */
 export async function POST() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
-      }
+  try {
+    const { supabase, json } = await createRouteHandlerSupabase();
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return json({ error: 'Sign in required.', code: 'unauthorized' }, { status: 401 });
     }
-  });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+    const bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined);
 
-  if (!user) {
-    return NextResponse.json({ error: 'Sign in required.', code: 'unauthorized' }, { status: 401 });
-  }
+    if (!bootstrap.ok) {
+      return json(
+        {
+          error: bootstrap.message,
+          title: 'Workspace setup required',
+          details: bootstrap.details,
+          code: bootstrap.code,
+          setupRequired: true,
+          diagnostics: {
+            profile: bootstrap.profileSnapshot ?? null,
+            hasMembership: bootstrap.hasMembership ?? false
+          }
+        },
+        { status: 409 }
+      );
+    }
 
-  const bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined);
-
-  if (!bootstrap.ok) {
-    return NextResponse.json(
+    return json({
+      ok: true,
+      profile: bootstrap.profile,
+      created: bootstrap.created,
+      redirectTo: bootstrap.created ? '/onboarding?setup=1' : '/dashboard'
+    });
+  } catch (err) {
+    const { json } = await createRouteHandlerSupabase();
+    return json(
       {
-        error: bootstrap.message,
-        title: 'Workspace setup required',
-        details: bootstrap.details,
-        code: bootstrap.code,
-        setupRequired: true
+        error: 'Workspace setup failed due to a server error.',
+        details: err instanceof Error ? err.message : String(err),
+        code: 'setup_route_exception'
       },
-      { status: 409 }
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    ok: true,
-    profile: bootstrap.profile,
-    created: bootstrap.created,
-    redirectTo: bootstrap.created ? '/onboarding?setup=1' : '/dashboard'
-  });
 }

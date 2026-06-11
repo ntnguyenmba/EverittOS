@@ -14,7 +14,19 @@ export type WorkspaceProfile = {
 
 export type BootstrapResult =
   | { ok: true; profile: WorkspaceProfile; created: boolean }
-  | { ok: false; code: string; message: string; details?: string };
+  | {
+      ok: false;
+      code: string;
+      message: string;
+      details?: string;
+      profileSnapshot?: {
+        role?: string | null;
+        organization_id?: string | null;
+        account_status?: string | null;
+        plan?: string | null;
+      } | null;
+      hasMembership?: boolean;
+    };
 
 function profileNeedsSetup(profile: {
   role?: string | null;
@@ -62,7 +74,9 @@ export async function ensureUserWorkspace(
       ok: false,
       code: 'profile_read_failed',
       message: 'We could not load your account profile. Try again or contact support.',
-      details: readError.message
+      details: readError.message,
+      profileSnapshot: existing ?? null,
+      hasMembership: false
     };
   }
 
@@ -107,7 +121,9 @@ export async function ensureUserWorkspace(
       ok: false,
       code: 'profile_upsert_failed',
       message: 'We could not create your account profile. Contact support with your sign-in email.',
-      details: profileUpsertError.message
+      details: profileUpsertError.message,
+      profileSnapshot: existing ?? null,
+      hasMembership: Boolean(membership)
     };
   }
 
@@ -124,7 +140,9 @@ export async function ensureUserWorkspace(
         ok: false,
         code: 'org_create_failed',
         message: 'Your profile exists but workspace organization setup failed. Contact support to finish setup.',
-        details: orgError?.message || 'Organization insert returned no row.'
+        details: orgError?.message || 'Organization insert returned no row.',
+        profileSnapshot: existing ?? null,
+        hasMembership: Boolean(membership)
       };
     }
     orgId = org.id;
@@ -149,7 +167,9 @@ export async function ensureUserWorkspace(
       ok: false,
       code: 'membership_upsert_failed',
       message: 'Your account profile exists but organization access was not granted. Contact support.',
-      details: memberError.message
+      details: memberError.message,
+      profileSnapshot: existing ?? null,
+      hasMembership: Boolean(membership)
     };
   }
 
@@ -176,7 +196,9 @@ export async function ensureUserWorkspace(
       ok: false,
       code: 'profile_link_failed',
       message: 'Workspace setup did not finish linking your organization. Try signing in again.',
-      details: linkError?.message || 'Profile update returned no row.'
+      details: linkError?.message || 'Profile update returned no row.',
+      profileSnapshot: existing ?? null,
+      hasMembership: Boolean(membership)
     };
   }
 
