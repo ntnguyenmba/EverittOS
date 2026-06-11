@@ -7,11 +7,11 @@ import {
   EVERITTOS_STRIPE_LINKS,
   isPaidEverittosPlan,
   normalizePlan,
-  hasTeamManagement,
   planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
+import { canAccessNavHref } from '@/lib/nav-access';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -40,6 +40,12 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
   const normalized = normalizePlan(plan);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
+
+  useEffect(() => {
+    if (roleProp) {
+      setRole(normalizeRole(roleProp));
+    }
+  }, [roleProp]);
 
   useEffect(() => {
     async function load() {
@@ -91,9 +97,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
 
       {!isClientRole(role) &&
         baseLinks.map(([label, href]) => {
-          if (href === '/team' && !hasTeamManagement(normalized)) return null;
-          if (href === '/activity' && !limitsForPlan(normalized).activityLog) return null;
-          if (href === '/workflows' && !limitsForPlan(normalized).workflowCustomization) return null;
+          if (!canAccessNavHref(role, href, normalized)) return null;
           return (
             <Link key={href} href={href} aria-current={linkClass(href) ? 'page' : undefined}>
               {label}
@@ -102,7 +106,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
           );
         })}
 
-      {!isPaidEverittosPlan(normalized) && (
+      {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) && (
         <div className="sidebar-upgrade">
           <p>Need more jobs, photos, and team capacity?</p>
           <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">

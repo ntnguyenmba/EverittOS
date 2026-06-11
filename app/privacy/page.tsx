@@ -1,13 +1,30 @@
 import Link from 'next/link';
+import { LegalNotice } from '@/components/legal-notice';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 export default function PrivacyPage() {
   return (
     <main className="section">
-      <div className="container" style={{ maxWidth: 640 }}>
-        <h2>Privacy</h2>
-        <p>EverittOS stores account, job, customer, photo, and report data in Supabase. Data is used to operate your workspace and is not sold.</p>
-        <p>Photos are stored in secure storage tied to your account. You can request account deletion by contacting Everitt Ventures.</p>
-        <p>Public marketing pages may use Google Analytics. Authenticated app pages do not load marketing analytics by default.</p>
+      <div className="container" style={{ maxWidth: 720 }}>
+        <h2>Privacy Policy</h2>
+        <p>
+          EverittOS stores account, organization, job, customer, photo, and report data in Supabase to operate your
+          workspace. We use this data to provide the service, support your team, and improve reliability.
+        </p>
+        <p>
+          We do not sell personal information. Photos and documents are stored in secure storage tied to your
+          organization. Access is limited by role and row-level security policies in the database.
+        </p>
+        <p>
+          Public marketing pages may use analytics (for example Google Analytics). Authenticated app pages do not load
+          marketing analytics by default. See our <Link href="/cookies">cookie notice</Link> for details.
+        </p>
+        <p>
+          You may deactivate your account from settings or request permanent deletion. Deactivation blocks sign-in;
+          deletion requests are reviewed by our team. Contact <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>{' '}
+          for data access or export questions.
+        </p>
+        <LegalNotice />
         <Link className="btn" href="/login">
           Back to login
         </Link>

@@ -4,6 +4,8 @@ import { isAccountActive } from '@/lib/account-status';
 import { mapAccessError } from '@/lib/auth-errors';
 import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
 import { normalizePlan } from '@/lib/everittos-plans';
+import { canAccessNavHref, canAccessSettingsPath } from '@/lib/nav-access';
+import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -37,8 +39,7 @@ const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 
 const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
   { prefix: '/team', permission: 'view_team' },
-  { prefix: '/settings/billing', permission: 'manage_billing' },
-  { prefix: '/admin', permission: 'view_all_org_data' }
+  { prefix: '/settings/billing', permission: 'manage_billing' }
 ];
 
 function isProtectedPath(pathname: string) {
@@ -51,6 +52,13 @@ function redirectWithCookies(url: URL, source: NextResponse) {
     redirect.cookies.set(name, value);
   });
   return redirect;
+}
+
+function roleBlockedRedirect(request: NextRequest, source: NextResponse, pathname: string, detail: string) {
+  const dashboard = new URL('/dashboard', request.url);
+  dashboard.searchParams.set('reason', 'role');
+  dashboard.searchParams.set('detail', detail);
+  return redirectWithCookies(dashboard, source);
 }
 
 export async function middleware(request: NextRequest) {
@@ -180,6 +188,15 @@ export async function middleware(request: NextRequest) {
   const userPlan = normalizePlan(await resolveProfilePlan(supabase, user.id, profile));
   const subscriptionStatus = await resolveProfileSubscriptionStatus(supabase, user.id, profile);
 
+  if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) {
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      pathname,
+      'Platform admin access is limited to authorized Everitt Ventures operators.'
+    );
+  }
+
   if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
     const billing = new URL('/settings/billing', request.url);
     billing.searchParams.set('reason', 'subscription');
@@ -192,10 +209,12 @@ export async function middleware(request: NextRequest) {
   for (const rule of ROLE_BLOCKED_PREFIXES) {
     if (pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) {
       if (!hasPermission(role, rule.permission)) {
-        const dashboard = new URL('/dashboard', request.url);
-        dashboard.searchParams.set('reason', 'role');
-        dashboard.searchParams.set('detail', `Role "${role}" cannot access ${pathname}.`);
-        return redirectWithCookies(dashboard, supabaseResponse);
+        return roleBlockedRedirect(
+          request,
+          supabaseResponse,
+          pathname,
+          `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`
+        );
       }
     }
   }
@@ -211,10 +230,52 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers'))) {
-    const dashboard = new URL('/dashboard', request.url);
-    dashboard.searchParams.set('reason', 'role');
-    dashboard.searchParams.set('detail', 'Your role only includes assigned work — not full customer or worker lists.');
-    return redirectWithCookies(dashboard, supabaseResponse);
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      pathname,
+      'Your role only includes assigned work — not full customer or worker lists.'
+    );
+  }
+
+  if (!canSeeOrgWideData(role) && (pathname.startsWith('/activity') || pathname.startsWith('/workflows'))) {
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      pathname,
+      'Your role cannot access organization-wide activity or workflow settings.'
+    );
+  }
+
+  if (pathname.startsWith('/settings') && !canAccessSettingsPath(role, pathname, userPlan)) {
+    const detail =
+      pathname.startsWith('/settings/billing')
+        ? 'Billing is limited to workspace owners and admins.'
+        : pathname === '/settings' || pathname.startsWith('/settings?')
+          ? 'Company settings are limited to workspace owners and admins.'
+          : `Your role (${role}) cannot access ${pathname}.`;
+    return roleBlockedRedirect(request, supabaseResponse, pathname, detail);
+  }
+
+  const mainNavPaths = [
+    '/dashboard',
+    '/jobs',
+    '/customers',
+    '/schedule',
+    '/workers',
+    '/team',
+    '/activity',
+    '/workflows',
+    '/notifications'
+  ];
+  const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      pathname,
+      `Your role (${role}) cannot access ${matchedNav}.`
+    );
   }
 
   const requiredPlan = minimumPlanForPath(pathname);

@@ -11,6 +11,7 @@ const MARKETING_PATHS = new Set([
   '/demo',
   '/terms',
   '/privacy',
+  '/cookies',
   '/disclaimer',
   '/docs/api'
 ]);

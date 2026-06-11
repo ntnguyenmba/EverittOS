@@ -21,7 +21,7 @@ export async function POST() {
 
   const { data: profile } = await supabase.from('profiles').select('role, stripe_customer_id, email').eq('id', user.id).maybeSingle();
   if (!canManageBilling(normalizeRole(profile?.role))) {
-    return NextResponse.json({ error: 'Only the company owner can manage billing.' }, { status: 403 });
+    return NextResponse.json({ error: 'Only workspace owners and admins can manage billing.' }, { status: 403 });
   }
 
   const customerId = profile?.stripe_customer_id;

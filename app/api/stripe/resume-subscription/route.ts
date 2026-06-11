@@ -26,7 +26,7 @@ export async function POST() {
     .maybeSingle();
 
   if (!canManageBilling(normalizeRole(profile?.role))) {
-    return NextResponse.json({ error: 'Only the company owner can manage billing.' }, { status: 403 });
+    return NextResponse.json({ error: 'Only workspace owners and admins can manage billing.' }, { status: 403 });
   }
 
   if (!canResumeSubscription(profile?.subscription_status)) {

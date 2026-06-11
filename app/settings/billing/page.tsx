@@ -174,7 +174,7 @@ function BillingSettingsContent() {
   const canBilling = canManageBilling(role);
 
   return (
-    <SettingsShell plan={plan} title="Billing" description="Subscription status, usage, and plan changes.">
+    <SettingsShell plan={plan} role={role} title="Billing" description="Subscription status, usage, and plan changes.">
       {accessNotice ? (
         <AccessBlockedBanner
           title={accessNotice.title}
@@ -276,6 +276,10 @@ function BillingSettingsContent() {
             </a>
           ) : null}
         </div>
+        <p className="muted" style={{ marginTop: 16 }}>
+          Subscriptions renew automatically until canceled. Cancel anytime from billing or the Stripe customer portal.{' '}
+          <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link>
+        </p>
       </div>
     </SettingsShell>
   );

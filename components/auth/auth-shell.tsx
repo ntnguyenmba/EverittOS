@@ -301,6 +301,9 @@ export function AuthShell({ eyebrow, title, description, children, aside }: Auth
               </a>
               . Field operations for asset care teams.
             </p>
+            <p>
+              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link>
+            </p>
           </footer>
         </div>
 

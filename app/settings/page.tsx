@@ -237,7 +237,8 @@ export default function SettingsPage() {
             Log out
           </button>
           <p style={{ marginTop: 16 }}>
-            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/disclaimer">Disclaimer</Link>
+            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+            <Link href="/disclaimer">Disclaimer</Link>
           </p>
           {message && (
             <p className={saveSuccess ? 'auth-message auth-message-success' : 'auth-message auth-message-error'} role={saveSuccess ? 'status' : 'alert'}>

@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server';
+import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
-
-function isPlatformAdmin(email: string | undefined): boolean {
-  const list = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return !!email && list.includes(email.toLowerCase());
-}
 
 type CheckStatus = 'ok' | 'warn' | 'fail';
 
@@ -29,7 +22,7 @@ export async function GET() {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user || !isPlatformAdmin(user.email)) {
+  if (!user || !isPlatformAdminEmail(user.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

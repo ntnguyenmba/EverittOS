@@ -70,6 +70,10 @@ export function canManageBilling(role: UserRole): boolean {
   return role === 'owner' || role === 'admin';
 }
 
+export function canManageOrganizationSettings(role: UserRole): boolean {
+  return role === 'owner' || role === 'admin';
+}
+
 export function canViewInternalNotes(role: UserRole): boolean {
   return isManagerRole(role) || role === 'employee';
 }

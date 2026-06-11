@@ -22,7 +22,8 @@ import {
   reportLimitReached,
   limitMessage
 } from '@/lib/everittos-usage';
-import { canViewInternalNotes, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { hasPermission } from '@/lib/permissions';
+import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -74,6 +75,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [userRole, setUserRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
   const [canEditStatus, setCanEditStatus] = useState(false);
+  const [canUploadPhotos, setCanUploadPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [creatingReport, setCreatingReport] = useState(false);
@@ -102,7 +104,10 @@ export default function JobDetailPage({ params }: PageProps) {
     const userPlan = normalizePlan(profile?.plan);
     setPlan(userPlan);
     setCanManage(isManagerRole(role));
-    setCanEditStatus(isManagerRole(role) || isStaffRole(role));
+    setCanEditStatus(hasPermission(role, 'update_status'));
+    setCanUploadPhotos(
+      hasPermission(role, 'upload_before_photos') || hasPermission(role, 'upload_after_photos')
+    );
 
     const org = await fetchOrganizationContext(user.id);
     if (org) setOrgId(org.organizationId);
@@ -456,7 +461,7 @@ export default function JobDetailPage({ params }: PageProps) {
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Photos</h3>
           <PhotoGallery jobId={job.id} refreshKey={photoRefresh} />
-          {canManage && (
+          {canUploadPhotos && (
             <PhotoUpload
               jobId={job.id}
               userId={job.user_id}

@@ -5,14 +5,15 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   EVERITTOS_STRIPE_LINKS,
-  hasTeamManagement,
   isPaidEverittosPlan,
   normalizePlan,
   planDisplayName,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
+import { canAccessNavHref } from '@/lib/nav-access';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { supabase } from '@/lib/supabase';
 
 const baseLinks = [
   ['Dashboard', '/dashboard'],
@@ -37,7 +38,26 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const normalized = normalizePlan(plan);
-  const role = normalizeRole(roleProp);
+  const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
+
+  useEffect(() => {
+    if (roleProp) {
+      setRole(normalizeRole(roleProp));
+    }
+  }, [roleProp]);
+
+  useEffect(() => {
+    async function loadRole() {
+      if (roleProp) return;
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      setRole(normalizeRole(profile?.role));
+    }
+    loadRole();
+  }, [roleProp]);
 
   useEffect(() => {
     setOpen(false);
@@ -52,12 +72,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const links = baseLinks.filter(([label, href]) => {
-    if (href === '/team' && !hasTeamManagement(normalized)) return false;
-    if (href === '/activity' && !limitsForPlan(normalized).activityLog) return false;
-    if (href === '/workflows' && !limitsForPlan(normalized).workflowCustomization) return false;
-    return true;
-  });
+  const links = baseLinks.filter(([, href]) => canAccessNavHref(role, href, normalized));
 
   return (
     <div className="mobile-nav">
@@ -92,7 +107,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
                 {label}
               </Link>
             ))}
-          {!isPaidEverittosPlan(normalized) ? (
+          {!isPaidEverittosPlan(normalized) && canAccessNavHref(role, '/settings/billing', normalized) ? (
             <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               Start Pro
             </a>
