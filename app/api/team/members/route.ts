@@ -51,6 +51,26 @@ export async function PATCH(request: Request) {
     await admin.from('profiles').update({ role: updates.role }).eq('id', targetUserId);
   }
 
+  const { data: actorProfile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
+  const actorName = actorProfile?.full_name || actorProfile?.email || user.email || 'Team member';
+  const action = updates.role ? 'status_changed' : 'status_changed';
+  await admin.from('activity_logs').insert({
+    organization_id: org.organizationId,
+    user_id: user.id,
+    actor_name: actorName,
+    entity_type: 'member',
+    entity_id: targetUserId,
+    action,
+    message: updates.role
+      ? `Changed member role to ${updates.role}`
+      : updates.active === false
+        ? 'Deactivated team member'
+        : updates.active === true
+          ? 'Reactivated team member'
+          : 'Updated team member',
+    metadata: updates
+  });
+
   return NextResponse.json({ ok: true });
 }
 
@@ -86,6 +106,19 @@ export async function DELETE(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  const { data: actorProfile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
+  const actorName = actorProfile?.full_name || actorProfile?.email || user.email || 'Team member';
+  await admin.from('activity_logs').insert({
+    organization_id: org.organizationId,
+    user_id: user.id,
+    actor_name: actorName,
+    entity_type: 'member',
+    entity_id: targetUserId,
+    action: 'user_removed',
+    message: 'Removed team member from organization',
+    metadata: { userId: targetUserId }
+  });
 
   return NextResponse.json({ ok: true });
 }

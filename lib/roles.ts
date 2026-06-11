@@ -55,7 +55,11 @@ export function isStaffRole(role: UserRole): boolean {
 }
 
 export function canManageTeam(role: UserRole): boolean {
-  return isManagerRole(role);
+  return role === 'owner' || role === 'admin';
+}
+
+export function canViewTeam(role: UserRole): boolean {
+  return role === 'owner' || role === 'admin' || role === 'manager';
 }
 
 export function canAssignJobs(role: UserRole): boolean {
@@ -63,7 +67,7 @@ export function canAssignJobs(role: UserRole): boolean {
 }
 
 export function canManageBilling(role: UserRole): boolean {
-  return role === 'owner';
+  return role === 'owner' || role === 'admin';
 }
 
 export function canViewInternalNotes(role: UserRole): boolean {

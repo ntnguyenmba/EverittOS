@@ -52,7 +52,8 @@ async function updateProfilePlan(
   plan: EverittosPlan,
   status: string,
   stripeCustomerId: string | null,
-  stripeSubscriptionId?: string | null
+  stripeSubscriptionId?: string | null,
+  currentPeriodEnd?: number | null
 ) {
   const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
 
@@ -75,7 +76,9 @@ async function updateProfilePlan(
         plan,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId,
-        status: status.startsWith('everittos_') ? 'active' : status
+        status: status.startsWith('everittos_') ? 'active' : status,
+        current_period_end: currentPeriodEnd ? new Date(currentPeriodEnd * 1000).toISOString() : null,
+        updated_at: new Date().toISOString()
       },
       { onConflict: 'stripe_subscription_id' }
     );
@@ -122,7 +125,16 @@ export async function POST(request: Request) {
     if (email && plan) {
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
       const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
-      await updateProfilePlan(admin, email, plan, `everittos_${plan}`, customerId, subId);
+      let periodEnd: number | null = null;
+      if (subId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(subId);
+          periodEnd = sub.current_period_end;
+        } catch {
+          /* ignore */
+        }
+      }
+      await updateProfilePlan(admin, email, plan, `everittos_${plan}`, customerId, subId, periodEnd);
       const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
       await admin.from('everittos_subscriptions').upsert(
         {
@@ -132,7 +144,9 @@ export async function POST(request: Request) {
           stripe_customer_id: customerId,
           stripe_session_id: session.id,
           stripe_subscription_id: subId,
-          status: 'active'
+          status: 'active',
+          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+          updated_at: new Date().toISOString()
         },
         { onConflict: 'stripe_session_id' }
       );
@@ -151,7 +165,8 @@ export async function POST(request: Request) {
         sub.status === 'active' || sub.status === 'trialing' ? plan : 'free',
         status,
         typeof sub.customer === 'string' ? sub.customer : null,
-        sub.id
+        sub.id,
+        sub.current_period_end
       );
     }
   }

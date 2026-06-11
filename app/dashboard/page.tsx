@@ -175,10 +175,32 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <section className="dashboard-quick-actions" aria-label="Quick actions" style={{ marginTop: 18 }}>
+          <h2 className="sr-only">Quick actions</h2>
+          <div className="dashboard-quick-actions-grid">
+            <Link href="/jobs" className="btn btn-primary">
+              Create job
+            </Link>
+            <Link href="/team" className="btn">
+              Invite team member
+            </Link>
+            <Link href="/jobs" className="btn">
+              View reports
+            </Link>
+            <Link href="/schedule" className="btn">
+              Upcoming work
+            </Link>
+          </div>
+        </section>
+
         <section className="dashboard-glance" aria-label="Operations summary">
           <div className="dashboard-glance-card">
             <span>Open jobs</span>
             <strong>{loading ? '—' : openJobs}</strong>
+          </div>
+          <div className="dashboard-glance-card">
+            <span>Completed jobs</span>
+            <strong>{loading ? '—' : jobs.filter((j) => j.status === 'completed').length}</strong>
           </div>
           <div className="dashboard-glance-card">
             <span>Due in 7 days</span>

@@ -27,6 +27,10 @@ export default function SettingsPage() {
   const [notifyCompletions, setNotifyCompletions] = useState(true);
   const [notifyReports, setNotifyReports] = useState(true);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [timezone, setTimezone] = useState('America/New_York');
+  const [teamSize, setTeamSize] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -66,6 +70,9 @@ export default function SettingsPage() {
           setNotifyDueDates(settings.notification_due_dates ?? true);
           setNotifyCompletions(settings.notification_completions ?? true);
           setNotifyReports(settings.notification_reports ?? true);
+          setTimezone(settings.timezone || 'America/New_York');
+          setTeamSize(settings.team_size || '');
+          setIndustry(settings.industry || '');
         }
       }
 
@@ -85,6 +92,7 @@ export default function SettingsPage() {
 
     setSaving(true);
     setMessage('');
+    setSaveSuccess(false);
 
     const { error } = await supabase
       .from('profiles')
@@ -118,13 +126,17 @@ export default function SettingsPage() {
         notification_assignments: notifyAssignments,
         notification_due_dates: notifyDueDates,
         notification_completions: notifyCompletions,
-        notification_reports: notifyReports
+        notification_reports: notifyReports,
+        timezone: timezone || 'UTC',
+        team_size: teamSize.trim() || null,
+        industry: industry.trim() || null
       });
       await supabase.from('organizations').update({ name: businessName.trim() || 'My Business' }).eq('id', orgId);
     }
 
     setSaving(false);
-    setMessage('Settings saved.');
+    setSaveSuccess(true);
+    setMessage('Settings saved successfully.');
   }
 
   async function uploadLogo(file: File | null) {
@@ -166,20 +178,45 @@ export default function SettingsPage() {
           <Link href="/settings/billing">billing settings</Link> or{' '}
           <Link href="/settings/account">account settings</Link>.
         </p>
-          <input className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-          <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <input className="input" placeholder="Service type" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
+          <label htmlFor="org-name">Organization name</label>
+          <input id="org-name" className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+          <label htmlFor="org-phone">Phone</label>
+          <input id="org-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <label htmlFor="org-website">Website</label>
+          <input id="org-website" className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          <label htmlFor="org-address">Address</label>
+          <input id="org-address" className="input" placeholder="Company address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
+          <label htmlFor="org-industry">Business type</label>
+          <input id="org-industry" className="input" placeholder="e.g. Landscaping, HVAC" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+          <label htmlFor="org-team-size">Employee count</label>
+          <select id="org-team-size" className="input" value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
+            <option value="">Select…</option>
+            <option value="1-5">1–5</option>
+            <option value="6-15">6–15</option>
+            <option value="16-50">16–50</option>
+            <option value="51+">51+</option>
+          </select>
+          <label htmlFor="org-timezone">Timezone</label>
+          <select id="org-timezone" className="input" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+            <option value="America/New_York">Eastern (US)</option>
+            <option value="America/Chicago">Central (US)</option>
+            <option value="America/Denver">Mountain (US)</option>
+            <option value="America/Los_Angeles">Pacific (US)</option>
+            <option value="UTC">UTC</option>
+          </select>
+          <label htmlFor="org-service">Service type</label>
+          <input id="org-service" className="input" placeholder="Service type" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
           <input
             className="input"
             placeholder="External booking URL"
             value={bookingUrl}
             onChange={(e) => setBookingUrl(e.target.value)}
           />
-          <input className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-          <input className="input" placeholder="Company address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
-          <input className="input" placeholder="Email" value={email} disabled />
+          <label htmlFor="org-email">Email</label>
+          <input id="org-email" className="input" placeholder="Email" value={email} disabled />
           <h3>Logo</h3>
-          <input type="file" accept="image/*" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />
+          <input type="file" accept="image/*" aria-label="Upload organization logo" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />
+          {logoUploading ? <p className="loading-state" role="status">Uploading logo…</p> : null}
           <h3>Notification preferences</h3>
           <label>
             <input type="checkbox" checked={notifyAssignments} onChange={(e) => setNotifyAssignments(e.target.checked)} /> Assignments
@@ -202,7 +239,11 @@ export default function SettingsPage() {
           <p style={{ marginTop: 16 }}>
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/disclaimer">Disclaimer</Link>
           </p>
-          {message && <p>{message}</p>}
+          {message && (
+            <p className={saveSuccess ? 'auth-message auth-message-success' : 'auth-message auth-message-error'} role={saveSuccess ? 'status' : 'alert'}>
+              {message}
+            </p>
+          )}
         </div>
     </SettingsShell>
   );

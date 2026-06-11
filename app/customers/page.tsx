@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -35,6 +37,7 @@ export default function CustomersPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [canManage, setCanManage] = useState(false);
+  const [role, setRole] = useState(normalizeRole('owner'));
 
   async function load() {
     setLoading(true);
@@ -49,8 +52,10 @@ export default function CustomersPage() {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+    const userRole = normalizeRole(profile?.role);
     setPlan(normalizePlan(profile?.plan));
-    setCanManage(isManagerRole(normalizeRole(profile?.role)));
+    setRole(userRole);
+    setCanManage(isManagerRole(userRole));
 
     const { data, error } = await supabase
       .from('customers')
@@ -133,13 +138,11 @@ export default function CustomersPage() {
   }, []);
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
+    <AppShell plan={plan} role={role}>
         <div className="page-head">
           <div>
-            <h2>Customers</h2>
-            <p>Customer records linked to your jobs.</p>
+            <h1>Customers</h1>
+            <p className="muted">Customer records linked to your jobs.</p>
           </div>
         </div>
 
@@ -164,9 +167,18 @@ export default function CustomersPage() {
         )}
 
         <div className="card">
-          {loading && <p>Loading customers...</p>}
-          {message && <p>{message}</p>}
-          {!loading && customers.length === 0 && <p>No customers yet.</p>}
+          {loading && <p className="loading-state" role="status">Loading customers…</p>}
+          {message && (
+            <p className="auth-message auth-message-error" role="alert">
+              {friendlyErrorMessage(message)}
+            </p>
+          )}
+          {!loading && customers.length === 0 && (
+            <EmptyState
+              title="No customers yet"
+              description="Add your first customer to link jobs and keep contact details in one place."
+            />
+          )}
           {!loading &&
             customers.map((customer) => (
               <div key={customer.id} className="card" style={{ marginTop: 12 }}>
@@ -183,7 +195,6 @@ export default function CustomersPage() {
               </div>
             ))}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

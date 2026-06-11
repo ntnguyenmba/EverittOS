@@ -60,6 +60,7 @@ function BillingSettingsContent() {
     locations: 0
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState('free');
+  const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -88,6 +89,21 @@ function BillingSettingsContent() {
       setRole(normalizeRole(profile?.role));
       setSubscriptionStatus(profile?.subscription_status || 'free');
       setStripeCustomerId(profile?.stripe_customer_id || '');
+
+      const { data: subscription } = await supabase
+        .from('everittos_subscriptions')
+        .select('current_period_end, status')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (subscription?.current_period_end) {
+        setRenewalDate(subscription.current_period_end);
+      }
+      if (subscription?.status && !profile?.subscription_status) {
+        setSubscriptionStatus(subscription.status);
+      }
 
       const org = await fetchOrganizationContext(user.id);
       const counts = await fetchUsageCounts(user.id, org?.organizationId);
@@ -181,6 +197,14 @@ function BillingSettingsContent() {
           <span className="settings-row-label">Status</span>
           <span className="settings-row-value">{subscriptionStatus}</span>
         </div>
+        {renewalDate ? (
+          <div className="settings-row">
+            <span className="settings-row-label">Renewal date</span>
+            <span className="settings-row-value">
+              {new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+        ) : null}
         <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
 
         {!canBilling ? <p className="muted">Contact your company owner to change billing.</p> : null}

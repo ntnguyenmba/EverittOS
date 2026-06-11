@@ -3,15 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ActivityFeed } from '@/components/activity-feed';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
+import { EmptyState } from '@/components/empty-state';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 export default function ActivityPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
   const [items, setItems] = useState<
     { id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]
   >([]);
@@ -27,9 +30,10 @@ export default function ActivityPage() {
         return;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       const p = normalizePlan(profile?.plan);
       setPlan(p);
+      setRole(normalizeRole(profile?.role));
 
       if (!limitsForPlan(p).activityLog) {
         setLoading(false);
@@ -59,17 +63,30 @@ export default function ActivityPage() {
   const enabled = limitsForPlan(plan).activityLog;
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={plan} />
-      <main className="main">
-        <h2>Activity log</h2>
-        {!enabled && <div className="card">Activity log requires Business, Operations, Growth, or Enterprise.</div>}
-        {enabled && (
-          <div className="card" style={{ marginTop: 18 }}>
+    <AppShell plan={plan} role={role}>
+      <h1>Activity log</h1>
+      <p className="muted">Organization-wide audit trail of jobs, team, and billing events.</p>
+      {!enabled && (
+        <div className="card" style={{ marginTop: 18 }}>
+          Activity log requires Business, Operations, Growth, or Enterprise.
+        </div>
+      )}
+      {enabled && (
+        <div className="card" style={{ marginTop: 18 }}>
+          {loading ? (
+            <p className="loading-state" role="status">
+              Loading activity…
+            </p>
+          ) : items.length === 0 ? (
+            <EmptyState
+              title="No activity yet"
+              description="Job updates, team changes, and report submissions will appear here."
+            />
+          ) : (
             <ActivityFeed items={items} loading={loading} />
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </div>
+      )}
+    </AppShell>
   );
 }

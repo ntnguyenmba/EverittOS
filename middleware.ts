@@ -35,8 +35,8 @@ const AUTH_PREFIXES = [
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 
-const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'manage_team' | 'manage_billing' | 'view_all_org_data' }[] = [
-  { prefix: '/team', permission: 'manage_team' },
+const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
+  { prefix: '/team', permission: 'view_team' },
   { prefix: '/settings/billing', permission: 'manage_billing' },
   { prefix: '/admin', permission: 'view_all_org_data' }
 ];
@@ -147,6 +147,33 @@ export async function middleware(request: NextRequest) {
     login.searchParams.set('reason', 'disabled');
     login.searchParams.set('detail', mapAccessError('disabled').message);
     return redirectWithCookies(login, supabaseResponse);
+  }
+
+  const organizationId = profile.organization_id || null;
+  let resolvedOrgId = organizationId;
+  if (!resolvedOrgId) {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle();
+    resolvedOrgId = membership?.organization_id || null;
+  }
+
+  if (resolvedOrgId && !pathname.startsWith('/onboarding')) {
+    const { data: orgSettings } = await supabase
+      .from('organization_settings')
+      .select('onboarding_completed')
+      .eq('organization_id', resolvedOrgId)
+      .maybeSingle();
+
+    if (orgSettings && orgSettings.onboarding_completed === false) {
+      const onboarding = new URL('/onboarding', request.url);
+      onboarding.searchParams.set('reason', 'setup');
+      return redirectWithCookies(onboarding, supabaseResponse);
+    }
   }
 
   const role = normalizeRole(profile.role);

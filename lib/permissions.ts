@@ -11,6 +11,7 @@ export type Permission =
   | 'view_schedules'
   | 'view_assigned_customers'
   | 'view_assigned_projects'
+  | 'view_team'
   | 'manage_team'
   | 'manage_billing'
   | 'view_all_org_data';
@@ -26,6 +27,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_schedules',
     'view_assigned_customers',
     'view_assigned_projects',
+    'view_team',
     'manage_team',
     'manage_billing',
     'view_all_org_data'
@@ -40,7 +42,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_schedules',
     'view_assigned_customers',
     'view_assigned_projects',
+    'view_team',
     'manage_team',
+    'manage_billing',
     'view_all_org_data'
   ],
   manager: [
@@ -53,7 +57,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_schedules',
     'view_assigned_customers',
     'view_assigned_projects',
-    'manage_team',
+    'view_team',
     'view_all_org_data'
   ],
   employee: [
@@ -117,6 +121,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   view_schedules: 'View schedules',
   view_assigned_customers: 'View assigned customers only',
   view_assigned_projects: 'View assigned projects only',
+  view_team: 'View team directory',
   manage_team: 'Manage team',
   manage_billing: 'Manage billing',
   view_all_org_data: 'View all organization data'

@@ -128,6 +128,7 @@ alter table public.organization_settings add column if not exists website text;
 alter table public.organization_settings add column if not exists onboarding_step int not null default 0;
 alter table public.organization_settings add column if not exists onboarding_completed boolean not null default false;
 alter table public.organization_settings add column if not exists updated_at timestamptz default now();
+alter table public.organization_settings add column if not exists timezone text default 'UTC';
 
 create table if not exists public.organization_members (
   id uuid primary key default gen_random_uuid(),

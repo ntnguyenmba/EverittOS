@@ -65,6 +65,19 @@ export async function POST(request: Request) {
     role
   });
 
+  const { data: actorProfile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
+  const actorName = actorProfile?.full_name || actorProfile?.email || user.email || 'Team member';
+  await admin.from('activity_logs').insert({
+    organization_id: org.organizationId,
+    user_id: user.id,
+    actor_name: actorName,
+    entity_type: 'invitation',
+    entity_id: invite.id,
+    action: 'user_invited',
+    message: `Invited ${email} as ${role}`,
+    metadata: { email, role }
+  });
+
   return NextResponse.json({
     ok: true,
     acceptUrl,
