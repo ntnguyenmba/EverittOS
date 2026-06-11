@@ -17,13 +17,13 @@ function signupRedirect(plan: EverittosPlan, next: string): string {
     if (tier?.stripeLink) return tier.stripeLink;
     return `/billing?plan=${plan}`;
   }
-  return safeNextPath(next, '/onboarding');
+  return safeNextPath(next, '/dashboard');
 }
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeNextPath(searchParams.get('next'), '/onboarding');
+  const next = safeNextPath(searchParams.get('next'), '/dashboard');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
 
   const [email, setEmail] = useState('');
@@ -42,9 +42,9 @@ function SignupForm() {
     setError('');
     setSuccess('');
 
-    if (!businessName.trim() || !email.trim() || !password) {
+    if (!email.trim() || !password) {
       setLoading(false);
-      setError('Please fill in all fields.');
+      setError('Email and password are required.');
       return;
     }
 
@@ -126,14 +126,13 @@ function SignupForm() {
 
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
-          <label htmlFor="business_name">Business name</label>
+          <label htmlFor="business_name">Business or display name (optional)</label>
           <input
             id="business_name"
             className="input"
-            placeholder="Your company name"
+            placeholder="Leave blank for a personal workspace"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            required
           />
         </div>
 

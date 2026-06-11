@@ -45,7 +45,7 @@ export async function POST() {
       ok: true,
       profile: bootstrap.profile,
       created: bootstrap.created,
-      redirectTo: bootstrap.created ? '/onboarding?setup=1' : '/dashboard'
+      redirectTo: '/dashboard'
     });
   } catch (err) {
     const { json } = await createRouteHandlerSupabase();

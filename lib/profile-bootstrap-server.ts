@@ -11,6 +11,7 @@ import {
   updateProfileLink,
   upsertProfileRow
 } from '@/lib/profile-query';
+import { defaultWorkspaceName } from '@/lib/personal-workspace';
 import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -250,11 +251,11 @@ export async function ensureUserWorkspace(
     membership = adminRead.membership;
   }
 
-  const businessName =
-    existing?.business_name?.trim() ||
-    (typeof metadata?.business_name === 'string' ? metadata.business_name.trim() : '') ||
-    normalizedEmail.split('@')[0] ||
-    'My Business';
+  const businessName = defaultWorkspaceName({
+    email: normalizedEmail,
+    businessName: existing?.business_name,
+    metadata
+  });
 
   const selectedPlan = normalizePlan(
     (typeof metadata?.selected_plan === 'string' ? metadata.selected_plan : null) ||
@@ -338,7 +339,14 @@ export async function ensureUserWorkspace(
     };
   }
 
-  await admin.from('organization_settings').upsert({ organization_id: orgId }, { onConflict: 'organization_id' });
+  await admin.from('organization_settings').upsert(
+    {
+      organization_id: orgId,
+      onboarding_step: 0,
+      onboarding_completed: false
+    },
+    { onConflict: 'organization_id' }
+  );
 
   await admin.from('business_profiles').upsert(
     {

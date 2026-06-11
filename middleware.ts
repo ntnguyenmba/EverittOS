@@ -113,50 +113,7 @@ export async function middleware(request: NextRequest) {
   const profileRead = await fetchProfileByUserId(supabase, user.id);
   const profile = profileRead.profile;
 
-  if (profileRead.error) {
-    const onboarding = new URL('/onboarding', request.url);
-    onboarding.searchParams.set(
-      'reason',
-      profileRead.error.toLowerCase().includes('does not exist') ? 'schema' : 'profile'
-    );
-    onboarding.searchParams.set('detail', profileRead.error);
-    return redirectWithCookies(onboarding, supabaseResponse);
-  }
-
-  if (!profile) {
-    if (pathname.startsWith('/onboarding')) {
-      return supabaseResponse;
-    }
-    const onboarding = new URL('/onboarding', request.url);
-    onboarding.searchParams.set('reason', 'profile');
-    onboarding.searchParams.set('detail', mapAccessError('profile').message);
-    return redirectWithCookies(onboarding, supabaseResponse);
-  }
-
-  if (!profile.organization_id) {
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('active', true)
-      .limit(1)
-      .maybeSingle();
-
-    if (!membership) {
-      if (pathname.startsWith('/onboarding')) {
-        return supabaseResponse;
-      }
-      const onboarding = new URL('/onboarding', request.url);
-      onboarding.searchParams.set('reason', 'organization');
-      onboarding.searchParams.set(
-        'detail',
-        'Organization access is missing for this account. Complete workspace setup to continue.'
-      );
-      return redirectWithCookies(onboarding, supabaseResponse);
-    }
-  }
-
-  if (!isAccountActive(profile.account_status)) {
+  if (!isAccountActive(profile?.account_status)) {
     await supabase.auth.signOut();
     const login = new URL('/login', request.url);
     login.searchParams.set('reason', 'disabled');
@@ -166,7 +123,7 @@ export async function middleware(request: NextRequest) {
     return disabledRedirect;
   }
 
-  const organizationId = profile.organization_id || null;
+  const organizationId = profile?.organization_id || null;
   let resolvedOrgId = organizationId;
   if (!resolvedOrgId) {
     const { data: membership } = await supabase
@@ -179,23 +136,13 @@ export async function middleware(request: NextRequest) {
     resolvedOrgId = membership?.organization_id || null;
   }
 
-  if (resolvedOrgId && !pathname.startsWith('/onboarding')) {
-    const { data: orgSettings } = await supabase
-      .from('organization_settings')
-      .select('onboarding_completed')
-      .eq('organization_id', resolvedOrgId)
-      .maybeSingle();
-
-    if (!orgSettings || orgSettings.onboarding_completed === false) {
-      const onboarding = new URL('/onboarding', request.url);
-      onboarding.searchParams.set('reason', 'setup');
-      return redirectWithCookies(onboarding, supabaseResponse);
-    }
-  }
-
-  const role = normalizeRole(profile.role);
-  const userPlan = normalizePlan(await resolveProfilePlan(supabase, user.id, profile));
-  const subscriptionStatus = await resolveProfileSubscriptionStatus(supabase, user.id, profile);
+  const role = normalizeRole(profile?.role || 'owner');
+  const userPlan = profile
+    ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile))
+    : 'free';
+  const subscriptionStatus = profile
+    ? await resolveProfileSubscriptionStatus(supabase, user.id, profile)
+    : 'free';
 
   if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) {
     return roleBlockedRedirect(

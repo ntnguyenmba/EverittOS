@@ -69,7 +69,7 @@ export default function TeamPage() {
     if (!org) {
       setLoading(false);
       setMessageType('error');
-      setMessage('Organization not found. Complete onboarding first.');
+      setMessage('Workspace is still setting up. Refresh the page or open the dashboard to continue.');
       return;
     }
 

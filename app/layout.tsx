@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { SessionGuard } from '@/components/session-guard';
+import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SupabaseRuntimeConfig />
         <SuppressVercelToolbar />
         <SessionGuard />
+        <WorkspaceBootstrap />
         <SkipToMain />
         <SiteChrome />
         {children}

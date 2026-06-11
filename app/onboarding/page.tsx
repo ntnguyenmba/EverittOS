@@ -50,7 +50,11 @@ export default function OnboardingPage() {
       const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
 
-      const org = await fetchOrganizationContext(user.id);
+      let org = await fetchOrganizationContext(user.id);
+      if (!org) {
+        await fetch('/api/auth/setup', { method: 'POST' });
+        org = await fetchOrganizationContext(user.id);
+      }
       if (org) {
         setOrgId(org.organizationId);
         const { data: settings } = await supabase
@@ -100,8 +104,11 @@ export default function OnboardingPage() {
     } = await supabase.auth.getUser();
     if (!user || !orgId) return;
 
-    await supabase.from('organizations').update({ name: companyName.trim() || 'My Company' }).eq('id', orgId);
-    await supabase.from('profiles').update({ business_name: companyName.trim() }).eq('id', user.id);
+    const trimmedName = companyName.trim();
+    if (trimmedName) {
+      await supabase.from('organizations').update({ name: trimmedName }).eq('id', orgId);
+      await supabase.from('profiles').update({ business_name: trimmedName }).eq('id', user.id);
+    }
     await saveStep(1);
     await trackProductEvent('company_created', orgId);
     setStep(1);
@@ -250,8 +257,18 @@ export default function OnboardingPage() {
     <div className="dashboard-shell">
       <Sidebar plan={plan} />
       <main className="main">
-        <h2>Company onboarding</h2>
-        <p className="muted">Step {step + 1} of {STEPS.length}: {STEPS[step]}</p>
+        <div className="page-head">
+          <div>
+            <h2>Company setup (optional)</h2>
+            <p className="muted">
+              Step {step + 1} of {STEPS.length}: {STEPS[step]}. You can finish later from Settings — your dashboard stays
+              available.
+            </p>
+          </div>
+          <Link href="/dashboard" className="btn">
+            Back to dashboard
+          </Link>
+        </div>
         <div className="onboarding-progress">
           <div className="onboarding-progress-bar" style={{ width: `${progress}%` }} />
         </div>
@@ -259,15 +276,31 @@ export default function OnboardingPage() {
         <div className="card form" style={{ marginTop: 18 }}>
           {step === 0 && (
             <>
-              <h3>Create company</h3>
-              <input className="input" placeholder="Company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-              <input className="input" placeholder="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)} />
-              <input className="input" placeholder="Team size" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
-              <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <h3>Company details (optional)</h3>
+              <p className="muted">Solo operator or freelancer? Skip this — we already created a personal workspace for you.</p>
+              <input className="input" placeholder="Company or display name (optional)" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+              <input className="input" placeholder="Industry (optional)" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+              <input className="input" placeholder="Team size (optional)" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} />
+              <input className="input" placeholder="Phone (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
               <input className="input" placeholder="Website (optional)" value={website} onChange={(e) => setWebsite(e.target.value)} />
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={stepCompany}>
-                Continue
-              </button>
+              <div className="settings-actions">
+                <button type="button" className="btn btn-primary" disabled={busy} onClick={stepCompany}>
+                  Save and continue
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    await saveStep(1);
+                    setStep(1);
+                    setBusy(false);
+                  }}
+                >
+                  Skip for now
+                </button>
+              </div>
             </>
           )}
           {step === 1 && (

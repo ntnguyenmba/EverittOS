@@ -217,10 +217,7 @@ export async function POST(request: Request) {
       );
     }
 
-    let redirectTo = defaultPathForRole(profile.role, next);
-    if (bootstrap.created && redirectTo === '/dashboard') {
-      redirectTo = '/onboarding?setup=1';
-    }
+    const redirectTo = defaultPathForRole(profile.role, next);
 
     logAuthEvent('login_success', {
       userId: user.id,

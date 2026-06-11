@@ -171,7 +171,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Company settings" description="Business profile, logo, and notifications.">
+    <SettingsShell
+      plan={plan}
+      title="Company settings"
+      description="Optional business profile, logo, and notifications. Solo operators can skip company details."
+    >
       <div className="settings-card form">
         <p>
           Plan: <strong>{plan}</strong>. Manage subscription on{' '}
@@ -236,6 +240,9 @@ export default function SettingsPage() {
           <button className="btn" type="button" onClick={logout}>
             Log out
           </button>
+          <p style={{ marginTop: 16 }}>
+            <Link href="/onboarding">Complete optional company setup</Link>
+          </p>
           <p style={{ marginTop: 16 }}>
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
             <Link href="/disclaimer">Disclaimer</Link>

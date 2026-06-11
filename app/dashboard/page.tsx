@@ -7,6 +7,7 @@ import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
 import { RoleDashboard } from '@/components/role-dashboard';
 import { AppShell } from '@/components/app-shell';
+import { OnboardingChecklist } from '@/components/onboarding-checklist';
 import { EmptyState } from '@/components/empty-state';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { UsageDashboard } from '@/components/usage-dashboard';
@@ -62,7 +63,9 @@ export default function DashboardPage() {
   const [activityItems, setActivityItems] = useState<
     { id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]
   >([]);
-  const [onboardingPct, setOnboardingPct] = useState(100);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [organizationId, setOrganizationId] = useState('');
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -83,16 +86,16 @@ export default function DashboardPage() {
     const org = await fetchOrganizationContext(user.id);
     setRole(normalizeRole(profile?.role));
     if (org?.organizationId) {
+      setOrganizationId(org.organizationId);
       const { data: settings } = await supabase
         .from('organization_settings')
         .select('onboarding_completed, onboarding_step')
         .eq('organization_id', org.organizationId)
         .maybeSingle();
-      if (settings && !settings.onboarding_completed) {
-        router.push('/onboarding');
-        return;
-      }
-      setOnboardingPct(settings?.onboarding_completed ? 100 : Math.round(((settings?.onboarding_step || 0) / 6) * 100));
+      setOnboardingCompleted(Boolean(settings?.onboarding_completed));
+      setOnboardingStep(settings?.onboarding_step || 0);
+    } else {
+      await fetch('/api/auth/setup', { method: 'POST' });
     }
 
     setPlan(normalizePlan(profile?.plan));
@@ -233,17 +236,13 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {onboardingPct < 100 && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <h3>Onboarding progress</h3>
-            <div className="onboarding-progress">
-              <div className="onboarding-progress-bar" style={{ width: `${onboardingPct}%` }} />
-            </div>
-            <Link href="/onboarding" className="btn btn-primary" style={{ marginTop: 12 }}>
-              Continue setup
-            </Link>
-          </div>
-        )}
+        {organizationId ? (
+          <OnboardingChecklist
+            organizationId={organizationId}
+            step={onboardingStep}
+            completed={onboardingCompleted}
+          />
+        ) : null}
 
         <div className="card" style={{ marginTop: 18 }}>
           <UsageDashboard plan={plan} counts={usage} />
