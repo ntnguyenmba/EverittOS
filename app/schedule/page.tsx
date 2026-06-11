@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
@@ -112,7 +113,10 @@ export default function SchedulePage() {
       <Sidebar plan={plan} />
       <main className="main">
         <h2>Schedule</h2>
-        <p>Calendar, daily, weekly, and upcoming job views.</p>
+        <p>
+          Calendar, daily, weekly, and upcoming job views.{' '}
+          <Link href="/settings/integrations">Connect Google Calendar</Link> to sync scheduled jobs.
+        </p>
 
         {loading && <div className="card">Loading schedule...</div>}
         {error && <div className="card">{error}</div>}

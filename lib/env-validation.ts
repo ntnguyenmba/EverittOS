@@ -83,6 +83,14 @@ export function validateEnvAtStartup(): EnvValidationResult {
     });
   }
 
+  if (!hasValue('GOOGLE_CALENDAR_CLIENT_ID') || !hasValue('GOOGLE_CALENDAR_CLIENT_SECRET')) {
+    issues.push({
+      level: 'info',
+      key: 'GOOGLE_CALENDAR_CLIENT_ID',
+      message: 'Google Calendar OAuth not configured. Integrations page will show setup instructions.'
+    });
+  }
+
   const errors = issues.filter((i) => i.level === 'error');
   const result: EnvValidationResult = { ok: errors.length === 0, issues };
 

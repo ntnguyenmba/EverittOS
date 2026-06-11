@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { syncJobToGoogleCalendar } from '@/lib/google-calendar-sync';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
@@ -73,6 +74,17 @@ export async function POST(request: Request) {
 
   const { error } = await admin.from('jobs').update(update).eq('id', body.jobId).eq('organization_id', org.organizationId);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  try {
+    const { data: settings } = await admin
+      .from('organization_settings')
+      .select('timezone')
+      .eq('organization_id', org.organizationId)
+      .maybeSingle();
+    await syncJobToGoogleCalendar(admin, org.organizationId, body.jobId, settings?.timezone || 'America/New_York');
+  } catch {
+    /* calendar sync failure should not block schedule updates */
+  }
 
   return NextResponse.json({ ok: true });
 }

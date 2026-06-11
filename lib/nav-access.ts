@@ -17,6 +17,7 @@ export type SettingsNavLink = {
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings', label: 'Workspace' },
+  { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Billing' },
   { href: '/settings/security', label: 'Security' },
@@ -75,6 +76,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   return SETTINGS_NAV_LINKS.filter((link) => {
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
+    if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
     if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
     return true;
@@ -93,6 +95,7 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
     return false;
   }
   if (path.startsWith('/settings/departments') && !canManageDepartments(role, normalizedPlan)) return false;
+  if (path.startsWith('/settings/integrations') && !canManageOrganizationSettings(role)) return false;
   if (path.startsWith('/settings/api') && !limitsForPlan(normalizedPlan).apiAccess) return false;
 
   return true;

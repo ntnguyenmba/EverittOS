@@ -1,5 +1,5 @@
 /** Production EverittOS origin (used when env is unset on server). */
-export const PRODUCTION_APP_ORIGIN = 'https://everitt-os.vercel.app';
+export const PRODUCTION_APP_ORIGIN = 'https://app.everittventures.com';
 
 export function safeNextPath(next: string | null | undefined, fallback = '/dashboard'): string {
   if (!next || !next.startsWith('/') || next.startsWith('//')) return fallback;
