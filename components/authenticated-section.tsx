@@ -1,7 +1,7 @@
 'use client';
 
-import { AppBackButton } from '@/components/app-back-button';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
+import { AppPageTop } from '@/components/app-page-top';
 
 type AuthenticatedSectionProps = {
   role?: string | null;
@@ -15,7 +15,7 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
     <main className={className ? `section ${className}` : 'section'}>
       <AppNavigationTracker />
       <div className="container">
-        <AppBackButton role={role} />
+        <AppPageTop role={role} />
         {children}
       </div>
     </main>

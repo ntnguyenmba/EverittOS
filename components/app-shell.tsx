@@ -1,7 +1,7 @@
 'use client';
 
-import { AppBackButton } from '@/components/app-back-button';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
+import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
 import { Sidebar } from '@/components/sidebar';
 import type { EverittosPlan } from '@/lib/everittos-plans';
@@ -24,7 +24,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       </div>
       <Sidebar plan={plan} role={role} />
       <main id="main-content" className="main">
-        {showBackButton ? <AppBackButton role={role} /> : null}
+        <AppPageTop role={role} showBackButton={showBackButton} />
         {children}
       </main>
     </div>
