@@ -154,7 +154,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
       {view === 'day' && (
         <div className="card">
           <h4>{anchor.toLocaleDateString()}</h4>
-          {jobsForDay.length === 0 && <p>No jobs scheduled this day.</p>}
+          {jobsForDay.length === 0 && <p className="muted">No scheduled work yet.</p>}
           {jobsForDay.map((j) => (
             <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}
@@ -186,7 +186,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
       {view === 'list' && (
         <div className="card">
           <h4>Upcoming jobs</h4>
-          {scheduled.length === 0 && <p>No scheduled jobs.</p>}
+          {scheduled.length === 0 && <p className="muted">No scheduled work yet.</p>}
           {scheduled.slice(0, 20).map((j) => (
             <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}

@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -127,6 +129,12 @@ export default function WorkflowsPage() {
                 <button type="button" className="btn btn-primary" onClick={createWorkflow}>
                   Create workflow
                 </button>
+              </div>
+            ) : null}
+
+            {workflows.length === 0 ? (
+              <div className="settings-card">
+                <EmptyState title={EMPTY_COPY.workflows.title} description={EMPTY_COPY.workflows.description} />
               </div>
             ) : null}
 

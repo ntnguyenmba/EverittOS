@@ -15,7 +15,7 @@ type ActivityFeedProps = {
   emptyLabel?: string;
 };
 
-export function ActivityFeed({ items, loading, emptyLabel = 'No activity yet.' }: ActivityFeedProps) {
+export function ActivityFeed({ items, loading, emptyLabel = 'No activity yet' }: ActivityFeedProps) {
   if (loading) return <p>Loading activity...</p>;
   if (items.length === 0) return <p>{emptyLabel}</p>;
 

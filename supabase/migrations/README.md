@@ -19,7 +19,7 @@ Run **once** in the Supabase SQL Editor:
 
 - [`../everittos_full_setup.sql`](../everittos_full_setup.sql) — full idempotent schema (profiles, business_profiles, organizations, plan limits, launch tables, RLS, storage). Safe on empty projects and projects with a broken partial `business_profiles` table missing `user_id`.
 
-Optional demo data after creating a demo auth user: [`../demo_seed.sql`](../demo_seed.sql) (see [`../../docs/DEMO_SEED.md`](../../docs/DEMO_SEED.md)).
+Optional **manual** demo data for a dedicated demo auth user only (never for production signups): [`../demo_seed.sql`](../demo_seed.sql) (see [`../../docs/DEMO_SEED.md`](../../docs/DEMO_SEED.md)). New accounts must start with a clean workspace.
 
 ## Incremental migrations
 

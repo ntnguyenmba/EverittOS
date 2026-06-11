@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -174,10 +175,7 @@ export default function CustomersPage() {
             </p>
           )}
           {!loading && customers.length === 0 && (
-            <EmptyState
-              title="No customers yet"
-              description="Add your first customer to link jobs and keep contact details in one place."
-            />
+            <EmptyState title={EMPTY_COPY.customers.title} description={EMPTY_COPY.customers.description} />
           )}
           {!loading &&
             customers.map((customer) => (

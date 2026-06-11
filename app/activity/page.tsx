@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ActivityFeed } from '@/components/activity-feed';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -78,10 +79,7 @@ export default function ActivityPage() {
               Loading activity…
             </p>
           ) : items.length === 0 ? (
-            <EmptyState
-              title="No activity yet"
-              description="Job updates, team changes, and report submissions will appear here."
-            />
+            <EmptyState title={EMPTY_COPY.activity.title} description={EMPTY_COPY.activity.description} />
           ) : (
             <ActivityFeed items={items} loading={loading} />
           )}

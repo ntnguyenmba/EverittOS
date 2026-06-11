@@ -43,7 +43,6 @@ export function Nav() {
           <Link href="/product">Product</Link>
           <Link href="/industries">Industries</Link>
           <Link href="/pricing">Pricing</Link>
-          <Link href="/demo">Demo</Link>
         </nav>
 
         <div className="nav-actions">

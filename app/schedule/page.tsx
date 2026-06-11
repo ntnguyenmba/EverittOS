@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/empty-state';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
 import { Sidebar } from '@/components/sidebar';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -114,7 +116,12 @@ export default function SchedulePage() {
 
         {loading && <div className="card">Loading schedule...</div>}
         {error && <div className="card">{error}</div>}
-        {!loading && !error && (
+        {!loading && !error && jobs.length === 0 && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <EmptyState title={EMPTY_COPY.schedule.title} description={EMPTY_COPY.schedule.description} />
+          </div>
+        )}
+        {!loading && !error && jobs.length > 0 && (
           <div className="card" style={{ marginTop: 18 }}>
             <ScheduleViews
               jobs={jobs}

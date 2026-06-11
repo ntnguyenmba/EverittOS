@@ -37,18 +37,21 @@ export default function HomePage() {
               <div className="preview-main">
                 <div className="stat-grid">
                   <div className="stat">
-                    <strong>12</strong>
+                    <strong>0</strong>
                     <p>Open jobs</p>
                   </div>
                   <div className="stat">
-                    <strong>4</strong>
-                    <p>Due this week</p>
+                    <strong>0</strong>
+                    <p>Scheduled</p>
                   </div>
                   <div className="stat">
-                    <strong>28</strong>
+                    <strong>0</strong>
                     <p>Completed</p>
                   </div>
                 </div>
+                <p className="muted" style={{ marginTop: 12, fontSize: 13 }}>
+                  Every account starts with a clean workspace — add real jobs as you go.
+                </p>
               </div>
             </div>
           </div>

@@ -1,4 +1,6 @@
--- EverittOS demo seed for investor walkthrough
+-- EverittOS manual demo seed (development / investor walkthrough only).
+-- NEVER run this in production for new signups. It inserts fake customers, workers, and jobs.
+-- New accounts must start with a clean workspace via normal signup bootstrap only.
 -- Run manually in Supabase SQL editor. Do NOT run automatically in production.
 
 -- Replace with your demo owner auth user id after creating a demo account in Supabase Auth.

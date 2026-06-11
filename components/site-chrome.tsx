@@ -8,7 +8,6 @@ const MARKETING_PATHS = new Set([
   '/product',
   '/industries',
   '/pricing',
-  '/demo',
   '/terms',
   '/privacy',
   '/cookies',

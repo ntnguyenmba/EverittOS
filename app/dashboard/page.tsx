@@ -9,6 +9,7 @@ import { RoleDashboard } from '@/components/role-dashboard';
 import { AppShell } from '@/components/app-shell';
 import { OnboardingChecklist } from '@/components/onboarding-checklist';
 import { EmptyState } from '@/components/empty-state';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { JobCreator } from '@/components/job-creator';
@@ -312,10 +313,7 @@ export default function DashboardPage() {
                 </p>
               ) : null}
               {!loading && !errorMessage && jobs.length === 0 ? (
-                <EmptyState
-                  title="No jobs yet"
-                  description="Create your first job to start tracking field work."
-                />
+                <EmptyState title={EMPTY_COPY.jobs.title} description={EMPTY_COPY.jobs.description} />
               ) : null}
               {!loading &&
                 !errorMessage &&

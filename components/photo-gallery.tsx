@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/empty-state';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
 
@@ -68,10 +69,7 @@ export function PhotoGallery({ jobId, refreshKey = 0 }: PhotoGalleryProps) {
   }
   if (photos.length === 0) {
     return (
-      <EmptyState
-        title="No photos yet"
-        description="Upload before and after photos below to document completed work."
-      />
+      <EmptyState title={EMPTY_COPY.photos.title} description={EMPTY_COPY.photos.description} />
     );
   }
 

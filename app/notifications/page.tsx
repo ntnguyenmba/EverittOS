@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
@@ -113,10 +114,7 @@ export default function NotificationsPage() {
           </p>
         ) : null}
         {!loading && !error && items.length === 0 ? (
-          <EmptyState
-            title="No notifications yet"
-            description="You'll see job assignments, report submissions, and team updates here."
-          />
+          <EmptyState title={EMPTY_COPY.notifications.title} description={EMPTY_COPY.notifications.description} />
         ) : null}
         {items.map((n) => (
           <div key={n.id} className={`list-row${!n.read_at ? ' list-row-unread' : ''}`}>
