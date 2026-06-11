@@ -2,7 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Inter } from 'next/font/google';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
+import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
+import { vercelDeploymentEnv } from '@/lib/deployment-env';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-display' });
@@ -21,10 +23,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const deployment = vercelDeploymentEnv();
+
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang="en" data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}>
       <body>
         <SupabaseRuntimeConfig />
+        <SuppressVercelToolbar />
         <SkipToMain />
         <SiteChrome />
         {children}

@@ -1219,6 +1219,15 @@ p { color: var(--muted); line-height: 1.7; }
   color: var(--text-on-dark);
 }
 
+/* Hide Vercel platform toolbar on production (see components/suppress-vercel-toolbar.tsx). */
+html[data-deployment='production'] vercel-live-feedback,
+html[data-deployment='production'] [data-vercel-toolbar],
+html[data-deployment='production'] #vercel-toolbar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @media print {
   .sidebar,
   .no-print,
