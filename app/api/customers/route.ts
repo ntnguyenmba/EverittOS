@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const ctx = await requireWorkspaceSession({ requireManager: true });
+  const ctx = await requireWorkspaceSession({ requireManager: true, requireCompany: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }

@@ -28,5 +28,18 @@ export async function ensureOrganizationForUser(userId: string): Promise<ClientW
 
 /** Client helper before workspace-scoped saves — runs bootstrap repair when needed. */
 export async function ensureWorkspaceForSave(userId: string): Promise<ClientWorkspace | null> {
-  return ensureOrganizationForUser(userId);
+  let org = await ensureOrganizationForUser(userId);
+  if (org?.organizationId) return org;
+
+  try {
+    const res = await fetch('/api/workspace/ensure', { method: 'POST' });
+    if (res.ok) {
+      org = await fetchOrganizationContext(userId);
+      if (org?.organizationId) return org;
+    }
+  } catch {
+    /* retry on next action */
+  }
+
+  return fetchOrganizationContext(userId);
 }

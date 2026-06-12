@@ -15,10 +15,8 @@ export type ActivityEventType =
   | 'invoice_created'
   | 'invoice_paid'
   | 'subscription_changed'
-  | 'job_created'
   | 'job_edited'
   | 'job_updated'
-  | 'job_assigned'
   | 'customer_created'
   | 'worker_assigned'
   | 'worker_removed'
@@ -54,6 +52,36 @@ export async function logActivityServer(input: LogActivityInput): Promise<void> 
     action: input.action,
     message: input.message,
     metadata: input.metadata || {}
+  });
+}
+
+export async function logWorkspaceActivity(
+  organizationId: string,
+  userId: string,
+  entityType: string,
+  entityId: string | null,
+  action: ActivityEventType | string,
+  message: string,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  const admin = createAdminSupabase();
+  if (!admin) return;
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('business_name')
+    .eq('id', userId)
+    .maybeSingle();
+
+  await logActivityServer({
+    organizationId,
+    userId,
+    actorName: profile?.business_name?.trim() || 'Team member',
+    entityType,
+    entityId,
+    action,
+    message,
+    metadata
   });
 }
 

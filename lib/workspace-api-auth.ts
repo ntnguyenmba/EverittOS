@@ -19,6 +19,7 @@ export type WorkspaceSessionContext =
 
 export async function requireWorkspaceSession(options?: {
   requireManager?: boolean;
+  requireCompany?: boolean;
 }): Promise<WorkspaceSessionContext> {
   const supabase = await createServerSupabase();
   const {
@@ -32,7 +33,8 @@ export async function requireWorkspaceSession(options?: {
   const workspaceResult = await getCurrentWorkspaceForUser(supabase, user.id, {
     email: user.email || '',
     userMetadata: user.user_metadata || undefined,
-    repair: true
+    repair: true,
+    requireCompany: options?.requireCompany
   });
 
   if (!workspaceResult.ok) {

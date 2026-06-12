@@ -79,24 +79,23 @@ async function createCompanyRecord(
 ): Promise<string | null> {
   const label = businessName?.trim() || 'My Business';
 
-  const ownerInsert = await admin
-    .from('companies')
-    .insert({ owner_id: ownerUserId, company_name: label })
-    .select('id')
-    .single();
+  const attempts: Record<string, string>[] = [
+    { owner_id: ownerUserId, company_name: label },
+    { user_id: userId, name: label },
+    { owner_id: ownerUserId, name: label },
+    { user_id: userId, company_name: label },
+    { owner_id: ownerUserId },
+    { user_id: userId }
+  ];
 
-  if (!ownerInsert.error && ownerInsert.data?.id) {
-    return ownerInsert.data.id;
-  }
-
-  const userInsert = await admin
-    .from('companies')
-    .insert({ user_id: userId, name: label })
-    .select('id')
-    .single();
-
-  if (!userInsert.error && userInsert.data?.id) {
-    return userInsert.data.id;
+  for (const row of attempts) {
+    const { data, error } = await admin.from('companies').insert(row).select('id').single();
+    if (!error && data?.id) {
+      return data.id;
+    }
+    if (error && isMissingRelationOrColumn(error.message)) {
+      return null;
+    }
   }
 
   return null;
@@ -119,6 +118,12 @@ export async function resolveCompanyIdForUser(
   if (companyId) return companyId;
 
   companyId = await createCompanyRecord(admin, userId, ownerUserId, businessName);
+  if (!companyId) {
+    const { data: rpcId, error: rpcError } = await admin.rpc('ensure_user_company', { p_user_id: userId });
+    if (!rpcError && rpcId) {
+      companyId = rpcId as string;
+    }
+  }
   if (!companyId) return null;
 
   await linkProfileCompanyId(admin, userId, companyId);
@@ -135,7 +140,12 @@ export async function customersRequireCompanyId(admin: SupabaseClient): Promise<
 export async function getCurrentWorkspaceForUser(
   supabase: SupabaseClient,
   userId: string,
-  options?: { email?: string; userMetadata?: Record<string, unknown>; repair?: boolean }
+  options?: {
+    email?: string;
+    userMetadata?: Record<string, unknown>;
+    repair?: boolean;
+    requireCompany?: boolean;
+  }
 ): Promise<WorkspaceResult> {
   let org = await fetchOrganizationContextForRequest(supabase, userId);
 
@@ -185,11 +195,12 @@ export async function getCurrentWorkspaceForUser(
         profile?.business_name
       );
 
-      if (!companyId) {
+      if (!companyId && options?.requireCompany) {
         return {
           ok: false,
           status: 409,
-          error: 'Your workspace company record could not be created. Contact support if this continues.',
+          error:
+            'We could not finish workspace setup for customer records. Refresh the page or contact support if this continues.',
           code: 'company_missing'
         };
       }
@@ -221,8 +232,8 @@ export function workspaceScopedFields(
 
 export function mapWorkspaceSaveError(message: string, fallback = 'Unable to save. Try again.'): string {
   const lower = message.toLowerCase();
-  if (lower.includes('company_id') && lower.includes('not-null')) {
-    return 'Your workspace company record is missing. Sign out, sign back in, and try again.';
+  if (lower.includes('company_id')) {
+    return 'Workspace setup is still finishing. Refresh the page and try again.';
   }
   if (lower.includes('organization_id') && lower.includes('not-null')) {
     return 'Workspace setup is still finishing. Refresh and try again.';

@@ -41,6 +41,7 @@ function JobsList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -91,6 +92,19 @@ function JobsList() {
     load();
   }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter]);
 
+  async function removeJob(job: Job) {
+    if (!window.confirm(`Remove job "${job.title}"?`)) return;
+    setRemovingId(job.id);
+    const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+    setRemovingId('');
+    if (!res.ok) {
+      const json = await res.json();
+      window.alert(json.error || 'Unable to remove job.');
+      return;
+    }
+    setJobs((rows) => rows.filter((row) => row.id !== job.id));
+  }
+
   return (
     <AppShell plan={plan}>
         <PageHeader
@@ -132,10 +146,18 @@ function JobsList() {
                     <td>
                       <StatusPill status={job.status} />
                     </td>
-                    <td>
-                      <Link className="btn" href={`/jobs/${job.id}`}>
+                    <td className="table-actions">
+                      <Link className="btn btn-sm" href={`/jobs/${job.id}`}>
                         Open
                       </Link>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        disabled={removingId === job.id}
+                        onClick={() => void removeJob(job)}
+                      >
+                        {removingId === job.id ? 'Removing…' : 'Remove'}
+                      </button>
                     </td>
                   </tr>
                 ))}

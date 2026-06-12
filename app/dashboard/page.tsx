@@ -12,8 +12,6 @@ import { PageHeader } from '@/components/page-header';
 import { todayIso, daysAheadIso } from '@/lib/date-filters';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
-import { limitsForPlan } from '@/lib/everittos-limits';
-import { billingUpgradeHref } from '@/lib/nav-access';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -21,7 +19,6 @@ import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
-import { workspaceBusinessName } from '@/lib/workspace-display';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -60,7 +57,6 @@ export default function DashboardPage() {
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
-  const [businessName, setBusinessName] = useState('');
   const [orgId, setOrgId] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,13 +80,12 @@ export default function DashboardPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('plan, role, business_name')
+      .select('plan, role')
       .eq('id', user.id)
       .maybeSingle();
     const org = await ensureOrganizationForUser(user.id);
     const userPlan = normalizePlan(profile?.plan);
     setRole(normalizeRole(profile?.role));
-    setBusinessName(workspaceBusinessName(profile) || '');
     setOrgId(org?.organizationId || '');
     setPlan(userPlan);
 
@@ -197,24 +192,7 @@ export default function DashboardPage() {
     [jobs, today, upcomingEnd]
   );
 
-  function workersHref(): string {
-    if (!limitsForPlan(plan).crewAssignment) {
-      return billingUpgradeHref('business', t('dashboard.actions.workers'));
-    }
-    return '/workers';
-  }
-
-  const welcomeTitle = businessName || t('dashboard.welcome');
-  const welcomeSubtitle = businessName ? t('dashboard.subtitleToday') : t('dashboard.subtitle');
   const showSetupSupportCard = !loading && (totalCustomers === 0 || totalJobs === 0 || totalWorkers === 0);
-
-  const coreActions = [
-    { key: 'newJob', href: null, onClick: () => setShowNewJob(true), primary: true },
-    { key: 'schedule', href: '/schedule', onClick: null, primary: false },
-    { key: 'customers', href: '/customers', onClick: null, primary: false },
-    { key: 'workers', href: workersHref(), onClick: null, primary: false },
-    { key: 'billing', href: '/settings/billing', onClick: null, primary: false }
-  ] as const;
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -230,8 +208,8 @@ export default function DashboardPage() {
 
       <div className="today-page">
         <PageHeader
-          title={welcomeTitle}
-          subtitle={welcomeSubtitle}
+          title={t('dashboard.welcome')}
+          subtitle={t('dashboard.subtitle')}
           action={
             <button type="button" className="btn btn-primary" onClick={() => setShowNewJob((v) => !v)}>
               {t('dashboard.newJob')}
@@ -252,36 +230,6 @@ export default function DashboardPage() {
             )}
           </p>
         ) : null}
-
-        <section aria-label={t('dashboard.primaryActions')}>
-          <h2 className="section-heading">{t('dashboard.primaryActions')}</h2>
-          <div className="quick-actions-grid">
-            {coreActions.map((action) => {
-              const label = t(`dashboard.actions.${action.key}`);
-              if (action.onClick) {
-                return (
-                  <button
-                    key={action.key}
-                    type="button"
-                    className={action.primary ? 'quick-action-tile quick-action-tile-primary' : 'quick-action-tile'}
-                    onClick={action.onClick}
-                  >
-                    {label}
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={action.key}
-                  href={action.href || '/dashboard'}
-                  className={action.primary ? 'quick-action-tile quick-action-tile-primary' : 'quick-action-tile'}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
 
         {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
 

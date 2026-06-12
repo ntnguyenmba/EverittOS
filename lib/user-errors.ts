@@ -33,8 +33,8 @@ export function friendlyErrorMessage(raw: string | null | undefined, fallback = 
     return 'You do not have permission to perform this action.';
   }
 
-  if (lower.includes('company_id') && lower.includes('not-null')) {
-    return 'Your workspace company record is missing. Sign out, sign back in, and try again.';
+  if (lower.includes('company_id')) {
+    return 'Workspace setup is still finishing. Refresh the page and try again.';
   }
 
   return raw;

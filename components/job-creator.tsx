@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
@@ -11,14 +10,13 @@ import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { validatePlanAction } from '@/lib/plan-validate';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 
 type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
 };
 
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
-  const router = useRouter();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -58,7 +56,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const org = await ensureOrganizationForUser(user.id);
+    const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setLoading(false);
       setFeedback(
@@ -100,7 +98,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         status: 'new'
       })
     });
-    const createJson = (await createRes.json()) as { job?: { id: string }; error?: string };
+    const createJson = (await createRes.json()) as { job?: { id: string }; error?: string; message?: string };
 
     setLoading(false);
 
@@ -122,9 +120,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       body: JSON.stringify({ jobId: createdJob.id })
     });
 
-    setFeedback(successFeedback('Job saved successfully.'));
+    setTitle('');
+    setAddress('');
+    setCustomerName('');
+    setPhone('');
+    setNotes('');
+    setFeedback(successFeedback(createJson.message || 'Job saved successfully.'));
     onJobCreated?.(createdJob.id);
-    router.push(`/jobs/${createdJob.id}`);
   }
 
   if (permissionBlocked) {

@@ -30,8 +30,8 @@ export async function logClientActivity(
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
-  const actorName = profile?.full_name || profile?.email || user.email || 'Team member';
+  const { data: profile } = await supabase.from('profiles').select('business_name').eq('id', user.id).maybeSingle();
+  const actorName = profile?.business_name?.trim() || 'Team member';
 
   await supabase.from('activity_logs').insert({
     organization_id: organizationId,
