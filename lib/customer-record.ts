@@ -4,7 +4,7 @@
  */
 
 export const CUSTOMER_LIST_SELECT =
-  'id, company_name, phone, email, address, notes, pipeline_stage, lead_source, record_type, created_at, organization_id, user_id, updated_at, deal_value';
+  'id, company_name, phone, email, address, notes, logo_path, pipeline_stage, lead_source, record_type, created_at, organization_id, user_id, updated_at, deal_value';
 
 export const CUSTOMER_SEARCH_SELECT = 'id, company_name, email';
 
@@ -21,6 +21,7 @@ export type CustomerRecord = {
   lead_source?: string | null;
   record_type?: string | null;
   deal_value?: number | null;
+  logo_path?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -50,8 +51,11 @@ export type CustomerWriteInput = {
 };
 
 export function buildCustomerWritePayload(input: CustomerWriteInput): Record<string, unknown> {
+  const label = input.displayName.trim();
   return {
-    company_name: input.displayName.trim(),
+    company_name: label,
+    // Legacy production column may still be NOT NULL.
+    name: label,
     phone: input.phone?.trim() || null,
     email: input.email?.trim() || null,
     address: input.address?.trim() || null,
@@ -64,7 +68,11 @@ export function buildCustomerWritePayload(input: CustomerWriteInput): Record<str
 
 export function buildCustomerUpdatePayload(input: Partial<CustomerWriteInput>): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
-  if (input.displayName !== undefined) payload.company_name = input.displayName.trim();
+  if (input.displayName !== undefined) {
+    const label = input.displayName.trim();
+    payload.company_name = label;
+    payload.name = label;
+  }
   if (input.phone !== undefined) payload.phone = input.phone?.trim() || null;
   if (input.email !== undefined) payload.email = input.email?.trim() || null;
   if (input.address !== undefined) payload.address = input.address?.trim() || null;

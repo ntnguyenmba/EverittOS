@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { CustomerLogo } from '@/components/customer-logo';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -13,7 +14,9 @@ import {
   customerDisplayName,
   type CustomerRecord
 } from '@/lib/customer-record';
+import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -36,6 +39,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [propName, setPropName] = useState('');
   const [propAddress, setPropAddress] = useState('');
   const [message, setMessage] = useState('');
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     setEmail(customer.email || '');
     setAddress(customer.address || '');
     setNotes(customer.notes || '');
+    setLogoPath((customer as CustomerRecord).logo_path || null);
 
     const org = await fetchOrganizationContext(user.id);
     const orgId = org?.organizationId || customer.organization_id;
@@ -118,6 +124,36 @@ export default function CustomerDetailPage({ params }: PageProps) {
     load();
   }, [customerId]);
 
+  async function uploadLogo(file: File | null) {
+    if (!file || !canEdit || !customerId) return;
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const org = await ensureOrganizationForUser(user.id);
+    if (!org?.organizationId) {
+      setMessage('Workspace is not ready yet. Refresh and try again.');
+      return;
+    }
+
+    setLogoUploading(true);
+    const { path, error } = await uploadCustomerLogo(supabase, org.organizationId, customerId, file);
+    if (error || !path) {
+      setLogoUploading(false);
+      setMessage(error || 'Logo upload failed.');
+      return;
+    }
+
+    const { error: updateError } = await supabase.from('customers').update({ logo_path: path }).eq('id', customerId);
+    setLogoUploading(false);
+    if (updateError) {
+      setMessage(updateError.message);
+      return;
+    }
+    setLogoPath(path);
+    setMessage('Logo saved.');
+  }
+
   async function saveCustomer() {
     if (!canEdit) return;
     const { error } = await supabase
@@ -166,7 +202,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
   return (
     <AppShell plan={plan}>
-        <div className="page-head">
+        <div className="page-head customer-card-row">
+          <CustomerLogo logoPath={logoPath} alt={displayName} size={56} />
           <h2>{displayName}</h2>
           <Link className="btn" href="/customers">
             Back
@@ -184,9 +221,22 @@ export default function CustomerDetailPage({ params }: PageProps) {
             <input className="input" value={address} disabled={!canEdit} onChange={(e) => setAddress(e.target.value)} />
             <textarea className="input" rows={4} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} />
             {canEdit && (
-              <button type="button" className="btn btn-primary" onClick={saveCustomer}>
-                Save
-              </button>
+              <>
+                <label className="auth-field">
+                  <span>Logo</span>
+                  <input
+                    className="input"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={logoUploading}
+                    onChange={(e) => void uploadLogo(e.target.files?.[0] || null)}
+                  />
+                </label>
+                {logoUploading ? <p className="loading-state" role="status">Uploading logo…</p> : null}
+                <button type="button" className="btn btn-primary" onClick={saveCustomer}>
+                  Save
+                </button>
+              </>
             )}
           </div>
 

@@ -6,6 +6,7 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
+import { resolveOrgLogoUrl } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ export default function BrandingSettingsPage() {
   const [primaryColor, setPrimaryColor] = useState('#2D3748');
   const [secondaryColor, setSecondaryColor] = useState('#3A4658');
   const [logoPath, setLogoPath] = useState('');
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,7 +64,9 @@ export default function BrandingSettingsPage() {
       setSupportEmail(settings?.company_email || user.email || '');
       setPrimaryColor(settings?.brand_primary_color || '#2D3748');
       setSecondaryColor(settings?.brand_accent_color || '#3A4658');
-      setLogoPath(settings?.logo_path || '');
+      const path = settings?.logo_path || '';
+      setLogoPath(path);
+      setLogoPreviewUrl(path ? await resolveOrgLogoUrl(supabase, path) : null);
       setLoading(false);
     }
     load();
@@ -102,6 +106,7 @@ export default function BrandingSettingsPage() {
     }
     setLogoPath(path);
     await supabase.from('organization_settings').upsert({ organization_id: orgId, logo_path: path });
+    setLogoPreviewUrl(await resolveOrgLogoUrl(supabase, path));
     setMessage('Logo uploaded.');
   }
 
@@ -159,7 +164,11 @@ export default function BrandingSettingsPage() {
             }}
           />
         </label>
-        {logoPath ? <p className="muted">Current logo: {logoPath}</p> : null}
+        {logoPreviewUrl ? (
+          <img src={logoPreviewUrl} alt="Company logo preview" className="customer-logo-preview" width={96} height={96} />
+        ) : logoPath ? (
+          <p className="muted">Logo saved. Refresh if preview does not appear.</p>
+        ) : null}
         <p className="muted">Branding applies to the client portal, PDF reports, invite emails, and the dashboard header.</p>
         <button type="submit" className="btn btn-primary" disabled={saving}>
           {saving ? 'Saving…' : 'Save branding'}

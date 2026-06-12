@@ -18,6 +18,7 @@ import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -79,15 +80,11 @@ export default function DashboardPage() {
 
     setPlan(userPlan);
 
-    let jobsQuery = supabase
-      .from('jobs')
-      .select('id, title, status, start_date, due_date')
-      .order('created_at', { ascending: false });
-    if (org?.organizationId) {
-      jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
-    } else {
-      jobsQuery = jobsQuery.eq('user_id', user.id);
-    }
+    let jobsQuery = scopeJobsForWorkspace(
+      supabase.from('jobs').select('id, title, status, start_date, due_date').order('created_at', { ascending: false }),
+      user.id,
+      org?.organizationId
+    );
 
     const [jobsRes, orgIsDemo] = await Promise.all([jobsQuery, fetchOrganizationIsDemo(supabase, org?.organizationId)]);
 
@@ -196,7 +193,6 @@ export default function DashboardPage() {
             <JobCreator
               onJobCreated={() => {
                 setShowNewJob(false);
-                void loadDashboard();
               }}
             />
           </section>

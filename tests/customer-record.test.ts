@@ -25,11 +25,11 @@ test('buildCustomerWritePayload uses company_name', () => {
     lead_source: 'manual'
   });
   assert.equal(payload.company_name, 'Riverfront');
-  assert.equal('name' in payload, false);
+  assert.equal(payload.name, 'Riverfront');
   assert.equal(payload.record_type, 'lead');
 });
 
 test('buildCustomerUpdatePayload maps displayName to company_name', () => {
   const payload = buildCustomerUpdatePayload({ displayName: 'Updated label' });
-  assert.deepEqual(payload, { company_name: 'Updated label' });
+  assert.deepEqual(payload, { company_name: 'Updated label', name: 'Updated label' });
 });

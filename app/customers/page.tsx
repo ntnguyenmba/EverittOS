@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { CustomerLogo } from '@/components/customer-logo';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
-import { friendlyErrorMessage } from '@/lib/user-errors';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedCustomers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -23,8 +25,10 @@ import {
   customerDisplayName,
   type CustomerRecord
 } from '@/lib/customer-record';
+import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { monthStartIso } from '@/lib/date-filters';
 import { supabase } from '@/lib/supabase';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 function CustomersPageContent() {
   const router = useRouter();
@@ -41,13 +45,15 @@ function CustomersPageContent() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [role, setRole] = useState(normalizeRole('owner'));
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    setMessage('');
+    setFeedback(null);
 
     const {
       data: { user }
@@ -87,31 +93,50 @@ function CustomersPageContent() {
 
     setLoading(false);
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       return;
     }
     setCustomers(filterDemoSeedCustomers(data || [], orgIsDemo));
   }
 
+  function onLogoSelected(file: File | null) {
+    setLogoFile(file);
+    if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    setLogoPreviewUrl(file ? URL.createObjectURL(file) : null);
+  }
+
   async function addCustomer() {
-    if (!displayName.trim() || saving) return;
+    if (!displayName.trim()) {
+      setFeedback(errorFeedback('Enter a customer name first.'));
+      return;
+    }
+    if (saving) return;
 
     const {
       data: { user }
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push('/login?next=/customers');
+      return;
+    }
 
     setSaving(true);
-    setMessage('');
+    setFeedback(null);
 
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
+    if (!org?.organizationId) {
+      setSaving(false);
+      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
+      return;
+    }
+
     const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
     const usage = await fetchUsageCounts(user.id, org?.organizationId);
     const check = validatePlanAction({ plan: orgPlan, resource: 'customers', currentCount: usage.customers });
 
     if (!check.allowed) {
       setSaving(false);
-      setMessage(check.message || limitMessage('customers', orgPlan));
+      setFeedback(errorFeedback(check.message || limitMessage('customers', orgPlan)));
       return;
     }
 
@@ -123,38 +148,71 @@ function CustomersPageContent() {
     const serverJson = await serverCheck.json();
     if (!serverJson.allowed) {
       setSaving(false);
-      setMessage(serverJson.message || 'Plan limit reached.');
+      setFeedback(errorFeedback(serverJson.message || 'Plan limit reached.'));
       return;
     }
 
-    const { error } = await supabase.from('customers').insert({
-      user_id: user.id,
-      organization_id: org?.organizationId || null,
-      ...buildCustomerWritePayload({
-        displayName,
-        phone,
-        email,
-        address,
-        notes
+    const { data: createdCustomer, error } = await supabase
+      .from('customers')
+      .insert({
+        user_id: user.id,
+        organization_id: org.organizationId,
+        ...buildCustomerWritePayload({
+          displayName,
+          phone,
+          email,
+          address,
+          notes
+        })
       })
-    });
-
-    setSaving(false);
+      .select('id')
+      .single();
 
     if (error) {
+      setSaving(false);
       if (error.message.includes('PLAN_LIMIT_CUSTOMERS')) {
-        setMessage(limitMessage('customers', orgPlan));
+        setFeedback(errorFeedback(limitMessage('customers', orgPlan)));
       } else {
-        setMessage(error.message);
+        setFeedback(errorFeedback(formatSupabaseError(error)));
       }
       return;
     }
 
+    if (logoFile && createdCustomer?.id) {
+      const { path, error: uploadError } = await uploadCustomerLogo(
+        supabase,
+        org.organizationId,
+        createdCustomer.id,
+        logoFile
+      );
+      if (uploadError) {
+        setSaving(false);
+        setFeedback(errorFeedback(`Customer saved, but logo upload failed: ${uploadError}`));
+        load();
+        return;
+      }
+      if (path) {
+        const { error: logoUpdateError } = await supabase
+          .from('customers')
+          .update({ logo_path: path })
+          .eq('id', createdCustomer.id);
+        if (logoUpdateError) {
+          setSaving(false);
+          setFeedback(errorFeedback(`Customer saved, but logo could not be linked: ${logoUpdateError.message}`));
+          load();
+          return;
+        }
+      }
+    }
+
+    setSaving(false);
+    setFeedback(successFeedback(logoFile ? 'Customer and logo saved.' : 'Customer saved.'));
     setDisplayName('');
     setPhone('');
     setEmail('');
     setAddress('');
     setNotes('');
+    onLogoSelected(null);
     load();
   }
 
@@ -180,6 +238,18 @@ function CustomersPageContent() {
             <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
             <textarea className="input" rows={3} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <label className="auth-field">
+              <span>Logo (optional)</span>
+              <input
+                className="input"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => onLogoSelected(e.target.files?.[0] || null)}
+              />
+            </label>
+            {logoPreviewUrl ? (
+              <img src={logoPreviewUrl} alt="Logo preview" className="customer-logo-preview" width={72} height={72} />
+            ) : null}
             <button className="btn btn-primary" type="button" onClick={addCustomer} disabled={saving}>
               {saving ? 'Saving...' : 'Save customer'}
             </button>
@@ -188,17 +258,15 @@ function CustomersPageContent() {
 
         <div className="card">
           {loading && <p className="loading-state" role="status">Loading customers…</p>}
-          {message && (
-            <p className="auth-message auth-message-error" role="alert">
-              {friendlyErrorMessage(message)}
-            </p>
-          )}
+          <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
           {!loading && customers.length === 0 && (
             <LocalizedEmptyState emptyKey="customers" />
           )}
           {!loading &&
             customers.map((customer) => (
-              <div key={customer.id} className="card" style={{ marginTop: 12 }}>
+              <div key={customer.id} className="card customer-card-row" style={{ marginTop: 12 }}>
+                <CustomerLogo logoPath={customer.logo_path} alt={customerDisplayName(customer)} size={48} />
+                <div>
                 <h3>{customerDisplayName(customer)}</h3>
                 <p className="muted">
                   {(customer.pipeline_stage || 'lead').replace('_', ' ')}
@@ -213,6 +281,7 @@ function CustomersPageContent() {
                 <Link className="btn" href={`/jobs?customer=${customer.id}`}>
                   View jobs
                 </Link>
+                </div>
               </div>
             ))}
         </div>

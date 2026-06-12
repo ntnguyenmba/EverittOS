@@ -15,6 +15,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { weekAgoIso } from '@/lib/date-filters';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
+import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -55,16 +56,14 @@ function JobsList() {
       setPlan(normalizePlan(profile?.plan));
 
       const org = await fetchOrganizationContext(user.id);
-      let query = supabase
-        .from('jobs')
-        .select('id, title, customer_name, customer_id, address, status, completed_at, assigned_to')
-        .order('created_at', { ascending: false });
-
-      if (org?.organizationId) {
-        query = query.eq('organization_id', org.organizationId);
-      } else {
-        query = query.eq('user_id', user.id);
-      }
+      let query = scopeJobsForWorkspace(
+        supabase
+          .from('jobs')
+          .select('id, title, customer_name, customer_id, address, status, completed_at, assigned_to')
+          .order('created_at', { ascending: false }),
+        user.id,
+        org?.organizationId
+      );
 
       if (customerFilter) {
         query = query.eq('customer_id', customerFilter);

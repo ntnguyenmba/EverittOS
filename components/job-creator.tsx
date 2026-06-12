@@ -1,37 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan } from '@/lib/everittos-plans';
-import { fetchOrganizationContext } from '@/lib/organization';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { validatePlanAction } from '@/lib/plan-validate';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type JobCreatorProps = {
-  onJobCreated?: () => void;
+  onJobCreated?: (jobId: string) => void;
 };
 
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [created, setCreated] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [permissionBlocked, setPermissionBlocked] = useState(false);
 
-  async function createJob() {
+  async function createJob(event?: FormEvent) {
+    event?.preventDefault();
+
     if (!title.trim()) {
-      alert('Add a job title first.');
+      setFeedback(errorFeedback('Add a job title first.'));
       return;
     }
 
     setLoading(true);
-    setCreated(false);
+    setFeedback(null);
 
     const {
       data: { user }
@@ -39,26 +45,37 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     if (!user) {
       setLoading(false);
-      alert('Sign in to create jobs.');
+      setFeedback(errorFeedback('Sign in to create jobs.'));
       return;
     }
 
     const { data: profile } = await supabase.from('profiles').select('role, plan').eq('id', user.id).maybeSingle();
-    if (!isManagerRole(normalizeRole(profile?.role))) {
-      setBlocked(true);
+    const role = normalizeRole(profile?.role);
+    if (!isManagerRole(role)) {
+      setPermissionBlocked(true);
       setLoading(false);
+      setFeedback(errorFeedback('Only owners, admins, and managers can create jobs.'));
       return;
     }
 
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
+    if (!org?.organizationId) {
+      setLoading(false);
+      setFeedback(
+        errorFeedback('Workspace setup is still finishing. Wait a moment and try again, or refresh the page.')
+      );
+      return;
+    }
+
     const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
-    const usage = await fetchUsageCounts(user.id, org?.organizationId);
+    const usage = await fetchUsageCounts(user.id, org.organizationId);
     const check = validatePlanAction({ plan: orgPlan, resource: 'jobs', currentCount: usage.jobs });
     if (!check.allowed) {
       setLoading(false);
-      alert(check.message || limitMessage('jobs', orgPlan));
+      setFeedback(errorFeedback(check.message || limitMessage('jobs', orgPlan)));
       return;
     }
+
     const serverCheck = await fetch('/api/plan/validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -67,7 +84,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     const serverJson = await serverCheck.json();
     if (!serverJson.allowed) {
       setLoading(false);
-      alert(serverJson.message || 'Plan limit reached.');
+      setFeedback(errorFeedback(serverJson.message || 'Plan limit reached.'));
       return;
     }
 
@@ -76,7 +93,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       .insert([
         {
           user_id: user.id,
-          organization_id: org?.organizationId || null,
+          organization_id: org.organizationId,
           title: title.trim(),
           customer_name: customerName.trim() || null,
           phone: phone.trim() || null,
@@ -91,32 +108,32 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       return;
     }
 
-    if (createdJob?.id) {
-      void fetch('/api/integrations/google-calendar/sync-job', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId: createdJob.id })
-      });
+    if (!createdJob?.id) {
+      setFeedback(errorFeedback('Job could not be saved. Please try again.'));
+      return;
     }
 
-    setCreated(true);
-    setTitle('');
-    setAddress('');
-    setCustomerName('');
-    setPhone('');
-    setNotes('');
-    onJobCreated?.();
+    void fetch('/api/integrations/google-calendar/sync-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId: createdJob.id })
+    });
+
+    setFeedback(successFeedback('Job saved successfully.'));
+    onJobCreated?.(createdJob.id);
+    router.push(`/jobs/${createdJob.id}`);
   }
 
-  if (blocked) {
+  if (permissionBlocked) {
     return (
       <div className="card">
         <h3>Create a job</h3>
-        <p>Only owners and managers can create new jobs.</p>
+        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
+        <p>Only owners, admins, and managers can create new jobs.</p>
       </div>
     );
   }
@@ -124,17 +141,28 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>Create a job</h3>
-      <div className="form">
-        <input className="input" placeholder="Job title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+      <form className="form" onSubmit={createJob}>
+        <input
+          className="input"
+          placeholder="Job title *"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
+        <input
+          className="input"
+          placeholder="Customer name"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+        />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        <Button className="btn-primary" onClick={createJob} disabled={loading}>
-          {loading ? 'Creating...' : 'Create job'}
+        <Button className="btn-primary" type="submit" disabled={loading}>
+          {loading ? 'Saving...' : 'Save job'}
         </Button>
-      </div>
-      {created && <p style={{ color: 'var(--green)' }}>Job saved successfully.</p>}
+        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
+      </form>
     </div>
   );
 }
