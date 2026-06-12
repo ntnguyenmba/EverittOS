@@ -8,32 +8,252 @@ type AuthShellProps = {
   children: ReactNode;
 };
 
-/** Single-column auth layout: logo, title, form, minimal legal footer. */
+/** Centered auth layout aligned with the Everitt Ventures tech site. */
 export function AuthShell({ title, children }: AuthShellProps) {
   return (
-    <main id="main-content" className="auth-page">
-      <div className="auth-shell">
-        <div className="auth-shell-main">
-          <header className="auth-shell-header auth-shell-header-centered">
-            <BrandLogo href="/" size={40} showName />
-            <div className="auth-shell-language">
-              <LanguageSwitcher id="auth-language" variant="compact" />
-            </div>
-          </header>
+    <main id="main-content" className="auth-page auth-tech-page">
+      <div className="auth-tech-background" aria-hidden="true" />
+      <div className="auth-tech-overlay" aria-hidden="true" />
 
-          <div className="auth-shell-content">
-            <h1 className="auth-title">{title}</h1>
-            {children}
+      <div className="auth-tech-shell">
+        <header className="auth-tech-header">
+          <BrandLogo href="/" size={44} showName />
+          <div className="auth-shell-language auth-tech-language">
+            <LanguageSwitcher id="auth-language" variant="compact" />
           </div>
+        </header>
 
-          <footer className="auth-shell-footer">
-            <p>
-              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
-              <Link href="/security">Security</Link>
-            </p>
-          </footer>
-        </div>
+        <section className="auth-tech-card" aria-labelledby="auth-page-title">
+          <h1 id="auth-page-title" className="auth-title">
+            {title}
+          </h1>
+          <p className="auth-card-subtitle">Run your business from one place.</p>
+          {children}
+          <p className="auth-legal-note">
+            By continuing, you agree to the <Link href="/terms">Terms</Link> and acknowledge the{' '}
+            <Link href="/privacy">Privacy Policy</Link>.
+          </p>
+        </section>
+
+        <footer className="auth-tech-footer">
+          <p>
+            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+            <Link href="/security">Security</Link>
+          </p>
+        </footer>
       </div>
+
+      <style>{`
+        .auth-tech-page {
+          position: relative;
+          min-height: 100svh;
+          overflow: hidden;
+          isolation: isolate;
+          background: #f8fafc;
+          color: var(--text);
+        }
+
+        .auth-tech-background {
+          position: fixed;
+          inset: 0;
+          z-index: -3;
+          background-image: url('/hero.jpg');
+          background-size: cover;
+          background-position: center;
+          opacity: 0.34;
+          filter: grayscale(0.08) saturate(0.72) contrast(0.96) brightness(1.04);
+          transform: scale(1.01);
+        }
+
+        .auth-tech-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: -2;
+          background:
+            linear-gradient(135deg, rgba(248, 250, 252, 0.58), rgba(255, 255, 255, 0.5) 45%, rgba(239, 246, 255, 0.58)),
+            radial-gradient(circle at 18% 16%, rgba(45, 96, 142, 0.14), transparent 26%),
+            radial-gradient(circle at 82% 78%, rgba(45, 55, 72, 0.08), transparent 34%);
+        }
+
+        .auth-tech-shell {
+          position: relative;
+          z-index: 1;
+          min-height: 100svh;
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          align-items: center;
+          padding: clamp(18px, 4vw, 42px);
+        }
+
+        .auth-tech-header {
+          width: min(1120px, 100%);
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .auth-tech-language select,
+        .auth-tech-language button {
+          background: rgba(255, 255, 255, 0.92);
+          border-color: rgba(45, 55, 72, 0.13);
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .auth-tech-card {
+          width: min(420px, 100%);
+          margin: clamp(26px, 7vh, 72px) auto;
+          padding: clamp(28px, 4vw, 38px);
+          border: 1px solid rgba(45, 55, 72, 0.1);
+          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.11), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        }
+
+        .auth-tech-card .brand-logo,
+        .auth-tech-card .auth-card-brandline {
+          display: none;
+        }
+
+        .auth-tech-card .auth-title {
+          margin-bottom: 8px;
+          color: #1f2f43;
+          font-size: clamp(31px, 5vw, 40px);
+          line-height: 1.1;
+          letter-spacing: -0.04em;
+        }
+
+        .auth-card-subtitle {
+          margin: 0 0 22px;
+          color: #54677d;
+          font-size: 16px;
+          line-height: 1.55;
+        }
+
+        .auth-tech-card .auth-methods-note {
+          margin: -4px 0 16px;
+          color: #54677d;
+          font-size: 14px;
+        }
+
+        .auth-tech-card .auth-form.card {
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .auth-tech-card .auth-field label {
+          color: #22344a;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .auth-tech-card .input {
+          min-height: 52px;
+          border-color: rgba(45, 55, 72, 0.14);
+          background: #ffffff;
+          color: #1f2f43;
+          box-shadow: 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+        }
+
+        .auth-tech-card .input:focus {
+          border-color: rgba(45, 96, 142, 0.42);
+          box-shadow: 0 0 0 4px rgba(45, 96, 142, 0.08);
+        }
+
+        .auth-tech-card .btn {
+          min-height: 52px;
+          border-radius: 999px;
+        }
+
+        .auth-tech-card .btn-primary {
+          background: #2d608e;
+          border-color: #2d608e;
+          color: #ffffff;
+          box-shadow: 0 16px 36px rgba(45, 96, 142, 0.2);
+        }
+
+        .auth-tech-card .btn-primary:hover {
+          background: #244f76;
+          border-color: #244f76;
+        }
+
+        .auth-tech-card .auth-links {
+          justify-content: center;
+          margin-top: 18px;
+          gap: 14px 22px;
+          color: #2d608e;
+          font-size: 14px;
+        }
+
+        .auth-legal-note {
+          margin: 18px auto 0;
+          max-width: 340px;
+          color: rgba(31, 47, 67, 0.5);
+          font-size: 11px;
+          line-height: 1.45;
+          text-align: center;
+        }
+
+        .auth-legal-note a,
+        .auth-tech-footer a {
+          border-bottom: 1px solid rgba(45, 96, 142, 0.22);
+        }
+
+        .auth-tech-footer {
+          align-self: end;
+          text-align: center;
+        }
+
+        .auth-tech-footer p {
+          margin: 0;
+          color: rgba(31, 47, 67, 0.46);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        @media (max-width: 640px) {
+          .auth-tech-shell {
+            padding: 16px 14px 18px;
+          }
+
+          .auth-tech-header {
+            gap: 12px;
+          }
+
+          .auth-tech-header .brand-logo-name {
+            font-size: 20px;
+          }
+
+          .auth-tech-card {
+            margin: 22px auto;
+            padding: 22px;
+            border-radius: 22px;
+          }
+
+          .auth-tech-card .auth-title {
+            font-size: 30px;
+          }
+
+          .auth-card-subtitle {
+            font-size: 15px;
+          }
+
+          .auth-password-row {
+            display: grid;
+            grid-template-columns: 1fr;
+          }
+
+          .auth-password-toggle {
+            width: 100%;
+          }
+        }
+      `}</style>
     </main>
   );
 }
