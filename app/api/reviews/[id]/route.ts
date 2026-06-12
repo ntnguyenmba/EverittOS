@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -17,7 +17,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
@@ -102,7 +105,10 @@ export async function DELETE(_request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
@@ -115,5 +121,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  return NextResponse.json({ ok: true });
+  await logActivityServer({
+    organizationId: org.organizationId,
+    userId: user.id,
+    entityType: 'review_request',
+    entityId: id,
+    action: 'review_request_deleted',
+    message: 'Review request removed'
+  });
+
+  return NextResponse.json({ ok: true, message: 'Review removed successfully.' });
 }

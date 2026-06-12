@@ -28,7 +28,8 @@ import {
 import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { monthStartIso } from '@/lib/date-filters';
 import { supabase } from '@/lib/supabase';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { RecordActions } from '@/components/record-actions';
+import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 
 function CustomersPageContent() {
   const router = useRouter();
@@ -123,7 +124,7 @@ function CustomersPageContent() {
     setSaving(true);
     setFeedback(null);
 
-    const org = await ensureOrganizationForUser(user.id);
+    const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
       setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
@@ -268,32 +269,27 @@ function CustomersPageContent() {
                 <p>{customer.phone || 'No phone'}</p>
                 <p>{customer.email || 'No email'}</p>
                 <p>{customerDisplayAddress(customer, 'No address')}</p>
-                <Link className="btn" href={`/customers/${customer.id}`}>
-                  View customer
-                </Link>
-                <Link className="btn" href={`/jobs?customer=${customer.id}`}>
-                  View jobs
-                </Link>
-                {canManage ? (
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    style={{ marginLeft: 8 }}
-                    onClick={async () => {
-                      if (!window.confirm(`Remove ${customerDisplayName(customer)}?`)) return;
-                      const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
-                      const json = (await res.json().catch(() => ({}))) as { error?: string };
-                      if (!res.ok) {
-                        setFeedback(errorFeedback(json.error || 'Unable to remove customer.'));
-                        return;
-                      }
-                      setFeedback(successFeedback('Customer removed.'));
-                      load();
-                    }}
-                  >
-                    Remove
-                  </button>
-                ) : null}
+                <RecordActions
+                  viewHref={`/customers/${customer.id}`}
+                  viewLabel="Open"
+                  editHref={canManage ? `/customers/${customer.id}` : undefined}
+                  editLabel="Edit"
+                  onRemove={
+                    canManage
+                      ? async () => {
+                          if (!window.confirm(`Remove ${customerDisplayName(customer)}?`)) return;
+                          const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
+                          const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+                          if (!res.ok) {
+                            setFeedback(errorFeedback(json.error || 'Unable to remove customer.'));
+                            return;
+                          }
+                          setFeedback(successFeedback(json.message || 'Customer removed.'));
+                          load();
+                        }
+                      : undefined
+                  }
+                />
                 </div>
               </div>
             ))}

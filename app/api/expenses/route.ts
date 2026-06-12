@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
 import { parseMoneyInput } from '@/lib/finance-format';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -97,8 +99,17 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message, 'Unable to save expense. Please try again.') }, { status: 400 });
   }
 
-  return NextResponse.json({ expense: data });
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'expense',
+    data.id,
+    'expense_created',
+    `Expense added: ${category} $${amount.toFixed(2)}`
+  );
+
+  return NextResponse.json({ expense: data, message: 'Expense saved successfully.' });
 }

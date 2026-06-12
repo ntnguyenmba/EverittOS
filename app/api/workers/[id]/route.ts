@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -18,7 +19,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('workers')
-    .select('id')
+    .select('id, name')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -45,7 +46,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'worker',
+    id,
+    'worker_updated',
+    `Worker updated: ${existing.name}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Worker saved successfully.' });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -58,7 +68,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('workers')
-    .select('id')
+    .select('id, name')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -76,5 +86,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'worker',
+    id,
+    'worker_deleted',
+    `Worker removed: ${existing.name}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Worker removed successfully.' });
 }

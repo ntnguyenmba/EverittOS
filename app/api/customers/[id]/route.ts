@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { buildCustomerUpdatePayload } from '@/lib/customer-record';
+import { logWorkspaceActivity } from '@/lib/activity-server';
+import { buildCustomerUpdatePayload, customerDisplayName } from '@/lib/customer-record';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -26,7 +27,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id')
+    .select('id, display_name, name, company_name')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -56,7 +57,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'customer',
+    id,
+    'customer_updated',
+    `Customer updated: ${customerDisplayName(existing)}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Customer saved successfully.' });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -69,7 +79,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id')
+    .select('id, display_name, name, company_name')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -94,5 +104,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'customer',
+    id,
+    'customer_deleted',
+    `Customer removed: ${customerDisplayName(existing)}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Customer removed successfully.' });
 }

@@ -15,7 +15,8 @@ import { filterDemoSeedWorkers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { RecordActions } from '@/components/record-actions';
+import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
 type Worker = {
@@ -93,7 +94,7 @@ export default function WorkersPage() {
     setSaving(true);
     setFeedback(null);
 
-    const org = await ensureOrganizationForUser(user.id);
+    const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
       setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
@@ -206,14 +207,10 @@ export default function WorkersPage() {
               <p className="muted">{worker.role || 'Crew member'}</p>
               <p className="muted">{worker.phone || 'No phone'}</p>
               {canManage && crewEnabled ? (
-                <div className="settings-actions" style={{ marginTop: 12 }}>
-                  <button type="button" className="btn btn-sm" onClick={() => startEdit(worker)}>
-                    Edit
-                  </button>
-                  <button type="button" className="btn btn-sm btn-danger" onClick={() => void removeWorker(worker)}>
-                    Remove
-                  </button>
-                </div>
+                <RecordActions
+                  onEdit={() => startEdit(worker)}
+                  onRemove={() => void removeWorker(worker)}
+                />
               ) : null}
             </div>
           ))}

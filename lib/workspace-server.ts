@@ -230,6 +230,27 @@ export function workspaceScopedFields(
   return fields;
 }
 
+/** Organization context with automatic workspace and membership repair. */
+export async function fetchOrganizationContextWithRepair(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: { email?: string; userMetadata?: Record<string, unknown> }
+): Promise<OrganizationContext | null> {
+  const result = await getCurrentWorkspaceForUser(supabase, userId, {
+    email: options?.email,
+    userMetadata: options?.userMetadata,
+    repair: true
+  });
+  if (!result.ok) return null;
+  const workspace = result.workspace;
+  return {
+    organizationId: workspace.organizationId,
+    organizationName: workspace.organizationName,
+    role: workspace.role,
+    ownerUserId: workspace.ownerUserId
+  };
+}
+
 export function mapWorkspaceSaveError(message: string, fallback = 'Unable to save. Try again.'): string {
   const lower = message.toLowerCase();
   if (lower.includes('company_id')) {

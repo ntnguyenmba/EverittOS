@@ -23,12 +23,23 @@ export function WorkspaceBootstrap() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const org = await fetchOrganizationContext(user.id);
-      if (org?.organizationId) return;
+      let org = await fetchOrganizationContext(user.id);
+      if (org?.organizationId) {
+        try {
+          await fetch('/api/workspace/ensure', { method: 'POST' });
+        } catch {
+          /* company repair retries on next navigation */
+        }
+        return;
+      }
 
       bootstrappingRef.current = true;
       try {
         await fetch('/api/auth/setup', { method: 'POST' });
+        org = await fetchOrganizationContext(user.id);
+        if (org?.organizationId) {
+          await fetch('/api/workspace/ensure', { method: 'POST' });
+        }
       } catch {
         /* setup retries on next navigation */
       } finally {

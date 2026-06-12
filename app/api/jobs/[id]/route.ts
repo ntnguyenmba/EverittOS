@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -35,7 +36,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('jobs')
-    .select('id')
+    .select('id, title')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -64,7 +65,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'job',
+    id,
+    'job_updated',
+    `Job updated: ${existing.title || 'Untitled'}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Job saved successfully.' });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -77,7 +87,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('jobs')
-    .select('id')
+    .select('id, title')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -101,10 +111,27 @@ export async function DELETE(_request: Request, context: RouteContext) {
       if (cancelError) {
         return NextResponse.json({ error: mapWorkspaceSaveError(cancelError.message) }, { status: 400 });
       }
-      return NextResponse.json({ ok: true, cancelled: true });
+      await logWorkspaceActivity(
+        ctx.workspace.organizationId,
+        ctx.userId,
+        'job',
+        id,
+        'job_deleted',
+        `Job cancelled: ${existing.title || 'Untitled'}`
+      );
+      return NextResponse.json({ ok: true, cancelled: true, message: 'Job removed from schedule.' });
     }
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'job',
+    id,
+    'job_deleted',
+    `Job deleted: ${existing.title || 'Untitled'}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Job removed successfully.' });
 }

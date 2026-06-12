@@ -1,10 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { canAccessFinancialTracking, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
-import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export type FinanceApiContext =
   | {
@@ -17,21 +16,16 @@ export type FinanceApiContext =
   | { ok: false; status: number; error: string };
 
 export async function requireFinanceApiAccess(): Promise<FinanceApiContext> {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { ok: false, status: 401, error: 'Unauthorized' };
+  const ctx = await requireWorkspaceSession();
+  if (!ctx.ok) {
+    return { ok: false, status: ctx.status, error: ctx.error };
   }
 
-  const org = await fetchOrganizationContextForRequest(supabase, user.id);
-  if (!org || !canSeeOrgWideData(org.role)) {
+  if (!canSeeOrgWideData(ctx.workspace.role)) {
     return { ok: false, status: 403, error: 'Permission denied' };
   }
 
-  const { plan } = await resolveOrganizationPlan(supabase, user.id);
+  const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
   if (!canAccessFinancialTracking(plan)) {
     return {
       ok: false,
@@ -42,9 +36,9 @@ export async function requireFinanceApiAccess(): Promise<FinanceApiContext> {
 
   return {
     ok: true,
-    supabase,
-    userId: user.id,
-    organizationId: org.organizationId,
-    canManage: isManagerRole(org.role)
+    supabase: ctx.supabase,
+    userId: ctx.userId,
+    organizationId: ctx.workspace.organizationId,
+    canManage: isManagerRole(ctx.workspace.role)
   };
 }

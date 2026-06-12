@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { canAssignJobs } from '@/lib/roles';
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
 
   const { data: job } = await admin
     .from('jobs')
-    .select('organization_id')
+    .select('organization_id, title')
     .eq('id', body.jobId)
     .maybeSingle();
 
@@ -77,5 +78,14 @@ export async function POST(request: Request) {
 
   await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId);
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'job',
+    body.jobId,
+    'schedule_changed',
+    `Schedule updated: ${job.title || 'Job'}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Schedule saved successfully.' });
 }

@@ -16,6 +16,7 @@ import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { weekAgoIso } from '@/lib/date-filters';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
+import { RecordActions } from '@/components/record-actions';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -147,17 +148,12 @@ function JobsList() {
                       <StatusPill status={job.status} />
                     </td>
                     <td className="table-actions">
-                      <Link className="btn btn-sm" href={`/jobs/${job.id}`}>
-                        Open
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        disabled={removingId === job.id}
-                        onClick={() => void removeJob(job)}
-                      >
-                        {removingId === job.id ? 'Removing…' : 'Remove'}
-                      </button>
+                      <RecordActions
+                        viewHref={`/jobs/${job.id}`}
+                        editHref={`/jobs/${job.id}`}
+                        onRemove={() => void removeJob(job)}
+                        removing={removingId === job.id}
+                      />
                     </td>
                   </tr>
                 ))}

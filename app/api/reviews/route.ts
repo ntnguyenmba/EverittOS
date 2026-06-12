@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -14,7 +14,10 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
 
   const [requestsRes, reviewsRes] = await Promise.all([
@@ -47,7 +50,10 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }

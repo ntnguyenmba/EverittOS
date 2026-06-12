@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
+import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -17,7 +18,10 @@ export async function GET(_request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
 
   const { data: form, error } = await supabase
@@ -40,7 +44,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
@@ -59,7 +66,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message, 'Unable to save form. Please try again.') }, { status: 400 });
+  }
 
   await logActivityServer({
     organizationId: org.organizationId,
@@ -70,7 +79,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     message: `Form updated: ${data.name}`
   });
 
-  return NextResponse.json({ form: data });
+  return NextResponse.json({ form: data, message: 'Form saved successfully.' });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -81,13 +90,18 @@ export async function DELETE(_request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
   const { error } = await supabase.from('everitt_forms').delete().eq('id', id).eq('organization_id', org.organizationId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message, 'Unable to save form. Please try again.') }, { status: 400 });
+  }
 
   await logActivityServer({
     organizationId: org.organizationId,
@@ -98,5 +112,5 @@ export async function DELETE(_request: Request, context: RouteContext) {
     message: 'Form deleted'
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, message: 'Form removed successfully.' });
 }

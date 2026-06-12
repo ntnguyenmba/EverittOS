@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -47,5 +48,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, worker: data });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'worker',
+    data.id,
+    'worker_created',
+    `Worker added: ${body.name.trim()}`
+  );
+
+  return NextResponse.json({ ok: true, worker: data, message: 'Worker saved successfully.' });
 }

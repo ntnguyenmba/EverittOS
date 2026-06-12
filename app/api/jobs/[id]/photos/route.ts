@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { JOB_PHOTO_SELECT, attachSignedUrls } from '@/lib/job-photos-client';
 import { isValidUuid } from '@/lib/input-validation';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
@@ -57,7 +57,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'photoId is required' }, { status: 400 });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextWithRepair(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined
+  });
   if (!org) {
     return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
   }

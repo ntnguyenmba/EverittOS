@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -83,5 +84,14 @@ export async function PATCH(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'settings',
+    ctx.workspace.organizationId,
+    'user_updated',
+    'Company settings saved'
+  );
+
+  return NextResponse.json({ ok: true, message: 'Settings saved successfully.' });
 }

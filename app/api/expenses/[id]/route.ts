@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
 import { parseMoneyInput } from '@/lib/finance-format';
 import { isValidUuid } from '@/lib/input-validation';
@@ -73,10 +75,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message, 'Unable to save expense. Please try again.') }, { status: 400 });
   }
 
-  return NextResponse.json({ expense: data });
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'expense',
+    id,
+    'expense_updated',
+    `Expense updated: ${data.category} $${Number(data.amount).toFixed(2)}`
+  );
+
+  return NextResponse.json({ expense: data, message: 'Expense saved successfully.' });
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
@@ -107,8 +118,17 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     .eq('organization_id', ctx.organizationId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message, 'Unable to remove expense. Please try again.') }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'expense',
+    id,
+    'expense_deleted',
+    `Expense removed: ${existing.category} $${Number(existing.amount).toFixed(2)}`
+  );
+
+  return NextResponse.json({ ok: true, message: 'Expense removed successfully.' });
 }

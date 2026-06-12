@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { buildCustomerWritePayload } from '@/lib/customer-record';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
@@ -55,5 +56,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, customer: data });
+  const isLead = body.record_type === 'lead' || body.pipeline_stage === 'lead';
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    isLead ? 'lead' : 'customer',
+    data.id,
+    isLead ? 'lead_created' : 'customer_created',
+    `${isLead ? 'Lead' : 'Customer'} created: ${body.displayName.trim()}`
+  );
+
+  return NextResponse.json({ ok: true, customer: data, message: 'Customer saved successfully.' });
 }

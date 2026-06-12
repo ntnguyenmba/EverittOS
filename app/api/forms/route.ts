@@ -1,43 +1,34 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
 import { slugifyFormName } from '@/lib/forms-utils';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { requireOrganizationSession } from '@/lib/organization-api-auth';
+import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const ctx = await requireOrganizationSession();
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
-
-  const { data, error } = await supabase
+  const { data, error } = await ctx.supabase
     .from('everitt_forms')
     .select('id, name, slug, form_type, active, description, created_at, updated_at')
-    .eq('organization_id', org.organizationId)
+    .eq('organization_id', ctx.workspace.organizationId)
     .order('updated_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 500 });
+  }
   return NextResponse.json({ forms: data || [] });
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  const ctx = await requireOrganizationSession({ requireSettingsManager: true });
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
   const body = (await request.json()) as {
@@ -48,26 +39,29 @@ export async function POST(request: Request) {
   };
 
   if (!body.name?.trim()) {
-    return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Form name is required.' }, { status: 400 });
   }
 
   const slug = `${slugifyFormName(body.name)}-${Date.now().toString(36).slice(-4)}`;
 
-  const { data: form, error } = await supabase
+  const { data: form, error } = await ctx.supabase
     .from('everitt_forms')
     .insert({
-      organization_id: org.organizationId,
+      organization_id: ctx.workspace.organizationId,
       name: body.name.trim(),
       slug,
       form_type: body.form_type || 'contact',
       description: body.description?.trim() || null,
-      created_by: user.id
+      created_by: ctx.userId
     })
     .select('*')
     .single();
 
   if (error || !form) {
-    return NextResponse.json({ error: error?.message || 'Failed to create form' }, { status: 400 });
+    return NextResponse.json(
+      { error: mapWorkspaceSaveError(error?.message || '', 'Unable to save form. Please try again.') },
+      { status: 400 }
+    );
   }
 
   const fields = body.fields || [
@@ -76,10 +70,10 @@ export async function POST(request: Request) {
     { label: 'Message', field_type: 'textarea', required: false }
   ];
 
-  await supabase.from('everitt_form_fields').insert(
+  await ctx.supabase.from('everitt_form_fields').insert(
     fields.map((f, i) => ({
       form_id: form.id,
-      organization_id: org.organizationId,
+      organization_id: ctx.workspace.organizationId,
       label: f.label,
       field_type: f.field_type || 'text',
       required: Boolean(f.required),
@@ -88,13 +82,13 @@ export async function POST(request: Request) {
   );
 
   await logActivityServer({
-    organizationId: org.organizationId,
-    userId: user.id,
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
     entityType: 'form',
     entityId: form.id,
     action: 'form_created',
     message: `Form created: ${form.name}`
   });
 
-  return NextResponse.json({ form });
+  return NextResponse.json({ form, message: 'Form saved successfully.' });
 }

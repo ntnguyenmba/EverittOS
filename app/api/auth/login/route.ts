@@ -10,6 +10,7 @@ import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/inpu
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
 import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
+import { getCurrentWorkspaceForUser } from '@/lib/workspace-server';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
@@ -253,6 +254,12 @@ export async function POST(request: Request) {
     }
 
     const profile = bootstrap.profile;
+
+    await getCurrentWorkspaceForUser(supabase, user.id, {
+      email,
+      userMetadata: user.user_metadata || undefined,
+      repair: true
+    });
 
     if (isAccountDeleted(profile.deleted_at)) {
       await supabase.auth.signOut();
