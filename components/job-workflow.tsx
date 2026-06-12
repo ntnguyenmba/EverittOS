@@ -99,7 +99,7 @@ export function JobWorkflow({ jobId, canManage, canComplete, hasWorkflowFeature 
     return (
       <div className="card" style={{ marginTop: 18 }}>
         <h3>Workflow</h3>
-        <p className="muted">Custom workflows are available on Growth and Enterprise.</p>
+        <p className="muted">Workflows are available on Operations and higher.</p>
       </div>
     );
   }

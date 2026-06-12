@@ -23,6 +23,7 @@ export type PlanLimits = {
   clientPortal: boolean;
   contractorPortal: boolean;
   brandedReports: boolean;
+  beforeAfterPhotos: boolean;
   apiAccess: boolean;
   prioritySupport: boolean;
 };
@@ -54,6 +55,7 @@ export function limitsForPlan(plan: EverittosPlan): PlanLimits {
     clientPortal: row.clientPortal,
     contractorPortal: row.contractorPortal,
     brandedReports: row.brandedReports,
+    beforeAfterPhotos: row.beforeAfterPhotos,
     apiAccess: row.apiAccess,
     prioritySupport: row.prioritySupport
   };

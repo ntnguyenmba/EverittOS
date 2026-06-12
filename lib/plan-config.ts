@@ -27,6 +27,7 @@ export type PlanTierRow = {
   clientPortal: boolean;
   contractorPortal: boolean;
   brandedReports: boolean;
+  beforeAfterPhotos: boolean;
   apiAccess: boolean;
   prioritySupport: boolean;
 };
@@ -40,7 +41,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     jobs: 3,
     photos: 20,
     customers: 10,
-    reports: 10,
+    reports: 0,
     teamMembers: 1,
     crewMembers: 0,
     locations: 1,
@@ -52,18 +53,19 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     workflowCustomization: false,
     multiLocation: false,
     customBranding: false,
-    pdfReports: true,
+    pdfReports: false,
     photoUpload: true,
     clientPortal: false,
     contractorPortal: false,
     brandedReports: false,
+    beforeAfterPhotos: false,
     apiAccess: false,
     prioritySupport: false
   },
   {
     id: 'pro',
     jobs: 25,
-    photos: UNLIMITED_CAP,
+    photos: 100,
     customers: 100,
     reports: UNLIMITED_CAP,
     teamMembers: 3,
@@ -79,9 +81,10 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     customBranding: false,
     pdfReports: true,
     photoUpload: true,
-    clientPortal: true,
+    clientPortal: false,
     contractorPortal: false,
     brandedReports: false,
+    beforeAfterPhotos: true,
     apiAccess: false,
     prioritySupport: false
   },
@@ -107,6 +110,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     clientPortal: false,
     contractorPortal: false,
     brandedReports: false,
+    beforeAfterPhotos: true,
     apiAccess: false,
     prioritySupport: false
   },
@@ -124,7 +128,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     scheduling: true,
     activityLog: true,
     advancedReporting: true,
-    workflowCustomization: false,
+    workflowCustomization: true,
     multiLocation: false,
     customBranding: true,
     pdfReports: true,
@@ -132,6 +136,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     clientPortal: true,
     contractorPortal: true,
     brandedReports: true,
+    beforeAfterPhotos: true,
     apiAccess: false,
     prioritySupport: true
   },
@@ -157,6 +162,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     clientPortal: true,
     contractorPortal: true,
     brandedReports: true,
+    beforeAfterPhotos: true,
     apiAccess: true,
     prioritySupport: true
   },
@@ -182,10 +188,15 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     clientPortal: true,
     contractorPortal: true,
     brandedReports: true,
+    beforeAfterPhotos: true,
     apiAccess: true,
     prioritySupport: true
   }
 ];
+
+export function getPlanConfig(plan: PlanTierId): PlanTierRow {
+  return planTierRow(plan);
+}
 
 export function planTierRow(id: PlanTierId): PlanTierRow {
   const row = PLAN_TIER_ROWS.find((r) => r.id === id);

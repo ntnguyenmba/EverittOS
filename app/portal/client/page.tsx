@@ -104,7 +104,7 @@ function ClientPortalContent() {
       });
 
       if (!isClientRole(role) && !limitsForPlan(plan).clientPortal) {
-        setMessage('Client portal requires Pro plan or a client role.');
+        setMessage('Client portal requires Operations plan or higher, or a client role.');
         setLoading(false);
         return;
       }

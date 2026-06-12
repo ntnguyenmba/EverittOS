@@ -13,6 +13,7 @@ import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { logClientActivity, createNotification } from '@/lib/activity';
 import { StatusPill } from '@/components/status-pill';
+import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import {
@@ -457,6 +458,7 @@ export default function JobDetailPage({ params }: PageProps) {
             organizationId={orgId || job.organization_id}
             plan={plan}
             canUpload={canUploadPhotos}
+            showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')}
             refreshKey={photoRefresh}
             onChange={() => {
               setPhotoRefresh((k) => k + 1);

@@ -36,8 +36,8 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'Customer management',
       'Basic job tracking',
       'Status updates and notes',
-      'Basic reports',
-      'Before and after photos (limited)'
+      'Schedule and notifications',
+      'Basic photo uploads (limited)'
     ],
     limits: ['3 active jobs', '10 customers', '20 photos', '1 user'],
     buttonLabel: 'Start Free'
@@ -46,16 +46,15 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     id: 'pro',
     name: 'EverittOS Pro',
     priceLabel: '$9/month',
-    headline: 'Add photos, reports, and a client portal.',
+    headline: 'Add before/after photos, reports, and professional job records.',
     features: [
       'Everything in Free',
       'Before and after photos',
       'Job records with notes',
       'Standard reports',
-      'Customer portal',
-      'More customers and jobs'
+      'Expanded jobs and customers'
     ],
-    limits: ['25 active jobs', '100 customers', '3 users'],
+    limits: ['25 active jobs', '100 customers', '100 photos', '3 users'],
     buttonLabel: 'Start Pro',
     featured: true,
     stripeLink: EVERITTOS_STRIPE_LINKS.pro
@@ -86,9 +85,9 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     headline: 'Run contractor and client portals with role controls.',
     features: [
       'Everything in Business',
-      'Contractor portal',
+      'Workflows',
+      'Client and contractor portals',
       'Role-based permissions',
-      'Activity log',
       'Branded reports',
       'Priority support'
     ],

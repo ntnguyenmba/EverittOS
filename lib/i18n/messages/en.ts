@@ -313,9 +313,21 @@ export const messages: Messages = {
     metrics: {
       jobsToday: 'Jobs today',
       openJobs: 'Open jobs',
+      completedJobs: 'Completed jobs',
+      dueInSevenDays: 'Due in 7 days',
+      reports: 'Reports',
+      teamMembers: 'Team members',
       unpaidInvoices: 'Unpaid invoices',
       upcomingSchedule: 'Upcoming'
     },
+    quickLinksLabel: 'More',
+    quickLinks: {
+      jobs: 'Jobs',
+      notifications: 'Notifications',
+      settings: 'Settings',
+      activity: 'Activity'
+    },
+    activityEmpty: 'No activity yet',
     skipped: {
       label: 'Still open:',
       createJob: 'Create job',

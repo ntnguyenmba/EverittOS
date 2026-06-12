@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   if (!limitsForPlan(plan).workflowCustomization) {
-    return NextResponse.json({ error: 'Custom workflows require Growth or Enterprise.' }, { status: 403 });
+    return NextResponse.json({ error: 'Workflows require Operations or higher.' }, { status: 403 });
   }
 
   const body = (await request.json()) as { name?: string; description?: string; active?: boolean };
@@ -60,7 +60,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   if (!limitsForPlan(plan).workflowCustomization) {
-    return NextResponse.json({ error: 'Custom workflows require Growth or Enterprise.' }, { status: 403 });
+    return NextResponse.json({ error: 'Workflows require Operations or higher.' }, { status: 403 });
   }
 
   const admin = createAdminSupabase();

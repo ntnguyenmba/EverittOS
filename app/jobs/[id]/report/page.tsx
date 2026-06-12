@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -189,7 +190,11 @@ export default function JobReportPage({ params }: PageProps) {
           {showPhotos ? (
             <section className="report-photos-section">
               <h3>Before &amp; after photos</h3>
-              <PhotoGallery jobId={job.id} showComparison showMetadata />
+              <PhotoGallery
+                jobId={job.id}
+                showComparison={canAccessFeature(plan, 'beforeAfterPhotos')}
+                showMetadata
+              />
             </section>
           ) : (
             <section>

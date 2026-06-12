@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -16,6 +18,11 @@ export async function GET() {
   const org = await fetchOrganizationContextForUser(supabase, user.id);
   if (!org || !canSeeOrgWideData(org.role)) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  }
+
+  const { plan } = await resolveOrganizationPlan(supabase, user.id);
+  if (!limitsForPlan(plan).advancedReporting) {
+    return NextResponse.json({ error: 'Analytics requires Business or higher.' }, { status: 403 });
   }
 
   const orgId = org.organizationId;

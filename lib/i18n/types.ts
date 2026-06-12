@@ -203,9 +203,21 @@ export type MessageTree = {
     metrics: {
       jobsToday: string;
       openJobs: string;
+      completedJobs: string;
+      dueInSevenDays: string;
+      reports: string;
+      teamMembers: string;
       unpaidInvoices: string;
       upcomingSchedule: string;
     };
+    quickLinksLabel: string;
+    quickLinks: {
+      jobs: string;
+      notifications: string;
+      settings: string;
+      activity: string;
+    };
+    activityEmpty: string;
     skipped: {
       label: string;
       createJob: string;

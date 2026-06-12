@@ -22,6 +22,10 @@ export async function GET() {
   }
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
+  if (!limitsForPlan(plan).workflowCustomization) {
+    return NextResponse.json({ plan, canManage: false, workflows: [] });
+  }
+
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
 
@@ -50,7 +54,7 @@ export async function POST(request: Request) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   if (!limitsForPlan(plan).workflowCustomization) {
-    return NextResponse.json({ error: 'Custom workflows require Growth or Enterprise.' }, { status: 403 });
+    return NextResponse.json({ error: 'Workflows require Operations or higher.' }, { status: 403 });
   }
 
   const body = (await request.json()) as { name?: string; description?: string; steps?: { title: string; description?: string; step_type?: string; required?: boolean }[] };

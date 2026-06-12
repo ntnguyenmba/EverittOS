@@ -138,7 +138,7 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
     return 'business';
   }
   if (path === '/portal/client' && !limits.clientPortal) {
-    return 'pro';
+    return 'operations';
   }
   if (path === '/portal/contractor' && !limits.contractorPortal) {
     return 'operations';

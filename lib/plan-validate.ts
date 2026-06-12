@@ -33,6 +33,10 @@ export function validatePlanAction({ plan, resource, currentCount }: PlanValidat
     return { allowed: false, message: 'Photo uploads are not available on your plan.' };
   }
 
+  if (resource === 'reports' && !limits.pdfReports) {
+    return { allowed: false, message: 'Reports require Pro or higher.' };
+  }
+
   if (resource === 'teamMembers' && !limits.teamManagement) {
     return { allowed: false, message: 'Team invitations require a plan with team management.' };
   }

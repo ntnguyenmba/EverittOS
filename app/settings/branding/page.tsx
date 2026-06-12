@@ -124,7 +124,7 @@ export default function BrandingSettingsPage() {
       ) : null}
 
       {!brandingEnabled ? (
-        <div className="settings-warning">Custom branding on reports and the client portal requires Growth or Enterprise.</div>
+        <div className="settings-warning">Custom branding on reports and the client portal requires Operations or higher.</div>
       ) : null}
 
       <form className="settings-card" onSubmit={saveBranding}>

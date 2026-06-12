@@ -17,6 +17,7 @@ export type PlanFeature =
   | 'clientPortal'
   | 'contractorPortal'
   | 'brandedReports'
+  | 'beforeAfterPhotos'
   | 'apiAccess'
   | 'prioritySupport';
 
@@ -41,7 +42,8 @@ export function meetsMinimumPlan(userPlan: EverittosPlan, requiredPlan: Everitto
 
 export function canAccessFeature(plan: EverittosPlan, feature: PlanFeature): boolean {
   const limits = limitsForPlan(normalizePlan(plan));
-  return Boolean(limits[feature]);
+  const value = limits[feature as keyof typeof limits];
+  return typeof value === 'boolean' ? value : Boolean(value);
 }
 
 export function limitsForUserPlan(plan: EverittosPlan): PlanLimits {
@@ -78,12 +80,15 @@ export function requirePlan(userPlan: EverittosPlan, requiredPlan: EverittosPlan
 
 /** Route prefixes that require a minimum plan tier. */
 export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
+  { prefix: '/workers', plan: 'business' },
   { prefix: '/team', plan: 'business' },
   { prefix: '/settings/team', plan: 'business' },
   { prefix: '/activity', plan: 'business' },
   { prefix: '/analytics', plan: 'business' },
-  { prefix: '/portal/client', plan: 'pro' },
+  { prefix: '/workflows', plan: 'operations' },
+  { prefix: '/portal/client', plan: 'operations' },
   { prefix: '/portal/contractor', plan: 'operations' },
+  { prefix: '/settings/api', plan: 'growth' },
   { prefix: '/admin', plan: 'enterprise' }
 ];
 

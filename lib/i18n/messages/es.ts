@@ -315,9 +315,21 @@ export const messages: Messages = {
     metrics: {
       jobsToday: 'Trabajos hoy',
       openJobs: 'Trabajos abiertos',
+      completedJobs: 'Trabajos completados',
+      dueInSevenDays: 'Vencen en 7 días',
+      reports: 'Informes',
+      teamMembers: 'Miembros del equipo',
       unpaidInvoices: 'Facturas sin pagar',
       upcomingSchedule: 'Próximos'
     },
+    quickLinksLabel: 'Más',
+    quickLinks: {
+      jobs: 'Trabajos',
+      notifications: 'Notificaciones',
+      settings: 'Ajustes',
+      activity: 'Actividad'
+    },
+    activityEmpty: 'Sin actividad aún',
     skipped: {
       label: 'Pendiente:',
       createJob: 'Crear trabajo',

@@ -314,9 +314,21 @@ export const messages: Messages = {
     metrics: {
       jobsToday: 'Việc hôm nay',
       openJobs: 'Việc đang mở',
+      completedJobs: 'Việc đã hoàn thành',
+      dueInSevenDays: 'Đến hạn trong 7 ngày',
+      reports: 'Báo cáo',
+      teamMembers: 'Thành viên nhóm',
       unpaidInvoices: 'Hóa đơn chưa trả',
       upcomingSchedule: 'Sắp tới'
     },
+    quickLinksLabel: 'Thêm',
+    quickLinks: {
+      jobs: 'Việc',
+      notifications: 'Thông báo',
+      settings: 'Cài đặt',
+      activity: 'Hoạt động'
+    },
+    activityEmpty: 'Chưa có hoạt động',
     skipped: {
       label: 'Còn lại:',
       createJob: 'Tạo việc',

@@ -110,10 +110,10 @@ export default function WorkflowsPage() {
   return (
     <AppShell plan={plan}>
       <h2>Workflows</h2>
-        <p className="muted">Custom job workflows for Growth and Enterprise.</p>
+        <p className="muted">Job workflows and checklist templates for Operations and higher.</p>
 
         {!limitsForPlan(plan).workflowCustomization ? (
-          <PlanLockedMessage feature="Custom workflows" requiredPlan="Growth" />
+          <PlanLockedMessage feature="Workflows" requiredPlan="Operations" />
         ) : (
           <>
             {canManage ? (
