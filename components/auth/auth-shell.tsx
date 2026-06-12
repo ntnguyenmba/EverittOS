@@ -8,41 +8,39 @@ type AuthShellProps = {
   children: ReactNode;
 };
 
-/** Centered auth layout with a muted full-page hero backdrop. */
+/** Centered auth layout with a visible muted hero backdrop. */
 export function AuthShell({ title, children }: AuthShellProps) {
   return (
     <main id="main-content" className="auth-page auth-orphic-page">
       <div className="auth-orphic-background" aria-hidden="true" />
       <div className="auth-orphic-overlay" aria-hidden="true" />
 
-      <div className="auth-shell auth-orphic-shell">
-        <div className="auth-shell-main auth-orphic-main">
-          <header className="auth-shell-header auth-orphic-header">
-            <BrandLogo href="/" size={44} showName />
-            <div className="auth-shell-language auth-orphic-language">
-              <LanguageSwitcher id="auth-language" variant="compact" />
-            </div>
-          </header>
+      <div className="auth-orphic-shell">
+        <header className="auth-orphic-header">
+          <BrandLogo href="/" size={44} showName />
+          <div className="auth-shell-language auth-orphic-language">
+            <LanguageSwitcher id="auth-language" variant="compact" />
+          </div>
+        </header>
 
-          <section className="auth-glass-card" aria-labelledby="auth-page-title">
-            <div className="auth-card-brandline">
-              <BrandLogo href="/" size={34} showName={false} />
-              <span>EverittOS</span>
-            </div>
-            <h1 id="auth-page-title" className="auth-title">
-              {title}
-            </h1>
-            <p className="auth-card-subtitle">Run your business from one place.</p>
-            {children}
-          </section>
+        <section className="auth-glass-card" aria-labelledby="auth-page-title">
+          <h1 id="auth-page-title" className="auth-title">
+            {title}
+          </h1>
+          <p className="auth-card-subtitle">Run your business from one place.</p>
+          {children}
+          <p className="auth-legal-note">
+            By continuing, you agree to the <Link href="/terms">Terms</Link> and acknowledge the{' '}
+            <Link href="/privacy">Privacy Policy</Link>.
+          </p>
+        </section>
 
-          <footer className="auth-shell-footer auth-orphic-footer">
-            <p>
-              <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
-              <Link href="/security">Security</Link>
-            </p>
-          </footer>
-        </div>
+        <footer className="auth-orphic-footer">
+          <p>
+            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+            <Link href="/security">Security</Link>
+          </p>
+        </footer>
       </div>
 
       <style>{`
@@ -56,14 +54,13 @@ export function AuthShell({ title, children }: AuthShellProps) {
 
         .auth-orphic-background {
           position: fixed;
-          inset: -18px;
+          inset: 0;
           z-index: -3;
-          background-image: url('https://raw.githubusercontent.com/ntnguyenmba/EverittOS/main/hero.jpg');
+          background-image: url('/hero.jpg');
           background-size: cover;
           background-position: center;
-          filter: blur(10px) saturate(0.82);
-          transform: scale(1.04);
-          opacity: 0.58;
+          opacity: 0.46;
+          transform: scale(1.01);
         }
 
         .auth-orphic-overlay {
@@ -71,91 +68,69 @@ export function AuthShell({ title, children }: AuthShellProps) {
           inset: 0;
           z-index: -2;
           background:
-            radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.62), rgba(247, 246, 243, 0.86) 46%, rgba(247, 246, 243, 0.94) 100%),
-            linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(247, 246, 243, 0.9));
-        }
-
-        .auth-orphic-overlay::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at center, transparent 0 45%, rgba(45, 55, 72, 0.12) 100%);
-          pointer-events: none;
+            linear-gradient(90deg, rgba(247, 246, 243, 0.72), rgba(247, 246, 243, 0.46) 42%, rgba(247, 246, 243, 0.74)),
+            radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.14), rgba(247, 246, 243, 0.5) 58%, rgba(45, 55, 72, 0.16));
+          backdrop-filter: blur(2px) saturate(0.9);
         }
 
         .auth-orphic-shell {
           position: relative;
           z-index: 1;
-          display: block;
-          min-height: 100svh;
-          background: transparent;
-        }
-
-        .auth-orphic-main {
           min-height: 100svh;
           display: grid;
           grid-template-rows: auto 1fr auto;
-          place-items: center;
-          padding: clamp(20px, 4vw, 40px);
+          align-items: center;
+          padding: clamp(18px, 4vw, 42px);
         }
 
         .auth-orphic-header {
-          width: min(1040px, 100%);
+          width: min(1120px, 100%);
           margin: 0 auto;
+          display: flex;
+          align-items: center;
           justify-content: space-between;
-          align-self: start;
+          gap: 16px;
         }
 
         .auth-orphic-language select,
         .auth-orphic-language button {
-          background: rgba(255, 255, 255, 0.72);
+          background: rgba(255, 255, 255, 0.84);
           backdrop-filter: blur(12px);
         }
 
         .auth-glass-card {
-          width: min(480px, 100%);
-          margin: clamp(28px, 6vh, 64px) auto;
-          padding: clamp(24px, 4vw, 38px);
-          border: 1px solid rgba(255, 255, 255, 0.68);
-          border-radius: 28px;
-          background: rgba(255, 255, 255, 0.72);
-          box-shadow: 0 28px 80px rgba(45, 55, 72, 0.16), 0 1px 0 rgba(255, 255, 255, 0.78) inset;
-          backdrop-filter: blur(24px);
+          width: min(430px, 100%);
+          margin: clamp(26px, 7vh, 72px) auto;
+          padding: clamp(26px, 4vw, 36px);
+          border: 1px solid rgba(255, 255, 255, 0.72);
+          border-radius: 26px;
+          background: rgba(255, 255, 255, 0.66);
+          box-shadow: 0 24px 70px rgba(25, 38, 55, 0.16), 0 1px 0 rgba(255, 255, 255, 0.78) inset;
+          backdrop-filter: blur(20px);
         }
 
-        .auth-card-brandline {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 22px;
-          color: var(--text);
-          font-size: 18px;
-          font-weight: 600;
-          letter-spacing: -0.02em;
-        }
-
-        .auth-card-brandline .brand-logo-image {
-          border-radius: 12px;
-          box-shadow: 0 10px 24px rgba(45, 55, 72, 0.12);
+        .auth-glass-card .brand-logo,
+        .auth-glass-card .auth-card-brandline {
+          display: none;
         }
 
         .auth-glass-card .auth-title {
           margin-bottom: 8px;
-          font-size: clamp(30px, 5vw, 40px);
+          font-size: clamp(30px, 5vw, 38px);
           line-height: 1.12;
           letter-spacing: -0.035em;
         }
 
         .auth-card-subtitle {
-          margin: 0 0 24px;
+          margin: 0 0 22px;
           color: var(--muted);
-          font-size: 17px;
+          font-size: 16px;
           line-height: 1.55;
         }
 
         .auth-glass-card .auth-methods-note {
-          margin: -6px 0 18px;
-          font-size: 15px;
+          margin: -4px 0 16px;
+          font-size: 14px;
         }
 
         .auth-glass-card .auth-form.card {
@@ -166,10 +141,18 @@ export function AuthShell({ title, children }: AuthShellProps) {
           box-shadow: none;
         }
 
+        .auth-glass-card .auth-field label {
+          color: var(--navy-primary);
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
         .auth-glass-card .input {
           min-height: 52px;
           border-color: rgba(45, 55, 72, 0.16);
-          background: rgba(255, 255, 255, 0.78);
+          background: rgba(255, 255, 255, 0.84);
           box-shadow: 0 1px 0 rgba(255, 255, 255, 0.78) inset;
         }
 
@@ -184,31 +167,40 @@ export function AuthShell({ title, children }: AuthShellProps) {
 
         .auth-glass-card .auth-links {
           justify-content: center;
-          margin-top: 20px;
+          margin-top: 18px;
           gap: 14px 22px;
-          font-size: 15px;
+          font-size: 14px;
+        }
+
+        .auth-legal-note {
+          margin: 18px auto 0;
+          max-width: 340px;
+          color: rgba(42, 42, 42, 0.5);
+          font-size: 11px;
+          line-height: 1.45;
+          text-align: center;
+        }
+
+        .auth-legal-note a,
+        .auth-orphic-footer a {
+          border-bottom: 1px solid rgba(45, 55, 72, 0.18);
         }
 
         .auth-orphic-footer {
           align-self: end;
-          padding-top: 0;
-          margin-top: 0;
+          text-align: center;
         }
 
         .auth-orphic-footer p {
           margin: 0;
-          color: rgba(42, 42, 42, 0.68);
-        }
-
-        @media (min-width: 960px) {
-          .auth-orphic-shell {
-            grid-template-columns: 1fr;
-          }
+          color: rgba(42, 42, 42, 0.46);
+          font-size: 11px;
+          line-height: 1.4;
         }
 
         @media (max-width: 640px) {
-          .auth-orphic-main {
-            padding: 18px 14px 20px;
+          .auth-orphic-shell {
+            padding: 16px 14px 18px;
           }
 
           .auth-orphic-header {
@@ -225,16 +217,12 @@ export function AuthShell({ title, children }: AuthShellProps) {
             border-radius: 22px;
           }
 
-          .auth-card-brandline {
-            margin-bottom: 18px;
-          }
-
           .auth-glass-card .auth-title {
             font-size: 30px;
           }
 
           .auth-card-subtitle {
-            font-size: 16px;
+            font-size: 15px;
           }
 
           .auth-password-row {
