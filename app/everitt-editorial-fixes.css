@@ -1,0 +1,14 @@
+/* EverittOS editorial fixes. This file is intentionally small so the build import resolves. */
+
+input,
+textarea,
+select {
+  min-height: 50px;
+  border-radius: 13px;
+}
+
+.mobile-nav-panel,
+.mobile-menu-panel,
+.more-menu-panel {
+  z-index: 9999 !important;
+}
