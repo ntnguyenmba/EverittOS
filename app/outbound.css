@@ -1,0 +1,181 @@
+.outbound-composer {
+  margin-bottom: 18px;
+}
+
+.outbound-composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.outbound-composer-head h3 {
+  margin: 0;
+}
+
+.outbound-autosave-indicator {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.outbound-autosave-saving {
+  color: var(--accent);
+}
+
+.outbound-autosave-saved {
+  color: var(--success);
+}
+
+.outbound-autosave-error {
+  color: var(--danger, #9a4a45);
+}
+
+.outbound-composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.outbound-secondary-action {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.outbound-secondary-action:hover {
+  background: var(--hover);
+  border-color: var(--line);
+}
+
+.outbound-composer-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.outbound-history-card {
+  margin-bottom: 16px;
+}
+
+.outbound-history-head h3 {
+  margin: 0 0 12px;
+}
+
+.outbound-status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(37, 54, 74, 0.05);
+  border: 1px solid rgba(37, 54, 74, 0.06);
+}
+
+.outbound-status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.outbound-status-tab:hover {
+  background: rgba(37, 54, 74, 0.05);
+  color: var(--text);
+}
+
+.outbound-status-tab.active {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: var(--shadow-nav-active);
+}
+
+.outbound-status-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.outbound-document-list {
+  display: grid;
+  gap: 10px;
+}
+
+.outbound-document-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.outbound-document-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.outbound-document-main strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.outbound-document-time {
+  font-size: 12px;
+}
+
+.outbound-document-error {
+  font-size: 13px;
+  color: var(--danger, #9a4a45);
+}
+
+.outbound-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .outbound-composer-actions .btn-primary {
+    width: 100%;
+  }
+
+  .outbound-document-actions {
+    width: 100%;
+  }
+
+  .outbound-document-actions .btn {
+    flex: 1 1 auto;
+  }
+}

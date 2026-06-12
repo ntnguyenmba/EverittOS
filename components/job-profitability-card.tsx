@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { formatCurrency } from '@/lib/finance-format';
@@ -14,11 +15,10 @@ type JobProfitabilityCardProps = {
 };
 
 export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfitabilityCardProps) {
+  const router = useRouter();
   const [profitability, setProfitability] = useState<JobProfitability | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
-  const [invoiceAmount, setInvoiceAmount] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
@@ -38,40 +38,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     void load();
   }, [load]);
 
-  async function saveInvoice() {
-    if (saving) return;
-    const amount = Number.parseFloat(invoiceAmount);
-    const paid = Number.parseFloat(paymentAmount || '0');
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setFeedback(errorFeedback('Enter a valid invoice amount.'));
-      return;
-    }
-
-    setSaving(true);
-    setFeedback(null);
-    const res = await fetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        job_id: jobId,
-        customer_id: customerId || null,
-        amount,
-        amount_paid: Number.isFinite(paid) ? paid : 0
-      })
-    });
-    const json = await res.json();
-    setSaving(false);
-
-    if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save invoice.'));
-      return;
-    }
-
-    setFeedback(successFeedback('Invoice saved.'));
-    setShowInvoiceForm(false);
-    setInvoiceAmount('');
-    setPaymentAmount('');
-    void load();
+  function openSendInvoice() {
+    const params = new URLSearchParams({ jobId });
+    if (customerId) params.set('customerId', customerId);
+    router.push(`/invoices?${params.toString()}`);
   }
 
   async function recordPayment() {
@@ -132,10 +102,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
 
       {!p?.hasInvoice ? (
         <div className="finance-empty-block">
-          <p>No invoice yet. Add invoice or payment to calculate profit.</p>
+          <p>No invoice yet. Send an invoice to calculate profit.</p>
           {canManage ? (
-            <button type="button" className="btn btn-primary" onClick={() => setShowInvoiceForm((v) => !v)}>
-              {showInvoiceForm ? 'Cancel' : 'Add invoice'}
+            <button type="button" className="btn btn-primary" onClick={openSendInvoice}>
+              Send invoice
             </button>
           ) : null}
         </div>
@@ -198,35 +168,17 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
         </div>
       ) : null}
 
-      {canManage && showInvoiceForm ? (
-        <div className="finance-form-block">
-          <label>Invoice amount</label>
-          <input
-            className="input"
-            type="number"
-            min="0"
-            step="0.01"
-            value={invoiceAmount}
-            onChange={(e) => setInvoiceAmount(e.target.value)}
-          />
-          <label>Payment received (optional)</label>
-          <input
-            className="input"
-            type="number"
-            min="0"
-            step="0.01"
-            value={paymentAmount}
-            onChange={(e) => setPaymentAmount(e.target.value)}
-          />
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveInvoice()}>
-            {saving ? 'Saving...' : 'Save invoice'}
-          </button>
-        </div>
-      ) : null}
-
       <div className="finance-actions">
+        {canManage ? (
+          <button type="button" className="btn btn-primary" onClick={openSendInvoice}>
+            Send invoice
+          </button>
+        ) : null}
         <Link className="btn" href={`/expenses?jobId=${jobId}`}>
           View job expenses
+        </Link>
+        <Link className="btn" href={`/invoices?jobId=${jobId}${customerId ? `&customerId=${customerId}` : ''}`}>
+          Invoice history
         </Link>
       </div>
     </div>

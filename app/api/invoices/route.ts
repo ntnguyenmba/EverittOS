@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logActivityServer } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
 
@@ -69,6 +70,15 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivityServer({
+    organizationId: ctx.organizationId,
+    userId: ctx.userId,
+    entityType: 'invoice',
+    entityId: data.id,
+    action: status === 'paid' ? 'invoice_paid' : 'invoice_created',
+    message: status === 'paid' ? 'Invoice paid' : 'Invoice sent'
+  });
 
   return NextResponse.json({ invoice: data });
 }

@@ -17,6 +17,7 @@ import './everitt-app-polish.css';
 import './everitt-editorial-fixes.css';
 import './typography.css';
 import './nav.css';
+import './outbound.css';
 
 const inter = Inter({
   subsets: ['latin'],

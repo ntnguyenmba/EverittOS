@@ -220,6 +220,10 @@ export type MessageTree = {
     forms: string;
     templates: string;
     reviews: string;
+    proposals: string;
+    estimates: string;
+    invoices: string;
+    messages: string;
     leads: string;
     jobs: string;
     crm: string;

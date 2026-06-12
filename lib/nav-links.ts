@@ -27,7 +27,11 @@ const PRIMARY_NAV: NavLinkDef[] = [
 const TOOLS_NAV: NavLinkDef[] = [
   { label: 'Forms', href: '/forms', flag: 'formsNav' },
   { label: 'Templates', href: '/templates', flag: 'templatesNav' },
-  { label: 'Reviews', href: '/reviews', flag: 'reviewsNav' }
+  { label: 'Reviews', href: '/reviews', flag: 'reviewsNav' },
+  { label: 'Proposals', href: '/proposals', flag: 'proposalsNav' },
+  { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
+  { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
+  { label: 'Messages', href: '/messages', flag: 'messagesNav' }
 ];
 
 const INSIGHTS_NAV: NavLinkDef[] = [
@@ -62,6 +66,9 @@ export const SECONDARY_APP_ROUTES = [
   '/workflows',
   '/notifications',
   '/proposals',
+  '/estimates',
+  '/invoices',
+  '/messages',
   '/projects',
   '/knowledge',
   '/automations',

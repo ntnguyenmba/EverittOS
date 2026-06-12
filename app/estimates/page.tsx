@@ -7,7 +7,7 @@ import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 
-export default function ProposalsPage() {
+export default function EstimatesPage() {
   const [role, setRole] = useState(normalizeRole('employee'));
 
   useEffect(() => {
@@ -24,13 +24,13 @@ export default function ProposalsPage() {
 
   return (
     <OsModulePage
-      title="Proposal Center"
-      description="Create, review, and send proposals. Work saves automatically — send when you are ready."
+      title="Estimates"
+      description="Build estimates, send them to customers, and track sent history. Auto-save keeps your work safe."
       requiredPlan="pro"
-      requiredFeature="Proposals"
+      requiredFeature="Estimates"
       featureCheck={(plan) => canAccessFeature(plan, 'pdfReports')}
     >
-      <OutboundHub docType="proposal" canManage={isManagerRole(role)} showAmount />
+      <OutboundHub docType="estimate" canManage={isManagerRole(role)} showAmount />
     </OsModulePage>
   );
 }
