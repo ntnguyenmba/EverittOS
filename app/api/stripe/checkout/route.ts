@@ -6,6 +6,8 @@ import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
 import { getStripeClient } from '@/lib/stripe-server';
+import { logPromoCodeFailure } from '@/lib/promo-code-logging';
+import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
 
 export const runtime = 'nodejs';
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, email, stripe_customer_id')
+    .select('role, email, stripe_customer_id, organization_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -60,6 +62,15 @@ export async function POST(request: Request) {
   if (promoCode) {
     const validation = await validatePromotionCodeForPlan(stripe, promoCode, plan);
     if (!validation.valid) {
+      await logPromoCodeFailure({
+        userId: user.id,
+        organizationId: profile?.organization_id || null,
+        stage: 'checkout',
+        code: promoCode,
+        plan,
+        errorCode: validation.errorCode,
+        error: validation.error
+      });
       return NextResponse.json(validation, { status: 400 });
     }
     promotionCodeId = validation.promotionCodeId;
@@ -100,12 +111,7 @@ export async function POST(request: Request) {
     sessionParams.customer_email = profile?.email || user.email || undefined;
   }
 
-  if (promotionCodeId) {
-    sessionParams.discounts = [{ promotion_code: promotionCodeId }];
-  } else {
-    // Let customers enter a code on the Stripe Checkout page when none was applied in-app.
-    sessionParams.allow_promotion_codes = true;
-  }
+  Object.assign(sessionParams, checkoutPromotionParams(promotionCodeId));
 
   const session = await stripe.checkout.sessions.create(sessionParams);
 

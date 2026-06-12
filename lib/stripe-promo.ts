@@ -45,6 +45,9 @@ export type StoredCouponDiscount = {
   coupon_expires_at: string | null;
 };
 
+/** Production Stripe promotion codes (customer-facing). */
+export const EVERITTOS_PROMOTION_CODES = ['VIP', 'FOUNDING', 'STAY25', 'EVERITTTEAM'] as const;
+
 function normalizePromoCodeInput(code: string): string {
   return code.trim().toUpperCase();
 }
