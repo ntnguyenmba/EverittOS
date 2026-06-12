@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSync } from '@/components/locale-sync';
@@ -15,9 +15,13 @@ import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import './everitt-theme.css';
 import './everitt-app-polish.css';
 import './everitt-editorial-fixes.css';
+import './typography.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-display' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap'
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -52,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const deployment = vercelDeploymentEnv();
 
   return (
-    <html lang="en" data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang="en" data-deployment={deployment} className={inter.variable}>
       <body>
         <SupabaseRuntimeConfig />
         <AppConnectivityBanner />

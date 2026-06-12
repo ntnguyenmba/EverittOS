@@ -99,7 +99,7 @@ export function AiUsagePanel({ plan: planProp }: AiUsagePanelProps) {
           {!hasAccess ? ' Update billing if your subscription is inactive.' : ''}
         </p>
       ) : null}
-      <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+      <p className="muted" style={{ marginTop: 8 }}>
         Input tokens: {usage.promptTokens.toLocaleString()} · Output tokens: {usage.completionTokens.toLocaleString()}
       </p>
     </div>

@@ -41,9 +41,9 @@ label,
 .form-label,
 .field-label {
   color: var(--slate);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.055em;
+  font-size: var(--text-min, 14px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -184,7 +184,7 @@ button {
 .metric-label,
 .kpi-label {
   color: #6f8191;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -228,14 +228,14 @@ button {
 .table th {
   background: #eef3f7 !important;
   color: var(--finish-navy) !important;
-  font-size: 12px !important;
+  font-size: 14px !important;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .table td {
   color: var(--charcoal) !important;
-  font-size: 15px !important;
+  font-size: 16px !important;
 }
 
 .table tr:hover td {
@@ -253,7 +253,7 @@ button {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -397,7 +397,7 @@ nav[aria-label='Bottom navigation'] {
   button.auth-password-toggle {
     min-width: 78px;
     padding: 0 10px;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .main {

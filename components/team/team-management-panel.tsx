@@ -386,7 +386,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
               <p className="muted">
                 {normalizeRole(m.role)} · {m.active ? 'Active' : 'Inactive'}
               </p>
-              <p className="muted" style={{ fontSize: '0.85rem' }}>
+              <p className="muted">
                 Joined {formatDate(m.created_at)} · Last active {formatDate(m.profiles?.updated_at)}
               </p>
             </div>
@@ -428,7 +428,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
                 <p className="muted">
                   {normalizeRole(inv.role)} · {inv.status}
                 </p>
-                <p className="muted" style={{ fontSize: '0.85rem' }}>
+                <p className="muted">
                   Sent {formatDate(inv.created_at)}
                   {inv.expires_at ? ` · Expires ${formatDate(inv.expires_at)}` : ''}
                 </p>

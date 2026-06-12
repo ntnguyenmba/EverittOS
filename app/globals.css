@@ -28,6 +28,14 @@
   --card-pad: 16px;
   --touch-min: 44px;
 
+  /* Typography (see typography.css for full system) */
+  --font-ui: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --text-min: 14px;
+  --text-body: 16px;
+  --text-card-title: 18px;
+  --text-section: 20px;
+  --text-page-title: clamp(26px, 4vw, 32px);
+
   /* Legacy aliases */
   --slate: var(--navy-primary);
   --charcoal: #2A2A2A;
@@ -45,15 +53,15 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 16px;
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4 {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-weight: 500;
+  font-family: var(--font-ui);
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -125,7 +133,7 @@ a.btn,
 }
 
 .brand-logo-name {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -218,15 +226,15 @@ a.btn,
   padding: 7px 14px;
   border-radius: var(--radius-sm);
   width: fit-content;
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-family: var(--font-inter), Inter, sans-serif;
 }
 
-h1 { font-size: clamp(42px, 6vw, 68px); line-height: 1.04; letter-spacing: -0.02em; margin: 24px 0; }
-h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 16px; }
-h3 { margin: 0 0 12px; letter-spacing: -0.01em; font-size: 24px; }
+h1 { font-size: var(--text-page-title); line-height: 1.25; letter-spacing: -0.02em; margin: 0 0 12px; }
+h2 { font-size: var(--text-section); line-height: 1.25; letter-spacing: -0.015em; margin: 0 0 10px; }
+h3 { margin: 0 0 8px; letter-spacing: -0.01em; font-size: var(--text-card-title); }
 p { color: var(--muted); line-height: 1.7; }
 .hero-copy { font-size: 17px; max-width: 620px; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
@@ -282,7 +290,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .app-preview { padding: 20px; box-shadow: var(--shadow-subtle); }
-.preview-top { display: flex; align-items: center; justify-content: space-between; padding: 10px; color: var(--muted); font-size: 13px; }
+.preview-top { display: flex; align-items: center; justify-content: space-between; padding: 10px; color: var(--muted); font-size: 14px; }
 .dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; }
 .preview-body { display: grid; grid-template-columns: 160px 1fr; min-height: 320px; overflow: hidden; border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--surface); }
 .preview-side { background: var(--bg); padding: 14px; border-right: 1px solid var(--line); }
@@ -291,7 +299,7 @@ p { color: var(--muted); line-height: 1.7; }
 .preview-main { padding: 16px; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.stat strong { display: block; font-size: 28px; letter-spacing: -0.03em; color: var(--text); font-family: var(--font-display), "Cormorant Garamond", Georgia, serif; font-weight: 500; }
+.stat strong { display: block; font-size: 28px; letter-spacing: -0.03em; color: var(--text); font-family: var(--font-ui); font-weight: 500; }
 
 .section { padding: 72px 0; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -356,7 +364,7 @@ p { color: var(--muted); line-height: 1.7; }
   margin-left: 8px;
   padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: rgba(45, 55, 72, 0.08);
@@ -367,10 +375,10 @@ p { color: var(--muted); line-height: 1.7; }
   background: rgba(45, 55, 72, 0.12);
   color: var(--text);
 }
-.sidebar-plan-label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
-.plan-badge { display: inline-block; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); font-size: 12px; color: var(--text); background: var(--bg); }
+.sidebar-plan-label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
+.plan-badge { display: inline-block; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); font-size: 14px; color: var(--text); background: var(--bg); }
 .sidebar-upgrade { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
-.sidebar-upgrade p { font-size: 13px; }
+.sidebar-upgrade p { font-size: 14px; }
 .sidebar-logout { margin-top: 20px; width: 100%; justify-content: center; }
 
 .main {
@@ -432,7 +440,7 @@ p { color: var(--muted); line-height: 1.7; }
   background: rgba(255, 255, 255, 0.72);
   color: var(--muted);
   font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.03em;
   line-height: 1;
@@ -462,7 +470,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .app-back-arrow {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
   opacity: 0.7;
 }
@@ -482,7 +490,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .page-head h1,
 .page-head h2 { margin: 0; }
-.page-head h1 { font-size: clamp(32px, 4vw, 40px); }
+.page-head h1 { font-size: var(--text-page-title); }
 .upgrade-banner {
   display: flex;
   justify-content: space-between;
@@ -507,10 +515,10 @@ p { color: var(--muted); line-height: 1.7; }
 
 .table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
 .table th, .table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; color: var(--muted); font-size: 14px; }
-.table th { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; background: var(--bg); }
+.table th { color: var(--accent); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; background: var(--bg); }
 .table tr:last-child td { border-bottom: none; }
 
-.status { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; border: 1px solid var(--line); color: var(--text); display: inline-flex; font-family: var(--font-inter), Inter, sans-serif; }
+.status { padding: 5px 10px; border-radius: var(--radius-sm); font-size: 14px; border: 1px solid var(--line); color: var(--text); display: inline-flex; font-family: var(--font-inter), Inter, sans-serif; }
 .status.completed, .status.verified { background: var(--success-soft); color: var(--success); border-color: rgba(74, 99, 84, 0.2); }
 .status.progress, .status.assigned, .status.in_progress { background: var(--accent-soft); color: var(--accent); border-color: rgba(45, 55, 72, 0.18); }
 .status.pending, .status.new { background: var(--hover); color: var(--muted); }
@@ -598,7 +606,7 @@ p { color: var(--muted); line-height: 1.7; }
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -633,7 +641,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-ventures-link {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   border-bottom: 1px solid var(--line);
   padding-bottom: 2px;
@@ -656,7 +664,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-shell-footer p {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .auth-shell-footer a {
@@ -664,7 +672,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-eyebrow {
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent);
@@ -673,14 +681,16 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-title {
-  font-size: clamp(36px, 5vw, 52px);
-  line-height: 1.06;
+  font-size: var(--text-page-title);
+  font-weight: 600;
+  line-height: 1.25;
   margin: 0 0 16px;
   color: var(--text);
+  font-family: var(--font-ui);
 }
 
 .auth-description {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.7;
   margin: 0 0 32px;
 }
@@ -692,7 +702,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .auth-field label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   margin-bottom: 6px;
   letter-spacing: 0.02em;
@@ -712,7 +722,7 @@ p { color: var(--muted); line-height: 1.7; }
   flex-shrink: 0;
   min-width: 4.5rem;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .auth-plan-note {
@@ -734,7 +744,7 @@ p { color: var(--muted); line-height: 1.7; }
 .legal-document h3 {
   margin-top: 1.75rem;
   margin-bottom: 0.5rem;
-  font-size: 1.2rem;
+  font-size: var(--text-card-title);
 }
 
 .legal-document ul {
@@ -780,7 +790,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .auth-message-title {
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   margin-bottom: 6px;
 }
 
@@ -797,7 +807,7 @@ p { color: var(--muted); line-height: 1.7; }
   border: none;
   background: none;
   color: inherit;
-  font-size: 13px;
+  font-size: 14px;
   text-decoration: underline;
   cursor: pointer;
   opacity: 0.9;
@@ -817,7 +827,7 @@ p { color: var(--muted); line-height: 1.7; }
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: rgba(45, 55, 72, 0.06);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -870,7 +880,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-aside-label {
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--muted);
@@ -926,7 +936,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .auth-aside-plans span {
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
@@ -995,13 +1005,13 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .settings-row-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
 .settings-row-value {
   color: var(--text);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .settings-warning {
@@ -1113,7 +1123,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .dashboard-glance-card span {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1121,7 +1131,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .dashboard-glance-card strong {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 32px;
   font-weight: 500;
   color: var(--charcoal);
@@ -1163,7 +1173,7 @@ p { color: var(--muted); line-height: 1.7; }
   margin-left: 8px;
   padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: rgba(45, 55, 72, 0.1);
@@ -1190,7 +1200,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .mobile-nav-plan {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   margin: 0 0 8px;
 }
@@ -1218,7 +1228,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .trust-line {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   margin-top: 20px;
 }
@@ -1269,7 +1279,7 @@ p { color: var(--muted); line-height: 1.7; }
   body.mobile-nav-open {
     overflow: hidden;
   }
-  h1 { font-size: 40px; }
+  h1 { font-size: var(--text-page-title); }
   .main {
     grid-area: main;
     position: relative;
@@ -1291,10 +1301,10 @@ p { color: var(--muted); line-height: 1.7; }
     min-height: 44px;
     min-width: 44px;
     padding: 10px 14px 10px 12px;
-    font-size: 13px;
+    font-size: 14px;
   }
   .app-back-arrow {
-    font-size: 13px;
+    font-size: 14px;
   }
   .main > .app-page-top + .page-head {
     margin-bottom: 20px;
@@ -1331,7 +1341,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .photo-thumb figcaption {
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   display: flex;
   flex-direction: column;
@@ -1340,7 +1350,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .photo-tag-pill {
   display: inline-block;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1348,14 +1358,14 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .photo-meta-line {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .photo-delete-btn {
   margin-top: 4px;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 14px;
   align-self: flex-start;
 }
 
@@ -1412,7 +1422,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .photo-delete-confirm p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .photo-dropzone {
@@ -1457,7 +1467,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .photo-upload-status {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -1489,7 +1499,7 @@ p { color: var(--muted); line-height: 1.7; }
 .before-after-label {
   margin: 0;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1500,7 +1510,7 @@ p { color: var(--muted); line-height: 1.7; }
 .before-after-meta {
   margin: 0;
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -1510,7 +1520,7 @@ p { color: var(--muted); line-height: 1.7; }
   place-items: center;
   padding: 16px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .photo-comparison-section h4 {
@@ -1554,7 +1564,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .report-brand {
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1585,14 +1595,14 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .schedule-day-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   margin-bottom: 6px;
 }
 
 .schedule-job-chip {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 4px;
   padding: 4px 8px;
   background: var(--hover);
@@ -1621,7 +1631,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .stat-card span {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1629,7 +1639,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .stat-card strong {
   display: block;
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 28px;
   font-weight: 500;
   color: var(--charcoal);
@@ -1675,7 +1685,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .muted {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* App shell: enforce light cards + charcoal text (no dark-on-dark) */
@@ -1742,7 +1752,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .billing-plan-badge {
   align-self: flex-start;
-  font-size: 0.75rem;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1754,7 +1764,7 @@ p { color: var(--muted); line-height: 1.7; }
 .billing-plan-features {
   margin: 0;
   padding-left: 1.1rem;
-  font-size: 0.9rem;
+  font-size: 16px;
 }
 
 .billing-support-fallback {
@@ -1792,7 +1802,8 @@ p { color: var(--muted); line-height: 1.7; }
 
 .onboarding-support-title {
   margin: 0 0 10px;
-  font-size: 1.35rem;
+  font-size: var(--text-card-title);
+  font-weight: 600;
   line-height: 1.3;
   color: var(--charcoal);
 }
@@ -1897,7 +1908,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .promo-code-price-discounted {
-  font-size: 1.15rem;
+  font-size: var(--text-card-title);
   font-weight: 600;
   color: var(--navy-primary);
 }
@@ -1999,7 +2010,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .onboarding-step-label {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2033,7 +2044,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .onboarding-field span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .onboarding-actions {
@@ -2156,7 +2167,7 @@ p { color: var(--muted); line-height: 1.7; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -2445,7 +2456,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .trend-label {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -2495,7 +2506,7 @@ html[data-deployment='production'] #vercel-toolbar {
   }
 
   .data-table {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .permission-matrix-wrap {
@@ -2580,7 +2591,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .cookie-banner-links {
-  font-size: 13px;
+  font-size: 14px;
   margin-top: 8px;
 }
 
@@ -2621,11 +2632,11 @@ html[data-deployment='production'] #vercel-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .app-footer-copy {
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 12px;
 }
 
@@ -2696,7 +2707,7 @@ html[data-deployment='production'] #vercel-toolbar {
   }
 
   .legal-document h2 {
-    font-size: 1.75rem;
+    font-size: var(--text-section);
   }
 
   .cookie-banner-inner {
@@ -2723,7 +2734,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .dashboard-hero-title {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: clamp(28px, 5vw, 36px);
   font-weight: 500;
   margin: 0;
@@ -2761,7 +2772,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .dashboard-section-head h2 {
   font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2784,7 +2795,7 @@ html[data-deployment='production'] #vercel-toolbar {
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
   color: var(--charcoal);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .dashboard-today-row:last-child {
@@ -2798,7 +2809,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .dashboard-quiet-empty {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--muted);
 }
 
@@ -2860,7 +2871,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .dashboard-metric-card span {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -2868,10 +2879,10 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .dashboard-metric-card strong {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 1;
+  font-family: var(--font-ui);
+  font-size: var(--text-stat, 28px);
+  font-weight: 600;
+  line-height: 1.1;
   color: var(--charcoal);
 }
 
@@ -2932,7 +2943,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .usage-dashboard-note {
   margin: 12px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -2944,7 +2955,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .empty-state-compact h3 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   margin: 0 0 10px;
 }
@@ -3012,15 +3023,15 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .page-subtitle {
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.55;
   color: var(--muted);
   margin-top: 4px;
 }
 
 .card-title-sm {
-  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 16px;
+  font-family: var(--font-ui);
+  font-size: var(--text-card-title);
   font-weight: 600;
   letter-spacing: -0.01em;
   margin: 0 0 12px;
@@ -3059,7 +3070,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .btn-sm {
   padding: 8px 14px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .dashboard-usage-card,
@@ -3112,7 +3123,7 @@ html[data-deployment='production'] #vercel-toolbar {
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 14px;
   word-break: break-all;
 }
 
@@ -3165,12 +3176,12 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .integration-callback-note {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 .integration-callback-note code {
-  font-size: 12px;
+  font-size: 14px;
   word-break: break-all;
 }
 
@@ -3236,7 +3247,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .command-kpi-card span {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
 }
 
@@ -3274,7 +3285,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .command-quick-btn {
   padding: 8px 14px;
-  font-size: 13px;
+  font-size: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -3304,7 +3315,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .command-kbd-hint {
-  font-size: 12px;
+  font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 8px;
@@ -3354,7 +3365,7 @@ html[data-deployment='production'] #vercel-toolbar {
   width: auto;
   margin: 0;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .everitt-cmd-placeholder {
@@ -3362,7 +3373,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .everitt-cmd-kbd {
-  font-size: 11px;
+  font-size: 14px;
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid var(--line);
@@ -3428,7 +3439,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .everitt-cmd-chip {
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--bg);
@@ -3439,7 +3450,7 @@ html[data-deployment='production'] #vercel-toolbar {
 .everitt-cmd-usage,
 .everitt-cmd-notice {
   padding: 4px 10px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .everitt-cmd-notice {
@@ -3471,7 +3482,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .everitt-cmd-section-label {
-  font-size: 11px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
@@ -3504,14 +3515,14 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .everitt-cmd-result-type {
-  font-size: 10px;
+  font-size: 14px;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .everitt-cmd-footer {
   padding: 10px;
-  font-size: 12px;
+  font-size: 14px;
   border-top: 1px solid var(--line);
   margin-top: 8px;
 }
@@ -3600,7 +3611,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .ai-suggestion-chip {
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--bg);
@@ -3642,7 +3653,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .global-search-hint {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .global-search-results {
@@ -3671,7 +3682,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .global-search-type {
-  font-size: 11px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
@@ -3683,12 +3694,12 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .global-search-sub {
   grid-column: 2;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .global-search-footer {
   margin-top: 12px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Organization switcher */
@@ -3697,7 +3708,7 @@ html[data-deployment='production'] #vercel-toolbar {
   align-items: center;
   gap: 8px;
   margin-left: auto;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .org-switcher-label {
@@ -3712,7 +3723,7 @@ html[data-deployment='production'] #vercel-toolbar {
 .org-switcher-single,
 .org-switcher-loading {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* Public forms */
@@ -3749,7 +3760,7 @@ html[data-deployment='production'] #vercel-toolbar {
   overflow: auto;
   padding: 12px;
   margin: 8px 0;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: var(--radius-md);
   background: var(--bg);
   border: 1px solid var(--line);
@@ -3960,7 +3971,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .mobile-nav-brand {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 20px;
   font-weight: 500;
   color: var(--charcoal);
@@ -4041,7 +4052,7 @@ html[data-deployment='production'] #vercel-toolbar {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.2;
   text-align: center;
   cursor: pointer;
@@ -4086,13 +4097,13 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .progress-card span {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.4;
 }
 
 .progress-card strong {
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: clamp(24px, 4vw, 30px);
   font-weight: 500;
   color: var(--charcoal);
@@ -4115,7 +4126,7 @@ html[data-deployment='production'] #vercel-toolbar {
   border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--charcoal);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.35;
   text-align: center;
   text-decoration: none;
@@ -4171,7 +4182,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .attention-item span {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.4;
   color: var(--text);
 }
@@ -4224,7 +4235,7 @@ html[data-deployment='production'] #vercel-toolbar {
   margin: 0;
   padding: 8px 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -4268,7 +4279,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .metric-value {
   display: block;
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: clamp(24px, 4vw, 30px);
   font-weight: 500;
   color: var(--charcoal);
@@ -4278,7 +4289,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .metric-label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.45;
   margin: 0;
@@ -4286,7 +4297,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .metric-hint {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.4;
   margin: 0;
@@ -4364,7 +4375,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .stat-label {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -4374,7 +4385,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .stat-value {
   display: block;
-  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 28px;
   font-weight: 500;
   color: var(--charcoal);
@@ -4481,13 +4492,13 @@ html[data-deployment='production'] #vercel-toolbar {
     gap: 12px;
     padding: 6px 0;
     border: none;
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .table-responsive-wrap .table tbody td::before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 13px;
+    font-size: 14px;
     flex-shrink: 0;
   }
 
@@ -4522,7 +4533,7 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .finance-metric-label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   margin-bottom: 6px;
 }
@@ -4625,7 +4636,7 @@ html[data-deployment='production'] #vercel-toolbar {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .finance-summary-grid {

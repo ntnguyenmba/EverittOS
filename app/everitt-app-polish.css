@@ -164,7 +164,7 @@ main,
 .metric-label,
 .kpi-label {
   color: var(--cool-grey);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -407,7 +407,7 @@ textarea {
   .pill,
   .tag,
   .badge {
-    font-size: 12px;
+    font-size: 14px;
   }
 }
 

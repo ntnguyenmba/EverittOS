@@ -75,7 +75,7 @@ export function PhotoComparisonSection({ photos }: PhotoComparisonGridProps) {
       <h4>Before &amp; after</h4>
       <BeforeAfterComparison before={latestBefore} after={latestAfter} />
       {beforePhotos.length > 1 || afterPhotos.length > 1 ? (
-        <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+        <p className="muted" style={{ marginTop: 8 }}>
           Showing most recent before and after. View all photos below for the full gallery.
         </p>
       ) : null}

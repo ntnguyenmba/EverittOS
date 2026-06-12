@@ -137,7 +137,7 @@ function JobsList() {
                     <td>
                       {job.title}
                       {job.photo_count ? (
-                        <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
+                        <span className="muted" style={{ marginLeft: 8 }}>
                           {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
                         </span>
                       ) : null}

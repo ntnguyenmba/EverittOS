@@ -1,0 +1,272 @@
+/* EverittOS global typography system
+   Loaded last. One UI font, readable outdoors, no sub-14px text. */
+
+:root {
+  --font-ui: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Type scale (px) */
+  --text-min: 14px;
+  --text-body: 16px;
+  --text-body-lg: 17px;
+  --text-card-title: 18px;
+  --text-section: 20px;
+  --text-page-title: clamp(26px, 4vw, 32px);
+  --text-stat: 28px;
+
+  --leading-tight: 1.25;
+  --leading-ui: 1.5;
+  --leading-body: 1.65;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+}
+
+/* Single primary font for all app content */
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+li,
+td,
+th,
+label,
+input,
+textarea,
+select,
+button,
+.btn,
+.card,
+.sidebar,
+.table,
+.modal,
+dialog,
+.nav,
+.mobile-bottom-nav,
+.page-header,
+.dashboard-shell,
+.auth-card,
+.billing-plans-grid,
+.schedule-board,
+.crm-shell {
+  font-family: var(--font-ui);
+}
+
+body {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+/* Heading hierarchy */
+h1 {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+}
+
+h2 {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+  margin: 0 0 10px;
+}
+
+h3 {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+
+h4 {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-ui);
+  margin: 0 0 6px;
+}
+
+/* Semantic type utilities */
+.type-page-title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.type-section-title {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.type-card-title {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.type-body {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.type-body-lg {
+  font-size: var(--text-body-lg);
+  line-height: var(--leading-body);
+}
+
+.type-caption,
+.muted {
+  font-size: var(--text-min);
+  line-height: var(--leading-ui);
+}
+
+.type-label,
+label,
+.form-label,
+.field-label,
+.auth-field label {
+  font-size: var(--text-min);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-ui);
+  letter-spacing: 0.04em;
+}
+
+/* App shell components */
+.page-header h1,
+.page-head h1,
+.dashboard-header h1 {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle,
+.page-header p,
+.page-head p,
+.dashboard-header p {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.card-title-sm,
+.card h3,
+.form h3,
+.modal h3,
+dialog h3 {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+/* Navigation */
+.sidebar a,
+.nav-links a,
+.mobile-bottom-nav-item,
+.mobile-drawer a {
+  font-size: var(--text-body);
+  line-height: var(--leading-ui);
+}
+
+.sidebar-plan-label,
+.nav-kicker,
+.table th {
+  font-size: var(--text-min);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plan-badge,
+.status,
+.status-pill,
+.badge {
+  font-size: var(--text-min);
+  line-height: var(--leading-ui);
+  font-weight: var(--weight-medium);
+}
+
+/* Tables and data */
+.table td {
+  font-size: var(--text-body);
+  line-height: var(--leading-ui);
+}
+
+.table th {
+  font-size: var(--text-min);
+}
+
+/* Forms and buttons */
+.input,
+input,
+textarea,
+select,
+.btn {
+  font-size: var(--text-body);
+  line-height: var(--leading-ui);
+}
+
+.btn-sm {
+  font-size: var(--text-min);
+}
+
+/* Stats and metrics */
+.stat strong,
+.metric-value,
+.dashboard-stat-value,
+.dashboard-metric-card strong {
+  font-size: var(--text-stat);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  font-family: var(--font-ui);
+}
+
+/* Auth and onboarding */
+.auth-card h1,
+.onboarding-step h1 {
+  font-size: var(--text-page-title);
+}
+
+.auth-card p,
+.onboarding-step p {
+  font-size: var(--text-body);
+}
+
+/* Billing */
+.billing-plan-name {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+}
+
+.billing-plan-price {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+}
+
+/* Schedule */
+.schedule-job-title,
+.calendar-event-title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
+}
+
+/* Prevent editorial display font from leaking into app UI */
+.stat strong,
+.brand-wordmark,
+.hero h1 {
+  font-family: var(--font-ui);
+}
