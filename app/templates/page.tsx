@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { EmptyState } from '@/components/empty-state';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -188,17 +188,10 @@ export default function TemplatesPage() {
 
       {loading ? <p>Loading…</p> : null}
       {!loading && templates.length === 0 && !showCreateForm ? (
-        <EmptyState
+        <LocalizedEmptyState
+          emptyKey="templates"
           compact
-          title="No templates"
-          description="Create reusable templates for proposals, SOPs, and emails."
-          action={
-            canManage ? (
-              <button type="button" className="btn btn-primary" onClick={openCreateForm}>
-                New template
-              </button>
-            ) : null
-          }
+          onPrimaryClick={canManage ? openCreateForm : undefined}
         />
       ) : null}
 

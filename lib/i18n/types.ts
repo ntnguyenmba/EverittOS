@@ -81,12 +81,19 @@ export type MessageTree = {
   empty: {
     jobs: { title: string; description: string; action: string };
     customers: { title: string; description: string; action: string };
+    leads: { title: string; description: string; action: string; secondaryAction: string };
     schedule: { title: string; description: string; action: string };
     workers: { title: string; description: string; action: string };
     activity: { title: string; description: string };
     notifications: { title: string; description: string };
     workflows: { title: string; description: string };
     photos: { title: string; description: string };
+    reviews: { title: string; description: string; action: string };
+    forms: { title: string; description: string; action: string };
+    templates: { title: string; description: string; action: string };
+    expenses: { title: string; description: string; action: string };
+    invoices: { title: string; description: string; action: string };
+    analytics: { title: string; description: string; action: string };
   };
   legal: {
     terms: string;

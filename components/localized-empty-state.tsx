@@ -4,38 +4,101 @@ import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
 import { EmptyState } from '@/components/empty-state';
 
-type EmptyKey = 'jobs' | 'customers' | 'schedule' | 'workers';
+export type EmptyKey =
+  | 'jobs'
+  | 'customers'
+  | 'leads'
+  | 'schedule'
+  | 'workers'
+  | 'reviews'
+  | 'forms'
+  | 'templates'
+  | 'expenses'
+  | 'invoices'
+  | 'analytics'
+  | 'activity'
+  | 'notifications'
+  | 'workflows'
+  | 'photos';
 
-const EMPTY_ACTIONS: Record<EmptyKey, string> = {
+const EMPTY_ACTIONS: Partial<Record<EmptyKey, string>> = {
   jobs: '/jobs/new',
   customers: '/customers/new',
+  leads: '/leads/new',
   schedule: '/schedule/new',
-  workers: '/workers'
+  workers: '/workers',
+  reviews: '/reviews',
+  forms: '/forms',
+  templates: '/templates',
+  expenses: '/expenses',
+  invoices: '/invoices',
+  analytics: '/dashboard'
 };
+
+const SECONDARY_ACTIONS: Partial<Record<EmptyKey, string>> = {
+  leads: '/forms'
+};
+
+function resolveString(t: (path: string) => string, path: string): string | undefined {
+  const value = t(path);
+  return value === path ? undefined : value;
+}
 
 type LocalizedEmptyStateProps = {
   emptyKey: EmptyKey;
   href?: string;
+  secondaryHref?: string;
+  onPrimaryClick?: () => void;
+  compact?: boolean;
+  icon?: 'default' | 'none';
 };
 
-export function LocalizedEmptyState({ emptyKey, href }: LocalizedEmptyStateProps) {
+export function LocalizedEmptyState({
+  emptyKey,
+  href,
+  secondaryHref,
+  onPrimaryClick,
+  compact,
+  icon
+}: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
-  const actionHref = href || EMPTY_ACTIONS[emptyKey];
+  const base = `empty.${emptyKey}`;
+  const title = t(`${base}.title`);
+  const description = resolveString(t, `${base}.description`);
+  const actionLabel = resolveString(t, `${base}.action`);
+  const secondaryActionLabel = resolveString(t, `${base}.secondaryAction`);
 
-  const description = t(`empty.${emptyKey}.description`);
+  const actionHref = href || EMPTY_ACTIONS[emptyKey];
+  const secondaryActionHref = secondaryHref || SECONDARY_ACTIONS[emptyKey];
+
+  const primaryAction =
+    actionLabel && (actionHref || onPrimaryClick) ? (
+      onPrimaryClick ? (
+        <button type="button" className="btn btn-primary" onClick={onPrimaryClick}>
+          {actionLabel}
+        </button>
+      ) : actionHref ? (
+        <Link className="btn btn-primary" href={actionHref}>
+          {actionLabel}
+        </Link>
+      ) : null
+    ) : null;
+
+  const secondaryAction =
+    secondaryActionLabel && secondaryActionHref ? (
+      <Link className="btn" href={secondaryActionHref}>
+        {secondaryActionLabel}
+      </Link>
+    ) : null;
 
   return (
     <EmptyState
-      compact
-      title={t(`empty.${emptyKey}.title`)}
-      description={description || undefined}
-      action={
-        emptyKey === 'jobs' || emptyKey === 'customers' || emptyKey === 'schedule' || emptyKey === 'workers' ? (
-          <Link className="btn btn-primary" href={actionHref}>
-            {t(`empty.${emptyKey}.action`)}
-          </Link>
-        ) : undefined
-      }
+      compact={compact}
+      icon={icon}
+      title={title}
+      description={description}
+      action={primaryAction}
+      secondaryAction={secondaryAction}
     />
   );
 }

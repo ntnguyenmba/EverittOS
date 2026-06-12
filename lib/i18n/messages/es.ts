@@ -167,8 +167,15 @@ export const messages: Messages = {
     },
     customers: {
       title: 'Sin clientes aún',
-      description: 'Agregue su primer cliente para rastrear trabajos y facturas.',
+      description:
+        'Agregue su primer cliente para rastrear trabajos, notas, facturas y seguimientos.',
       action: 'Agregar cliente'
+    },
+    leads: {
+      title: 'Sin prospectos aún',
+      description: 'Capture su primer prospecto para rastrear fuentes y conversión.',
+      action: 'Agregar prospecto',
+      secondaryAction: 'Crear un formulario'
     },
     schedule: {
       title: 'Sin programación',
@@ -193,8 +200,38 @@ export const messages: Messages = {
       description: 'Cree una lista de verificación para los mismos pasos en cada trabajo.'
     },
     photos: {
-      title: 'Sin fotos aún',
+      title: 'Sin fotos antes/después aún',
       description: 'Suba fotos de antes y después para documentar el trabajo completado.'
+    },
+    reviews: {
+      title: 'Sin reseñas aún',
+      description: 'Envíe una solicitud de reseña después de un trabajo.',
+      action: 'Enviar solicitud'
+    },
+    forms: {
+      title: 'Sin formularios aún',
+      description: 'Cree un formulario para captar prospectos desde su sitio web.',
+      action: 'Crear formulario'
+    },
+    templates: {
+      title: 'Sin plantillas aún',
+      description: 'Guarde propuestas, SOPs y correos reutilizables para su equipo.',
+      action: 'Nueva plantilla'
+    },
+    expenses: {
+      title: 'Sin gastos aún',
+      description: 'Registre gastos por trabajo para entender la rentabilidad.',
+      action: 'Agregar gasto'
+    },
+    invoices: {
+      title: 'Sin facturas aún',
+      description: 'Envíe su primera factura para cobrar el trabajo completado.',
+      action: 'Enviar factura'
+    },
+    analytics: {
+      title: 'Sin analíticas aún',
+      description: 'Cree clientes, trabajos y facturas para ver métricas de ingresos.',
+      action: 'Ir al panel'
     }
   },
   legal: {

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
@@ -141,9 +142,7 @@ export default function LeadsPage() {
           <div className="card" style={{ marginTop: 18 }}>
             <h3>Open leads</h3>
             {leads.length === 0 ? (
-              <p className="muted">
-                No open leads yet. <Link href="/leads/new">Add a lead</Link> or capture leads from Forms.
-              </p>
+              <LocalizedEmptyState emptyKey="leads" compact />
             ) : (
               leads.map((lead) => (
                 <div key={lead.id} className="dashboard-today-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

@@ -20,6 +20,7 @@ import './typography.css';
 import './nav.css';
 import './outbound.css';
 import './feedback-toast.css';
+import './everitt-luxury-refresh.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,7 +32,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#2D3748'
+  themeColor: '#0F2D5C'
 };
 
 export const metadata: Metadata = {

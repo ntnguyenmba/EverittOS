@@ -1,7 +1,7 @@
 'use client';
 
 import { AppShell } from '@/components/app-shell';
-import { EmptyState } from '@/components/empty-state';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { BusinessPerformanceSection } from '@/components/business-performance-section';
 import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       {!loading && !error && limitsForPlan(plan).advancedReporting && summary && !hasData ? (
-        <EmptyState title={t('dashboard.metricsEmpty')} description={t('dashboard.analyticsEmpty')} />
+        <LocalizedEmptyState emptyKey="analytics" />
       ) : null}
 
       {canAccessFinancialTracking(plan) ? (

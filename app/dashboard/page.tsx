@@ -231,15 +231,28 @@ export default function DashboardPage() {
       ) : null}
 
       <div className="today-page">
-        <PageHeader
-          title={t('dashboard.welcome')}
-          subtitle={t('dashboard.subtitle')}
-          action={
-            <Link className="btn btn-primary" href="/jobs/new">
-              {t('dashboard.newJob')}
+        <PageHeader title={t('dashboard.welcome')} subtitle={t('dashboard.subtitleToday')} />
+
+        <section className="card dashboard-quick-actions-card" aria-label={t('dashboard.primaryActions')}>
+          <h2>{t('dashboard.primaryActions')}</h2>
+          <div className="quick-actions-grid dashboard-quick-actions-grid">
+            <Link href="/jobs/new" className="quick-action-tile quick-action-tile-primary">
+              {t('dashboard.quickActions.createJob')}
             </Link>
-          }
-        />
+            <Link href="/customers/new" className="quick-action-tile">
+              {t('dashboard.quickActions.addCustomer')}
+            </Link>
+            <Link href="/invoices" className="quick-action-tile">
+              {t('dashboard.quickActions.sendInvoice')}
+            </Link>
+            <Link href="/schedule/new" className="quick-action-tile">
+              {t('dashboard.quickActions.scheduleWork')}
+            </Link>
+            <Link href="/workers" className="quick-action-tile">
+              {t('dashboard.quickActions.addWorker')}
+            </Link>
+          </div>
+        </section>
 
         <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
           <div className="dashboard-section-head">
@@ -249,9 +262,6 @@ export default function DashboardPage() {
             </Link>
           </div>
           {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
-          {!loading && todayJobs.length === 0 ? (
-            <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
-          ) : null}
           {!loading &&
             todayJobs.map((job) => (
               <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
@@ -259,25 +269,22 @@ export default function DashboardPage() {
                 <span className="muted">{job.due_date || job.start_date}</span>
               </Link>
             ))}
-        </section>
 
-        <section className="card dashboard-today-card" aria-label={t('dashboard.upcomingJobs')}>
-          <div className="dashboard-section-head">
-            <h2>{t('dashboard.upcomingJobs')}</h2>
-            <Link href="/schedule?range=upcoming" className="dashboard-section-link">
-              {t('dashboard.sidebar.openSchedule')}
-            </Link>
-          </div>
-          {!loading && upcomingJobs.length === 0 ? (
-            <p className="dashboard-quiet-empty">{t('dashboard.noUpcomingJobs')}</p>
+          {!loading && upcomingJobs.length > 0 ? (
+            <div className="dashboard-schedule-upcoming">
+              <h3 className="dashboard-schedule-subhead">{t('dashboard.upcomingJobs')}</h3>
+              {upcomingJobs.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
+                  <span>{job.title}</span>
+                  <span className="muted">{job.due_date || job.start_date}</span>
+                </Link>
+              ))}
+            </div>
           ) : null}
-          {!loading &&
-            upcomingJobs.map((job) => (
-              <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
-                <span>{job.title}</span>
-                <span className="muted">{job.due_date || job.start_date}</span>
-              </Link>
-            ))}
+
+          {!loading && todayJobs.length === 0 && upcomingJobs.length === 0 ? (
+            <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
+          ) : null}
         </section>
 
         <section className="card dashboard-today-card" aria-label={t('dashboard.customersAndLeads')}>

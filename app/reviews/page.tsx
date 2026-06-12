@@ -7,6 +7,7 @@ import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import type { CustomerReview } from '@/lib/os-types';
 
 export default function ReviewsPage() {
@@ -56,7 +57,7 @@ export default function ReviewsPage() {
         footer={
           <div className="card">
             <h3>Submitted reviews</h3>
-            {reviews.length === 0 ? <p className="muted">No reviews recorded yet.</p> : null}
+            {reviews.length === 0 ? <LocalizedEmptyState emptyKey="reviews" compact icon="none" /> : null}
             {reviews.map((r) => (
               <div key={r.id} className="dashboard-today-row">
                 <span>{'★'.repeat(r.rating || 0)}</span>

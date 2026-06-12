@@ -166,8 +166,14 @@ export const messages: Messages = {
     },
     customers: {
       title: 'Chưa có khách hàng',
-      description: 'Thêm khách đầu tiên để theo dõi việc và hóa đơn.',
+      description: 'Thêm khách đầu tiên để theo dõi việc, ghi chú, hóa đơn và theo dõi.',
       action: 'Thêm khách'
+    },
+    leads: {
+      title: 'Chưa có khách tiềm năng',
+      description: 'Thu thập khách tiềm năng đầu tiên để theo dõi nguồn và chuyển đổi.',
+      action: 'Thêm khách tiềm năng',
+      secondaryAction: 'Tạo biểu mẫu'
     },
     schedule: {
       title: 'Chưa có lịch',
@@ -192,8 +198,38 @@ export const messages: Messages = {
       description: 'Tạo danh sách kiểm tra khi muốn các bước giống nhau cho mọi công việc.'
     },
     photos: {
-      title: 'Chưa có ảnh',
+      title: 'Chưa có ảnh trước/sau',
       description: 'Tải ảnh trước và sau để ghi lại công việc đã hoàn thành.'
+    },
+    reviews: {
+      title: 'Chưa có đánh giá',
+      description: 'Gửi yêu cầu đánh giá sau khi hoàn thành công việc.',
+      action: 'Gửi yêu cầu đánh giá'
+    },
+    forms: {
+      title: 'Chưa có biểu mẫu',
+      description: 'Tạo biểu mẫu để thu thập khách tiềm năng từ website.',
+      action: 'Tạo biểu mẫu'
+    },
+    templates: {
+      title: 'Chưa có mẫu',
+      description: 'Lưu đề xuất, SOP và email tái sử dụng cho nhóm.',
+      action: 'Mẫu mới'
+    },
+    expenses: {
+      title: 'Chưa có chi phí',
+      description: 'Theo dõi chi phí theo công việc để hiểu lợi nhuận.',
+      action: 'Thêm chi phí'
+    },
+    invoices: {
+      title: 'Chưa có hóa đơn',
+      description: 'Gửi hóa đơn đầu tiên để thu tiền cho công việc đã hoàn thành.',
+      action: 'Gửi hóa đơn'
+    },
+    analytics: {
+      title: 'Chưa có phân tích',
+      description: 'Tạo khách, việc và hóa đơn để xem thông tin doanh thu.',
+      action: 'Đến bảng điều khiển'
     }
   },
   legal: {

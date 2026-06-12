@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { EmptyState } from '@/components/empty-state';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -110,9 +110,7 @@ export default function FormsPage() {
       ) : null}
 
       {loading ? <p>Loading forms…</p> : null}
-      {!loading && forms.length === 0 ? (
-        <EmptyState compact title="No forms yet" description="Create a form to capture leads from your website." />
-      ) : null}
+      {!loading && forms.length === 0 ? <LocalizedEmptyState emptyKey="forms" compact /> : null}
 
       <div className="card-list">
         {forms.map((form) => (

@@ -165,8 +165,15 @@ export const messages: Messages = {
     },
     customers: {
       title: 'No customers yet',
-      description: 'Add your first customer to begin tracking jobs and invoices.',
+      description:
+        'Add your first customer to start tracking jobs, notes, invoices, and follow-ups.',
       action: 'Add customer'
+    },
+    leads: {
+      title: 'No leads yet',
+      description: 'Capture your first lead to track sources, follow-ups, and conversion.',
+      action: 'Add lead',
+      secondaryAction: 'Create a form'
     },
     schedule: {
       title: 'Nothing scheduled',
@@ -191,8 +198,38 @@ export const messages: Messages = {
       description: 'Create a checklist when you want the same steps on every job.'
     },
     photos: {
-      title: 'No photos yet',
-      description: 'Upload before and after photos to document completed work.'
+      title: 'No before/after photos yet',
+      description: 'Upload before and after photos to document completed work and share results.'
+    },
+    reviews: {
+      title: 'No reviews yet',
+      description: 'Send a review request after a job to collect customer feedback.',
+      action: 'Send review request'
+    },
+    forms: {
+      title: 'No forms yet',
+      description: 'Create a form to capture leads from your website or social channels.',
+      action: 'Create form'
+    },
+    templates: {
+      title: 'No templates yet',
+      description: 'Save reusable proposals, SOPs, emails, and checklists for your team.',
+      action: 'New template'
+    },
+    expenses: {
+      title: 'No expenses yet',
+      description: 'Track spending by job to understand profit and business performance.',
+      action: 'Add expense'
+    },
+    invoices: {
+      title: 'No invoices yet',
+      description: 'Send your first invoice to collect payment for completed work.',
+      action: 'Send invoice'
+    },
+    analytics: {
+      title: 'No analytics yet',
+      description: 'Create customers, jobs, and invoices to see revenue and performance insights.',
+      action: 'Go to dashboard'
     }
   },
   legal: {

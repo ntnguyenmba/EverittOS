@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
+import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancialTracking, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
@@ -434,14 +435,11 @@ function ExpensesContent() {
       <div className="card">
         {loading ? <p className="loading-state">Loading expenses...</p> : null}
         {!loading && expenses.length === 0 ? (
-          <div className="finance-empty-block">
-            <p>No expenses yet.</p>
-            {canManage ? (
-              <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
-                Add your first expense to see estimated profit.
-              </button>
-            ) : null}
-          </div>
+          <LocalizedEmptyState
+            emptyKey="expenses"
+            compact
+            onPrimaryClick={canManage ? () => setShowForm(true) : undefined}
+          />
         ) : null}
 
         {!loading && expenses.length > 0 ? (
