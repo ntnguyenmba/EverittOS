@@ -44,7 +44,9 @@ const ALWAYS_LOG = new Set([
   'workspace_bootstrap_retry',
   'workspace_bootstrap_failed',
   'google_calendar_callback',
-  'google_calendar_status'
+  'google_calendar_status',
+  'google_calendar_disconnect',
+  'google_calendar_token_refresh'
 ]);
 
 /** Console-safe auth logging. Critical failures always log; verbose logs are development-only. */

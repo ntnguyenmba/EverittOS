@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logAuthEvent } from '@/lib/auth-logger';
 import { appUrl } from '@/lib/app-url';
+import { isRevokedTokenError } from '@/lib/google-calendar-health';
 import { refreshGoogleAccessToken } from '@/lib/google-calendar-oauth';
 
 export type GoogleCalendarConnectionRow = {
@@ -38,6 +40,28 @@ type GoogleCalendarEventBody = {
   end: { dateTime?: string; date?: string; timeZone?: string };
 };
 
+async function markGoogleCalendarReconnectRequired(
+  admin: SupabaseClient,
+  connection: GoogleCalendarConnectionRow,
+  reason: string
+): Promise<void> {
+  await admin
+    .from('google_calendar_connections')
+    .update({
+      last_sync_error: reason.slice(0, 500),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', connection.id);
+
+  logAuthEvent('google_calendar_token_refresh', {
+    organizationId: connection.organization_id,
+    connectionFound: true,
+    refreshPresent: Boolean(connection.refresh_token),
+    phase: 'reconnect_required',
+    reason: reason.slice(0, 180)
+  });
+}
+
 async function ensureAccessToken(
   admin: SupabaseClient,
   connection: GoogleCalendarConnectionRow
@@ -46,19 +70,41 @@ async function ensureAccessToken(
   const stillValid = Number.isFinite(expiresAt) && expiresAt - Date.now() > 60_000;
   if (stillValid) return connection.access_token;
 
-  const refreshed = await refreshGoogleAccessToken(connection.refresh_token);
-  const nextExpires = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+  if (!connection.refresh_token?.trim()) {
+    await markGoogleCalendarReconnectRequired(admin, connection, 'Missing refresh token.');
+    throw new Error('Google Calendar reconnect required: missing refresh token.');
+  }
 
-  await admin
-    .from('google_calendar_connections')
-    .update({
-      access_token: refreshed.access_token,
-      token_expires_at: nextExpires,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', connection.id);
+  try {
+    const refreshed = await refreshGoogleAccessToken(connection.refresh_token);
+    const nextExpires = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
 
-  return refreshed.access_token;
+    await admin
+      .from('google_calendar_connections')
+      .update({
+        access_token: refreshed.access_token,
+        token_expires_at: nextExpires,
+        last_sync_error: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', connection.id);
+
+    logAuthEvent('google_calendar_token_refresh', {
+      organizationId: connection.organization_id,
+      connectionFound: true,
+      refreshPresent: true,
+      expiryPresent: true,
+      phase: 'refreshed'
+    });
+
+    return refreshed.access_token;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Google token refresh failed.';
+    if (isRevokedTokenError(message)) {
+      await markGoogleCalendarReconnectRequired(admin, connection, message);
+    }
+    throw err;
+  }
 }
 
 function buildEventBody(job: JobForCalendarSync, timeZone: string): GoogleCalendarEventBody | null {
@@ -129,6 +175,7 @@ export function isActiveGoogleCalendarConnection(
   if (!connection.refresh_token?.trim()) return false;
   if (!connection.access_token?.trim()) return false;
   if (!connection.token_expires_at) return false;
+  if (isRevokedTokenError(connection.last_sync_error)) return false;
   return true;
 }
 
@@ -142,7 +189,15 @@ export async function getGoogleCalendarConnection(
     .eq('organization_id', organizationId)
     .maybeSingle();
 
-  if (error) return null;
+  if (error) {
+    logAuthEvent('google_calendar_status', {
+      organizationId,
+      connectionFound: false,
+      phase: 'lookup_failed',
+      reason: error.message.slice(0, 180)
+    });
+    return null;
+  }
   return (data as GoogleCalendarConnectionRow | null) || null;
 }
 
@@ -285,7 +340,23 @@ export async function syncOrganizationJobsToGoogleCalendar(
   return { synced, failed, error: lastError };
 }
 
-export async function disconnectGoogleCalendar(admin: SupabaseClient, organizationId: string): Promise<void> {
+export async function disconnectGoogleCalendar(
+  admin: SupabaseClient,
+  organizationId: string,
+  userId?: string | null
+): Promise<void> {
   await admin.from('job_google_calendar_events').delete().eq('organization_id', organizationId);
-  await admin.from('google_calendar_connections').delete().eq('organization_id', organizationId);
+  const { error } = await admin.from('google_calendar_connections').delete().eq('organization_id', organizationId);
+
+  logAuthEvent('google_calendar_disconnect', {
+    userId: userId || undefined,
+    organizationId,
+    connectionFound: !error,
+    phase: error ? 'delete_failed' : 'deleted',
+    reason: error?.message.slice(0, 180)
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

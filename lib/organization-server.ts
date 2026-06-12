@@ -20,7 +20,11 @@ export async function fetchOrganizationContextForUser(
     .eq('id', userId)
     .maybeSingle();
 
-  const orgId = await resolveActiveOrganizationId(supabase, userId, preferredOrgId || profile?.organization_id);
+  const orgId = await resolveActiveOrganizationId(
+    supabase,
+    userId,
+    preferredOrgId ?? profile?.organization_id ?? null
+  );
 
   if (!orgId) return null;
 

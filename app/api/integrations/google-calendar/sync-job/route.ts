@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextForRequest(supabase, user.id);
   if (!org || !canAssignJobs(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }

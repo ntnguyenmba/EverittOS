@@ -4,12 +4,9 @@ import { appUrl } from '@/lib/app-url';
 import { googleCalendarConfigured } from '@/lib/google-calendar-config';
 import { exchangeGoogleAuthCode, fetchGoogleUserEmail } from '@/lib/google-calendar-oauth';
 import { verifyGoogleOAuthState } from '@/lib/google-calendar-oauth-state';
-import {
-  getGoogleCalendarConnection,
-  isActiveGoogleCalendarConnection,
-  syncOrganizationJobsToGoogleCalendar
-} from '@/lib/google-calendar-sync';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { isGoogleCalendarOperational, resolveGoogleCalendarHealth } from '@/lib/google-calendar-health';
+import { getGoogleCalendarConnection, syncOrganizationJobsToGoogleCalendar } from '@/lib/google-calendar-sync';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -54,13 +51,20 @@ export async function GET(request: Request) {
     return integrationsRedirect({ error: 'session_mismatch' });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (
-    !org ||
-    org.organizationId !== statePayload.organizationId ||
-    !canManageOrganizationSettings(normalizeRole(org.role))
-  ) {
+  const org = await fetchOrganizationContextForRequest(supabase, user.id);
+  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return integrationsRedirect({ error: 'permission_denied' });
+  }
+
+  if (org.organizationId !== statePayload.organizationId) {
+    logAuthEvent('google_calendar_callback', {
+      userId: user.id,
+      organizationId: org.organizationId,
+      connectionFound: false,
+      phase: 'org_mismatch',
+      reason: `state=${statePayload.organizationId}`
+    });
+    return integrationsRedirect({ error: 'permission_denied', detail: 'Workspace changed during sign-in. Try again.' });
   }
 
   const admin = createAdminSupabase();
@@ -124,7 +128,8 @@ export async function GET(request: Request) {
     }
 
     const saved = await getGoogleCalendarConnection(admin, org.organizationId);
-    const active = isActiveGoogleCalendarConnection(saved);
+    const health = resolveGoogleCalendarHealth(saved);
+    const active = isGoogleCalendarOperational(health);
 
     logAuthEvent('google_calendar_callback', {
       userId: user.id,
@@ -132,7 +137,8 @@ export async function GET(request: Request) {
       connectionFound: Boolean(saved),
       expiryPresent: Boolean(saved?.token_expires_at),
       refreshPresent: Boolean(saved?.refresh_token),
-      phase: active ? 'saved' : 'verify_failed'
+      phase: active ? 'saved' : 'verify_failed',
+      reason: health
     });
 
     if (!active) {

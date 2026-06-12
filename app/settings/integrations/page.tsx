@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { googleCalendarRedirectUri } from '@/lib/google-calendar-config';
+import type { GoogleCalendarHealth } from '@/lib/google-calendar-health';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -12,10 +13,15 @@ import { supabase } from '@/lib/supabase';
 type CalendarStatus = {
   configured: boolean;
   connected: boolean;
+  health: GoogleCalendarHealth;
+  healthLabel: string;
   canManage: boolean;
+  provider: string;
+  organizationId?: string;
   googleEmail: string | null;
   calendarId: string;
   syncEnabled: boolean;
+  tokenExpiresAt: string | null;
   lastSyncAt: string | null;
   lastSyncError: string | null;
 };
@@ -26,7 +32,7 @@ const CALLBACK_ERRORS: Record<string, string> = {
   missing_code: 'Google did not return an authorization code.',
   invalid_state: 'The OAuth session expired. Try connecting again.',
   session_mismatch: 'Your EverittOS session changed during Google sign-in. Try again.',
-  permission_denied: 'You do not have permission to connect Google Calendar.',
+  permission_denied: 'You do not have permission to connect Google Calendar for this workspace.',
   server_config: 'Server configuration is incomplete.',
   missing_refresh_token: 'Google did not return a refresh token. Disconnect the app in your Google Account and try again.',
   connect_failed: 'Google Calendar connection failed.'
@@ -39,6 +45,19 @@ const STATUS_FETCH_INIT: RequestInit = {
     Pragma: 'no-cache'
   }
 };
+
+function healthClass(health: GoogleCalendarHealth): string {
+  switch (health) {
+    case 'connected':
+      return 'integration-health-connected';
+    case 'token_expired':
+      return 'integration-health-expired';
+    case 'reconnect_required':
+      return 'integration-health-reconnect';
+    default:
+      return 'integration-health-disconnected';
+  }
+}
 
 function IntegrationsContent() {
   const router = useRouter();
@@ -82,40 +101,58 @@ function IntegrationsContent() {
         return;
       }
 
+      const oauthSuccess = searchParams.get('googleCalendar') === 'connected';
+      const legacySuccess = searchParams.get('connected') === '1';
+      const errKey = searchParams.get('error');
+
+      if (oauthSuccess || legacySuccess) {
+        setSuccessAlert('Google Calendar connected. Existing scheduled jobs were synced.');
+      }
+
+      if (errKey) {
+        const detail = searchParams.get('detail');
+        setError(CALLBACK_ERRORS[errKey] || 'Google Calendar connection failed.');
+        if (detail) {
+          setError((prev) => `${prev} ${detail}`);
+        }
+      }
+
       await loadStatus();
+
+      if (oauthSuccess || legacySuccess || errKey) {
+        router.replace('/settings/integrations');
+      }
     }
 
     void init();
-  }, [loadStatus, router]);
-
-  useEffect(() => {
-    const oauthSuccess = searchParams.get('googleCalendar') === 'connected';
-    const legacySuccess = searchParams.get('connected') === '1';
-
-    if (oauthSuccess || legacySuccess) {
-      setSuccessAlert('Google Calendar connected. Existing scheduled jobs were synced.');
-      void loadStatus();
-    }
-
-    const errKey = searchParams.get('error');
-    if (errKey) {
-      const detail = searchParams.get('detail');
-      setError(CALLBACK_ERRORS[errKey] || 'Google Calendar connection failed.');
-      if (detail && errKey === 'connect_failed') {
-        setError(`${CALLBACK_ERRORS.connect_failed} ${detail}`);
-      }
-    }
-  }, [searchParams, loadStatus]);
+  }, [loadStatus, router, searchParams]);
 
   async function disconnect() {
     setBusy(true);
     setError('');
     setSuccessAlert('');
+    setStatus((prev) =>
+      prev
+        ? {
+            ...prev,
+            connected: false,
+            health: 'not_connected',
+            healthLabel: 'Not Connected',
+            googleEmail: null,
+            syncEnabled: false,
+            tokenExpiresAt: null,
+            lastSyncAt: null,
+            lastSyncError: null
+          }
+        : prev
+    );
+
     const res = await fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' });
     setBusy(false);
     if (!res.ok) {
       const json = await res.json();
       setError(json.error || 'Unable to disconnect.');
+      await loadStatus();
       return;
     }
     setSuccessAlert('Google Calendar disconnected.');
@@ -131,13 +168,15 @@ function IntegrationsContent() {
     setBusy(false);
     if (!res.ok) {
       setError(json.error || 'Sync failed.');
+      await loadStatus();
       return;
     }
     setSuccessAlert(`Synced ${json.synced} job(s) to Google Calendar.${json.failed ? ` ${json.failed} failed.` : ''}`);
     await loadStatus();
   }
 
-  const showConnected = Boolean(status?.connected);
+  const health = status?.health || 'not_connected';
+  const showOperational = Boolean(status?.connected);
 
   if (loading) {
     return (
@@ -171,11 +210,19 @@ function IntegrationsContent() {
 
         <p style={{ marginTop: 12 }}>
           Status:{' '}
-          <strong>
-            {!status?.configured ? 'Configuration missing' : showConnected ? 'Connected' : 'Not connected'}
+          <strong className={healthClass(health)}>
+            {!status?.configured ? 'Configuration missing' : status.healthLabel || 'Not Connected'}
           </strong>
-          {showConnected && status?.googleEmail ? ` (${status.googleEmail})` : ''}
+          {status?.googleEmail ? ` (${status.googleEmail})` : ''}
         </p>
+
+        {health === 'token_expired' ? (
+          <p className="muted">Access token expired. EverittOS will refresh automatically on the next sync.</p>
+        ) : null}
+
+        {health === 'reconnect_required' ? (
+          <p className="muted">Reconnect Google Calendar to restore sync.</p>
+        ) : null}
 
         {!status?.configured ? (
           <p className="muted" style={{ marginTop: 12 }}>
@@ -187,15 +234,18 @@ function IntegrationsContent() {
 
         {status?.configured ? (
           <>
-            {showConnected && status.lastSyncAt ? (
+            {status.tokenExpiresAt ? (
+              <p className="muted">Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}</p>
+            ) : null}
+            {showOperational && status.lastSyncAt ? (
               <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
             ) : null}
             {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
 
             <div className="settings-actions" style={{ marginTop: 16 }}>
-              {!showConnected ? (
+              {!showOperational ? (
                 <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
-                  Connect Google Calendar
+                  {health === 'reconnect_required' ? 'Reconnect Google Calendar' : 'Connect Google Calendar'}
                 </a>
               ) : (
                 <>

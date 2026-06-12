@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test tests/google-calendar.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19.1.5",
     "eslint": "^9.27.0",
     "eslint-config-next": "^15.3.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.3"
   }
 }

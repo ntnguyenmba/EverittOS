@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { disconnectGoogleCalendar } from '@/lib/google-calendar-sync';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { logAuthEvent } from '@/lib/auth-logger';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -17,7 +18,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextForRequest(supabase, user.id);
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
@@ -27,6 +28,18 @@ export async function POST() {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  await disconnectGoogleCalendar(admin, org.organizationId);
-  return NextResponse.json({ ok: true });
+  try {
+    await disconnectGoogleCalendar(admin, org.organizationId, user.id);
+    return NextResponse.json({ ok: true, health: 'not_connected' });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Disconnect failed.';
+    logAuthEvent('google_calendar_disconnect', {
+      userId: user.id,
+      organizationId: org.organizationId,
+      connectionFound: false,
+      phase: 'delete_failed',
+      reason: message.slice(0, 180)
+    });
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

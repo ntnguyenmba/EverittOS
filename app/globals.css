@@ -2746,6 +2746,38 @@ html[data-deployment='production'] #vercel-toolbar {
   min-height: 44px;
 }
 
+.integration-health-connected {
+  color: var(--success, #1a7f4b);
+}
+
+.integration-health-expired {
+  color: var(--warning, #9a6b00);
+}
+
+.integration-health-reconnect {
+  color: var(--danger, #b42318);
+}
+
+.integration-health-disconnected {
+  color: inherit;
+}
+
+.integration-health-connected {
+  color: #1a7f4b;
+}
+
+.integration-health-expired {
+  color: #9a6b00;
+}
+
+.integration-health-reconnect {
+  color: #b42318;
+}
+
+.integration-health-disconnected {
+  color: inherit;
+}
+
 .integration-callback-note {
   font-size: 13px;
   line-height: 1.5;
