@@ -206,6 +206,7 @@ export type MessageTree = {
     acceptPrivacy: string;
     consentRequired: string;
     signInMethods: string;
+    signUpMethods: string;
   };
   nav: {
     today: string;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { getCurrentWorkspaceForUser, mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { sendTeamInviteEmail } from '@/lib/email';
 import { canManageTeam } from '@/lib/roles';
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
@@ -20,8 +20,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized or server not configured' }, { status: 401 });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !canManageTeam(org.role)) {
+  const workspaceResult = await getCurrentWorkspaceForUser(supabase, user.id, {
+    email: user.email || '',
+    userMetadata: user.user_metadata || undefined,
+    repair: true
+  });
+  if (!workspaceResult.ok) {
+    return NextResponse.json({ error: workspaceResult.error, code: workspaceResult.code }, { status: workspaceResult.status });
+  }
+  const org = workspaceResult.workspace;
+  if (!canManageTeam(org.role)) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
@@ -56,7 +64,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
   const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);

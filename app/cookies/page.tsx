@@ -44,7 +44,7 @@ export default function CookiesPage() {
 
         <h3>Third parties</h3>
         <p>
-          Stripe checkout and Google sign-in may set their own cookies when you use those features. See their respective
+          Stripe checkout may set its own cookies when you use billing. See their respective
           privacy policies for details.
         </p>
 

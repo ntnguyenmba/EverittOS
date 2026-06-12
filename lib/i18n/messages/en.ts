@@ -315,7 +315,8 @@ export const messages: Messages = {
     acceptTerms: 'I agree to the Terms of Service',
     acceptPrivacy: 'I agree to the Privacy Policy',
     consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.',
-    signInMethods: 'Sign in with email or Google.'
+    signInMethods: 'Sign in with your email and password.',
+    signUpMethods: 'Create an account with email and password.'
   },
   nav: {
     today: 'Today',

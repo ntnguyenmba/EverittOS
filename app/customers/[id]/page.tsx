@@ -9,12 +9,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import {
-  buildCustomerUpdatePayload,
-  customerDisplayAddress,
-  customerDisplayName,
-  type CustomerRecord
-} from '@/lib/customer-record';
+import { customerDisplayAddress, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -145,10 +140,15 @@ export default function CustomerDetailPage({ params }: PageProps) {
       return;
     }
 
-    const { error: updateError } = await supabase.from('customers').update({ logo_path: path }).eq('id', customerId);
+    const logoRes = await fetch(`/api/customers/${customerId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logo_path: path })
+    });
+    const logoJson = (await logoRes.json().catch(() => ({}))) as { error?: string };
     setLogoUploading(false);
-    if (updateError) {
-      setMessage(updateError.message);
+    if (!logoRes.ok) {
+      setMessage(logoJson.error || 'Logo could not be saved.');
       return;
     }
     setLogoPath(path);
@@ -156,21 +156,18 @@ export default function CustomerDetailPage({ params }: PageProps) {
   }
 
   async function saveCustomer() {
-    if (!canEdit) return;
-    const { error } = await supabase
-      .from('customers')
-      .update(
-        buildCustomerUpdatePayload({
-          displayName,
-          phone,
-          email,
-          address,
-          notes
-        })
-      )
-      .eq('id', customerId);
-    if (error) setMessage(error.message);
-    else setMessage('Customer saved.');
+    if (!canEdit || !customerId) return;
+    const res = await fetch(`/api/customers/${customerId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, phone, email, address, notes })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to save customer.');
+      return;
+    }
+    setMessage('Customer saved.');
     load();
   }
 

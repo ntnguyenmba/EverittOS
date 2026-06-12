@@ -160,7 +160,7 @@ function SignupForm() {
         </p>
       ) : null}
 
-      <p className="auth-methods-note">{t('auth.signInMethods')}</p>
+      <p className="auth-methods-note">{t('auth.signUpMethods')}</p>
 
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">

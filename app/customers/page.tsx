@@ -20,7 +20,6 @@ import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { validatePlanAction } from '@/lib/plan-validate';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import {
-  buildCustomerWritePayload,
   CUSTOMER_LIST_SELECT,
   customerDisplayAddress,
   customerDisplayName,
@@ -153,31 +152,20 @@ function CustomersPageContent() {
       return;
     }
 
-    const { data: createdCustomer, error } = await supabase
-      .from('customers')
-      .insert({
-        user_id: user.id,
-        organization_id: org.organizationId,
-        ...buildCustomerWritePayload({
-          displayName,
-          phone,
-          email,
-          address,
-          notes
-        })
-      })
-      .select('id')
-      .single();
+    const createRes = await fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, phone, email, address, notes })
+    });
+    const createJson = (await createRes.json()) as { customer?: { id: string }; error?: string };
 
-    if (error) {
+    if (!createRes.ok) {
       setSaving(false);
-      if (error.message.includes('PLAN_LIMIT_CUSTOMERS')) {
-        setFeedback(errorFeedback(limitMessage('customers', orgPlan)));
-      } else {
-        setFeedback(errorFeedback(formatSupabaseError(error)));
-      }
+      setFeedback(errorFeedback(createJson.error || 'Unable to save customer.'));
       return;
     }
+
+    const createdCustomer = createJson.customer;
 
     if (logoFile && createdCustomer?.id) {
       const { path, error: uploadError } = await uploadCustomerLogo(
@@ -193,13 +181,17 @@ function CustomersPageContent() {
         return;
       }
       if (path) {
-        const { error: logoUpdateError } = await supabase
-          .from('customers')
-          .update({ logo_path: path })
-          .eq('id', createdCustomer.id);
-        if (logoUpdateError) {
+        const logoRes = await fetch(`/api/customers/${createdCustomer.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logo_path: path })
+        });
+        if (!logoRes.ok) {
+          const logoJson = (await logoRes.json().catch(() => ({}))) as { error?: string };
           setSaving(false);
-          setFeedback(errorFeedback(`Customer saved, but logo could not be linked: ${logoUpdateError.message}`));
+          setFeedback(
+            errorFeedback(`Customer saved, but logo could not be linked: ${logoJson.error || 'Update failed.'}`)
+          );
           load();
           return;
         }

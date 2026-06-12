@@ -4,7 +4,7 @@ import { PermissionMatrix } from '@/components/team/permission-matrix';
 import { EmptyState } from '@/components/empty-state';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchOrganizationContext } from '@/lib/organization';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { canManageTeam, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { PERMISSION_LABELS, permissionsForRole } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
@@ -81,7 +81,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     setPlan(normalizePlan(profile?.plan));
 
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
     if (!org) {
       setLoading(false);
       setMessageType('error');

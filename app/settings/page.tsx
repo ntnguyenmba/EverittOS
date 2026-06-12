@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchOrganizationContext } from '@/lib/organization';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function SettingsPage() {
       setBookingUrl(biz?.booking_url || '');
       setEmail(user.email || '');
 
-      const org = await fetchOrganizationContext(user.id);
+      const org = await ensureOrganizationForUser(user.id);
       if (org) {
         setOrgId(org.organizationId);
         const { data: settings } = await supabase
@@ -123,6 +123,14 @@ export default function SettingsPage() {
     setSaving(true);
     setFeedback(null);
 
+    const org = await ensureOrganizationForUser(user.id);
+    if (!org?.organizationId) {
+      setSaving(false);
+      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
+      return;
+    }
+    setOrgId(org.organizationId);
+
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ business_name: businessName.trim() || null })
@@ -149,9 +157,9 @@ export default function SettingsPage() {
       return;
     }
 
-    if (orgId) {
+    if (org.organizationId) {
       const { error: settingsError } = await supabase.from('organization_settings').upsert({
-        organization_id: orgId,
+        organization_id: org.organizationId,
         company_phone: phone.trim() || null,
         company_email: email,
         website: website.trim() || null,
@@ -175,7 +183,7 @@ export default function SettingsPage() {
       const { error: orgError } = await supabase
         .from('organizations')
         .update({ name: businessName.trim() || 'My Business' })
-        .eq('id', orgId);
+        .eq('id', org.organizationId);
       if (orgError) {
         setSaving(false);
         setFeedback(errorFeedback(formatSupabaseError(orgError)));

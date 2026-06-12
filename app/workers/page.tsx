@@ -7,7 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useTranslation } from '@/components/locale-provider';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
@@ -98,22 +98,17 @@ export default function WorkersPage() {
       setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
       return;
     }
-    const { error } = await supabase.from('workers').insert({
-      user_id: user.id,
-      organization_id: org.organizationId,
-      name: name.trim(),
-      role: role.trim() || null,
-      phone: phone.trim() || null
+    const res = await fetch('/api/workers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim(), role: role.trim() || null, phone: phone.trim() || null })
     });
 
     setSaving(false);
 
-    if (error) {
-      if (error.message.includes('PLAN_LIMIT_CREW')) {
-        setFeedback(errorFeedback('Workers and crew assignment require the Business plan.'));
-      } else {
-        setFeedback(errorFeedback(formatSupabaseError(error)));
-      }
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      setFeedback(errorFeedback(json.error || 'Unable to save worker.'));
       return;
     }
 

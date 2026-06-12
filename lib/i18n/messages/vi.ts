@@ -316,7 +316,8 @@ export const messages: Messages = {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
     consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
-    signInMethods: 'Đăng nhập bằng email hoặc Google.'
+    signInMethods: 'Đăng nhập bằng email và mật khẩu.',
+    signUpMethods: 'Tạo tài khoản bằng email và mật khẩu.'
   },
   nav: {
     today: 'Hôm nay',

@@ -1232,7 +1232,6 @@ p { color: var(--muted); line-height: 1.7; }
     position: sticky;
     top: 0;
     z-index: 40;
-    isolation: isolate;
   }
   .sidebar {
     display: none !important;
@@ -3847,6 +3846,14 @@ html[data-deployment='production'] #vercel-toolbar {
   justify-content: flex-end;
   align-items: stretch;
   pointer-events: auto;
+}
+
+.mobile-nav-overlay-portal {
+  z-index: 9990;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .customer-card-row {

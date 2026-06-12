@@ -167,14 +167,25 @@ export default function JobDetailPage({ params }: PageProps) {
     setTimeline(notes || []);
   }
 
+  async function patchJob(fields: Record<string, unknown>, successMessage: string) {
+    const res = await fetch(`/api/jobs/${jobId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields)
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setFeedback(errorFeedback(json.error || 'Unable to save job.'));
+      return false;
+    }
+    setFeedback(successFeedback(successMessage));
+    return true;
+  }
+
   async function updateStatus(status: string) {
     if (!canEditStatus) return;
-    const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
-    if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
-      return;
-    }
-    setFeedback(successFeedback(`Status updated to ${status.replace('_', ' ')}.`));
+    const ok = await patchJob({ status }, `Status updated to ${status.replace('_', ' ')}.`);
+    if (!ok) return;
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'status_changed', `Status set to ${status}`);
       if (status === 'completed') {
@@ -189,20 +200,16 @@ export default function JobDetailPage({ params }: PageProps) {
 
   async function saveJobFields() {
     if (!job || !canManage) return;
-    const { error } = await supabase
-      .from('jobs')
-      .update({
+    const ok = await patchJob(
+      {
         priority: job.priority,
         internal_notes: job.internal_notes,
         customer_notes: job.customer_notes,
         completion_verified: job.completion_verified
-      })
-      .eq('id', jobId);
-    if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
-      return;
-    }
-    setFeedback(successFeedback('Job details saved.'));
+      },
+      'Job details saved.'
+    );
+    if (!ok) return;
     if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
     loadJob();
   }
@@ -213,23 +220,18 @@ export default function JobDetailPage({ params }: PageProps) {
     setSavingSchedule(true);
     setFeedback(null);
 
-    const { error } = await supabase
-      .from('jobs')
-      .update({
+    const ok = await patchJob(
+      {
         start_date: job.start_date || null,
         due_date: job.due_date || null,
         assigned_to: job.assigned_to || null
-      })
-      .eq('id', jobId);
+      },
+      'Schedule saved.'
+    );
 
     setSavingSchedule(false);
 
-    if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
-      return;
-    }
-
-    setFeedback(successFeedback('Schedule saved.'));
+    if (!ok) return;
     loadJob();
   }
 

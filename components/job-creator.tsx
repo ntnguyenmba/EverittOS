@@ -9,7 +9,7 @@ import { normalizePlan } from '@/lib/everittos-plans';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { validatePlanAction } from '@/lib/plan-validate';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
@@ -88,29 +88,28 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const { data: createdJob, error } = await supabase
-      .from('jobs')
-      .insert([
-        {
-          user_id: user.id,
-          organization_id: org.organizationId,
-          title: title.trim(),
-          customer_name: customerName.trim() || null,
-          phone: phone.trim() || null,
-          address: address.trim() || null,
-          notes: notes.trim() || null,
-          status: 'new'
-        }
-      ])
-      .select('id')
-      .single();
+    const createRes = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title.trim(),
+        customer_name: customerName.trim() || null,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        notes: notes.trim() || null,
+        status: 'new'
+      })
+    });
+    const createJson = (await createRes.json()) as { job?: { id: string }; error?: string };
 
     setLoading(false);
 
-    if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
+    if (!createRes.ok) {
+      setFeedback(errorFeedback(createJson.error || 'Unable to save job.'));
       return;
     }
+
+    const createdJob = createJson.job;
 
     if (!createdJob?.id) {
       setFeedback(errorFeedback('Job could not be saved. Please try again.'));
