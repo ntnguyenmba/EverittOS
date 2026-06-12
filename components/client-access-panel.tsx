@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { appUrl } from '@/lib/app-url';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
@@ -83,7 +84,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
 
   function copyLink(token: string | null) {
     if (!token) return;
-    const url = `${window.location.origin}/portal/client?token=${token}`;
+    const url = appUrl(`/portal/client?token=${token}`);
     navigator.clipboard.writeText(url);
     setMessage('Client portal link copied.');
   }

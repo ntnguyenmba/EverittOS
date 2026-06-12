@@ -1,3 +1,6 @@
+import { mapAuthError } from '@/lib/auth-errors';
+import { isProductionRuntime } from '@/lib/safe-api-error';
+
 export type AuthRequestDebug = {
   endpoint: string;
   requestedUrl: string;
@@ -177,30 +180,27 @@ export async function parseLoginApiResponse(
   const profileDiag = diagnostics.profile as Record<string, unknown> | undefined;
   const orgDiag = diagnostics.organization as Record<string, unknown> | undefined;
   const sessionDiag = diagnostics.session as Record<string, unknown> | undefined;
-  const apiMessage =
-    (json.supabaseMessage as string) ||
-    (json.error as string) ||
-    (json.code as string) ||
-    'Sign-in was rejected by the server.';
-  const detailMessage =
-    (json.details as string) ||
-    (json.supabaseMessage as string) ||
-    (json.code as string) ||
-    undefined;
+  const apiCode = (json.code as string) || undefined;
+  const rawSupabase = (json.supabaseMessage as string) || (json.error as string) || undefined;
+  const mapped = mapAuthError(rawSupabase, apiCode as 'invalid_credentials' | undefined);
+  const userMessage = mapped.message || (json.error as string) || 'Sign-in was rejected by the server.';
+  const detailMessage = isProductionRuntime()
+    ? undefined
+    : (json.details as string) || rawSupabase || apiCode || undefined;
 
   return {
     ok: false,
     error: buildLoginClientError({
-      title: (json.title as string) || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
-      message: apiMessage,
+      title: (json.title as string) || mapped.title || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
+      message: userMessage,
       debug: {
         endpoint: path,
         requestedUrl,
         method,
         httpStatus,
         httpStatusText,
-        apiCode: (json.code as string) || undefined,
-        supabaseMessage: (json.supabaseMessage as string) || (json.error as string) || undefined,
+        apiCode,
+        supabaseMessage: rawSupabase,
         rawError: detailMessage,
         responseBody: responseText.slice(0, 1200),
         profile: profileDiag

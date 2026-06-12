@@ -128,7 +128,7 @@ export function supabaseConfigError(): string {
   if (typeof window === 'undefined') {
     return 'Authentication service is not configured on the server.';
   }
-  return 'Authentication is not configured for this deployment. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, then redeploy.';
+  return 'Authentication is not configured for this deployment. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then redeploy.';
 }
 
 /** Values used only so `next build` succeeds without env injection. */

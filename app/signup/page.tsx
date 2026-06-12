@@ -2,15 +2,19 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
-import { appUrl, safeNextPath } from '@/lib/app-url';
+import { authApiFetch } from '@/lib/auth-fetch';
+import { safeNextPath } from '@/lib/app-url';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
-import { friendlyErrorMessage } from '@/lib/user-errors';
+import { normalizeEmail } from '@/lib/input-validation';
+import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
+import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { useTranslation } from '@/components/locale-provider';
-import { supabase } from '@/lib/supabase';
+
+const SIGNUP_API_PATH = '/api/auth/signup';
 
 function signupRedirect(plan: EverittosPlan, next: string): string {
   if (plan !== 'free') {
@@ -31,12 +35,20 @@ function SignupForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [error, setError] = useState('');
+  const urlError = useMemo(() => {
+    const message = searchParams.get('error');
+    if (!message) return '';
+    const mapped = mapAuthError(searchParams.get('error_code') || decodeURIComponent(message));
+    return decodeURIComponent(message) || mapped.message;
+  }, [searchParams]);
+
+  const [error, setError] = useState(urlError);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const { t } = useTranslation();
+  const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
 
@@ -46,7 +58,9 @@ function SignupForm() {
     setError('');
     setSuccess('');
 
-    if (!email.trim() || !password) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || !password) {
       setLoading(false);
       setError('Email and password are required.');
       return;
@@ -83,46 +97,56 @@ function SignupForm() {
 
     const redirectTarget = signupRedirect(selectedPlan, next);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(redirectTarget.startsWith('http') ? next : redirectTarget)}`),
-        data: {
-          business_name: businessName.trim(),
-          selected_plan: selectedPlan
-        }
-      }
-    });
-
-    if (signUpError) {
-      setLoading(false);
-      const mapped = mapAuthError(signUpError.message);
-      setError(mapped.message || friendlyErrorMessage(signUpError.message));
-      return;
-    }
-
-    setLoading(false);
-
-    if (data.session) {
-      await fetch('/api/auth/setup', { method: 'POST' });
-      await fetch('/api/account/consent', {
+    try {
+      const { response, url, method } = await authApiFetch(SIGNUP_API_PATH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true })
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+          businessName: businessName.trim(),
+          selectedPlan,
+          next: redirectTarget.startsWith('http') ? next : redirectTarget
+        })
       });
-      if (redirectTarget.startsWith('http')) {
-        window.location.href = redirectTarget;
+
+      const parsed = await parseLoginApiResponse(response, SIGNUP_API_PATH, url, method);
+
+      if (!parsed.ok) {
+        setLoading(false);
+        setError(parsed.error.message || 'Signup failed.');
         return;
       }
-      router.push(redirectTarget);
-      router.refresh();
-      return;
-    }
 
-    setSuccess(
-      'Account created. Check your email and click the confirmation link, then sign in with your email and password.'
-    );
+      const json = parsed.json;
+
+      if (!json.confirmationRequired) {
+        await fetch('/api/auth/setup', { method: 'POST' });
+        await fetch('/api/account/consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true })
+        });
+        if (redirectTarget.startsWith('http')) {
+          window.location.href = redirectTarget;
+          return;
+        }
+        router.push(redirectTarget);
+        router.refresh();
+        return;
+      }
+
+      setLoading(false);
+      setSuccess(
+        (json.message as string) ||
+          'Account created. Check your email and click the confirmation link, then sign in with your email and password.'
+      );
+    } catch (err) {
+      const failure = parseFetchFailure(err, SIGNUP_API_PATH, signupUrl, 'POST');
+      setLoading(false);
+      const mapped = mapAuthError(failure.message);
+      setError(mapped.message || failure.message);
+    }
   }
 
   return (

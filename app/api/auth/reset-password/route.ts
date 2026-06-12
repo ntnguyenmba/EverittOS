@@ -3,7 +3,8 @@ import { isValidEmail, normalizeEmail } from '@/lib/input-validation';
 import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep } from '@/lib/auth-diagnostics';
-import { appUrl } from '@/lib/app-url';
+import { logAuthDebug } from '@/lib/auth-debug';
+import { resetPasswordRedirectUrl } from '@/lib/auth-redirect-urls';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
@@ -74,7 +75,8 @@ export async function POST(request: Request) {
   }
 
   const { supabase, json } = await createRouteHandlerSupabase();
-  const redirectTo = appUrl('/auth/callback?next=/reset-password&type=recovery');
+  const redirectTo = resetPasswordRedirectUrl();
+  logAuthDebug('reset_password_email_redirect', { redirectTo });
 
   logAuthStep(ROUTE, 'sign_in', { host: diagnostics.urlHost || 'unknown', redirectHost: new URL(redirectTo).host });
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
     return json(
       secureResetPayload({
         error: isFetchFailure
-          ? 'Supabase password reset request failed from the server. Verify Supabase URL/key in Vercel.'
+          ? 'We could not send the reset email right now. Try again in a moment or contact support.'
           : mapped.message,
         title: isFetchFailure ? 'Supabase connection failed' : mapped.title,
         code: error.message,

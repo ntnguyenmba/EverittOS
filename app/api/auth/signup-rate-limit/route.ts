@@ -3,7 +3,7 @@ import { clientIpFromRequest, checkRateLimit, rateLimitKey, RATE_LIMITS } from '
 
 export const runtime = 'nodejs';
 
-/** Pre-signup rate limit gate. Does not create accounts; signup still uses Supabase Auth directly. */
+/** Pre-signup rate limit gate before POST /api/auth/signup. */
 export async function POST(request: Request) {
   const ip = clientIpFromRequest(request);
   const result = checkRateLimit(rateLimitKey('signup', ip), RATE_LIMITS.signup);

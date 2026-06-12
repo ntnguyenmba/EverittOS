@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import { PRODUCTION_EVERITTOS_ORIGIN } from '@/lib/google-calendar-config';
+import { googleCalendarRedirectUri } from '@/lib/google-calendar-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -196,7 +196,7 @@ function IntegrationsContent() {
 
         <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
           Production OAuth redirect:{' '}
-          <code>{PRODUCTION_EVERITTOS_ORIGIN}/api/integrations/google-calendar/callback</code>
+          <code>{googleCalendarRedirectUri()}</code>
         </p>
       </div>
     </SettingsShell>

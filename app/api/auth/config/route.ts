@@ -1,4 +1,11 @@
 import { NextResponse } from 'next/server';
+import {
+  confirmEmailRedirectUrl,
+  productionAuthRedirects,
+  resetPasswordRedirectUrl,
+  supabaseAllowedRedirectUrls
+} from '@/lib/auth-redirect-urls';
+import { appOrigin } from '@/lib/app-url';
 import { getPublicSupabaseConfig, isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 
 export const runtime = 'nodejs';
@@ -12,6 +19,16 @@ export async function GET() {
     url,
     anonKey,
     configured: isSupabaseConfigured(),
-    diagnostics
+    diagnostics,
+    authEmailProvider: 'supabase',
+    appOrigin: appOrigin(),
+    authRedirects: {
+      production: productionAuthRedirects(),
+      signupConfirmation: confirmEmailRedirectUrl('/onboarding'),
+      passwordReset: resetPasswordRedirectUrl(),
+      authCallback: productionAuthRedirects().authCallback,
+      login: productionAuthRedirects().login,
+      supabaseAllowList: supabaseAllowedRedirectUrls()
+    }
   });
 }

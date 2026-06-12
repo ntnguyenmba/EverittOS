@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
@@ -12,9 +13,22 @@ import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 
 const RESET_API_PATH = '/api/auth/reset-password';
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
+  const urlError = useMemo(() => {
+    const message = searchParams.get('error');
+    const code = searchParams.get('error_code');
+    if (!message) return null;
+    const mapped = mapAuthError(code || decodeURIComponent(message));
+    return {
+      title: mapped.title,
+      message: decodeURIComponent(message),
+      details: code ? `Supabase: ${code}` : mapped.details
+    };
+  }, [searchParams]);
+
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(null);
+  const [error, setError] = useState<{ title?: string; message: string; details?: string } | null>(urlError);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const configError = isBrowserSupabaseMisconfigured();
@@ -105,5 +119,13 @@ export default function ForgotPasswordPage() {
         <Link href="/login">Back to sign in</Link>
       </div>
     </AuthShell>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }

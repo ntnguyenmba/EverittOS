@@ -6,35 +6,35 @@ Field operations app for Everitt Ventures. Next.js 15, Supabase Auth, Postgres, 
 
 - GitHub repository: https://github.com/ntnguyenmba/EverittOS
 - Production branch: `main`
-- Production app: https://everitt-os.vercel.app
+- Production app: https://app.everittventures.com
 
-If production does not match GitHub, check Vercel Project Settings → Git and confirm it deploys from `main`.
+If production does not match GitHub, confirm the hosting project deploys from `main` with `NEXT_PUBLIC_APP_URL=https://app.everittventures.com`.
 
 ## Environment
 
 Copy `.env.example` to `.env.local` for local development.
 
-### Required in Vercel Production
+### Required in production
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_APP_URL` | Auth redirects, password reset, Stripe return URLs (`https://everitt-os.vercel.app`) |
+| `NEXT_PUBLIC_APP_URL` | **Must be** `https://app.everittventures.com` — auth redirects, password reset, Stripe return URLs |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (`https://<ref>.supabase.co`) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser auth (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only bootstrap, webhooks, team APIs, admin |
 | `STRIPE_SECRET_KEY` | Billing portal, cancel/resume subscription |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
-| `RESEND_API_KEY` | Team invite email delivery |
-| `EMAIL_FROM` | Sender address for invite email (e.g. `EverittOS <notifications@yourdomain.com>`) |
+| `RESEND_API_KEY` | Team invite email only (not auth) |
+| `EMAIL_FROM` | Sender for invite email only (not auth) |
 | `ADMIN_EMAILS` | Comma-separated emails for `/admin/launch-status` and platform metrics |
 
 Optional:
 
-- `AUTH_DEBUG=1` — server auth event logging (no secrets)
+- `AUTH_DEBUG=1` — development auth diagnostics (no secrets)
 
-**Important:** `NEXT_PUBLIC_*` variables are embedded at build time. After adding or changing them in Vercel, redeploy `main`.
+**Important:** `NEXT_PUBLIC_*` variables are embedded at build time. After changing them, redeploy `main`.
 
-See **docs/LAUNCH_AUTH_CHECKLIST.md** for Supabase Auth URLs, Stripe webhook setup, and step-by-step test procedures.
+See **docs/LAUNCH_AUTH_CHECKLIST.md** and **docs/SUPABASE_AUTH_EMAIL_TEMPLATES.md** for Supabase Auth URLs, Stripe webhook setup, and test procedures.
 
 To grant yourself owner/admin access in Supabase SQL Editor, run `supabase/grant_owner_access.sql` (replace the email placeholder first).
 
@@ -46,18 +46,17 @@ Apply migrations in `supabase/migrations/` in filename order via Supabase SQL ed
 
 In **Supabase Dashboard → Authentication → URL Configuration**:
 
-- **Site URL:** `https://everitt-os.vercel.app`
+- **Site URL:** `https://app.everittventures.com`
 - **Redirect URLs:**
-  - `https://everitt-os.vercel.app/**`
-  - `https://everitt-os.vercel.app/auth/callback`
-  - `https://everitt-os.vercel.app/auth/callback/**`
-  - `https://everitt-os.vercel.app/reset-password`
+  - `https://app.everittventures.com/confirm-email` and `/**`
+  - `https://app.everittventures.com/auth/callback` and `/**`
+  - `https://app.everittventures.com/reset-password` and `/**`
 
-Ensure Storage bucket `job-photos` exists. See `202605310003_rls_storage.sql`.
+Auth emails are sent by **Supabase Auth only**. Ensure Storage bucket `job-photos` exists. See `202605310003_rls_storage.sql`.
 
 ## Stripe webhook
 
-Endpoint: `https://everitt-os.vercel.app/api/stripe/webhook`
+Endpoint: `https://app.everittventures.com/api/stripe/webhook`
 
 Required: `checkout.session.completed`
 
@@ -70,10 +69,10 @@ Enable **Stripe Customer Portal** for payment method self-service.
 ## Auth architecture
 
 - **Sign in:** `POST /api/auth/login` (server sets HttpOnly session cookies)
-- **Password reset:** `/forgot-password` → email link → `/auth/callback` → `/reset-password`
+- **Sign up:** `POST /api/auth/signup` → confirmation email → `/confirm-email` → `/login?verified=1`
+- **Password reset:** `/forgot-password` → email link → `/reset-password` → `/login?reset=1`
 - **Protected routes:** `middleware.ts` (session, account status, plan, role, subscription)
-- **Account controls:** `/settings/account` (deactivate, cancel/resume subscription for owners)
-- **Billing:** `/settings/billing` (Stripe portal, usage, upgrades)
+- **URL helper:** `lib/app-url.ts` (`appUrl`, `appOrigin`, `authRoutes`) — never hardcode deployment hosts
 
 Service role key is used only in server API routes (`lib/supabase-admin.ts`), never in client code.
 
@@ -90,11 +89,11 @@ Open http://localhost:3000
 
 ## Launch test checklist
 
-Full checklist with Vercel, Supabase, Stripe, and manual test steps: **docs/LAUNCH_AUTH_CHECKLIST.md**
+Full checklist: **docs/LAUNCH_AUTH_CHECKLIST.md**
 
 Quick smoke test:
 
-- [ ] Sign up / verify email
+- [ ] Sign up / verify email at `/confirm-email`
 - [ ] Log in / log out
 - [ ] Forgot password / reset password
 - [ ] Role-appropriate dashboard or portal

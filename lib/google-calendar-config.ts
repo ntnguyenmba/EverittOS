@@ -1,8 +1,5 @@
 import { appUrl } from '@/lib/app-url';
 
-/** Production EverittOS custom domain. */
-export const PRODUCTION_EVERITTOS_ORIGIN = 'https://app.everittventures.com';
-
 export const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/userinfo.email'

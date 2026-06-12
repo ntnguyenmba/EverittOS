@@ -15,6 +15,7 @@ export const MOBILE_APP_CONFIG = {
     '/portal/client',
     '/portal/contractor',
     '/auth/callback',
+    '/confirm-email',
     '/reset-password',
     '/team/accept'
   ]

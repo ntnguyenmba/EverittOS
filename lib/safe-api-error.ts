@@ -23,26 +23,17 @@ export function sanitizeErrorPayload<T extends Record<string, unknown>>(payload:
     config: _config,
     connectivity: _connectivity,
     stack: _stack,
+    supabaseMessage: _supabaseMessage,
+    diagnosisReason: _diagnosisReason,
     ...safe
   } = payload;
 
   return safe as T;
 }
 
-/** Auth endpoints keep the Supabase message visible to users for faster debugging. */
+/** Auth endpoints: friendly user messages only in production (no raw Supabase text). */
 export function sanitizeAuthErrorPayload<T extends Record<string, unknown>>(payload: T): T {
-  if (!isProductionRuntime()) return payload;
-
-  const {
-    details: _details,
-    diagnostics: _diagnostics,
-    config: _config,
-    connectivity: _connectivity,
-    stack: _stack,
-    ...safe
-  } = payload;
-
-  return safe as T;
+  return sanitizeErrorPayload(payload);
 }
 
 export function jsonSafeError(

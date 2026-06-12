@@ -1,4 +1,4 @@
-import { logAuthEvent } from '@/lib/auth-logger';
+import { logAuthDebug } from '@/lib/auth-debug';
 import { resolveClientApiUrl } from '@/lib/client-api-url';
 
 export const LOGIN_API_PATH = '/api/auth/login';
@@ -10,13 +10,12 @@ export type AuthFetchResult = {
   method: string;
 };
 
-/** Logged fetch for auth API routes. Always uses an absolute same-origin URL. */
+/** Fetch for auth API routes. Uses absolute same-origin URLs from NEXT_PUBLIC_APP_URL. */
 export async function authApiFetch(path: string, init: RequestInit = {}): Promise<AuthFetchResult> {
   const url = resolveClientApiUrl(path);
   const method = (init.method || 'GET').toUpperCase();
 
-  console.info('[everittos-auth] fetch start', { method, url });
-  logAuthEvent('auth_fetch_start', { method, endpoint: url });
+  logAuthDebug('auth_fetch_start', { method, endpoint: path, requestedUrl: url });
 
   const response = await fetch(url, {
     ...init,
@@ -24,16 +23,10 @@ export async function authApiFetch(path: string, init: RequestInit = {}): Promis
     cache: init.cache ?? 'no-store'
   });
 
-  console.info('[everittos-auth] fetch response', {
+  logAuthDebug('auth_fetch_response', {
     method,
-    url,
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok
-  });
-  logAuthEvent('auth_fetch_response', {
-    method,
-    endpoint: url,
+    endpoint: path,
+    requestedUrl: url,
     status: response.status,
     ok: response.ok ? 1 : 0
   });

@@ -45,7 +45,10 @@ const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 /** Session-authenticated API routes that skip disabled-account enforcement in middleware. */
 const PUBLIC_API_PREFIXES = [
   '/api/auth/login',
+  '/api/auth/signup',
   '/api/auth/reset-password',
+  '/api/auth/reset-session',
+  '/api/auth/update-password',
   '/api/auth/config',
   '/api/auth/setup',
   '/api/auth/session',
@@ -109,6 +112,14 @@ export async function middleware(request: NextRequest) {
   if (rateLimited) return rateLimited;
 
   const pathname = request.nextUrl.pathname;
+
+  if (pathname === '/reset-password' && request.nextUrl.searchParams.has('code')) {
+    const exchangeUrl = new URL('/api/auth/reset-session', request.url);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      exchangeUrl.searchParams.set(key, value);
+    });
+    return NextResponse.redirect(exchangeUrl);
+  }
 
   if (isLegacyMarketingAppPath(pathname)) {
     return NextResponse.redirect(MARKETING_SITE_URL);

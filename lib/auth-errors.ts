@@ -62,9 +62,9 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
     code: 'schema_mismatch'
   },
   supabase_unreachable: {
-    title: 'Supabase connection failed',
+    title: 'Connection problem',
     message:
-      'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, confirm the Supabase project is active, then redeploy.',
+      'We could not reach the authentication service. Check your connection and try again, or contact support if this continues.',
     details: 'Supabase auth client returned fetch failed.',
     code: 'supabase_unreachable'
   },

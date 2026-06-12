@@ -84,6 +84,7 @@ export async function GET(request: Request) {
   }
 
   if (isRecovery) {
+    logAuthEvent('auth_callback_recovery_legacy', { note: 'prefer /reset-password redirect from Supabase email' });
     return redirect(new URL('/reset-password', origin), { establishSession: true });
   }
 

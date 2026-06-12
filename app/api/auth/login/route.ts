@@ -4,6 +4,7 @@ import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
 import { logActivityServer } from '@/lib/activity-server';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
+import { diagnoseLoginFailure } from '@/lib/auth-user-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
       const { json } = await createRouteHandlerSupabase();
       return json(
         secureLoginPayload({
-          error: 'This deployment cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, then redeploy.',
+          error: 'We could not reach the authentication service. Try again in a moment or contact support.',
           title: 'Supabase unreachable',
           details: connectivity.error,
           code: 'supabase_unreachable',
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
 
     if (error) {
       const isFetchFailure = error.message.toLowerCase().includes('fetch failed');
+      const diagnosis = isFetchFailure ? null : await diagnoseLoginFailure(email);
       const meta = requestClientMeta(request);
       await logSecurityEvent({
         eventType: isFetchFailure ? 'suspicious_activity' : 'login_failed',
@@ -108,19 +110,33 @@ export async function POST(request: Request) {
         message: `Login failed for ${email.split('@')[1] || 'unknown domain'}`,
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
-        metadata: { code: error.message }
+        metadata: {
+          code: error.message,
+          diagnosisReason: diagnosis?.reason || 'unknown'
+        }
       });
       logAuthEvent('login_failed', {
         emailDomain: email.split('@')[1] || 'unknown',
         reason: error.message,
+        diagnosisReason: diagnosis?.reason || 'unknown',
+        userExists: diagnosis?.userExists ? 1 : 0,
+        emailConfirmed: diagnosis?.emailConfirmed === false ? 0 : diagnosis?.emailConfirmed ? 1 : -1,
+        profileExists: diagnosis?.profileExists ? 1 : diagnosis?.profileExists === false ? 0 : -1,
         host: configDiagnostics.urlHost || 'unknown',
         fetchFailure: isFetchFailure ? 1 : 0
       });
 
-      const mapped = mapAuthError(error.message);
+      const diagnosisMapped =
+        diagnosis?.reason === 'email_not_confirmed'
+          ? mapAuthError('email_not_confirmed', 'email_not_confirmed')
+          : diagnosis?.reason === 'user_banned'
+            ? mapAuthError('user_banned', 'user_banned')
+            : null;
+
+      const mapped = diagnosisMapped || mapAuthError(error.message);
       const displayError = isFetchFailure
         ? error.message ||
-          'Supabase auth request failed from the server. Verify Supabase URL/key in Vercel and that the project is active.'
+          'We could not reach the authentication service. Try again in a moment or contact support.'
         : mapped.message;
       return json(
         secureLoginPayload({
@@ -131,6 +147,7 @@ export async function POST(request: Request) {
             : mapped.details,
           code: mapped.code || error.message,
           supabaseMessage: error.message,
+          diagnosisReason: diagnosis?.reason,
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
           config: configDiagnostics,
           connectivity

@@ -26,6 +26,7 @@
           "/portal/contractor",
           "/portal/contractor/*",
           "/auth/callback",
+          "/confirm-email",
           "/reset-password",
           "/team/accept"
         ]
