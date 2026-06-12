@@ -58,3 +58,41 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const ctx = await requireWorkspaceSession({ requireManager: true });
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const { id } = await context.params;
+
+  const { data: existing, error: readError } = await ctx.supabase
+    .from('customers')
+    .select('id')
+    .eq('id', id)
+    .eq('organization_id', ctx.workspace.organizationId)
+    .maybeSingle();
+
+  if (readError) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
+  }
+  if (!existing) {
+    return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
+  }
+
+  const { error } = await ctx.supabase.from('customers').delete().eq('id', id);
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('foreign key') || msg.includes('violates')) {
+      return NextResponse.json(
+        { error: 'This customer is linked to jobs or records. Remove those first, then try again.' },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

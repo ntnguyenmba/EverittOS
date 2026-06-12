@@ -201,6 +201,7 @@ export const messages: Messages = {
     privacy: 'Privacidad',
     cookies: 'Cookies',
     security: 'Seguridad',
+    support: 'Soporte',
     footerLabel: 'Legal y políticas',
     footerNav: 'Enlaces legales'
   },

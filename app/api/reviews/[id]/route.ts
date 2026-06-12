@@ -93,3 +93,27 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   return NextResponse.json({ request: data });
 }
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const { id } = await context.params;
+  const supabase = await createServerSupabase();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
+    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+  }
+
+  const { error } = await supabase
+    .from('review_requests')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', org.organizationId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ ok: true });
+}

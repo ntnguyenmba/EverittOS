@@ -200,6 +200,7 @@ export const messages: Messages = {
     privacy: 'Quyền riêng tư',
     cookies: 'Cookie',
     security: 'Bảo mật',
+    support: 'Hỗ trợ',
     footerLabel: 'Pháp lý và chính sách',
     footerNav: 'Liên kết pháp lý'
   },

@@ -1,5 +1,9 @@
-/** Startup support contact shown on account and legal pages. */
-export const SUPPORT_EMAIL = 'support@everittventures.com';
+/** Production support contact for mailto links and account help. */
+export const SUPPORT_EMAIL = 'team@everittventures.com';
+
+export function supportMailtoHref(subject = 'EverittOS support'): string {
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
+}
 
 export const LEGAL_NOTICE =
   'These policies are provided for early-stage operations and are not attorney-reviewed. Consult qualified legal counsel before a public launch.';

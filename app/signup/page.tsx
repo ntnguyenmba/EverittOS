@@ -242,7 +242,7 @@ function SignupForm() {
         <AuthMessages error={error} success={success} />
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Creating account...' : selectedPlan === 'free' ? 'Start free trial' : 'Create account'}
+          {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
 

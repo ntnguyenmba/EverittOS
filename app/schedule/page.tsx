@@ -9,7 +9,7 @@ import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
-import { fetchOrganizationContext } from '@/lib/organization';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -44,7 +44,7 @@ function SchedulePageContent() {
     const p = normalizePlan(profile?.plan);
     setPlan(p);
 
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
     setOrgId(org?.organizationId || '');
     setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(normalizeRole(profile?.role)));
 

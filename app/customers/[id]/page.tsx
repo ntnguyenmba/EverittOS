@@ -234,6 +234,23 @@ export default function CustomerDetailPage({ params }: PageProps) {
                 <button type="button" className="btn btn-primary" onClick={saveCustomer}>
                   Save
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ marginLeft: 8 }}
+                  onClick={async () => {
+                    if (!window.confirm('Remove this customer?')) return;
+                    const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
+                    const json = (await res.json().catch(() => ({}))) as { error?: string };
+                    if (!res.ok) {
+                      setMessage(json.error || 'Unable to remove customer.');
+                      return;
+                    }
+                    router.push('/customers');
+                  }}
+                >
+                  Remove customer
+                </button>
               </>
             )}
           </div>

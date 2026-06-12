@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canAssignJobs, normalizeRole } from '@/lib/roles';
+import { canAssignJobs } from '@/lib/roles';
+import { mapWorkspaceSaveError } from '@/lib/workspace-server';
+import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
-import { createServerSupabase } from '@/lib/supabase-server';
-
 export async function POST(request: Request) {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !canAssignJobs(normalizeRole(org.role))) {
+  const ctx = await requireWorkspaceSession();
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+  if (!canAssignJobs(ctx.workspace.role)) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
@@ -39,19 +35,19 @@ export async function POST(request: Request) {
     .eq('id', body.jobId)
     .maybeSingle();
 
-  if (!job || job.organization_id !== org.organizationId) {
+  if (!job || job.organization_id !== ctx.workspace.organizationId) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
   if (body.assigned_to) {
-    const validWorker = await workerBelongsToOrg(admin, body.assigned_to, org.organizationId);
+    const validWorker = await workerBelongsToOrg(admin, body.assigned_to, ctx.workspace.organizationId);
     if (!validWorker) {
       return NextResponse.json({ error: 'Worker not found in organization' }, { status: 400 });
     }
   }
 
   if (body.department_id) {
-    const validDepartment = await departmentBelongsToOrg(admin, body.department_id, org.organizationId);
+    const validDepartment = await departmentBelongsToOrg(admin, body.department_id, ctx.workspace.organizationId);
     if (!validDepartment) {
       return NextResponse.json({ error: 'Department not found in organization' }, { status: 400 });
     }
@@ -72,10 +68,14 @@ export async function POST(request: Request) {
     update.due_date = body.scheduled_end.slice(0, 10);
   }
 
-  const { error } = await admin.from('jobs').update(update).eq('id', body.jobId).eq('organization_id', org.organizationId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  const { error } = await admin
+    .from('jobs')
+    .update(update)
+    .eq('id', body.jobId)
+    .eq('organization_id', ctx.workspace.organizationId);
+  if (error) return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
 
-  await syncJobToGoogleCalendarSafe(admin, org.organizationId, body.jobId);
+  await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId);
 
   return NextResponse.json({ ok: true });
 }

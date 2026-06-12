@@ -25,7 +25,7 @@ export function renderEmailTemplate(input: EmailTemplateInput): string {
   const primary = input.primaryColor || BRAND.primary;
   const secondary = input.secondaryColor || BRAND.secondary;
   const org = input.organizationName || BRAND.name;
-  const support = input.supportEmail || 'support@everittventures.com';
+  const support = input.supportEmail || 'team@everittventures.com';
 
   const cta =
     input.ctaLabel && input.ctaUrl

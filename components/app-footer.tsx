@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
+import { supportMailtoHref, SUPPORT_EMAIL } from '@/lib/support';
 
 export function AppFooter() {
   const { t } = useTranslation();
@@ -13,8 +14,12 @@ export function AppFooter() {
         <Link href="/privacy">{t('legal.privacy')}</Link>
         <Link href="/cookies">{t('legal.cookies')}</Link>
         <Link href="/security">{t('legal.security')}</Link>
+        <a href={supportMailtoHref()}>{t('legal.support')}</a>
       </nav>
-      <p className="app-footer-copy muted">© {new Date().getFullYear()} Everitt Ventures</p>
+      <p className="app-footer-copy muted">
+        © {new Date().getFullYear()} Everitt Ventures ·{' '}
+        <a href={supportMailtoHref()}>{SUPPORT_EMAIL}</a>
+      </p>
     </footer>
   );
 }

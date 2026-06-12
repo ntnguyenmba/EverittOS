@@ -274,6 +274,26 @@ function CustomersPageContent() {
                 <Link className="btn" href={`/jobs?customer=${customer.id}`}>
                   View jobs
                 </Link>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    style={{ marginLeft: 8 }}
+                    onClick={async () => {
+                      if (!window.confirm(`Remove ${customerDisplayName(customer)}?`)) return;
+                      const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
+                      const json = (await res.json().catch(() => ({}))) as { error?: string };
+                      if (!res.ok) {
+                        setFeedback(errorFeedback(json.error || 'Unable to remove customer.'));
+                        return;
+                      }
+                      setFeedback(successFeedback('Customer removed.'));
+                      load();
+                    }}
+                  >
+                    Remove
+                  </button>
+                ) : null}
                 </div>
               </div>
             ))}

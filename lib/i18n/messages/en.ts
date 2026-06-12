@@ -199,6 +199,7 @@ export const messages: Messages = {
     privacy: 'Privacy',
     cookies: 'Cookies',
     security: 'Security',
+    support: 'Support',
     footerLabel: 'Legal and policies',
     footerNav: 'Legal links'
   },

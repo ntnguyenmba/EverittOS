@@ -93,6 +93,7 @@ export type MessageTree = {
     cookies: string;
     security: string;
     footerLabel: string;
+    support: string;
     footerNav: string;
   };
   cookies: {

@@ -123,75 +123,36 @@ export default function SettingsPage() {
     setSaving(true);
     setFeedback(null);
 
-    const org = await ensureOrganizationForUser(user.id);
-    if (!org?.organizationId) {
-      setSaving(false);
-      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
-      return;
-    }
-    setOrgId(org.organizationId);
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ business_name: businessName.trim() || null })
-      .eq('id', user.id);
-
-    if (profileError) {
-      setSaving(false);
-      setFeedback(errorFeedback(formatSupabaseError(profileError)));
-      return;
-    }
-
-    const { error: bizError } = await supabase.from('business_profiles').upsert({
-      user_id: user.id,
-      business_name: businessName.trim() || null,
-      phone: phone.trim() || null,
-      service_type: serviceType.trim() || null,
-      booking_url: bookingUrl.trim() || null,
-      email
+    const res = await fetch('/api/settings/workspace', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName,
+        phone,
+        serviceType,
+        bookingUrl,
+        website,
+        companyAddress,
+        email,
+        notifyAssignments,
+        notifyDueDates,
+        notifyCompletions,
+        notifyReports,
+        timezone,
+        teamSize,
+        industry
+      })
     });
+    const json = (await res.json()) as { error?: string };
+    setSaving(false);
 
-    if (bizError) {
-      setSaving(false);
-      setFeedback(errorFeedback(formatSupabaseError(bizError)));
+    if (!res.ok) {
+      setFeedback(errorFeedback(json.error || 'Unable to save settings.'));
       return;
     }
 
-    if (org.organizationId) {
-      const { error: settingsError } = await supabase.from('organization_settings').upsert({
-        organization_id: org.organizationId,
-        company_phone: phone.trim() || null,
-        company_email: email,
-        website: website.trim() || null,
-        company_address: companyAddress.trim() || null,
-        service_type: serviceType.trim() || null,
-        booking_url: bookingUrl.trim() || null,
-        notification_assignments: notifyAssignments,
-        notification_due_dates: notifyDueDates,
-        notification_completions: notifyCompletions,
-        notification_reports: notifyReports,
-        timezone: timezone || 'UTC',
-        team_size: teamSize.trim() || null,
-        industry: industry.trim() || null
-      });
-      if (settingsError) {
-        setSaving(false);
-        setFeedback(errorFeedback(formatSupabaseError(settingsError)));
-        return;
-      }
-
-      const { error: orgError } = await supabase
-        .from('organizations')
-        .update({ name: businessName.trim() || 'My Business' })
-        .eq('id', org.organizationId);
-      if (orgError) {
-        setSaving(false);
-        setFeedback(errorFeedback(formatSupabaseError(orgError)));
-        return;
-      }
-    }
-
-    setSaving(false);
+    const org = await ensureOrganizationForUser(user.id);
+    if (org?.organizationId) setOrgId(org.organizationId);
     setFeedback(successFeedback('Settings saved successfully.'));
   }
 

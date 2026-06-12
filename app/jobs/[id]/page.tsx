@@ -373,6 +373,26 @@ export default function JobDetailPage({ params }: PageProps) {
                 <button type="button" className="btn" onClick={saveJobFields}>
                   Save details
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ marginLeft: 8 }}
+                  onClick={async () => {
+                    if (!window.confirm('Remove this job?')) return;
+                    const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+                    const json = (await res.json().catch(() => ({}))) as { error?: string; cancelled?: boolean };
+                    if (!res.ok) {
+                      setFeedback(errorFeedback(json.error || 'Unable to remove job.'));
+                      return;
+                    }
+                    setFeedback(
+                      successFeedback(json.cancelled ? 'Job marked cancelled (linked records kept).' : 'Job removed.')
+                    );
+                    router.push('/jobs');
+                  }}
+                >
+                  Remove job
+                </button>
               </div>
             )}
             <p>

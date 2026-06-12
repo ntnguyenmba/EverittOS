@@ -9,14 +9,14 @@ import { useTranslation } from '@/components/locale-provider';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedWorkers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
-import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { supabase } from '@/lib/supabase';
 
 type Worker = {
   id: string;
@@ -34,6 +34,7 @@ export default function WorkersPage() {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
@@ -67,7 +68,7 @@ export default function WorkersPage() {
     setLoading(false);
   }
 
-  async function addWorker() {
+  async function saveWorker() {
     if (!name.trim() || saving) return;
 
     const {
@@ -84,7 +85,7 @@ export default function WorkersPage() {
       setFeedback(errorFeedback('Workers and crew assignment require the Business plan.'));
       return;
     }
-    if (crewLimitReached(userPlan, workers.length)) {
+    if (!editingId && crewLimitReached(userPlan, workers.length)) {
       setFeedback(errorFeedback(limitMessage('crewMembers', userPlan)));
       return;
     }
@@ -98,24 +99,47 @@ export default function WorkersPage() {
       setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
       return;
     }
-    const res = await fetch('/api/workers', {
-      method: 'POST',
+
+    const url = editingId ? `/api/workers/${editingId}` : '/api/workers';
+    const method = editingId ? 'PATCH' : 'POST';
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim(), role: role.trim() || null, phone: phone.trim() || null })
     });
 
+    const json = (await res.json()) as { error?: string };
     setSaving(false);
 
-    const json = (await res.json()) as { error?: string };
     if (!res.ok) {
       setFeedback(errorFeedback(json.error || 'Unable to save worker.'));
       return;
     }
 
-    setFeedback(successFeedback('Worker saved.'));
+    setFeedback(successFeedback(editingId ? 'Worker updated.' : 'Worker saved.'));
     setName('');
     setRole('');
     setPhone('');
+    setEditingId(null);
+    loadWorkers();
+  }
+
+  function startEdit(worker: Worker) {
+    setEditingId(worker.id);
+    setName(worker.name);
+    setRole(worker.role || '');
+    setPhone(worker.phone || '');
+  }
+
+  async function removeWorker(worker: Worker) {
+    if (!window.confirm(`Remove ${worker.name}?`)) return;
+    const res = await fetch(`/api/workers/${worker.id}`, { method: 'DELETE' });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setFeedback(errorFeedback(json.error || 'Unable to remove worker.'));
+      return;
+    }
+    setFeedback(successFeedback('Worker removed.'));
     loadWorkers();
   }
 
@@ -133,16 +157,31 @@ export default function WorkersPage() {
 
       {canManage && crewEnabled && (
         <div className="card form" style={{ marginTop: 20 }}>
-          <h3 className="card-title-sm">Add worker</h3>
+          <h3 className="card-title-sm">{editingId ? 'Edit worker' : 'Add worker'}</h3>
           <label htmlFor="worker-name">Name</label>
           <input id="worker-name" className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <label htmlFor="worker-role">Role</label>
           <input id="worker-role" className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
           <label htmlFor="worker-phone">Phone</label>
           <input id="worker-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <button className="btn btn-primary" type="button" onClick={addWorker} disabled={saving}>
-            {saving ? 'Saving...' : 'Save worker'}
+          <button className="btn btn-primary" type="button" onClick={saveWorker} disabled={saving}>
+            {saving ? 'Saving...' : editingId ? 'Save changes' : 'Save worker'}
           </button>
+          {editingId ? (
+            <button
+              type="button"
+              className="btn"
+              style={{ marginLeft: 8 }}
+              onClick={() => {
+                setEditingId(null);
+                setName('');
+                setRole('');
+                setPhone('');
+              }}
+            >
+              Cancel edit
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -166,6 +205,16 @@ export default function WorkersPage() {
               <h3 className="card-title-sm">{worker.name}</h3>
               <p className="muted">{worker.role || 'Crew member'}</p>
               <p className="muted">{worker.phone || 'No phone'}</p>
+              {canManage && crewEnabled ? (
+                <div className="settings-actions" style={{ marginTop: 12 }}>
+                  <button type="button" className="btn btn-sm" onClick={() => startEdit(worker)}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-sm btn-danger" onClick={() => void removeWorker(worker)}>
+                    Remove
+                  </button>
+                </div>
+              ) : null}
             </div>
           ))}
       </div>

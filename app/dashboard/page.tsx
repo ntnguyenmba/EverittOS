@@ -8,17 +8,18 @@ import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
-import { todayIso } from '@/lib/date-filters';
+import { todayIso, daysAheadIso } from '@/lib/date-filters';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { billingUpgradeHref } from '@/lib/nav-access';
-import { fetchOrganizationContext } from '@/lib/organization';
+import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -27,6 +28,14 @@ type Job = {
   status: string | null;
   start_date: string | null;
   due_date: string | null;
+};
+
+type ActivityRow = {
+  id: string;
+  message: string | null;
+  action: string;
+  created_at: string | null;
+  actor_name: string | null;
 };
 
 function DashboardAccessNotice() {
@@ -44,9 +53,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [displayName, setDisplayName] = useState('');
+  const [orgId, setOrgId] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -69,16 +82,17 @@ export default function DashboardPage() {
       .select('plan, role, full_name, business_name')
       .eq('id', user.id)
       .maybeSingle();
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
     const userPlan = normalizePlan(profile?.plan);
     setRole(normalizeRole(profile?.role));
     setDisplayName(profile?.full_name?.trim() || profile?.business_name?.trim() || '');
-
-    if (!org) {
-      await fetch('/api/auth/setup', { method: 'POST' });
-    }
-
+    setOrgId(org?.organizationId || '');
     setPlan(userPlan);
+
+    if (isClientRole(normalizeRole(profile?.role))) {
+      router.push('/portal/client');
+      return;
+    }
 
     let jobsQuery = scopeJobsForWorkspace(
       supabase.from('jobs').select('id, title, status, start_date, due_date').order('created_at', { ascending: false }),
@@ -86,7 +100,36 @@ export default function DashboardPage() {
       org?.organizationId
     );
 
-    const [jobsRes, orgIsDemo] = await Promise.all([jobsQuery, fetchOrganizationIsDemo(supabase, org?.organizationId)]);
+    const customersQuery = org?.organizationId
+      ? supabase
+          .from('customers')
+          .select(CUSTOMER_LIST_SELECT)
+          .eq('organization_id', org.organizationId)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : supabase
+          .from('customers')
+          .select(CUSTOMER_LIST_SELECT)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+    const activityQuery = org?.organizationId
+      ? supabase
+          .from('activity_logs')
+          .select('id, message, action, created_at, actor_name')
+          .eq('organization_id', org.organizationId)
+          .order('created_at', { ascending: false })
+          .limit(8)
+      : Promise.resolve({ data: [], error: null });
+
+    const [jobsRes, customersRes, activityRes, orgIsDemo, calendarRes] = await Promise.all([
+      jobsQuery,
+      customersQuery,
+      activityQuery,
+      fetchOrganizationIsDemo(supabase, org?.organizationId),
+      fetch('/api/integrations/google-calendar/status').then((r) => r.json()).catch(() => null)
+    ]);
 
     setLoading(false);
 
@@ -96,17 +139,17 @@ export default function DashboardPage() {
     }
 
     setJobs(filterDemoSeedJobs(jobsRes.data || [], orgIsDemo));
-
-    if (isClientRole(normalizeRole(profile?.role))) {
-      router.push('/portal/client');
-    }
+    setCustomers((customersRes.data || []) as CustomerRecord[]);
+    setActivity((activityRes.data || []) as ActivityRow[]);
+    setCalendarConnected(Boolean(calendarRes?.connected));
   }
 
   useEffect(() => {
-    loadDashboard();
+    void loadDashboard();
   }, []);
 
   const today = todayIso();
+  const upcomingEnd = daysAheadIso(14);
 
   const todayJobs = useMemo(
     () =>
@@ -114,6 +157,19 @@ export default function DashboardPage() {
         .filter((j) => j.status !== 'cancelled' && (j.start_date === today || j.due_date === today))
         .slice(0, 8),
     [jobs, today]
+  );
+
+  const upcomingJobs = useMemo(
+    () =>
+      jobs
+        .filter((j) => {
+          if (j.status === 'cancelled' || j.status === 'completed') return false;
+          const date = j.due_date || j.start_date;
+          return date && date >= today && date <= upcomingEnd;
+        })
+        .sort((a, b) => (a.due_date || a.start_date || '').localeCompare(b.due_date || b.start_date || ''))
+        .slice(0, 8),
+    [jobs, today, upcomingEnd]
   );
 
   function workersHref(): string {
@@ -158,6 +214,20 @@ export default function DashboardPage() {
           }
         />
 
+        {calendarConnected !== null ? (
+          <p className="muted dashboard-calendar-status">
+            Google Calendar:{' '}
+            {calendarConnected ? (
+              <span className="status-pill status-pill-success">Connected</span>
+            ) : (
+              <>
+                <span className="status-pill status-pill-muted">Not connected</span>{' '}
+                <Link href="/settings/integrations">Connect in Settings</Link>
+              </>
+            )}
+          </p>
+        ) : null}
+
         <section aria-label={t('dashboard.primaryActions')}>
           <h2 className="section-heading">{t('dashboard.primaryActions')}</h2>
           <div className="quick-actions-grid">
@@ -193,6 +263,7 @@ export default function DashboardPage() {
             <JobCreator
               onJobCreated={() => {
                 setShowNewJob(false);
+                void loadDashboard();
               }}
             />
           </section>
@@ -215,6 +286,67 @@ export default function DashboardPage() {
                 <span>{job.title}</span>
                 <span className="muted">{job.due_date || job.start_date}</span>
               </Link>
+            ))}
+        </section>
+
+        <section className="card dashboard-today-card" aria-label={t('dashboard.sidebar.upcoming')}>
+          <div className="dashboard-section-head">
+            <h2>{t('dashboard.sidebar.upcoming')}</h2>
+            <Link href="/schedule?range=upcoming" className="dashboard-section-link">
+              {t('dashboard.sidebar.openSchedule')}
+            </Link>
+          </div>
+          {!loading && upcomingJobs.length === 0 ? (
+            <p className="dashboard-quiet-empty">No upcoming jobs in the next two weeks.</p>
+          ) : null}
+          {!loading &&
+            upcomingJobs.map((job) => (
+              <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
+                <span>{job.title}</span>
+                <span className="muted">{job.due_date || job.start_date}</span>
+              </Link>
+            ))}
+        </section>
+
+        <section className="card dashboard-today-card" aria-label={t('dashboard.sidebar.crmSnapshot')}>
+          <div className="dashboard-section-head">
+            <h2>{t('dashboard.sidebar.crmSnapshot')}</h2>
+            <Link href="/customers" className="dashboard-section-link">
+              {t('dashboard.sidebar.openCrm')}
+            </Link>
+          </div>
+          {!loading && customers.length === 0 ? (
+            <p className="dashboard-quiet-empty">No customers yet. Add your first customer to get started.</p>
+          ) : null}
+          {!loading &&
+            customers.map((customer) => (
+              <Link key={customer.id} href={`/customers/${customer.id}`} className="dashboard-today-row">
+                <span>{customerDisplayName(customer)}</span>
+                <span className="muted">{customer.pipeline_stage || 'lead'}</span>
+              </Link>
+            ))}
+        </section>
+
+        <section className="card dashboard-today-card" aria-label={t('dashboard.recentActivity')}>
+          <div className="dashboard-section-head">
+            <h2>{t('dashboard.recentActivity')}</h2>
+            {orgId ? (
+              <Link href="/activity" className="dashboard-section-link">
+                {t('dashboard.viewActivity')}
+              </Link>
+            ) : null}
+          </div>
+          {!loading && activity.length === 0 ? (
+            <p className="dashboard-quiet-empty">Activity will appear here as your team works.</p>
+          ) : null}
+          {!loading &&
+            activity.map((row) => (
+              <div key={row.id} className="dashboard-today-row">
+                <span>{row.message || row.action}</span>
+                <span className="muted">
+                  {row.created_at ? new Date(row.created_at).toLocaleDateString() : ''}
+                </span>
+              </div>
             ))}
         </section>
       </div>

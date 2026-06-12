@@ -95,6 +95,33 @@ export default function ReviewsPage() {
     setFeedback(successFeedback('Request message copied. Send it from your email app.'));
   }
 
+  async function markSent(id: string) {
+    const res = await fetch(`/api/reviews/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'sent' })
+    });
+    if (!res.ok) {
+      const json = await res.json();
+      setFeedback(errorFeedback(json.error || 'Update failed'));
+      return;
+    }
+    setFeedback(successFeedback('Marked as sent. Copy your message and email the customer.'));
+    void load();
+  }
+
+  async function removeRequest(id: string) {
+    if (!window.confirm('Delete this review request?')) return;
+    const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const json = await res.json();
+      setFeedback(errorFeedback(json.error || 'Delete failed'));
+      return;
+    }
+    setFeedback(successFeedback('Review request removed.'));
+    void load();
+  }
+
   async function markSubmitted(id: string) {
     const rating = Number(prompt('Rating 1-5', '5'));
     if (!rating || rating < 1 || rating > 5) return;
@@ -161,10 +188,25 @@ export default function ReviewsPage() {
             <span>{r.customer_email || 'No email'}</span>
             <span className="muted">
               {r.status}
-              {canManage && r.status !== 'submitted' ? (
-                <button type="button" className="btn btn-sm" style={{ marginLeft: 8 }} onClick={() => void markSubmitted(r.id)}>
-                  Record review
-                </button>
+              {canManage && r.status === 'pending' ? (
+                <>
+                  <button type="button" className="btn btn-sm" style={{ marginLeft: 8 }} onClick={() => void markSent(r.id)}>
+                    Mark sent
+                  </button>
+                  <button type="button" className="btn btn-sm btn-danger" style={{ marginLeft: 8 }} onClick={() => void removeRequest(r.id)}>
+                    Remove
+                  </button>
+                </>
+              ) : null}
+              {canManage && r.status === 'sent' ? (
+                <>
+                  <button type="button" className="btn btn-sm" style={{ marginLeft: 8 }} onClick={() => void markSubmitted(r.id)}>
+                    Record review
+                  </button>
+                  <button type="button" className="btn btn-sm btn-danger" style={{ marginLeft: 8 }} onClick={() => void removeRequest(r.id)}>
+                    Remove
+                  </button>
+                </>
               ) : null}
             </span>
           </div>

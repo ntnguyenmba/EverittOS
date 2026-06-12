@@ -113,15 +113,35 @@ export default function FormsPage() {
 
       <div className="card-list">
         {forms.map((form) => (
-          <Link key={form.id} href={`/forms/${form.id}`} className="card card-link">
+          <div key={form.id} className="card">
             <div className="card-link-head">
-              <strong>{form.name}</strong>
+              <Link href={`/forms/${form.id}`}>
+                <strong>{form.name}</strong>
+              </Link>
               <span className={`status-pill ${form.active ? 'status-pill-success' : 'status-pill-muted'}`}>
                 {form.active ? 'Active' : 'Inactive'}
               </span>
             </div>
             <p className="muted">{form.form_type.replace('_', ' ')} · /f/{form.slug}</p>
-          </Link>
+            {canManage ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-danger"
+                onClick={async () => {
+                  if (!window.confirm(`Delete form ${form.name}?`)) return;
+                  const res = await fetch(`/api/forms/${form.id}`, { method: 'DELETE' });
+                  const json = await res.json();
+                  if (!res.ok) {
+                    setMessage(json.error || 'Delete failed');
+                    return;
+                  }
+                  void load();
+                }}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
         ))}
       </div>
     </AppShell>
