@@ -358,13 +358,18 @@ export async function middleware(request: NextRequest) {
     '/dashboard',
     '/jobs',
     '/customers',
+    '/projects',
     '/schedule',
+    '/knowledge',
+    '/automations',
+    '/clients',
     '/workers',
     '/team',
     '/activity',
     '/analytics',
     '/workflows',
-    '/notifications'
+    '/notifications',
+    '/proposals'
   ];
   const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
@@ -407,6 +412,12 @@ export const config = {
     '/workers/:path*',
     '/settings/:path*',
     '/customers/:path*',
+    '/crm/:path*',
+    '/projects/:path*',
+    '/knowledge/:path*',
+    '/automations/:path*',
+    '/clients/:path*',
+    '/proposals/:path*',
     '/schedule/:path*',
     '/onboarding/:path*',
     '/team/:path*',

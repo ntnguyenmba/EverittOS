@@ -79,7 +79,15 @@ export function validateEnvAtStartup(): EnvValidationResult {
     issues.push({
       level: 'info',
       key: 'RESEND_API_KEY',
-      message: 'Transactional email not fully configured. Invite emails will use copy-link fallback.'
+      message: 'Transactional email not configured. Auth uses Supabase only. Invites use copy-link fallback.'
+    });
+  }
+
+  if (!hasValue('OPENAI_API_KEY')) {
+    issues.push({
+      level: 'info',
+      key: 'OPENAI_API_KEY',
+      message: 'OpenAI not configured. Ask Everitt AI will be unavailable until OPENAI_API_KEY is set server-side.'
     });
   }
 

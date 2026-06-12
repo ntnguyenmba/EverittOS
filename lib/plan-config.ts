@@ -28,6 +28,8 @@ export type PlanTierRow = {
   contractorPortal: boolean;
   brandedReports: boolean;
   beforeAfterPhotos: boolean;
+  aiAccess: boolean;
+  aiUnlimited: boolean;
   apiAccess: boolean;
   prioritySupport: boolean;
 };
@@ -59,6 +61,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: false,
     brandedReports: false,
     beforeAfterPhotos: false,
+    aiAccess: false,
+    aiUnlimited: false,
     apiAccess: false,
     prioritySupport: false
   },
@@ -85,6 +89,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: false,
     brandedReports: false,
     beforeAfterPhotos: true,
+    aiAccess: false,
+    aiUnlimited: false,
     apiAccess: false,
     prioritySupport: false
   },
@@ -111,6 +117,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: false,
     brandedReports: false,
     beforeAfterPhotos: true,
+    aiAccess: true,
+    aiUnlimited: false,
     apiAccess: false,
     prioritySupport: false
   },
@@ -137,6 +145,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: true,
     brandedReports: true,
     beforeAfterPhotos: true,
+    aiAccess: false,
+    aiUnlimited: false,
     apiAccess: false,
     prioritySupport: true
   },
@@ -163,6 +173,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: true,
     brandedReports: true,
     beforeAfterPhotos: true,
+    aiAccess: false,
+    aiUnlimited: false,
     apiAccess: true,
     prioritySupport: true
   },
@@ -189,6 +201,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: true,
     brandedReports: true,
     beforeAfterPhotos: true,
+    aiAccess: true,
+    aiUnlimited: true,
     apiAccess: true,
     prioritySupport: true
   }

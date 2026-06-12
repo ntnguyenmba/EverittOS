@@ -262,9 +262,15 @@ export const messages: Messages = {
     signInMethods: 'Sign in with email, Google, or passkey.'
   },
   nav: {
+    commandCenter: 'Command Center',
     dashboard: 'Dashboard',
     jobs: 'Jobs',
+    crm: 'CRM',
     customers: 'Customers',
+    projects: 'Projects',
+    knowledge: 'Knowledge',
+    automations: 'Automations',
+    clients: 'Clients',
     schedule: 'Schedule',
     workers: 'Workers',
     team: 'Team',
@@ -288,6 +294,7 @@ export const messages: Messages = {
     privacy: 'Privacy',
     notifications: 'Notifications',
     api: 'API',
+    aiMemory: 'AI Memory',
     departments: 'Departments'
   },
   dashboard: {

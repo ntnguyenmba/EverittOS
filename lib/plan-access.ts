@@ -18,6 +18,8 @@ export type PlanFeature =
   | 'contractorPortal'
   | 'brandedReports'
   | 'beforeAfterPhotos'
+  | 'aiAccess'
+  | 'aiUnlimited'
   | 'apiAccess'
   | 'prioritySupport';
 
@@ -89,6 +91,10 @@ export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
   { prefix: '/portal/client', plan: 'operations' },
   { prefix: '/portal/contractor', plan: 'operations' },
   { prefix: '/settings/api', plan: 'growth' },
+  { prefix: '/settings/ai-memory', plan: 'business' },
+  { prefix: '/knowledge', plan: 'pro' },
+  { prefix: '/proposals', plan: 'pro' },
+  { prefix: '/automations', plan: 'business' },
   { prefix: '/admin', plan: 'enterprise' }
 ];
 

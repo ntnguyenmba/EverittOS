@@ -24,8 +24,9 @@ Copy `.env.example` to `.env.local` for local development.
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only bootstrap, webhooks, team APIs, admin |
 | `STRIPE_SECRET_KEY` | Billing portal, cancel/resume subscription |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
-| `RESEND_API_KEY` | Team invite email only (not auth) |
-| `EMAIL_FROM` | Sender for invite email only (not auth) |
+| `RESEND_API_KEY` | Optional. Team/client invite email only (not auth). Copy-link fallback when unset. |
+| `EMAIL_FROM` | Optional. Sender for invite email when Resend is configured. |
+| `OPENAI_API_KEY` | Optional. Server-only Ask Everitt AI (Business and Enterprise). |
 | `ADMIN_EMAILS` | Comma-separated emails for `/admin/launch-status` and platform metrics |
 
 Optional:

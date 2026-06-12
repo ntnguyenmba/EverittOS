@@ -1,10 +1,14 @@
 import type { Messages } from '@/lib/i18n/types';
 
 const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
-  '/dashboard': 'dashboard',
+  '/dashboard': 'commandCenter',
   '/jobs': 'jobs',
-  '/customers': 'customers',
+  '/customers': 'crm',
+  '/projects': 'projects',
   '/schedule': 'schedule',
+  '/knowledge': 'knowledge',
+  '/automations': 'automations',
+  '/clients': 'clients',
   '/workers': 'workers',
   '/team': 'team',
   '/activity': 'activity',
@@ -28,6 +32,7 @@ const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
   '/settings/privacy': 'privacy',
   '/settings/notifications': 'notifications',
   '/settings/api': 'api',
+  '/settings/ai-memory': 'aiMemory',
   '/settings/departments': 'departments'
 };
 

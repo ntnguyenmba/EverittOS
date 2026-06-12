@@ -264,9 +264,15 @@ export const messages: Messages = {
     signInMethods: 'Inicie sesión con correo, Google o llave de acceso.'
   },
   nav: {
+    commandCenter: 'Centro de mando',
     dashboard: 'Panel',
     jobs: 'Trabajos',
+    crm: 'CRM',
     customers: 'Clientes',
+    projects: 'Proyectos',
+    knowledge: 'Conocimiento',
+    automations: 'Automatizaciones',
+    clients: 'Clientes portal',
     schedule: 'Horario',
     workers: 'Trabajadores',
     team: 'Equipo',
@@ -290,6 +296,7 @@ export const messages: Messages = {
     privacy: 'Privacidad',
     notifications: 'Notificaciones',
     api: 'API',
+    aiMemory: 'Memoria IA',
     departments: 'Departamentos'
   },
   dashboard: {

@@ -11,6 +11,7 @@
   --line: rgba(45, 55, 72, 0.1);
   --hover: rgba(45, 55, 72, 0.06);
   --muted: #6B7280;
+  --bronze-muted: #8B7355;
   --warm-white: #F7F6F3;
   --success: #4A6354;
   --success-soft: rgba(74, 99, 84, 0.1);
@@ -2795,5 +2796,194 @@ html[data-deployment='production'] #vercel-toolbar {
   .onboarding-back {
     margin-right: 0;
     order: 3;
+  }
+}
+
+/* Command Center */
+.command-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.command-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.command-kpi-card span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.command-kpi-card strong {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.command-center-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+
+.command-center-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.command-center-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.command-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.command-quick-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--charcoal);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.command-quick-btn:hover {
+  background: var(--hover);
+}
+
+.command-ask-everitt {
+  padding: 20px;
+}
+
+.command-ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.command-ask-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.command-kbd-hint {
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.command-ask-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.command-ask-row .input {
+  flex: 1;
+}
+
+.command-ask-reply {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* Ask Everitt global */
+.ask-everitt-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--navy-primary);
+  color: var(--text-on-dark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.ai-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(42, 42, 42, 0.35);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 20px 20px;
+}
+
+.ai-modal-card,
+.ai-palette {
+  width: min(640px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.ai-palette-input {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.ai-palette-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ai-suggestion-chip {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.ai-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 960px) {
+  .command-center-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .command-center-sidebar {
+    order: 2;
   }
 }

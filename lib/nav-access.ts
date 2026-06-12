@@ -29,6 +29,7 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/privacy', label: 'Privacy' },
   { href: '/settings/notifications', label: 'Notifications' },
   { href: '/settings/api', label: 'API' },
+  { href: '/settings/ai-memory', label: 'AI Memory' },
   { href: '/settings/departments', label: 'Departments' }
 ];
 
@@ -59,6 +60,11 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/schedule':
       return hasPermission(role, 'view_schedules');
     case '/customers':
+    case '/projects':
+    case '/knowledge':
+    case '/proposals':
+    case '/automations':
+    case '/clients':
     case '/workers':
     case '/activity':
     case '/analytics':
@@ -114,6 +120,11 @@ export function requiredPlanForNavHref(href: string): EverittosPlan | null {
   switch (path) {
     case '/workflows':
       return 'operations';
+    case '/automations':
+      return 'business';
+    case '/knowledge':
+    case '/proposals':
+      return 'pro';
     default:
       return null;
   }
@@ -130,6 +141,9 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
   }
   if (path === '/workflows' && !limits.workflowCustomization) {
     return 'operations';
+  }
+  if (path === '/automations' && !limits.aiAccess) {
+    return 'business';
   }
   if (path === '/activity' && !limits.activityLog) {
     return 'business';
@@ -213,6 +227,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
     if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
     if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
+    if (link.href === '/settings/ai-memory' && !limitsForPlan(normalizedPlan).aiAccess) return false;
     return true;
   });
 }
@@ -238,6 +253,7 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
   if (path.startsWith('/settings/departments') && !canManageDepartments(role, normalizedPlan)) return false;
   if (path.startsWith('/settings/integrations') && !canManageOrganizationSettings(role)) return false;
   if (path.startsWith('/settings/api') && !limitsForPlan(normalizedPlan).apiAccess) return false;
+  if (path.startsWith('/settings/ai-memory') && !limitsForPlan(normalizedPlan).aiAccess) return false;
 
   return true;
 }

@@ -94,8 +94,6 @@ export function AppNavItems({
             ? href
             : billingUpgradeHref(resolution.requiredPlan || 'business', label);
           const active = isNavLinkActive(pathname, href);
-          const suffix = href === '/notifications' && unread > 0 ? ` (${unread})` : '';
-
           return (
             <Link
               key={href}
@@ -106,7 +104,6 @@ export function AppNavItems({
               onClick={onNavigate}
             >
               {navLabel(href, t, label)}
-              {suffix}
               {!resolution.accessible && resolution.requiredPlan ? (
                 <span className="nav-upgrade-badge">{planDisplayName(resolution.requiredPlan)}</span>
               ) : null}

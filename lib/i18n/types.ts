@@ -152,9 +152,15 @@ export type MessageTree = {
     signInMethods: string;
   };
   nav: {
+    commandCenter: string;
     dashboard: string;
     jobs: string;
+    crm: string;
     customers: string;
+    projects: string;
+    knowledge: string;
+    automations: string;
+    clients: string;
     schedule: string;
     workers: string;
     team: string;
@@ -178,6 +184,7 @@ export type MessageTree = {
     privacy: string;
     notifications: string;
     api: string;
+    aiMemory: string;
     departments: string;
   };
   dashboard: {

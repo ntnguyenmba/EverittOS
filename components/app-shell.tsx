@@ -1,10 +1,12 @@
 'use client';
 
+import { AskEveritt } from '@/components/ask-everitt';
 import { AppFooter } from '@/components/app-footer';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
 import { Sidebar } from '@/components/sidebar';
+import { isClientRole, normalizeRole } from '@/lib/roles';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import type { UserRole } from '@/lib/roles';
 
@@ -17,6 +19,9 @@ type AppShellProps = {
 };
 
 export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
+  const normalizedRole = normalizeRole(role);
+  const showAi = !isClientRole(normalizedRole);
+
   return (
     <div className={className ? `dashboard-shell ${className}` : 'dashboard-shell'}>
       <AppNavigationTracker />
@@ -29,6 +34,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         {children}
         <AppFooter />
       </main>
+      {showAi ? <AskEveritt plan={plan} /> : null}
     </div>
   );
 }

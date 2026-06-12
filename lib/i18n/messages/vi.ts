@@ -263,9 +263,15 @@ export const messages: Messages = {
     signInMethods: 'Đăng nhập bằng email, Google hoặc passkey.'
   },
   nav: {
+    commandCenter: 'Trung tâm điều hành',
     dashboard: 'Bảng điều khiển',
     jobs: 'Công việc',
+    crm: 'CRM',
     customers: 'Khách hàng',
+    projects: 'Dự án',
+    knowledge: 'Tri thức',
+    automations: 'Tự động hóa',
+    clients: 'Khách hàng portal',
     schedule: 'Lịch',
     workers: 'Nhân viên',
     team: 'Nhóm',
@@ -289,6 +295,7 @@ export const messages: Messages = {
     privacy: 'Quyền riêng tư',
     notifications: 'Thông báo',
     api: 'API',
+    aiMemory: 'Bộ nhớ AI',
     departments: 'Phòng ban'
   },
   dashboard: {

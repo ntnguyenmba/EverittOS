@@ -154,7 +154,7 @@ export default function CustomersPage() {
     <AppShell plan={plan} role={role}>
         <div className="page-head">
           <div>
-            <h1>Customers</h1>
+            <h1>CRM</h1>
           </div>
         </div>
 

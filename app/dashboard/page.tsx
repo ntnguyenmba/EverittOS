@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
+import { AskEveritt } from '@/components/ask-everitt';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
@@ -81,6 +82,10 @@ export default function DashboardPage() {
   const [teamMembersCount, setTeamMembersCount] = useState(0);
   const [usageCounts, setUsageCounts] = useState<UsageCounts | null>(null);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [leadCount, setLeadCount] = useState(0);
+  const [clientCount, setClientCount] = useState(0);
+  const [todayTasks, setTodayTasks] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -158,15 +163,38 @@ export default function DashboardPage() {
             .limit(5)
         : Promise.resolve({ data: [], error: null });
 
-    const [jobsRes, orgIsDemo, invoiceRes, reportsRes, teamRes, activityRes, counts] = await Promise.all([
-      jobsQuery,
-      fetchOrganizationIsDemo(supabase, org?.organizationId),
-      invoiceQuery,
-      reportsQuery,
-      teamQuery,
-      activityQuery,
-      fetchUsageCounts(user.id, org?.organizationId)
-    ]);
+    const customersQuery = org?.organizationId
+      ? supabase.from('customers').select('id, pipeline_stage').eq('organization_id', org.organizationId)
+      : supabase.from('customers').select('id, pipeline_stage').eq('user_id', user.id);
+
+    const tasksQuery = org?.organizationId
+      ? supabase
+          .from('os_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.organizationId)
+          .eq('due_date', todayIso())
+          .neq('status', 'done')
+      : Promise.resolve({ count: 0, error: null });
+
+    const notificationsQuery = supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('read_at', null);
+
+    const [jobsRes, orgIsDemo, invoiceRes, reportsRes, teamRes, activityRes, counts, customersRes, tasksRes, notifRes] =
+      await Promise.all([
+        jobsQuery,
+        fetchOrganizationIsDemo(supabase, org?.organizationId),
+        invoiceQuery,
+        reportsQuery,
+        teamQuery,
+        activityQuery,
+        fetchUsageCounts(user.id, org?.organizationId),
+        customersQuery,
+        tasksQuery,
+        notificationsQuery
+      ]);
 
     setLoading(false);
 
@@ -181,6 +209,17 @@ export default function DashboardPage() {
     if (!teamRes.error) setTeamMembersCount(teamRes.count || 0);
     if (!activityRes.error) setRecentActivity(activityRes.data || []);
     setUsageCounts(counts);
+    if (!customersRes.error && customersRes.data) {
+      const rows = customersRes.data as { id: string; pipeline_stage?: string | null }[];
+      setLeadCount(rows.filter((c) => c.pipeline_stage === 'lead' || c.pipeline_stage === 'qualified').length);
+      setClientCount(
+        rows.filter((c) => !c.pipeline_stage || c.pipeline_stage === 'won' || c.pipeline_stage === 'contact').length
+      );
+    } else {
+      setClientCount(counts.customers);
+    }
+    if (!tasksRes.error) setTodayTasks(tasksRes.count || 0);
+    if (!notifRes.error) setUnreadNotifications(notifRes.count || 0);
 
     if (isClientRole(normalizeRole(profile?.role))) {
       router.push('/portal/client');
@@ -256,14 +295,57 @@ export default function DashboardPage() {
 
       <header className="dashboard-hero">
         <div>
-          <h1 className="dashboard-hero-title">
+          <h1 className="dashboard-hero-title">Command Center</h1>
+          <p className="page-subtitle">
             {displayName ? t('dashboard.welcomeName', { name: displayName }) : t('dashboard.welcome')}
-          </h1>
+          </p>
         </div>
         <button type="button" className="btn btn-primary dashboard-hero-cta" onClick={() => setShowNewJob((v) => !v)}>
           {t('dashboard.newJob')}
         </button>
       </header>
+
+      <section className="command-kpi-row" aria-label="Key metrics">
+        <div className="command-kpi-card">
+          <span>Revenue due</span>
+          <strong>{loading ? '…' : unpaidInvoices}</strong>
+        </div>
+        <div className="command-kpi-card">
+          <span>Leads</span>
+          <strong>{loading ? '…' : leadCount}</strong>
+        </div>
+        <div className="command-kpi-card">
+          <span>Active clients</span>
+          <strong>{loading ? '…' : clientCount}</strong>
+        </div>
+        <div className="command-kpi-card">
+          <span>Open jobs</span>
+          <strong>{loading ? '…' : openJobs}</strong>
+        </div>
+        <div className="command-kpi-card">
+          <span>Due in 7 days</span>
+          <strong>{loading ? '…' : dueInSevenDays}</strong>
+        </div>
+        <div className="command-kpi-card">
+          <span>Team activity</span>
+          <strong>{loading ? '…' : recentActivity.length}</strong>
+        </div>
+      </section>
+
+      <div className="command-center-grid">
+        <div className="command-center-main">
+          <AskEveritt plan={plan} embedded />
+
+          <nav className="command-quick-actions" aria-label="Quick actions">
+            <Link href="/customers" className="command-quick-btn">Create lead</Link>
+            <Link href="/customers" className="command-quick-btn">Create contact</Link>
+            <button type="button" className="command-quick-btn" onClick={() => setShowNewJob(true)}>Create job</button>
+            <Link href="/proposals" className="command-quick-btn">Create proposal</Link>
+            <Link href="/settings/billing" className="command-quick-btn">Create invoice</Link>
+            <Link href="/knowledge" className="command-quick-btn">Upload file</Link>
+            <Link href="/projects" className="command-quick-btn">Create task</Link>
+            <Link href="/schedule" className="command-quick-btn">Schedule</Link>
+          </nav>
 
       {showNewJob ? (
         <section id="new-job" className="card dashboard-new-job-panel">
@@ -376,6 +458,31 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
+        </div>
+
+        <aside className="command-center-sidebar">
+          <section className="card">
+            <h3 className="card-title-sm">Today&apos;s tasks</h3>
+            <strong>{loading ? '…' : todayTasks}</strong>
+            <Link href="/projects" className="dashboard-section-link">View tasks</Link>
+          </section>
+          <section className="card">
+            <h3 className="card-title-sm">Notifications</h3>
+            <strong>{loading ? '…' : unreadNotifications}</strong>
+            <Link href="/notifications" className="dashboard-section-link">Open inbox</Link>
+          </section>
+          <section className="card">
+            <h3 className="card-title-sm">Upcoming</h3>
+            <strong>{loading ? '…' : dueInSevenDays}</strong>
+            <Link href="/schedule" className="dashboard-section-link">Open schedule</Link>
+          </section>
+          <section className="card">
+            <h3 className="card-title-sm">CRM snapshot</h3>
+            <p className="muted">{loading ? '…' : `${leadCount} leads · ${clientCount} clients`}</p>
+            <Link href="/customers" className="dashboard-section-link">Open CRM</Link>
+          </section>
+        </aside>
+      </div>
     </AppShell>
   );
 }
