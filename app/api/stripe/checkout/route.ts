@@ -103,6 +103,7 @@ export async function POST(request: Request) {
   if (promotionCodeId) {
     sessionParams.discounts = [{ promotion_code: promotionCodeId }];
   } else {
+    // Let customers enter a code on the Stripe Checkout page when none was applied in-app.
     sessionParams.allow_promotion_codes = true;
   }
 

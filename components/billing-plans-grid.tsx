@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
-import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { choosePlanButtonLabel, planCardAction } from '@/lib/billing-plan-actions';
 import { EVERITTOS_PLANS, EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
@@ -21,19 +20,20 @@ type StripeCapabilities = {
 
 type BillingPlansGridProps = {
   currentPlan: EverittosPlan;
-  initialPromoCode?: string;
   highlightPlan?: EverittosPlan;
+  /** Applied promo code passed to Stripe checkout */
+  promoCode?: string;
+  promoPreview?: PromoDiscountPreview | null;
 };
 
 export function BillingPlansGrid({
   currentPlan,
-  initialPromoCode = '',
-  highlightPlan
+  highlightPlan,
+  promoCode = '',
+  promoPreview = null
 }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
-  const [promoCode, setPromoCode] = useState(initialPromoCode);
-  const [promoPreview, setPromoPreview] = useState<PromoDiscountPreview | null>(null);
   const [capabilities, setCapabilities] = useState<StripeCapabilities | null>(null);
 
   useEffect(() => {
@@ -45,18 +45,10 @@ export function BillingPlansGrid({
 
   const checkoutEnabled = Boolean(capabilities?.checkout);
   const selfServePlanChanges = checkoutEnabled || Boolean(capabilities?.portal);
+  const appliedPromoCode = promoPreview?.code || promoCode.trim();
 
   return (
     <div className="billing-plans-grid-wrap">
-      <StripePromoCodeField
-        plan={highlightPlan && highlightPlan !== 'free' ? highlightPlan : 'pro'}
-        initialCode={initialPromoCode}
-        onValidated={(preview) => {
-          setPromoPreview(preview);
-          if (preview) setPromoCode(preview.code);
-        }}
-      />
-
       <div className="billing-plans-grid pricing-grid">
         {EVERITTOS_PLANS.map((tier) => {
           const action = planCardAction(normalizedCurrent, tier.id);
@@ -65,6 +57,9 @@ export function BillingPlansGrid({
           const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS];
           const canCheckoutThisPlan =
             checkoutEnabled && tier.id !== 'free' && (capabilities?.checkoutPlans || []).includes(tier.id);
+          const showPromoPricing =
+            promoPreview &&
+            tier.id === (highlightPlan && highlightPlan !== 'free' ? highlightPlan : 'pro');
 
           return (
             <div
@@ -81,7 +76,15 @@ export function BillingPlansGrid({
             >
               {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
               <h3>{tier.name}</h3>
-              <p className="pricing-plan-price">{tier.priceLabel}</p>
+              {showPromoPricing && promoPreview ? (
+                <p className="pricing-plan-price">
+                  <span className="promo-code-price-original">{promoPreview.originalPriceLabel}</span>{' '}
+                  <strong>{promoPreview.discountedPriceLabel}</strong>
+                  <span className="muted"> / mo</span>
+                </p>
+              ) : (
+                <p className="pricing-plan-price">{tier.priceLabel}</p>
+              )}
               <p className="muted">{tier.headline}</p>
               <ul className="billing-plan-features">
                 {tier.features.slice(0, 4).map((feature) => (
@@ -97,7 +100,7 @@ export function BillingPlansGrid({
                 <PlanCheckoutButton
                   plan={action.plan}
                   label={action.label}
-                  promoCode={promoCode}
+                  promoCode={appliedPromoCode}
                   promoPreview={promoPreview}
                   fallbackHref={fallbackHref}
                   className="btn btn-primary btn-block"
@@ -135,6 +138,7 @@ export function BillingPlansGrid({
         {t('billing.plansFootnote')}{' '}
         <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
       </p>
+      <p className="muted billing-plans-footnote">{t('billing.promo.checkoutNote')}</p>
     </div>
   );
 }

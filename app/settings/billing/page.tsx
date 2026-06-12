@@ -9,6 +9,7 @@ import { AiUsagePanel } from '@/components/ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
+import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
@@ -19,6 +20,7 @@ import { canCancelSubscription, canResumeSubscription } from '@/lib/stripe-subsc
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { useTranslation } from '@/components/locale-provider';
 import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
+import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
@@ -79,6 +81,9 @@ function BillingSettingsContent() {
   const [couponExpiresAt, setCouponExpiresAt] = useState<string | null>(null);
   const initialPromo = (searchParams.get('promo') || '').trim();
   const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
+  const promoValidationPlan =
+    checkoutPlan !== 'free' ? checkoutPlan : ('pro' as EverittosPlan);
+  const [appliedPromo, setAppliedPromo] = useState<PromoDiscountPreview | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -350,15 +355,29 @@ function BillingSettingsContent() {
       </div>
 
       {canBilling ? (
-        <div className="settings-card">
-          <h3>{t('billing.allPlans')}</h3>
-          <p className="muted">{t('billing.pricingSubtitle')}</p>
-          <BillingPlansGrid
-            currentPlan={plan}
-            initialPromoCode={initialPromo}
-            highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
-          />
-        </div>
+        <>
+          <div className="settings-card billing-promo-card">
+            <h3>{t('billing.promo.label')}</h3>
+            <p className="muted">{t('billing.promo.checkoutNote')}</p>
+            <StripePromoCodeField
+              fieldId="billing-promo-code"
+              plan={promoValidationPlan}
+              initialCode={initialPromo}
+              onValidated={setAppliedPromo}
+            />
+          </div>
+
+          <div className="settings-card">
+            <h3>{t('billing.allPlans')}</h3>
+            <p className="muted">{t('billing.pricingSubtitle')}</p>
+            <BillingPlansGrid
+              currentPlan={plan}
+              highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
+              promoCode={appliedPromo?.code || ''}
+              promoPreview={appliedPromo}
+            />
+          </div>
+        </>
       ) : null}
     </SettingsShell>
   );

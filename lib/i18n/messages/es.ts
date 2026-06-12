@@ -569,11 +569,11 @@ export const messages: Messages = {
     upgrade: 'Actualizar',
     promo: {
       label: 'Código promocional',
-      placeholder: 'FOUNDING',
+      placeholder: 'Ingrese código promocional',
       apply: 'Aplicar',
       validating: 'Validando…',
       invalid: 'Este código promocional no es válido.',
-      applied: '{name} aplicado',
+      applied: 'Código promocional aplicado: {code}',
       savings: 'Ahorra {amount} por mes',
       expires: 'El código vence el {date}',
       expiresLabel: 'Vence',

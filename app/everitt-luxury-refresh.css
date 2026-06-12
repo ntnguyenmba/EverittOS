@@ -891,6 +891,92 @@ table tbody tr:last-child td {
   }
 }
 
+/* ── Billing promo code ─────────────────────────────────────── */
+
+.billing-promo-card {
+  border-left: 3px solid var(--accent-gold);
+  background: linear-gradient(180deg, #fffdf9 0%, rgba(184, 148, 59, 0.06) 100%);
+}
+
+.billing-promo-card h3 {
+  margin: 0 0 8px;
+}
+
+.promo-code-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.promo-code-field {
+  margin-bottom: 0;
+}
+
+.promo-code-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.promo-code-input-row .input,
+.promo-code-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: var(--touch-min);
+}
+
+.promo-code-apply-btn {
+  flex: 0 0 auto;
+  min-width: 120px;
+}
+
+.promo-code-message {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.promo-code-applied-banner {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(74, 99, 84, 0.22);
+  background: var(--success-soft);
+}
+
+.promo-code-applied-text {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.promo-code-applied-detail {
+  margin: 0;
+}
+
+.plan-checkout-button {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.plan-checkout-button .btn-block {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .promo-code-input-row {
+    flex-direction: column;
+  }
+
+  .promo-code-apply-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

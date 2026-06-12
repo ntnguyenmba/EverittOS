@@ -567,11 +567,11 @@ export const messages: Messages = {
     upgrade: 'Upgrade',
     promo: {
       label: 'Promo code',
-      placeholder: 'FOUNDING',
+      placeholder: 'Enter promo code',
       apply: 'Apply',
       validating: 'Validating…',
       invalid: 'This promo code is not valid.',
-      applied: '{name} applied',
+      applied: 'Promo code applied: {code}',
       savings: 'You save {amount} per month',
       expires: 'Code expires {date}',
       expiresLabel: 'Expires',

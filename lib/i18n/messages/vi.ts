@@ -567,11 +567,11 @@ export const messages: Messages = {
     upgrade: 'Nâng cấp',
     promo: {
       label: 'Mã khuyến mãi',
-      placeholder: 'FOUNDING',
+      placeholder: 'Nhập mã khuyến mãi',
       apply: 'Áp dụng',
       validating: 'Đang xác minh…',
       invalid: 'Mã khuyến mãi này không hợp lệ.',
-      applied: 'Đã áp dụng {name}',
+      applied: 'Đã áp dụng mã: {code}',
       savings: 'Tiết kiệm {amount} mỗi tháng',
       expires: 'Mã hết hạn {date}',
       expiresLabel: 'Hết hạn',

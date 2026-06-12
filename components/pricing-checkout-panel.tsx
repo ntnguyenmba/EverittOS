@@ -47,7 +47,7 @@ export function PricingCheckoutPanel({
         initialCode={initialPromoCode}
         onValidated={(preview) => {
           setPromoPreview(preview);
-          if (preview) setPromoCode(preview.code);
+          setPromoCode(preview?.code ?? '');
         }}
       />
 
