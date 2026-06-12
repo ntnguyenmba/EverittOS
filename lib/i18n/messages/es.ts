@@ -13,7 +13,6 @@ export const messages: Messages = {
     addAnother: 'Agregar otro',
     goToDashboard: 'Ir al panel',
     exploreFeatures: 'Explorar funciones',
-    createSampleJob: 'Crear trabajo de ejemplo',
     optional: 'Opcional',
     language: 'Idioma'
   },
@@ -28,8 +27,6 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Conectar Google Calendar',
     openIntegrations: 'Abrir integraciones',
     inviteFailed: 'No se pudo enviar la invitación. Puede invitar al equipo desde Configuración.',
-    sampleJobName: 'Visita de bienvenida',
-    sampleCustomer: 'Cliente de ejemplo',
     steps: {
       welcome: {
         title: 'Bienvenido a EverittOS',
@@ -60,7 +57,7 @@ export const messages: Messages = {
       },
       firstJob: {
         title: 'Cree su primer trabajo',
-        subtitle: 'Agregue un trabajo real, cree un ejemplo u omita y comience desde el panel.',
+        subtitle: 'Agregue su primer trabajo ahora, o omita y créelo después desde el panel.',
         jobName: 'Nombre del trabajo',
         customer: 'Cliente',
         date: 'Fecha'
@@ -91,9 +88,9 @@ export const messages: Messages = {
     },
     teamSizes: {
       solo: 'Solo yo',
-      small: '2–5',
-      medium: '6–20',
-      large: '21–50',
+      small: '2-5',
+      medium: '6-20',
+      large: '21-50',
       enterprise: '50+'
     },
     operations: {

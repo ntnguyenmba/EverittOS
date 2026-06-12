@@ -1,3 +1,4 @@
+import { isDemoFeatureEnabled } from '@/lib/demo-guard';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export const DEMO_ORG_NAME = 'Everitt Demo Services';
@@ -8,6 +9,10 @@ export type DemoSeedResult =
   | { ok: false; message: string };
 
 export async function seedDemoOrganization(userId: string, email: string): Promise<DemoSeedResult> {
+  if (!isDemoFeatureEnabled()) {
+    return { ok: false, message: 'Demo workspaces are not available in production.' };
+  }
+
   const admin = createAdminSupabase();
   if (!admin) {
     return { ok: false, message: 'Demo setup unavailable on this server.' };

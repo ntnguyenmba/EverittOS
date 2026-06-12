@@ -7,7 +7,9 @@ import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { filterDemoSeedCustomers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { validatePlanAction } from '@/lib/plan-validate';
@@ -57,17 +59,28 @@ export default function CustomersPage() {
     setRole(userRole);
     setCanManage(isManagerRole(userRole));
 
-    const { data, error } = await supabase
+    const org = await fetchOrganizationContext(user.id);
+    let query = supabase
       .from('customers')
       .select('id, name, phone, email, address, notes, created_at')
       .order('created_at', { ascending: false });
+    if (org?.organizationId) {
+      query = query.eq('organization_id', org.organizationId);
+    } else {
+      query = query.eq('user_id', user.id);
+    }
+
+    const [{ data, error }, orgIsDemo] = await Promise.all([
+      query,
+      fetchOrganizationIsDemo(supabase, org?.organizationId)
+    ]);
 
     setLoading(false);
     if (error) {
       setMessage(error.message);
       return;
     }
-    setCustomers(data || []);
+    setCustomers(filterDemoSeedCustomers(data || [], orgIsDemo));
   }
 
   async function addCustomer() {

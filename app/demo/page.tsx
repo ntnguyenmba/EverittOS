@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
+import { isDemoFeatureEnabled } from '@/lib/demo-guard';
 
-/** Demo entry is signup-first; product onboarding follows sign-in. */
 export default function DemoPage() {
-  redirect('/signup?next=/onboarding');
+  redirect(isDemoFeatureEnabled() ? '/signup?next=/onboarding' : '/login');
 }

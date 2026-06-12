@@ -8,6 +8,9 @@ import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
+import { fetchOrganizationContext } from '@/lib/organization';
+import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { supabase } from '@/lib/supabase';
 
@@ -42,17 +45,27 @@ function JobsList() {
       const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
 
+      const org = await fetchOrganizationContext(user.id);
       let query = supabase
         .from('jobs')
         .select('id, title, customer_name, customer_id, address, status')
         .order('created_at', { ascending: false });
 
+      if (org?.organizationId) {
+        query = query.eq('organization_id', org.organizationId);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
       if (customerFilter) {
         query = query.eq('customer_id', customerFilter);
       }
 
-      const { data } = await query;
-      const rows = data || [];
+      const [{ data }, orgIsDemo] = await Promise.all([
+        query,
+        fetchOrganizationIsDemo(supabase, org?.organizationId)
+      ]);
+      const rows = filterDemoSeedJobs(data || [], orgIsDemo);
       const photoCounts = await fetchPhotoCountsByJobIds(rows.map((j) => j.id));
       setJobs(rows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
       setLoading(false);

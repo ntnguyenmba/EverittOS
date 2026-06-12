@@ -18,6 +18,7 @@ import {
 } from '@/lib/profile-query';
 import { enforceIdleSession } from '@/lib/session-server';
 import { enforceRateLimit } from '@/lib/rate-limit-middleware';
+import { isDemoFeatureEnabled } from '@/lib/demo-guard';
 import { isLegacyMarketingAppPath, MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { postAuthRedirectPath, shouldRedirectToOnboarding } from '@/lib/post-auth-redirect';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
@@ -126,7 +127,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/demo') {
-    return NextResponse.redirect(new URL('/signup?next=/onboarding', request.url));
+    const destination = isDemoFeatureEnabled() ? '/signup?next=/onboarding' : '/login';
+    return NextResponse.redirect(new URL(destination, request.url));
+  }
+
+  if (pathname === '/api/demo/enter' && !isDemoFeatureEnabled()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -164,7 +170,7 @@ export async function middleware(request: NextRequest) {
       );
       return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
     }
-    return supabaseResponse;
+    return redirectWithCookies(new URL('/login', request.url), supabaseResponse);
   }
 
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {

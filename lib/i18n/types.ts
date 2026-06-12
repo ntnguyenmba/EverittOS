@@ -11,7 +11,6 @@ export type MessageTree = {
     addAnother: string;
     goToDashboard: string;
     exploreFeatures: string;
-    createSampleJob: string;
     optional: string;
     language: string;
   };
@@ -25,8 +24,6 @@ export type MessageTree = {
     connectGoogleCalendar: string;
     openIntegrations: string;
     inviteFailed: string;
-    sampleJobName: string;
-    sampleCustomer: string;
     steps: {
       welcome: { title: string; subtitle: string };
       business: { title: string; subtitle: string; companyName: string; industry: string; teamSize: string };

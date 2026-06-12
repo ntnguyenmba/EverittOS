@@ -13,7 +13,6 @@ export const messages: Messages = {
     addAnother: 'Add Another',
     goToDashboard: 'Go To Dashboard',
     exploreFeatures: 'Explore Features',
-    createSampleJob: 'Create Sample Job',
     optional: 'Optional',
     language: 'Language'
   },
@@ -28,8 +27,6 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Connect Google Calendar',
     openIntegrations: 'Open integrations settings',
     inviteFailed: 'Invite could not be sent. You can invite team members later from Settings.',
-    sampleJobName: 'Welcome visit',
-    sampleCustomer: 'Sample customer',
     steps: {
       welcome: {
         title: 'Welcome to EverittOS',
@@ -60,7 +57,7 @@ export const messages: Messages = {
       },
       firstJob: {
         title: 'Create your first job',
-        subtitle: 'Add a real job, create a sample, or skip and start from your dashboard.',
+        subtitle: 'Add your first job now, or skip and create one from your dashboard later.',
         jobName: 'Job name',
         customer: 'Customer',
         date: 'Date'
@@ -91,9 +88,9 @@ export const messages: Messages = {
     },
     teamSizes: {
       solo: 'Just Me',
-      small: '2–5',
-      medium: '6–20',
-      large: '21–50',
+      small: '2-5',
+      medium: '6-20',
+      large: '21-50',
       enterprise: '50+'
     },
     operations: {

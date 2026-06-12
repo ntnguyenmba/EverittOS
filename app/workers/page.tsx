@@ -10,7 +10,9 @@ import { friendlyErrorMessage } from '@/lib/user-errors';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
+import { filterDemoSeedWorkers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -55,8 +57,11 @@ export default function WorkersPage() {
       query = query.eq('user_id', user.id);
     }
 
-    const { data } = await query;
-    setWorkers(data || []);
+    const [{ data }, orgIsDemo] = await Promise.all([
+      query,
+      fetchOrganizationIsDemo(supabase, org?.organizationId)
+    ]);
+    setWorkers(filterDemoSeedWorkers(data || [], orgIsDemo));
     setLoading(false);
   }
 

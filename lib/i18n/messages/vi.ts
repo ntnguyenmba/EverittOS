@@ -13,7 +13,6 @@ export const messages: Messages = {
     addAnother: 'Thêm email khác',
     goToDashboard: 'Đến bảng điều khiển',
     exploreFeatures: 'Khám phá tính năng',
-    createSampleJob: 'Tạo công việc mẫu',
     optional: 'Tùy chọn',
     language: 'Ngôn ngữ'
   },
@@ -27,8 +26,6 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Kết nối Google Calendar',
     openIntegrations: 'Mở cài đặt tích hợp',
     inviteFailed: 'Không gửi được lời mời. Bạn có thể mời nhóm sau trong Cài đặt.',
-    sampleJobName: 'Chuyến thăm chào mừng',
-    sampleCustomer: 'Khách hàng mẫu',
     steps: {
       welcome: {
         title: 'Chào mừng đến EverittOS',
@@ -59,7 +56,7 @@ export const messages: Messages = {
       },
       firstJob: {
         title: 'Tạo công việc đầu tiên',
-        subtitle: 'Thêm công việc thật, tạo mẫu, hoặc bỏ qua và bắt đầu từ bảng điều khiển.',
+        subtitle: 'Thêm công việc đầu tiên ngay, hoặc bỏ qua và tạo sau từ bảng điều khiển.',
         jobName: 'Tên công việc',
         customer: 'Khách hàng',
         date: 'Ngày'
@@ -90,9 +87,9 @@ export const messages: Messages = {
     },
     teamSizes: {
       solo: 'Chỉ tôi',
-      small: '2–5',
-      medium: '6–20',
-      large: '21–50',
+      small: '2-5',
+      medium: '6-20',
+      large: '21-50',
       enterprise: '50+'
     },
     operations: {

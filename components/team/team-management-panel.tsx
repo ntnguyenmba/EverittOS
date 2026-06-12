@@ -1,6 +1,5 @@
 'use client';
 
-import { DemoBanner } from '@/components/demo-banner';
 import { PermissionMatrix } from '@/components/team/permission-matrix';
 import { EmptyState } from '@/components/empty-state';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -52,7 +51,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
-  const [isDemo, setIsDemo] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
@@ -93,9 +91,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
 
     setOrgId(org.organizationId);
     setRole(org.role);
-
-    const { data: orgRow } = await supabase.from('organizations').select('is_demo').eq('id', org.organizationId).maybeSingle();
-    setIsDemo(Boolean(orgRow?.is_demo));
 
     const { data, error } = await supabase
       .from('organization_members')
@@ -294,8 +289,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
 
   return (
     <>
-      {isDemo ? <DemoBanner organizationName="Demo workspace" /> : null}
-
       {!teamEnabled && (
         <div className="settings-card plan-gate-card">
           <p>Team management requires Business, Operations, Growth, or Enterprise.</p>

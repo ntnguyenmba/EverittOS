@@ -302,15 +302,6 @@ export function OnboardingWizard() {
     }
   }
 
-  async function createSampleJob() {
-    try {
-      await createJobRecord(t('onboarding.sampleJobName'), t('onboarding.sampleCustomer'), null);
-      await completeStep(6);
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Unable to create sample job.');
-    }
-  }
-
   if (loading) {
     return (
       <OnboardingShell role={role}>
@@ -538,9 +529,6 @@ export function OnboardingWizard() {
               <span>{t('onboarding.steps.firstJob.date')}</span>
               <input className="input" type="date" value={jobDate} onChange={(e) => setJobDate(e.target.value)} />
             </label>
-            <button type="button" className="btn onboarding-sample" onClick={() => void createSampleJob()} disabled={busy}>
-              {t('common.createSampleJob')}
-            </button>
           </div>
           {message ? (
             <p className="auth-message auth-message-error" role="alert">

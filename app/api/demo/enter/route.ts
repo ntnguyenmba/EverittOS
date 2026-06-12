@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { isDemoFeatureEnabled } from '@/lib/demo-guard';
 import { seedDemoOrganization } from '@/lib/demo-seed-server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export async function POST() {
+  if (!isDemoFeatureEnabled()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const supabase = await createServerSupabase();
   const {
     data: { user }

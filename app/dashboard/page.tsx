@@ -13,7 +13,9 @@ import { UsageDashboard } from '@/components/usage-dashboard';
 import { useTranslation } from '@/components/locale-provider';
 import { mapAccessError } from '@/lib/auth-errors';
 import { hasTeamManagement } from '@/lib/everittos-plans';
+import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isClientRole, canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -107,11 +109,18 @@ export default function DashboardPage() {
     setPlan(normalizePlan(profile?.plan));
 
     const planNorm = normalizePlan(profile?.plan);
-    const [jobsRes, counts, activityRes, activityListRes] = await Promise.all([
-      supabase
-        .from('jobs')
-        .select('id, title, customer_name, status, start_date, due_date, created_at')
-        .order('created_at', { ascending: false }),
+    let jobsQuery = supabase
+      .from('jobs')
+      .select('id, title, customer_name, status, start_date, due_date, created_at')
+      .order('created_at', { ascending: false });
+    if (org?.organizationId) {
+      jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
+    } else {
+      jobsQuery = jobsQuery.eq('user_id', user.id);
+    }
+
+    const [jobsRes, counts, activityRes, activityListRes, orgIsDemo] = await Promise.all([
+      jobsQuery,
       fetchUsageCounts(user.id, org?.organizationId),
       org?.organizationId
         ? supabase
@@ -126,7 +135,8 @@ export default function DashboardPage() {
             .eq('organization_id', org.organizationId)
             .order('created_at', { ascending: false })
             .limit(6)
-        : Promise.resolve({ data: [] })
+        : Promise.resolve({ data: [] }),
+      fetchOrganizationIsDemo(supabase, org?.organizationId)
     ]);
 
     setLoading(false);
@@ -136,7 +146,7 @@ export default function DashboardPage() {
       return;
     }
 
-    const jobRows = jobsRes.data || [];
+    const jobRows = filterDemoSeedJobs(jobsRes.data || [], orgIsDemo);
     const photoCounts = await fetchPhotoCountsByJobIds(jobRows.map((j) => j.id));
     setJobs(jobRows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
     setUsage(counts);

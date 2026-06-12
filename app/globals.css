@@ -1914,19 +1914,6 @@ html[data-deployment='production'] #vercel-toolbar {
   box-shadow: var(--shadow-card);
 }
 
-/* Enterprise / funding readiness */
-.demo-banner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  align-items: center;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(74, 99, 84, 0.25);
-  background: var(--success-soft);
-}
-
 .permission-matrix-wrap {
   overflow-x: auto;
   margin-top: 12px;
