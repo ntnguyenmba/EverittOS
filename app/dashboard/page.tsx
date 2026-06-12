@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
-import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { todayIso, daysAheadIso } from '@/lib/date-filters';
@@ -58,7 +57,6 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
-  const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [totalJobs, setTotalJobs] = useState(0);
@@ -211,9 +209,9 @@ export default function DashboardPage() {
           title={t('dashboard.welcome')}
           subtitle={t('dashboard.subtitle')}
           action={
-            <button type="button" className="btn btn-primary" onClick={() => setShowNewJob((v) => !v)}>
+            <Link className="btn btn-primary" href="/jobs/new">
               {t('dashboard.newJob')}
-            </button>
+            </Link>
           }
         />
 
@@ -232,17 +230,6 @@ export default function DashboardPage() {
         ) : null}
 
         {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
-
-        {showNewJob ? (
-          <section id="new-job" className="card dashboard-new-job-panel">
-            <JobCreator
-              onJobCreated={() => {
-                setShowNewJob(false);
-                void loadDashboard();
-              }}
-            />
-          </section>
-        ) : null}
 
         <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
           <div className="dashboard-section-head">

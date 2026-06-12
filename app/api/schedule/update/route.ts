@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { canAssignJobs } from '@/lib/roles';
@@ -86,6 +87,12 @@ export async function POST(request: Request) {
     'schedule_changed',
     `Schedule updated: ${job.title || 'Job'}`
   );
+
+  await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
+    metadata: { jobId: body.jobId }
+  });
 
   return NextResponse.json({ ok: true, message: 'Schedule saved successfully.' });
 }

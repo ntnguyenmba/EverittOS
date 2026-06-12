@@ -3,6 +3,7 @@ import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
 import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import type { OrganizationContext } from '@/lib/organization-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { logSaveFlowEvent } from '@/lib/save-flow-log';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 
 export type CurrentWorkspace = OrganizationContext & {
@@ -75,11 +76,19 @@ async function createCompanyRecord(
   admin: SupabaseClient,
   userId: string,
   ownerUserId: string,
-  businessName?: string | null
+  businessName?: string | null,
+  organizationId?: string | null
 ): Promise<string | null> {
   const label = businessName?.trim() || 'My Business';
 
-  const attempts: Record<string, string>[] = [
+  const attempts: Array<Record<string, string>> = [
+    ...(organizationId
+      ? [
+          { owner_id: ownerUserId, organization_id: organizationId, company_name: label },
+          { user_id: userId, organization_id: organizationId, name: label },
+          { organization_id: organizationId, company_name: label }
+        ]
+      : []),
     { owner_id: ownerUserId, company_name: label },
     { user_id: userId, name: label },
     { owner_id: ownerUserId, name: label },
@@ -94,7 +103,13 @@ async function createCompanyRecord(
       return data.id;
     }
     if (error && isMissingRelationOrColumn(error.message)) {
-      return null;
+      continue;
+    }
+    if (error) {
+      logSaveFlowEvent('company_insert_attempt_failed', {
+        userId,
+        reason: error.message
+      });
     }
   }
 
@@ -112,28 +127,40 @@ export async function resolveCompanyIdForUser(
   admin: SupabaseClient,
   userId: string,
   ownerUserId: string,
-  businessName?: string | null
+  businessName?: string | null,
+  organizationId?: string | null
 ): Promise<string | null> {
   let companyId = await lookupCompanyId(admin, userId, ownerUserId);
   if (companyId) return companyId;
 
-  companyId = await createCompanyRecord(admin, userId, ownerUserId, businessName);
+  companyId = await createCompanyRecord(admin, userId, ownerUserId, businessName, organizationId);
   if (!companyId) {
     const { data: rpcId, error: rpcError } = await admin.rpc('ensure_user_company', { p_user_id: userId });
     if (!rpcError && rpcId) {
       companyId = rpcId as string;
+    } else if (rpcError) {
+      logSaveFlowEvent('ensure_user_company_rpc_failed', {
+        userId,
+        reason: rpcError.message
+      });
     }
   }
-  if (!companyId) return null;
+  if (!companyId) {
+    logSaveFlowEvent('company_resolve_failed', { userId, organizationId: organizationId || null });
+    return null;
+  }
 
   await linkProfileCompanyId(admin, userId, companyId);
   return companyId;
 }
 
+/** Whether to attempt company resolution before customer writes. */
 export async function customersRequireCompanyId(admin: SupabaseClient): Promise<boolean> {
   const { error } = await admin.from('customers').select('company_id').limit(0);
-  if (!error) return true;
-  return !isMissingRelationOrColumn(error.message);
+  if (error && isMissingRelationOrColumn(error.message)) {
+    return false;
+  }
+  return Boolean(!error);
 }
 
 /** Server-side workspace for the signed-in user, with optional bootstrap repair. */
@@ -192,18 +219,19 @@ export async function getCurrentWorkspaceForUser(
         admin,
         userId,
         org.ownerUserId,
-        profile?.business_name
+        profile?.business_name,
+        org.organizationId
       );
 
-      if (!companyId && options?.requireCompany) {
-        return {
-          ok: false,
-          status: 409,
-          error:
-            'We could not finish workspace setup for customer records. Refresh the page or contact support if this continues.',
-          code: 'company_missing'
-        };
+      if (!companyId) {
+        logSaveFlowEvent('company_missing_nonblocking', {
+          userId,
+          organizationId: org.organizationId,
+          requireCompany: options?.requireCompany ? 1 : 0
+        });
       }
+    } else {
+      logSaveFlowEvent('admin_client_unavailable', { userId, organizationId: org.organizationId });
     }
   }
 

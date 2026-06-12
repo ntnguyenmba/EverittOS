@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
-import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import { insertCustomerRecord } from '@/lib/customer-insert-server';
 import { buildCustomerWritePayload } from '@/lib/customer-record';
-import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
+import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
+import { workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
-  const ctx = await requireWorkspaceSession({ requireManager: true, requireCompany: true });
+  const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
@@ -34,9 +36,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
   }
 
-  const { data, error } = await ctx.supabase
-    .from('customers')
-    .insert({
+  const insertResult = await insertCustomerRecord({
+    supabase: ctx.supabase,
+    userId: ctx.userId,
+    workspace: ctx.workspace,
+    row: {
       ...workspaceScopedFields(ctx.workspace, ctx.userId),
       ...buildCustomerWritePayload({
         displayName: body.displayName,
@@ -48,12 +52,11 @@ export async function POST(request: Request) {
         pipeline_stage: body.pipeline_stage,
         lead_source: body.lead_source
       })
-    })
-    .select('id')
-    .single();
+    }
+  });
 
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  if (!insertResult.ok) {
+    return NextResponse.json({ error: insertResult.error, code: insertResult.code }, { status: 400 });
   }
 
   const isLead = body.record_type === 'lead' || body.pipeline_stage === 'lead';
@@ -61,10 +64,20 @@ export async function POST(request: Request) {
     ctx.workspace.organizationId,
     ctx.userId,
     isLead ? 'lead' : 'customer',
-    data.id,
+    insertResult.id,
     isLead ? 'lead_created' : 'customer_created',
     `${isLead ? 'Lead' : 'Customer'} created: ${body.displayName.trim()}`
   );
 
-  return NextResponse.json({ ok: true, customer: data, message: 'Customer saved successfully.' });
+  await trackProductEventServer(ctx.supabase, isLead ? 'lead_created' : 'customer_created', {
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
+    metadata: { customerId: insertResult.id, lead_source: body.lead_source || null }
+  });
+
+  return NextResponse.json({
+    ok: true,
+    customer: { id: insertResult.id },
+    message: isLead ? 'Lead saved successfully.' : 'Customer saved successfully.'
+  });
 }

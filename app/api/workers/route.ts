@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -56,6 +57,12 @@ export async function POST(request: Request) {
     'worker_created',
     `Worker added: ${body.name.trim()}`
   );
+
+  await trackProductEventServer(ctx.supabase, 'worker_created', {
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
+    metadata: { workerId: data.id }
+  });
 
   return NextResponse.json({ ok: true, worker: data, message: 'Worker saved successfully.' });
 }

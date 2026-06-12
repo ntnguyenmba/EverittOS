@@ -216,7 +216,17 @@ function CustomersPageContent() {
 
   return (
     <AppShell plan={plan} role={role}>
-        <PageHeader title={t('nav.crm')} subtitle={t('ux.pageTitles.customers')} />
+        <PageHeader
+          title={t('nav.crm')}
+          subtitle={t('ux.pageTitles.customers')}
+          action={
+            canManage ? (
+              <Link className="btn btn-primary" href="/customers/new">
+                Add customer
+              </Link>
+            ) : undefined
+          }
+        />
 
         {!canManage && (
           <div className="card">

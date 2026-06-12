@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -59,6 +60,12 @@ export async function POST(request: Request) {
     'job_created',
     `Job created: ${body.title.trim()}`
   );
+
+  await trackProductEventServer(ctx.supabase, 'job_created', {
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
+    metadata: { jobId: data.id }
+  });
 
   return NextResponse.json({ ok: true, job: data, message: 'Job saved successfully.' });
 }

@@ -111,7 +111,7 @@ function JobsList() {
         <PageHeader
           title={t('nav.jobs')}
           action={
-            <Link className="btn btn-primary" href="/dashboard">
+            <Link className="btn btn-primary" href="/jobs/new">
               {t('empty.jobs.action')}
             </Link>
           }

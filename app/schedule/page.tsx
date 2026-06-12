@@ -142,7 +142,15 @@ function SchedulePageContent() {
 
   return (
     <AppShell plan={plan}>
-      <PageHeader title={t('ux.pageTitles.schedule')} subtitle={t('ux.helperSchedule')} />
+      <PageHeader
+        title={t('ux.pageTitles.schedule')}
+        subtitle={t('ux.helperSchedule')}
+        action={
+          <Link className="btn btn-primary" href="/schedule/new">
+            Schedule work
+          </Link>
+        }
+      />
 
         {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
         {error && (

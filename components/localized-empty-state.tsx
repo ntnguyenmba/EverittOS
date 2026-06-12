@@ -7,10 +7,10 @@ import { EmptyState } from '@/components/empty-state';
 type EmptyKey = 'jobs' | 'customers' | 'schedule' | 'workers';
 
 const EMPTY_ACTIONS: Record<EmptyKey, string> = {
-  jobs: '/dashboard',
-  customers: '/customers',
-  schedule: '/schedule',
-  workers: '/settings/team'
+  jobs: '/jobs/new',
+  customers: '/customers/new',
+  schedule: '/schedule/new',
+  workers: '/workers'
 };
 
 type LocalizedEmptyStateProps = {
