@@ -15,6 +15,7 @@ export type MessageTree = {
     optional: string;
     language: string;
     close: string;
+    cancel: string;
   };
   ux: {
     appName: string;
@@ -44,6 +45,10 @@ export type MessageTree = {
     connectGoogleCalendar: string;
     openIntegrations: string;
     inviteFailed: string;
+    teamUpgradeRequired: string;
+    inviteLinkReady: string;
+    inviteLinkCopied: string;
+    copyInviteLink: string;
     steps: {
       welcome: { title: string; subtitle: string };
       business: { title: string; subtitle: string; companyName: string; industry: string; teamSize: string };
@@ -164,6 +169,35 @@ export type MessageTree = {
       passkeysBody: string;
       compromised: string;
     };
+    account: {
+      description: string;
+      profile: string;
+      email: string;
+      role: string;
+      accountStatus: string;
+      active: string;
+      disabled: string;
+      manageBilling: string;
+      workspaceSettings: string;
+      subscription: string;
+      subscriptionNote: string;
+      subscriptionOwnerOnly: string;
+      openBilling: string;
+      disableTitle: string;
+      disableNote: string;
+      ownerDisableWarning: string;
+      restoreContact: string;
+      disabling: string;
+      disableConfirmTitle: string;
+      disableConfirmBody: string;
+      disableFailed: string;
+      disabledDetail: string;
+    };
+  };
+  analytics: {
+    adoption: string;
+    growth: string;
+    usage: string;
   };
   auth: {
     acceptTerms: string;

@@ -174,7 +174,11 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
       return;
     }
     setInviteUrl(json.acceptUrl);
-    showSuccess(json.message || 'Invitation sent.');
+    if (json.emailSent) {
+      showSuccess(json.message || 'Invitation sent.');
+    } else {
+      showSuccess(json.message || 'Email not configured. Copy the invite link below.');
+    }
     setEmail('');
     setInviteNote('');
     load();

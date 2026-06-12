@@ -228,15 +228,18 @@ function BillingSettingsContent() {
             ) : (
               <p className="muted">{t('billing.noCustomer')}</p>
             )}
-            {canCancelSubscription(subscriptionStatus) ? (
+            {stripeCustomerId && canCancelSubscription(subscriptionStatus) ? (
               <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
                 {cancelLoading ? 'Working...' : t('billing.cancel')}
               </button>
             ) : null}
-            {canResumeSubscription(subscriptionStatus) ? (
+            {stripeCustomerId && canResumeSubscription(subscriptionStatus) ? (
               <button type="button" className="btn btn-primary" disabled={resumeLoading} onClick={resumeSubscription}>
                 {resumeLoading ? 'Working...' : t('billing.resume')}
               </button>
+            ) : null}
+            {!stripeCustomerId && canBilling ? (
+              <p className="muted">{t('billing.portalUnavailable')}</p>
             ) : null}
           </div>
         ) : null}

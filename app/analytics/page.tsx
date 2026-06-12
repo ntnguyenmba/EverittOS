@@ -77,14 +77,14 @@ export default function AnalyticsPage() {
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       {!loading && !error && summary && !hasData ? (
-        <EmptyState title="No metrics yet" description={t('dashboard.analyticsEmpty')} />
+        <EmptyState title={t('dashboard.metricsEmpty')} description={t('dashboard.analyticsEmpty')} />
       ) : null}
 
       {summary && hasData ? (
         <div className="charts-grid">
-          <SimpleBarChart title="Adoption metrics" points={summary.adoptionMetrics} />
-          <SimpleBarChart title="Growth metrics" points={summary.growthMetrics} />
-          <SimpleBarChart title="Usage metrics" points={summary.usageMetrics} />
+          <SimpleBarChart title={t('analytics.adoption')} points={summary.adoptionMetrics} />
+          <SimpleBarChart title={t('analytics.growth')} points={summary.growthMetrics} />
+          <SimpleBarChart title={t('analytics.usage')} points={summary.usageMetrics} />
         </div>
       ) : null}
     </AppShell>

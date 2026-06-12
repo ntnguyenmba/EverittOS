@@ -16,7 +16,8 @@ export const messages: Messages = {
     exploreFeatures: 'Explore Features',
     optional: 'Optional',
     language: 'Language',
-    close: 'Close'
+    close: 'Close',
+    cancel: 'Cancel'
   },
   ux: {
     appName: 'EverittOS',
@@ -47,6 +48,10 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Connect Google Calendar',
     openIntegrations: 'Open integrations settings',
     inviteFailed: 'Invite could not be sent. You can invite team members later from Settings.',
+    teamUpgradeRequired: 'Team invites require Business or higher. Upgrade billing to invite teammates.',
+    inviteLinkReady: 'Invitation created. Copy the invite link below because email is not configured.',
+    inviteLinkCopied: 'Invite link copied.',
+    copyInviteLink: 'Copy invite link',
     steps: {
       welcome: {
         title: 'Welcome to EverittOS',
@@ -273,7 +278,37 @@ export const messages: Messages = {
       passkeysBody:
         'Passkeys let you sign in with your device, browser, password manager, biometric unlock, or security key. EverittOS does not receive or store biometric data.',
       compromised: 'If you believe your account or device has been compromised, contact us at'
+    },
+    account: {
+      description: 'Email, role, subscription, and account status.',
+      profile: 'Profile',
+      email: 'Email',
+      role: 'Role',
+      accountStatus: 'Account status',
+      active: 'Active',
+      disabled: 'Disabled',
+      manageBilling: 'Manage billing',
+      workspaceSettings: 'Workspace settings',
+      subscription: 'Subscription',
+      subscriptionNote: 'Cancel, resume, or change plans from billing settings.',
+      subscriptionOwnerOnly: 'Only workspace owners and admins can change billing.',
+      openBilling: 'Open billing settings',
+      disableTitle: 'Disable account',
+      disableNote:
+        'Disabling signs you out and blocks sign-in. Your organization data stays stored. Nothing is deleted.',
+      ownerDisableWarning: 'You are the workspace owner. Disabling only blocks your account. Transfer ownership on',
+      restoreContact: 'Contact support to restore access:',
+      disabling: 'Disabling…',
+      disableConfirmTitle: 'Disable your account?',
+      disableConfirmBody: 'You will be signed out and cannot access protected pages until support restores access.',
+      disableFailed: 'Unable to disable account.',
+      disabledDetail: 'Account disabled at your request.'
     }
+  },
+  analytics: {
+    adoption: 'Adoption metrics',
+    growth: 'Growth metrics',
+    usage: 'Usage metrics'
   },
   auth: {
     acceptTerms: 'I agree to the Terms of Service',
@@ -417,7 +452,7 @@ export const messages: Messages = {
       connectCalendar: 'Connect calendar'
     },
     metricsEmpty: 'No metrics yet',
-    analyticsEmpty: 'No metrics yet'
+    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.'
   },
   billing: {
     title: 'Billing',

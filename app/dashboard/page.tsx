@@ -4,25 +4,18 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
-import { ActivityFeed } from '@/components/activity-feed';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
-import { MetricCard } from '@/components/metric-card';
-import { SnapshotCard } from '@/components/snapshot-card';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
-import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
-import { monthStartIso, todayIso, weekAgoIso } from '@/lib/date-filters';
-import { UsageDashboard } from '@/components/usage-dashboard';
+import { todayIso } from '@/lib/date-filters';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
 import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
-import { hasTeamManagement, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import type { Locale } from '@/lib/i18n/config';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
@@ -30,36 +23,10 @@ import { supabase } from '@/lib/supabase';
 type Job = {
   id: string;
   title: string;
-  customer_name: string | null;
   status: string | null;
   start_date: string | null;
   due_date: string | null;
-  assigned_to: string | null;
-  completed_at: string | null;
 };
-
-type ActivityItem = {
-  id: string;
-  action: string;
-  message: string | null;
-  entity_type: string;
-  created_at: string | null;
-  actor_name: string | null;
-};
-
-const LOCALE_TAGS: Record<Locale, string> = {
-  en: 'en-US',
-  es: 'es',
-  vi: 'vi-VN'
-};
-
-function formatMoney(amount: number, locale: Locale): string {
-  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(amount);
-}
 
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
@@ -72,30 +39,13 @@ function DashboardAccessNotice() {
   );
 }
 
-const QUICK_LINKS = [
-  { key: 'jobs', href: '/jobs' },
-  { key: 'notifications', href: '/notifications' },
-  { key: 'settings', href: '/settings' },
-  { key: 'activity', href: '/activity', minPlan: 'business' as const }
-] as const;
-
 export default function DashboardPage() {
   const router = useRouter();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [displayName, setDisplayName] = useState('');
-  const [unpaidInvoices, setUnpaidInvoices] = useState(0);
-  const [revenueMonth, setRevenueMonth] = useState(0);
-  const [pendingProposals, setPendingProposals] = useState(0);
-  const [usageCounts, setUsageCounts] = useState<UsageCounts | null>(null);
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [leadCount, setLeadCount] = useState(0);
-  const [clientCount, setClientCount] = useState(0);
-  const [newCustomersMonth, setNewCustomersMonth] = useState(0);
-  const [todayTasks, setTodayTasks] = useState(0);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -131,7 +81,7 @@ export default function DashboardPage() {
 
     let jobsQuery = supabase
       .from('jobs')
-      .select('id, title, customer_name, status, start_date, due_date, assigned_to, completed_at')
+      .select('id, title, status, start_date, due_date')
       .order('created_at', { ascending: false });
     if (org?.organizationId) {
       jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
@@ -139,84 +89,7 @@ export default function DashboardPage() {
       jobsQuery = jobsQuery.eq('user_id', user.id);
     }
 
-    const invoiceOpenQuery = org?.organizationId
-      ? supabase
-          .from('invoices')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', org.organizationId)
-          .neq('status', 'paid')
-          .neq('status', 'cancelled')
-      : Promise.resolve({ count: 0, error: null });
-
-    const invoicePaidQuery = org?.organizationId
-      ? supabase
-          .from('invoices')
-          .select('amount')
-          .eq('organization_id', org.organizationId)
-          .eq('status', 'paid')
-          .gte('created_at', monthStartIso())
-      : Promise.resolve({ data: [], error: null });
-
-    const proposalsQuery = org?.organizationId
-      ? supabase
-          .from('proposals')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', org.organizationId)
-          .in('status', ['draft', 'sent', 'pending', 'open'])
-      : Promise.resolve({ count: 0, error: null });
-
-    const activityQuery =
-      org?.organizationId && limitsForPlan(userPlan).activityLog
-        ? supabase
-            .from('activity_logs')
-            .select('id, action, message, entity_type, created_at, actor_name')
-            .eq('organization_id', org.organizationId)
-            .order('created_at', { ascending: false })
-            .limit(5)
-        : Promise.resolve({ data: [], error: null });
-
-    const customersQuery = org?.organizationId
-      ? supabase.from('customers').select('id, pipeline_stage, created_at').eq('organization_id', org.organizationId)
-      : supabase.from('customers').select('id, pipeline_stage, created_at').eq('user_id', user.id);
-
-    const tasksQuery = org?.organizationId
-      ? supabase
-          .from('os_tasks')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', org.organizationId)
-          .eq('due_date', todayIso())
-          .neq('status', 'done')
-      : Promise.resolve({ count: 0, error: null });
-
-    const notificationsQuery = supabase
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('read_at', null);
-
-    const [
-      jobsRes,
-      orgIsDemo,
-      invoiceOpenRes,
-      invoicePaidRes,
-      proposalsRes,
-      activityRes,
-      counts,
-      customersRes,
-      tasksRes,
-      notifRes
-    ] = await Promise.all([
-      jobsQuery,
-      fetchOrganizationIsDemo(supabase, org?.organizationId),
-      invoiceOpenQuery,
-      invoicePaidQuery,
-      proposalsQuery,
-      activityQuery,
-      fetchUsageCounts(user.id, org?.organizationId),
-      customersQuery,
-      tasksQuery,
-      notificationsQuery
-    ]);
+    const [jobsRes, orgIsDemo] = await Promise.all([jobsQuery, fetchOrganizationIsDemo(supabase, org?.organizationId)]);
 
     setLoading(false);
 
@@ -226,32 +99,6 @@ export default function DashboardPage() {
     }
 
     setJobs(filterDemoSeedJobs(jobsRes.data || [], orgIsDemo));
-    if (!invoiceOpenRes.error) setUnpaidInvoices(invoiceOpenRes.count || 0);
-    if (!invoicePaidRes.error && invoicePaidRes.data) {
-      const total = (invoicePaidRes.data as { amount: number | null }[]).reduce(
-        (sum, row) => sum + (Number(row.amount) || 0),
-        0
-      );
-      setRevenueMonth(total);
-    }
-    if (!proposalsRes.error) setPendingProposals(proposalsRes.count || 0);
-    if (!activityRes.error) setRecentActivity(activityRes.data || []);
-    setUsageCounts(counts);
-
-    const monthStart = monthStartIso();
-    if (!customersRes.error && customersRes.data) {
-      const rows = customersRes.data as { id: string; pipeline_stage?: string | null; created_at?: string | null }[];
-      setLeadCount(rows.filter((c) => c.pipeline_stage === 'lead' || c.pipeline_stage === 'qualified').length);
-      setClientCount(
-        rows.filter((c) => !c.pipeline_stage || c.pipeline_stage === 'won' || c.pipeline_stage === 'contact').length
-      );
-      setNewCustomersMonth(rows.filter((c) => c.created_at && c.created_at >= monthStart).length);
-    } else {
-      setClientCount(counts.customers);
-    }
-
-    if (!tasksRes.error) setTodayTasks(tasksRes.count || 0);
-    if (!notifRes.error) setUnreadNotifications(notifRes.count || 0);
 
     if (isClientRole(normalizeRole(profile?.role))) {
       router.push('/portal/client');
@@ -263,74 +110,33 @@ export default function DashboardPage() {
   }, []);
 
   const today = todayIso();
-  const showActivity = limitsForPlan(plan).activityLog;
-  const weekAgo = weekAgoIso();
-
-  const completedThisWeek = useMemo(
-    () =>
-      jobs.filter(
-        (j) =>
-          j.status === 'completed' &&
-          j.completed_at &&
-          new Date(j.completed_at).getTime() >= new Date(weekAgo).getTime()
-      ).length,
-    [jobs, weekAgo]
-  );
-
-  const unassignedJobs = useMemo(
-    () =>
-      jobs.filter(
-        (j) => j.status !== 'completed' && j.status !== 'cancelled' && !j.assigned_to
-      ).length,
-    [jobs]
-  );
-
-  const dueInSevenDays = useMemo(() => {
-    const weekAhead = new Date();
-    weekAhead.setDate(weekAhead.getDate() + 7);
-    const end = weekAhead.toISOString().slice(0, 10);
-    return jobs.filter(
-      (j) =>
-        j.status !== 'completed' &&
-        j.status !== 'cancelled' &&
-        ((j.due_date && j.due_date >= today && j.due_date <= end) ||
-          (j.start_date && j.start_date >= today && j.start_date <= end))
-    ).length;
-  }, [jobs, today]);
 
   const todayJobs = useMemo(
     () =>
       jobs
         .filter((j) => j.status !== 'cancelled' && (j.start_date === today || j.due_date === today))
-        .slice(0, 5),
+        .slice(0, 8),
     [jobs, today]
   );
 
   function workersHref(): string {
-    if (!hasTeamManagement(plan)) {
-      return billingUpgradeHref('business', t('dashboard.quickActions.addWorker'));
+    if (!limitsForPlan(plan).crewAssignment) {
+      return billingUpgradeHref('business', t('dashboard.actions.workers'));
     }
     return '/workers';
   }
 
-  function quickLinkHref(link: (typeof QUICK_LINKS)[number]): string {
-    if ('minPlan' in link && link.minPlan && !limitsForPlan(plan).activityLog) {
-      return billingUpgradeHref(link.minPlan, t(`dashboard.quickLinks.${link.key}`));
-    }
-    return link.href;
-  }
-
-  const attentionItems = [
-    { key: 'overdueInvoices', count: unpaidInvoices, href: DASHBOARD_LINKS.openInvoices },
-    { key: 'unassignedJobs', count: unassignedJobs, href: '/jobs?filter=unassigned' },
-    { key: 'pendingEstimates', count: pendingProposals, href: DASHBOARD_LINKS.proposals },
-    { key: 'followUpCustomers', count: leadCount, href: DASHBOARD_LINKS.customersLeads },
-    { key: 'upcomingAppointments', count: dueInSevenDays, href: DASHBOARD_LINKS.scheduledUpcoming }
-  ].filter((item) => item.count > 0);
-
   const welcomeSubtitle = displayName
     ? t('dashboard.welcomeName', { name: displayName })
     : t('dashboard.subtitle');
+
+  const coreActions = [
+    { key: 'newJob', href: null, onClick: () => setShowNewJob(true), primary: true },
+    { key: 'schedule', href: '/schedule', onClick: null, primary: false },
+    { key: 'customers', href: '/customers', onClick: null, primary: false },
+    { key: 'workers', href: workersHref(), onClick: null, primary: false },
+    { key: 'billing', href: '/settings/billing', onClick: null, primary: false }
+  ] as const;
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -355,85 +161,35 @@ export default function DashboardPage() {
           }
         />
 
-        <section aria-label={t('ux.progressTitle')}>
-          <h2 className="section-heading">{t('ux.progressTitle')}</h2>
-          <div className="progress-cards">
-            <MetricCard
-              value={completedThisWeek}
-              label={t('dashboard.progress.completedWeek')}
-              hint={t('dashboard.progress.hints.completedWeek')}
-              href={DASHBOARD_LINKS.completedWeek}
-              loading={loading}
-            />
-            <MetricCard
-              value={formatMoney(revenueMonth, locale)}
-              label={t('dashboard.progress.revenueMonth')}
-              hint={t('dashboard.progress.hints.revenueMonth')}
-              href={DASHBOARD_LINKS.revenueMonth}
-              loading={loading}
-            />
-            <MetricCard
-              value={newCustomersMonth}
-              label={t('dashboard.progress.newCustomersMonth')}
-              hint={t('dashboard.progress.hints.newCustomersMonth')}
-              href={DASHBOARD_LINKS.newCustomersMonth}
-              loading={loading}
-            />
-            <MetricCard
-              value={unpaidInvoices}
-              label={t('dashboard.progress.openInvoices')}
-              hint={t('dashboard.progress.hints.openInvoices')}
-              href={DASHBOARD_LINKS.openInvoices}
-              loading={loading}
-            />
-            <MetricCard
-              value={dueInSevenDays}
-              label={t('dashboard.progress.scheduledUpcoming')}
-              hint={t('dashboard.progress.hints.scheduledUpcoming')}
-              href={DASHBOARD_LINKS.scheduledUpcoming}
-              loading={loading}
-            />
-          </div>
-        </section>
-
         <section aria-label={t('dashboard.primaryActions')}>
           <h2 className="section-heading">{t('dashboard.primaryActions')}</h2>
           <div className="quick-actions-grid">
-            <button
-              type="button"
-              className="quick-action-tile quick-action-tile-primary"
-              onClick={() => setShowNewJob(true)}
-            >
-              {t('dashboard.quickActions.createJob')}
-            </button>
-            <Link href="/customers" className="quick-action-tile">
-              {t('dashboard.quickActions.addCustomer')}
-            </Link>
-            <Link href="/settings/billing" className="quick-action-tile">
-              {t('dashboard.quickActions.sendInvoice')}
-            </Link>
-            <Link href="/schedule" className="quick-action-tile">
-              {t('dashboard.quickActions.scheduleWork')}
-            </Link>
-            <Link href={workersHref()} className="quick-action-tile">
-              {t('dashboard.quickActions.addWorker')}
-            </Link>
+            {coreActions.map((action) => {
+              const label = t(`dashboard.actions.${action.key}`);
+              if (action.onClick) {
+                return (
+                  <button
+                    key={action.key}
+                    type="button"
+                    className={action.primary ? 'quick-action-tile quick-action-tile-primary' : 'quick-action-tile'}
+                    onClick={action.onClick}
+                  >
+                    {label}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={action.key}
+                  href={action.href || '/dashboard'}
+                  className={action.primary ? 'quick-action-tile quick-action-tile-primary' : 'quick-action-tile'}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </div>
         </section>
-
-        {attentionItems.length > 0 ? (
-          <section className="card" aria-label={t('ux.attentionNeeded')}>
-            <h2 className="section-heading">{t('ux.attentionNeeded')}</h2>
-            <div className="attention-list">
-              {attentionItems.map((item) => (
-                <Link key={item.key} href={item.href} className="attention-item">
-                  <span>{t(`dashboard.attention.${item.key}`)}</span>
-                  <strong>{loading ? '…' : item.count}</strong>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         {showNewJob ? (
           <section id="new-job" className="card dashboard-new-job-panel">
@@ -453,7 +209,7 @@ export default function DashboardPage() {
               {t('dashboard.viewSchedule')}
             </Link>
           </div>
-          {loading ? <p className="loading-state" role="status">…</p> : null}
+          {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
           {!loading && todayJobs.length === 0 ? (
             <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
           ) : null}
@@ -465,83 +221,6 @@ export default function DashboardPage() {
               </Link>
             ))}
         </section>
-
-        <div className="command-center-grid">
-          <div className="command-center-sidebar">
-            <SnapshotCard
-              title={t('dashboard.sidebar.todayTasks')}
-              value={todayTasks}
-              actionLabel={t('dashboard.sidebar.viewTasks')}
-              hint={t('dashboard.sidebar.hints.todayTasks')}
-              href={DASHBOARD_LINKS.todayTasks}
-              loading={loading}
-            />
-            <SnapshotCard
-              title={t('dashboard.sidebar.notifications')}
-              value={unreadNotifications}
-              actionLabel={t('dashboard.sidebar.openInbox')}
-              hint={t('dashboard.sidebar.hints.notifications')}
-              href={DASHBOARD_LINKS.notifications}
-              loading={loading}
-            />
-            <SnapshotCard
-              title={t('dashboard.sidebar.upcoming')}
-              value={dueInSevenDays}
-              actionLabel={t('dashboard.sidebar.openSchedule')}
-              hint={t('dashboard.sidebar.hints.upcoming')}
-              href={DASHBOARD_LINKS.scheduledUpcoming}
-              loading={loading}
-            />
-            <SnapshotCard
-              title={t('dashboard.sidebar.crmSnapshot')}
-              value={
-                loading ? '…' : t('dashboard.sidebar.leadsClients', { leads: leadCount, clients: clientCount })
-              }
-              actionLabel={t('dashboard.sidebar.openCrm')}
-              hint={t('dashboard.sidebar.hints.crmSnapshot')}
-              href={DASHBOARD_LINKS.customers}
-              loading={loading}
-            />
-          </div>
-        </div>
-
-        <details className="details-advanced">
-          <summary>{t('ux.advancedTools')}</summary>
-          <div className="details-advanced-body">
-            {usageCounts ? (
-              <details className="card dashboard-usage-card">
-                <summary className="dashboard-section-head" style={{ cursor: 'pointer', listStyle: 'none' }}>
-                  <h2 className="card-title-sm" style={{ margin: 0 }}>
-                    {t('dashboard.moreDetails')}
-                  </h2>
-                </summary>
-                <UsageDashboard plan={plan} counts={usageCounts} />
-              </details>
-            ) : null}
-
-            {showActivity ? (
-              <section className="card dashboard-metrics-card" aria-label={t('dashboard.recentActivity')}>
-                <div className="dashboard-section-head">
-                  <h2 className="card-title-sm">{t('dashboard.recentActivity')}</h2>
-                  <Link href="/activity" className="dashboard-section-link">
-                    {t('dashboard.viewActivity')}
-                  </Link>
-                </div>
-                <ActivityFeed items={recentActivity} loading={loading} emptyLabel={t('dashboard.activityEmpty')} />
-              </section>
-            ) : null}
-
-            <section className="card dashboard-quick-links-card" aria-label={t('dashboard.quickLinksLabel')}>
-              <div className="btn-group-responsive">
-                {QUICK_LINKS.map((link) => (
-                  <Link key={link.key} href={quickLinkHref(link)} className="btn btn-sm">
-                    {t(`dashboard.quickLinks.${link.key}`)}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          </div>
-        </details>
       </div>
     </AppShell>
   );

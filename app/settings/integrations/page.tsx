@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import { googleCalendarRedirectUri } from '@/lib/google-calendar-config';
+import {
+  GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI,
+  googleCalendarRedirectUri
+} from '@/lib/google-calendar-config';
 import type { GoogleCalendarHealth } from '@/lib/google-calendar-health';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
@@ -265,7 +268,8 @@ function IntegrationsContent() {
         ) : null}
 
         <p className="muted integration-callback-note" style={{ marginTop: 16 }}>
-          OAuth redirect URI for setup: <code>{googleCalendarRedirectUri()}</code>
+          OAuth redirect URI for setup:{' '}
+          <code>{status?.configured ? googleCalendarRedirectUri() : GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI}</code>
         </p>
       </div>
     </SettingsShell>

@@ -13,6 +13,7 @@ type PrivacyPayload = {
   sms_notifications: boolean;
   do_not_sell: boolean;
   preferred_locale: string;
+  locale: string;
 };
 
 export async function GET() {
@@ -28,7 +29,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'marketing_emails, product_updates, operational_notifications, email_notifications, push_notifications, sms_notifications, do_not_sell, preferred_locale, terms_accepted_at, privacy_accepted_at, terms_version, privacy_version'
+      'marketing_emails, product_updates, operational_notifications, email_notifications, push_notifications, sms_notifications, do_not_sell, preferred_locale, locale, terms_accepted_at, privacy_accepted_at, terms_version, privacy_version'
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -64,7 +65,15 @@ export async function PATCH(request: Request) {
   if (typeof body.do_not_sell === 'boolean') patch.do_not_sell = body.do_not_sell;
 
   if (typeof body.preferred_locale === 'string') {
-    patch.preferred_locale = normalizeLocale(body.preferred_locale);
+    const nextLocale = normalizeLocale(body.preferred_locale);
+    patch.preferred_locale = nextLocale;
+    patch.locale = nextLocale;
+  }
+
+  if (typeof body.locale === 'string') {
+    const nextLocale = normalizeLocale(body.locale);
+    patch.locale = nextLocale;
+    patch.preferred_locale = nextLocale;
   }
 
   if (Object.keys(patch).length === 0) {

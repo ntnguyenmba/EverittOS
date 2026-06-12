@@ -8,6 +8,10 @@ export const GOOGLE_CALENDAR_SCOPES = [
 /** Production OAuth callback registered in Google Cloud Console. */
 export const GOOGLE_CALENDAR_CALLBACK_PATH = '/api/integrations/google-calendar/callback';
 
+/** Canonical redirect URI shown when server OAuth credentials are missing. */
+export const GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI =
+  'https://app.everittventures.com/api/integrations/google-calendar/callback';
+
 export function googleCalendarRedirectUri(): string {
   const explicit = (process.env.GOOGLE_CALENDAR_REDIRECT_URI || '').trim();
   if (explicit) return explicit;

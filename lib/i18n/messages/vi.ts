@@ -16,7 +16,8 @@ export const messages: Messages = {
     exploreFeatures: 'Khám phá tính năng',
     optional: 'Tùy chọn',
     language: 'Ngôn ngữ',
-    close: 'Đóng'
+    close: 'Đóng',
+    cancel: 'Hủy'
   },
   ux: {
     appName: 'EverittOS',
@@ -46,6 +47,10 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Kết nối Google Calendar',
     openIntegrations: 'Mở cài đặt tích hợp',
     inviteFailed: 'Không gửi được lời mời. Bạn có thể mời nhóm sau trong Cài đặt.',
+    teamUpgradeRequired: 'Mời nhóm cần gói Business trở lên. Nâng cấp trong Thanh toán.',
+    inviteLinkReady: 'Đã tạo lời mời. Sao chép liên kết bên dưới vì email chưa được cấu hình.',
+    inviteLinkCopied: 'Đã sao chép liên kết mời.',
+    copyInviteLink: 'Sao chép liên kết mời',
     steps: {
       welcome: {
         title: 'Chào mừng đến EverittOS',
@@ -274,7 +279,37 @@ export const messages: Messages = {
       passkeysBody:
         'Passkey cho phép bạn đăng nhập bằng thiết bị, trình duyệt, trình quản lý mật khẩu, mở khóa sinh trắc học hoặc khóa bảo mật. EverittOS không nhận hoặc lưu dữ liệu sinh trắc học.',
       compromised: 'Nếu bạn cho rằng tài khoản hoặc thiết bị bị xâm phạm, hãy liên hệ'
+    },
+    account: {
+      description: 'Email, vai trò, đăng ký và trạng thái tài khoản.',
+      profile: 'Hồ sơ',
+      email: 'Email',
+      role: 'Vai trò',
+      accountStatus: 'Trạng thái tài khoản',
+      active: 'Đang hoạt động',
+      disabled: 'Đã vô hiệu hóa',
+      manageBilling: 'Quản lý thanh toán',
+      workspaceSettings: 'Cài đặt không gian làm việc',
+      subscription: 'Đăng ký',
+      subscriptionNote: 'Hủy, tiếp tục hoặc đổi gói trong cài đặt thanh toán.',
+      subscriptionOwnerOnly: 'Chỉ chủ sở hữu và quản trị viên mới có thể thay đổi thanh toán.',
+      openBilling: 'Mở cài đặt thanh toán',
+      disableTitle: 'Vô hiệu hóa tài khoản',
+      disableNote:
+        'Vô hiệu hóa sẽ đăng xuất và chặn đăng nhập. Dữ liệu tổ chức được giữ nguyên. Không có gì bị xóa.',
+      ownerDisableWarning: 'Bạn là chủ sở hữu không gian. Vô hiệu hóa chỉ chặn tài khoản của bạn. Chuyển quyền sở hữu tại',
+      restoreContact: 'Liên hệ hỗ trợ để khôi phục quyền truy cập:',
+      disabling: 'Đang vô hiệu hóa…',
+      disableConfirmTitle: 'Vô hiệu hóa tài khoản?',
+      disableConfirmBody: 'Bạn sẽ bị đăng xuất và không thể truy cập các trang được bảo vệ cho đến khi hỗ trợ khôi phục.',
+      disableFailed: 'Không thể vô hiệu hóa tài khoản.',
+      disabledDetail: 'Tài khoản đã được vô hiệu hóa theo yêu cầu của bạn.'
     }
+  },
+  analytics: {
+    adoption: 'Chỉ số áp dụng',
+    growth: 'Chỉ số tăng trưởng',
+    usage: 'Chỉ số sử dụng'
   },
   auth: {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
@@ -418,7 +453,7 @@ export const messages: Messages = {
       connectCalendar: 'Kết nối lịch'
     },
     metricsEmpty: 'Chưa có số liệu',
-    analyticsEmpty: 'Chưa có số liệu'
+    analyticsEmpty: 'Số liệu sẽ xuất hiện sau khi tạo công việc, báo cáo và hoạt động nhóm.'
   },
   billing: {
     title: 'Thanh toán',

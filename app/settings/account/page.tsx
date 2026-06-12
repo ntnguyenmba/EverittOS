@@ -1,15 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import {
-  canCancelSubscription,
-  canResumeSubscription,
-  subscriptionStatusMessage
-} from '@/lib/stripe-subscription';
+import { useTranslation } from '@/components/locale-provider';
+import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, isOwner, normalizeRole } from '@/lib/roles';
 import { roleDisplayName } from '@/lib/role-routes';
@@ -18,24 +15,18 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { supabase } from '@/lib/supabase';
 
-const DISABLE_CONFIRMATION = 'disable my account';
-const DELETE_CONFIRMATION = 'DELETE MY ACCOUNT';
-
 export default function AccountSettingsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const disableDialogRef = useRef<HTMLDialogElement>(null);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [email, setEmail] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
   const [subscriptionStatus, setSubscriptionStatus] = useState('free');
-  const [confirmDisableText, setConfirmDisableText] = useState('');
-  const [confirmDeleteText, setConfirmDeleteText] = useState('');
   const [message, setMessage] = useState<{ title?: string; body: string; details?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [resumeLoading, setResumeLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -64,131 +55,81 @@ export default function AccountSettingsPage() {
     load();
   }, [router]);
 
+  function openDisableModal() {
+    disableDialogRef.current?.showModal();
+  }
+
+  function closeDisableModal() {
+    disableDialogRef.current?.close();
+  }
+
   async function disableAccount() {
-    if (confirmDisableText.trim().toLowerCase() !== DISABLE_CONFIRMATION || busy) return;
+    if (busy) return;
     setBusy(true);
     setMessage(null);
+    closeDisableModal();
 
     const res = await fetch('/api/account/disable', { method: 'POST' });
     const json = await res.json();
     setBusy(false);
 
     if (!res.ok) {
-      setMessage({ title: 'Unable to disable account', body: json.error || 'Unable to disable account.', details: json.code });
+      setMessage({ title: t('settings.account.disableFailed'), body: json.error || t('settings.account.disableFailed'), details: json.code });
       return;
     }
 
-    window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent('Account disabled at your request.');
-  }
-
-  async function requestDeletion() {
-    if (confirmDeleteText.trim() !== DELETE_CONFIRMATION || deleteBusy) return;
-    setDeleteBusy(true);
-    setMessage(null);
-
-    const res = await fetch('/api/account/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ confirmation: confirmDeleteText.trim() })
-    });
-    const json = await res.json();
-    setDeleteBusy(false);
-
-    if (!res.ok) {
-      setMessage({
-        title: 'Deletion failed',
-        body: json.error || 'Unable to delete account.',
-        details: json.code
-      });
-      return;
-    }
-
-    window.location.href = '/login?reason=deleted&detail=' + encodeURIComponent(
-      `Your account is scheduled for deletion. Contact support within ${json.recoveryDays || 14} days to recover.`
-    );
-  }
-
-  async function cancelSubscription() {
-    setCancelLoading(true);
-    setMessage(null);
-    const res = await fetch('/api/stripe/cancel-subscription', { method: 'POST' });
-    const json = await res.json();
-    setCancelLoading(false);
-
-    if (!res.ok) {
-      setMessage({ title: 'Cancellation failed', body: json.error || 'Unable to cancel subscription.', details: json.code });
-      return;
-    }
-
-    setSubscriptionStatus('canceled');
-    setMessage({ body: json.message || 'Subscription set to cancel at period end.' });
-  }
-
-  async function resumeSubscription() {
-    setResumeLoading(true);
-    setMessage(null);
-    const res = await fetch('/api/stripe/resume-subscription', { method: 'POST' });
-    const json = await res.json();
-    setResumeLoading(false);
-
-    if (!res.ok) {
-      setMessage({ title: 'Resume failed', body: json.error || 'Unable to resume subscription.', details: json.code });
-      return;
-    }
-
-    setSubscriptionStatus(json.status || 'active');
-    setMessage({ body: json.message || 'Subscription resumed.' });
+    window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent(t('settings.account.disabledDetail'));
   }
 
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p>Loading account...</p>
+        <p>{t('common.loading')}</p>
       </AppShell>
     );
   }
 
   const canBilling = canManageBilling(role);
-  const disableReady = confirmDisableText.trim().toLowerCase() === DISABLE_CONFIRMATION;
-  const deleteReady = confirmDeleteText.trim() === DELETE_CONFIRMATION;
 
   return (
-    <SettingsShell plan={plan} role={role} title="Account" description="Email, role, subscription, and account status.">
+    <SettingsShell plan={plan} role={role} title={t('settingsNav.account')} description={t('settings.account.description')}>
       <div className="settings-card">
-        <h3>Profile</h3>
+        <h3>{t('settings.account.profile')}</h3>
         <div className="settings-row">
-          <span className="settings-row-label">Email</span>
+          <span className="settings-row-label">{t('settings.account.email')}</span>
           <span className="settings-row-value">{email}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Role</span>
+          <span className="settings-row-label">{t('settings.account.role')}</span>
           <span className="settings-row-value">{roleDisplayName(role)}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Current plan</span>
+          <span className="settings-row-label">{t('billing.currentPlan')}</span>
           <span className="settings-row-value">{planDisplayName(plan)}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Subscription status</span>
+          <span className="settings-row-label">{t('billing.status')}</span>
           <span className="settings-row-value">{subscriptionStatus}</span>
         </div>
         <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
         <div className="settings-row">
-          <span className="settings-row-label">Account status</span>
-          <span className="settings-row-value">{accountStatus === 'active' ? 'Active' : 'Disabled'}</span>
+          <span className="settings-row-label">{t('settings.account.accountStatus')}</span>
+          <span className="settings-row-value">
+            {accountStatus === 'active' ? t('settings.account.active') : t('settings.account.disabled')}
+          </span>
         </div>
         <div className="settings-actions">
           {canBilling ? (
             <Link href="/settings/billing" className="btn">
-              Manage billing
+              {t('settings.account.manageBilling')}
             </Link>
           ) : null}
           <Link href="/settings/security" className="btn">
-            Security
+            {t('settingsNav.security')}
           </Link>
           {canBilling ? (
             <Link href="/settings" className="btn">
-              Workspace settings
+              {t('settings.account.workspaceSettings')}
             </Link>
           ) : null}
         </div>
@@ -196,94 +137,55 @@ export default function AccountSettingsPage() {
 
       {canBilling ? (
         <div className="settings-card">
-          <h3>Subscription</h3>
-          <p className="muted">
-            Cancel or resume your Stripe subscription. Billing history stays available in the customer portal. Paid access
-            may continue until the current billing period ends after cancellation.
-          </p>
+          <h3>{t('settings.account.subscription')}</h3>
+          <p className="muted">{t('settings.account.subscriptionNote')}</p>
           <div className="settings-actions">
-            {canCancelSubscription(subscriptionStatus) ? (
-              <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
-                {cancelLoading ? 'Working...' : 'Cancel subscription'}
-              </button>
-            ) : null}
-            {canResumeSubscription(subscriptionStatus) ? (
-              <button type="button" className="btn btn-primary" disabled={resumeLoading} onClick={resumeSubscription}>
-                {resumeLoading ? 'Working...' : 'Resume subscription'}
-              </button>
-            ) : null}
-            <Link href="/settings/billing" className="btn">
-              Open billing portal
+            <Link href="/settings/billing" className="btn btn-primary">
+              {t('settings.account.openBilling')}
             </Link>
           </div>
         </div>
       ) : (
         <div className="settings-card">
-          <h3>Subscription</h3>
-          <p className="muted">
-            Only workspace owners and admins can cancel or resume billing. Contact your owner or admin for plan changes.
-          </p>
+          <h3>{t('settings.account.subscription')}</h3>
+          <p className="muted">{t('settings.account.subscriptionOwnerOnly')}</p>
         </div>
       )}
 
       <div className="settings-card">
-        <h3>Disable account</h3>
-        <p className="muted">
-          Disabling signs you out and blocks sign-in. Your organization data (jobs, customers, billing records) stays
-          stored. Nothing is deleted.
-        </p>
+        <h3>{t('settings.account.disableTitle')}</h3>
+        <p className="muted">{t('settings.account.disableNote')}</p>
         {isOwner(role) ? (
           <div className="settings-warning">
-            You are the workspace owner. Disabling only blocks your account. It does not delete the organization.
-            Transfer ownership on the <Link href="/team">Team</Link> page first if someone else should manage billing
-            and settings.
+            {t('settings.account.ownerDisableWarning')}{' '}
+            <Link href="/team">{t('nav.team')}</Link>
           </div>
         ) : null}
         <div className="settings-warning">
-          Contact <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> to restore access.
+          {t('settings.account.restoreContact')}{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
         </div>
-        <label className="auth-field">
-          <span className="muted">Type &quot;{DISABLE_CONFIRMATION}&quot; to confirm</span>
-          <input
-            className="input"
-            type="text"
-            value={confirmDisableText}
-            onChange={(e) => setConfirmDisableText(e.target.value)}
-            autoComplete="off"
-          />
-        </label>
         <div className="settings-actions">
-          <button type="button" className="btn" disabled={!disableReady || busy} onClick={disableAccount}>
-            {busy ? 'Disabling...' : 'Disable account'}
+          <button type="button" className="btn" disabled={busy} onClick={openDisableModal}>
+            {busy ? t('settings.account.disabling') : t('settings.account.disableTitle')}
           </button>
         </div>
       </div>
 
-      <div className="settings-card">
-        <h3>Delete account</h3>
-        <p className="muted">
-          Your account is soft-deleted immediately and signed out. A 14-day recovery window applies before permanent
-          removal. Organization records may be retained where required for billing, legal, or backup obligations.
-        </p>
-        <label className="auth-field">
-          <span className="muted">Type &quot;{DELETE_CONFIRMATION}&quot; to submit a deletion request</span>
-          <input
-            className="input"
-            type="text"
-            value={confirmDeleteText}
-            onChange={(e) => setConfirmDeleteText(e.target.value)}
-            autoComplete="off"
-          />
-        </label>
-        <div className="settings-actions">
-          <button type="button" className="btn" disabled={!deleteReady || deleteBusy} onClick={requestDeletion}>
-            {deleteBusy ? 'Deleting...' : 'Delete account'}
-          </button>
-        </div>
-        <p className="muted">
-          Support: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-        </p>
-      </div>
+      <dialog ref={disableDialogRef} className="confirm-dialog" aria-labelledby="disable-account-title">
+        <form method="dialog" className="confirm-dialog-body">
+          <h3 id="disable-account-title">{t('settings.account.disableConfirmTitle')}</h3>
+          <p className="muted">{t('settings.account.disableConfirmBody')}</p>
+          <div className="confirm-dialog-actions">
+            <button type="button" className="btn" onClick={closeDisableModal}>
+              {t('common.cancel')}
+            </button>
+            <button type="button" className="btn" disabled={busy} onClick={() => void disableAccount()}>
+              {t('settings.account.disableTitle')}
+            </button>
+          </div>
+        </form>
+      </dialog>
 
       {message ? (
         message.title ? (

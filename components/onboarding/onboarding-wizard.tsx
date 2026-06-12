@@ -12,7 +12,7 @@ import {
 } from '@/components/onboarding/onboarding-shell';
 import { dashboardPathForRole, loginUrlWithDashboardNext } from '@/lib/dashboard-nav';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { hasTeamManagement, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { logClientActivity } from '@/lib/activity';
 import {
   INDUSTRY_OPTIONS,
@@ -67,6 +67,7 @@ export function OnboardingWizard() {
   const [jobName, setJobName] = useState('');
   const [jobCustomer, setJobCustomer] = useState('');
   const [jobDate, setJobDate] = useState('');
+  const [inviteLinks, setInviteLinks] = useState<string[]>([]);
 
   const stepLabel = useMemo(() => {
     if (step >= ONBOARDING_STEP_COUNT - 1) return undefined;
@@ -269,7 +270,22 @@ export function OnboardingWizard() {
   }
 
   async function sendInvites() {
+    if (!hasTeamManagement(plan)) {
+      setMessage(t('onboarding.teamUpgradeRequired'));
+      return;
+    }
+
     const valid = invites.filter((row) => row.email.trim());
+    if (valid.length === 0) {
+      setMessage('');
+      setInviteLinks([]);
+      await completeStep(4);
+      return;
+    }
+
+    const links: string[] = [];
+    let needsCopy = false;
+
     for (const row of valid) {
       const res = await fetch('/api/team/invite', {
         method: 'POST',
@@ -279,11 +295,21 @@ export function OnboardingWizard() {
           role: row.role === 'admin' ? 'admin' : row.role === 'manager' ? 'manager' : 'employee'
         })
       });
+      const json = await res.json();
       if (!res.ok) {
-        setMessage(t('onboarding.inviteFailed'));
+        setMessage(json.error || t('onboarding.inviteFailed'));
         return;
       }
+      if (json.acceptUrl) links.push(json.acceptUrl);
+      if (!json.emailSent) needsCopy = true;
     }
+
+    setInviteLinks(links);
+    if (needsCopy) {
+      setMessage(t('onboarding.inviteLinkReady'));
+      return;
+    }
+
     setMessage('');
     await completeStep(4);
   }
@@ -460,6 +486,14 @@ export function OnboardingWizard() {
         <OnboardingCard stepLabel={stepLabel}>
           <h2 className="onboarding-title">{t('onboarding.steps.team.title')}</h2>
           <p className="onboarding-subtitle">{t('onboarding.steps.team.subtitle')}</p>
+          {!hasTeamManagement(plan) ? (
+            <div className="settings-warning onboarding-upgrade-note">
+              <p>{t('onboarding.teamUpgradeRequired')}</p>
+              <Link className="btn btn-primary" href="/settings/billing?upgrade=business">
+                {t('ux.startPro')}
+              </Link>
+            </div>
+          ) : null}
           <div className="onboarding-form">
             {invites.map((row, index) => (
               <div key={index} className="onboarding-invite-row">
@@ -501,10 +535,32 @@ export function OnboardingWizard() {
               type="button"
               className="btn onboarding-add-row"
               onClick={() => setInvites((rows) => [...rows, emptyInvite()])}
+              disabled={!hasTeamManagement(plan)}
             >
               {t('common.addAnother')}
             </button>
           </div>
+          {message ? (
+            <p className="auth-message auth-message-error" role="alert">
+              {message}
+            </p>
+          ) : null}
+          {inviteLinks.length > 0 ? (
+            <div className="invite-link-row">
+              {inviteLinks.map((url) => (
+                <div key={url} className="onboarding-invite-link">
+                  <code className="invite-link-code">{url}</code>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => void navigator.clipboard.writeText(url)}
+                  >
+                    {t('onboarding.copyInviteLink')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <OnboardingActions
             continueLabel={actionLabels.continue}
             skipThisStepLabel={exitActions.skipThisStepLabel}

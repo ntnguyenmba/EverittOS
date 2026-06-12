@@ -22,7 +22,7 @@ export function AiUpgradeModal({ open, onClose, plan = 'business' }: AiUpgradeMo
       >
         <h2 id="ai-upgrade-title">Ask Everitt</h2>
         <p className="muted">
-          Ask Everitt is available on Business and Enterprise plans. Upgrade to unlock AI-powered workflows, proposals,
+          Ask Everitt is available on Business and Enterprise plans. Upgrade to unlock guided workflows, proposals,
           email drafting, and your business command center.
         </p>
         <div className="ai-modal-actions">

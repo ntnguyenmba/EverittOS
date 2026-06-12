@@ -102,7 +102,7 @@ export default function ReviewsPage() {
       <header className="page-header">
         <h1>Review Center</h1>
         <p className="page-subtitle">
-          Request and track customer reviews. Google, Facebook, and Yelp integrations are planned — architecture is ready.
+          Request and track customer reviews. Google, Facebook, and Yelp integrations are planned. Architecture is ready.
         </p>
       </header>
 

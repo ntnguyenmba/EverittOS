@@ -25,8 +25,14 @@ export function LocaleSync() {
       if (!res.ok) return;
 
       const json = await res.json();
-      if (typeof json.preferred_locale === 'string') {
-        setLocale(normalizeLocale(json.preferred_locale));
+      const stored =
+        typeof json.locale === 'string'
+          ? json.locale
+          : typeof json.preferred_locale === 'string'
+            ? json.preferred_locale
+            : null;
+      if (stored) {
+        setLocale(normalizeLocale(stored));
       }
     }
 

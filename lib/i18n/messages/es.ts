@@ -16,7 +16,8 @@ export const messages: Messages = {
     exploreFeatures: 'Explorar funciones',
     optional: 'Opcional',
     language: 'Idioma',
-    close: 'Cerrar'
+    close: 'Cerrar',
+    cancel: 'Cancelar'
   },
   ux: {
     appName: 'EverittOS',
@@ -47,6 +48,10 @@ export const messages: Messages = {
     connectGoogleCalendar: 'Conectar Google Calendar',
     openIntegrations: 'Abrir integraciones',
     inviteFailed: 'No se pudo enviar la invitación. Puede invitar al equipo desde Configuración.',
+    teamUpgradeRequired: 'Las invitaciones de equipo requieren Business o superior. Actualice la facturación.',
+    inviteLinkReady: 'Invitación creada. Copie el enlace porque el correo no está configurado.',
+    inviteLinkCopied: 'Enlace de invitación copiado.',
+    copyInviteLink: 'Copiar enlace de invitación',
     steps: {
       welcome: {
         title: 'Bienvenido a EverittOS',
@@ -275,7 +280,37 @@ export const messages: Messages = {
       passkeysBody:
         'Las llaves de acceso le permiten iniciar sesión con su dispositivo, navegador, gestor de contraseñas, desbloqueo biométrico o llave de seguridad. EverittOS no recibe ni almacena datos biométricos.',
       compromised: 'Si cree que su cuenta o dispositivo se ha visto comprometido, contáctenos en'
+    },
+    account: {
+      description: 'Correo, rol, suscripción y estado de la cuenta.',
+      profile: 'Perfil',
+      email: 'Correo',
+      role: 'Rol',
+      accountStatus: 'Estado de la cuenta',
+      active: 'Activa',
+      disabled: 'Desactivada',
+      manageBilling: 'Gestionar facturación',
+      workspaceSettings: 'Configuración del espacio',
+      subscription: 'Suscripción',
+      subscriptionNote: 'Cancele, reanude o cambie planes desde facturación.',
+      subscriptionOwnerOnly: 'Solo propietarios y administradores pueden cambiar la facturación.',
+      openBilling: 'Abrir facturación',
+      disableTitle: 'Desactivar cuenta',
+      disableNote:
+        'Desactivar cierra su sesión y bloquea el acceso. Los datos de su organización se conservan. Nada se elimina.',
+      ownerDisableWarning: 'Es el propietario del espacio. Desactivar solo bloquea su cuenta. Transfiera la propiedad en',
+      restoreContact: 'Contacte soporte para restaurar el acceso:',
+      disabling: 'Desactivando…',
+      disableConfirmTitle: '¿Desactivar su cuenta?',
+      disableConfirmBody: 'Se cerrará su sesión y no podrá acceder a páginas protegidas hasta que soporte restaure el acceso.',
+      disableFailed: 'No se pudo desactivar la cuenta.',
+      disabledDetail: 'Cuenta desactivada a su solicitud.'
     }
+  },
+  analytics: {
+    adoption: 'Métricas de adopción',
+    growth: 'Métricas de crecimiento',
+    usage: 'Métricas de uso'
   },
   auth: {
     acceptTerms: 'Acepto los Términos de servicio',
@@ -419,7 +454,7 @@ export const messages: Messages = {
       connectCalendar: 'Conectar calendario'
     },
     metricsEmpty: 'Sin métricas aún',
-    analyticsEmpty: 'Sin métricas aún'
+    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.'
   },
   billing: {
     title: 'Facturación',

@@ -24,7 +24,7 @@ export function LanguageSwitcher({ className, id = 'app-language' }: LanguageSwi
           void fetch('/api/account/privacy', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ preferred_locale: next })
+            body: JSON.stringify({ preferred_locale: next, locale: next })
           });
         }}
         aria-label={t('common.language')}
