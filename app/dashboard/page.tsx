@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
+import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
@@ -64,6 +65,9 @@ export default function DashboardPage() {
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalWorkers, setTotalWorkers] = useState(0);
 
   async function loadDashboard() {
     setLoading(true);
@@ -124,13 +128,29 @@ export default function DashboardPage() {
           .limit(8)
       : Promise.resolve({ data: [], error: null });
 
-    const [jobsRes, customersRes, activityRes, orgIsDemo, calendarRes] = await Promise.all([
-      jobsQuery,
-      customersQuery,
-      activityQuery,
-      fetchOrganizationIsDemo(supabase, org?.organizationId),
-      fetch('/api/integrations/google-calendar/status').then((r) => r.json()).catch(() => null)
-    ]);
+    const jobCountQuery = scopeJobsForWorkspace(
+      supabase.from('jobs').select('id', { count: 'exact', head: true }),
+      user.id,
+      org?.organizationId
+    );
+    const customerCountQuery = org?.organizationId
+      ? supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
+      : supabase.from('customers').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+    const workerCountQuery = org?.organizationId
+      ? supabase.from('workers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
+      : supabase.from('workers').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+
+    const [jobsRes, customersRes, activityRes, orgIsDemo, calendarRes, jobCountRes, customerCountRes, workerCountRes] =
+      await Promise.all([
+        jobsQuery,
+        customersQuery,
+        activityQuery,
+        fetchOrganizationIsDemo(supabase, org?.organizationId),
+        fetch('/api/integrations/google-calendar/status').then((r) => r.json()).catch(() => null),
+        jobCountQuery,
+        customerCountQuery,
+        workerCountQuery
+      ]);
 
     setLoading(false);
 
@@ -139,10 +159,14 @@ export default function DashboardPage() {
       return;
     }
 
-    setJobs(filterDemoSeedJobs(jobsRes.data || [], orgIsDemo));
+    const filteredJobs = filterDemoSeedJobs((jobsRes.data || []) as Job[], orgIsDemo) as Job[];
+    setJobs(filteredJobs);
     setCustomers((customersRes.data || []) as CustomerRecord[]);
     setActivity((activityRes.data || []) as ActivityRow[]);
     setCalendarConnected(Boolean(calendarRes?.connected));
+    setTotalJobs(orgIsDemo ? filteredJobs.length : jobCountRes.count || 0);
+    setTotalCustomers(customerCountRes.count || 0);
+    setTotalWorkers(workerCountRes.count || 0);
   }
 
   useEffect(() => {
@@ -182,6 +206,7 @@ export default function DashboardPage() {
 
   const welcomeTitle = businessName || t('dashboard.welcome');
   const welcomeSubtitle = businessName ? t('dashboard.subtitleToday') : t('dashboard.subtitle');
+  const showSetupSupportCard = !loading && (totalCustomers === 0 || totalJobs === 0 || totalWorkers === 0);
 
   const coreActions = [
     { key: 'newJob', href: null, onClick: () => setShowNewJob(true), primary: true },
@@ -257,6 +282,8 @@ export default function DashboardPage() {
             })}
           </div>
         </section>
+
+        {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
 
         {showNewJob ? (
           <section id="new-job" className="card dashboard-new-job-panel">

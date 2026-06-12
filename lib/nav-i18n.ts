@@ -36,6 +36,7 @@ const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
   '/settings/security': 'security',
   '/settings/privacy': 'privacy',
   '/settings/notifications': 'notifications',
+  '/settings/support': 'supportTraining',
   '/settings/api': 'api',
   '/settings/ai-memory': 'aiMemory',
   '/settings/departments': 'departments'

@@ -13,6 +13,7 @@ import { mapAuthError } from '@/lib/auth-errors';
 import { normalizeEmail } from '@/lib/input-validation';
 import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
 import { resolveClientApiUrl } from '@/lib/client-api-url';
+import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { PasskeySetupPrompt } from '@/components/passkey-setup-prompt';
 import { useTranslation } from '@/components/locale-provider';
 
@@ -245,12 +246,15 @@ function SignupForm() {
       </form>
 
       {showPasskeyPrompt && pendingRedirect ? (
-        <PasskeySetupPrompt
-          onDone={() => {
-            router.push(pendingRedirect);
-            router.refresh();
-          }}
-        />
+        <>
+          <OnboardingSupportPromo variant="welcome" />
+          <PasskeySetupPrompt
+            onDone={() => {
+              router.push(pendingRedirect);
+              router.refresh();
+            }}
+          />
+        </>
       ) : null}
 
       <div className="auth-links">

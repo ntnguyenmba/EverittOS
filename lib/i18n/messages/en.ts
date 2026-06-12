@@ -361,9 +361,30 @@ export const messages: Messages = {
     security: 'Security',
     privacy: 'Privacy',
     notifications: 'Notifications',
+    supportTraining: 'Support & Training',
     api: 'API',
     aiMemory: 'AI Memory',
     departments: 'Departments'
+  },
+  supportTraining: {
+    pricingHeadline: 'Need help getting started?',
+    pricingBody:
+      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, workers, schedule, invoices, and SOPs.',
+    itemOnboardingCall: 'Free 30-minute onboarding call',
+    itemSopSetup: 'SOP setup available',
+    itemTeamTraining: 'Team training available',
+    bookOnboardingCall: 'Book Free Onboarding Call',
+    welcomeTitle: 'Welcome to EverittOS.',
+    welcomeBody:
+      'Need help getting started? Book a free 30-minute onboarding call and we’ll help configure your account.',
+    bookFreeCall: 'Book Free Call',
+    dashboardTitle: 'Need help setting up EverittOS?',
+    dashboardBody:
+      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, workers, schedule, invoices, and SOPs.',
+    settingsTitle: 'Support & Training',
+    settingsDescription: 'Onboarding, SOP setup, and team training from the Everitt team.',
+    settingsEmailNote: 'You can also email us at',
+    contactEverittTeam: 'Contact Everitt Team'
   },
   dashboard: {
     title: 'Today',

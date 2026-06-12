@@ -254,6 +254,24 @@ export type MessageTree = {
     api: string;
     aiMemory: string;
     departments: string;
+    supportTraining: string;
+  };
+  supportTraining: {
+    pricingHeadline: string;
+    pricingBody: string;
+    itemOnboardingCall: string;
+    itemSopSetup: string;
+    itemTeamTraining: string;
+    bookOnboardingCall: string;
+    welcomeTitle: string;
+    welcomeBody: string;
+    bookFreeCall: string;
+    dashboardTitle: string;
+    dashboardBody: string;
+    settingsTitle: string;
+    settingsDescription: string;
+    settingsEmailNote: string;
+    contactEverittTeam: string;
   };
   dashboard: {
     title: string;

@@ -362,9 +362,30 @@ export const messages: Messages = {
     security: 'Bảo mật',
     privacy: 'Quyền riêng tư',
     notifications: 'Thông báo',
+    supportTraining: 'Hỗ trợ & đào tạo',
     api: 'API',
     aiMemory: 'Bộ nhớ AI',
     departments: 'Phòng ban'
+  },
+  supportTraining: {
+    pricingHeadline: 'Cần hỗ trợ bắt đầu?',
+    pricingBody:
+      'Đặt cuộc gọi onboarding miễn phí 30 phút và chúng tôi sẽ giúp bạn thiết lập khách hàng, công việc, nhân sự, lịch, hóa đơn và SOP đầu tiên.',
+    itemOnboardingCall: 'Cuộc gọi onboarding miễn phí 30 phút',
+    itemSopSetup: 'Hỗ trợ thiết lập SOP',
+    itemTeamTraining: 'Đào tạo nhóm có sẵn',
+    bookOnboardingCall: 'Đặt cuộc gọi onboarding miễn phí',
+    welcomeTitle: 'Chào mừng đến EverittOS.',
+    welcomeBody:
+      'Cần hỗ trợ bắt đầu? Đặt cuộc gọi onboarding miễn phí 30 phút và chúng tôi sẽ giúp cấu hình tài khoản của bạn.',
+    bookFreeCall: 'Đặt cuộc gọi miễn phí',
+    dashboardTitle: 'Cần hỗ trợ thiết lập EverittOS?',
+    dashboardBody:
+      'Đặt cuộc gọi onboarding miễn phí 30 phút và chúng tôi sẽ giúp bạn thiết lập khách hàng, công việc, nhân sự, lịch, hóa đơn và SOP đầu tiên.',
+    settingsTitle: 'Hỗ trợ & đào tạo',
+    settingsDescription: 'Onboarding, thiết lập SOP và đào tạo nhóm từ đội ngũ Everitt.',
+    settingsEmailNote: 'Bạn cũng có thể gửi email cho chúng tôi tại',
+    contactEverittTeam: 'Liên hệ đội Everitt'
   },
   dashboard: {
     title: 'Hôm nay',

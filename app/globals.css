@@ -1761,6 +1761,76 @@ p { color: var(--muted); line-height: 1.7; }
   margin-top: 16px;
 }
 
+.onboarding-support-card {
+  margin-top: 28px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.onboarding-support-card-pricing {
+  margin-top: 32px;
+  background: linear-gradient(180deg, rgba(45, 55, 72, 0.04) 0%, var(--surface) 100%);
+}
+
+.onboarding-support-card-dashboard {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.onboarding-support-card-welcome,
+.onboarding-support-inline {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  padding: 20px;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.onboarding-support-title {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  line-height: 1.3;
+  color: var(--charcoal);
+}
+
+.onboarding-support-body {
+  margin: 0 0 16px;
+  max-width: 52ch;
+}
+
+.onboarding-support-list {
+  margin: 0 0 20px;
+  padding-left: 1.2rem;
+  color: var(--charcoal);
+}
+
+.onboarding-support-list li {
+  margin-bottom: 8px;
+}
+
+.onboarding-support-list li:last-child {
+  margin-bottom: 0;
+}
+
+.onboarding-support-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  width: 100%;
+  max-width: 320px;
+}
+
+@media (min-width: 640px) {
+  .onboarding-support-cta {
+    width: auto;
+  }
+}
+
 .passkey-sign-in {
   margin-top: 12px;
 }

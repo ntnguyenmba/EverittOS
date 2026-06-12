@@ -28,6 +28,7 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/security', label: 'Security' },
   { href: '/settings/privacy', label: 'Privacy' },
   { href: '/settings/notifications', label: 'Notifications' },
+  { href: '/settings/support', label: 'Support & Training' },
   { href: '/settings/api', label: 'API' },
   { href: '/settings/ai-memory', label: 'AI Memory' },
   { href: '/settings/departments', label: 'Departments' }
@@ -99,7 +100,8 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
       path.startsWith('/settings/account') ||
       path.startsWith('/settings/security') ||
       path.startsWith('/settings/privacy') ||
-      path.startsWith('/settings/notifications')
+      path.startsWith('/settings/notifications') ||
+      path.startsWith('/settings/support')
     );
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
@@ -217,7 +219,9 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 
   if (isClientRole(role)) {
     return SETTINGS_NAV_LINKS.filter((link) =>
-      ['/settings/account', '/settings/security', '/settings/privacy', '/settings/notifications'].includes(link.href)
+      ['/settings/account', '/settings/security', '/settings/privacy', '/settings/notifications', '/settings/support'].includes(
+        link.href
+      )
     );
   }
 
@@ -242,7 +246,8 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
       path.startsWith('/settings/account') ||
       path.startsWith('/settings/security') ||
       path.startsWith('/settings/privacy') ||
-      path.startsWith('/settings/notifications')
+      path.startsWith('/settings/notifications') ||
+      path.startsWith('/settings/support')
     );
   }
 

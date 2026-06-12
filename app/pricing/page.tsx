@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
+import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { PricingCheckoutPanel } from '@/components/pricing-checkout-panel';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -55,6 +56,7 @@ function PricingContent() {
         initialPromoCode={initialPromo}
         authenticated={authenticated}
       />
+      <OnboardingSupportPromo variant="pricing" />
       {!authenticated ? (
         <p className="muted pricing-signin-note">
           {t('billing.promo.signInNote')}{' '}

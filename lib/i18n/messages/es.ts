@@ -363,9 +363,30 @@ export const messages: Messages = {
     security: 'Seguridad',
     privacy: 'Privacidad',
     notifications: 'Notificaciones',
+    supportTraining: 'Soporte y capacitación',
     api: 'API',
     aiMemory: 'Memoria IA',
     departments: 'Departamentos'
+  },
+  supportTraining: {
+    pricingHeadline: '¿Necesita ayuda para empezar?',
+    pricingBody:
+      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, trabajadores, horario, facturas y SOP.',
+    itemOnboardingCall: 'Llamada gratuita de incorporación de 30 minutos',
+    itemSopSetup: 'Configuración de SOP disponible',
+    itemTeamTraining: 'Capacitación de equipo disponible',
+    bookOnboardingCall: 'Reservar llamada gratuita de incorporación',
+    welcomeTitle: 'Bienvenido a EverittOS.',
+    welcomeBody:
+      '¿Necesita ayuda para empezar? Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar su cuenta.',
+    bookFreeCall: 'Reservar llamada gratuita',
+    dashboardTitle: '¿Necesita ayuda para configurar EverittOS?',
+    dashboardBody:
+      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, trabajadores, horario, facturas y SOP.',
+    settingsTitle: 'Soporte y capacitación',
+    settingsDescription: 'Incorporación, configuración de SOP y capacitación de equipo con el equipo Everitt.',
+    settingsEmailNote: 'También puede escribirnos a',
+    contactEverittTeam: 'Contactar al equipo Everitt'
   },
   dashboard: {
     title: 'Hoy',

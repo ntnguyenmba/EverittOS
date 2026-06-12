@@ -32,6 +32,7 @@ import {
   trackOnboardingStepCompleted,
   trackOnboardingStepSkipped
 } from '@/lib/onboarding/analytics';
+import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { errorFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
@@ -398,6 +399,7 @@ export function OnboardingWizard() {
         <OnboardingCard stepLabel={stepLabel}>
           <h1 className="onboarding-title">{t('onboarding.steps.welcome.title')}</h1>
           <p className="onboarding-subtitle">{t('onboarding.steps.welcome.subtitle')}</p>
+          <OnboardingSupportPromo variant="welcome" className="onboarding-support-inline" />
           <OnboardingActions
             continueLabel={actionLabels.continue}
             skipThisStepLabel={exitActions.skipThisStepLabel}
@@ -668,6 +670,7 @@ export function OnboardingWizard() {
         <OnboardingCard>
           <h2 className="onboarding-title">{t('onboarding.steps.complete.title')}</h2>
           <p className="onboarding-subtitle">{t('onboarding.steps.complete.message')}</p>
+          <OnboardingSupportPromo variant="welcome" className="onboarding-support-inline" />
           <OnboardingActions
             continueLabel={t('common.goToDashboard')}
             skipThisStepLabel={exitActions.skipThisStepLabel}
