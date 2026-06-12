@@ -151,3 +151,22 @@ export function photoUploadAllowed(plan: EverittosPlan): boolean {
 export function planDisplayName(plan: EverittosPlan): string {
   return EVERITTOS_PLANS.find((p) => p.id === plan)?.name || 'Free';
 }
+
+/** Short plan label for compact nav badges (Pro, Business, Enterprise). */
+export function planShortBadgeName(plan: EverittosPlan): string {
+  const short: Record<EverittosPlan, string> = {
+    free: 'Free',
+    pro: 'Pro',
+    business: 'Business',
+    operations: 'Operations',
+    growth: 'Growth',
+    enterprise: 'Enterprise'
+  };
+  return short[normalizePlan(plan)] || 'Pro';
+}
+
+/** Sidebar footer label, e.g. "Free Plan". */
+export function planFooterLabel(plan: EverittosPlan): string {
+  const name = planShortBadgeName(plan);
+  return name === 'Free' ? 'Free Plan' : `${name} Plan`;
+}

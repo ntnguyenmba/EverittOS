@@ -11,11 +11,10 @@ import { useTranslation } from '@/components/locale-provider';
 import {
   isPaidEverittosPlan,
   normalizePlan,
-  planDisplayName,
+  planFooterLabel,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { canManageBilling } from '@/lib/roles';
-import { isNavLinkActive } from '@/lib/nav-access';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -90,6 +89,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   }
 
   const showBillingLink = canManageBilling(role);
+  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
 
   const drawer = open ? (
     <div className="mobile-nav-overlay mobile-nav-overlay-portal" role="presentation" onClick={() => setOpen(false)}>
@@ -100,31 +100,11 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav-drawer-head">
-          <strong>{t('nav.more')}</strong>
+          <strong>Menu</strong>
           <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
             {t('common.close')}
           </button>
         </div>
-
-        <div className="mobile-nav-drawer-language">
-          <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
-        </div>
-
-        {showBillingLink ? (
-          <p className="mobile-nav-plan">
-            <Link
-              href="/settings/billing"
-              className={isNavLinkActive(pathname, '/settings/billing') ? 'active' : undefined}
-              onClick={() => setOpen(false)}
-            >
-              {planDisplayName(normalized)}
-            </Link>
-          </p>
-        ) : (
-          <p className="mobile-nav-plan">
-            <strong>{planDisplayName(normalized)}</strong>
-          </p>
-        )}
 
         <div className="mobile-nav-panel">
           <AppNavItems
@@ -136,21 +116,36 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
           />
         </div>
 
-        {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) ? (
-          <Link
-            href="/settings/billing"
-            className="btn btn-primary btn-block mobile-nav-drawer-cta"
-            onClick={() => setOpen(false)}
-          >
-            {t('ux.viewPlans')}
-          </Link>
-        ) : null}
-
-        {!isClientRole(role) ? (
-          <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
-            {t('ux.logOut')}
-          </button>
-        ) : null}
+        <div className="mobile-nav-drawer-footer">
+          <div className="sidebar-plan-footer">
+            {showBillingLink ? (
+              <Link
+                href="/settings/billing"
+                className="sidebar-plan-text"
+                onClick={() => setOpen(false)}
+              >
+                {planFooterLabel(normalized)}
+              </Link>
+            ) : (
+              <span className="sidebar-plan-text">{planFooterLabel(normalized)}</span>
+            )}
+            {showUpgrade ? (
+              <Link
+                href="/settings/billing"
+                className="sidebar-upgrade-link"
+                onClick={() => setOpen(false)}
+              >
+                Upgrade
+              </Link>
+            ) : null}
+          </div>
+          <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
+          {!isClientRole(role) ? (
+            <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
+              {t('ux.logOut')}
+            </button>
+          ) : null}
+        </div>
       </nav>
     </div>
   ) : null;
@@ -158,7 +153,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   return (
     <header className={`mobile-nav${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
       <div className="mobile-nav-bar">
-        <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
+        <BrandLogo href="/dashboard" size={26} showName className="mobile-nav-brand-logo" />
         <div className="mobile-nav-bar-actions">
           <LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" />
           <button

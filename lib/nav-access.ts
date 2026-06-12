@@ -1,6 +1,6 @@
 import { canManageDepartments } from '@/lib/departments';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { hasTeamManagement, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { hasTeamManagement, normalizePlan, planShortBadgeName, type EverittosPlan } from '@/lib/everittos-plans';
 import { meetsMinimumPlan, minimumPlanForPath, planRank } from '@/lib/plan-access';
 import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import type { AppNavHref } from '@/lib/nav-links';
@@ -194,7 +194,7 @@ export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPl
 export function billingUpgradeHref(requiredPlan: EverittosPlan, featureLabel?: string): string {
   const params = new URLSearchParams({ upgrade: requiredPlan, reason: 'plan' });
   if (featureLabel) {
-    params.set('detail', `${planDisplayName(requiredPlan)} plan required for ${featureLabel}.`);
+    params.set('detail', `${planShortBadgeName(requiredPlan)} plan required for ${featureLabel}.`);
   }
   return `/settings/billing?${params.toString()}`;
 }
@@ -209,6 +209,9 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
   }
   if (target === '/dashboard') {
     return path === '/dashboard';
+  }
+  if (target === '/team') {
+    return path === '/team' || path.startsWith('/team/') || path === '/workers' || path.startsWith('/workers/');
   }
 
   return path === target || path.startsWith(`${target}/`);

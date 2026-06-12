@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
+import { DashboardBusinessActivity } from '@/components/dashboard-business-activity';
+import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
 import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
+import { filterBusinessActivity, type ActivityLogRow } from '@/lib/business-activity';
+import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { todayIso, daysAheadIso } from '@/lib/date-filters';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -26,14 +31,6 @@ type Job = {
   status: string | null;
   start_date: string | null;
   due_date: string | null;
-};
-
-type ActivityRow = {
-  id: string;
-  message: string | null;
-  action: string;
-  created_at: string | null;
-  actor_name: string | null;
 };
 
 function DashboardAccessNotice() {
@@ -52,8 +49,14 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
-  const [activity, setActivity] = useState<ActivityRow[]>([]);
-  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+  const [leads, setLeads] = useState<CustomerRecord[]>([]);
+  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
+  const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>({
+    revenueThisMonth: 0,
+    outstandingInvoices: 0,
+    jobsCompleted: 0,
+    activeCustomers: 0
+  });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
@@ -92,7 +95,7 @@ export default function DashboardPage() {
       return;
     }
 
-    let jobsQuery = scopeJobsForWorkspace(
+    const jobsQuery = scopeJobsForWorkspace(
       supabase.from('jobs').select('id, title, status, start_date, due_date').order('created_at', { ascending: false }),
       user.id,
       org?.organizationId
@@ -103,22 +106,40 @@ export default function DashboardPage() {
           .from('customers')
           .select(CUSTOMER_LIST_SELECT)
           .eq('organization_id', org.organizationId)
+          .not('pipeline_stage', 'in', '("lead","qualified")')
           .order('created_at', { ascending: false })
           .limit(5)
       : supabase
           .from('customers')
           .select(CUSTOMER_LIST_SELECT)
           .eq('user_id', user.id)
+          .not('pipeline_stage', 'in', '("lead","qualified")')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+    const leadsQuery = org?.organizationId
+      ? supabase
+          .from('customers')
+          .select(CUSTOMER_LIST_SELECT)
+          .eq('organization_id', org.organizationId)
+          .in('pipeline_stage', ['lead', 'qualified'])
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : supabase
+          .from('customers')
+          .select(CUSTOMER_LIST_SELECT)
+          .eq('user_id', user.id)
+          .in('pipeline_stage', ['lead', 'qualified'])
           .order('created_at', { ascending: false })
           .limit(5);
 
     const activityQuery = org?.organizationId
       ? supabase
           .from('activity_logs')
-          .select('id, message, action, created_at, actor_name')
+          .select('id, message, action, entity_type, entity_id, created_at, actor_name, metadata')
           .eq('organization_id', org.organizationId)
           .order('created_at', { ascending: false })
-          .limit(8)
+          .limit(40)
       : Promise.resolve({ data: [], error: null });
 
     const jobCountQuery = scopeJobsForWorkspace(
@@ -133,16 +154,19 @@ export default function DashboardPage() {
       ? supabase.from('workers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
       : supabase.from('workers').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
 
-    const [jobsRes, customersRes, activityRes, orgIsDemo, calendarRes, jobCountRes, customerCountRes, workerCountRes] =
+    const metricsPromise = fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
+
+    const [jobsRes, customersRes, leadsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] =
       await Promise.all([
         jobsQuery,
         customersQuery,
+        leadsQuery,
         activityQuery,
         fetchOrganizationIsDemo(supabase, org?.organizationId),
-        fetch('/api/integrations/google-calendar/status').then((r) => r.json()).catch(() => null),
         jobCountQuery,
         customerCountQuery,
-        workerCountQuery
+        workerCountQuery,
+        metricsPromise
       ]);
 
     setLoading(false);
@@ -155,8 +179,9 @@ export default function DashboardPage() {
     const filteredJobs = filterDemoSeedJobs((jobsRes.data || []) as Job[], orgIsDemo) as Job[];
     setJobs(filteredJobs);
     setCustomers((customersRes.data || []) as CustomerRecord[]);
-    setActivity((activityRes.data || []) as ActivityRow[]);
-    setCalendarConnected(Boolean(calendarRes?.connected));
+    setLeads((leadsRes.data || []) as CustomerRecord[]);
+    setActivity(filterBusinessActivity((activityRes.data || []) as ActivityLogRow[]).slice(0, 8));
+    setRevenueMetrics(metrics);
     setTotalJobs(orgIsDemo ? filteredJobs.length : jobCountRes.count || 0);
     setTotalCustomers(customerCountRes.count || 0);
     setTotalWorkers(workerCountRes.count || 0);
@@ -191,6 +216,7 @@ export default function DashboardPage() {
   );
 
   const showSetupSupportCard = !loading && (totalCustomers === 0 || totalJobs === 0 || totalWorkers === 0);
+  const showActivityLink = limitsForPlan(plan).activityLog && Boolean(orgId);
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -215,22 +241,6 @@ export default function DashboardPage() {
           }
         />
 
-        {calendarConnected !== null ? (
-          <p className="muted dashboard-calendar-status">
-            Google Calendar:{' '}
-            {calendarConnected ? (
-              <span className="status-pill status-pill-success">Connected</span>
-            ) : (
-              <>
-                <span className="status-pill status-pill-muted">Not connected</span>{' '}
-                <Link href="/settings/integrations">Connect in Settings</Link>
-              </>
-            )}
-          </p>
-        ) : null}
-
-        {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
-
         <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
           <div className="dashboard-section-head">
             <h2>{t('dashboard.todaysSchedule')}</h2>
@@ -251,15 +261,15 @@ export default function DashboardPage() {
             ))}
         </section>
 
-        <section className="card dashboard-today-card" aria-label={t('dashboard.sidebar.upcoming')}>
+        <section className="card dashboard-today-card" aria-label={t('dashboard.upcomingJobs')}>
           <div className="dashboard-section-head">
-            <h2>{t('dashboard.sidebar.upcoming')}</h2>
+            <h2>{t('dashboard.upcomingJobs')}</h2>
             <Link href="/schedule?range=upcoming" className="dashboard-section-link">
               {t('dashboard.sidebar.openSchedule')}
             </Link>
           </div>
           {!loading && upcomingJobs.length === 0 ? (
-            <p className="dashboard-quiet-empty">No upcoming jobs in the next two weeks.</p>
+            <p className="dashboard-quiet-empty">{t('dashboard.noUpcomingJobs')}</p>
           ) : null}
           {!loading &&
             upcomingJobs.map((job) => (
@@ -270,47 +280,42 @@ export default function DashboardPage() {
             ))}
         </section>
 
-        <section className="card dashboard-today-card" aria-label={t('dashboard.sidebar.crmSnapshot')}>
+        <section className="card dashboard-today-card" aria-label={t('dashboard.customersAndLeads')}>
           <div className="dashboard-section-head">
-            <h2>{t('dashboard.sidebar.crmSnapshot')}</h2>
-            <Link href="/customers" className="dashboard-section-link">
-              {t('dashboard.sidebar.openCrm')}
-            </Link>
+            <h2>{t('dashboard.customersAndLeads')}</h2>
+            <div className="dashboard-section-links">
+              <Link href="/customers" className="dashboard-section-link">
+                {t('nav.customers')}
+              </Link>
+              <Link href="/leads" className="dashboard-section-link">
+                {t('nav.leads')}
+              </Link>
+            </div>
           </div>
-          {!loading && customers.length === 0 ? (
-            <p className="dashboard-quiet-empty">No customers yet. Add your first customer to get started.</p>
+          {!loading && customers.length === 0 && leads.length === 0 ? (
+            <p className="dashboard-quiet-empty">{t('dashboard.noCustomersOrLeads')}</p>
           ) : null}
           {!loading &&
             customers.map((customer) => (
               <Link key={customer.id} href={`/customers/${customer.id}`} className="dashboard-today-row">
                 <span>{customerDisplayName(customer)}</span>
-                <span className="muted">{customer.pipeline_stage || 'lead'}</span>
+                <span className="muted">{customer.pipeline_stage || 'customer'}</span>
+              </Link>
+            ))}
+          {!loading &&
+            leads.map((lead) => (
+              <Link key={lead.id} href={`/customers/${lead.id}`} className="dashboard-today-row">
+                <span>{customerDisplayName(lead)}</span>
+                <span className="muted">{lead.lead_source || 'lead'}</span>
               </Link>
             ))}
         </section>
 
-        <section className="card dashboard-today-card" aria-label={t('dashboard.recentActivity')}>
-          <div className="dashboard-section-head">
-            <h2>{t('dashboard.recentActivity')}</h2>
-            {orgId ? (
-              <Link href="/activity" className="dashboard-section-link">
-                {t('dashboard.viewActivity')}
-              </Link>
-            ) : null}
-          </div>
-          {!loading && activity.length === 0 ? (
-            <p className="dashboard-quiet-empty">Activity will appear here as your team works.</p>
-          ) : null}
-          {!loading &&
-            activity.map((row) => (
-              <div key={row.id} className="dashboard-today-row">
-                <span>{row.message || row.action}</span>
-                <span className="muted">
-                  {row.created_at ? new Date(row.created_at).toLocaleDateString() : ''}
-                </span>
-              </div>
-            ))}
-        </section>
+        <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
+
+        <DashboardBusinessActivity items={activity} loading={loading} showViewAll={showActivityLink} />
+
+        {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
       </div>
     </AppShell>
   );

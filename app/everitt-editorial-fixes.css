@@ -144,13 +144,7 @@ button {
 
 .sidebar-upgrade,
 .sidebar-plan {
-  border-radius: 16px;
-}
-
-.sidebar-upgrade {
-  background: linear-gradient(180deg, rgba(47, 95, 143, 0.08), rgba(47, 95, 143, 0.03));
-  border: 1px solid rgba(47, 95, 143, 0.14);
-  padding: 16px;
+  display: none;
 }
 
 .panel,

@@ -47,6 +47,19 @@ export function requestClientMeta(request: Request): { ipAddress: string | null;
   return { ipAddress, userAgent };
 }
 
+export const SECURITY_EVENT_LABELS: Record<SecurityEventType, string> = {
+  login_success: 'Signed in',
+  login_failed: 'Failed sign-in attempt',
+  logout: 'Signed out',
+  session_timeout: 'Session timed out',
+  rate_limited: 'Rate limited',
+  password_reset: 'Password reset',
+  account_disabled: 'Account disabled',
+  suspicious_activity: 'Suspicious activity',
+  permission_denied: 'Permission denied',
+  org_isolation_violation: 'Workspace isolation violation'
+};
+
 export async function fetchRecentSecurityEvents(
   supabase: SupabaseClient,
   organizationId: string,
@@ -54,10 +67,39 @@ export async function fetchRecentSecurityEvents(
 ) {
   const { data } = await supabase
     .from('security_events')
-    .select('id, event_type, severity, message, user_id, created_at, metadata')
+    .select('id, event_type, severity, message, user_id, created_at, metadata, user_agent, ip_address')
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   return data || [];
+}
+
+export async function fetchUserSecurityEvents(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 30
+) {
+  const { data } = await supabase
+    .from('security_events')
+    .select('id, event_type, severity, message, created_at, metadata, user_agent, ip_address')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  return data || [];
+}
+
+export function securityEventLabel(eventType: string): string {
+  return SECURITY_EVENT_LABELS[eventType as SecurityEventType] || eventType.replace(/_/g, ' ');
+}
+
+export function summarizeUserAgent(userAgent: string | null | undefined): string {
+  if (!userAgent) return 'Unknown device';
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return 'Apple mobile';
+  if (/Android/i.test(userAgent)) return 'Android device';
+  if (/Macintosh/i.test(userAgent)) return 'Mac';
+  if (/Windows/i.test(userAgent)) return 'Windows';
+  if (/Linux/i.test(userAgent)) return 'Linux';
+  return 'Web browser';
 }

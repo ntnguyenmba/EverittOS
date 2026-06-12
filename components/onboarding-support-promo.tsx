@@ -38,14 +38,18 @@ export function OnboardingSupportPromo({ variant, className = '' }: OnboardingSu
   if (variant === 'dashboard') {
     return (
       <section
-        className={`card onboarding-support-card onboarding-support-card-dashboard ${className}`.trim()}
+        className={`onboarding-support-card onboarding-support-card-dashboard onboarding-support-card-dashboard-subtle ${className}`.trim()}
         aria-label={t('supportTraining.dashboardTitle')}
       >
-        <h2 className="onboarding-support-title">{t('supportTraining.dashboardTitle')}</h2>
-        <p className="muted onboarding-support-body">{t('supportTraining.dashboardBody')}</p>
-        <a className="btn btn-primary onboarding-support-cta" href={href}>
-          {t('supportTraining.bookFreeCall')}
-        </a>
+        <div className="onboarding-support-dashboard-inner">
+          <div>
+            <h2 className="onboarding-support-title">{t('supportTraining.dashboardTitle')}</h2>
+            <p className="muted onboarding-support-body">{t('supportTraining.dashboardBody')}</p>
+          </div>
+          <a className="btn onboarding-support-cta onboarding-support-cta-subtle" href={href}>
+            {t('supportTraining.bookFreeCall')}
+          </a>
+        </div>
       </section>
     );
   }

@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ActivityFeed } from '@/components/activity-feed';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
 import { ACTIVITY_EVENT_LABELS } from '@/lib/activity-server';
+import { filterBusinessActivity } from '@/lib/business-activity';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -68,7 +70,7 @@ export default function ActivityPage() {
         .order('created_at', { ascending: false })
         .limit(250);
 
-      setItems(data || []);
+      setItems(filterBusinessActivity(data || []));
       setLoading(false);
     }
 
@@ -105,7 +107,10 @@ export default function ActivityPage() {
   return (
     <AppShell plan={plan} role={role}>
       <h1>Activity log</h1>
-      <p className="muted">Organization-wide audit trail with search and filters.</p>
+      <p className="muted">
+        Business operations history for your workspace. Sign-in and security events are in{' '}
+        <Link href="/settings/security">Settings → Security</Link>.
+      </p>
       {!enabled && (
         <div className="card" style={{ marginTop: 18 }}>
           Activity log requires Business, Operations, Growth, or Enterprise.

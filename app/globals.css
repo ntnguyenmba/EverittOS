@@ -308,7 +308,7 @@ p { color: var(--muted); line-height: 1.7; }
 
 .dashboard-shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 300px minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   grid-template-areas:
     'mobile mobile'
@@ -330,24 +330,10 @@ p { color: var(--muted); line-height: 1.7; }
 
 .sidebar {
   grid-area: side;
-  border-right: 1px solid var(--line);
-  background: var(--surface);
-  padding: 28px 22px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
 }
 
 .main { grid-area: main; }
 
-.sidebar a { display: block; padding: 10px 12px; color: var(--muted); border-radius: var(--radius-sm); margin-bottom: 4px; font-size: 14px; transition: background 0.18s ease, color 0.18s ease; }
-.sidebar a:hover,
-.sidebar a.active { background: var(--hover); color: var(--text); }
-.sidebar a.active { font-weight: 500; }
-.sidebar a.nav-link-locked {
-  opacity: 0.82;
-  border: 1px dashed rgba(45, 55, 72, 0.18);
-}
 .sidebar-plan { margin-bottom: 20px; }
 .sidebar-plan-link {
   display: inline-flex;
@@ -359,27 +345,7 @@ p { color: var(--muted); line-height: 1.7; }
 .sidebar-plan-link.active {
   background: var(--hover);
 }
-.nav-upgrade-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  background: rgba(45, 55, 72, 0.08);
-  color: var(--muted);
-  vertical-align: middle;
-}
-.sidebar a.nav-link-locked .nav-upgrade-badge {
-  background: rgba(45, 55, 72, 0.12);
-  color: var(--text);
-}
-.sidebar-plan-label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
-.plan-badge { display: inline-block; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); font-size: 14px; color: var(--text); background: var(--bg); }
-.sidebar-upgrade { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
-.sidebar-upgrade p { font-size: 14px; }
-.sidebar-logout { margin-top: 20px; width: 100%; justify-content: center; }
+.sidebar-logout { margin-top: 0; width: auto; }
 
 .main {
   padding: var(--page-py) var(--page-px) calc(var(--page-py) + 12px);
@@ -1169,7 +1135,7 @@ p { color: var(--muted); line-height: 1.7; }
 }
 
 .mobile-nav-panel .nav-upgrade-badge {
-  display: inline-block;
+  display: none;
   margin-left: 8px;
   padding: 2px 7px;
   border-radius: 999px;
@@ -1788,6 +1754,176 @@ p { color: var(--muted); line-height: 1.7; }
 .onboarding-support-card-dashboard {
   margin-top: 0;
   margin-bottom: 20px;
+}
+
+.onboarding-support-card-dashboard-subtle {
+  margin-top: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  box-shadow: none;
+}
+
+.onboarding-support-dashboard-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.onboarding-support-card-dashboard-subtle .onboarding-support-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.onboarding-support-card-dashboard-subtle .onboarding-support-body {
+  margin: 0;
+  font-size: 14px;
+  max-width: 52ch;
+}
+
+.onboarding-support-cta-subtle {
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.onboarding-support-cta-subtle:hover {
+  background: var(--hover);
+}
+
+.dashboard-section-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-revenue-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .dashboard-revenue-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dashboard-revenue-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.dashboard-revenue-metric:hover {
+  background: var(--hover);
+}
+
+.dashboard-revenue-metric-label {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.dashboard-revenue-metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--charcoal);
+  line-height: 1.15;
+}
+
+.dashboard-activity-row {
+  align-items: flex-start;
+}
+
+.dashboard-activity-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-activity-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dashboard-activity-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.dashboard-activity-detail {
+  flex-shrink: 0;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.security-activity-log {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.security-last-login {
+  margin: 0;
+  font-size: 14px;
+}
+
+.security-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.security-event-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.security-event-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.security-event-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.security-event-copy strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.security-event-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .onboarding-support-card-welcome,
@@ -4351,8 +4487,6 @@ html[data-deployment='production'] #vercel-toolbar {
 
 .sidebar-brand {
   margin-bottom: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
 }
 
 .mobile-nav-brand-logo {
@@ -4419,8 +4553,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .nav-upgrade-badge {
-  margin-left: 6px;
-  margin-right: 2px;
+  display: none;
 }
 
 .status-pill {

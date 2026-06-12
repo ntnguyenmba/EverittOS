@@ -1,7 +1,6 @@
 import { isAccountActive, isAccountDeleted } from '@/lib/account-status';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
-import { logActivityServer } from '@/lib/activity-server';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { diagnoseLoginFailure } from '@/lib/auth-user-diagnostics';
@@ -343,17 +342,6 @@ export async function POST(request: Request) {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent
     });
-    if (profile.organization_id) {
-      await logActivityServer({
-        organizationId: profile.organization_id,
-        userId: user.id,
-        actorName: email,
-        entityType: 'auth',
-        action: 'login',
-        message: 'User signed in'
-      });
-    }
-
     await trackProductEventServer(supabase, 'login', {
       organizationId: profile.organization_id,
       userId: user.id

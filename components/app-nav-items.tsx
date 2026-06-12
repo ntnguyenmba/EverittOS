@@ -9,9 +9,9 @@ import {
   isNavLinkActive,
   resolveNavItem
 } from '@/lib/nav-access';
-import { APP_NAV_LINKS } from '@/lib/nav-links';
+import { APP_NAV_SECTIONS } from '@/lib/nav-links';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizePlan, planShortBadgeName, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 
 type AppNavItemsProps = {
@@ -23,6 +23,17 @@ type AppNavItemsProps = {
   onNavigate?: () => void;
 };
 
+function NavLockIcon() {
+  return (
+    <svg className="nav-lock-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M17 8V7a5 5 0 0 0-10 0v1H5v12h14V8h-2zm-8 0V7a3 3 0 0 1 6 0v1H9z"
+      />
+    </svg>
+  );
+}
+
 function navItemClassName(
   pathname: string,
   href: string,
@@ -31,10 +42,51 @@ function navItemClassName(
   lockedClassName: string
 ): string {
   const active = isNavLinkActive(pathname, href);
-  const classes = [linkClassName];
+  const classes = ['nav-item', linkClassName];
   if (active) classes.push('active');
   if (!accessible) classes.push(lockedClassName);
   return classes.filter(Boolean).join(' ');
+}
+
+function NavLinkRow({
+  href,
+  label,
+  accessible,
+  requiredPlan,
+  pathname,
+  linkClassName,
+  lockedClassName,
+  onNavigate
+}: {
+  href: string;
+  label: string;
+  accessible: boolean;
+  requiredPlan?: EverittosPlan;
+  pathname: string;
+  linkClassName: string;
+  lockedClassName: string;
+  onNavigate?: () => void;
+}) {
+  const destination = accessible ? href : billingUpgradeHref(requiredPlan || 'pro', label);
+  const active = isNavLinkActive(pathname, href);
+
+  return (
+    <Link
+      href={destination}
+      className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName)}
+      aria-current={active ? 'page' : undefined}
+      aria-disabled={accessible ? undefined : true}
+      onClick={onNavigate}
+    >
+      <span className="nav-item-label">{label}</span>
+      {!accessible && requiredPlan ? (
+        <span className="nav-item-meta">
+          <NavLockIcon />
+          <span className="nav-plan-chip">{planShortBadgeName(requiredPlan)}</span>
+        </span>
+      ) : null}
+    </Link>
+  );
 }
 
 export function AppNavItems({
@@ -58,58 +110,94 @@ export function AppNavItems({
     portalLinks.push({ label: 'Contractor portal', href: '/portal/contractor' });
   }
 
+  if (isClientRole(normalizedRole)) {
+    return (
+      <nav className="app-nav" aria-label="App navigation">
+        {portalLinks.map(({ label, href }) => {
+          const resolution = resolveNavItem(normalizedRole, normalized, href);
+          if (!resolution.visible) return null;
+          return (
+            <NavLinkRow
+              key={href}
+              href={href}
+              label={navLabel(href, t, label)}
+              accessible={resolution.accessible}
+              requiredPlan={resolution.requiredPlan}
+              pathname={pathname}
+              linkClassName={linkClassName}
+              lockedClassName={lockedClassName}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
-    <>
+    <nav className="app-nav" aria-label="App navigation">
       {portalLinks.map(({ label, href }) => {
         const resolution = resolveNavItem(normalizedRole, normalized, href);
         if (!resolution.visible) return null;
-
-        const destination = resolution.accessible
-          ? href
-          : billingUpgradeHref(resolution.requiredPlan || 'pro', label);
-        const active = isNavLinkActive(pathname, href);
-
         return (
-          <Link
+          <NavLinkRow
             key={href}
-            href={destination}
-            className={navItemClassName(pathname, href, resolution.accessible, linkClassName, lockedClassName)}
-            aria-current={active ? 'page' : undefined}
-            onClick={onNavigate}
-          >
-            {navLabel(href, t, label)}
-            {!resolution.accessible && resolution.requiredPlan ? (
-              <span className="nav-upgrade-badge">{planDisplayName(resolution.requiredPlan)}</span>
-            ) : null}
-          </Link>
+            href={href}
+            label={navLabel(href, t, label)}
+            accessible={resolution.accessible}
+            requiredPlan={resolution.requiredPlan}
+            pathname={pathname}
+            linkClassName={linkClassName}
+            lockedClassName={lockedClassName}
+            onNavigate={onNavigate}
+          />
         );
       })}
 
-      {!isClientRole(normalizedRole) &&
-        APP_NAV_LINKS.map(({ label, href }) => {
-          const resolution = resolveNavItem(normalizedRole, normalized, href);
-          if (!resolution.visible) return null;
+      {APP_NAV_SECTIONS.map((section, index) => {
+        const visibleItems = section.items
+          .map((item) => {
+            const resolution = resolveNavItem(normalizedRole, normalized, item.href);
+            if (!resolution.visible) return null;
+            return { ...item, resolution };
+          })
+          .filter(Boolean) as Array<{
+          label: string;
+          href: string;
+          resolution: ReturnType<typeof resolveNavItem>;
+        }>;
 
-          const destination = resolution.accessible
-            ? href
-            : billingUpgradeHref(resolution.requiredPlan || 'business', label);
-          const active = isNavLinkActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={destination}
-              className={navItemClassName(pathname, href, resolution.accessible, linkClassName, lockedClassName)}
-              aria-current={active ? 'page' : undefined}
-              aria-disabled={resolution.accessible ? undefined : true}
-              onClick={onNavigate}
-            >
-              {navLabel(href, t, label)}
-              {!resolution.accessible && resolution.requiredPlan ? (
-                <span className="nav-upgrade-badge">{planDisplayName(resolution.requiredPlan)}</span>
-              ) : null}
-            </Link>
-          );
-        })}
-    </>
+        if (!visibleItems.length) return null;
+
+        return (
+          <div key={section.id} className={`nav-section${index > 0 ? ' nav-section-spaced' : ''}`}>
+            {visibleItems.map(({ label, href, resolution }) => (
+              <NavLinkRow
+                key={href}
+                href={href}
+                label={navLabel(href, t, label)}
+                accessible={resolution.accessible}
+                requiredPlan={resolution.requiredPlan}
+                pathname={pathname}
+                linkClassName={linkClassName}
+                lockedClassName={lockedClassName}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        );
+      })}
+
+      {unread > 0 ? (
+        <Link
+          href="/notifications"
+          className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`}
+          onClick={onNavigate}
+        >
+          <span className="nav-item-label">{t('nav.notifications')}</span>
+          <span className="nav-unread-chip">{unread}</span>
+        </Link>
+      ) : null}
+    </nav>
   );
 }

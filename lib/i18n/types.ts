@@ -328,6 +328,20 @@ export type MessageTree = {
     todaysSchedule: string;
     viewSchedule: string;
     noScheduleToday: string;
+    upcomingJobs: string;
+    noUpcomingJobs: string;
+    customersAndLeads: string;
+    noCustomersOrLeads: string;
+    businessActivity: string;
+    businessActivityEmpty: string;
+    revenue: {
+      title: string;
+      revenueMonth: string;
+      outstanding: string;
+      jobsCompleted: string;
+      activeCustomers: string;
+      viewAnalytics: string;
+    };
     primaryActions: string;
     metricsLabel: string;
     recentActivity: string;

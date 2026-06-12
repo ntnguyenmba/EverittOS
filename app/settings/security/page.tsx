@@ -1,13 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { SecurityActivityLog } from '@/components/security-activity-log';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
-import { fetchRecentSecurityEvents } from '@/lib/security-events';
+import { fetchRecentSecurityEvents, fetchUserSecurityEvents } from '@/lib/security-events';
 import { useTranslation } from '@/components/locale-provider';
 import { PasskeyManager } from '@/components/passkey-manager';
 import { SUPPORT_EMAIL } from '@/lib/support';
@@ -19,6 +21,8 @@ type SecurityEventRow = {
   severity: string;
   message: string;
   created_at: string;
+  user_agent?: string | null;
+  ip_address?: string | null;
 };
 
 export default function SecuritySettingsPage() {
@@ -30,7 +34,8 @@ export default function SecuritySettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [securityEvents, setSecurityEvents] = useState<SecurityEventRow[]>([]);
+  const [personalEvents, setPersonalEvents] = useState<SecurityEventRow[]>([]);
+  const [orgEvents, setOrgEvents] = useState<SecurityEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -48,10 +53,13 @@ export default function SecuritySettingsPage() {
       setPlan(normalizePlan(profile?.plan));
       setRole(normalizeRole(profile?.role));
 
+      const userEvents = await fetchUserSecurityEvents(supabase, user.id, 25);
+      setPersonalEvents(userEvents as SecurityEventRow[]);
+
       const org = await fetchOrganizationContext(user.id);
       if (org && canManageOrganizationSettings(normalizeRole(profile?.role))) {
-        const events = await fetchRecentSecurityEvents(supabase, org.organizationId, 20);
-        setSecurityEvents(events as SecurityEventRow[]);
+        const events = await fetchRecentSecurityEvents(supabase, org.organizationId, 30);
+        setOrgEvents(events as SecurityEventRow[]);
       }
 
       setLoading(false);
@@ -106,7 +114,7 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Security" description="Password and session controls.">
+    <SettingsShell plan={plan} title="Security" description="Password, sessions, and sign-in history.">
       <div className="settings-card">
         <h3>{t('settings.security.passkeysTitle')}</h3>
         <PasskeyManager />
@@ -159,21 +167,21 @@ export default function SecuritySettingsPage() {
         </div>
       </div>
 
+      <div className="settings-card">
+        <h3>Sign-in history</h3>
+        <p className="muted">Recent sign-ins, sign-outs, password changes, and session events for your account.</p>
+        <SecurityActivityLog events={personalEvents} />
+        <p className="muted" style={{ marginTop: 16 }}>
+          Business activity such as jobs, customers, and invoices is on the{' '}
+          <Link href="/activity">activity log</Link> or your <Link href="/dashboard">dashboard</Link>.
+        </p>
+      </div>
+
       {canManageOrganizationSettings(role) ? (
         <div className="settings-card">
-          <h3>Security audit review</h3>
-          <p className="muted">Recent sign-in, sign-out, and failed login events for your organization.</p>
-          {securityEvents.length === 0 ? <p className="muted">No security events recorded yet.</p> : null}
-          {securityEvents.map((event) => (
-            <div key={event.id} className="list-row compact">
-              <div>
-                <strong>{event.event_type}</strong>
-                <p className="muted">
-                  {event.message} · {new Date(event.created_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))}
+          <h3>Organization security audit</h3>
+          <p className="muted">Sign-in and security events across your workspace.</p>
+          <SecurityActivityLog events={orgEvents} emptyLabel="No organization security events recorded yet." />
         </div>
       ) : null}
     </SettingsShell>

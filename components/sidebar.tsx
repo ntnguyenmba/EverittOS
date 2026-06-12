@@ -10,7 +10,7 @@ import { useTranslation } from '@/components/locale-provider';
 import {
   isPaidEverittosPlan,
   normalizePlan,
-  planDisplayName,
+  planFooterLabel,
   type EverittosPlan
 } from '@/lib/everittos-plans';
 import { canManageBilling } from '@/lib/roles';
@@ -63,46 +63,44 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
     await performClientLogout(router);
   }
 
-  const planBadge = <span className="plan-badge">{planDisplayName(normalized)}</span>;
   const showBillingLink = canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
+  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
 
   return (
     <aside className="sidebar" aria-label="App navigation">
       <div className="sidebar-brand">
-        <BrandLogo href="/dashboard" size={32} showName />
-      </div>
-      <div className="sidebar-language">
-        <LanguageSwitcher id="sidebar-language" variant="default" />
-      </div>
-      <div className="sidebar-plan">
-        <span className="sidebar-plan-label">{t('billing.currentPlan')}</span>
-        {showBillingLink ? (
-          <Link
-            href="/settings/billing"
-            className={`sidebar-plan-link${pathname.startsWith('/settings/billing') ? ' active' : ''}`}
-            aria-current={pathname.startsWith('/settings/billing') ? 'page' : undefined}
-          >
-            {planBadge}
-          </Link>
-        ) : (
-          planBadge
-        )}
+        <BrandLogo href="/dashboard" size={28} showName />
       </div>
 
-      <AppNavItems plan={normalized} role={role} unread={unread} />
+      <div className="sidebar-nav">
+        <AppNavItems plan={normalized} role={role} unread={unread} />
+      </div>
 
-      {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) && (
-        <div className="sidebar-upgrade">
-          <p>Need more jobs, photos, or team members?</p>
-          <Link href="/settings/billing" className="btn btn-primary">
-            {t('ux.viewPlans')}
-          </Link>
+      <div className="sidebar-footer">
+        <div className="sidebar-plan-footer">
+          {showBillingLink ? (
+            <Link
+              href="/settings/billing"
+              className={`sidebar-plan-text${pathname.startsWith('/settings/billing') ? ' active' : ''}`}
+            >
+              {planFooterLabel(normalized)}
+            </Link>
+          ) : (
+            <span className="sidebar-plan-text">{planFooterLabel(normalized)}</span>
+          )}
+          {showUpgrade ? (
+            <Link href="/settings/billing" className="sidebar-upgrade-link">
+              Upgrade
+            </Link>
+          ) : null}
         </div>
-      )}
-
-      <button className="btn sidebar-logout" type="button" onClick={logout}>
-        {t('ux.logOut')}
-      </button>
+        <div className="sidebar-footer-actions">
+          <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
+          <button className="btn btn-sm sidebar-logout" type="button" onClick={logout}>
+            {t('ux.logOut')}
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
