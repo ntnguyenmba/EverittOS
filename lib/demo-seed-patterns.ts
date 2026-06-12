@@ -28,8 +28,12 @@ export function isDemoSeedWorker(row: { name?: string | null; phone?: string | n
   return DEMO_SEED_WORKER_NAMES.has(name) || isDemoSeedPhone(row.phone);
 }
 
-export function isDemoSeedCustomer(row: { name?: string | null; phone?: string | null; email?: string | null }): boolean {
-  const name = (row.name || '').trim();
+export function isDemoSeedCustomer(row: {
+  company_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}): boolean {
+  const name = (row.company_name || '').trim();
   if (DEMO_SEED_CUSTOMER_NAMES.has(name)) return true;
   if (isDemoSeedPhone(row.phone)) return true;
   const email = (row.email || '').toLowerCase();

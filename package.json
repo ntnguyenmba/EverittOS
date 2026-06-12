@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test tests/google-calendar.test.ts"
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

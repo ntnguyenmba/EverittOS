@@ -9,6 +9,7 @@ import { PhotoGallery } from '@/components/photo-gallery';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { isClientRole, normalizeRole } from '@/lib/roles';
+import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
 
 type ClientJob = {
@@ -46,7 +47,7 @@ type TimelineRow = {
 
 type CustomerRow = {
   id: string;
-  name: string;
+  company_name: string | null;
   email: string | null;
   phone: string | null;
 };
@@ -140,7 +141,7 @@ function ClientPortalContent() {
       if (customerIds.length) {
         const { data: customerRows } = await supabase
           .from('customers')
-          .select('id, name, email, phone')
+          .select(CUSTOMER_SEARCH_SELECT)
           .in('id', customerIds);
         setCustomers((customerRows || []) as CustomerRow[]);
       }
@@ -245,7 +246,7 @@ function ClientPortalContent() {
                     <h4 style={{ marginTop: 16 }}>Customer records</h4>
                     {customers.map((c) => (
                       <div key={c.id} className="list-row">
-                        <strong>{c.name}</strong>
+                        <strong>{customerDisplayName(c)}</strong>
                         <p className="muted">{c.email || 'No email'} · {c.phone || 'No phone'}</p>
                       </div>
                     ))}

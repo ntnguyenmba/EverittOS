@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authenticateApiRequest, hasScope, jsonError } from '@/lib/api-auth';
+import { CUSTOMER_LIST_SELECT } from '@/lib/customer-record';
 
 export async function GET(request: Request) {
   const auth = await authenticateApiRequest(request);
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await auth.admin
     .from('customers')
-    .select('id, name, phone, email, address, department_id, created_at')
+    .select(`${CUSTOMER_LIST_SELECT}, department_id`)
     .eq('organization_id', auth.organizationId)
     .order('created_at', { ascending: false })
     .limit(limit);

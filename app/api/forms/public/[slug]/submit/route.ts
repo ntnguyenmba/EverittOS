@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
+import { buildCustomerWritePayload } from '@/lib/customer-record';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -37,13 +38,15 @@ export async function POST(request: Request, context: RouteContext) {
     .from('customers')
     .insert({
       organization_id: form.organization_id,
-      name: String(name).trim(),
-      email: email ? String(email).trim() : null,
-      phone: phone ? String(phone).trim() : null,
-      notes: payload.Message || payload.message || null,
-      record_type: 'lead',
-      pipeline_stage: 'lead',
-      lead_source: 'form'
+      ...buildCustomerWritePayload({
+        displayName: String(name).trim(),
+        email: email ? String(email).trim() : null,
+        phone: phone ? String(phone).trim() : null,
+        notes: payload.Message || payload.message || null,
+        record_type: 'lead',
+        pipeline_stage: 'lead',
+        lead_source: 'form'
+      })
     })
     .select('id')
     .single();

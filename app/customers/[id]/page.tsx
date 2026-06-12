@@ -8,6 +8,11 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import {
+  buildCustomerUpdatePayload,
+  customerDisplayName,
+  type CustomerRecord
+} from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -17,7 +22,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [customerId, setCustomerId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canEdit, setCanEdit] = useState(false);
-  const [name, setName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
@@ -59,7 +64,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
       return;
     }
 
-    setName(customer.name);
+    setDisplayName(customerDisplayName(customer as CustomerRecord));
     setPhone(customer.phone || '');
     setEmail(customer.email || '');
     setAddress(customer.address || '');
@@ -117,7 +122,15 @@ export default function CustomerDetailPage({ params }: PageProps) {
     if (!canEdit) return;
     const { error } = await supabase
       .from('customers')
-      .update({ name, phone, email, address, notes })
+      .update(
+        buildCustomerUpdatePayload({
+          displayName,
+          phone,
+          email,
+          address,
+          notes
+        })
+      )
       .eq('id', customerId);
     if (error) setMessage(error.message);
     else setMessage('Customer saved.');
@@ -154,7 +167,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   return (
     <AppShell plan={plan}>
         <div className="page-head">
-          <h2>{name}</h2>
+          <h2>{displayName}</h2>
           <Link className="btn" href="/customers">
             Back
           </Link>
@@ -165,7 +178,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
         <div className="grid-2">
           <div className="card form">
             <h3>Edit customer</h3>
-            <input className="input" value={name} disabled={!canEdit} onChange={(e) => setName(e.target.value)} />
+            <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
             <input className="input" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
             <input className="input" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
             <input className="input" value={address} disabled={!canEdit} onChange={(e) => setAddress(e.target.value)} />

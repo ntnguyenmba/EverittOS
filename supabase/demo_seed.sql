@@ -37,7 +37,7 @@ begin
   values (demo_org, 'demo@everittventures.com', '512-555-0100', 'https://everittventures.com', 'Austin, TX')
   on conflict (organization_id) do update set website = excluded.website;
 
-  insert into public.customers (user_id, organization_id, name, phone, email, address)
+  insert into public.customers (user_id, organization_id, company_name, phone, email, address)
   values (demo_user, demo_org, 'Riverfront Property Group', '512-555-0188', 'ops@riverfront.example', '1200 Congress Ave')
   returning id into demo_customer;
 

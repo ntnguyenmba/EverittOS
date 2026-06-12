@@ -48,11 +48,14 @@ export type Worker = {
 export type Customer = {
   id: string;
   user_id: string;
-  name: string;
+  company_name: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
   notes: string | null;
+  pipeline_stage?: string | null;
+  lead_source?: string | null;
+  record_type?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };

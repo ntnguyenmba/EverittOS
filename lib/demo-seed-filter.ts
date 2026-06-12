@@ -5,7 +5,7 @@ import {
 } from '@/lib/demo-seed-patterns';
 
 type WorkerRow = { name?: string | null; phone?: string | null };
-type CustomerRow = { name?: string | null; phone?: string | null; email?: string | null };
+type CustomerRow = { company_name?: string | null; phone?: string | null; email?: string | null };
 type JobRow = { title?: string | null; customer_name?: string | null };
 
 /** Strip known demo seed rows from non-demo organizations (belt-and-suspenders with DB cleanup). */

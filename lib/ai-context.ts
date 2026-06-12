@@ -53,7 +53,7 @@ export async function buildOrganizationAiContext(
       .limit(12),
     admin
       .from('customers')
-      .select('name, pipeline_stage, lead_source, record_type, created_at')
+      .select('company_name, pipeline_stage, lead_source, record_type, created_at')
       .eq('organization_id', organizationId)
       .eq('record_type', 'lead')
       .gte('created_at', monthStart)
@@ -124,7 +124,7 @@ export async function buildOrganizationAiContext(
   const leads = leadsRes.data || [];
   if (leads.length) {
     sections.push(
-      `Leads this month:\n${leads.map((l) => `- ${l.name} [${l.pipeline_stage}] source=${l.lead_source}`).join('\n')}`
+      `Leads this month:\n${leads.map((l) => `- ${l.company_name || 'Unnamed'} [${l.pipeline_stage}] source=${l.lead_source}`).join('\n')}`
     );
   } else {
     sections.push('Leads this month: none');

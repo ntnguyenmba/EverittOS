@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import type { SearchResultItem } from '@/lib/os-types';
+import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
@@ -30,9 +31,9 @@ export async function GET(request: Request) {
   const [customers, jobs, tasks, docs, templates, forms] = await Promise.all([
     supabase
       .from('customers')
-      .select('id, name, email')
+      .select(CUSTOMER_SEARCH_SELECT)
       .eq('organization_id', orgId)
-      .or(`name.ilike."${pattern}",email.ilike."${pattern}"`)
+      .or(`company_name.ilike."${pattern}",email.ilike."${pattern}"`)
       .limit(8),
     supabase
       .from('jobs')
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
     results.push({
       id: c.id,
       type: 'customer',
-      title: c.name,
+      title: customerDisplayName(c),
       subtitle: c.email,
       href: `/customers/${c.id}`
     });

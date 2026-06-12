@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logActivityServer } from '@/lib/activity-server';
+import { buildCustomerWritePayload } from '@/lib/customer-record';
 import { canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
 
 export type AiActionType =
@@ -74,13 +75,15 @@ export async function executeAiAction(
         .from('customers')
         .insert({
           organization_id: orgId,
-          name,
-          email: params.email?.trim() || null,
-          phone: params.phone?.trim() || null,
-          notes: params.notes?.trim() || null,
-          record_type: type === 'create_lead' ? 'lead' : 'contact',
-          pipeline_stage: type === 'create_lead' ? 'lead' : 'won',
-          lead_source: 'manual'
+          ...buildCustomerWritePayload({
+            displayName: name,
+            email: params.email?.trim() || null,
+            phone: params.phone?.trim() || null,
+            notes: params.notes?.trim() || null,
+            record_type: type === 'create_lead' ? 'lead' : 'contact',
+            pipeline_stage: type === 'create_lead' ? 'lead' : 'won',
+            lead_source: 'manual'
+          })
         })
         .select('id')
         .single();

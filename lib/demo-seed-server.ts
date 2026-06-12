@@ -74,7 +74,7 @@ export async function seedDemoOrganization(userId: string, email: string): Promi
     .insert({
       user_id: userId,
       organization_id: orgId,
-      name: 'Riverfront Property Group',
+      company_name: 'Riverfront Property Group',
       phone: '512-555-0188',
       email: 'ops@riverfront.example',
       address: '1200 Congress Ave'

@@ -16,27 +16,20 @@ import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { validatePlanAction } from '@/lib/plan-validate';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
+import {
+  buildCustomerWritePayload,
+  CUSTOMER_LIST_SELECT,
+  customerDisplayName,
+  type CustomerRecord
+} from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
-
-type Customer = {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  notes: string | null;
-  pipeline_stage: string | null;
-  lead_source: string | null;
-  record_type: string | null;
-  created_at: string | null;
-};
 
 export default function CustomersPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [name, setName] = useState('');
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
@@ -68,7 +61,7 @@ export default function CustomersPage() {
     const org = await fetchOrganizationContext(user.id);
     let query = supabase
       .from('customers')
-      .select('id, name, phone, email, address, notes, pipeline_stage, lead_source, record_type, created_at')
+      .select(CUSTOMER_LIST_SELECT)
       .order('created_at', { ascending: false });
     if (org?.organizationId) {
       query = query.eq('organization_id', org.organizationId);
@@ -90,7 +83,7 @@ export default function CustomersPage() {
   }
 
   async function addCustomer() {
-    if (!name.trim() || saving) return;
+    if (!displayName.trim() || saving) return;
 
     const {
       data: { user }
@@ -126,11 +119,13 @@ export default function CustomersPage() {
     const { error } = await supabase.from('customers').insert({
       user_id: user.id,
       organization_id: org?.organizationId || null,
-      name: name.trim(),
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-      address: address.trim() || null,
-      notes: notes.trim() || null
+      ...buildCustomerWritePayload({
+        displayName,
+        phone,
+        email,
+        address,
+        notes
+      })
     });
 
     setSaving(false);
@@ -144,7 +139,7 @@ export default function CustomersPage() {
       return;
     }
 
-    setName('');
+    setDisplayName('');
     setPhone('');
     setEmail('');
     setAddress('');
@@ -169,7 +164,7 @@ export default function CustomersPage() {
         {canManage && (
           <div className="card form" style={{ marginBottom: 18 }}>
             <h3>Add customer</h3>
-            <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="input" placeholder="Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
             <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
@@ -193,7 +188,7 @@ export default function CustomersPage() {
           {!loading &&
             customers.map((customer) => (
               <div key={customer.id} className="card" style={{ marginTop: 12 }}>
-                <h3>{customer.name}</h3>
+                <h3>{customerDisplayName(customer)}</h3>
                 <p className="muted">
                   {(customer.pipeline_stage || 'lead').replace('_', ' ')}
                   {customer.lead_source ? ` · ${customer.lead_source}` : ''}
