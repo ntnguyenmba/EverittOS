@@ -9,6 +9,7 @@ import { AppShell } from '@/components/app-shell';
 import { OnboardingChecklist } from '@/components/onboarding-checklist';
 import { EmptyState } from '@/components/empty-state';
 import { ExecutiveMetricsPanel } from '@/components/dashboard/executive-metrics';
+import { OnboardingSkippedPrompts } from '@/components/dashboard/onboarding-skipped-prompts';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { useTranslation } from '@/components/locale-provider';
 import { mapAccessError } from '@/lib/auth-errors';
@@ -73,6 +74,8 @@ export default function DashboardPage() {
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
   const [onboardingSkipped, setOnboardingSkipped] = useState(false);
   const [organizationId, setOrganizationId] = useState('');
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarConfigured, setCalendarConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -152,6 +155,17 @@ export default function DashboardPage() {
     setUsage(counts);
     setActivityCount(activityRes.count || 0);
     setActivityItems(activityListRes.data || []);
+
+    try {
+      const calendarRes = await fetch('/api/integrations/google-calendar/status');
+      if (calendarRes.ok) {
+        const calendarJson = (await calendarRes.json()) as { connected?: boolean; configured?: boolean };
+        setCalendarConnected(Boolean(calendarJson.connected));
+        setCalendarConfigured(Boolean(calendarJson.configured));
+      }
+    } catch {
+      /* optional */
+    }
 
     if (isClientRole(normalizeRole(profile?.role))) {
       router.push('/portal/client');
@@ -260,6 +274,16 @@ export default function DashboardPage() {
           skipped={onboardingSkipped}
         />
       ) : null}
+
+      <OnboardingSkippedPrompts
+        skipped={onboardingSkipped}
+        jobsCount={usage.jobs}
+        customersCount={usage.customers}
+        teamMembers={usage.teamMembers}
+        calendarConnected={calendarConnected}
+        calendarConfigured={calendarConfigured}
+        teamManagementEnabled={hasTeamManagement(plan)}
+      />
 
       <div className="card dashboard-usage-card">
         <UsageDashboard plan={plan} counts={usage} />

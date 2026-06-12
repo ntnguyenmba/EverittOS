@@ -89,24 +89,28 @@ export function OnboardingWizard() {
     [orgId, industry, teamSize, operationsFocus]
   );
 
-  const finishOnboarding = useCallback(
-    async (skipped: boolean) => {
+  const dismissSetup = useCallback(
+    async (action: 'skip_all' | 'cancel') => {
       if (!orgId) return;
       setBusy(true);
-      await persistSettings(ONBOARDING_STEP_COUNT, { completed: true, skipped });
-      await trackOnboardingCompleted(orgId, { skipped });
+      const res = await fetch('/api/onboarding/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, step })
+      });
       setBusy(false);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setMessage(typeof json.error === 'string' ? json.error : 'Unable to leave setup right now.');
+        return;
+      }
       router.push(dashboardPathForRole(role));
     },
-    [orgId, persistSettings, role, router]
+    [orgId, role, router, step]
   );
 
-  const skipEntire = useCallback(async () => {
-    if (!orgId) return;
-    setBusy(true);
-    await trackOnboardingStepSkipped(orgId, step, { action: 'skip_all' });
-    await finishOnboarding(true);
-  }, [finishOnboarding, orgId, step]);
+  const skipAllSetup = useCallback(() => dismissSetup('skip_all'), [dismissSetup]);
+  const cancelSetup = useCallback(() => dismissSetup('cancel'), [dismissSetup]);
 
   const advance = useCallback(
     async (nextStep: number, completed = false) => {
@@ -150,6 +154,28 @@ export function OnboardingWizard() {
     setStep(prevStep);
     setMessage('');
   }, []);
+
+  const actionLabels = useMemo(
+    () => ({
+      continue: t('common.continue'),
+      skipThisStep: t('common.skipThisStep'),
+      skipAll: t('common.skipAllSetup'),
+      cancel: t('common.cancelSetup'),
+      back: t('common.back')
+    }),
+    [t]
+  );
+
+  const exitActions = useMemo(
+    () => ({
+      skipThisStepLabel: actionLabels.skipThisStep,
+      skipAllLabel: actionLabels.skipAll,
+      cancelLabel: actionLabels.cancel,
+      onSkipAll: () => void skipAllSetup(),
+      onCancel: () => void cancelSetup()
+    }),
+    [actionLabels, cancelSetup, skipAllSetup]
+  );
 
   useEffect(() => {
     async function load() {
@@ -315,7 +341,7 @@ export function OnboardingWizard() {
   }
 
   return (
-    <OnboardingShell role={role} onSkipAll={skipEntire} skipBusy={busy}>
+    <OnboardingShell role={role}>
       <div className="onboarding-progress" aria-hidden={step >= ONBOARDING_STEP_COUNT - 1}>
         <div
           className="onboarding-progress-bar"
@@ -328,10 +354,14 @@ export function OnboardingWizard() {
           <h1 className="onboarding-title">{t('onboarding.steps.welcome.title')}</h1>
           <p className="onboarding-subtitle">{t('onboarding.steps.welcome.subtitle')}</p>
           <OnboardingActions
-            continueLabel={t('common.continue')}
-            skipLabel={t('common.skipSetup')}
+            continueLabel={actionLabels.continue}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
             onContinue={() => void completeStep(1)}
-            onSkip={() => void skipStep(1)}
+            onSkipThisStep={() => void skipStep(1)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -375,12 +405,16 @@ export function OnboardingWizard() {
             </label>
           </div>
           <OnboardingActions
-            continueLabel={t('common.continue')}
-            skipLabel={t('common.skip')}
-            backLabel={t('common.back')}
+            continueLabel={actionLabels.continue}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            backLabel={actionLabels.back}
             onBack={() => goBack(0)}
             onContinue={() => void saveBusinessProfile()}
-            onSkip={() => void skipStep(2)}
+            onSkipThisStep={() => void skipStep(2)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -407,12 +441,16 @@ export function OnboardingWizard() {
             })}
           </div>
           <OnboardingActions
-            continueLabel={t('common.continue')}
-            skipLabel={t('common.skip')}
-            backLabel={t('common.back')}
+            continueLabel={actionLabels.continue}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            backLabel={actionLabels.back}
             onBack={() => goBack(1)}
             onContinue={() => void completeStep(3)}
-            onSkip={() => void skipStep(3)}
+            onSkipThisStep={() => void skipStep(3)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -468,12 +506,16 @@ export function OnboardingWizard() {
             </button>
           </div>
           <OnboardingActions
-            continueLabel={t('common.continue')}
-            skipLabel={t('common.skipForNow')}
-            backLabel={t('common.back')}
+            continueLabel={actionLabels.continue}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            backLabel={actionLabels.back}
             onBack={() => goBack(2)}
             onContinue={() => void sendInvites()}
-            onSkip={() => void skipStep(4)}
+            onSkipThisStep={() => void skipStep(4)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -501,12 +543,18 @@ export function OnboardingWizard() {
             )}
           </div>
           <OnboardingActions
-            continueLabel={calendarStatus.configured && !calendarStatus.connected ? t('common.connectLater') : t('common.continue')}
-            skipLabel={t('common.skip')}
-            backLabel={t('common.back')}
+            continueLabel={
+              calendarStatus.configured && !calendarStatus.connected ? t('common.connectLater') : actionLabels.continue
+            }
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            backLabel={actionLabels.back}
             onBack={() => goBack(3)}
             onContinue={() => void completeStep(5)}
-            onSkip={() => void skipStep(5)}
+            onSkipThisStep={() => void skipStep(5)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -536,12 +584,16 @@ export function OnboardingWizard() {
             </p>
           ) : null}
           <OnboardingActions
-            continueLabel={t('common.continue')}
-            skipLabel={t('common.skip')}
-            backLabel={t('common.back')}
+            continueLabel={actionLabels.continue}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            backLabel={actionLabels.back}
             onBack={() => goBack(4)}
             onContinue={() => void saveFirstJob()}
-            onSkip={() => void skipStep(6)}
+            onSkipThisStep={() => void skipStep(6)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
             busy={busy}
           />
         </OnboardingCard>
@@ -551,10 +603,18 @@ export function OnboardingWizard() {
         <OnboardingCard>
           <h2 className="onboarding-title">{t('onboarding.steps.complete.title')}</h2>
           <p className="onboarding-subtitle">{t('onboarding.steps.complete.message')}</p>
-          <div className="onboarding-actions">
-            <button type="button" className="btn btn-primary" onClick={() => void advance(ONBOARDING_STEP_COUNT, true)} disabled={busy}>
-              {t('common.goToDashboard')}
-            </button>
+          <OnboardingActions
+            continueLabel={t('common.goToDashboard')}
+            skipThisStepLabel={exitActions.skipThisStepLabel}
+            skipAllLabel={exitActions.skipAllLabel}
+            cancelLabel={exitActions.cancelLabel}
+            onContinue={() => void advance(ONBOARDING_STEP_COUNT, true)}
+            onSkipAll={exitActions.onSkipAll}
+            onCancel={exitActions.onCancel}
+            showSkipThisStep={false}
+            busy={busy}
+          />
+          <div className="onboarding-complete-extra">
             <OnboardingExploreLink href="/jobs" />
           </div>
         </OnboardingCard>

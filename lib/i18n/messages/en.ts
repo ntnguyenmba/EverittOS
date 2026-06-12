@@ -4,8 +4,9 @@ export const messages: Messages = {
   common: {
     continue: 'Continue',
     skip: 'Skip',
-    skipSetup: 'Skip Setup',
-    skipForNow: 'Skip For Now',
+    skipThisStep: 'Skip this step',
+    skipAllSetup: 'Skip all setup',
+    cancelSetup: 'Cancel setup',
     back: 'Back',
     loading: 'Loading…',
     connect: 'Connect',
@@ -18,7 +19,6 @@ export const messages: Messages = {
   },
   onboarding: {
     progress: 'Step {current} of {total}',
-    skipEntire: 'Skip setup',
     loading: 'Loading your workspace…',
     calendarLater: 'Calendar integration can be connected later.',
     calendarNotConfigured:
@@ -127,10 +127,10 @@ export const messages: Messages = {
       ]
     },
     settings: {
-      restart: 'Restart onboarding',
+      restart: 'Restart setup',
       restartDescription: 'Walk through setup again from the beginning.',
       restartConfirm: 'Restart setup?',
-      restartSuccess: 'Onboarding restarted. Continue from the welcome screen.'
+      restartSuccess: 'Setup restarted. Continue from the welcome screen.'
     }
   },
   empty: {
@@ -312,7 +312,33 @@ export const messages: Messages = {
     upgradeTitle: 'Need higher limits?',
     upgradeBody: 'Upgrade for more jobs, photos, team members, and crew assignment.',
     metricsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
-    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.'
+    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
+    skippedPrompts: {
+      title: 'Finish when you are ready',
+      description: 'You left setup early. These steps are still open.',
+      restartNote: 'Want to walk through setup again?',
+      restartSetup: 'Restart setup in Settings',
+      createJob: 'Create job',
+      addCustomer: 'Add customer',
+      inviteTeam: 'Invite team',
+      connectCalendar: 'Connect calendar',
+      firstJob: {
+        title: 'Create your first job',
+        description: 'Add a job to start tracking work, schedules, and photos.'
+      },
+      customers: {
+        title: 'Add your first customer',
+        description: 'Save client contact details and link them to jobs.'
+      },
+      team: {
+        title: 'Invite your team',
+        description: 'Add coworkers so they can see assignments and updates.'
+      },
+      calendar: {
+        title: 'Connect Google Calendar',
+        description: 'Sync scheduled jobs with your calendar.'
+      }
+    }
   },
   billing: {
     title: 'Billing',

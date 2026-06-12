@@ -4,8 +4,9 @@ export const messages: Messages = {
   common: {
     continue: 'Continuar',
     skip: 'Omitir',
-    skipSetup: 'Omitir configuración',
-    skipForNow: 'Omitir por ahora',
+    skipThisStep: 'Omitir este paso',
+    skipAllSetup: 'Omitir toda la configuración',
+    cancelSetup: 'Cancelar configuración',
     back: 'Atrás',
     loading: 'Cargando…',
     connect: 'Conectar',
@@ -18,7 +19,6 @@ export const messages: Messages = {
   },
   onboarding: {
     progress: 'Paso {current} de {total}',
-    skipEntire: 'Omitir configuración',
     loading: 'Cargando su espacio de trabajo…',
     calendarLater: 'La integración del calendario se puede conectar más tarde.',
     calendarNotConfigured:
@@ -127,10 +127,10 @@ export const messages: Messages = {
       ]
     },
     settings: {
-      restart: 'Reiniciar onboarding',
+      restart: 'Reiniciar configuración',
       restartDescription: 'Repita la configuración desde el inicio.',
       restartConfirm: '¿Reiniciar configuración?',
-      restartSuccess: 'Onboarding reiniciado. Continúe desde la pantalla de bienvenida.'
+      restartSuccess: 'Configuración reiniciada. Continúe desde la pantalla de bienvenida.'
     }
   },
   empty: {
@@ -312,7 +312,33 @@ export const messages: Messages = {
     upgradeTitle: '¿Necesita más límites?',
     upgradeBody: 'Actualice para más trabajos, fotos, miembros del equipo y asignación de cuadrillas.',
     metricsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
-    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.'
+    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
+    skippedPrompts: {
+      title: 'Termine cuando esté listo',
+      description: 'Salió de la configuración antes de tiempo. Estos pasos siguen pendientes.',
+      restartNote: '¿Quiere repetir la configuración?',
+      restartSetup: 'Reiniciar en Configuración',
+      createJob: 'Crear trabajo',
+      addCustomer: 'Agregar cliente',
+      inviteTeam: 'Invitar equipo',
+      connectCalendar: 'Conectar calendario',
+      firstJob: {
+        title: 'Cree su primer trabajo',
+        description: 'Agregue un trabajo para empezar a registrar trabajo, horarios y fotos.'
+      },
+      customers: {
+        title: 'Agregue su primer cliente',
+        description: 'Guarde datos de contacto y vincúlelos a trabajos.'
+      },
+      team: {
+        title: 'Invite a su equipo',
+        description: 'Agregue compañeros para que vean asignaciones y actualizaciones.'
+      },
+      calendar: {
+        title: 'Conecte Google Calendar',
+        description: 'Sincronice trabajos programados con su calendario.'
+      }
+    }
   },
   billing: {
     title: 'Facturación',

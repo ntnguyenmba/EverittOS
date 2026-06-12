@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
 import { BrandLogo } from '@/components/brand-logo';
 import { useTranslation } from '@/components/locale-provider';
 import type { UserRole } from '@/lib/roles';
@@ -10,27 +9,15 @@ import type { UserRole } from '@/lib/roles';
 type OnboardingShellProps = {
   role?: UserRole | string | null;
   children: React.ReactNode;
-  onSkipAll?: () => void;
-  skipBusy?: boolean;
 };
 
-export function OnboardingShell({ role, children, onSkipAll, skipBusy }: OnboardingShellProps) {
-  const { t } = useTranslation();
-
+export function OnboardingShell({ children }: OnboardingShellProps) {
   return (
     <div className="onboarding-layout">
       <header className="onboarding-header">
         <BrandLogo href="/dashboard" showName />
         <div className="onboarding-header-actions">
           <LanguageSwitcher />
-          {onSkipAll ? (
-            <button type="button" className="btn onboarding-skip-all" onClick={onSkipAll} disabled={skipBusy}>
-              {t('onboarding.skipEntire')}
-            </button>
-          ) : null}
-          <GoToDashboardLink role={role} className="btn">
-            {t('common.goToDashboard')}
-          </GoToDashboardLink>
         </div>
       </header>
       <main id="main-content" className="onboarding-main">
@@ -57,22 +44,32 @@ export function OnboardingCard({
 
 export function OnboardingActions({
   onContinue,
-  onSkip,
+  onSkipThisStep,
+  onSkipAll,
+  onCancel,
   onBack,
   continueLabel,
-  skipLabel,
+  skipThisStepLabel,
+  skipAllLabel,
+  cancelLabel,
   backLabel,
   busy,
-  continueDisabled
+  continueDisabled,
+  showSkipThisStep = true
 }: {
   onContinue: () => void;
-  onSkip: () => void;
+  onSkipThisStep?: () => void;
+  onSkipAll?: () => void;
+  onCancel?: () => void;
   onBack?: () => void;
   continueLabel: string;
-  skipLabel: string;
+  skipThisStepLabel: string;
+  skipAllLabel: string;
+  cancelLabel: string;
   backLabel?: string;
   busy?: boolean;
   continueDisabled?: boolean;
+  showSkipThisStep?: boolean;
 }) {
   return (
     <div className="onboarding-actions">
@@ -81,12 +78,24 @@ export function OnboardingActions({
           {backLabel || 'Back'}
         </button>
       ) : null}
-      <button type="button" className="btn btn-primary" onClick={onContinue} disabled={busy || continueDisabled}>
+      <button type="button" className="btn btn-primary onboarding-continue" onClick={onContinue} disabled={busy || continueDisabled}>
         {continueLabel}
       </button>
-      <button type="button" className="btn" onClick={onSkip} disabled={busy}>
-        {skipLabel}
-      </button>
+      {showSkipThisStep && onSkipThisStep ? (
+        <button type="button" className="btn onboarding-skip-step" onClick={onSkipThisStep} disabled={busy}>
+          {skipThisStepLabel}
+        </button>
+      ) : null}
+      {onSkipAll ? (
+        <button type="button" className="btn onboarding-exit-action" onClick={onSkipAll} disabled={busy}>
+          {skipAllLabel}
+        </button>
+      ) : null}
+      {onCancel ? (
+        <button type="button" className="btn onboarding-exit-action onboarding-cancel" onClick={onCancel} disabled={busy}>
+          {cancelLabel}
+        </button>
+      ) : null}
     </div>
   );
 }

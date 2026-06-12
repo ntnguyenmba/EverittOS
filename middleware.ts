@@ -232,6 +232,15 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
   }
 
+  if (
+    (pathname === '/onboarding' || pathname.startsWith('/onboarding/')) &&
+    onboarding.skipped &&
+    onboarding.completed
+  ) {
+    const destination = postAuthRedirectPath(profile?.role, '/dashboard', true, true);
+    return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
+  }
+
   if (isAccountDeleted(profile?.deleted_at)) {
     await supabase.auth.signOut();
     const login = new URL('/login', request.url);

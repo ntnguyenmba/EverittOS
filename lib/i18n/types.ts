@@ -2,8 +2,9 @@ export type MessageTree = {
   common: {
     continue: string;
     skip: string;
-    skipSetup: string;
-    skipForNow: string;
+    skipThisStep: string;
+    skipAllSetup: string;
+    cancelSetup: string;
     back: string;
     loading: string;
     connect: string;
@@ -16,7 +17,6 @@ export type MessageTree = {
   };
   onboarding: {
     progress: string;
-    skipEntire: string;
     loading: string;
     calendarLater: string;
     calendarNotConfigured: string;
@@ -201,6 +201,20 @@ export type MessageTree = {
     upgradeBody: string;
     metricsEmpty: string;
     analyticsEmpty: string;
+    skippedPrompts: {
+      title: string;
+      description: string;
+      restartNote: string;
+      restartSetup: string;
+      createJob: string;
+      addCustomer: string;
+      inviteTeam: string;
+      connectCalendar: string;
+      firstJob: { title: string; description: string };
+      customers: { title: string; description: string };
+      team: { title: string; description: string };
+      calendar: { title: string; description: string };
+    };
   };
   billing: {
     title: string;

@@ -4,8 +4,9 @@ export const messages: Messages = {
   common: {
     continue: 'Tiếp tục',
     skip: 'Bỏ qua',
-    skipSetup: 'Bỏ qua thiết lập',
-    skipForNow: 'Bỏ qua tạm thời',
+    skipThisStep: 'Bỏ qua bước này',
+    skipAllSetup: 'Bỏ qua toàn bộ thiết lập',
+    cancelSetup: 'Hủy thiết lập',
     back: 'Quay lại',
     loading: 'Đang tải…',
     connect: 'Kết nối',
@@ -18,7 +19,6 @@ export const messages: Messages = {
   },
   onboarding: {
     progress: 'Bước {current} / {total}',
-    skipEntire: 'Bỏ qua thiết lập',
     loading: 'Đang tải không gian làm việc…',
     calendarLater: 'Có thể kết nối lịch sau.',
     calendarNotConfigured: 'Kết nối lịch chưa được cấu hình. Bạn có thể tiếp tục và thêm sau trong Cài đặt.',
@@ -126,10 +126,10 @@ export const messages: Messages = {
       ]
     },
     settings: {
-      restart: 'Khởi động lại onboarding',
+      restart: 'Khởi động lại thiết lập',
       restartDescription: 'Thực hiện lại thiết lập từ đầu.',
       restartConfirm: 'Khởi động lại thiết lập?',
-      restartSuccess: 'Đã khởi động lại onboarding. Tiếp tục từ màn hình chào mừng.'
+      restartSuccess: 'Đã khởi động lại thiết lập. Tiếp tục từ màn hình chào mừng.'
     }
   },
   empty: {
@@ -311,7 +311,33 @@ export const messages: Messages = {
     upgradeTitle: 'Cần giới hạn cao hơn?',
     upgradeBody: 'Nâng cấp để có thêm công việc, ảnh, thành viên nhóm và phân công đội.',
     metricsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.',
-    analyticsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.'
+    analyticsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.',
+    skippedPrompts: {
+      title: 'Hoàn tất khi bạn sẵn sàng',
+      description: 'Bạn đã rời thiết lập sớm. Các bước sau vẫn còn mở.',
+      restartNote: 'Muốn làm lại thiết lập?',
+      restartSetup: 'Khởi động lại trong Cài đặt',
+      createJob: 'Tạo công việc',
+      addCustomer: 'Thêm khách hàng',
+      inviteTeam: 'Mời nhóm',
+      connectCalendar: 'Kết nối lịch',
+      firstJob: {
+        title: 'Tạo công việc đầu tiên',
+        description: 'Thêm công việc để theo dõi công việc, lịch trình và ảnh.'
+      },
+      customers: {
+        title: 'Thêm khách hàng đầu tiên',
+        description: 'Lưu thông tin liên hệ và liên kết với công việc.'
+      },
+      team: {
+        title: 'Mời nhóm của bạn',
+        description: 'Thêm đồng nghiệp để họ xem phân công và cập nhật.'
+      },
+      calendar: {
+        title: 'Kết nối Google Calendar',
+        description: 'Đồng bộ công việc đã lên lịch với lịch của bạn.'
+      }
+    }
   },
   billing: {
     title: 'Thanh toán',
