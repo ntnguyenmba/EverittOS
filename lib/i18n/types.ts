@@ -181,40 +181,40 @@ export type MessageTree = {
     departments: string;
   };
   dashboard: {
-    title: string;
-    subtitle: string;
-    createJob: string;
-    inviteTeam: string;
-    viewReports: string;
-    upcomingWork: string;
-    quickLinks: string;
-    openJobs: string;
-    completedJobs: string;
-    dueSoon: string;
-    reportsOnFile: string;
-    teamMembers: string;
-    recentJobs: string;
-    upcomingJobs: string;
+    welcome: string;
+    welcomeName: string;
+    newJob: string;
+    todaysSchedule: string;
+    viewSchedule: string;
+    noScheduleToday: string;
+    primaryActions: string;
+    metricsLabel: string;
     recentActivity: string;
-    viewAllActivity: string;
-    upgradeTitle: string;
-    upgradeBody: string;
-    metricsEmpty: string;
-    analyticsEmpty: string;
-    skippedPrompts: {
-      title: string;
-      description: string;
-      restartNote: string;
-      restartSetup: string;
+    viewActivity: string;
+    moreDetails: string;
+    finishSetup: string;
+    actions: {
+      newJob: string;
+      schedule: string;
+      customers: string;
+      workers: string;
+      billing: string;
+    };
+    metrics: {
+      jobsToday: string;
+      openJobs: string;
+      unpaidInvoices: string;
+      upcomingSchedule: string;
+    };
+    skipped: {
+      label: string;
       createJob: string;
       addCustomer: string;
       inviteTeam: string;
       connectCalendar: string;
-      firstJob: { title: string; description: string };
-      customers: { title: string; description: string };
-      team: { title: string; description: string };
-      calendar: { title: string; description: string };
     };
+    metricsEmpty: string;
+    analyticsEmpty: string;
   };
   billing: {
     title: string;

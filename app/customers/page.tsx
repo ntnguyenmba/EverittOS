@@ -155,7 +155,6 @@ export default function CustomersPage() {
         <div className="page-head">
           <div>
             <h1>Customers</h1>
-            <p className="muted">Customer records linked to your jobs.</p>
           </div>
         </div>
 

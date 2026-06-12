@@ -220,9 +220,9 @@ export default function SettingsPage() {
           <label htmlFor="org-team-size">Employee count</label>
           <select id="org-team-size" className="input" value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
             <option value="">Select…</option>
-            <option value="1-5">1–5</option>
-            <option value="6-15">6–15</option>
-            <option value="16-50">16–50</option>
+            <option value="1-5">1-5</option>
+            <option value="6-15">6-15</option>
+            <option value="16-50">16-50</option>
             <option value="51+">51+</option>
           </select>
           <label htmlFor="org-timezone">Timezone</label>

@@ -134,28 +134,28 @@ export const messages: Messages = {
   },
   empty: {
     jobs: {
-      title: 'Tạo công việc đầu tiên',
-      description: 'Theo dõi công việc, lịch, ảnh và báo cáo từ một nơi.',
-      action: 'Tạo công việc'
+      title: 'Chưa có công việc',
+      description: '',
+      action: 'Công việc mới'
     },
     customers: {
-      title: 'Thêm khách hàng đầu tiên',
-      description: 'Sắp xếp thông tin liên hệ và lịch sử công việc cho mỗi khách.',
+      title: 'Chưa có khách hàng',
+      description: '',
       action: 'Thêm khách hàng'
     },
     schedule: {
-      title: 'Tạo nhiệm vụ đã lên lịch đầu tiên',
-      description: 'Thêm ngày vào công việc để xem trên lịch và chế độ xem hàng ngày.',
-      action: 'Đến công việc'
+      title: 'Chưa có lịch',
+      description: '',
+      action: 'Xem công việc'
     },
     workers: {
       title: 'Chưa có nhân viên',
-      description: 'Mời thành viên nhóm hoặc thêm nhân viên khi gói của bạn hỗ trợ quản lý đội.',
+      description: '',
       action: 'Mời nhóm'
     },
     activity: {
       title: 'Chưa có hoạt động',
-      description: 'Cập nhật về công việc, nhóm và báo cáo sẽ hiển thị ở đây.'
+      description: ''
     },
     notifications: {
       title: 'Chưa có thông báo',
@@ -292,52 +292,40 @@ export const messages: Messages = {
     departments: 'Phòng ban'
   },
   dashboard: {
-    title: 'Bảng điều khiển',
-    subtitle: 'Những gì cần chú ý ngay bây giờ.',
-    createJob: 'Tạo công việc',
-    inviteTeam: 'Mời thành viên',
-    viewReports: 'Xem báo cáo',
-    upcomingWork: 'Công việc sắp tới',
-    quickLinks: 'Liên kết nhanh',
-    openJobs: 'Công việc mở',
-    completedJobs: 'Đã hoàn thành',
-    dueSoon: 'Đến hạn trong 7 ngày',
-    reportsOnFile: 'Báo cáo đã lưu',
-    teamMembers: 'Thành viên nhóm',
-    recentJobs: 'Công việc gần đây',
-    upcomingJobs: 'Công việc sắp tới',
+    welcome: 'Chào mừng trở lại',
+    welcomeName: 'Chào mừng trở lại, {name}',
+    newJob: 'Công việc mới',
+    todaysSchedule: 'Lịch hôm nay',
+    viewSchedule: 'Lịch',
+    noScheduleToday: 'Không có lịch hôm nay',
+    primaryActions: 'Thao tác nhanh',
+    metricsLabel: 'Tổng quan',
     recentActivity: 'Hoạt động gần đây',
-    viewAllActivity: 'Xem tất cả hoạt động',
-    upgradeTitle: 'Cần giới hạn cao hơn?',
-    upgradeBody: 'Nâng cấp để có thêm công việc, ảnh, thành viên nhóm và phân công đội.',
-    metricsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.',
-    analyticsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.',
-    skippedPrompts: {
-      title: 'Hoàn tất khi bạn sẵn sàng',
-      description: 'Bạn đã rời thiết lập sớm. Các bước sau vẫn còn mở.',
-      restartNote: 'Muốn làm lại thiết lập?',
-      restartSetup: 'Khởi động lại trong Cài đặt',
-      createJob: 'Tạo công việc',
-      addCustomer: 'Thêm khách hàng',
+    viewActivity: 'Xem tất cả',
+    moreDetails: 'Gói và sử dụng',
+    finishSetup: 'Hoàn tất thiết lập',
+    actions: {
+      newJob: 'Công việc mới',
+      schedule: 'Lịch',
+      customers: 'Khách hàng',
+      workers: 'Nhân viên',
+      billing: 'Thanh toán'
+    },
+    metrics: {
+      jobsToday: 'Việc hôm nay',
+      openJobs: 'Việc đang mở',
+      unpaidInvoices: 'Hóa đơn chưa trả',
+      upcomingSchedule: 'Sắp tới'
+    },
+    skipped: {
+      label: 'Còn lại:',
+      createJob: 'Tạo việc',
+      addCustomer: 'Thêm khách',
       inviteTeam: 'Mời nhóm',
-      connectCalendar: 'Kết nối lịch',
-      firstJob: {
-        title: 'Tạo công việc đầu tiên',
-        description: 'Thêm công việc để theo dõi công việc, lịch trình và ảnh.'
-      },
-      customers: {
-        title: 'Thêm khách hàng đầu tiên',
-        description: 'Lưu thông tin liên hệ và liên kết với công việc.'
-      },
-      team: {
-        title: 'Mời nhóm của bạn',
-        description: 'Thêm đồng nghiệp để họ xem phân công và cập nhật.'
-      },
-      calendar: {
-        title: 'Kết nối Google Calendar',
-        description: 'Đồng bộ công việc đã lên lịch với lịch của bạn.'
-      }
-    }
+      connectCalendar: 'Kết nối lịch'
+    },
+    metricsEmpty: 'Chưa có số liệu',
+    analyticsEmpty: 'Chưa có số liệu'
   },
   billing: {
     title: 'Thanh toán',

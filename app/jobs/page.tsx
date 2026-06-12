@@ -79,7 +79,6 @@ function JobsList() {
         <div className="page-head">
           <div>
             <h2>Jobs</h2>
-            <p>All jobs you can access based on your role.</p>
           </div>
           <Link className="btn btn-primary" href="/dashboard">
             New job

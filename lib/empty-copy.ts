@@ -2,23 +2,23 @@
 export const EMPTY_COPY = {
   workers: {
     title: 'No workers yet',
-    description: 'Invite a team member or add a worker when your plan supports crew management.'
+    description: ''
   },
   customers: {
     title: 'No customers yet',
-    description: 'Create your first customer.'
+    description: ''
   },
   jobs: {
     title: 'No jobs yet',
-    description: 'Create your first job.'
+    description: ''
   },
   schedule: {
-    title: 'No scheduled work yet',
-    description: 'Create a job and add dates to see it on your calendar.'
+    title: 'Nothing scheduled',
+    description: ''
   },
   activity: {
     title: 'No activity yet',
-    description: 'Updates to jobs, team, and reports will show up here.'
+    description: ''
   },
   notifications: {
     title: 'No notifications yet',

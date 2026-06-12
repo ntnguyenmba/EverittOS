@@ -135,28 +135,28 @@ export const messages: Messages = {
   },
   empty: {
     jobs: {
-      title: 'Cree su primer trabajo',
-      description: 'Gestione trabajo, horarios, fotos e informes desde un solo lugar.',
-      action: 'Crear trabajo'
+      title: 'Sin trabajos aún',
+      description: '',
+      action: 'Nuevo trabajo'
     },
     customers: {
-      title: 'Agregue su primer cliente',
-      description: 'Organice contactos e historial de trabajos para cada cliente.',
+      title: 'Sin clientes aún',
+      description: '',
       action: 'Agregar cliente'
     },
     schedule: {
-      title: 'Cree su primera tarea programada',
-      description: 'Agregue fechas a los trabajos para verlos en el calendario.',
-      action: 'Ir a trabajos'
+      title: 'Sin programación',
+      description: '',
+      action: 'Ver trabajos'
     },
     workers: {
-      title: 'Aún no hay trabajadores',
-      description: 'Invite a un miembro del equipo o agregue un trabajador cuando su plan lo permita.',
+      title: 'Sin trabajadores aún',
+      description: '',
       action: 'Invitar equipo'
     },
     activity: {
       title: 'Sin actividad aún',
-      description: 'Las actualizaciones de trabajos, equipo e informes aparecerán aquí.'
+      description: ''
     },
     notifications: {
       title: 'Sin notificaciones aún',
@@ -293,52 +293,40 @@ export const messages: Messages = {
     departments: 'Departamentos'
   },
   dashboard: {
-    title: 'Panel',
-    subtitle: 'Lo que necesita atención ahora.',
-    createJob: 'Crear trabajo',
-    inviteTeam: 'Invitar miembro',
-    viewReports: 'Ver informes',
-    upcomingWork: 'Trabajo próximo',
-    quickLinks: 'Enlaces rápidos',
-    openJobs: 'Trabajos abiertos',
-    completedJobs: 'Trabajos completados',
-    dueSoon: 'Vence en 7 días',
-    reportsOnFile: 'Informes archivados',
-    teamMembers: 'Miembros del equipo',
-    recentJobs: 'Trabajos recientes',
-    upcomingJobs: 'Trabajos próximos',
+    welcome: 'Bienvenido de nuevo',
+    welcomeName: 'Bienvenido de nuevo, {name}',
+    newJob: 'Nuevo trabajo',
+    todaysSchedule: 'Horario de hoy',
+    viewSchedule: 'Horario',
+    noScheduleToday: 'Nada programado hoy',
+    primaryActions: 'Acciones rápidas',
+    metricsLabel: 'Resumen',
     recentActivity: 'Actividad reciente',
-    viewAllActivity: 'Ver toda la actividad',
-    upgradeTitle: '¿Necesita más límites?',
-    upgradeBody: 'Actualice para más trabajos, fotos, miembros del equipo y asignación de cuadrillas.',
-    metricsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
-    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
-    skippedPrompts: {
-      title: 'Termine cuando esté listo',
-      description: 'Salió de la configuración antes de tiempo. Estos pasos siguen pendientes.',
-      restartNote: '¿Quiere repetir la configuración?',
-      restartSetup: 'Reiniciar en Configuración',
+    viewActivity: 'Ver todo',
+    moreDetails: 'Plan y uso',
+    finishSetup: 'Terminar configuración',
+    actions: {
+      newJob: 'Nuevo trabajo',
+      schedule: 'Horario',
+      customers: 'Clientes',
+      workers: 'Trabajadores',
+      billing: 'Facturación'
+    },
+    metrics: {
+      jobsToday: 'Trabajos hoy',
+      openJobs: 'Trabajos abiertos',
+      unpaidInvoices: 'Facturas sin pagar',
+      upcomingSchedule: 'Próximos'
+    },
+    skipped: {
+      label: 'Pendiente:',
       createJob: 'Crear trabajo',
       addCustomer: 'Agregar cliente',
       inviteTeam: 'Invitar equipo',
-      connectCalendar: 'Conectar calendario',
-      firstJob: {
-        title: 'Cree su primer trabajo',
-        description: 'Agregue un trabajo para empezar a registrar trabajo, horarios y fotos.'
-      },
-      customers: {
-        title: 'Agregue su primer cliente',
-        description: 'Guarde datos de contacto y vincúlelos a trabajos.'
-      },
-      team: {
-        title: 'Invite a su equipo',
-        description: 'Agregue compañeros para que vean asignaciones y actualizaciones.'
-      },
-      calendar: {
-        title: 'Conecte Google Calendar',
-        description: 'Sincronice trabajos programados con su calendario.'
-      }
-    }
+      connectCalendar: 'Conectar calendario'
+    },
+    metricsEmpty: 'Sin métricas aún',
+    analyticsEmpty: 'Sin métricas aún'
   },
   billing: {
     title: 'Facturación',

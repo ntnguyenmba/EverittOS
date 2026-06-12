@@ -31,49 +31,25 @@ export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
     limitReached(limits.teamMembers, counts.teamMembers - 1);
 
   return (
-    <div className="usage-dashboard">
-      <div className="page-head" style={{ marginBottom: 12 }}>
-        <div>
-          <h3>Plan usage</h3>
-          <p className="muted">{planDisplayName(plan)}</p>
-        </div>
-        {link && (
-          <a className="btn btn-primary" href={link} target="_blank" rel="noopener noreferrer">
-            Upgrade plan
+    <div className="usage-dashboard usage-dashboard-compact">
+      <div className="usage-dashboard-head">
+        <p className="muted">{planDisplayName(plan)}</p>
+        {link ? (
+          <a className="btn btn-sm" href={link} target="_blank" rel="noopener noreferrer">
+            Upgrade
           </a>
-        )}
+        ) : null}
       </div>
-      <div className="stat-grid">
-        <div className="stat">
-          <strong>{labels.jobs}</strong>
-          <p>Active jobs</p>
-        </div>
-        <div className="stat">
-          <strong>{labels.customers}</strong>
-          <p>Customers</p>
-        </div>
-        <div className="stat">
-          <strong>{labels.reports}</strong>
-          <p>Reports</p>
-        </div>
-        <div className="stat">
-          <strong>{labels.team}</strong>
-          <p>Team members</p>
-        </div>
-        {limits.photoUpload && (
-          <div className="stat">
-            <strong>{labels.photos}</strong>
-            <p>Photos</p>
-          </div>
-        )}
+      <div className="usage-dashboard-stats">
+        <span>{labels.jobs} jobs</span>
+        <span>{labels.customers} customers</span>
+        <span>{labels.team} team</span>
+        {limits.photoUpload ? <span>{labels.photos} photos</span> : null}
       </div>
-      {nearLimit && link && (
-        <div className="card upgrade-banner" style={{ marginTop: 16 }}>
-          <p>You are nearing your plan limit. Upgrade for higher limits.</p>
-          <Link href="/billing" className="btn">
-            View billing
-          </Link>
-        </div>
+      {nearLimit && (
+        <p className="usage-dashboard-note">
+          Near plan limit. <Link href="/settings/billing">View billing</Link>
+        </p>
       )}
     </div>
   );

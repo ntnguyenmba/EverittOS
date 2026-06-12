@@ -22,10 +22,13 @@ export function LocalizedEmptyState({ emptyKey, href }: LocalizedEmptyStateProps
   const { t } = useTranslation();
   const actionHref = href || EMPTY_ACTIONS[emptyKey];
 
+  const description = t(`empty.${emptyKey}.description`);
+
   return (
     <EmptyState
+      compact
       title={t(`empty.${emptyKey}.title`)}
-      description={t(`empty.${emptyKey}.description`)}
+      description={description || undefined}
       action={
         emptyKey === 'jobs' || emptyKey === 'customers' || emptyKey === 'schedule' || emptyKey === 'workers' ? (
           <Link className="btn btn-primary" href={actionHref}>

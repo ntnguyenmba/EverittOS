@@ -122,7 +122,6 @@ export default function WorkersPage() {
   return (
     <AppShell plan={plan}>
       <h1>{t('nav.workers')}</h1>
-      <p className="muted page-subtitle">Crew members linked to your operation.</p>
 
       {message ? (
         <p className="auth-message auth-message-error" role="alert">

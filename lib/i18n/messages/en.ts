@@ -30,8 +30,7 @@ export const messages: Messages = {
     steps: {
       welcome: {
         title: 'Welcome to EverittOS',
-        subtitle:
-          'Manage jobs, customers, schedules, workers, and operations from one place.'
+        subtitle: 'A few quick steps to set up your workspace.'
       },
       business: {
         title: 'Business profile',
@@ -111,8 +110,7 @@ export const messages: Messages = {
     },
     checklist: {
       title: 'Getting started',
-      description:
-        'Optional setup to help you launch faster. Skip anytime. Nothing here blocks your work.',
+      description: 'Optional setup. Skip anytime.',
       dismiss: 'Dismiss',
       continue: 'Continue setup',
       settings: 'Workspace settings',
@@ -135,28 +133,28 @@ export const messages: Messages = {
   },
   empty: {
     jobs: {
-      title: 'Create your first job',
-      description: 'Track work, schedules, photos, and reports from one place.',
-      action: 'Create job'
+      title: 'No jobs yet',
+      description: '',
+      action: 'New job'
     },
     customers: {
-      title: 'Add your first customer',
-      description: 'Keep contact details and job history organized for every client.',
+      title: 'No customers yet',
+      description: '',
       action: 'Add customer'
     },
     schedule: {
-      title: 'Create your first scheduled task',
-      description: 'Add dates to jobs to see them on your calendar and daily views.',
-      action: 'Go to jobs'
+      title: 'Nothing scheduled',
+      description: '',
+      action: 'View jobs'
     },
     workers: {
       title: 'No workers yet',
-      description: 'Invite a team member or add a worker when your plan supports crew management.',
+      description: '',
       action: 'Invite team'
     },
     activity: {
       title: 'No activity yet',
-      description: 'Updates to jobs, team, and reports will show up here.'
+      description: ''
     },
     notifications: {
       title: 'No notifications yet',
@@ -293,52 +291,40 @@ export const messages: Messages = {
     departments: 'Departments'
   },
   dashboard: {
-    title: 'Dashboard',
-    subtitle: 'What needs attention right now.',
-    createJob: 'Create job',
-    inviteTeam: 'Invite team member',
-    viewReports: 'View reports',
-    upcomingWork: 'Upcoming work',
-    quickLinks: 'Quick links',
-    openJobs: 'Open jobs',
-    completedJobs: 'Completed jobs',
-    dueSoon: 'Due in 7 days',
-    reportsOnFile: 'Reports on file',
-    teamMembers: 'Team members',
-    recentJobs: 'Recent jobs',
-    upcomingJobs: 'Upcoming jobs',
+    welcome: 'Welcome back',
+    welcomeName: 'Welcome back, {name}',
+    newJob: 'New job',
+    todaysSchedule: "Today's schedule",
+    viewSchedule: 'Schedule',
+    noScheduleToday: 'Nothing scheduled today',
+    primaryActions: 'Quick actions',
+    metricsLabel: 'Overview',
     recentActivity: 'Recent activity',
-    viewAllActivity: 'View all activity',
-    upgradeTitle: 'Need higher limits?',
-    upgradeBody: 'Upgrade for more jobs, photos, team members, and crew assignment.',
-    metricsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
-    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
-    skippedPrompts: {
-      title: 'Finish when you are ready',
-      description: 'You left setup early. These steps are still open.',
-      restartNote: 'Want to walk through setup again?',
-      restartSetup: 'Restart setup in Settings',
+    viewActivity: 'View all',
+    moreDetails: 'Plan and usage',
+    finishSetup: 'Finish setup',
+    actions: {
+      newJob: 'New job',
+      schedule: 'Schedule',
+      customers: 'Customers',
+      workers: 'Workers',
+      billing: 'Billing'
+    },
+    metrics: {
+      jobsToday: 'Jobs today',
+      openJobs: 'Open jobs',
+      unpaidInvoices: 'Unpaid invoices',
+      upcomingSchedule: 'Upcoming'
+    },
+    skipped: {
+      label: 'Still open:',
       createJob: 'Create job',
       addCustomer: 'Add customer',
       inviteTeam: 'Invite team',
-      connectCalendar: 'Connect calendar',
-      firstJob: {
-        title: 'Create your first job',
-        description: 'Add a job to start tracking work, schedules, and photos.'
-      },
-      customers: {
-        title: 'Add your first customer',
-        description: 'Save client contact details and link them to jobs.'
-      },
-      team: {
-        title: 'Invite your team',
-        description: 'Add coworkers so they can see assignments and updates.'
-      },
-      calendar: {
-        title: 'Connect Google Calendar',
-        description: 'Sync scheduled jobs with your calendar.'
-      }
-    }
+      connectCalendar: 'Connect calendar'
+    },
+    metricsEmpty: 'No metrics yet',
+    analyticsEmpty: 'No metrics yet'
   },
   billing: {
     title: 'Billing',
