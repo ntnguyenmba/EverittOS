@@ -14,30 +14,133 @@ import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Member = {
+interface Profile {
+  email: string | null;
+  full_name: string | null;
+  updated_at: string | null;
+}
+
+interface ProfileRow extends Profile {
+  id: string;
+}
+
+interface MemberRow {
   user_id: string;
   role: string;
   active: boolean;
   created_at: string | null;
-  profiles?: { email: string | null; full_name: string | null; updated_at: string | null } | null;
-};
+}
 
-type Invitation = {
+interface Member extends MemberRow {
+  profiles: Profile | null;
+}
+
+interface Invitation {
   id: string;
   email: string;
   role: string;
   status: string;
   created_at: string;
   expires_at: string | null;
-};
+}
 
-type AuditItem = {
+interface AuditItem {
   id: string;
   action: string;
   message: string | null;
   actor_name: string | null;
   created_at: string | null;
-};
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function parseMemberRow(record: object): MemberRow | null {
+  if (!('user_id' in record) || typeof record.user_id !== 'string') return null;
+  if (!('role' in record) || typeof record.role !== 'string') return null;
+  if (!('active' in record) || typeof record.active !== 'boolean') return null;
+  const createdAt = 'created_at' in record ? record.created_at : null;
+
+  return {
+    user_id: record.user_id,
+    role: record.role,
+    active: record.active,
+    created_at: nullableString(createdAt)
+  };
+}
+
+function parseProfileRow(record: object): ProfileRow | null {
+  if (!('id' in record) || typeof record.id !== 'string') return null;
+
+  return {
+    id: record.id,
+    email: 'email' in record ? nullableString(record.email) : null,
+    full_name: 'full_name' in record ? nullableString(record.full_name) : null,
+    updated_at: 'updated_at' in record ? nullableString(record.updated_at) : null
+  };
+}
+
+function toProfile(row: ProfileRow): Profile {
+  return {
+    email: row.email,
+    full_name: row.full_name,
+    updated_at: row.updated_at
+  };
+}
+
+function buildProfileMap(records: object[]): Map<string, Profile> {
+  const profileMap = new Map<string, Profile>();
+  for (const record of records) {
+    const parsed = parseProfileRow(record);
+    if (!parsed) continue;
+    profileMap.set(parsed.id, toProfile(parsed));
+  }
+  return profileMap;
+}
+
+function buildMembers(rows: MemberRow[], profileMap: Map<string, Profile>): Member[] {
+  return rows.map((row): Member => ({
+    ...row,
+    profiles: profileMap.get(row.user_id) ?? null
+  }));
+}
+
+function parseInvitation(record: object): Invitation | null {
+  if (!('id' in record) || typeof record.id !== 'string') return null;
+  if (!('email' in record) || typeof record.email !== 'string') return null;
+  if (!('role' in record) || typeof record.role !== 'string') return null;
+  if (!('status' in record) || typeof record.status !== 'string') return null;
+  if (!('created_at' in record) || typeof record.created_at !== 'string') return null;
+
+  const expiresAt = 'expires_at' in record ? record.expires_at : null;
+
+  return {
+    id: record.id,
+    email: record.email,
+    role: record.role,
+    status: record.status,
+    created_at: record.created_at,
+    expires_at: nullableString(expiresAt)
+  };
+}
+
+function parseAuditItem(record: object): AuditItem | null {
+  if (!('id' in record) || typeof record.id !== 'string') return null;
+  if (!('action' in record) || typeof record.action !== 'string') return null;
+
+  const message = 'message' in record ? record.message : null;
+  const actorName = 'actor_name' in record ? record.actor_name : null;
+  const createdAt = 'created_at' in record ? record.created_at : null;
+
+  return {
+    id: record.id,
+    action: record.action,
+    message: nullableString(message),
+    actor_name: nullableString(actorName),
+    created_at: nullableString(createdAt)
+  };
+}
 
 function formatDate(value: string | null | undefined) {
   if (!value) return 'N/A';
@@ -104,24 +207,19 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
       return;
     }
 
-    const rows = (data || []) as Pick<Member, 'user_id' | 'role' | 'active' | 'created_at'>[];
-    const ids = rows.map((r) => r.user_id);
-    const { data: profiles } = ids.length
-      ? await supabase.from('profiles').select('id, email, full_name, updated_at').in('id', ids)
-      : { data: [] };
-    const profileMap = new Map(
-      (profiles || []).map((p: { id: string; email: string | null; full_name: string | null; updated_at: string | null }) => [
-        p.id,
-        p
-      ])
-    );
+    const rows: MemberRow[] = [];
+    for (const record of data ?? []) {
+      const parsed = parseMemberRow(record);
+      if (parsed) rows.push(parsed);
+    }
 
-    setMembers(
-      rows.map((r) => ({
-        ...r,
-        profiles: profileMap.get(r.user_id) || null
-      }))
-    );
+    const ids = rows.map((row) => row.user_id);
+    const profileRows = ids.length
+      ? (await supabase.from('profiles').select('id, email, full_name, updated_at').in('id', ids)).data
+      : [];
+
+    const profileMap = buildProfileMap(profileRows ?? []);
+    setMembers(buildMembers(rows, profileMap));
 
     if (canViewTeam(org.role)) {
       const { data: inviteRows } = await supabase
@@ -130,7 +228,13 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
         .eq('organization_id', org.organizationId)
         .in('status', ['pending', 'revoked', 'expired'])
         .order('created_at', { ascending: false });
-      setInvitations((inviteRows || []) as Invitation[]);
+
+      const invitations: Invitation[] = [];
+      for (const record of inviteRows ?? []) {
+        const parsed = parseInvitation(record);
+        if (parsed) invitations.push(parsed);
+      }
+      setInvitations(invitations);
     }
 
     if (showAuditHistory) {
@@ -141,7 +245,13 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
         .in('entity_type', ['member', 'invitation', 'organization'])
         .order('created_at', { ascending: false })
         .limit(25);
-      setAuditItems((auditRows || []) as AuditItem[]);
+
+      const audit: AuditItem[] = [];
+      for (const record of auditRows ?? []) {
+        const parsed = parseAuditItem(record);
+        if (parsed) audit.push(parsed);
+      }
+      setAuditItems(audit);
     }
 
     setLoading(false);
