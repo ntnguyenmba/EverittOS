@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
+import { logAuthEvent } from '@/lib/auth-logger';
 import { appUrl } from '@/lib/app-url';
 import { googleCalendarConfigured } from '@/lib/google-calendar-config';
 import { exchangeGoogleAuthCode, fetchGoogleUserEmail } from '@/lib/google-calendar-oauth';
 import { verifyGoogleOAuthState } from '@/lib/google-calendar-oauth-state';
-import { syncOrganizationJobsToGoogleCalendar } from '@/lib/google-calendar-sync';
+import {
+  getGoogleCalendarConnection,
+  isActiveGoogleCalendarConnection,
+  syncOrganizationJobsToGoogleCalendar
+} from '@/lib/google-calendar-sync';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 function integrationsRedirect(params: Record<string, string>) {
   const url = new URL(appUrl('/settings/integrations'));
@@ -79,21 +85,59 @@ export async function GET(request: Request) {
     const googleEmail = await fetchGoogleUserEmail(tokens.access_token);
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-    await admin.from('google_calendar_connections').upsert(
-      {
-        organization_id: org.organizationId,
-        connected_by_user_id: user.id,
-        google_email: googleEmail,
-        access_token: tokens.access_token,
-        refresh_token: refreshToken,
-        token_expires_at: expiresAt,
-        calendar_id: 'primary',
-        sync_enabled: true,
-        last_sync_error: null,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'organization_id' }
-    );
+    const row = {
+      organization_id: org.organizationId,
+      connected_by_user_id: user.id,
+      google_email: googleEmail,
+      access_token: tokens.access_token,
+      refresh_token: refreshToken,
+      token_expires_at: expiresAt,
+      calendar_id: 'primary',
+      sync_enabled: true,
+      last_sync_error: null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: upsertError } = await admin
+      .from('google_calendar_connections')
+      .upsert(row, { onConflict: 'organization_id' });
+
+    if (upsertError) {
+      logAuthEvent('google_calendar_callback', {
+        userId: user.id,
+        organizationId: org.organizationId,
+        connectionFound: false,
+        expiryPresent: Boolean(expiresAt),
+        refreshPresent: Boolean(refreshToken),
+        phase: 'upsert_failed',
+        reason: upsertError.message
+      });
+
+      const { error: retryError } = await admin.from('google_calendar_connections').upsert(
+        { ...row, connected_by_user_id: null },
+        { onConflict: 'organization_id' }
+      );
+
+      if (retryError) {
+        return integrationsRedirect({ error: 'connect_failed', detail: retryError.message.slice(0, 180) });
+      }
+    }
+
+    const saved = await getGoogleCalendarConnection(admin, org.organizationId);
+    const active = isActiveGoogleCalendarConnection(saved);
+
+    logAuthEvent('google_calendar_callback', {
+      userId: user.id,
+      organizationId: org.organizationId,
+      connectionFound: Boolean(saved),
+      expiryPresent: Boolean(saved?.token_expires_at),
+      refreshPresent: Boolean(saved?.refresh_token),
+      phase: active ? 'saved' : 'verify_failed'
+    });
+
+    if (!active) {
+      return integrationsRedirect({ error: 'connect_failed', detail: 'Connection was not saved.' });
+    }
 
     const { data: settings } = await admin
       .from('organization_settings')
@@ -107,9 +151,18 @@ export async function GET(request: Request) {
       settings?.timezone || 'America/New_York'
     );
 
-    return integrationsRedirect({ connected: '1' });
+    return integrationsRedirect({ googleCalendar: 'connected' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Google Calendar connection failed.';
+    logAuthEvent('google_calendar_callback', {
+      userId: user.id,
+      organizationId: org.organizationId,
+      connectionFound: false,
+      expiryPresent: false,
+      refreshPresent: false,
+      phase: 'exception',
+      reason: message.slice(0, 180)
+    });
     return integrationsRedirect({ error: 'connect_failed', detail: message.slice(0, 180) });
   }
 }

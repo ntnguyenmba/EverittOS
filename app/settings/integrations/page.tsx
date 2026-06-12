@@ -32,6 +32,14 @@ const CALLBACK_ERRORS: Record<string, string> = {
   connect_failed: 'Google Calendar connection failed.'
 };
 
+const STATUS_FETCH_INIT: RequestInit = {
+  cache: 'no-store',
+  headers: {
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache'
+  }
+};
+
 function IntegrationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,18 +48,19 @@ function IntegrationsContent() {
   const [status, setStatus] = useState<CalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [successAlert, setSuccessAlert] = useState('');
   const [error, setError] = useState('');
 
   const loadStatus = useCallback(async () => {
-    const res = await fetch('/api/integrations/google-calendar/status');
+    const res = await fetch('/api/integrations/google-calendar/status', STATUS_FETCH_INIT);
     if (res.status === 401) {
       router.push('/login?next=/settings/integrations');
-      return;
+      return null;
     }
     const json = (await res.json()) as CalendarStatus;
     setStatus(json);
     setLoading(false);
+    return json;
   }, [router]);
 
   useEffect(() => {
@@ -80,9 +89,14 @@ function IntegrationsContent() {
   }, [loadStatus, router]);
 
   useEffect(() => {
-    if (searchParams.get('connected') === '1') {
-      setMessage('Google Calendar connected. Existing scheduled jobs were synced.');
+    const oauthSuccess = searchParams.get('googleCalendar') === 'connected';
+    const legacySuccess = searchParams.get('connected') === '1';
+
+    if (oauthSuccess || legacySuccess) {
+      setSuccessAlert('Google Calendar connected. Existing scheduled jobs were synced.');
+      void loadStatus();
     }
+
     const errKey = searchParams.get('error');
     if (errKey) {
       const detail = searchParams.get('detail');
@@ -91,12 +105,12 @@ function IntegrationsContent() {
         setError(`${CALLBACK_ERRORS.connect_failed} ${detail}`);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, loadStatus]);
 
   async function disconnect() {
     setBusy(true);
     setError('');
-    setMessage('');
+    setSuccessAlert('');
     const res = await fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' });
     setBusy(false);
     if (!res.ok) {
@@ -104,14 +118,14 @@ function IntegrationsContent() {
       setError(json.error || 'Unable to disconnect.');
       return;
     }
-    setMessage('Google Calendar disconnected.');
+    setSuccessAlert('Google Calendar disconnected.');
     await loadStatus();
   }
 
   async function syncNow() {
     setBusy(true);
     setError('');
-    setMessage('');
+    setSuccessAlert('');
     const res = await fetch('/api/integrations/google-calendar/sync', { method: 'POST' });
     const json = await res.json();
     setBusy(false);
@@ -119,9 +133,11 @@ function IntegrationsContent() {
       setError(json.error || 'Sync failed.');
       return;
     }
-    setMessage(`Synced ${json.synced} job(s) to Google Calendar.${json.failed ? ` ${json.failed} failed.` : ''}`);
+    setSuccessAlert(`Synced ${json.synced} job(s) to Google Calendar.${json.failed ? ` ${json.failed} failed.` : ''}`);
     await loadStatus();
   }
+
+  const showConnected = Boolean(status?.connected);
 
   if (loading) {
     return (
@@ -143,7 +159,7 @@ function IntegrationsContent() {
 
   return (
     <SettingsShell plan={plan} role={role} title="Integrations" description="Connect external tools to EverittOS.">
-      {message ? <p className="auth-message auth-message-success">{message}</p> : null}
+      {successAlert ? <p className="auth-message auth-message-success">{successAlert}</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       <div className="settings-card">
@@ -156,9 +172,9 @@ function IntegrationsContent() {
         <p style={{ marginTop: 12 }}>
           Status:{' '}
           <strong>
-            {!status?.configured ? 'Configuration missing' : status.connected ? 'Connected' : 'Not connected'}
+            {!status?.configured ? 'Configuration missing' : showConnected ? 'Connected' : 'Not connected'}
           </strong>
-          {status?.connected && status.googleEmail ? ` (${status.googleEmail})` : ''}
+          {showConnected && status?.googleEmail ? ` (${status.googleEmail})` : ''}
         </p>
 
         {!status?.configured ? (
@@ -171,13 +187,13 @@ function IntegrationsContent() {
 
         {status?.configured ? (
           <>
-            {status.connected && status.lastSyncAt ? (
+            {showConnected && status.lastSyncAt ? (
               <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
             ) : null}
             {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
 
             <div className="settings-actions" style={{ marginTop: 16 }}>
-              {!status.connected ? (
+              {!showConnected ? (
                 <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
                   Connect Google Calendar
                 </a>

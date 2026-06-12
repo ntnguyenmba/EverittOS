@@ -121,16 +121,28 @@ async function googleCalendarRequest(
   });
 }
 
+export function isActiveGoogleCalendarConnection(
+  connection: GoogleCalendarConnectionRow | null | undefined
+): connection is GoogleCalendarConnectionRow {
+  if (!connection) return false;
+  if (!connection.sync_enabled) return false;
+  if (!connection.refresh_token?.trim()) return false;
+  if (!connection.access_token?.trim()) return false;
+  if (!connection.token_expires_at) return false;
+  return true;
+}
+
 export async function getGoogleCalendarConnection(
   admin: SupabaseClient,
   organizationId: string
 ): Promise<GoogleCalendarConnectionRow | null> {
-  const { data } = await admin
+  const { data, error } = await admin
     .from('google_calendar_connections')
     .select('*')
     .eq('organization_id', organizationId)
     .maybeSingle();
 
+  if (error) return null;
   return (data as GoogleCalendarConnectionRow | null) || null;
 }
 
