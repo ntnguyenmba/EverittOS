@@ -240,6 +240,8 @@ export type MessageTree = {
     settings: string;
     clientPortal: string;
     contractorPortal: string;
+    sectionTools: string;
+    sectionInsights: string;
   };
   settingsNav: {
     workspace: string;
@@ -407,6 +409,7 @@ export type MessageTree = {
     portalUnavailable: string;
     portalNotConfigured: string;
     upgradeOptions: string;
+    upgrade: string;
     promo: {
       label: string;
       placeholder: string;

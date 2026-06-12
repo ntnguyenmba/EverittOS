@@ -54,7 +54,7 @@ export function SettingsShell({ plan, title, description, role: roleProp, childr
         </div>
       </div>
 
-      <nav className="settings-subnav" aria-label="Settings">
+      <nav className="settings-subnav settings-subnav-pills" aria-label="Settings">
         {links.map((link) => {
           const active =
             link.href === '/settings'

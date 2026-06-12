@@ -50,8 +50,8 @@ main,
 
 .dashboard-shell {
   background:
-    radial-gradient(circle at top right, rgba(47, 95, 143, 0.06), transparent 34rem),
-    linear-gradient(180deg, #ffffff 0%, #f7f9fb 44%, #eef3f7 100%);
+    radial-gradient(circle at top right, rgba(47, 95, 143, 0.04), transparent 34rem),
+    linear-gradient(180deg, #fcfdfd 0%, #fafbfc 48%, #f5f7fa 100%);
 }
 
 .sidebar {

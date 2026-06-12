@@ -120,26 +120,33 @@ button {
 }
 
 .sidebar {
-  background: rgba(255, 255, 255, 0.96) !important;
+  background: var(--sidebar-bg) !important;
   border-right: 1px solid var(--finish-line) !important;
 }
 
-.sidebar a {
-  min-height: 44px;
-  padding: 11px 12px;
-  border-radius: 12px;
-  font-weight: 650;
-  color: var(--finish-slate);
+.sidebar a.nav-item {
+  min-height: 36px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 9px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
-.sidebar a.active,
-.sidebar a:hover {
-  background: rgba(47, 95, 143, 0.09) !important;
-  color: var(--finish-navy) !important;
+.sidebar a.nav-item:hover {
+  background: var(--hover) !important;
+  color: var(--text) !important;
 }
 
-.sidebar a.active {
-  box-shadow: inset 3px 0 0 var(--finish-blue);
+.sidebar a.nav-item.active {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  font-weight: 600;
+  border-left-color: var(--accent);
+  box-shadow: var(--shadow-nav-active) !important;
+}
+
+.mobile-nav-drawer {
+  background: var(--sidebar-bg) !important;
 }
 
 .sidebar-upgrade,

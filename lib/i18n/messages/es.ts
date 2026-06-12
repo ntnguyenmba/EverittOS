@@ -351,7 +351,9 @@ export const messages: Messages = {
     billing: 'Planes y facturación',
     settings: 'Configuración',
     clientPortal: 'Portal del cliente',
-    contractorPortal: 'Portal del contratista'
+    contractorPortal: 'Portal del contratista',
+    sectionTools: 'Herramientas',
+    sectionInsights: 'Información'
   },
   settingsNav: {
     workspace: 'Espacio de trabajo',
@@ -523,6 +525,7 @@ export const messages: Messages = {
     portalUnavailable: 'El portal de facturación aún no está configurado.',
     portalNotConfigured: 'El portal de facturación aún no está configurado.',
     upgradeOptions: 'Opciones de actualización',
+    upgrade: 'Actualizar',
     promo: {
       label: 'Código promocional',
       placeholder: 'FOUNDING',

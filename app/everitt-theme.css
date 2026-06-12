@@ -3,10 +3,12 @@
    Goal: readable, upscale, consistent, blue-gray, charcoal, no harsh black. */
 
 :root {
-  --bg: #f7f9fb;
+  --bg: #fafbfc;
   --surface: #ffffff;
+  --sidebar-bg: #eff3f7;
   --card: #ffffff;
-  --text: #273747;
+  --text: #25364a;
+  --text-secondary: #5f7186;
   --text-on-dark: #f7f9fb;
   --navy-primary: #243b53;
   --navy-secondary: #334e68;
@@ -16,13 +18,14 @@
   --blue: #2f5f8f;
   --blue-soft: rgba(47, 95, 143, 0.1);
   --slate: #334e68;
-  --charcoal: #273747;
-  --muted: #526577;
-  --cool-grey: #6f8191;
-  --warm-white: #f7f9fb;
-  --soft-white: #f7f9fb;
-  --line: rgba(36, 59, 83, 0.14);
-  --hover: rgba(47, 95, 143, 0.08);
+  --charcoal: #25364a;
+  --muted: #8897a8;
+  --cool-grey: #5f7186;
+  --warm-white: #fafbfc;
+  --soft-white: #fafbfc;
+  --line: rgba(37, 54, 74, 0.12);
+  --hover: rgba(47, 95, 143, 0.07);
+  --shadow-nav-active: 0 1px 3px rgba(37, 54, 74, 0.08), 0 1px 2px rgba(37, 54, 74, 0.04);
   --success: #3f6f5a;
   --success-soft: rgba(63, 111, 90, 0.12);
   --warning: #8a6632;
@@ -128,10 +131,14 @@ small,
 }
 
 .nav,
-.dashboard-shell-mobile,
-.sidebar {
+.dashboard-shell-mobile {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(18px);
+  border-color: var(--line);
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
   border-color: var(--line);
 }
 
@@ -149,22 +156,35 @@ small,
 }
 
 .nav-links,
-.sidebar a,
-.settings-subnav a,
-.mobile-nav-panel a {
-  color: #526577;
+.settings-subnav:not(.settings-subnav-pills) a,
+.mobile-nav-panel a:not(.nav-item) {
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .nav-links a:hover,
-.sidebar a:hover,
-.sidebar a.active,
-.settings-subnav a:hover,
-.settings-subnav a.active,
-.mobile-nav-panel a:hover,
-.mobile-nav-panel a.active {
-  color: var(--navy-primary);
+.settings-subnav:not(.settings-subnav-pills) a:hover,
+.settings-subnav:not(.settings-subnav-pills) a.active,
+.mobile-nav-panel a:not(.nav-item):hover,
+.mobile-nav-panel a:not(.nav-item).active {
+  color: var(--text);
   background: var(--hover);
+}
+
+.sidebar a.nav-item {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sidebar a.nav-item:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.sidebar a.nav-item.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow-nav-active);
 }
 
 .btn,
@@ -398,14 +418,14 @@ select:focus {
 }
 
 .sidebar {
-  padding: 30px 22px;
+  padding: 18px 14px 16px;
 }
 
-.sidebar a {
-  min-height: 42px;
+.sidebar a.nav-item {
+  min-height: 36px;
   display: flex;
   align-items: center;
-  border-radius: 10px;
+  border-radius: 9px;
 }
 
 .main {

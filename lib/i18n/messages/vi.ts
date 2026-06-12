@@ -350,7 +350,9 @@ export const messages: Messages = {
     billing: 'Gói & thanh toán',
     settings: 'Cài đặt',
     clientPortal: 'Cổng khách hàng',
-    contractorPortal: 'Cổng nhà thầu'
+    contractorPortal: 'Cổng nhà thầu',
+    sectionTools: 'Công cụ',
+    sectionInsights: 'Phân tích'
   },
   settingsNav: {
     workspace: 'Không gian làm việc',
@@ -522,6 +524,7 @@ export const messages: Messages = {
     portalUnavailable: 'Cổng thanh toán chưa được cấu hình.',
     portalNotConfigured: 'Cổng thanh toán chưa được cấu hình.',
     upgradeOptions: 'Tùy chọn nâng cấp',
+    upgrade: 'Nâng cấp',
     promo: {
       label: 'Mã khuyến mãi',
       placeholder: 'FOUNDING',

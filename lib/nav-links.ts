@@ -6,8 +6,12 @@ export type NavLinkDef = {
   flag?: FeatureFlag;
 };
 
+export type NavSectionId = 'primary' | 'tools' | 'insights' | 'settings';
+
 export type NavSectionDef = {
-  id: string;
+  id: NavSectionId;
+  /** When true, renders an uppercase section label above the group. */
+  showSectionLabel?: boolean;
   items: NavLinkDef[];
 };
 
@@ -40,8 +44,8 @@ function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
 /** Grouped sidebar navigation in display order. */
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
   { id: 'primary', items: PRIMARY_NAV },
-  { id: 'tools', items: filterFlagged(TOOLS_NAV) },
-  { id: 'insights', items: INSIGHTS_NAV },
+  { id: 'tools', showSectionLabel: true, items: filterFlagged(TOOLS_NAV) },
+  { id: 'insights', showSectionLabel: true, items: INSIGHTS_NAV },
   { id: 'settings', items: SETTINGS_NAV }
 ];
 

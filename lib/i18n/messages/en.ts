@@ -349,7 +349,9 @@ export const messages: Messages = {
     billing: 'Plans & billing',
     settings: 'Settings',
     clientPortal: 'Client portal',
-    contractorPortal: 'Contractor portal'
+    contractorPortal: 'Contractor portal',
+    sectionTools: 'Tools',
+    sectionInsights: 'Insights'
   },
   settingsNav: {
     workspace: 'Workspace',
@@ -521,6 +523,7 @@ export const messages: Messages = {
     portalUnavailable: 'Billing portal is not configured yet.',
     portalNotConfigured: 'Billing portal is not configured yet.',
     upgradeOptions: 'Upgrade options',
+    upgrade: 'Upgrade',
     promo: {
       label: 'Promo code',
       placeholder: 'FOUNDING',

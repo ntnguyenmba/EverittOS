@@ -1,18 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AppNavItems } from '@/components/app-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
-import {
-  isPaidEverittosPlan,
-  normalizePlan,
-  planFooterLabel,
-  type EverittosPlan
-} from '@/lib/everittos-plans';
+import { SidebarPlanCard } from '@/components/sidebar-plan-card';
+import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling } from '@/lib/roles';
 import { canAccessNavHref } from '@/lib/nav-access';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -77,23 +72,12 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
       </div>
 
       <div className="sidebar-footer">
-        <div className="sidebar-plan-footer">
-          {showBillingLink ? (
-            <Link
-              href="/settings/billing"
-              className={`sidebar-plan-text${pathname.startsWith('/settings/billing') ? ' active' : ''}`}
-            >
-              {planFooterLabel(normalized)}
-            </Link>
-          ) : (
-            <span className="sidebar-plan-text">{planFooterLabel(normalized)}</span>
-          )}
-          {showUpgrade ? (
-            <Link href="/settings/billing" className="sidebar-upgrade-link">
-              Upgrade
-            </Link>
-          ) : null}
-        </div>
+        <SidebarPlanCard
+          plan={normalized}
+          showBillingLink={showBillingLink}
+          showUpgrade={showUpgrade}
+          billingActive={pathname.startsWith('/settings/billing')}
+        />
         <div className="sidebar-footer-actions">
           <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
           <button className="btn btn-sm sidebar-logout" type="button" onClick={logout}>
