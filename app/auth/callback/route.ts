@@ -100,8 +100,7 @@ export async function GET(request: Request) {
     const login = authRedirectUrl(origin, '/login', {
       error: bootstrap.message,
       error_code: bootstrap.code,
-      reason: 'profile_setup',
-      detail: bootstrap.details
+      reason: 'profile_setup'
     });
     return redirect(login);
   }

@@ -38,7 +38,11 @@ const ALWAYS_LOG = new Set([
   'profile_bootstrap_failed',
   'org_bootstrap_failed',
   'membership_bootstrap_failed',
-  'org_settings_bootstrap_failed'
+  'org_settings_bootstrap_failed',
+  'bootstrap_step_ok',
+  'bootstrap_step_failed',
+  'workspace_bootstrap_retry',
+  'workspace_bootstrap_failed'
 ]);
 
 /** Console-safe auth logging. Critical failures always log; verbose logs are development-only. */

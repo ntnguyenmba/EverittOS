@@ -6,7 +6,7 @@ import { Suspense, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { PasswordField } from '@/components/auth/password-field';
-import { authApiFetch, LOGIN_API_PATH } from '@/lib/auth-fetch';
+import { authApiFetch, LOGIN_API_PATH, SETUP_API_PATH } from '@/lib/auth-fetch';
 import { logAuthDebug } from '@/lib/auth-debug';
 import { mapAccessError, mapAuthError } from '@/lib/auth-errors';
 import { parseFetchFailure, parseLoginApiResponse, type LoginClientError } from '@/lib/auth-request-error';
@@ -93,6 +93,23 @@ function LoginForm() {
       const parsed = await parseLoginApiResponse(response, LOGIN_API_PATH, url, method);
 
       if (!parsed.ok) {
+        const setupRequired = Boolean(parsed.json?.setupRequired);
+        const retryable = Boolean(parsed.json?.retryable);
+
+        if (setupRequired && retryable) {
+          try {
+            const setup = await authApiFetch(SETUP_API_PATH, { method: 'POST' });
+            const setupParsed = await parseLoginApiResponse(setup.response, SETUP_API_PATH, setup.url, setup.method);
+            if (setupParsed.ok) {
+              const redirectTo = (setupParsed.json.redirectTo as string) || next;
+              window.location.assign(redirectTo);
+              return;
+            }
+          } catch {
+            /* fall through to login error */
+          }
+        }
+
         showError(parsed.error);
         setLoading(false);
         return;

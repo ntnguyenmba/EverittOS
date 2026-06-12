@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
+import { logAuthEvent } from '@/lib/auth-logger';
+import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
 import { sanitizeErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
@@ -18,27 +18,39 @@ export async function POST() {
       return json({ error: 'Sign in required.', code: 'unauthorized' }, { status: 401 });
     }
 
-    const bootstrap = await ensureUserWorkspace(
+    let bootstrap = await ensureUserWorkspace(
       user.id,
       user.email || '',
       user.user_metadata || undefined,
       supabase
     );
 
+    if (!bootstrap.ok && isRetryableBootstrapCode(bootstrap.code)) {
+      logAuthEvent('workspace_bootstrap_retry', { userId: user.id, code: bootstrap.code, route: 'setup' });
+      bootstrap = await ensureUserWorkspace(
+        user.id,
+        user.email || '',
+        user.user_metadata || undefined,
+        supabase
+      );
+    }
+
     if (!bootstrap.ok) {
+      logAuthEvent('workspace_bootstrap_failed', {
+        userId: user.id,
+        code: bootstrap.code,
+        route: 'setup',
+        reason: bootstrap.details || bootstrap.message
+      });
       return json(
-        {
+        sanitizeErrorPayload({
           error: bootstrap.message,
           title: 'Workspace setup required',
-          details: bootstrap.details,
           code: bootstrap.code,
-          setupRequired: true,
-          diagnostics: {
-            profile: bootstrap.profileSnapshot ?? null,
-            hasMembership: bootstrap.hasMembership ?? false
-          }
-        },
-        { status: 409 }
+          setupRequired: isRetryableBootstrapCode(bootstrap.code),
+          retryable: isRetryableBootstrapCode(bootstrap.code)
+        }),
+        { status: bootstrap.code === 'bootstrap_unavailable' ? 503 : 409 }
       );
     }
 

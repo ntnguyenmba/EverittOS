@@ -122,7 +122,10 @@ export async function parseLoginApiResponse(
   path: string,
   requestedUrl: string,
   method = 'POST'
-): Promise<{ ok: true; json: Record<string, unknown> } | { ok: false; error: LoginClientError }> {
+): Promise<
+  | { ok: true; json: Record<string, unknown> }
+  | { ok: false; error: LoginClientError; json: Record<string, unknown> }
+> {
   const httpStatus = res.status;
   const httpStatusText = res.statusText;
   let responseText = '';
@@ -132,6 +135,7 @@ export async function parseLoginApiResponse(
   } catch (err) {
     return {
       ok: false,
+      json: {},
       error: buildLoginClientError({
         title: 'Empty API response',
         message: 'The sign-in endpoint returned no readable response body.',
@@ -155,6 +159,7 @@ export async function parseLoginApiResponse(
     } catch {
       return {
         ok: false,
+        json: {},
         error: buildLoginClientError({
           title: 'Invalid API response',
           message: 'The sign-in endpoint returned a non-JSON response (often an HTML error page from a server crash).',
@@ -190,6 +195,7 @@ export async function parseLoginApiResponse(
 
   return {
     ok: false,
+    json,
     error: buildLoginClientError({
       title: (json.title as string) || mapped.title || (json.setupRequired ? 'Workspace setup required' : 'Sign in failed'),
       message: userMessage,

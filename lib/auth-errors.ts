@@ -8,7 +8,7 @@ type AuthErrorResult = {
 const FRIENDLY: Record<string, AuthErrorResult> = {
   invalid_credentials: {
     title: 'Sign in failed',
-    message: 'The email or password is incorrect. Check both fields and try again.',
+    message: 'The email or password is incorrect.',
     details: 'Supabase returned invalid login credentials.',
     code: 'invalid_credentials'
   },
@@ -161,7 +161,8 @@ export function mapAccessError(code: string | null | undefined): AuthErrorResult
     },
     profile_setup: {
       title: 'Workspace setup required',
-      message: 'Your account exists in Supabase Auth but EverittOS could not finish workspace setup. Try signing in again or contact support.',
+      message:
+        'Your account was created, but EverittOS could not finish workspace setup. Sign in again to retry, or contact support if this continues.',
       details: 'Profile or organization bootstrap failed on the server.'
     },
     schema: {

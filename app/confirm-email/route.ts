@@ -3,7 +3,7 @@ import { mapAuthError } from '@/lib/auth-errors';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { safeNextPath } from '@/lib/app-url';
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal-versions';
-import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
+import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
@@ -83,7 +83,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined, supabase);
+  let bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined, supabase);
+
+  if (!bootstrap.ok && isRetryableBootstrapCode(bootstrap.code)) {
+    logAuthEvent('workspace_bootstrap_retry', { userId: user.id, code: bootstrap.code, route: 'confirm_email' });
+    bootstrap = await ensureUserWorkspace(user.id, user.email || '', user.user_metadata || undefined, supabase);
+  }
 
   if (!bootstrap.ok) {
     logAuthEvent('confirm_email_bootstrap_failed', {
@@ -96,8 +101,7 @@ export async function GET(request: Request) {
       redirectWithParams(origin, '/login', {
         error: bootstrap.message,
         error_code: bootstrap.code,
-        reason: 'profile_setup',
-        detail: bootstrap.details
+        reason: 'profile_setup'
       })
     );
   }

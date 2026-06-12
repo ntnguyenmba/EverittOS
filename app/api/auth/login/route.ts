@@ -9,7 +9,7 @@ import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
-import { ensureUserWorkspace } from '@/lib/profile-bootstrap-server';
+import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
@@ -199,10 +199,19 @@ export async function POST(request: Request) {
     }
 
     logAuthStep(ROUTE, 'workspace_bootstrap', { userId: user.id });
-    const bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
+    let bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
+
+    if (!bootstrap.ok && isRetryableBootstrapCode(bootstrap.code)) {
+      logAuthEvent('workspace_bootstrap_retry', { userId: user.id, code: bootstrap.code });
+      bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
+    }
 
     if (!bootstrap.ok) {
-      await supabase.auth.signOut();
+      const keepSession = isRetryableBootstrapCode(bootstrap.code);
+      if (!keepSession) {
+        await supabase.auth.signOut();
+      }
+
       const bootstrapTitle =
         bootstrap.code === 'schema_mismatch'
           ? 'Database schema out of date'
@@ -210,18 +219,24 @@ export async function POST(request: Request) {
             ? 'Workspace setup unavailable'
             : 'Workspace setup required';
 
+      logAuthEvent('workspace_bootstrap_failed', {
+        userId: user.id,
+        code: bootstrap.code,
+        retryable: keepSession ? 1 : 0,
+        reason: bootstrap.details || bootstrap.message
+      });
+
       return json(
         secureLoginPayload({
-          error: bootstrap.details || bootstrap.message,
+          error: bootstrap.message,
           title: bootstrapTitle,
-          details: bootstrap.details,
           code: bootstrap.code,
-          supabaseMessage: bootstrap.details || bootstrap.message,
-          setupRequired: bootstrap.code !== 'schema_mismatch',
+          setupRequired: keepSession || bootstrap.code === 'bootstrap_unavailable',
+          retryable: keepSession,
           diagnostics: workspaceDiagnostics({
             authStep: 'workspace_bootstrap',
             userId: user.id,
-            sessionVerified: true,
+            sessionVerified: keepSession,
             profile: bootstrap.profileSnapshot ?? null,
             hasMembership: bootstrap.hasMembership,
             profileLookupRan: true,
