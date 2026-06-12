@@ -1,14 +1,164 @@
-/* EverittOS editorial fixes. This file is intentionally small so the build import resolves. */
+/* EverittOS editorial fixes. Loaded last. */
+
+:root {
+  --field-bg: #ffffff;
+  --field-border: rgba(36, 59, 83, 0.16);
+  --field-focus: rgba(47, 95, 143, 0.42);
+}
 
 input,
 textarea,
-select {
+select,
+.input {
   min-height: 50px;
   border-radius: 13px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  color: var(--charcoal);
+  padding: 13px 15px;
+  box-shadow: 0 8px 18px rgba(36, 59, 83, 0.045);
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.input:focus {
+  border-color: var(--field-focus);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(47, 95, 143, 0.1);
+}
+
+select {
+  padding-right: 42px;
+}
+
+label,
+.auth-field label,
+.form-label,
+.field-label {
+  color: var(--slate);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.auth-form {
+  gap: 18px;
+}
+
+.auth-password-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.auth-password-row input,
+.auth-password-row .input {
+  width: 100%;
+  min-width: 0;
+}
+
+.auth-password-toggle,
+button.auth-password-toggle {
+  width: auto !important;
+  min-width: 76px;
+  min-height: 50px;
+  padding: 0 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.btn,
+button {
+  border-radius: 999px;
 }
 
 .mobile-nav-panel,
 .mobile-menu-panel,
-.more-menu-panel {
+.more-menu-panel,
+[data-mobile-menu],
+[data-more-menu] {
+  position: fixed !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  top: auto !important;
   z-index: 9999 !important;
+  max-height: min(76vh, 620px) !important;
+  overflow-y: auto !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(36, 59, 83, 0.16) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 28px 80px rgba(36, 59, 83, 0.28) !important;
+  backdrop-filter: blur(22px) !important;
+}
+
+.mobile-nav-overlay,
+.mobile-menu-overlay,
+.more-menu-overlay,
+[data-mobile-menu-overlay],
+[data-more-menu-overlay] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  background: rgba(36, 59, 83, 0.28) !important;
+}
+
+.bottom-nav,
+.mobile-bottom-nav,
+.app-bottom-nav,
+nav[aria-label='Mobile navigation'],
+nav[aria-label='Bottom navigation'] {
+  z-index: 9000 !important;
+}
+
+.mobile-nav-panel a,
+.mobile-menu-panel a,
+.more-menu-panel a,
+[data-mobile-menu] a,
+[data-more-menu] a {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 50px !important;
+  padding: 12px 14px !important;
+  color: var(--slate) !important;
+  border-radius: 14px !important;
+}
+
+@media (max-width: 720px) {
+  input,
+  textarea,
+  select,
+  .input {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .auth-password-row {
+    grid-template-columns: minmax(0, 1fr) 78px;
+    gap: 8px;
+  }
+
+  .auth-password-toggle,
+  button.auth-password-toggle {
+    min-width: 78px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .mobile-nav-panel,
+  .mobile-menu-panel,
+  .more-menu-panel,
+  [data-mobile-menu],
+  [data-more-menu] {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    max-height: min(78vh, 640px) !important;
+  }
 }
