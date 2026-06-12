@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
-import { AskEveritt } from '@/components/ask-everitt';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
 import { useTranslation } from '@/components/locale-provider';
+import { PageHeader } from '@/components/page-header';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
@@ -18,6 +18,7 @@ import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { hasTeamManagement, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import type { Locale } from '@/lib/i18n/config';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,8 @@ type Job = {
   status: string | null;
   start_date: string | null;
   due_date: string | null;
+  assigned_to: string | null;
+  completed_at: string | null;
 };
 
 type ActivityItem = {
@@ -40,8 +43,36 @@ type ActivityItem = {
   actor_name: string | null;
 };
 
+const LOCALE_TAGS: Record<Locale, string> = {
+  en: 'en-US',
+  es: 'es',
+  vi: 'vi-VN'
+};
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function monthStartIso(): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function weekAgoIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function formatMoney(amount: number, locale: Locale): string {
+  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(amount);
 }
 
 function DashboardAccessNotice() {
@@ -55,14 +86,6 @@ function DashboardAccessNotice() {
   );
 }
 
-const PRIMARY_ACTIONS = [
-  { key: 'newJob', href: '#new-job', primary: true },
-  { key: 'schedule', href: '/schedule' },
-  { key: 'customers', href: '/customers' },
-  { key: 'workers', href: '/workers', minPlan: 'business' as const },
-  { key: 'billing', href: '/settings/billing' }
-] as const;
-
 const QUICK_LINKS = [
   { key: 'jobs', href: '/jobs' },
   { key: 'notifications', href: '/notifications' },
@@ -72,18 +95,19 @@ const QUICK_LINKS = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [displayName, setDisplayName] = useState('');
   const [unpaidInvoices, setUnpaidInvoices] = useState(0);
-  const [reportsCount, setReportsCount] = useState(0);
-  const [teamMembersCount, setTeamMembersCount] = useState(0);
+  const [revenueMonth, setRevenueMonth] = useState(0);
+  const [pendingProposals, setPendingProposals] = useState(0);
   const [usageCounts, setUsageCounts] = useState<UsageCounts | null>(null);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [leadCount, setLeadCount] = useState(0);
   const [clientCount, setClientCount] = useState(0);
+  const [newCustomersMonth, setNewCustomersMonth] = useState(0);
   const [todayTasks, setTodayTasks] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNewJob, setShowNewJob] = useState(false);
@@ -121,7 +145,7 @@ export default function DashboardPage() {
 
     let jobsQuery = supabase
       .from('jobs')
-      .select('id, title, customer_name, status, start_date, due_date')
+      .select('id, title, customer_name, status, start_date, due_date, assigned_to, completed_at')
       .order('created_at', { ascending: false });
     if (org?.organizationId) {
       jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
@@ -129,7 +153,7 @@ export default function DashboardPage() {
       jobsQuery = jobsQuery.eq('user_id', user.id);
     }
 
-    const invoiceQuery = org?.organizationId
+    const invoiceOpenQuery = org?.organizationId
       ? supabase
           .from('invoices')
           .select('id', { count: 'exact', head: true })
@@ -138,20 +162,22 @@ export default function DashboardPage() {
           .neq('status', 'cancelled')
       : Promise.resolve({ count: 0, error: null });
 
-    const reportsQuery = org?.organizationId
+    const invoicePaidQuery = org?.organizationId
       ? supabase
-          .from('job_reports')
-          .select('id', { count: 'exact', head: true })
+          .from('invoices')
+          .select('amount')
           .eq('organization_id', org.organizationId)
-      : supabase.from('job_reports').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+          .eq('status', 'paid')
+          .gte('created_at', monthStartIso())
+      : Promise.resolve({ data: [], error: null });
 
-    const teamQuery = org?.organizationId
+    const proposalsQuery = org?.organizationId
       ? supabase
-          .from('organization_members')
+          .from('proposals')
           .select('id', { count: 'exact', head: true })
           .eq('organization_id', org.organizationId)
-          .eq('active', true)
-      : Promise.resolve({ count: 1, error: null });
+          .in('status', ['draft', 'sent', 'pending', 'open'])
+      : Promise.resolve({ count: 0, error: null });
 
     const activityQuery =
       org?.organizationId && limitsForPlan(userPlan).activityLog
@@ -164,8 +190,8 @@ export default function DashboardPage() {
         : Promise.resolve({ data: [], error: null });
 
     const customersQuery = org?.organizationId
-      ? supabase.from('customers').select('id, pipeline_stage').eq('organization_id', org.organizationId)
-      : supabase.from('customers').select('id, pipeline_stage').eq('user_id', user.id);
+      ? supabase.from('customers').select('id, pipeline_stage, created_at').eq('organization_id', org.organizationId)
+      : supabase.from('customers').select('id, pipeline_stage, created_at').eq('user_id', user.id);
 
     const tasksQuery = org?.organizationId
       ? supabase
@@ -182,19 +208,29 @@ export default function DashboardPage() {
       .eq('user_id', user.id)
       .is('read_at', null);
 
-    const [jobsRes, orgIsDemo, invoiceRes, reportsRes, teamRes, activityRes, counts, customersRes, tasksRes, notifRes] =
-      await Promise.all([
-        jobsQuery,
-        fetchOrganizationIsDemo(supabase, org?.organizationId),
-        invoiceQuery,
-        reportsQuery,
-        teamQuery,
-        activityQuery,
-        fetchUsageCounts(user.id, org?.organizationId),
-        customersQuery,
-        tasksQuery,
-        notificationsQuery
-      ]);
+    const [
+      jobsRes,
+      orgIsDemo,
+      invoiceOpenRes,
+      invoicePaidRes,
+      proposalsRes,
+      activityRes,
+      counts,
+      customersRes,
+      tasksRes,
+      notifRes
+    ] = await Promise.all([
+      jobsQuery,
+      fetchOrganizationIsDemo(supabase, org?.organizationId),
+      invoiceOpenQuery,
+      invoicePaidQuery,
+      proposalsQuery,
+      activityQuery,
+      fetchUsageCounts(user.id, org?.organizationId),
+      customersQuery,
+      tasksQuery,
+      notificationsQuery
+    ]);
 
     setLoading(false);
 
@@ -204,20 +240,30 @@ export default function DashboardPage() {
     }
 
     setJobs(filterDemoSeedJobs(jobsRes.data || [], orgIsDemo));
-    if (!invoiceRes.error) setUnpaidInvoices(invoiceRes.count || 0);
-    if (!reportsRes.error) setReportsCount(reportsRes.count || 0);
-    if (!teamRes.error) setTeamMembersCount(teamRes.count || 0);
+    if (!invoiceOpenRes.error) setUnpaidInvoices(invoiceOpenRes.count || 0);
+    if (!invoicePaidRes.error && invoicePaidRes.data) {
+      const total = (invoicePaidRes.data as { amount: number | null }[]).reduce(
+        (sum, row) => sum + (Number(row.amount) || 0),
+        0
+      );
+      setRevenueMonth(total);
+    }
+    if (!proposalsRes.error) setPendingProposals(proposalsRes.count || 0);
     if (!activityRes.error) setRecentActivity(activityRes.data || []);
     setUsageCounts(counts);
+
+    const monthStart = monthStartIso();
     if (!customersRes.error && customersRes.data) {
-      const rows = customersRes.data as { id: string; pipeline_stage?: string | null }[];
+      const rows = customersRes.data as { id: string; pipeline_stage?: string | null; created_at?: string | null }[];
       setLeadCount(rows.filter((c) => c.pipeline_stage === 'lead' || c.pipeline_stage === 'qualified').length);
       setClientCount(
         rows.filter((c) => !c.pipeline_stage || c.pipeline_stage === 'won' || c.pipeline_stage === 'contact').length
       );
+      setNewCustomersMonth(rows.filter((c) => c.created_at && c.created_at >= monthStart).length);
     } else {
       setClientCount(counts.customers);
     }
+
     if (!tasksRes.error) setTodayTasks(tasksRes.count || 0);
     if (!notifRes.error) setUnreadNotifications(notifRes.count || 0);
 
@@ -232,15 +278,24 @@ export default function DashboardPage() {
 
   const today = todayIso();
   const showActivity = limitsForPlan(plan).activityLog;
-  const showTeamMetric = hasTeamManagement(plan);
+  const weekAgo = weekAgoIso();
 
-  const openJobs = useMemo(
-    () => jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled').length,
-    [jobs]
+  const completedThisWeek = useMemo(
+    () =>
+      jobs.filter(
+        (j) =>
+          j.status === 'completed' &&
+          j.completed_at &&
+          new Date(j.completed_at).getTime() >= new Date(weekAgo).getTime()
+      ).length,
+    [jobs, weekAgo]
   );
 
-  const completedJobs = useMemo(
-    () => jobs.filter((j) => j.status === 'completed').length,
+  const unassignedJobs = useMemo(
+    () =>
+      jobs.filter(
+        (j) => j.status !== 'completed' && j.status !== 'cancelled' && !j.assigned_to
+      ).length,
     [jobs]
   );
 
@@ -260,18 +315,16 @@ export default function DashboardPage() {
   const todayJobs = useMemo(
     () =>
       jobs
-        .filter(
-          (j) => j.status !== 'cancelled' && (j.start_date === today || j.due_date === today)
-        )
-        .slice(0, 4),
+        .filter((j) => j.status !== 'cancelled' && (j.start_date === today || j.due_date === today))
+        .slice(0, 5),
     [jobs, today]
   );
 
-  function actionHref(action: (typeof PRIMARY_ACTIONS)[number]): string {
-    if ('minPlan' in action && action.minPlan && !hasTeamManagement(plan)) {
-      return billingUpgradeHref(action.minPlan, t(`dashboard.actions.${action.key}`));
+  function workersHref(): string {
+    if (!hasTeamManagement(plan)) {
+      return billingUpgradeHref('business', t('dashboard.quickActions.addWorker'));
     }
-    return action.href;
+    return '/workers';
   }
 
   function quickLinkHref(link: (typeof QUICK_LINKS)[number]): string {
@@ -280,6 +333,18 @@ export default function DashboardPage() {
     }
     return link.href;
   }
+
+  const attentionItems = [
+    { key: 'overdueInvoices', count: unpaidInvoices, href: '/settings/billing' },
+    { key: 'unassignedJobs', count: unassignedJobs, href: '/jobs' },
+    { key: 'pendingEstimates', count: pendingProposals, href: '/proposals' },
+    { key: 'followUpCustomers', count: leadCount, href: '/customers' },
+    { key: 'upcomingAppointments', count: dueInSevenDays, href: '/schedule' }
+  ].filter((item) => item.count > 0);
+
+  const welcomeSubtitle = displayName
+    ? t('dashboard.welcomeName', { name: displayName })
+    : t('dashboard.subtitle');
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -293,195 +358,187 @@ export default function DashboardPage() {
         </p>
       ) : null}
 
-      <header className="dashboard-hero">
-        <div>
-          <h1 className="dashboard-hero-title">Command Center</h1>
-          <p className="page-subtitle">
-            {displayName ? t('dashboard.welcomeName', { name: displayName }) : t('dashboard.welcome')}
-          </p>
-        </div>
-        <button type="button" className="btn btn-primary dashboard-hero-cta" onClick={() => setShowNewJob((v) => !v)}>
-          {t('dashboard.newJob')}
-        </button>
-      </header>
+      <div className="today-page">
+        <PageHeader
+          title={t('dashboard.title')}
+          subtitle={welcomeSubtitle}
+          action={
+            <button type="button" className="btn btn-primary" onClick={() => setShowNewJob((v) => !v)}>
+              {t('dashboard.newJob')}
+            </button>
+          }
+        />
 
-      <section className="command-kpi-row" aria-label="Key metrics">
-        <div className="command-kpi-card">
-          <span>Revenue due</span>
-          <strong>{loading ? '…' : unpaidInvoices}</strong>
-        </div>
-        <div className="command-kpi-card">
-          <span>Leads</span>
-          <strong>{loading ? '…' : leadCount}</strong>
-        </div>
-        <div className="command-kpi-card">
-          <span>Active clients</span>
-          <strong>{loading ? '…' : clientCount}</strong>
-        </div>
-        <div className="command-kpi-card">
-          <span>Open jobs</span>
-          <strong>{loading ? '…' : openJobs}</strong>
-        </div>
-        <div className="command-kpi-card">
-          <span>Due in 7 days</span>
-          <strong>{loading ? '…' : dueInSevenDays}</strong>
-        </div>
-        <div className="command-kpi-card">
-          <span>Team activity</span>
-          <strong>{loading ? '…' : recentActivity.length}</strong>
-        </div>
-      </section>
-
-      <div className="command-center-grid">
-        <div className="command-center-main">
-          <AskEveritt plan={plan} embedded />
-
-          <nav className="command-quick-actions" aria-label="Quick actions">
-            <Link href="/customers" className="command-quick-btn">Create lead</Link>
-            <Link href="/customers" className="command-quick-btn">Create contact</Link>
-            <button type="button" className="command-quick-btn" onClick={() => setShowNewJob(true)}>Create job</button>
-            <Link href="/proposals" className="command-quick-btn">Create proposal</Link>
-            <Link href="/settings/billing" className="command-quick-btn">Create invoice</Link>
-            <Link href="/knowledge" className="command-quick-btn">Upload file</Link>
-            <Link href="/projects" className="command-quick-btn">Create task</Link>
-            <Link href="/schedule" className="command-quick-btn">Schedule</Link>
-          </nav>
-
-      {showNewJob ? (
-        <section id="new-job" className="card dashboard-new-job-panel">
-          <JobCreator
-            onJobCreated={() => {
-              setShowNewJob(false);
-              void loadDashboard();
-            }}
-          />
+        <section aria-label={t('ux.progressTitle')}>
+          <h2 className="section-heading">{t('ux.progressTitle')}</h2>
+          <div className="progress-cards">
+            <div className="progress-card">
+              <span>{t('dashboard.progress.completedWeek')}</span>
+              <strong>{loading ? '…' : completedThisWeek}</strong>
+            </div>
+            <div className="progress-card">
+              <span>{t('dashboard.progress.revenueMonth')}</span>
+              <strong>{loading ? '…' : formatMoney(revenueMonth, locale)}</strong>
+            </div>
+            <div className="progress-card">
+              <span>{t('dashboard.progress.newCustomersMonth')}</span>
+              <strong>{loading ? '…' : newCustomersMonth}</strong>
+            </div>
+            <div className="progress-card">
+              <span>{t('dashboard.progress.openInvoices')}</span>
+              <strong>{loading ? '…' : unpaidInvoices}</strong>
+            </div>
+            <div className="progress-card">
+              <span>{t('dashboard.progress.scheduledUpcoming')}</span>
+              <strong>{loading ? '…' : dueInSevenDays}</strong>
+            </div>
+          </div>
         </section>
-      ) : null}
 
-      <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
-        <div className="dashboard-section-head">
-          <h2>{t('dashboard.todaysSchedule')}</h2>
-          <Link href="/schedule" className="dashboard-section-link">
-            {t('dashboard.viewSchedule')}
-          </Link>
-        </div>
-        {loading ? <p className="loading-state" role="status">…</p> : null}
-        {!loading && todayJobs.length === 0 ? (
-          <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
-        ) : null}
-        {!loading &&
-          todayJobs.map((job) => (
-            <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
-              <span>{job.title}</span>
-              <span className="muted">{job.due_date || job.start_date}</span>
-            </Link>
-          ))}
-      </section>
-
-      <nav className="dashboard-actions" aria-label={t('dashboard.primaryActions')}>
-        {PRIMARY_ACTIONS.map((action) =>
-          action.key === 'newJob' ? (
+        <section aria-label={t('dashboard.primaryActions')}>
+          <h2 className="section-heading">{t('dashboard.primaryActions')}</h2>
+          <div className="quick-actions-grid">
             <button
-              key={action.key}
               type="button"
-              className="dashboard-action-tile dashboard-action-tile-primary"
+              className="quick-action-tile quick-action-tile-primary"
               onClick={() => setShowNewJob(true)}
             >
-              {t(`dashboard.actions.${action.key}`)}
+              {t('dashboard.quickActions.createJob')}
             </button>
-          ) : (
-            <Link key={action.key} href={actionHref(action)} className="dashboard-action-tile">
-              {t(`dashboard.actions.${action.key}`)}
+            <Link href="/customers" className="quick-action-tile">
+              {t('dashboard.quickActions.addCustomer')}
             </Link>
-          )
-        )}
-      </nav>
-
-      <section className="dashboard-metrics" aria-label={t('dashboard.metricsLabel')}>
-        <div className="dashboard-metric-card">
-          <span>{t('dashboard.metrics.openJobs')}</span>
-          <strong>{loading ? '…' : openJobs}</strong>
-        </div>
-        <div className="dashboard-metric-card">
-          <span>{t('dashboard.metrics.completedJobs')}</span>
-          <strong>{loading ? '…' : completedJobs}</strong>
-        </div>
-        <div className="dashboard-metric-card">
-          <span>{t('dashboard.metrics.dueInSevenDays')}</span>
-          <strong>{loading ? '…' : dueInSevenDays}</strong>
-        </div>
-        <div className="dashboard-metric-card">
-          <span>{t('dashboard.metrics.reports')}</span>
-          <strong>{loading ? '…' : reportsCount}</strong>
-        </div>
-        {showTeamMetric ? (
-          <div className="dashboard-metric-card">
-            <span>{t('dashboard.metrics.teamMembers')}</span>
-            <strong>{loading ? '…' : teamMembersCount}</strong>
-          </div>
-        ) : null}
-        <div className="dashboard-metric-card">
-          <span>{t('dashboard.metrics.unpaidInvoices')}</span>
-          <strong>{loading ? '…' : unpaidInvoices}</strong>
-        </div>
-      </section>
-
-      {usageCounts ? (
-        <details className="card dashboard-usage-card">
-          <summary className="dashboard-section-head" style={{ cursor: 'pointer', listStyle: 'none' }}>
-            <h2 className="card-title-sm" style={{ margin: 0 }}>
-              {t('dashboard.moreDetails')}
-            </h2>
-          </summary>
-          <UsageDashboard plan={plan} counts={usageCounts} />
-        </details>
-      ) : null}
-
-      {showActivity ? (
-        <section className="card dashboard-metrics-card" aria-label={t('dashboard.recentActivity')}>
-          <div className="dashboard-section-head">
-            <h2 className="card-title-sm">{t('dashboard.recentActivity')}</h2>
-            <Link href="/activity" className="dashboard-section-link">
-              {t('dashboard.viewActivity')}
+            <Link href="/settings/billing" className="quick-action-tile">
+              {t('dashboard.quickActions.sendInvoice')}
+            </Link>
+            <Link href="/schedule" className="quick-action-tile">
+              {t('dashboard.quickActions.scheduleWork')}
+            </Link>
+            <Link href={workersHref()} className="quick-action-tile">
+              {t('dashboard.quickActions.addWorker')}
             </Link>
           </div>
-          <ActivityFeed items={recentActivity} loading={loading} emptyLabel={t('dashboard.activityEmpty')} />
         </section>
-      ) : null}
 
-      <section className="card dashboard-quick-links-card" aria-label={t('dashboard.quickLinksLabel')}>
-        <div className="dashboard-quick-links-row">
-          {QUICK_LINKS.map((link) => (
-            <Link key={link.key} href={quickLinkHref(link)} className="btn btn-sm">
-              {t(`dashboard.quickLinks.${link.key}`)}
+        {attentionItems.length > 0 ? (
+          <section className="card" aria-label={t('ux.attentionNeeded')}>
+            <h2 className="section-heading">{t('ux.attentionNeeded')}</h2>
+            <div className="attention-list">
+              {attentionItems.map((item) => (
+                <Link key={item.key} href={item.href} className="attention-item">
+                  <span>{t(`dashboard.attention.${item.key}`)}</span>
+                  <strong>{loading ? '…' : item.count}</strong>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {showNewJob ? (
+          <section id="new-job" className="card dashboard-new-job-panel">
+            <JobCreator
+              onJobCreated={() => {
+                setShowNewJob(false);
+                void loadDashboard();
+              }}
+            />
+          </section>
+        ) : null}
+
+        <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
+          <div className="dashboard-section-head">
+            <h2>{t('dashboard.todaysSchedule')}</h2>
+            <Link href="/schedule" className="dashboard-section-link">
+              {t('dashboard.viewSchedule')}
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+          {loading ? <p className="loading-state" role="status">…</p> : null}
+          {!loading && todayJobs.length === 0 ? (
+            <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
+          ) : null}
+          {!loading &&
+            todayJobs.map((job) => (
+              <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
+                <span>{job.title}</span>
+                <span className="muted">{job.due_date || job.start_date}</span>
+              </Link>
+            ))}
+        </section>
+
+        <div className="command-center-grid">
+          <div className="command-center-sidebar">
+            <section className="card">
+              <h3 className="card-title-sm">{t('dashboard.sidebar.todayTasks')}</h3>
+              <strong>{loading ? '…' : todayTasks}</strong>
+              <Link href="/projects" className="dashboard-section-link">
+                {t('dashboard.sidebar.viewTasks')}
+              </Link>
+            </section>
+            <section className="card">
+              <h3 className="card-title-sm">{t('dashboard.sidebar.notifications')}</h3>
+              <strong>{loading ? '…' : unreadNotifications}</strong>
+              <Link href="/notifications" className="dashboard-section-link">
+                {t('dashboard.sidebar.openInbox')}
+              </Link>
+            </section>
+            <section className="card">
+              <h3 className="card-title-sm">{t('dashboard.sidebar.upcoming')}</h3>
+              <strong>{loading ? '…' : dueInSevenDays}</strong>
+              <Link href="/schedule" className="dashboard-section-link">
+                {t('dashboard.sidebar.openSchedule')}
+              </Link>
+            </section>
+            <section className="card">
+              <h3 className="card-title-sm">{t('dashboard.sidebar.crmSnapshot')}</h3>
+              <p className="muted">
+                {loading
+                  ? '…'
+                  : t('dashboard.sidebar.leadsClients', { leads: leadCount, clients: clientCount })}
+              </p>
+              <Link href="/customers" className="dashboard-section-link">
+                {t('dashboard.sidebar.openCrm')}
+              </Link>
+            </section>
+          </div>
         </div>
 
-        <aside className="command-center-sidebar">
-          <section className="card">
-            <h3 className="card-title-sm">Today&apos;s tasks</h3>
-            <strong>{loading ? '…' : todayTasks}</strong>
-            <Link href="/projects" className="dashboard-section-link">View tasks</Link>
-          </section>
-          <section className="card">
-            <h3 className="card-title-sm">Notifications</h3>
-            <strong>{loading ? '…' : unreadNotifications}</strong>
-            <Link href="/notifications" className="dashboard-section-link">Open inbox</Link>
-          </section>
-          <section className="card">
-            <h3 className="card-title-sm">Upcoming</h3>
-            <strong>{loading ? '…' : dueInSevenDays}</strong>
-            <Link href="/schedule" className="dashboard-section-link">Open schedule</Link>
-          </section>
-          <section className="card">
-            <h3 className="card-title-sm">CRM snapshot</h3>
-            <p className="muted">{loading ? '…' : `${leadCount} leads · ${clientCount} clients`}</p>
-            <Link href="/customers" className="dashboard-section-link">Open CRM</Link>
-          </section>
-        </aside>
+        <details className="details-advanced">
+          <summary>{t('ux.advancedTools')}</summary>
+          <div className="details-advanced-body">
+            {usageCounts ? (
+              <details className="card dashboard-usage-card">
+                <summary className="dashboard-section-head" style={{ cursor: 'pointer', listStyle: 'none' }}>
+                  <h2 className="card-title-sm" style={{ margin: 0 }}>
+                    {t('dashboard.moreDetails')}
+                  </h2>
+                </summary>
+                <UsageDashboard plan={plan} counts={usageCounts} />
+              </details>
+            ) : null}
+
+            {showActivity ? (
+              <section className="card dashboard-metrics-card" aria-label={t('dashboard.recentActivity')}>
+                <div className="dashboard-section-head">
+                  <h2 className="card-title-sm">{t('dashboard.recentActivity')}</h2>
+                  <Link href="/activity" className="dashboard-section-link">
+                    {t('dashboard.viewActivity')}
+                  </Link>
+                </div>
+                <ActivityFeed items={recentActivity} loading={loading} emptyLabel={t('dashboard.activityEmpty')} />
+              </section>
+            ) : null}
+
+            <section className="card dashboard-quick-links-card" aria-label={t('dashboard.quickLinksLabel')}>
+              <div className="btn-group-responsive">
+                {QUICK_LINKS.map((link) => (
+                  <Link key={link.key} href={quickLinkHref(link)} className="btn btn-sm">
+                    {t(`dashboard.quickLinks.${link.key}`)}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </div>
+        </details>
       </div>
     </AppShell>
   );

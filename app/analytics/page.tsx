@@ -2,6 +2,7 @@
 
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeader } from '@/components/page-header';
 import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -70,10 +71,9 @@ export default function AnalyticsPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <h1>{t('nav.analytics')}</h1>
-      <p className="muted page-subtitle">Usage, adoption, and growth metrics for your organization (last 30 days).</p>
+      <PageHeader title={t('ux.pageTitles.analytics')} subtitle={t('ux.helperAnalytics')} />
 
-      {loading ? <p className="loading-state">Loading analytics…</p> : null}
+      {loading ? <p className="loading-state">{t('common.loading')}</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       {!loading && !error && summary && !hasData ? (

@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
+import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
@@ -15,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function SchedulePage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
@@ -109,13 +112,9 @@ export default function SchedulePage() {
 
   return (
     <AppShell plan={plan}>
-      <h2>Schedule</h2>
-        <p>
-          Calendar, daily, weekly, and upcoming job views.{' '}
-          <Link href="/settings/integrations">Connect Google Calendar</Link> to sync scheduled jobs.
-        </p>
+      <PageHeader title={t('ux.pageTitles.schedule')} subtitle={t('ux.helperSchedule')} />
 
-        {loading && <div className="card">Loading schedule...</div>}
+        {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
         {error && <div className="card">{error}</div>}
         {!loading && !error && jobs.length === 0 && (
           <div className="card" style={{ marginTop: 18 }}>

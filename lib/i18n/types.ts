@@ -14,6 +14,24 @@ export type MessageTree = {
     exploreFeatures: string;
     optional: string;
     language: string;
+    close: string;
+  };
+  ux: {
+    appName: string;
+    mobileNavLabel: string;
+    logOut: string;
+    startPro: string;
+    attentionNeeded: string;
+    progressTitle: string;
+    advancedTools: string;
+    helperSchedule: string;
+    helperAnalytics: string;
+    helperBilling: string;
+    pageTitles: {
+      schedule: string;
+      analytics: string;
+      billing: string;
+    };
   };
   onboarding: {
     progress: string;
@@ -152,8 +170,14 @@ export type MessageTree = {
     signInMethods: string;
   };
   nav: {
+    today: string;
+    more: string;
     commandCenter: string;
     dashboard: string;
+    forms: string;
+    templates: string;
+    reviews: string;
+    leads: string;
     jobs: string;
     crm: string;
     customers: string;
@@ -188,9 +212,43 @@ export type MessageTree = {
     departments: string;
   };
   dashboard: {
+    title: string;
+    subtitle: string;
     welcome: string;
     welcomeName: string;
     newJob: string;
+    quickActions: {
+      createJob: string;
+      addCustomer: string;
+      sendInvoice: string;
+      scheduleWork: string;
+      addWorker: string;
+    };
+    attention: {
+      overdueInvoices: string;
+      unassignedJobs: string;
+      pendingEstimates: string;
+      followUpCustomers: string;
+      upcomingAppointments: string;
+    };
+    progress: {
+      completedWeek: string;
+      revenueMonth: string;
+      newCustomersMonth: string;
+      openInvoices: string;
+      scheduledUpcoming: string;
+    };
+    sidebar: {
+      todayTasks: string;
+      notifications: string;
+      upcoming: string;
+      crmSnapshot: string;
+      viewTasks: string;
+      openInbox: string;
+      openSchedule: string;
+      openCrm: string;
+      leadsClients: string;
+    };
     todaysSchedule: string;
     viewSchedule: string;
     noScheduleToday: string;

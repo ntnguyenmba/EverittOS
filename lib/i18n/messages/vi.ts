@@ -15,7 +15,25 @@ export const messages: Messages = {
     goToDashboard: 'Đến bảng điều khiển',
     exploreFeatures: 'Khám phá tính năng',
     optional: 'Tùy chọn',
-    language: 'Ngôn ngữ'
+    language: 'Ngôn ngữ',
+    close: 'Đóng'
+  },
+  ux: {
+    appName: 'EverittOS',
+    mobileNavLabel: 'Điều hướng chính',
+    logOut: 'Đăng xuất',
+    startPro: 'Bắt đầu Pro',
+    attentionNeeded: 'Cần chú ý',
+    progressTitle: 'Tiến độ của bạn',
+    advancedTools: 'Công cụ khác',
+    helperSchedule: 'Xem lịch và phân công công việc.',
+    helperAnalytics: 'Hiệu suất và xu hướng kinh doanh.',
+    helperBilling: 'Hóa đơn, thanh toán và gói đăng ký.',
+    pageTitles: {
+      schedule: 'Lịch & công việc',
+      analytics: 'Hiệu suất kinh doanh',
+      billing: 'Hóa đơn & thanh toán'
+    }
   },
   onboarding: {
     progress: 'Bước {current} / {total}',
@@ -263,8 +281,14 @@ export const messages: Messages = {
     signInMethods: 'Đăng nhập bằng email, Google hoặc passkey.'
   },
   nav: {
-    commandCenter: 'Trung tâm điều hành',
+    today: 'Hôm nay',
+    more: 'Thêm',
+    commandCenter: 'Hôm nay',
     dashboard: 'Bảng điều khiển',
+    forms: 'Biểu mẫu',
+    templates: 'Mẫu',
+    reviews: 'Đánh giá',
+    leads: 'Khách tiềm năng',
     jobs: 'Công việc',
     crm: 'CRM',
     customers: 'Khách hàng',
@@ -299,9 +323,43 @@ export const messages: Messages = {
     departments: 'Phòng ban'
   },
   dashboard: {
+    title: 'Hôm nay',
+    subtitle: 'Những việc cần làm ngay bây giờ.',
     welcome: 'Chào mừng trở lại',
     welcomeName: 'Chào mừng trở lại, {name}',
     newJob: 'Công việc mới',
+    quickActions: {
+      createJob: 'Tạo việc',
+      addCustomer: 'Thêm khách',
+      sendInvoice: 'Gửi hóa đơn',
+      scheduleWork: 'Lên lịch',
+      addWorker: 'Thêm nhân viên'
+    },
+    attention: {
+      overdueInvoices: 'Hóa đơn chưa trả',
+      unassignedJobs: 'Việc chưa giao',
+      pendingEstimates: 'Báo giá đang mở',
+      followUpCustomers: 'Khách cần theo dõi',
+      upcomingAppointments: 'Lịch hẹn sắp tới'
+    },
+    progress: {
+      completedWeek: 'Hoàn thành tuần này',
+      revenueMonth: 'Đã thu tháng này',
+      newCustomersMonth: 'Khách mới tháng này',
+      openInvoices: 'Hóa đơn mở',
+      scheduledUpcoming: 'Đã lên lịch'
+    },
+    sidebar: {
+      todayTasks: 'Việc hôm nay',
+      notifications: 'Thông báo',
+      upcoming: 'Sắp tới',
+      crmSnapshot: 'Tóm tắt CRM',
+      viewTasks: 'Xem việc',
+      openInbox: 'Mở hộp thư',
+      openSchedule: 'Mở lịch',
+      openCrm: 'Mở CRM',
+      leadsClients: '{leads} khách tiềm năng · {clients} khách'
+    },
     todaysSchedule: 'Lịch hôm nay',
     viewSchedule: 'Lịch',
     noScheduleToday: 'Không có lịch hôm nay',

@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
+import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
@@ -26,6 +28,7 @@ type Job = {
 
 function JobsList() {
   const router = useRouter();
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const customerFilter = searchParams.get('customer');
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -76,17 +79,17 @@ function JobsList() {
 
   return (
     <AppShell plan={plan}>
-        <div className="page-head">
-          <div>
-            <h2>Jobs</h2>
-          </div>
-          <Link className="btn btn-primary" href="/dashboard">
-            New job
-          </Link>
-        </div>
+        <PageHeader
+          title={t('nav.jobs')}
+          action={
+            <Link className="btn btn-primary" href="/dashboard">
+              {t('empty.jobs.action')}
+            </Link>
+          }
+        />
 
-        <div className="card">
-          {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
+        <div className="card table-responsive-wrap">
+          {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
           {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
           {!loading && jobs.length > 0 && (
             <table className="table">

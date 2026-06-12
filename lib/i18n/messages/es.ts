@@ -15,7 +15,25 @@ export const messages: Messages = {
     goToDashboard: 'Ir al panel',
     exploreFeatures: 'Explorar funciones',
     optional: 'Opcional',
-    language: 'Idioma'
+    language: 'Idioma',
+    close: 'Cerrar'
+  },
+  ux: {
+    appName: 'EverittOS',
+    mobileNavLabel: 'Navegación principal',
+    logOut: 'Cerrar sesión',
+    startPro: 'Empezar Pro',
+    attentionNeeded: 'Requiere atención',
+    progressTitle: 'Su progreso',
+    advancedTools: 'Más herramientas',
+    helperSchedule: 'Vea el calendario y asigne trabajo.',
+    helperAnalytics: 'Rendimiento y tendencias de su espacio de trabajo.',
+    helperBilling: 'Facturas, pagos y su suscripción.',
+    pageTitles: {
+      schedule: 'Calendario y trabajo',
+      analytics: 'Rendimiento del negocio',
+      billing: 'Facturas y pagos'
+    }
   },
   onboarding: {
     progress: 'Paso {current} de {total}',
@@ -264,8 +282,14 @@ export const messages: Messages = {
     signInMethods: 'Inicie sesión con correo, Google o llave de acceso.'
   },
   nav: {
-    commandCenter: 'Centro de mando',
+    today: 'Hoy',
+    more: 'Más',
+    commandCenter: 'Hoy',
     dashboard: 'Panel',
+    forms: 'Formularios',
+    templates: 'Plantillas',
+    reviews: 'Reseñas',
+    leads: 'Prospectos',
     jobs: 'Trabajos',
     crm: 'CRM',
     customers: 'Clientes',
@@ -300,9 +324,43 @@ export const messages: Messages = {
     departments: 'Departamentos'
   },
   dashboard: {
+    title: 'Hoy',
+    subtitle: 'Lo que necesita su atención ahora.',
     welcome: 'Bienvenido de nuevo',
     welcomeName: 'Bienvenido de nuevo, {name}',
     newJob: 'Nuevo trabajo',
+    quickActions: {
+      createJob: 'Crear trabajo',
+      addCustomer: 'Agregar cliente',
+      sendInvoice: 'Enviar factura',
+      scheduleWork: 'Programar trabajo',
+      addWorker: 'Agregar trabajador'
+    },
+    attention: {
+      overdueInvoices: 'Facturas sin pagar',
+      unassignedJobs: 'Trabajos sin trabajador',
+      pendingEstimates: 'Presupuestos abiertos',
+      followUpCustomers: 'Prospectos a seguir',
+      upcomingAppointments: 'Citas próximas'
+    },
+    progress: {
+      completedWeek: 'Completados esta semana',
+      revenueMonth: 'Cobrado este mes',
+      newCustomersMonth: 'Clientes nuevos este mes',
+      openInvoices: 'Facturas abiertas',
+      scheduledUpcoming: 'Programados adelante'
+    },
+    sidebar: {
+      todayTasks: 'Tareas de hoy',
+      notifications: 'Notificaciones',
+      upcoming: 'Próximos',
+      crmSnapshot: 'Resumen CRM',
+      viewTasks: 'Ver tareas',
+      openInbox: 'Abrir bandeja',
+      openSchedule: 'Abrir horario',
+      openCrm: 'Abrir CRM',
+      leadsClients: '{leads} prospectos · {clients} clientes'
+    },
     todaysSchedule: 'Horario de hoy',
     viewSchedule: 'Horario',
     noScheduleToday: 'Nada programado hoy',

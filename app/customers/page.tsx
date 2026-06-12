@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
+import { PageHeader } from '@/components/page-header';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedCustomers } from '@/lib/demo-seed-filter';
@@ -31,6 +33,7 @@ type Customer = {
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [name, setName] = useState('');
@@ -155,11 +158,7 @@ export default function CustomersPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-        <div className="page-head">
-          <div>
-            <h1>CRM</h1>
-          </div>
-        </div>
+        <PageHeader title={t('nav.crm')} />
 
         {!canManage && (
           <div className="card">
