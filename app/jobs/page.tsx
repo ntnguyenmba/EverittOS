@@ -79,7 +79,7 @@ function JobsList() {
         query,
         fetchOrganizationIsDemo(supabase, org?.organizationId)
       ]);
-      let rows = filterDemoSeedJobs(data || [], orgIsDemo);
+      let rows = filterDemoSeedJobs((data || []) as Job[], orgIsDemo);
       if (assignmentFilter === 'unassigned') {
         rows = rows.filter((j) => j.status !== 'completed' && j.status !== 'cancelled' && !j.assigned_to);
       }

@@ -77,7 +77,7 @@ function SchedulePageContent() {
     }
     const { data: workers } = await workersQuery;
     const map: Record<string, string> = {};
-    (workers || []).forEach((w) => {
+    (workers || []).forEach((w: { id: string; name: string }) => {
       map[w.id] = w.name;
     });
     setWorkerNames(map);

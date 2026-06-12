@@ -106,14 +106,19 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     }
 
     const rows = data || [];
-    const ids = rows.map((r) => r.user_id);
+    const ids = rows.map((r: { user_id: string }) => r.user_id);
     const { data: profiles } = ids.length
       ? await supabase.from('profiles').select('id, email, full_name, updated_at').in('id', ids)
       : { data: [] };
-    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+    const profileMap = new Map(
+      (profiles || []).map((p: { id: string; email: string | null; full_name: string | null; updated_at: string | null }) => [
+        p.id,
+        p
+      ])
+    );
 
     setMembers(
-      rows.map((r) => ({
+      rows.map((r: { user_id: string }) => ({
         ...r,
         profiles: profileMap.get(r.user_id) || null
       }))

@@ -81,7 +81,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false });
 
-    const jobIds = (jobRows || []).map((j) => j.id);
+    const jobIds = (jobRows || []).map((j: { id: string }) => j.id);
     const [{ data: props }, { data: reportRows }] = await Promise.all([
       orgId
         ? supabase.from('customer_properties').select('id, name, address').eq('customer_id', customerId)
@@ -101,7 +101,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
         .select('job_id, client_user_id, portal_token, profiles:profiles(email)')
         .in('job_id', jobIds);
       setPortalAccess(
-        (accessRows || []).map((row) => {
+        (accessRows || []).map((row: {
+          job_id: string;
+          client_user_id: string;
+          portal_token: string | null;
+          profiles: { email: string | null } | { email: string | null }[] | null;
+        }) => {
           const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
           return {
             job_id: row.job_id as string,

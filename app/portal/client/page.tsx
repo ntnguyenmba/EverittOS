@@ -128,12 +128,12 @@ function ClientPortalContent() {
       }
 
       const accessMap: Record<string, boolean> = {};
-      (access || []).forEach((row) => {
+      (access || []).forEach((row: { job_id: string; can_view_photos?: boolean | null }) => {
         accessMap[row.job_id as string] = row.can_view_photos !== false;
       });
       setPhotoAccessByJob(accessMap);
 
-      const jobIds = (access || []).map((a) => a.job_id);
+      const jobIds = (access || []).map((a: { job_id: string }) => a.job_id);
       if (jobIds.length === 0) {
         setLoading(false);
         return;

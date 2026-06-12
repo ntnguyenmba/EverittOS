@@ -57,7 +57,7 @@ export default function ContractorPortalPage() {
 
       if (worker?.id) {
         const { data: assignments } = await supabase.from('job_assignments').select('job_id').eq('worker_id', worker.id);
-        const ids = (assignments || []).map((a) => a.job_id);
+        const ids = (assignments || []).map((a: { job_id: string }) => a.job_id);
         if (ids.length) {
           const { data } = await supabase
             .from('jobs')

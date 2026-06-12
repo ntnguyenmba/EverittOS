@@ -33,7 +33,12 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
       .select('client_user_id, portal_token, granted_at, profiles:profiles(email)')
       .eq('job_id', jobId);
     setAccessRows(
-      (data || []).map((row) => {
+      (data || []).map((row: {
+        client_user_id: string;
+        portal_token: string | null;
+        granted_at: string | null;
+        profiles: { email: string | null } | { email: string | null }[] | null;
+      }) => {
         const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
         return {
           client_user_id: row.client_user_id as string,

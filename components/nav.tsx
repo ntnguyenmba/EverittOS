@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { MARKETING_SITE_URL } from '@/lib/marketing-site';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 /** Minimal chrome for legal and policy pages only. */
@@ -21,7 +22,7 @@ export function Nav() {
 
     checkUser();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setLoggedIn(!!session?.user);
     });
 
