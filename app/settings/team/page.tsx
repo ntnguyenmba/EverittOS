@@ -3,6 +3,7 @@
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
+import { EverittteamAiUsagePanel } from '@/components/team/everittteam-ai-usage-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -47,6 +48,7 @@ export default function SettingsTeamPage() {
       title="Team"
       description="Invite members, manage roles, and review team audit history."
     >
+      <EverittteamAiUsagePanel />
       <TeamManagementPanel showPermissionMatrix showAuditHistory />
     </SettingsShell>
   );

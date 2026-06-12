@@ -24,7 +24,16 @@ type AiStatus = {
   configured: boolean;
   locked: boolean;
   lockedMessage: string | null;
+  planLocked: boolean;
+  budgetLocked: boolean;
+  everittteamWarning: string | null;
   usage?: { monthlyUsed: number; monthlyCap: number; unlimited: boolean; remaining: number | null };
+  everittteam?: {
+    budgetUsd: number;
+    usedUsd: number;
+    remainingUsd: number;
+    percentUsed: number;
+  };
 };
 
 type AskEverittCommandProps = {
@@ -52,6 +61,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
   const kbd =
     typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K';
   const aiLocked = aiStatus?.locked ?? !aiStatus?.allowed;
+  const aiPlanLocked = aiStatus?.planLocked ?? false;
+  const aiBudgetLocked = aiStatus?.budgetLocked ?? false;
   const aiReady = Boolean(aiStatus?.allowed && aiStatus?.configured);
 
   useEffect(() => {
@@ -80,12 +91,26 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
       configured: Boolean(json.configured),
       locked: Boolean(json.locked),
       lockedMessage: json.lockedMessage || null,
+      planLocked: Boolean(json.locked && json.gate?.code === 'plan_required'),
+      budgetLocked: Boolean(
+        json.gate?.code === 'everittteam_budget_exhausted' ||
+          (json.everittteam?.budgetExhausted && !json.everittteam?.ownerBypass)
+      ),
+      everittteamWarning: json.everittteam?.warning || null,
       usage: json.usage
         ? {
             monthlyUsed: json.usage.monthlyUsed,
             monthlyCap: json.usage.monthlyCap,
             unlimited: json.usage.unlimited,
             remaining: json.usage.remaining
+          }
+        : undefined,
+      everittteam: json.everittteam?.applies
+        ? {
+            budgetUsd: json.everittteam.budgetUsd,
+            usedUsd: json.everittteam.usedUsd,
+            remainingUsd: json.everittteam.remainingUsd,
+            percentUsed: json.everittteam.percentUsed
           }
         : undefined
     });
@@ -157,7 +182,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     if (!value || busy) return;
 
     if (aiLocked) {
-      setUpgradeOpen(true);
+      if (aiPlanLocked) setUpgradeOpen(true);
       return;
     }
     if (!aiReady) {
@@ -185,6 +210,11 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
       }
       if (json.code === 'rate_limited') {
         setNotice('Monthly AI limit reached. Upgrade to Enterprise for unlimited usage.');
+        return;
+      }
+      if (json.code === 'everittteam_budget_exhausted' || json.code === 'budget_verification_failed') {
+        setNotice(json.error || 'AI is temporarily unavailable.');
+        void loadStatus();
         return;
       }
       setNotice(json.error || 'AI is temporarily unavailable.');
@@ -235,8 +265,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
         </div>
         <p className="muted">Your business command center: jobs, leads, proposals, and actions in one place.</p>
         {aiLocked ? (
-          <button type="button" className="btn" onClick={() => setUpgradeOpen(true)}>
-            Unlock AI on Business plan
+          <button type="button" className="btn" onClick={() => (aiPlanLocked ? setUpgradeOpen(true) : openCommand())}>
+            {aiPlanLocked ? 'Unlock AI on Business plan' : 'View AI status'}
           </button>
         ) : (
           <button type="button" className="btn btn-primary" onClick={openCommand}>
@@ -258,6 +288,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
       inputRef,
       kbd,
       aiLocked,
+      aiPlanLocked,
+      aiBudgetLocked,
       aiReady,
       aiStatus,
       busy,
@@ -295,6 +327,8 @@ type OverlayProps = {
   inputRef: React.RefObject<HTMLInputElement | null>;
   kbd: string;
   aiLocked: boolean;
+  aiPlanLocked: boolean;
+  aiBudgetLocked: boolean;
   aiReady: boolean;
   aiStatus: AiStatus | null;
   busy: boolean;
@@ -318,6 +352,8 @@ function CommandOverlay({
   inputRef,
   kbd,
   aiLocked,
+  aiPlanLocked,
+  aiBudgetLocked,
   aiReady,
   aiStatus,
   busy,
@@ -345,8 +381,11 @@ function CommandOverlay({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                if (aiLocked) setUpgradeOpen(true);
-                else void submitAi();
+                if (aiLocked) {
+                  if (aiPlanLocked) setUpgradeOpen(true);
+                  return;
+                }
+                void submitAi();
               }
             }}
           />
@@ -356,10 +395,16 @@ function CommandOverlay({
         {aiLocked ? (
           <div className="everitt-cmd-locked">
             <p>{aiStatus?.lockedMessage || 'Ask Everitt is available on Business and Enterprise plans.'}</p>
-            <button type="button" className="btn btn-primary" onClick={() => setUpgradeOpen(true)}>
-              Upgrade to unlock AI
-            </button>
+            {aiPlanLocked ? (
+              <button type="button" className="btn btn-primary" onClick={() => setUpgradeOpen(true)}>
+                Upgrade to unlock AI
+              </button>
+            ) : null}
           </div>
+        ) : null}
+
+        {!aiLocked && aiStatus?.everittteamWarning ? (
+          <p className="everittteam-ai-warning everitt-cmd-hint">{aiStatus.everittteamWarning}</p>
         ) : null}
 
         {!aiLocked && !aiReady ? (
@@ -375,7 +420,11 @@ function CommandOverlay({
                 </button>
               ))}
             </div>
-            {aiStatus?.usage ? (
+            {aiStatus?.everittteam ? (
+              <p className="muted everitt-cmd-usage">
+                EVERITTTEAM AI: ${aiStatus.everittteam.usedUsd.toFixed(2)} / ${aiStatus.everittteam.budgetUsd.toFixed(2)} used
+              </p>
+            ) : aiStatus?.usage ? (
               <p className="muted everitt-cmd-usage">
                 {aiStatus.usage.unlimited
                   ? 'Unlimited AI (Enterprise)'

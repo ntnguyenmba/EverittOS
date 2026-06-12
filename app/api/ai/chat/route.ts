@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const status =
       gate.code === 'plan_required' || gate.code === 'subscription_inactive' || gate.code === 'permission_denied'
         ? 403
-        : gate.code === 'rate_limited'
+        : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted'
           ? 429
           : gate.code === 'unauthorized' || gate.code === 'no_organization'
             ? 401

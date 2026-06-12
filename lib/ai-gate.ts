@@ -9,6 +9,7 @@ import { fetchOrganizationContextForUser, type OrganizationContext } from '@/lib
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchProfileByUserId, resolveProfileSubscriptionStatus } from '@/lib/profile-query';
 import { subscriptionAccess } from '@/lib/subscription-access';
+import { assertEverittteamBudgetAllowed } from '@/lib/everittteam-ai-budget';
 
 export type AiGateFailureCode =
   | 'unauthorized'
@@ -17,7 +18,9 @@ export type AiGateFailureCode =
   | 'plan_required'
   | 'subscription_inactive'
   | 'not_configured'
-  | 'rate_limited';
+  | 'rate_limited'
+  | 'everittteam_budget_exhausted'
+  | 'budget_verification_failed';
 
 export type AiGateResult =
   | {
@@ -88,6 +91,20 @@ export async function verifyAiRequest(
       code: gate.code,
       message: gate.message,
       requiredPlan: gate.code === 'plan_required' ? AI_REQUIRED_PLAN : undefined
+    };
+  }
+
+  const everittteamBudget = await assertEverittteamBudgetAllowed(
+    admin,
+    userId,
+    org.ownerUserId,
+    org.role
+  );
+  if (!everittteamBudget.ok) {
+    return {
+      ok: false,
+      code: everittteamBudget.code,
+      message: everittteamBudget.message
     };
   }
 

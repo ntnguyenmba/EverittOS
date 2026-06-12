@@ -93,6 +93,16 @@ export function validateEnvAtStartup(): EnvValidationResult {
     });
   }
 
+  const everittteamBudget = (process.env.AI_EVERITTTEAM_MONTHLY_BUDGET_USD || '10').trim();
+  const parsedBudget = Number(everittteamBudget);
+  if (!Number.isFinite(parsedBudget) || parsedBudget < 0) {
+    issues.push({
+      level: 'warn',
+      key: 'AI_EVERITTTEAM_MONTHLY_BUDGET_USD',
+      message: 'Invalid EVERITTTEAM AI budget. Using $10.00 USD default.'
+    });
+  }
+
   const googleClientId = hasValue('GOOGLE_CLIENT_ID') || hasValue('GOOGLE_CALENDAR_CLIENT_ID');
   const googleClientSecret = hasValue('GOOGLE_CLIENT_SECRET') || hasValue('GOOGLE_CALENDAR_CLIENT_SECRET');
   if (!googleClientId || !googleClientSecret) {

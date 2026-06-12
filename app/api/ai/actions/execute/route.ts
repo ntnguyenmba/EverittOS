@@ -25,7 +25,12 @@ export async function POST(request: Request) {
 
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ai_actions', requireManage: true });
   if (!gate.ok) {
-    const status = gate.code === 'rate_limited' ? 429 : 403;
+    const status =
+      gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted'
+        ? 429
+        : gate.code === 'budget_verification_failed'
+          ? 503
+          : 403;
     return NextResponse.json({ error: gate.message, code: gate.code, locked: gate.code === 'plan_required' }, { status });
   }
 
