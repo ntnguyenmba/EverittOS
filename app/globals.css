@@ -205,7 +205,7 @@ p { color: var(--muted); line-height: 1.7; }
   color: var(--muted);
 }
 
-/* Intentional dark surfaces — always light text */
+/* Intentional dark surfaces: always light text */
 .surface-dark {
   background: var(--navy-primary);
   border-color: rgba(247, 246, 243, 0.14);
@@ -1806,7 +1806,7 @@ p { color: var(--muted); line-height: 1.7; }
   max-width: 320px;
 }
 
-/* Production contrast guardrails — light cards use charcoal text; dark surfaces use light text */
+/* Production contrast guardrails: light cards use charcoal text; dark surfaces use light text */
 .card:not(.surface-dark),
 .stat-card:not(.surface-dark),
 .dashboard-glance-card,
@@ -2279,5 +2279,192 @@ html[data-deployment='production'] #vercel-toolbar {
 
   .cookie-banner-actions .btn {
     width: 100%;
+  }
+}
+
+/* Dashboard polish */
+.dashboard-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-primary-cta {
+  flex-shrink: 0;
+}
+
+.page-subtitle {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.card-title-sm {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  color: var(--charcoal);
+}
+
+.dashboard-quick-links-card {
+  margin-top: 18px;
+  padding: 16px 20px;
+}
+
+.dashboard-quick-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-upgrade-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.dashboard-upgrade-strip p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.dashboard-usage-card,
+.dashboard-metrics-card {
+  margin-top: 18px;
+}
+
+.dashboard-jobs-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-top: 18px;
+}
+
+.dashboard-job-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-job-row:last-child {
+  border-bottom: none;
+}
+
+.workers-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.plan-gate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.invite-link-row {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite-link-code {
+  display: block;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.onboarding-back {
+  margin-right: auto;
+}
+
+.onboarding-field > span {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--charcoal);
+}
+
+.onboarding-field select.input {
+  min-height: 44px;
+}
+
+.integration-callback-note {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.integration-callback-note code {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.app-footer {
+  margin-top: 40px;
+  padding: 24px 0 8px;
+  font-size: 14px;
+}
+
+.app-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.app-footer-links a {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.app-footer-links a:hover {
+  color: var(--charcoal);
+}
+
+@media (max-width: 640px) {
+  .dashboard-page-head {
+    flex-direction: column;
+  }
+
+  .dashboard-primary-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .onboarding-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .onboarding-back {
+    margin-right: 0;
+    order: 3;
   }
 }

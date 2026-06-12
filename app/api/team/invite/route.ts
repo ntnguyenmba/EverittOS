@@ -25,9 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
-  const body = (await request.json()) as { email?: string; role?: string };
+  const body = (await request.json()) as { email?: string; role?: string; note?: string };
   const email = (body.email || '').trim().toLowerCase();
   const role = parseAssignableMemberRole(body.role || 'employee');
+  const note = (body.note || '').trim();
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
     entity_id: invite.id,
     action: 'user_invited',
     message: `Invited ${email} as ${role}`,
-    metadata: { email, role }
+    metadata: { email, role, ...(note ? { note } : {}) }
   });
 
   return NextResponse.json({

@@ -110,9 +110,9 @@ export async function GET() {
     }).length
   }));
 
-  const revenueTrend = months.map((m, idx) => ({
+  const revenueTrend = months.map((m) => ({
     label: monthKey(m),
-    value: Math.round(mrrUsd * (0.85 + idx * 0.03))
+    value: mrrUsd > 0 ? mrrUsd : 0
   }));
 
   const growthTrend = months.map((m) => ({
@@ -129,6 +129,13 @@ export async function GET() {
   const revenueGrowthPct =
     prevMonthJobs === 0 ? 0 : Math.round(((currentMonthJobs - prevMonthJobs) / prevMonthJobs) * 100);
 
+  const hasActivity =
+    (jobsMonthRes.count || 0) > 0 ||
+    jobs.length > 0 ||
+    activeUsers > 1 ||
+    (portalEventsRes.count || 0) > 0 ||
+    jobsWithReports.size > 0;
+
   return NextResponse.json({
     mrrUsd,
     arrUsd: mrrUsd * 12,
@@ -140,7 +147,8 @@ export async function GET() {
     reportCompletionRatePct,
     subscriptionBreakdown,
     jobsTrend,
-    revenueTrend,
-    growthTrend
+    revenueTrend: mrrUsd > 0 ? revenueTrend : [],
+    growthTrend,
+    hasActivity
   });
 }

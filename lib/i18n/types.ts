@@ -20,6 +20,10 @@ export type MessageTree = {
     skipEntire: string;
     loading: string;
     calendarLater: string;
+    calendarNotConfigured: string;
+    calendarConnected: string;
+    connectGoogleCalendar: string;
+    openIntegrations: string;
     inviteFailed: string;
     sampleJobName: string;
     sampleCustomer: string;
@@ -149,6 +153,73 @@ export type MessageTree = {
     acceptPrivacy: string;
     consentRequired: string;
     signInMethods: string;
+  };
+  nav: {
+    dashboard: string;
+    jobs: string;
+    customers: string;
+    schedule: string;
+    workers: string;
+    team: string;
+    activity: string;
+    analytics: string;
+    workflows: string;
+    notifications: string;
+    billing: string;
+    settings: string;
+    clientPortal: string;
+    contractorPortal: string;
+  };
+  settingsNav: {
+    workspace: string;
+    team: string;
+    branding: string;
+    integrations: string;
+    account: string;
+    billing: string;
+    security: string;
+    privacy: string;
+    notifications: string;
+    api: string;
+    departments: string;
+  };
+  dashboard: {
+    title: string;
+    subtitle: string;
+    createJob: string;
+    inviteTeam: string;
+    viewReports: string;
+    upcomingWork: string;
+    quickLinks: string;
+    openJobs: string;
+    completedJobs: string;
+    dueSoon: string;
+    reportsOnFile: string;
+    teamMembers: string;
+    recentJobs: string;
+    upcomingJobs: string;
+    recentActivity: string;
+    viewAllActivity: string;
+    upgradeTitle: string;
+    upgradeBody: string;
+    metricsEmpty: string;
+    analyticsEmpty: string;
+  };
+  billing: {
+    title: string;
+    currentPlan: string;
+    status: string;
+    renewalDate: string;
+    manageStripe: string;
+    noCustomer: string;
+    cancel: string;
+    resume: string;
+    portalUnavailable: string;
+    upgradeOptions: string;
+  };
+  language: {
+    title: string;
+    note: string;
   };
 };
 

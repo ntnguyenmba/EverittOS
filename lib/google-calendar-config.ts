@@ -5,25 +5,33 @@ export const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email'
 ] as const;
 
+/** Production OAuth callback registered in Google Cloud Console. */
+export const GOOGLE_CALENDAR_CALLBACK_PATH = '/api/integrations/google-calendar/callback';
+
 export function googleCalendarRedirectUri(): string {
   const explicit = (process.env.GOOGLE_CALENDAR_REDIRECT_URI || '').trim();
   if (explicit) return explicit;
-  return appUrl('/api/integrations/google-calendar/callback');
+  return appUrl(GOOGLE_CALENDAR_CALLBACK_PATH);
 }
 
-export function googleCalendarConfigured(): boolean {
-  return Boolean(
-    (process.env.GOOGLE_CALENDAR_CLIENT_ID || '').trim() &&
-      (process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '').trim()
-  );
+function readEnv(...keys: string[]): string {
+  for (const key of keys) {
+    const value = (process.env[key] || '').trim();
+    if (value) return value;
+  }
+  return '';
 }
 
 export function googleCalendarClientId(): string {
-  return (process.env.GOOGLE_CALENDAR_CLIENT_ID || '').trim();
+  return readEnv('GOOGLE_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_ID');
 }
 
 export function googleCalendarClientSecret(): string {
-  return (process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '').trim();
+  return readEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_CALENDAR_CLIENT_SECRET');
+}
+
+export function googleCalendarConfigured(): boolean {
+  return Boolean(googleCalendarClientId() && googleCalendarClientSecret());
 }
 
 export function googleOAuthAuthorizeUrl(state: string): string {

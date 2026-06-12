@@ -44,7 +44,7 @@ export function PermissionMatrix() {
                 const allowed = permissionsForRole(role.key).includes(perm);
                 return (
                   <td key={role.key} className={allowed ? 'perm-yes' : 'perm-no'} aria-label={allowed ? 'Allowed' : 'Not allowed'}>
-                    {allowed ? '✓' : '—'}
+                    {allowed ? 'Yes' : 'No'}
                   </td>
                 );
               })}

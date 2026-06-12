@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticateApiRequest, hasScope, jsonError } from '@/lib/api-auth';
 import { ALLOWED_JOB_STATUSES, customerBelongsToOrg } from '@/lib/org-validation';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 
 export async function GET(request: Request) {
   const auth = await authenticateApiRequest(request);
@@ -85,5 +86,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return jsonError(error.message, 500);
+
+  if (data?.id) {
+    await syncJobToGoogleCalendarSafe(auth.admin, auth.organizationId, data.id);
+  }
+
   return NextResponse.json({ job: data }, { status: 201 });
 }

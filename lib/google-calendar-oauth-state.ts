@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { googleCalendarClientSecret } from '@/lib/google-calendar-config';
 
 type OAuthStatePayload = {
   userId: string;
@@ -10,7 +11,8 @@ type OAuthStatePayload = {
 function stateSecret(): string {
   return (
     process.env.GOOGLE_CALENDAR_OAUTH_STATE_SECRET ||
-    process.env.GOOGLE_CALENDAR_CLIENT_SECRET ||
+    process.env.GOOGLE_CLIENT_SECRET ||
+    googleCalendarClientSecret() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     ''
   );

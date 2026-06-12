@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/empty-state';
 import { SimpleBarChart, SimpleTrendChart } from '@/components/charts/simple-bar-chart';
+import { useTranslation } from '@/components/locale-provider';
 
 export type OrgMetrics = {
   mrrUsd: number;
@@ -16,9 +18,15 @@ export type OrgMetrics = {
   jobsTrend: { label: string; value: number }[];
   revenueTrend: { label: string; value: number }[];
   growthTrend: { label: string; value: number }[];
+  hasActivity?: boolean;
 };
 
+function trendHasData(points: { value: number }[]): boolean {
+  return points.some((p) => p.value > 0);
+}
+
 export function ExecutiveMetricsPanel() {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState<OrgMetrics | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -41,25 +49,30 @@ export function ExecutiveMetricsPanel() {
   if (error) return <p className="auth-message auth-message-error">{error}</p>;
   if (!metrics) return null;
 
+  if (!metrics.hasActivity) {
+    return (
+      <EmptyState
+        title="No metrics yet"
+        description={t('dashboard.metricsEmpty')}
+      />
+    );
+  }
+
   const subscriptionPoints = Object.entries(metrics.subscriptionBreakdown).map(([label, value]) => ({
     label,
     value
   }));
 
+  const showJobsTrend = trendHasData(metrics.jobsTrend);
+  const showRevenueTrend = trendHasData(metrics.revenueTrend);
+  const showGrowthTrend = trendHasData(metrics.growthTrend);
+
   return (
     <section className="executive-metrics">
-      <h3>Executive overview</h3>
-      <p className="muted">Organization performance based on your workspace data.</p>
+      <h3 className="card-title-sm">Executive overview</h3>
+      <p className="muted">Organization performance from your workspace data.</p>
 
       <div className="stats-grid executive-stats">
-        <div className="stat-card">
-          <span>MRR</span>
-          <strong>${metrics.mrrUsd}</strong>
-        </div>
-        <div className="stat-card">
-          <span>ARR</span>
-          <strong>${metrics.arrUsd}</strong>
-        </div>
         <div className="stat-card">
           <span>Active users</span>
           <strong>{metrics.activeUsers}</strong>
@@ -69,31 +82,31 @@ export function ExecutiveMetricsPanel() {
           <strong>{metrics.monthlyJobs}</strong>
         </div>
         <div className="stat-card">
-          <span>Technician utilization</span>
-          <strong>{metrics.technicianUtilizationPct}%</strong>
-        </div>
-        <div className="stat-card">
-          <span>Revenue growth</span>
-          <strong>{metrics.revenueGrowthPct}%</strong>
-        </div>
-        <div className="stat-card">
-          <span>Client portal activity (30d)</span>
-          <strong>{metrics.clientPortalViews30d}</strong>
-        </div>
-        <div className="stat-card">
-          <span>Report completion rate</span>
+          <span>Report completion</span>
           <strong>{metrics.reportCompletionRatePct}%</strong>
         </div>
-      </div>
-
-      <div className="charts-grid">
-        <SimpleTrendChart title="Jobs trend (6 months)" points={metrics.jobsTrend} />
-        <SimpleTrendChart title="Revenue trend (6 months)" points={metrics.revenueTrend} />
-        <SimpleTrendChart title="Team growth (6 months)" points={metrics.growthTrend} />
-        {subscriptionPoints.length > 0 ? (
-          <SimpleBarChart title="Subscription breakdown" points={subscriptionPoints} />
+        <div className="stat-card">
+          <span>Client portal views (30d)</span>
+          <strong>{metrics.clientPortalViews30d}</strong>
+        </div>
+        {metrics.mrrUsd > 0 ? (
+          <div className="stat-card">
+            <span>Plan MRR</span>
+            <strong>${metrics.mrrUsd}</strong>
+          </div>
         ) : null}
       </div>
+
+      {(showJobsTrend || showRevenueTrend || showGrowthTrend || subscriptionPoints.length > 0) && (
+        <div className="charts-grid">
+          {showJobsTrend ? <SimpleTrendChart title="Jobs trend (6 months)" points={metrics.jobsTrend} /> : null}
+          {showRevenueTrend ? <SimpleTrendChart title="Plan revenue (monthly)" points={metrics.revenueTrend} /> : null}
+          {showGrowthTrend ? <SimpleTrendChart title="Team size over time" points={metrics.growthTrend} /> : null}
+          {subscriptionPoints.length > 0 ? (
+            <SimpleBarChart title="Plan distribution" points={subscriptionPoints} />
+          ) : null}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
@@ -145,6 +146,11 @@ export function OnboardingWizard() {
     [advance, orgId, step]
   );
 
+  const goBack = useCallback((prevStep: number) => {
+    setStep(prevStep);
+    setMessage('');
+  }, []);
+
   useEffect(() => {
     async function load() {
       const {
@@ -272,7 +278,14 @@ export function OnboardingWizard() {
       .single();
 
     if (error) throw error;
-    if (orgId) await logClientActivity(orgId, 'job', data.id, 'job_created', `Job ${title} created`);
+    if (orgId) {
+      await logClientActivity(orgId, 'job', data.id, 'job_created', `Job ${title} created`);
+      void fetch('/api/integrations/google-calendar/sync-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: data.id })
+      });
+    }
   }
 
   async function saveFirstJob() {
@@ -373,6 +386,8 @@ export function OnboardingWizard() {
           <OnboardingActions
             continueLabel={t('common.continue')}
             skipLabel={t('common.skip')}
+            backLabel={t('common.back')}
+            onBack={() => goBack(0)}
             onContinue={() => void saveBusinessProfile()}
             onSkip={() => void skipStep(2)}
             busy={busy}
@@ -403,6 +418,8 @@ export function OnboardingWizard() {
           <OnboardingActions
             continueLabel={t('common.continue')}
             skipLabel={t('common.skip')}
+            backLabel={t('common.back')}
+            onBack={() => goBack(1)}
             onContinue={() => void completeStep(3)}
             onSkip={() => void skipStep(3)}
             busy={busy}
@@ -462,6 +479,8 @@ export function OnboardingWizard() {
           <OnboardingActions
             continueLabel={t('common.continue')}
             skipLabel={t('common.skipForNow')}
+            backLabel={t('common.back')}
+            onBack={() => goBack(2)}
             onContinue={() => void sendInvites()}
             onSkip={() => void skipStep(4)}
             busy={busy}
@@ -476,24 +495,29 @@ export function OnboardingWizard() {
           <div className="onboarding-calendar-options">
             <p className="onboarding-option-label">{t('onboarding.steps.calendar.google')}</p>
             {!calendarStatus.configured ? (
-              <p className="muted">{t('onboarding.calendarLater')}</p>
+              <>
+                <p className="muted">{t('onboarding.calendarNotConfigured')}</p>
+                <Link className="btn" href="/settings/integrations">
+                  {t('onboarding.openIntegrations')}
+                </Link>
+              </>
             ) : calendarStatus.connected ? (
-              <p className="muted">{t('common.connect')} ✓</p>
-            ) : null}
-          </div>
-          <div className="onboarding-actions">
-            {calendarStatus.configured && !calendarStatus.connected ? (
+              <p className="muted">{t('onboarding.calendarConnected')}</p>
+            ) : (
               <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
-                {t('common.connect')}
+                {t('onboarding.connectGoogleCalendar')}
               </a>
-            ) : null}
-            <button type="button" className="btn btn-primary" onClick={() => void completeStep(5)} disabled={busy}>
-              {calendarStatus.configured && !calendarStatus.connected ? t('common.connectLater') : t('common.continue')}
-            </button>
-            <button type="button" className="btn" onClick={() => void skipStep(5)} disabled={busy}>
-              {t('common.skip')}
-            </button>
+            )}
           </div>
+          <OnboardingActions
+            continueLabel={calendarStatus.configured && !calendarStatus.connected ? t('common.connectLater') : t('common.continue')}
+            skipLabel={t('common.skip')}
+            backLabel={t('common.back')}
+            onBack={() => goBack(3)}
+            onContinue={() => void completeStep(5)}
+            onSkip={() => void skipStep(5)}
+            busy={busy}
+          />
         </OnboardingCard>
       )}
 
@@ -526,6 +550,8 @@ export function OnboardingWizard() {
           <OnboardingActions
             continueLabel={t('common.continue')}
             skipLabel={t('common.skip')}
+            backLabel={t('common.back')}
+            onBack={() => goBack(4)}
             onContinue={() => void saveFirstJob()}
             onSkip={() => void skipStep(6)}
             busy={busy}

@@ -9,6 +9,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
@@ -264,6 +265,11 @@ export default function SettingsPage() {
           <button className="btn" type="button" onClick={logout}>
             Log out
           </button>
+          <div className="settings-card" style={{ marginTop: 18 }}>
+            <h3>{t('language.title')}</h3>
+            <p className="muted">{t('language.note')}</p>
+            <LanguageSwitcher />
+          </div>
           <div className="settings-card" style={{ marginTop: 18 }}>
             <h3>{t('onboarding.settings.restart')}</h3>
             <p className="muted">{t('onboarding.settings.restartDescription')}</p>

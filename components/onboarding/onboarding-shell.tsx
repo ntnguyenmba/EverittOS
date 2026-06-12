@@ -58,20 +58,29 @@ export function OnboardingCard({
 export function OnboardingActions({
   onContinue,
   onSkip,
+  onBack,
   continueLabel,
   skipLabel,
+  backLabel,
   busy,
   continueDisabled
 }: {
   onContinue: () => void;
   onSkip: () => void;
+  onBack?: () => void;
   continueLabel: string;
   skipLabel: string;
+  backLabel?: string;
   busy?: boolean;
   continueDisabled?: boolean;
 }) {
   return (
     <div className="onboarding-actions">
+      {onBack ? (
+        <button type="button" className="btn onboarding-back" onClick={onBack} disabled={busy}>
+          {backLabel || 'Back'}
+        </button>
+      ) : null}
       <button type="button" className="btn btn-primary" onClick={onContinue} disabled={busy || continueDisabled}>
         {continueLabel}
       </button>

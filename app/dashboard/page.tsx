@@ -5,22 +5,21 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
-import { RoleDashboard } from '@/components/role-dashboard';
 import { AppShell } from '@/components/app-shell';
 import { OnboardingChecklist } from '@/components/onboarding-checklist';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
-import { friendlyErrorMessage } from '@/lib/user-errors';
-import { UsageDashboard } from '@/components/usage-dashboard';
-import { JobCreator } from '@/components/job-creator';
 import { ExecutiveMetricsPanel } from '@/components/dashboard/executive-metrics';
+import { UsageDashboard } from '@/components/usage-dashboard';
+import { useTranslation } from '@/components/locale-provider';
 import { mapAccessError } from '@/lib/auth-errors';
+import { hasTeamManagement } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isClientRole, canManageOrganizationSettings, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { EVERITTOS_STRIPE_LINKS, isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
+import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -51,6 +50,7 @@ function DashboardAccessNotice() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [usage, setUsage] = useState<UsageCounts>({
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             .select('id, action, message, entity_type, created_at, actor_name')
             .eq('organization_id', org.organizationId)
             .order('created_at', { ascending: false })
-            .limit(8)
+            .limit(6)
         : Promise.resolve({ data: [] })
     ]);
 
@@ -156,7 +156,7 @@ export default function DashboardPage() {
     return jobs
       .filter((j) => j.due_date && j.status !== 'completed' && j.status !== 'cancelled')
       .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
-      .slice(0, 5);
+      .slice(0, 4);
   }, [jobs]);
 
   const openJobs = useMemo(
@@ -174,179 +174,161 @@ export default function DashboardPage() {
     ).length;
   }, [jobs]);
 
+  const showExecutiveMetrics = canManageOrganizationSettings(role) && (jobs.length > 0 || activityCount > 0);
+  const teamHref = hasTeamManagement(plan) ? '/team' : '/settings/billing?upgrade=business';
+
   return (
     <AppShell plan={plan} role={role}>
-        <Suspense>
-          <DashboardAccessNotice />
-        </Suspense>
-        <div className="page-head">
-          <div>
-            <h1>Dashboard</h1>
-            <p>What needs attention right now.</p>
-          </div>
+      <Suspense>
+        <DashboardAccessNotice />
+      </Suspense>
+
+      <div className="page-head dashboard-page-head">
+        <div>
+          <h1>{t('dashboard.title')}</h1>
+          <p className="page-subtitle">{t('dashboard.subtitle')}</p>
+        </div>
+        <Link href="/jobs" className="btn btn-primary dashboard-primary-cta">
+          {t('dashboard.createJob')}
+        </Link>
+      </div>
+
+      <section className="dashboard-glance" aria-label="Operations summary">
+        <div className="dashboard-glance-card">
+          <span>{t('dashboard.openJobs')}</span>
+          <strong>{loading ? '…' : openJobs}</strong>
+        </div>
+        <div className="dashboard-glance-card">
+          <span>{t('dashboard.completedJobs')}</span>
+          <strong>{loading ? '…' : jobs.filter((j) => j.status === 'completed').length}</strong>
+        </div>
+        <div className="dashboard-glance-card">
+          <span>{t('dashboard.dueSoon')}</span>
+          <strong>{loading ? '…' : dueSoon}</strong>
+        </div>
+        <div className="dashboard-glance-card">
+          <span>{t('dashboard.reportsOnFile')}</span>
+          <strong>{loading ? '…' : usage.reports}</strong>
+        </div>
+        <div className="dashboard-glance-card">
+          <span>{t('dashboard.teamMembers')}</span>
+          <strong>{loading ? '…' : usage.teamMembers}</strong>
+        </div>
+      </section>
+
+      <section className="card dashboard-quick-links-card" aria-label={t('dashboard.quickLinks')}>
+        <h3 className="card-title-sm">{t('dashboard.quickLinks')}</h3>
+        <div className="dashboard-quick-links-row">
+          <Link href={teamHref} className="btn">
+            {t('dashboard.inviteTeam')}
+          </Link>
+          <Link href="/jobs" className="btn">
+            {t('dashboard.viewReports')}
+          </Link>
+          <Link href="/schedule" className="btn">
+            {t('dashboard.upcomingWork')}
+          </Link>
+        </div>
+      </section>
+
+      {!isPaidEverittosPlan(plan) && (
+        <div className="dashboard-upgrade-strip">
+          <p>
+            <strong>{t('dashboard.upgradeTitle')}</strong> {t('dashboard.upgradeBody')}
+          </p>
+          <Link href="/settings/billing" className="btn btn-sm">
+            View plans
+          </Link>
+        </div>
+      )}
+
+      {organizationId ? (
+        <OnboardingChecklist
+          organizationId={organizationId}
+          step={onboardingStep}
+          completed={onboardingCompleted}
+          skipped={onboardingSkipped}
+        />
+      ) : null}
+
+      <div className="card dashboard-usage-card">
+        <UsageDashboard plan={plan} counts={usage} />
+      </div>
+
+      {showExecutiveMetrics ? (
+        <div className="card dashboard-metrics-card">
+          <ExecutiveMetricsPanel />
+        </div>
+      ) : null}
+
+      {limitsForPlan(plan).activityLog && activityItems.length > 0 && (
+        <div className="card">
+          <h3 className="card-title-sm">{t('dashboard.recentActivity')}</h3>
+          <ActivityFeed items={activityItems} />
+          <Link href="/activity" className="btn btn-sm" style={{ marginTop: 12 }}>
+            {t('dashboard.viewAllActivity')}
+          </Link>
+        </div>
+      )}
+
+      <div className="dashboard-jobs-grid">
+        <div className="card">
+          <h3 className="card-title-sm">{t('dashboard.upcomingJobs')}</h3>
+          {loading ? <p className="loading-state" role="status">Loading…</p> : null}
+          {!loading && upcoming.length === 0 ? (
+            <EmptyState
+              title="No upcoming due dates"
+              description="Add due dates on job details to see scheduled work here."
+              action={
+                <Link className="btn btn-sm" href="/schedule">
+                  Open schedule
+                </Link>
+              }
+            />
+          ) : null}
+          {!loading &&
+            upcoming.map((job) => (
+              <div key={job.id} className="dashboard-job-row">
+                <div>
+                  <strong>{job.title}</strong>
+                  <p className="muted">Due {job.due_date}</p>
+                </div>
+                <Link className="btn btn-sm" href={`/jobs/${job.id}`}>
+                  Open
+                </Link>
+              </div>
+            ))}
         </div>
 
-        <section className="dashboard-quick-actions" aria-label="Quick actions" style={{ marginTop: 18 }}>
-          <h2 className="sr-only">Quick actions</h2>
-          <div className="dashboard-quick-actions-grid">
-            <Link href="/jobs" className="btn btn-primary">
-              Create job
-            </Link>
-            <Link href="/team" className="btn">
-              Invite team member
-            </Link>
-            <Link href="/jobs" className="btn">
-              View reports
-            </Link>
-            <Link href="/schedule" className="btn">
-              Upcoming work
-            </Link>
-          </div>
-        </section>
-
-        <section className="dashboard-glance" aria-label="Operations summary">
-          <div className="dashboard-glance-card">
-            <span>Open jobs</span>
-            <strong>{loading ? '...' : openJobs}</strong>
-          </div>
-          <div className="dashboard-glance-card">
-            <span>Completed jobs</span>
-            <strong>{loading ? '...' : jobs.filter((j) => j.status === 'completed').length}</strong>
-          </div>
-          <div className="dashboard-glance-card">
-            <span>Due in 7 days</span>
-            <strong>{loading ? '...' : dueSoon}</strong>
-          </div>
-          <div className="dashboard-glance-card">
-            <span>Reports on file</span>
-            <strong>{loading ? '...' : usage.reports}</strong>
-          </div>
-          <div className="dashboard-glance-card">
-            <span>Team members</span>
-            <strong>{loading ? '...' : usage.teamMembers}</strong>
-          </div>
-        </section>
-
-        {!isPaidEverittosPlan(plan) && (
-          <div className="card upgrade-banner card-elevated">
-            <div>
-              <h3>Upgrade when you hit your limits</h3>
-              <p>Every plan includes photos. Upgrade for higher limits, team management, and crew assignment.</p>
-            </div>
-            <div className="upgrade-banner-actions">
-              <a href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                Start Pro
-              </a>
-              <a href={EVERITTOS_STRIPE_LINKS.business} target="_blank" rel="noopener noreferrer" className="btn">
-                Start Business
-              </a>
-            </div>
-          </div>
-        )}
-
-        {organizationId ? (
-          <OnboardingChecklist
-            organizationId={organizationId}
-            step={onboardingStep}
-            completed={onboardingCompleted}
-            skipped={onboardingSkipped}
-          />
-        ) : null}
-
-        {canManageOrganizationSettings(role) ? (
-          <div className="card" style={{ marginTop: 18 }}>
-            <ExecutiveMetricsPanel />
-          </div>
-        ) : null}
-
-        <div className="card" style={{ marginTop: 18 }}>
-          <UsageDashboard plan={plan} counts={usage} />
+        <div className="card">
+          <h3 className="card-title-sm">{t('dashboard.recentJobs')}</h3>
+          {loading ? <p className="loading-state" role="status">Loading…</p> : null}
+          {errorMessage ? (
+            <p className="auth-message auth-message-error" role="alert">
+              {friendlyErrorMessage(errorMessage)}
+            </p>
+          ) : null}
+          {!loading && !errorMessage && jobs.length === 0 ? (
+            <EmptyState title={t('empty.jobs.title')} description={t('empty.jobs.description')} action={<Link className="btn btn-primary btn-sm" href="/jobs">{t('empty.jobs.action')}</Link>} />
+          ) : null}
+          {!loading &&
+            !errorMessage &&
+            jobs.slice(0, 5).map((job) => (
+              <div key={job.id} className="dashboard-job-row">
+                <div>
+                  <strong>{job.title}</strong>
+                  <p className="muted">
+                    {job.customer_name || 'No customer'} · {job.status || 'new'}
+                    {job.photo_count ? ` · ${job.photo_count} photo${job.photo_count === 1 ? '' : 's'}` : ''}
+                  </p>
+                </div>
+                <Link className="btn btn-sm btn-primary" href={`/jobs/${job.id}`}>
+                  Open
+                </Link>
+              </div>
+            ))}
         </div>
-
-        <div className="card" style={{ marginTop: 18 }}>
-          <RoleDashboard
-            role={role}
-            jobs={jobs}
-            photoCount={usage.photos}
-            reportCount={usage.reports}
-            activityCount={activityCount}
-            customerCount={usage.customers}
-            teamCount={usage.teamMembers}
-          />
-        </div>
-
-        {limitsForPlan(plan).activityLog && activityItems.length > 0 && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <h3>Recent activity</h3>
-            <ActivityFeed items={activityItems} />
-            <Link href="/activity" className="btn" style={{ marginTop: 12 }}>
-              View all activity
-            </Link>
-          </div>
-        )}
-
-        <div className="grid-2" style={{ marginTop: 18 }}>
-          <JobCreator onJobCreated={loadDashboard} />
-
-          <div className="workflow">
-            <div className="card">
-              <h3>Upcoming jobs</h3>
-              {loading ? <p className="loading-state" role="status">Loading upcoming jobs…</p> : null}
-              {!loading && upcoming.length === 0 ? (
-                <EmptyState
-                  title="No upcoming due dates"
-                  description="Add due dates on job details to see scheduled work here."
-                  action={
-                    <Link className="btn" href="/schedule">
-                      Open schedule
-                    </Link>
-                  }
-                />
-              ) : null}
-              {!loading &&
-                upcoming.map((job) => (
-                  <div key={job.id} className="card" style={{ marginTop: 12 }}>
-                    <h3>{job.title}</h3>
-                    <p>Due: {job.due_date}</p>
-                    <Link className="btn" href={`/jobs/${job.id}`}>
-                      Open
-                    </Link>
-                  </div>
-                ))}
-              <Link className="btn" href="/schedule" style={{ marginTop: 12 }}>
-                View schedule
-              </Link>
-            </div>
-
-            <div className="card" style={{ marginTop: 18 }}>
-              <h3>Recent jobs</h3>
-              {loading ? <p className="loading-state" role="status">Loading jobs…</p> : null}
-              {errorMessage ? (
-                <p className="auth-message auth-message-error" role="alert">
-                  {friendlyErrorMessage(errorMessage)}
-                </p>
-              ) : null}
-              {!loading && !errorMessage && jobs.length === 0 ? (
-                <EmptyState title={EMPTY_COPY.jobs.title} description={EMPTY_COPY.jobs.description} />
-              ) : null}
-              {!loading &&
-                !errorMessage &&
-                jobs.slice(0, 5).map((job) => (
-                  <div key={job.id} className="card" style={{ marginTop: 12 }}>
-                    <h3>{job.title}</h3>
-                    <p>Customer: {job.customer_name || 'Not set'}</p>
-                    <p>
-                      Status: {job.status || 'new'}
-                      {job.photo_count ? ` · ${job.photo_count} photo${job.photo_count === 1 ? '' : 's'}` : ''}
-                    </p>
-                    <Link className="btn btn-primary" href={`/jobs/${job.id}`}>
-                      Open job
-                    </Link>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
+      </div>
     </AppShell>
   );
 }

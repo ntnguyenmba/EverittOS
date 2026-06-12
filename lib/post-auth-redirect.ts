@@ -22,7 +22,7 @@ export function isOnboardingExemptPath(pathname: string): boolean {
   return ONBOARDING_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-/** Whether middleware should block app routes until onboarding completes. Always false — onboarding is optional. */
+/** Whether middleware should block app routes until onboarding completes. Always false; onboarding is optional. */
 export function shouldRedirectToOnboarding(
   _roleInput: string | null | undefined,
   _onboardingCompleted: boolean | null | undefined,

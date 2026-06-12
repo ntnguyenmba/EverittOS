@@ -153,20 +153,24 @@ function IntegrationsContent() {
           events. Updates on the schedule page sync automatically.
         </p>
 
+        <p style={{ marginTop: 12 }}>
+          Status:{' '}
+          <strong>
+            {!status?.configured ? 'Configuration missing' : status.connected ? 'Connected' : 'Not connected'}
+          </strong>
+          {status?.connected && status.googleEmail ? ` (${status.googleEmail})` : ''}
+        </p>
+
         {!status?.configured ? (
           <p className="muted" style={{ marginTop: 12 }}>
-            Google Calendar OAuth is not configured on this deployment. Add the environment variables listed in{' '}
-            <code>docs/GOOGLE_CALENDAR_SETUP.md</code> in Vercel.
+            Google Calendar OAuth is not configured on this server. Set <code>GOOGLE_CLIENT_ID</code> and{' '}
+            <code>GOOGLE_CLIENT_SECRET</code> in your deployment environment. See{' '}
+            <code>docs/GOOGLE_CALENDAR_SETUP.md</code>.
           </p>
         ) : null}
 
         {status?.configured ? (
           <>
-            <p style={{ marginTop: 12 }}>
-              Status:{' '}
-              <strong>{status.connected ? 'Connected' : 'Not connected'}</strong>
-              {status.connected && status.googleEmail ? ` (${status.googleEmail})` : ''}
-            </p>
             {status.connected && status.lastSyncAt ? (
               <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
             ) : null}
@@ -194,9 +198,8 @@ function IntegrationsContent() {
           </>
         ) : null}
 
-        <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
-          Production OAuth redirect:{' '}
-          <code>{googleCalendarRedirectUri()}</code>
+        <p className="muted integration-callback-note" style={{ marginTop: 16 }}>
+          OAuth redirect URI for setup: <code>{googleCalendarRedirectUri()}</code>
         </p>
       </div>
     </SettingsShell>

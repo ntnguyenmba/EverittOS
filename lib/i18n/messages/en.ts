@@ -22,6 +22,11 @@ export const messages: Messages = {
     skipEntire: 'Skip setup',
     loading: 'Loading your workspace…',
     calendarLater: 'Calendar integration can be connected later.',
+    calendarNotConfigured:
+      'Calendar connection is not configured yet. You can continue and add it later from Settings.',
+    calendarConnected: 'Google Calendar is connected.',
+    connectGoogleCalendar: 'Connect Google Calendar',
+    openIntegrations: 'Open integrations settings',
     inviteFailed: 'Invite could not be sent. You can invite team members later from Settings.',
     sampleJobName: 'Welcome visit',
     sampleCustomer: 'Sample customer',
@@ -69,10 +74,18 @@ export const messages: Messages = {
     industries: {
       property_management: 'Property Management',
       cleaning: 'Cleaning',
+      salon: 'Salon',
+      barber: 'Barber',
+      spa: 'Spa',
+      beauty_studio: 'Beauty Studio',
       maintenance: 'Maintenance',
       construction: 'Construction',
+      general_contractor: 'General Contractor',
       landscaping: 'Landscaping',
       field_service: 'Field Service',
+      janitorial: 'Janitorial',
+      real_estate: 'Real Estate',
+      home_services: 'Home Services',
       hospitality: 'Hospitality',
       other: 'Other'
     },
@@ -102,7 +115,7 @@ export const messages: Messages = {
     checklist: {
       title: 'Getting started',
       description:
-        'Optional setup to help you launch faster. Skip anytime — nothing here blocks your work.',
+        'Optional setup to help you launch faster. Skip anytime. Nothing here blocks your work.',
       dismiss: 'Dismiss',
       continue: 'Continue setup',
       settings: 'Workspace settings',
@@ -140,8 +153,8 @@ export const messages: Messages = {
       action: 'Go to jobs'
     },
     workers: {
-      title: 'Invite your first team member',
-      description: 'Assign work and keep everyone aligned from the field or office.',
+      title: 'No workers yet',
+      description: 'Invite a team member or add a worker when your plan supports crew management.',
       action: 'Invite team'
     },
     activity: {
@@ -252,5 +265,72 @@ export const messages: Messages = {
     acceptPrivacy: 'I agree to the Privacy Policy',
     consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.',
     signInMethods: 'Sign in with email, Google, or passkey.'
+  },
+  nav: {
+    dashboard: 'Dashboard',
+    jobs: 'Jobs',
+    customers: 'Customers',
+    schedule: 'Schedule',
+    workers: 'Workers',
+    team: 'Team',
+    activity: 'Activity',
+    analytics: 'Analytics',
+    workflows: 'Workflows',
+    notifications: 'Notifications',
+    billing: 'Billing',
+    settings: 'Settings',
+    clientPortal: 'Client portal',
+    contractorPortal: 'Contractor portal'
+  },
+  settingsNav: {
+    workspace: 'Workspace',
+    team: 'Team',
+    branding: 'Branding',
+    integrations: 'Integrations',
+    account: 'Account',
+    billing: 'Billing',
+    security: 'Security',
+    privacy: 'Privacy',
+    notifications: 'Notifications',
+    api: 'API',
+    departments: 'Departments'
+  },
+  dashboard: {
+    title: 'Dashboard',
+    subtitle: 'What needs attention right now.',
+    createJob: 'Create job',
+    inviteTeam: 'Invite team member',
+    viewReports: 'View reports',
+    upcomingWork: 'Upcoming work',
+    quickLinks: 'Quick links',
+    openJobs: 'Open jobs',
+    completedJobs: 'Completed jobs',
+    dueSoon: 'Due in 7 days',
+    reportsOnFile: 'Reports on file',
+    teamMembers: 'Team members',
+    recentJobs: 'Recent jobs',
+    upcomingJobs: 'Upcoming jobs',
+    recentActivity: 'Recent activity',
+    viewAllActivity: 'View all activity',
+    upgradeTitle: 'Need higher limits?',
+    upgradeBody: 'Upgrade for more jobs, photos, team members, and crew assignment.',
+    metricsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
+    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.'
+  },
+  billing: {
+    title: 'Billing',
+    currentPlan: 'Plan',
+    status: 'Status',
+    renewalDate: 'Renewal date',
+    manageStripe: 'Manage billing in Stripe',
+    noCustomer: 'No Stripe customer on file yet. Choose a paid plan below to start checkout.',
+    cancel: 'Cancel subscription',
+    resume: 'Resume subscription',
+    portalUnavailable: 'Stripe billing portal is not configured. Contact support for billing changes.',
+    upgradeOptions: 'Upgrade options'
+  },
+  language: {
+    title: 'Language',
+    note: 'Language changes core app labels. Some legal and billing text may remain in English.'
   }
 };

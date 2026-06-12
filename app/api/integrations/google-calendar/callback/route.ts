@@ -64,7 +64,15 @@ export async function GET(request: Request) {
 
   try {
     const tokens = await exchangeGoogleAuthCode(code);
-    if (!tokens.refresh_token) {
+
+    const { data: existing } = await admin
+      .from('google_calendar_connections')
+      .select('refresh_token')
+      .eq('organization_id', org.organizationId)
+      .maybeSingle();
+
+    const refreshToken = tokens.refresh_token || existing?.refresh_token;
+    if (!refreshToken) {
       return integrationsRedirect({ error: 'missing_refresh_token' });
     }
 
@@ -77,7 +85,7 @@ export async function GET(request: Request) {
         connected_by_user_id: user.id,
         google_email: googleEmail,
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        refresh_token: refreshToken,
         token_expires_at: expiresAt,
         calendar_id: 'primary',
         sync_enabled: true,

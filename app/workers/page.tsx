@@ -1,13 +1,16 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
+import { useTranslation } from '@/components/locale-provider';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -20,6 +23,7 @@ type Worker = {
 
 export default function WorkersPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canManage, setCanManage] = useState(false);
@@ -43,7 +47,15 @@ export default function WorkersPage() {
     setPlan(normalizePlan(profile?.plan));
     setCanManage(isManagerRole(normalizeRole(profile?.role)));
 
-    const { data } = await supabase.from('workers').select('id, name, role, phone').order('created_at', { ascending: false });
+    const org = await fetchOrganizationContext(user.id);
+    let query = supabase.from('workers').select('id, name, role, phone').order('created_at', { ascending: false });
+    if (org?.organizationId) {
+      query = query.eq('organization_id', org.organizationId);
+    } else {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data } = await query;
     setWorkers(data || []);
     setLoading(false);
   }
@@ -70,8 +82,10 @@ export default function WorkersPage() {
     setSaving(true);
     setMessage('');
 
+    const org = await fetchOrganizationContext(user.id);
     const { error } = await supabase.from('workers').insert({
       user_id: user.id,
+      organization_id: org?.organizationId || null,
       name: name.trim(),
       role: role.trim() || null,
       phone: phone.trim() || null
@@ -98,52 +112,57 @@ export default function WorkersPage() {
     loadWorkers();
   }, []);
 
+  const crewEnabled = limitsForPlan(plan).crewAssignment;
+
   return (
     <AppShell plan={plan}>
-        <h1>Workers</h1>
-        <p className="muted">Crew members linked to your operation.</p>
+      <h1>{t('nav.workers')}</h1>
+      <p className="muted page-subtitle">Crew members linked to your operation.</p>
 
-        {message ? (
-          <p className="auth-message auth-message-error" role="alert">
-            {friendlyErrorMessage(message)}
-          </p>
-        ) : null}
+      {message ? (
+        <p className="auth-message auth-message-error" role="alert">
+          {friendlyErrorMessage(message)}
+        </p>
+      ) : null}
 
-        {canManage && limitsForPlan(plan).crewAssignment && (
-          <div className="card form" style={{ marginTop: 20 }}>
-            <h3>Add worker</h3>
-            <label htmlFor="worker-name">Name</label>
-            <input id="worker-name" className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-            <label htmlFor="worker-role">Role</label>
-            <input id="worker-role" className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
-            <label htmlFor="worker-phone">Phone</label>
-            <input id="worker-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <button className="btn btn-primary" type="button" onClick={addWorker} disabled={saving}>
-              {saving ? 'Saving...' : 'Save worker'}
-            </button>
-          </div>
-        )}
-
-        {canManage && !limitsForPlan(plan).crewAssignment && (
-          <div className="card" style={{ marginTop: 20 }}>
-            <p>Workers and crew assignment are available on the Business plan.</p>
-          </div>
-        )}
-
-        <div className="grid-3" style={{ marginTop: 20 }}>
-          {loading ? <p className="loading-state" role="status">Loading workers…</p> : null}
-          {!loading && workers.length === 0 ? (
-            <LocalizedEmptyState emptyKey="workers" />
-          ) : null}
-          {!loading &&
-            workers.map((worker) => (
-              <div className="card" key={worker.id}>
-                <h3>{worker.name}</h3>
-                <p>{worker.role || 'Crew member'}</p>
-                <p>{worker.phone || 'No phone'}</p>
-              </div>
-            ))}
+      {canManage && crewEnabled && (
+        <div className="card form" style={{ marginTop: 20 }}>
+          <h3 className="card-title-sm">Add worker</h3>
+          <label htmlFor="worker-name">Name</label>
+          <input id="worker-name" className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="worker-role">Role</label>
+          <input id="worker-role" className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
+          <label htmlFor="worker-phone">Phone</label>
+          <input id="worker-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <button className="btn btn-primary" type="button" onClick={addWorker} disabled={saving}>
+            {saving ? 'Saving...' : 'Save worker'}
+          </button>
         </div>
+      )}
+
+      {canManage && !crewEnabled && (
+        <div className="card plan-gate-card" style={{ marginTop: 20 }}>
+          <p>{t('empty.workers.description')}</p>
+          <Link href="/settings/billing?upgrade=business" className="btn btn-primary">
+            Upgrade to Business
+          </Link>
+        </div>
+      )}
+
+      <div className="workers-grid" style={{ marginTop: 20 }}>
+        {loading ? <p className="loading-state" role="status">Loading workers…</p> : null}
+        {!loading && workers.length === 0 ? (
+          <LocalizedEmptyState emptyKey="workers" href={crewEnabled ? '/team' : '/settings/billing?upgrade=business'} />
+        ) : null}
+        {!loading &&
+          workers.map((worker) => (
+            <div className="card worker-card" key={worker.id}>
+              <h3 className="card-title-sm">{worker.name}</h3>
+              <p className="muted">{worker.role || 'Crew member'}</p>
+              <p className="muted">{worker.phone || 'No phone'}</p>
+            </div>
+          ))}
+      </div>
     </AppShell>
   );
 }

@@ -58,7 +58,9 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
   const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('employee');
+  const [inviteNote, setInviteNote] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
+  const [copyMessage, setCopyMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success'>('error');
@@ -168,7 +170,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     const res = await fetch('/api/team/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim(), role: inviteRole })
+      body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined })
     });
     const json = await res.json();
     setBusy(false);
@@ -179,7 +181,18 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     setInviteUrl(json.acceptUrl);
     showSuccess(json.message || 'Invitation sent.');
     setEmail('');
+    setInviteNote('');
     load();
+  }
+
+  async function copyInviteLink() {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopyMessage('Invite link copied.');
+    } catch {
+      setCopyMessage('Copy the link manually.');
+    }
   }
 
   async function resendInvite(invitationId: string) {
@@ -284,8 +297,11 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
       {isDemo ? <DemoBanner organizationName="Demo workspace" /> : null}
 
       {!teamEnabled && (
-        <div className="settings-card">
+        <div className="settings-card plan-gate-card">
           <p>Team management requires Business, Operations, Growth, or Enterprise.</p>
+          <a className="btn btn-primary" href="/settings/billing?upgrade=business">
+            Upgrade to Business
+          </a>
         </div>
       )}
 
@@ -303,20 +319,34 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
           />
           <label htmlFor="invite-role">Role</label>
           <select id="invite-role" className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-            <option value="admin">Admin</option>
             <option value="manager">Manager</option>
-            <option value="employee">Worker</option>
-            <option value="contractor">Technician</option>
-            <option value="viewer">Viewer</option>
+            <option value="employee">Employee</option>
+            <option value="contractor">Contractor</option>
             <option value="client">Client</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
           </select>
+          <label htmlFor="invite-note">Note (optional)</label>
+          <textarea
+            id="invite-note"
+            className="input"
+            rows={2}
+            placeholder="Optional message for the invitee"
+            value={inviteNote}
+            onChange={(e) => setInviteNote(e.target.value)}
+          />
           <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={sendInvite}>
             {busy ? 'Sending…' : 'Send invitation'}
           </button>
           {inviteUrl ? (
-            <p>
-              Accept link: <a href={inviteUrl}>{inviteUrl}</a>
-            </p>
+            <div className="invite-link-row">
+              <p className="muted">Accept link:</p>
+              <code className="invite-link-code">{inviteUrl}</code>
+              <button type="button" className="btn btn-sm" onClick={() => void copyInviteLink()}>
+                Copy link
+              </button>
+              {copyMessage ? <p className="muted">{copyMessage}</p> : null}
+            </div>
           ) : null}
         </div>
       )}

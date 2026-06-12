@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/components/locale-provider';
+import { navLabel } from '@/lib/nav-i18n';
 import {
   billingUpgradeHref,
   isNavLinkActive,
@@ -44,6 +46,7 @@ export function AppNavItems({
   onNavigate
 }: AppNavItemsProps) {
   const pathname = usePathname() || '/';
+  const { t } = useTranslation();
   const normalized = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
 
@@ -74,7 +77,7 @@ export function AppNavItems({
             aria-current={active ? 'page' : undefined}
             onClick={onNavigate}
           >
-            {label}
+            {navLabel(href, t, label)}
             {!resolution.accessible && resolution.requiredPlan ? (
               <span className="nav-upgrade-badge">{planDisplayName(resolution.requiredPlan)}</span>
             ) : null}
@@ -102,7 +105,7 @@ export function AppNavItems({
               aria-disabled={resolution.accessible ? undefined : true}
               onClick={onNavigate}
             >
-              {label}
+              {navLabel(href, t, label)}
               {suffix}
               {!resolution.accessible && resolution.requiredPlan ? (
                 <span className="nav-upgrade-badge">{planDisplayName(resolution.requiredPlan)}</span>

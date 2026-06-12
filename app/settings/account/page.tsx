@@ -18,7 +18,7 @@ import { SUPPORT_EMAIL } from '@/lib/support';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { supabase } from '@/lib/supabase';
 
-const DEACTIVATE_CONFIRMATION = 'deactivate my account';
+const DISABLE_CONFIRMATION = 'disable my account';
 const DELETE_CONFIRMATION = 'DELETE MY ACCOUNT';
 
 export default function AccountSettingsPage() {
@@ -65,7 +65,7 @@ export default function AccountSettingsPage() {
   }, [router]);
 
   async function disableAccount() {
-    if (confirmDisableText.trim().toLowerCase() !== DEACTIVATE_CONFIRMATION || busy) return;
+    if (confirmDisableText.trim().toLowerCase() !== DISABLE_CONFIRMATION || busy) return;
     setBusy(true);
     setMessage(null);
 
@@ -74,11 +74,11 @@ export default function AccountSettingsPage() {
     setBusy(false);
 
     if (!res.ok) {
-      setMessage({ title: 'Unable to deactivate', body: json.error || 'Unable to disable account.', details: json.code });
+      setMessage({ title: 'Unable to disable account', body: json.error || 'Unable to disable account.', details: json.code });
       return;
     }
 
-    window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent('Account deactivated at your request.');
+    window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent('Account disabled at your request.');
   }
 
   async function requestDeletion() {
@@ -149,7 +149,7 @@ export default function AccountSettingsPage() {
   }
 
   const canBilling = canManageBilling(role);
-  const deactivateReady = confirmDisableText.trim().toLowerCase() === DEACTIVATE_CONFIRMATION;
+  const disableReady = confirmDisableText.trim().toLowerCase() === DISABLE_CONFIRMATION;
   const deleteReady = confirmDeleteText.trim() === DELETE_CONFIRMATION;
 
   return (
@@ -227,24 +227,23 @@ export default function AccountSettingsPage() {
       )}
 
       <div className="settings-card">
-        <h3>Deactivate account</h3>
+        <h3>Disable account</h3>
         <p className="muted">
-          Deactivation signs you out and blocks your sign-in. Your organization data (jobs, customers, billing records)
-          stays stored for your team unless you also request permanent deletion.
+          Disabling signs you out and blocks sign-in. Your organization data (jobs, customers, billing records) stays
+          stored. Nothing is deleted.
         </p>
         {isOwner(role) ? (
           <div className="settings-warning">
-            You are the workspace owner. Deactivating only blocks your account. It does not delete the organization.
-            Transfer ownership on the <Link href="/team">Team</Link> page before deactivating if someone else should
-            manage billing and settings.
+            You are the workspace owner. Disabling only blocks your account. It does not delete the organization.
+            Transfer ownership on the <Link href="/team">Team</Link> page first if someone else should manage billing
+            and settings.
           </div>
         ) : null}
         <div className="settings-warning">
-          This is not instant permanent deletion. Contact <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> to
-          restore access or complete a deletion request.
+          Contact <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> to restore access.
         </div>
         <label className="auth-field">
-          <span className="muted">Type &quot;{DEACTIVATE_CONFIRMATION}&quot; to confirm</span>
+          <span className="muted">Type &quot;{DISABLE_CONFIRMATION}&quot; to confirm</span>
           <input
             className="input"
             type="text"
@@ -254,8 +253,8 @@ export default function AccountSettingsPage() {
           />
         </label>
         <div className="settings-actions">
-          <button type="button" className="btn" disabled={!deactivateReady || busy} onClick={disableAccount}>
-            {busy ? 'Deactivating...' : 'Deactivate account'}
+          <button type="button" className="btn" disabled={!disableReady || busy} onClick={disableAccount}>
+            {busy ? 'Disabling...' : 'Disable account'}
           </button>
         </div>
       </div>

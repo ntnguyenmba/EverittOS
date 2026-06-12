@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { settingsLinksForRole } from '@/lib/nav-access';
+import { settingsNavLabel } from '@/lib/nav-i18n';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -19,6 +21,7 @@ type SettingsShellProps = {
 
 export function SettingsShell({ plan, title, description, role: roleProp, children }: SettingsShellProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const normalizedPlan = normalizePlan(plan);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
 
@@ -59,7 +62,7 @@ export function SettingsShell({ plan, title, description, role: roleProp, childr
               : pathname === link.href || pathname.startsWith(`${link.href}/`);
           return (
             <Link key={link.href} href={link.href} className={active ? 'active' : undefined}>
-              {link.label}
+              {settingsNavLabel(link.href, t, link.label)}
             </Link>
           );
         })}

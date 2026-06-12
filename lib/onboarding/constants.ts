@@ -3,10 +3,18 @@ export const ONBOARDING_STEP_COUNT = 7;
 export const INDUSTRY_OPTIONS = [
   'property_management',
   'cleaning',
+  'salon',
+  'barber',
+  'spa',
+  'beauty_studio',
   'maintenance',
   'construction',
+  'general_contractor',
   'landscaping',
   'field_service',
+  'janitorial',
+  'real_estate',
+  'home_services',
   'hospitality',
   'other'
 ] as const;

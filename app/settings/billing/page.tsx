@@ -20,11 +20,14 @@ import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canCancelSubscription, canResumeSubscription } from '@/lib/stripe-subscription';
 import { subscriptionAccess } from '@/lib/subscription-access';
+import { useTranslation } from '@/components/locale-provider';
+import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const upgradePlan = normalizePlan(searchParams.get('upgrade'));
 
   const accessNotice = useMemo(() => {
@@ -170,7 +173,7 @@ function BillingSettingsContent() {
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus);
 
   return (
-    <SettingsShell plan={plan} role={role} title="Billing" description="Subscription status, usage, and plan changes.">
+    <SettingsShell plan={plan} role={role} title={t('billing.title')} description="Subscription status, usage, and plan changes.">
       {accessNotice ? (
         <AccessBlockedBanner
           title={accessNotice.title}
@@ -186,21 +189,22 @@ function BillingSettingsContent() {
       <div className="settings-card">
         <h3>Current subscription</h3>
         <div className="settings-row">
-          <span className="settings-row-label">Plan</span>
+          <span className="settings-row-label">{t('billing.currentPlan')}</span>
           <span className="settings-row-value">{planDisplayName(plan)}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">Status</span>
+          <span className="settings-row-label">{t('billing.status')}</span>
           <span className="settings-row-value">{subscriptionStatus}</span>
         </div>
         {renewalDate ? (
           <div className="settings-row">
-            <span className="settings-row-label">Renewal date</span>
+            <span className="settings-row-label">{t('billing.renewalDate')}</span>
             <span className="settings-row-value">
               {new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
         ) : null}
+        <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
         <p className="muted">{subscriptionInfo.message}</p>
         {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
           <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
@@ -218,19 +222,19 @@ function BillingSettingsContent() {
                 onClick={openBillingPortal}
                 aria-label="Open Stripe customer portal in a new tab"
               >
-                {portalLoading ? 'Opening…' : 'Manage billing in Stripe'}
+                {portalLoading ? 'Opening…' : t('billing.manageStripe')}
               </button>
             ) : (
-              <p className="muted">No Stripe customer on file yet. Choose a paid plan below to start checkout.</p>
+              <p className="muted">{t('billing.noCustomer')}</p>
             )}
             {canCancelSubscription(subscriptionStatus) ? (
               <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
-                {cancelLoading ? 'Working...' : 'Cancel subscription'}
+                {cancelLoading ? 'Working...' : t('billing.cancel')}
               </button>
             ) : null}
             {canResumeSubscription(subscriptionStatus) ? (
               <button type="button" className="btn btn-primary" disabled={resumeLoading} onClick={resumeSubscription}>
-                {resumeLoading ? 'Working...' : 'Resume subscription'}
+                {resumeLoading ? 'Working...' : t('billing.resume')}
               </button>
             ) : null}
           </div>
@@ -244,7 +248,7 @@ function BillingSettingsContent() {
       </div>
 
       <div className="settings-card">
-        <h3>Upgrade options</h3>
+        <h3>{t('billing.upgradeOptions')}</h3>
         <div className="pricing-grid compact">
           {EVERITTOS_PLANS.filter((tier) => tier.id !== 'free').map((tier) => (
             <div key={tier.id} className="card" style={{ marginTop: 0 }}>

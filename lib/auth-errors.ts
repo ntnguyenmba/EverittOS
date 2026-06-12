@@ -38,7 +38,7 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
   },
   account_disabled: {
     title: 'Account disabled',
-    message: 'This account has been deactivated. Contact support to restore access.',
+    message: 'This account is disabled. Contact support if this looks wrong.',
     details: 'profiles.account_status is disabled.',
     code: 'account_disabled'
   },

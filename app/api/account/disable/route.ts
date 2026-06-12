@@ -28,5 +28,5 @@ export async function POST() {
 
   await supabase.auth.signOut();
 
-  return NextResponse.json({ ok: true, message: 'Account disabled. Contact support to restore access.' });
+  return NextResponse.json({ ok: true, message: 'Account disabled. Contact support if this looks wrong.' });
 }

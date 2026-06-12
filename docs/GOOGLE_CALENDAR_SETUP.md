@@ -45,9 +45,11 @@ Set these on the **Production** environment for the EverittOS project:
 | Variable | Production value |
 |----------|------------------|
 | `NEXT_PUBLIC_APP_URL` | `https://app.everittventures.com` |
-| `GOOGLE_CALENDAR_CLIENT_ID` | Your Google OAuth Web client ID (ends with `.apps.googleusercontent.com`) |
-| `GOOGLE_CALENDAR_CLIENT_SECRET` | Your Google OAuth client secret |
-| `GOOGLE_CALENDAR_REDIRECT_URI` | `https://app.everittventures.com/api/integrations/google-calendar/callback` |
+| `GOOGLE_CLIENT_ID` | Your Google OAuth Web client ID (ends with `.apps.googleusercontent.com`) |
+| `GOOGLE_CLIENT_SECRET` | Your Google OAuth client secret |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | `https://app.everittventures.com/api/integrations/google-calendar/callback` (optional; defaults from `NEXT_PUBLIC_APP_URL`) |
+
+Legacy aliases `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET` are also supported.
 
 Optional:
 
@@ -111,6 +113,6 @@ Production Google Cloud values above remain required for `app.everittventures.co
 | Symptom | Fix |
 |---------|-----|
 | `redirect_uri_mismatch` | Redirect URI in Google Console must match `GOOGLE_CALENDAR_REDIRECT_URI` exactly |
-| `Google Calendar is not configured` | Set `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET` in Vercel and redeploy |
+| `Google Calendar is not configured` | Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Vercel and redeploy |
 | `missing_refresh_token` | Revoke EverittOS in [Google Account permissions](https://myaccount.google.com/permissions) and reconnect (consent uses `prompt=consent`) |
 | Events not appearing | Job needs a schedule or due date; open Integrations → **Sync now** |

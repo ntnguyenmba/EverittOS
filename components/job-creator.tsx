@@ -71,24 +71,36 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const { error } = await supabase.from('jobs').insert([
-      {
-        user_id: user.id,
-        organization_id: org?.organizationId || null,
-        title: title.trim(),
-        customer_name: customerName.trim() || null,
-        phone: phone.trim() || null,
-        address: address.trim() || null,
-        notes: notes.trim() || null,
-        status: 'new'
-      }
-    ]);
+    const { data: createdJob, error } = await supabase
+      .from('jobs')
+      .insert([
+        {
+          user_id: user.id,
+          organization_id: org?.organizationId || null,
+          title: title.trim(),
+          customer_name: customerName.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+          notes: notes.trim() || null,
+          status: 'new'
+        }
+      ])
+      .select('id')
+      .single();
 
     setLoading(false);
 
     if (error) {
       alert(error.message);
       return;
+    }
+
+    if (createdJob?.id) {
+      void fetch('/api/integrations/google-calendar/sync-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: createdJob.id })
+      });
     }
 
     setCreated(true);

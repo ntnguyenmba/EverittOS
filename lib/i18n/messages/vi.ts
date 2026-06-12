@@ -22,6 +22,10 @@ export const messages: Messages = {
     skipEntire: 'Bỏ qua thiết lập',
     loading: 'Đang tải không gian làm việc…',
     calendarLater: 'Có thể kết nối lịch sau.',
+    calendarNotConfigured: 'Kết nối lịch chưa được cấu hình. Bạn có thể tiếp tục và thêm sau trong Cài đặt.',
+    calendarConnected: 'Google Calendar đã được kết nối.',
+    connectGoogleCalendar: 'Kết nối Google Calendar',
+    openIntegrations: 'Mở cài đặt tích hợp',
     inviteFailed: 'Không gửi được lời mời. Bạn có thể mời nhóm sau trong Cài đặt.',
     sampleJobName: 'Chuyến thăm chào mừng',
     sampleCustomer: 'Khách hàng mẫu',
@@ -69,10 +73,18 @@ export const messages: Messages = {
     industries: {
       property_management: 'Quản lý bất động sản',
       cleaning: 'Vệ sinh',
+      salon: 'Salon',
+      barber: 'Barber',
+      spa: 'Spa',
+      beauty_studio: 'Studio làm đẹp',
       maintenance: 'Bảo trì',
       construction: 'Xây dựng',
+      general_contractor: 'Nhà thầu tổng',
       landscaping: 'Cảnh quan',
       field_service: 'Dịch vụ hiện trường',
+      janitorial: 'Vệ sinh công nghiệp',
+      real_estate: 'Bất động sản',
+      home_services: 'Dịch vụ tại nhà',
       hospitality: 'Khách sạn & nhà hàng',
       other: 'Khác'
     },
@@ -102,7 +114,7 @@ export const messages: Messages = {
     checklist: {
       title: 'Bắt đầu',
       description:
-        'Thiết lập tùy chọn giúp bạn khởi động nhanh hơn. Bỏ qua bất cứ lúc nào — không chặn công việc của bạn.',
+        'Thiết lập tùy chọn giúp bạn khởi động nhanh hơn. Bỏ qua bất cứ lúc nào. Không chặn công việc của bạn.',
       dismiss: 'Ẩn',
       continue: 'Tiếp tục thiết lập',
       settings: 'Cài đặt không gian',
@@ -140,8 +152,8 @@ export const messages: Messages = {
       action: 'Đến công việc'
     },
     workers: {
-      title: 'Mời thành viên nhóm đầu tiên',
-      description: 'Phân công công việc và giữ mọi người đồng bộ từ hiện trường hoặc văn phòng.',
+      title: 'Chưa có nhân viên',
+      description: 'Mời thành viên nhóm hoặc thêm nhân viên khi gói của bạn hỗ trợ quản lý đội.',
       action: 'Mời nhóm'
     },
     activity: {
@@ -252,5 +264,72 @@ export const messages: Messages = {
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
     consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
     signInMethods: 'Đăng nhập bằng email, Google hoặc passkey.'
+  },
+  nav: {
+    dashboard: 'Bảng điều khiển',
+    jobs: 'Công việc',
+    customers: 'Khách hàng',
+    schedule: 'Lịch',
+    workers: 'Nhân viên',
+    team: 'Nhóm',
+    activity: 'Hoạt động',
+    analytics: 'Phân tích',
+    workflows: 'Quy trình',
+    notifications: 'Thông báo',
+    billing: 'Thanh toán',
+    settings: 'Cài đặt',
+    clientPortal: 'Cổng khách hàng',
+    contractorPortal: 'Cổng nhà thầu'
+  },
+  settingsNav: {
+    workspace: 'Không gian làm việc',
+    team: 'Nhóm',
+    branding: 'Thương hiệu',
+    integrations: 'Tích hợp',
+    account: 'Tài khoản',
+    billing: 'Thanh toán',
+    security: 'Bảo mật',
+    privacy: 'Quyền riêng tư',
+    notifications: 'Thông báo',
+    api: 'API',
+    departments: 'Phòng ban'
+  },
+  dashboard: {
+    title: 'Bảng điều khiển',
+    subtitle: 'Những gì cần chú ý ngay bây giờ.',
+    createJob: 'Tạo công việc',
+    inviteTeam: 'Mời thành viên',
+    viewReports: 'Xem báo cáo',
+    upcomingWork: 'Công việc sắp tới',
+    quickLinks: 'Liên kết nhanh',
+    openJobs: 'Công việc mở',
+    completedJobs: 'Đã hoàn thành',
+    dueSoon: 'Đến hạn trong 7 ngày',
+    reportsOnFile: 'Báo cáo đã lưu',
+    teamMembers: 'Thành viên nhóm',
+    recentJobs: 'Công việc gần đây',
+    upcomingJobs: 'Công việc sắp tới',
+    recentActivity: 'Hoạt động gần đây',
+    viewAllActivity: 'Xem tất cả hoạt động',
+    upgradeTitle: 'Cần giới hạn cao hơn?',
+    upgradeBody: 'Nâng cấp để có thêm công việc, ảnh, thành viên nhóm và phân công đội.',
+    metricsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.',
+    analyticsEmpty: 'Số liệu sẽ hiển thị sau khi bạn tạo công việc, báo cáo và hoạt động nhóm.'
+  },
+  billing: {
+    title: 'Thanh toán',
+    currentPlan: 'Gói',
+    status: 'Trạng thái',
+    renewalDate: 'Ngày gia hạn',
+    manageStripe: 'Quản lý thanh toán trên Stripe',
+    noCustomer: 'Chưa có khách hàng Stripe. Chọn gói trả phí bên dưới.',
+    cancel: 'Hủy đăng ký',
+    resume: 'Tiếp tục đăng ký',
+    portalUnavailable: 'Cổng Stripe chưa được cấu hình. Liên hệ hỗ trợ.',
+    upgradeOptions: 'Tùy chọn nâng cấp'
+  },
+  language: {
+    title: 'Ngôn ngữ',
+    note: 'Ngôn ngữ thay đổi nhãn chính của ứng dụng. Một số văn bản pháp lý và thanh toán có thể vẫn bằng tiếng Anh.'
   }
 };

@@ -2,7 +2,7 @@
 export const EMPTY_COPY = {
   workers: {
     title: 'No workers yet',
-    description: 'Add your first team member.'
+    description: 'Invite a team member or add a worker when your plan supports crew management.'
   },
   customers: {
     title: 'No customers yet',

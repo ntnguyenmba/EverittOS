@@ -22,6 +22,11 @@ export const messages: Messages = {
     skipEntire: 'Omitir configuración',
     loading: 'Cargando su espacio de trabajo…',
     calendarLater: 'La integración del calendario se puede conectar más tarde.',
+    calendarNotConfigured:
+      'La conexión del calendario aún no está configurada. Puede continuar y agregarla después en Configuración.',
+    calendarConnected: 'Google Calendar está conectado.',
+    connectGoogleCalendar: 'Conectar Google Calendar',
+    openIntegrations: 'Abrir integraciones',
     inviteFailed: 'No se pudo enviar la invitación. Puede invitar al equipo desde Configuración.',
     sampleJobName: 'Visita de bienvenida',
     sampleCustomer: 'Cliente de ejemplo',
@@ -69,10 +74,18 @@ export const messages: Messages = {
     industries: {
       property_management: 'Administración de propiedades',
       cleaning: 'Limpieza',
+      salon: 'Salón',
+      barber: 'Barbería',
+      spa: 'Spa',
+      beauty_studio: 'Estudio de belleza',
       maintenance: 'Mantenimiento',
       construction: 'Construcción',
+      general_contractor: 'Contratista general',
       landscaping: 'Paisajismo',
       field_service: 'Servicio de campo',
+      janitorial: 'Limpieza comercial',
+      real_estate: 'Bienes raíces',
+      home_services: 'Servicios del hogar',
       hospitality: 'Hospitalidad',
       other: 'Otro'
     },
@@ -102,7 +115,7 @@ export const messages: Messages = {
     checklist: {
       title: 'Primeros pasos',
       description:
-        'Configuración opcional para ayudarle a comenzar más rápido. Omita cuando quiera — nada bloquea su trabajo.',
+        'Configuración opcional para ayudarle a comenzar más rápido. Omita cuando quiera. Nada bloquea su trabajo.',
       dismiss: 'Descartar',
       continue: 'Continuar configuración',
       settings: 'Configuración del espacio',
@@ -140,8 +153,8 @@ export const messages: Messages = {
       action: 'Ir a trabajos'
     },
     workers: {
-      title: 'Invite a su primer miembro del equipo',
-      description: 'Asigne trabajo y mantenga a todos alineados desde el campo u oficina.',
+      title: 'Aún no hay trabajadores',
+      description: 'Invite a un miembro del equipo o agregue un trabajador cuando su plan lo permita.',
       action: 'Invitar equipo'
     },
     activity: {
@@ -252,5 +265,72 @@ export const messages: Messages = {
     acceptPrivacy: 'Acepto la Política de privacidad',
     consentRequired: 'Debe aceptar los Términos y la Política de privacidad para crear una cuenta.',
     signInMethods: 'Inicie sesión con correo, Google o llave de acceso.'
+  },
+  nav: {
+    dashboard: 'Panel',
+    jobs: 'Trabajos',
+    customers: 'Clientes',
+    schedule: 'Horario',
+    workers: 'Trabajadores',
+    team: 'Equipo',
+    activity: 'Actividad',
+    analytics: 'Analítica',
+    workflows: 'Flujos',
+    notifications: 'Notificaciones',
+    billing: 'Facturación',
+    settings: 'Configuración',
+    clientPortal: 'Portal del cliente',
+    contractorPortal: 'Portal del contratista'
+  },
+  settingsNav: {
+    workspace: 'Espacio de trabajo',
+    team: 'Equipo',
+    branding: 'Marca',
+    integrations: 'Integraciones',
+    account: 'Cuenta',
+    billing: 'Facturación',
+    security: 'Seguridad',
+    privacy: 'Privacidad',
+    notifications: 'Notificaciones',
+    api: 'API',
+    departments: 'Departamentos'
+  },
+  dashboard: {
+    title: 'Panel',
+    subtitle: 'Lo que necesita atención ahora.',
+    createJob: 'Crear trabajo',
+    inviteTeam: 'Invitar miembro',
+    viewReports: 'Ver informes',
+    upcomingWork: 'Trabajo próximo',
+    quickLinks: 'Enlaces rápidos',
+    openJobs: 'Trabajos abiertos',
+    completedJobs: 'Trabajos completados',
+    dueSoon: 'Vence en 7 días',
+    reportsOnFile: 'Informes archivados',
+    teamMembers: 'Miembros del equipo',
+    recentJobs: 'Trabajos recientes',
+    upcomingJobs: 'Trabajos próximos',
+    recentActivity: 'Actividad reciente',
+    viewAllActivity: 'Ver toda la actividad',
+    upgradeTitle: '¿Necesita más límites?',
+    upgradeBody: 'Actualice para más trabajos, fotos, miembros del equipo y asignación de cuadrillas.',
+    metricsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
+    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.'
+  },
+  billing: {
+    title: 'Facturación',
+    currentPlan: 'Plan',
+    status: 'Estado',
+    renewalDate: 'Fecha de renovación',
+    manageStripe: 'Gestionar facturación en Stripe',
+    noCustomer: 'Aún no hay cliente de Stripe. Elija un plan de pago abajo.',
+    cancel: 'Cancelar suscripción',
+    resume: 'Reanudar suscripción',
+    portalUnavailable: 'El portal de Stripe no está configurado. Contacte soporte.',
+    upgradeOptions: 'Opciones de actualización'
+  },
+  language: {
+    title: 'Idioma',
+    note: 'El idioma cambia las etiquetas principales. Parte del texto legal y de facturación puede permanecer en inglés.'
   }
 };
