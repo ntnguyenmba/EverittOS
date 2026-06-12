@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
+import {
+  isMissingSchemaError,
+  SCHEMA_SETUP_HINT,
+  schemaEmptyPayload
+} from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,10 +28,13 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json(schemaEmptyPayload('invoices', { setupHint: SCHEMA_SETUP_HINT }));
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ invoices: data || [] });
+  return NextResponse.json({ invoices: data || [], schemaReady: true });
 }
 
 export async function POST(request: Request) {
@@ -68,6 +76,9 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

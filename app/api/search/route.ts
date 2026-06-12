@@ -4,6 +4,7 @@ import { canSeeOrgWideData } from '@/lib/permissions';
 import type { SearchResultItem } from '@/lib/os-types';
 import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,7 @@ export async function GET(request: Request) {
       href: `/jobs/${j.id}`
     });
   }
-  for (const t of tasks.data || []) {
+  for (const t of tasks.error && isMissingSchemaError(tasks.error) ? [] : tasks.data || []) {
     results.push({
       id: t.id,
       type: 'task',
@@ -96,7 +97,7 @@ export async function GET(request: Request) {
       href: '/projects'
     });
   }
-  for (const d of docs.data || []) {
+  for (const d of docs.error && isMissingSchemaError(docs.error) ? [] : docs.data || []) {
     results.push({
       id: d.id,
       type: 'document',
@@ -105,7 +106,7 @@ export async function GET(request: Request) {
       href: '/knowledge'
     });
   }
-  for (const t of templates.data || []) {
+  for (const t of templates.error && isMissingSchemaError(templates.error) ? [] : templates.data || []) {
     results.push({
       id: t.id,
       type: 'template',
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
       href: '/templates'
     });
   }
-  for (const f of forms.data || []) {
+  for (const f of forms.error && isMissingSchemaError(forms.error) ? [] : forms.data || []) {
     results.push({
       id: f.id,
       type: 'form',

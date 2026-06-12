@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import type { OutboundStatus } from '@/lib/outbound/types';
+import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -73,6 +74,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     .single();
 
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
@@ -96,6 +100,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     .eq('organization_id', ctx.organizationId);
 
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

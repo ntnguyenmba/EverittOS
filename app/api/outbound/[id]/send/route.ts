@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { sendOutboundDocument } from '@/lib/outbound/send-document';
 import type { OutboundDocument } from '@/lib/outbound/types';
+import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,8 +26,14 @@ export async function POST(_request: Request, context: RouteContext) {
     .eq('organization_id', ctx.organizationId)
     .maybeSingle();
 
-  if (error || !document) {
-    return NextResponse.json({ error: error?.message || 'Document not found' }, { status: 404 });
+  if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (!document) {
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
   }
 
   if (document.status === 'sent') {

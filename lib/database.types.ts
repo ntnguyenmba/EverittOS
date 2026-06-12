@@ -170,6 +170,107 @@ export type Profile = {
   created_at?: string | null;
 };
 
+/** Matches public.template_library */
+export type TemplateLibraryRow = {
+  id: string;
+  organization_id: string;
+  category: string;
+  title: string;
+  body: string;
+  version: number;
+  parent_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Matches public.review_requests */
+export type ReviewRequestRow = {
+  id: string;
+  organization_id: string;
+  job_id: string | null;
+  customer_id: string | null;
+  customer_email: string | null;
+  status: string;
+  message: string | null;
+  sent_at: string | null;
+  submitted_at: string | null;
+  scheduled_at: string | null;
+  failure_reason: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Matches public.customer_reviews */
+export type CustomerReviewRow = {
+  id: string;
+  organization_id: string;
+  review_request_id: string | null;
+  rating: number | null;
+  body: string | null;
+  status: string;
+  created_at: string;
+};
+
+/** Matches public.proposals (estimates use the same table) */
+export type ProposalRow = {
+  id: string;
+  organization_id: string;
+  customer_id: string | null;
+  job_id: string | null;
+  title: string;
+  status: string;
+  amount: number | null;
+  body: string | null;
+  sent_at: string | null;
+  approved_at: string | null;
+  recipient_email: string | null;
+  failure_reason: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Matches public.invoices */
+export type InvoiceRow = {
+  id: string;
+  organization_id: string | null;
+  job_id: string | null;
+  customer_id: string | null;
+  client_user_id: string | null;
+  user_id: string | null;
+  amount: number;
+  amount_paid: number;
+  status: string;
+  due_date: string | null;
+  description: string | null;
+  notes: string | null;
+  invoice_date: string | null;
+  recipient_email: string | null;
+  sent_at: string | null;
+  delivery_status: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Matches public.outbound_sent_history */
+export type OutboundSentHistoryRow = {
+  id: string;
+  document_id: string;
+  organization_id: string;
+  event_type: string;
+  recipient_email: string | null;
+  subject: string | null;
+  body_snapshot: string | null;
+  delivery_provider: string | null;
+  external_message_id: string | null;
+  error_message: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type EverittosSubscription = {
   id: string;
   user_id: string | null;

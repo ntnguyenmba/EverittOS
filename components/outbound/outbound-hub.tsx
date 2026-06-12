@@ -29,6 +29,7 @@ export function OutboundHub({
   const [tab, setTab] = useState<OutboundTab>('sent');
   const [documents, setDocuments] = useState<OutboundDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [schemaReady, setSchemaReady] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const autosave = useOutboundAutosave({
@@ -45,8 +46,15 @@ export function OutboundHub({
     setLoading(false);
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to load documents');
+      setSchemaReady(true);
       return;
     }
+    if (json.schemaReady === false) {
+      setSchemaReady(false);
+      setDocuments([]);
+      return;
+    }
+    setSchemaReady(true);
     setDocuments((json.documents || []) as OutboundDocument[]);
   }, [appFeedback, docType, tab]);
 
@@ -116,7 +124,16 @@ export function OutboundHub({
 
   return (
     <>
-      {canManage ? (
+      {!schemaReady ? (
+        <div className="card outbound-schema-notice" role="status">
+          <p>
+            Outbound tables are not set up in this database yet. Run{' '}
+            <code>supabase/manual_schema_repair.sql</code> in the Supabase SQL Editor, then refresh this page.
+          </p>
+        </div>
+      ) : null}
+
+      {canManage && schemaReady ? (
         <OutboundComposer
           docType={docType}
           fields={autosave.fields}

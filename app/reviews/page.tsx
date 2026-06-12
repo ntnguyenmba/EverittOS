@@ -7,15 +7,7 @@ import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-
-type CustomerReview = {
-  id: string;
-  review_request_id: string | null;
-  rating: number | null;
-  body: string | null;
-  status: string;
-  created_at: string;
-};
+import type { CustomerReview } from '@/lib/os-types';
 
 export default function ReviewsPage() {
   const router = useRouter();

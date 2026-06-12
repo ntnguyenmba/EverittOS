@@ -3,6 +3,11 @@ import { logActivityServer } from '@/lib/activity-server';
 import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import {
+  isMissingSchemaError,
+  SCHEMA_SETUP_HINT,
+  schemaEmptyPayload
+} from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,11 +40,22 @@ export async function GET() {
       .limit(100)
   ]);
 
-  if (requestsRes.error) return NextResponse.json({ error: requestsRes.error.message }, { status: 500 });
+  if (requestsRes.error) {
+    if (isMissingSchemaError(requestsRes.error)) {
+      return NextResponse.json(
+        schemaEmptyPayload('requests', {
+          reviews: [],
+          setupHint: SCHEMA_SETUP_HINT
+        })
+      );
+    }
+    return NextResponse.json({ error: requestsRes.error.message }, { status: 500 });
+  }
 
   return NextResponse.json({
     requests: requestsRes.data || [],
-    reviews: reviewsRes.data || []
+    reviews: reviewsRes.error && isMissingSchemaError(reviewsRes.error) ? [] : reviewsRes.data || [],
+    schemaReady: true
   });
 }
 
@@ -83,7 +99,12 @@ export async function POST(request: Request) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
 
   await logActivityServer({
     organizationId: org.organizationId,

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { OUTBOUND_DOC_TYPES, type OutboundDocType, type OutboundStatus } from '@/lib/outbound/types';
+import {
+  isMissingSchemaError,
+  SCHEMA_SETUP_HINT,
+  schemaEmptyPayload
+} from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,10 +42,13 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json(schemaEmptyPayload('documents', { setupHint: SCHEMA_SETUP_HINT }));
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ documents: data || [] });
+  return NextResponse.json({ documents: data || [], schemaReady: true });
 }
 
 export async function POST(request: Request) {
@@ -99,6 +107,9 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

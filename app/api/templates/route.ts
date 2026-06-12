@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
 import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
-import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import type { TemplateCategory } from '@/lib/os-types';
 import { createServerSupabase } from '@/lib/supabase-server';
+import {
+  isMissingSchemaError,
+  SCHEMA_SETUP_HINT,
+  schemaEmptyPayload
+} from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,8 +49,15 @@ export async function GET(request: Request) {
   }
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ templates: data || [], categories: CATEGORIES });
+  if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json(
+        schemaEmptyPayload('templates', { categories: CATEGORIES, setupHint: SCHEMA_SETUP_HINT })
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ templates: data || [], categories: CATEGORIES, schemaReady: true });
 }
 
 export async function POST(request: Request) {
@@ -83,7 +94,12 @@ export async function POST(request: Request) {
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    if (isMissingSchemaError(error)) {
+      return NextResponse.json({ error: SCHEMA_SETUP_HINT }, { status: 503 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
 
   await logActivityServer({
     organizationId: org.organizationId,

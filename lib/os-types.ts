@@ -72,7 +72,22 @@ export type ReviewRequest = {
   customer_id: string | null;
   status: ReviewRequestStatus;
   customer_email: string | null;
+  message: string | null;
   sent_at: string | null;
+  submitted_at: string | null;
+  scheduled_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerReview = {
+  id: string;
+  organization_id: string;
+  review_request_id: string | null;
+  rating: number | null;
+  body: string | null;
+  status: string;
   created_at: string;
 };
 

@@ -26,6 +26,7 @@ export default function TemplatesPage() {
   const [body, setBody] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [schemaReady, setSchemaReady] = useState(true);
   const [canManage, setCanManage] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -50,8 +51,10 @@ export default function TemplatesPage() {
     setLoading(false);
     if (!res.ok) {
       feedback.error(json.error || 'Unable to load templates');
+      setSchemaReady(true);
       return;
     }
+    setSchemaReady(json.schemaReady !== false);
     setTemplates(json.templates || []);
     setCategories(json.categories || []);
   }
@@ -114,6 +117,15 @@ export default function TemplatesPage() {
         <p className="page-subtitle">SOPs, proposals, contracts, emails, and checklists for your organization.</p>
       </header>
 
+      {!schemaReady ? (
+        <div className="card" style={{ marginBottom: 16 }} role="status">
+          <p className="muted">
+            Template tables are not set up yet. Run <code>supabase/manual_schema_repair.sql</code> in the Supabase SQL
+            Editor, then refresh.
+          </p>
+        </div>
+      ) : null}
+
       <div className="card" style={{ marginBottom: 16 }}>
         <label>
           Category filter
@@ -128,7 +140,7 @@ export default function TemplatesPage() {
         </label>
       </div>
 
-      {canManage && !showCreateForm && !editingId ? (
+      {canManage && schemaReady && !showCreateForm && !editingId ? (
         <div className="card" style={{ marginBottom: 18 }}>
           <button type="button" className="btn btn-primary" onClick={openCreateForm}>
             New template
@@ -136,7 +148,7 @@ export default function TemplatesPage() {
         </div>
       ) : null}
 
-      {canManage && (showCreateForm || editingId) ? (
+      {canManage && schemaReady && (showCreateForm || editingId) ? (
         <div className="card form" style={{ marginBottom: 18 }}>
           <h3>{editingId ? 'Edit template' : 'New template'}</h3>
           <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />

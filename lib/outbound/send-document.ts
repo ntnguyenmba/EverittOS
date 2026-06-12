@@ -2,6 +2,7 @@ import { logActivityServer } from '@/lib/activity-server';
 import { sendTransactionalEmail, transactionalEmailConfigured } from '@/lib/email-provider';
 import type { OutboundDocType, OutboundDocument } from '@/lib/outbound/types';
 import { syncOutboundEntityOnSend } from '@/lib/outbound/sync-on-send';
+import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SendOutboundResult = {
@@ -91,10 +92,15 @@ export async function sendOutboundDocument(input: {
     .single();
 
   if (error || !updated) {
+    if (isMissingSchemaError(error)) {
+      throw new Error(
+        'Outbound tables are not set up yet. Run supabase/manual_schema_repair.sql in the Supabase SQL Editor.'
+      );
+    }
     throw new Error(error?.message || 'Unable to update document after send');
   }
 
-  await supabase.from('outbound_sent_history').insert({
+  const historyResult = await supabase.from('outbound_sent_history').insert({
     document_id: document.id,
     organization_id: organizationId,
     event_type: status === 'sent' ? 'sent' : 'failed',
@@ -106,6 +112,10 @@ export async function sendOutboundDocument(input: {
     error_message: failureReason,
     created_by: userId
   });
+
+  if (historyResult.error && !isMissingSchemaError(historyResult.error)) {
+    console.warn('outbound_sent_history insert failed:', historyResult.error.message);
+  }
 
   if (status === 'sent') {
     await syncOutboundEntityOnSend({
