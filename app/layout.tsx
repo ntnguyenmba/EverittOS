@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
+import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSync } from '@/components/locale-sync';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
@@ -18,6 +19,7 @@ import './everitt-editorial-fixes.css';
 import './typography.css';
 import './nav.css';
 import './outbound.css';
+import './feedback-toast.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -64,14 +66,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppConnectivityBanner />
         <SuppressVercelToolbar />
         <LocaleProvider>
-          <LocaleSync />
-          <SessionGuard />
-          <WorkspaceBootstrap />
-          <SkipToMain />
-          <SiteChrome />
-          <AnalyticsGate />
-          <CookieConsentBanner />
-          {children}
+          <ToastProvider>
+            <LocaleSync />
+            <SessionGuard />
+            <WorkspaceBootstrap />
+            <SkipToMain />
+            <SiteChrome />
+            <AnalyticsGate />
+            <CookieConsentBanner />
+            {children}
+          </ToastProvider>
         </LocaleProvider>
       </body>
     </html>

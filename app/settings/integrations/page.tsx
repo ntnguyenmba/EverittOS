@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import {
   GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI,
   googleCalendarRedirectUri
@@ -65,13 +68,12 @@ function healthClass(health: GoogleCalendarHealth): string {
 function IntegrationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const feedback = useAppFeedback();
+  const { busy, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('employee'));
   const [status, setStatus] = useState<CalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [successAlert, setSuccessAlert] = useState('');
-  const [error, setError] = useState('');
 
   const loadStatus = useCallback(async () => {
     const res = await fetch('/api/integrations/google-calendar/status', STATUS_FETCH_INIT);
@@ -109,15 +111,13 @@ function IntegrationsContent() {
       const errKey = searchParams.get('error');
 
       if (oauthSuccess || legacySuccess) {
-        setSuccessAlert('Google Calendar connected. Existing scheduled jobs were synced.');
+        feedback.connected();
       }
 
       if (errKey) {
         const detail = searchParams.get('detail');
-        setError(CALLBACK_ERRORS[errKey] || 'Google Calendar connection failed.');
-        if (detail) {
-          setError((prev) => `${prev} ${detail}`);
-        }
+        const base = CALLBACK_ERRORS[errKey] || 'Google Calendar connection failed.';
+        feedback.error(detail ? `${base} ${detail}` : base);
       }
 
       await loadStatus();
@@ -131,9 +131,6 @@ function IntegrationsContent() {
   }, [loadStatus, router, searchParams]);
 
   async function disconnect() {
-    setBusy(true);
-    setError('');
-    setSuccessAlert('');
     setStatus((prev) =>
       prev
         ? {
@@ -150,32 +147,21 @@ function IntegrationsContent() {
         : prev
     );
 
-    const res = await fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' });
-    setBusy(false);
-    if (!res.ok) {
-      const json = await res.json();
-      setError(json.error || 'Unable to disconnect.');
-      await loadStatus();
-      return;
-    }
-    setSuccessAlert('Google Calendar disconnected.');
+    const res = await runResponse(
+      () => fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' }),
+      'disconnected'
+    );
     await loadStatus();
+    if (!res) return;
   }
 
   async function syncNow() {
-    setBusy(true);
-    setError('');
-    setSuccessAlert('');
-    const res = await fetch('/api/integrations/google-calendar/sync', { method: 'POST' });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error || 'Sync failed.');
-      await loadStatus();
-      return;
-    }
-    setSuccessAlert(`Synced ${json.synced} job(s) to Google Calendar.${json.failed ? ` ${json.failed} failed.` : ''}`);
+    const res = await runResponse(
+      () => fetch('/api/integrations/google-calendar/sync', { method: 'POST' }),
+      'syncComplete'
+    );
     await loadStatus();
+    if (!res) return;
   }
 
   const health = status?.health || 'not_connected';
@@ -201,9 +187,6 @@ function IntegrationsContent() {
 
   return (
     <SettingsShell plan={plan} role={role} title="Integrations" description="Connect external tools to EverittOS.">
-      {successAlert ? <p className="auth-message auth-message-success">{successAlert}</p> : null}
-      {error ? <p className="auth-message auth-message-error">{error}</p> : null}
-
       <div className="settings-card">
         <h3>Google Calendar</h3>
         <p className="muted">
@@ -253,7 +236,7 @@ function IntegrationsContent() {
               ) : (
                 <>
                   <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void syncNow()}>
-                    {busy ? 'Syncing...' : 'Sync now'}
+                    {buttonLabel('Sync now', FEEDBACK.loading)}
                   </button>
                   <button type="button" className="btn" disabled={busy} onClick={() => void disconnect()}>
                     Disconnect

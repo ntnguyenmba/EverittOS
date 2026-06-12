@@ -21,7 +21,7 @@ export async function logClientActivity(
   organizationId: string,
   entityType: string,
   entityId: string | null,
-  action: ActivityAction,
+  action: ActivityAction | string,
   message: string,
   metadata?: Record<string, unknown>
 ) {

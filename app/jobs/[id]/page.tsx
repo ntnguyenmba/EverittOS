@@ -27,8 +27,9 @@ import {
 } from '@/lib/everittos-usage';
 import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { formatSupabaseError } from '@/lib/action-messages';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -86,7 +87,10 @@ export default function JobDetailPage({ params }: PageProps) {
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [creatingReport, setCreatingReport] = useState(false);
   const [photoRefresh, setPhotoRefresh] = useState(0);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [removingJob, setRemovingJob] = useState(false);
+  const appFeedback = useAppFeedback();
 
   useEffect(() => {
     params.then((p) => setJobId(p.id));
@@ -159,7 +163,9 @@ export default function JobDetailPage({ params }: PageProps) {
     setLoading(false);
 
     if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
+      const msg = formatSupabaseError(error);
+      setLoadError(msg);
+      appFeedback.error(msg);
       return;
     }
 
@@ -175,10 +181,10 @@ export default function JobDetailPage({ params }: PageProps) {
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save job.'));
+      appFeedback.error(json.error || 'Unable to save job.');
       return false;
     }
-    setFeedback(successFeedback(successMessage));
+    appFeedback.success(successMessage || FEEDBACK.updated);
     return true;
   }
 
@@ -199,7 +205,8 @@ export default function JobDetailPage({ params }: PageProps) {
   }
 
   async function saveJobFields() {
-    if (!job || !canManage) return;
+    if (!job || !canManage || savingDetails) return;
+    setSavingDetails(true);
     const ok = await patchJob(
       {
         priority: job.priority,
@@ -207,8 +214,9 @@ export default function JobDetailPage({ params }: PageProps) {
         customer_notes: job.customer_notes,
         completion_verified: job.completion_verified
       },
-      'Job details saved.'
+      FEEDBACK.saved
     );
+    setSavingDetails(false);
     if (!ok) return;
     if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
     loadJob();
@@ -218,7 +226,6 @@ export default function JobDetailPage({ params }: PageProps) {
     if (!job || !canManage || savingSchedule) return;
 
     setSavingSchedule(true);
-    setFeedback(null);
 
     const ok = await patchJob(
       {
@@ -247,12 +254,11 @@ export default function JobDetailPage({ params }: PageProps) {
     }
 
     setCreatingReport(true);
-    setFeedback(null);
 
     const usage = await fetchUsageCounts(user.id);
     if (reportLimitReached(plan, usage)) {
       setCreatingReport(false);
-      setFeedback(errorFeedback(limitMessage('reports', plan)));
+      appFeedback.error(limitMessage('reports', plan));
       return;
     }
 
@@ -266,9 +272,9 @@ export default function JobDetailPage({ params }: PageProps) {
 
     if (error) {
       if (error.message.includes('PLAN_LIMIT_REPORTS')) {
-        setFeedback(errorFeedback(limitMessage('reports', plan)));
+        appFeedback.error(limitMessage('reports', plan));
       } else {
-        setFeedback(errorFeedback(formatSupabaseError(error)));
+        appFeedback.error(formatSupabaseError(error));
       }
       return;
     }
@@ -296,7 +302,7 @@ export default function JobDetailPage({ params }: PageProps) {
     return (
       <AppShell plan={plan} role={userRole}>
         <div className="card">
-          {feedback?.message || 'Job not found or access denied.'}
+          {loadError || 'Job not found or access denied.'}
         </div>
       </AppShell>
     );
@@ -313,8 +319,6 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
           <StatusPill status={job.status} />
         </div>
-
-        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
         <div className="grid-2">
           <div className="card">
@@ -370,28 +374,29 @@ export default function JobDetailPage({ params }: PageProps) {
                   />{' '}
                   Completion verified
                 </label>
-                <button type="button" className="btn" onClick={saveJobFields}>
-                  Save details
+                <button type="button" className="btn" disabled={savingDetails} onClick={() => void saveJobFields()}>
+                  {savingDetails ? FEEDBACK.loading : 'Save details'}
                 </button>
                 <button
                   type="button"
                   className="btn btn-danger"
                   style={{ marginLeft: 8 }}
+                  disabled={removingJob}
                   onClick={async () => {
                     if (!window.confirm('Remove this job?')) return;
+                    setRemovingJob(true);
                     const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
                     const json = (await res.json().catch(() => ({}))) as { error?: string; cancelled?: boolean };
+                    setRemovingJob(false);
                     if (!res.ok) {
-                      setFeedback(errorFeedback(json.error || 'Unable to remove job.'));
+                      appFeedback.error(json.error || 'Unable to remove job.');
                       return;
                     }
-                    setFeedback(
-                      successFeedback(json.cancelled ? 'Job marked cancelled (linked records kept).' : 'Job removed.')
-                    );
+                    appFeedback.success(json.cancelled ? 'Job marked cancelled (linked records kept).' : FEEDBACK.deleted);
                     router.push('/jobs');
                   }}
                 >
-                  Remove job
+                  {removingJob ? FEEDBACK.loading : 'Remove job'}
                 </button>
               </div>
             )}

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTranslation } from '@/components/locale-provider';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 export default function NotificationSettingsPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { busy: saving, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [email, setEmail] = useState(true);
@@ -18,8 +21,6 @@ export default function NotificationSettingsPage() {
   const [sms, setSms] = useState(false);
   const [operational, setOperational] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -51,25 +52,20 @@ export default function NotificationSettingsPage() {
   }, [router]);
 
   async function save() {
-    setSaving(true);
-    setMessage('');
-    const res = await fetch('/api/account/privacy', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email_notifications: email,
-        push_notifications: push,
-        sms_notifications: sms,
-        operational_notifications: operational
-      })
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || t('settings.notifications.saveError'));
-      return;
-    }
-    setMessage(t('settings.notifications.saved'));
+    await runResponse(
+      () =>
+        fetch('/api/account/privacy', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email_notifications: email,
+            push_notifications: push,
+            sms_notifications: sms,
+            operational_notifications: operational
+          })
+        }),
+      t('settings.notifications.saved')
+    );
   }
 
   if (loading) {
@@ -107,10 +103,9 @@ export default function NotificationSettingsPage() {
             <span className="muted">{t('settings.notifications.smsFuture')}</span>
           </span>
         </label>
-        <button type="button" className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? t('common.loading') : t('settings.notifications.save')}
+        <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
+          {buttonLabel(t('settings.notifications.save'), FEEDBACK.loading)}
         </button>
-        {message ? <p className="auth-message auth-message-success" role="status">{message}</p> : null}
       </div>
     </SettingsShell>
   );

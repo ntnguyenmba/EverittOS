@@ -9,13 +9,22 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
+import { formatSupabaseError } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
+    successMessage: 'saved',
+    errorFallback: 'Unable to save settings.'
+  });
+  const { busy: logoUploading, run: runLogoUpload } = useAsyncAction({ successMessage: 'uploadComplete' });
+  const { busy: restartBusy, runResponse: runRestart } = useAsyncAction({
+    errorFallback: 'Unable to restart onboarding.'
+  });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
@@ -24,38 +33,29 @@ export default function SettingsPage() {
   const [website, setWebsite] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [email, setEmail] = useState('');
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [orgId, setOrgId] = useState('');
   const [notifyAssignments, setNotifyAssignments] = useState(true);
   const [notifyDueDates, setNotifyDueDates] = useState(true);
   const [notifyCompletions, setNotifyCompletions] = useState(true);
   const [notifyReports, setNotifyReports] = useState(true);
-  const [logoUploading, setLogoUploading] = useState(false);
   const [timezone, setTimezone] = useState('America/New_York');
   const [teamSize, setTeamSize] = useState('');
   const [industry, setIndustry] = useState('');
-  const [restartBusy, setRestartBusy] = useState(false);
   const { t } = useTranslation();
 
   async function restartOnboarding() {
     if (!window.confirm(t('onboarding.settings.restartConfirm'))) return;
-    setRestartBusy(true);
-    setFeedback(null);
-    const res = await fetch('/api/onboarding/restart', { method: 'POST' });
-    setRestartBusy(false);
-    if (!res.ok) {
-      const json = await res.json();
-      setFeedback(errorFeedback(json.error || 'Unable to restart onboarding.'));
-      return;
-    }
+    const res = await runRestart(
+      () => fetch('/api/onboarding/restart', { method: 'POST' }),
+      t('onboarding.settings.restartSuccess')
+    );
+    if (!res) return;
     try {
       if (orgId) localStorage.removeItem(onboardingDismissStorageKey(orgId));
     } catch {
       /* ignore */
     }
-    setFeedback(successFeedback(t('onboarding.settings.restartSuccess')));
     router.push('/onboarding');
   }
 
@@ -120,61 +120,45 @@ export default function SettingsPage() {
       return;
     }
 
-    setSaving(true);
-    setFeedback(null);
-
-    const res = await fetch('/api/settings/workspace', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        businessName,
-        phone,
-        serviceType,
-        bookingUrl,
-        website,
-        companyAddress,
-        email,
-        notifyAssignments,
-        notifyDueDates,
-        notifyCompletions,
-        notifyReports,
-        timezone,
-        teamSize,
-        industry
+    const res = await runResponse(() =>
+      fetch('/api/settings/workspace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName,
+          phone,
+          serviceType,
+          bookingUrl,
+          website,
+          companyAddress,
+          email,
+          notifyAssignments,
+          notifyDueDates,
+          notifyCompletions,
+          notifyReports,
+          timezone,
+          teamSize,
+          industry
+        })
       })
-    });
-    const json = (await res.json()) as { error?: string };
-    setSaving(false);
-
-    if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save settings.'));
-      return;
-    }
+    );
+    if (!res) return;
 
     const org = await ensureOrganizationForUser(user.id);
     if (org?.organizationId) setOrgId(org.organizationId);
-    setFeedback(successFeedback('Settings saved successfully.'));
   }
 
   async function uploadLogo(file: File | null) {
-    if (!file || !orgId) return;
-    setLogoUploading(true);
-    const path = `${orgId}/logo-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
-    const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
-    if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
-      setLogoUploading(false);
-      return;
-    }
-    const { error: settingsError } = await supabase
-      .from('organization_settings')
-      .upsert({ organization_id: orgId, logo_path: path });
-    setLogoUploading(false);
-    if (settingsError) {
-      setFeedback(errorFeedback(formatSupabaseError(settingsError)));
-      return;
-    }
-    setFeedback(successFeedback('Logo uploaded.'));
+    if (!file || !orgId || logoUploading) return;
+    await runLogoUpload(async () => {
+      const path = `${orgId}/logo-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
+      const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
+      if (error) throw new Error(formatSupabaseError(error));
+      const { error: settingsError } = await supabase
+        .from('organization_settings')
+        .upsert({ organization_id: orgId, logo_path: path });
+      if (settingsError) throw new Error(formatSupabaseError(settingsError));
+    });
   }
 
   async function logout() {
@@ -254,8 +238,8 @@ export default function SettingsPage() {
           <label>
             <input type="checkbox" checked={notifyReports} onChange={(e) => setNotifyReports(e.target.checked)} /> Reports
           </label>
-          <button className="btn btn-primary" type="button" onClick={saveProfile} disabled={saving}>
-            {saving ? 'Saving...' : 'Save settings'}
+          <button className="btn btn-primary" type="button" onClick={() => void saveProfile()} disabled={saving}>
+            {buttonLabel('Save settings', FEEDBACK.loading)}
           </button>
           <button className="btn" type="button" onClick={logout}>
             Log out
@@ -268,8 +252,8 @@ export default function SettingsPage() {
           <div className="settings-card" style={{ marginTop: 18 }}>
             <h3>{t('onboarding.settings.restart')}</h3>
             <p className="muted">{t('onboarding.settings.restartDescription')}</p>
-            <button type="button" className="btn" onClick={restartOnboarding} disabled={restartBusy}>
-              {t('onboarding.settings.restart')}
+            <button type="button" className="btn" onClick={() => void restartOnboarding()} disabled={restartBusy}>
+              {restartBusy ? FEEDBACK.loading : t('onboarding.settings.restart')}
             </button>
           </div>
           <p style={{ marginTop: 16 }}>
@@ -279,7 +263,6 @@ export default function SettingsPage() {
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
             <Link href="/disclaimer">Disclaimer</Link>
           </p>
-          <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
         </div>
     </SettingsShell>
   );

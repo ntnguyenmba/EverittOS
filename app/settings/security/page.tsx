@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { SecurityActivityLog } from '@/components/security-activity-log';
@@ -32,8 +34,7 @@ export default function SecuritySettingsPage() {
   const [role, setRole] = useState(normalizeRole('owner'));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const appFeedback = useAppFeedback();
   const [personalEvents, setPersonalEvents] = useState<SecurityEventRow[]>([]);
   const [orgEvents, setOrgEvents] = useState<SecurityEventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,16 +71,13 @@ export default function SecuritySettingsPage() {
 
   async function changePassword(event: React.FormEvent) {
     event.preventDefault();
-    setError('');
-    setMessage('');
-
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      appFeedback.error('Password must be at least 6 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      appFeedback.error('Passwords do not match.');
       return;
     }
 
@@ -88,13 +86,13 @@ export default function SecuritySettingsPage() {
     setSaving(false);
 
     if (updateError) {
-      setError(updateError.message);
+      appFeedback.error(updateError.message);
       return;
     }
 
     setPassword('');
     setConfirmPassword('');
-    setMessage('Password updated.');
+    appFeedback.updated();
   }
 
   async function signOutEverywhere() {
@@ -149,10 +147,8 @@ export default function SecuritySettingsPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
-          {error ? <p className="auth-message auth-message-error">{error}</p> : null}
-          {message ? <p className="auth-message auth-message-success">{message}</p> : null}
           <button className="btn btn-primary" type="submit" disabled={saving}>
-            {saving ? 'Updating...' : 'Update password'}
+            {saving ? FEEDBACK.loading : 'Update password'}
           </button>
         </form>
       </div>

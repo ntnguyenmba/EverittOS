@@ -1,0 +1,103 @@
+.app-toast-stack {
+  position: fixed;
+  right: clamp(12px, 2vw, 20px);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 120;
+  display: grid;
+  gap: 10px;
+  width: min(380px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.app-toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4px 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 14px 14px 0;
+  border-radius: 14px;
+  border: 1px solid rgba(37, 54, 74, 0.1);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 10px 28px rgba(37, 54, 74, 0.12),
+    0 2px 8px rgba(37, 54, 74, 0.06);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  animation: app-toast-in 0.22s ease-out;
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.app-toast-accent {
+  align-self: stretch;
+  border-radius: 14px 0 0 14px;
+  margin: -14px 0 -14px 0;
+}
+
+.app-toast-success .app-toast-accent {
+  background: linear-gradient(180deg, #4a7c59, #3f6f5a);
+}
+
+.app-toast-error .app-toast-accent {
+  background: linear-gradient(180deg, #b85c57, #9a4a45);
+}
+
+.app-toast-info .app-toast-accent {
+  background: linear-gradient(180deg, #3d74a8, #2f5f8f);
+}
+
+.app-toast-body {
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.app-toast-title {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.app-toast-message {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.app-toast-dismiss {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  min-height: auto;
+}
+
+.app-toast-dismiss:hover {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .app-toast-stack {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}

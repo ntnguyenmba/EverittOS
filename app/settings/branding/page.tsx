@@ -2,6 +2,8 @@
 
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -13,6 +15,8 @@ import { useEffect, useState } from 'react';
 
 export default function BrandingSettingsPage() {
   const router = useRouter();
+  const { busy: saving, run, buttonLabel } = useAsyncAction({ successMessage: 'saved' });
+  const { busy: uploading, run: runUpload } = useAsyncAction({ successMessage: 'uploadComplete' });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
@@ -22,9 +26,7 @@ export default function BrandingSettingsPage() {
   const [secondaryColor, setSecondaryColor] = useState('#3A4658');
   const [logoPath, setLogoPath] = useState('');
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -75,42 +77,36 @@ export default function BrandingSettingsPage() {
   async function saveBranding(event: React.FormEvent) {
     event.preventDefault();
     if (!orgId || saving) return;
-    setSaving(true);
-    setMessage('');
 
-    await supabase.from('organizations').update({ name: companyName.trim() || 'My company' }).eq('id', orgId);
-    const { error } = await supabase.from('organization_settings').upsert({
-      organization_id: orgId,
-      company_email: supportEmail.trim(),
-      brand_primary_color: primaryColor,
-      brand_accent_color: secondaryColor,
-      logo_path: logoPath || null
+    await run(async () => {
+      await supabase.from('organizations').update({ name: companyName.trim() || 'My company' }).eq('id', orgId);
+      const { error } = await supabase.from('organization_settings').upsert({
+        organization_id: orgId,
+        company_email: supportEmail.trim(),
+        brand_primary_color: primaryColor,
+        brand_accent_color: secondaryColor,
+        logo_path: logoPath || null
+      });
+      if (error) throw new Error(error.message);
     });
-
-    setSaving(false);
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-    setMessage('Branding saved.');
   }
 
   async function uploadLogo(file: File) {
-    if (!orgId) return;
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `${orgId}/logo.${ext}`;
-    const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-    setLogoPath(path);
-    await supabase.from('organization_settings').upsert({ organization_id: orgId, logo_path: path });
-    setLogoPreviewUrl(await resolveOrgLogoUrl(supabase, path));
-    setMessage('Logo uploaded.');
+    if (!orgId || uploading) return;
+
+    await runUpload(async () => {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${orgId}/logo.${ext}`;
+      const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
+      if (error) throw new Error(error.message);
+      setLogoPath(path);
+      await supabase.from('organization_settings').upsert({ organization_id: orgId, logo_path: path });
+      setLogoPreviewUrl(await resolveOrgLogoUrl(supabase, path));
+    });
   }
 
   const brandingEnabled = limitsForPlan(plan).customBranding;
+  const busy = saving || uploading;
 
   if (loading) {
     return (
@@ -158,9 +154,10 @@ export default function BrandingSettingsPage() {
             className="input"
             type="file"
             accept="image/png,image/jpeg,image/webp"
+            disabled={uploading}
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) uploadLogo(file);
+              if (file) void uploadLogo(file);
             }}
           />
         </label>
@@ -170,10 +167,9 @@ export default function BrandingSettingsPage() {
           <p className="muted">Logo saved. Refresh if preview does not appear.</p>
         ) : null}
         <p className="muted">Branding applies to the client portal, PDF reports, invite emails, and the dashboard header.</p>
-        <button type="submit" className="btn btn-primary" disabled={saving}>
-          {saving ? 'Saving…' : 'Save branding'}
+        <button type="submit" className="btn btn-primary" disabled={busy}>
+          {buttonLabel('Save branding', FEEDBACK.loading)}
         </button>
-        {message ? <p>{message}</p> : null}
       </form>
 
       <div className="settings-card brand-preview" style={{ ['--brand-primary' as string]: primaryColor, ['--brand-secondary' as string]: secondaryColor }}>

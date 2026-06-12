@@ -2,6 +2,9 @@
 
 import { PermissionMatrix } from '@/components/team/permission-matrix';
 import { EmptyState } from '@/components/empty-state';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -48,6 +51,8 @@ type TeamManagementPanelProps = {
 
 export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHistory = false }: TeamManagementPanelProps) {
   const router = useRouter();
+  const feedback = useAppFeedback();
+  const { busy, run, runResponse, buttonLabel } = useAsyncAction({ successMessage: 'invited' });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
@@ -58,11 +63,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
   const [inviteRole, setInviteRole] = useState('employee');
   const [inviteNote, setInviteNote] = useState('');
   const [inviteUrl, setInviteUrl] = useState('');
-  const [copyMessage, setCopyMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success'>('error');
-  const [busy, setBusy] = useState(false);
   const [transferTarget, setTransferTarget] = useState('');
 
   const canManage = canManageTeam(role);
@@ -84,8 +85,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     const org = await ensureOrganizationForUser(user.id);
     if (!org) {
       setLoading(false);
-      setMessageType('error');
-      setMessage('Workspace is still setting up. Refresh the page or open the dashboard to continue.');
+      feedback.error('Workspace is still setting up. Refresh the page or open the dashboard to continue.');
       return;
     }
 
@@ -100,8 +100,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
 
     if (error) {
       setLoading(false);
-      setMessageType('error');
-      setMessage(error.message);
+      feedback.error(error.message);
       return;
     }
 
@@ -152,118 +151,81 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     load();
   }, []);
 
-  function showSuccess(text: string) {
-    setMessageType('success');
-    setMessage(text);
-  }
-
-  function showError(text: string) {
-    setMessageType('error');
-    setMessage(text);
-  }
-
   async function sendInvite() {
-    if (!canManage || !email.trim()) return;
-    setBusy(true);
-    setMessage('');
+    if (!canManage || !email.trim() || busy) return;
     setInviteUrl('');
-    const res = await fetch('/api/team/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined })
+    await run(async () => {
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), role: inviteRole, note: inviteNote.trim() || undefined })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(friendlyErrorMessage(json.error || 'Invite failed'));
+      setInviteUrl(json.acceptUrl);
+      setEmail('');
+      setInviteNote('');
+      void load();
     });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Invite failed');
-      return;
-    }
-    setInviteUrl(json.acceptUrl);
-    if (json.emailSent) {
-      showSuccess(json.message || 'Invitation sent.');
-    } else {
-      showSuccess(json.message || 'Email not configured. Copy the invite link below.');
-    }
-    setEmail('');
-    setInviteNote('');
-    load();
   }
 
   async function copyInviteLink() {
     if (!inviteUrl) return;
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      setCopyMessage('Invite link copied.');
+      feedback.success(FEEDBACK.copied);
     } catch {
-      setCopyMessage('Copy the link manually.');
+      feedback.error('Copy the link manually.');
     }
   }
 
   async function resendInvite(invitationId: string) {
-    setBusy(true);
-    const res = await fetch('/api/team/invitations/resend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ invitationId })
-    });
+    const res = await runResponse(
+      () =>
+        fetch('/api/team/invitations/resend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitationId })
+        }),
+      'sent'
+    );
+    if (!res) return;
     const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Resend failed');
-      return;
-    }
     if (json.acceptUrl) setInviteUrl(json.acceptUrl);
-    showSuccess(json.message || 'Invitation resent.');
   }
 
   async function revokeInvite(invitationId: string) {
     if (!window.confirm('Revoke this invitation? The accept link will stop working.')) return;
-    setBusy(true);
-    const res = await fetch('/api/team/invitations/revoke', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ invitationId })
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Revoke failed');
-      return;
-    }
-    showSuccess('Invitation revoked.');
-    load();
+    const res = await runResponse(
+      () =>
+        fetch('/api/team/invitations/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitationId })
+        }),
+      'deleted'
+    );
+    if (res) load();
   }
 
   async function updateMember(userId: string, patch: { role?: string; active?: boolean }) {
     if (patch.active === false && !window.confirm('Deactivate this member? They will lose access until reactivated.')) return;
-    setBusy(true);
-    const res = await fetch('/api/team/members', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, ...patch })
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Update failed');
-      return;
-    }
-    showSuccess(patch.active === false ? 'Member deactivated.' : patch.active === true ? 'Member reactivated.' : 'Role updated.');
-    load();
+    const res = await runResponse(
+      () =>
+        fetch('/api/team/members', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, ...patch })
+        }),
+      'updated'
+    );
+    if (res) load();
   }
 
   async function removeMember(userId: string) {
     if (!window.confirm('Remove this member from the organization? They will lose access immediately.')) return;
-    setBusy(true);
-    const res = await fetch(`/api/team/members?userId=${userId}`, { method: 'DELETE' });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Remove failed');
-      return;
-    }
-    showSuccess('Member removed.');
-    load();
+    const res = await runResponse(() => fetch(`/api/team/members?userId=${userId}`, { method: 'DELETE' }), 'deleted');
+    if (res) load();
   }
 
   async function transferOwnership() {
@@ -275,19 +237,17 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     ) {
       return;
     }
-    setBusy(true);
-    const res = await fetch('/api/team/transfer-ownership', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: transferTarget })
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      showError(json.error || 'Transfer failed');
-      return;
-    }
-    showSuccess(json.message || 'Ownership transferred.');
+    const res = await runResponse(
+      () =>
+        fetch('/api/team/transfer-ownership', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: transferTarget })
+        }),
+      'updated'
+    );
+    if (!res) return;
+    await res.json();
     setTransferTarget('');
     load();
   }
@@ -337,8 +297,8 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
             value={inviteNote}
             onChange={(e) => setInviteNote(e.target.value)}
           />
-          <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={sendInvite}>
-            {busy ? 'Sending…' : 'Send invitation'}
+          <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={() => void sendInvite()}>
+            {buttonLabel('Send invitation', FEEDBACK.loading)}
           </button>
           {inviteUrl ? (
             <div className="invite-link-row">
@@ -347,7 +307,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
               <button type="button" className="btn btn-sm" onClick={() => void copyInviteLink()}>
                 Copy link
               </button>
-              {copyMessage ? <p className="muted">{copyMessage}</p> : null}
             </div>
           ) : null}
         </div>
@@ -367,8 +326,8 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
                 </option>
               ))}
           </select>
-          <button type="button" className="btn" disabled={busy || !transferTarget} onClick={transferOwnership}>
-            Transfer ownership
+          <button type="button" className="btn" disabled={busy || !transferTarget} onClick={() => void transferOwnership()}>
+            {buttonLabel('Transfer ownership', FEEDBACK.loading)}
           </button>
         </div>
       )}
@@ -475,12 +434,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
           </ul>
           <PermissionMatrix />
         </div>
-      ) : null}
-
-      {message ? (
-        <p className={messageType === 'success' ? 'auth-message auth-message-success' : 'auth-message auth-message-error'}>
-          {friendlyErrorMessage(message)}
-        </p>
       ) : null}
     </>
   );

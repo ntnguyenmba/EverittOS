@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import type { ActionFeedback } from '@/lib/action-messages';
 
 type ActionFeedbackBannerProps = {
@@ -7,24 +9,24 @@ type ActionFeedbackBannerProps = {
   onDismiss?: () => void;
 };
 
+/** Bridges legacy inline feedback state to the global toast system. */
 export function ActionFeedbackBanner({ feedback, onDismiss }: ActionFeedbackBannerProps) {
-  if (!feedback) return null;
+  const toast = useAppFeedback();
+  const lastMessageRef = useRef<string | null>(null);
 
-  const className =
-    feedback.kind === 'success'
-      ? 'auth-message auth-message-success action-feedback'
-      : feedback.kind === 'info'
-        ? 'auth-message action-feedback'
-        : 'auth-message auth-message-error action-feedback';
+  useEffect(() => {
+    if (!feedback) {
+      lastMessageRef.current = null;
+      return;
+    }
 
-  return (
-    <p className={className} role={feedback.kind === 'error' ? 'alert' : 'status'}>
-      {feedback.message}
-      {onDismiss ? (
-        <button type="button" className="action-feedback-dismiss" onClick={onDismiss} aria-label="Dismiss">
-          ×
-        </button>
-      ) : null}
-    </p>
-  );
+    const key = `${feedback.kind}:${feedback.message}`;
+    if (lastMessageRef.current === key) return;
+    lastMessageRef.current = key;
+
+    toast.fromActionFeedback(feedback);
+    onDismiss?.();
+  }, [feedback, onDismiss, toast]);
+
+  return null;
 }

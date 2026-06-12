@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { supabase } from '@/lib/supabase';
@@ -13,13 +13,13 @@ type JobOption = { id: string; title: string };
 
 export function ScheduleCreateForm() {
   const router = useRouter();
+  const appFeedback = useAppFeedback();
   const [jobs, setJobs] = useState<JobOption[]>([]);
   const [jobId, setJobId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   useEffect(() => {
     async function loadJobs() {
@@ -46,7 +46,6 @@ export function ScheduleCreateForm() {
   async function saveSchedule() {
     if (!jobId || !startDate || saving) return;
     setSaving(true);
-    setFeedback(null);
 
     const res = await fetch('/api/schedule/update', {
       method: 'POST',
@@ -61,11 +60,11 @@ export function ScheduleCreateForm() {
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save schedule.'));
+      appFeedback.error(json.error || 'Unable to save schedule.');
       return;
     }
 
-    setFeedback(successFeedback(json.message || 'Schedule saved successfully.'));
+    appFeedback.saved();
     setTimeout(() => router.push('/schedule'), 600);
   }
 
@@ -76,7 +75,6 @@ export function ScheduleCreateForm() {
   return (
     <div className="card form">
       <h3 className="card-title-sm">Schedule work</h3>
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       {jobs.length === 0 ? (
         <p className="muted">
           No jobs yet. <Link href="/jobs/new">Create a job</Link> first, then schedule it here.
@@ -102,7 +100,7 @@ export function ScheduleCreateForm() {
             <input className="input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </label>
           <button type="button" className="btn btn-primary" disabled={saving || !startDate} onClick={() => void saveSchedule()}>
-            {saving ? 'Saving…' : 'Save schedule'}
+            {saving ? FEEDBACK.loading : 'Save schedule'}
           </button>
         </>
       )}

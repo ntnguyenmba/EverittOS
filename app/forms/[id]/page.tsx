@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -13,14 +16,14 @@ type FormDetail = EverittForm & { everitt_form_fields?: EverittFormField[] };
 export default function FormDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const feedback = useAppFeedback();
+  const { busy, runResponse, buttonLabel } = useAsyncAction();
   const id = String(params.id);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [form, setForm] = useState<FormDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
   const [canManage, setCanManage] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const publicUrl =
     typeof window !== 'undefined' ? `${window.location.origin}/f/${form?.slug || ''}` : `/f/${form?.slug || ''}`;
@@ -45,7 +48,7 @@ export default function FormDetailPage() {
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setMessage(json.error || 'Form not found');
+      feedback.error(json.error || 'Form not found');
       return;
     }
     setForm(json.form);
@@ -57,24 +60,26 @@ export default function FormDetailPage() {
 
   async function toggleActive() {
     if (!form || !canManage) return;
-    const res = await fetch(`/api/forms/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: !form.active })
-    });
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || 'Update failed');
-      return;
-    }
-    void load();
+    const res = await runResponse(
+      () =>
+        fetch(`/api/forms/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: !form.active })
+        }),
+      'updated'
+    );
+    if (res) void load();
   }
 
   async function copyEmbed() {
     if (!embedCode) return;
-    await navigator.clipboard.writeText(embedCode);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(embedCode);
+      feedback.success(FEEDBACK.copied);
+    } catch {
+      feedback.error('Copy the embed code manually.');
+    }
   }
 
   if (loading) {
@@ -88,7 +93,7 @@ export default function FormDetailPage() {
   if (!form) {
     return (
       <AppShell plan={plan} role={role}>
-        <p className="auth-message auth-message-error">{message || 'Form not found'}</p>
+        <p>Form not found</p>
       </AppShell>
     );
   }
@@ -110,8 +115,8 @@ export default function FormDetailPage() {
           </a>
         </p>
         {canManage ? (
-          <button type="button" className="btn" onClick={() => void toggleActive()}>
-            {form.active ? 'Deactivate' : 'Activate'}
+          <button type="button" className="btn" disabled={busy} onClick={() => void toggleActive()}>
+            {buttonLabel(form.active ? 'Deactivate' : 'Activate', FEEDBACK.loading)}
           </button>
         ) : null}
       </div>
@@ -120,7 +125,7 @@ export default function FormDetailPage() {
         <h3>Embed code</h3>
         <pre className="code-block">{embedCode}</pre>
         <button type="button" className="btn" onClick={() => void copyEmbed()}>
-          {copied ? 'Copied' : 'Copy embed'}
+          Copy embed
         </button>
       </div>
 
@@ -137,8 +142,6 @@ export default function FormDetailPage() {
             ))}
         </ul>
       </div>
-
-      {message ? <p className="auth-message auth-message-error">{message}</p> : null}
     </AppShell>
   );
 }

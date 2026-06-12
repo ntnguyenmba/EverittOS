@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
 import { AppShell } from '@/components/app-shell';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -21,13 +23,13 @@ type Workflow = {
 
 export default function WorkflowsPage() {
   const router = useRouter();
+  const { busy, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [name, setName] = useState('');
   const [stepTitle, setStepTitle] = useState('');
   const [selectedId, setSelectedId] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -52,19 +54,19 @@ export default function WorkflowsPage() {
   }, [router]);
 
   async function createWorkflow() {
-    const res = await fetch('/api/workflows', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        steps: stepTitle ? [{ title: stepTitle, step_type: 'checklist' }] : []
-      })
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to create workflow.');
-      return;
-    }
+    const res = await runResponse(
+      () =>
+        fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            steps: stepTitle ? [{ title: stepTitle, step_type: 'checklist' }] : []
+          })
+        }),
+      'created'
+    );
+    if (!res) return;
     setName('');
     setStepTitle('');
     load();
@@ -121,8 +123,8 @@ export default function WorkflowsPage() {
                 <h3>Create workflow</h3>
                 <input className="input" placeholder="Workflow name" value={name} onChange={(e) => setName(e.target.value)} />
                 <input className="input" placeholder="First step (optional)" value={stepTitle} onChange={(e) => setStepTitle(e.target.value)} />
-                <button type="button" className="btn btn-primary" onClick={createWorkflow}>
-                  Create workflow
+                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createWorkflow()}>
+                  {buttonLabel('Create workflow', FEEDBACK.loading)}
                 </button>
               </div>
             ) : null}
@@ -141,7 +143,7 @@ export default function WorkflowsPage() {
                     <p className="muted">{wf.description || 'No description'}</p>
                   </div>
                   {canManage ? (
-                    <button type="button" className="btn" onClick={() => toggleActive(wf.id, wf.active)}>
+                    <button type="button" className="btn" disabled={busy} onClick={() => toggleActive(wf.id, wf.active)}>
                       {wf.active ? 'Deactivate' : 'Activate'}
                     </button>
                   ) : null}
@@ -154,10 +156,10 @@ export default function WorkflowsPage() {
                       <span className="muted">{step.step_type}</span>
                       {canManage ? (
                         <span className="inline-actions">
-                          <button type="button" className="btn" onClick={() => reorderStep(wf.id, step.id, 'up')}>
+                          <button type="button" className="btn" disabled={busy} onClick={() => reorderStep(wf.id, step.id, 'up')}>
                             Up
                           </button>
-                          <button type="button" className="btn" onClick={() => reorderStep(wf.id, step.id, 'down')}>
+                          <button type="button" className="btn" disabled={busy} onClick={() => reorderStep(wf.id, step.id, 'down')}>
                             Down
                           </button>
                         </span>
@@ -165,7 +167,7 @@ export default function WorkflowsPage() {
                     </div>
                   ))}
                 {canManage ? (
-                  <button type="button" className="btn" onClick={() => addStep(wf.id)}>
+                  <button type="button" className="btn" disabled={busy} onClick={() => addStep(wf.id)}>
                     Add step
                   </button>
                 ) : null}
@@ -177,7 +179,6 @@ export default function WorkflowsPage() {
         <Link href="/settings" className="btn">
           Back to settings
         </Link>
-        {message ? <p>{message}</p> : null}
     </AppShell>
   );
 }

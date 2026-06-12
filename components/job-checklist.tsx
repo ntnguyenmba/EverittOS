@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
+import { formatSupabaseError } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 
 type ChecklistItem = {
@@ -22,14 +23,13 @@ type JobChecklistProps = {
 };
 
 export function JobChecklist({ jobId, organizationId, userId, items, canEdit, onChange }: JobChecklistProps) {
+  const appFeedback = useAppFeedback();
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   async function addItem() {
-    if (!label.trim() || !canEdit) return;
+    if (!label.trim() || !canEdit || busy) return;
     setBusy(true);
-    setFeedback(null);
     const { error } = await supabase.from('job_checklist_items').insert({
       job_id: jobId,
       organization_id: organizationId,
@@ -39,7 +39,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
     });
     setBusy(false);
     if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
+      appFeedback.error(formatSupabaseError(error));
       return;
     }
     setLabel('');
@@ -48,13 +48,12 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
 
   async function toggleItem(item: ChecklistItem) {
     if (!canEdit) return;
-    setFeedback(null);
     const { error } = await supabase
       .from('job_checklist_items')
       .update({ completed: !item.completed })
       .eq('id', item.id);
     if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
+      appFeedback.error(formatSupabaseError(error));
       return;
     }
     onChange();
@@ -74,12 +73,11 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
       {canEdit && (
         <>
           <input className="input" placeholder="Add checklist item" value={label} onChange={(e) => setLabel(e.target.value)} />
-          <button type="button" className="btn" disabled={busy} onClick={addItem}>
-            Add item
+          <button type="button" className="btn" disabled={busy} onClick={() => void addItem()}>
+            {busy ? FEEDBACK.loading : 'Add item'}
           </button>
         </>
       )}
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
     </div>
   );
 }

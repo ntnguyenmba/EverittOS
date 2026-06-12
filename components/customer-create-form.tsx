@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -14,19 +14,18 @@ type CustomerCreateFormProps = {
 
 export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: CustomerCreateFormProps) {
   const router = useRouter();
+  const appFeedback = useAppFeedback();
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   async function saveCustomer() {
     if (!displayName.trim() || saving) return;
 
     setSaving(true);
-    setFeedback(null);
 
     const {
       data: { user }
@@ -40,7 +39,7 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
     const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
-      setFeedback(errorFeedback('Workspace setup is still finishing. Wait a moment and try again.'));
+      appFeedback.error('Workspace setup is still finishing. Wait a moment and try again.');
       return;
     }
 
@@ -53,11 +52,11 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save customer.'));
+      appFeedback.error(json.error || 'Unable to save customer.');
       return;
     }
 
-    setFeedback(successFeedback(json.message || 'Customer saved successfully.'));
+    appFeedback.created();
     setDisplayName('');
     setPhone('');
     setEmail('');
@@ -73,14 +72,13 @@ export function CustomerCreateForm({ onCreated, redirectTo = '/customers' }: Cus
   return (
     <div className="card form">
       <h3 className="card-title-sm">New customer</h3>
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       <input className="input" placeholder="Name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
       <textarea className="input" rows={3} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveCustomer()}>
-        {saving ? 'Saving…' : 'Save customer'}
+        {saving ? FEEDBACK.loading : 'Save customer'}
       </button>
     </div>
   );

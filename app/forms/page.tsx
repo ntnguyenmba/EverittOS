@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -21,19 +24,18 @@ const FORM_TYPES: { value: FormType; label: string }[] = [
 
 export default function FormsPage() {
   const router = useRouter();
+  const feedback = useAppFeedback();
+  const { busy, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [forms, setForms] = useState<EverittForm[]>([]);
   const [name, setName] = useState('');
   const [formType, setFormType] = useState<FormType>('contact');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [canManage, setCanManage] = useState(false);
 
   async function load() {
     setLoading(true);
-    setMessage('');
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -51,7 +53,7 @@ export default function FormsPage() {
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load forms');
+      feedback.error(json.error || 'Unable to load forms');
       return;
     }
     setForms(json.forms || []);
@@ -62,22 +64,25 @@ export default function FormsPage() {
   }, [router]);
 
   async function createForm() {
-    if (!name.trim() || saving) return;
-    setSaving(true);
-    setMessage('');
-    const res = await fetch('/api/forms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), form_type: formType })
-    });
-    const json = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setMessage(json.error || 'Failed to create form');
-      return;
-    }
+    if (!name.trim() || busy) return;
+    const res = await runResponse(
+      () =>
+        fetch('/api/forms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim(), form_type: formType })
+        }),
+      'created'
+    );
+    if (!res) return;
     setName('');
     void load();
+  }
+
+  async function deleteForm(id: string, formName: string) {
+    if (!window.confirm(`Delete form ${formName}?`)) return;
+    const res = await runResponse(() => fetch(`/api/forms/${id}`, { method: 'DELETE' }), 'deleted');
+    if (res) void load();
   }
 
   return (
@@ -98,13 +103,11 @@ export default function FormsPage() {
               </option>
             ))}
           </select>
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void createForm()}>
-            {saving ? 'Creating…' : 'Create form'}
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createForm()}>
+            {buttonLabel('Create form', FEEDBACK.loading)}
           </button>
         </div>
       ) : null}
-
-      {message ? <p className="auth-message auth-message-error">{message}</p> : null}
 
       {loading ? <p>Loading forms…</p> : null}
       {!loading && forms.length === 0 ? (
@@ -127,16 +130,8 @@ export default function FormsPage() {
               <button
                 type="button"
                 className="btn btn-sm btn-danger"
-                onClick={async () => {
-                  if (!window.confirm(`Delete form ${form.name}?`)) return;
-                  const res = await fetch(`/api/forms/${form.id}`, { method: 'DELETE' });
-                  const json = await res.json();
-                  if (!res.ok) {
-                    setMessage(json.error || 'Delete failed');
-                    return;
-                  }
-                  void load();
-                }}
+                disabled={busy}
+                onClick={() => void deleteForm(form.id, form.name)}
               >
                 Remove
               </button>

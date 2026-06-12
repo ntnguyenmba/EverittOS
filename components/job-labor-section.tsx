@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatCurrency } from '@/lib/finance-format';
 import type { JobLaborRecord } from '@/lib/finance-types';
 
@@ -15,10 +15,11 @@ type JobLaborSectionProps = {
 };
 
 export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionProps) {
+  const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [workerId, setWorkerId] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [hours, setHours] = useState('');
@@ -31,11 +32,11 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to load labor entries.'));
+      appFeedback.error(json.error || 'Unable to load labor entries.');
       return;
     }
     setEntries(json.labor || []);
-  }, [jobId]);
+  }, [appFeedback, jobId]);
 
   useEffect(() => {
     void load();
@@ -46,12 +47,11 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
     const h = Number.parseFloat(hours);
     const rate = Number.parseFloat(hourlyCost || '0');
     if (!Number.isFinite(h) || h <= 0) {
-      setFeedback(errorFeedback('Enter hours worked.'));
+      appFeedback.error('Enter hours worked.');
       return;
     }
 
     setSaving(true);
-    setFeedback(null);
     const selected = workers.find((w) => w.id === workerId);
     const res = await fetch(`/api/jobs/${jobId}/labor`, {
       method: 'POST',
@@ -68,11 +68,11 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save labor entry.'));
+      appFeedback.error(json.error || 'Unable to save labor entry.');
       return;
     }
 
-    setFeedback(successFeedback('Labor entry saved.'));
+    appFeedback.saved();
     setWorkerId('');
     setWorkerName('');
     setHours('');
@@ -82,14 +82,17 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
   }
 
   async function removeEntry(id: string) {
+    if (deletingId) return;
     if (!window.confirm('Delete this labor entry?')) return;
+    setDeletingId(id);
     const res = await fetch(`/api/jobs/${jobId}/labor/${id}`, { method: 'DELETE' });
+    const json = await res.json().catch(() => ({}));
+    setDeletingId(null);
     if (!res.ok) {
-      const json = await res.json();
-      setFeedback(errorFeedback(json.error || 'Unable to delete labor entry.'));
+      appFeedback.error(json.error || 'Unable to delete labor entry.');
       return;
     }
-    setFeedback(successFeedback('Labor entry deleted.'));
+    appFeedback.deleted();
     void load();
   }
 
@@ -99,8 +102,6 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
     <div className="card finance-card">
       <h3>Labor cost</h3>
       <p className="muted">Track hours and hourly cost for this job.</p>
-
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       {loading ? <p className="loading-state">Loading...</p> : null}
 
@@ -120,8 +121,13 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
                 {entry.notes ? <p className="muted">{entry.notes}</p> : null}
               </div>
               {canManage ? (
-                <button type="button" className="btn" onClick={() => void removeEntry(entry.id)}>
-                  Delete
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={deletingId === entry.id}
+                  onClick={() => void removeEntry(entry.id)}
+                >
+                  {deletingId === entry.id ? FEEDBACK.loading : 'Delete'}
                 </button>
               ) : null}
             </div>
@@ -166,7 +172,7 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
           <label>Notes (optional)</label>
           <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>
-            {saving ? 'Saving...' : 'Add labor'}
+            {saving ? FEEDBACK.loading : 'Add labor'}
           </button>
         </div>
       ) : null}

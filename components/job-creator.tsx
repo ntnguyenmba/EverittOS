@@ -7,8 +7,8 @@ import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { validatePlanAction } from '@/lib/plan-validate';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 
@@ -23,19 +23,20 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
+  const appFeedback = useAppFeedback();
 
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
 
+    if (loading) return;
+
     if (!title.trim()) {
-      setFeedback(errorFeedback('Add a job title first.'));
+      appFeedback.error('Add a job title first.');
       return;
     }
 
     setLoading(true);
-    setFeedback(null);
 
     const {
       data: { user }
@@ -43,7 +44,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     if (!user) {
       setLoading(false);
-      setFeedback(errorFeedback('Sign in to create jobs.'));
+      appFeedback.error('Sign in to create jobs.');
       return;
     }
 
@@ -52,16 +53,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (!isManagerRole(role)) {
       setPermissionBlocked(true);
       setLoading(false);
-      setFeedback(errorFeedback('Only owners, admins, and managers can create jobs.'));
+      appFeedback.error('Only owners, admins, and managers can create jobs.');
       return;
     }
 
     const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setLoading(false);
-      setFeedback(
-        errorFeedback('Workspace setup is still finishing. Wait a moment and try again, or refresh the page.')
-      );
+      appFeedback.error('Workspace setup is still finishing. Wait a moment and try again, or refresh the page.');
       return;
     }
 
@@ -70,7 +69,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     const check = validatePlanAction({ plan: orgPlan, resource: 'jobs', currentCount: usage.jobs });
     if (!check.allowed) {
       setLoading(false);
-      setFeedback(errorFeedback(check.message || limitMessage('jobs', orgPlan)));
+      appFeedback.error(check.message || limitMessage('jobs', orgPlan));
       return;
     }
 
@@ -82,7 +81,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     const serverJson = await serverCheck.json();
     if (!serverJson.allowed) {
       setLoading(false);
-      setFeedback(errorFeedback(serverJson.message || 'Plan limit reached.'));
+      appFeedback.error(serverJson.message || 'Plan limit reached.');
       return;
     }
 
@@ -103,14 +102,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setLoading(false);
 
     if (!createRes.ok) {
-      setFeedback(errorFeedback(createJson.error || 'Unable to save job.'));
+      appFeedback.error(createJson.error || 'Unable to save job.');
       return;
     }
 
     const createdJob = createJson.job;
 
     if (!createdJob?.id) {
-      setFeedback(errorFeedback('Job could not be saved. Please try again.'));
+      appFeedback.error('Job could not be saved. Please try again.');
       return;
     }
 
@@ -125,7 +124,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
-    setFeedback(successFeedback(createJson.message || 'Job saved successfully.'));
+    appFeedback.created();
     onJobCreated?.(createdJob.id);
   }
 
@@ -133,7 +132,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     return (
       <div className="card">
         <h3>Create a job</h3>
-        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
         <p>Only owners, admins, and managers can create new jobs.</p>
       </div>
     );
@@ -160,9 +158,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Saving...' : 'Save job'}
+          {loading ? FEEDBACK.loading : 'Save job'}
         </Button>
-        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       </form>
     </div>
   );

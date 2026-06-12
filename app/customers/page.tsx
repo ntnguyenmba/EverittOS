@@ -9,8 +9,9 @@ import { CustomerLogo } from '@/components/customer-logo';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
+import { formatSupabaseError } from '@/lib/action-messages';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedCustomers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -37,6 +38,7 @@ function CustomersPageContent() {
   const periodFilter = searchParams.get('period');
   const stageFilter = searchParams.get('stage');
   const { t } = useTranslation();
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [displayName, setDisplayName] = useState('');
@@ -46,7 +48,7 @@ function CustomersPageContent() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [role, setRole] = useState(normalizeRole('owner'));
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -54,7 +56,6 @@ function CustomersPageContent() {
 
   async function load() {
     setLoading(true);
-    setFeedback(null);
 
     const {
       data: { user }
@@ -94,7 +95,7 @@ function CustomersPageContent() {
 
     setLoading(false);
     if (error) {
-      setFeedback(errorFeedback(formatSupabaseError(error)));
+      appFeedback.error(formatSupabaseError(error));
       return;
     }
     setCustomers(filterDemoSeedCustomers(data || [], orgIsDemo));
@@ -108,7 +109,7 @@ function CustomersPageContent() {
 
   async function addCustomer() {
     if (!displayName.trim()) {
-      setFeedback(errorFeedback('Enter a customer name first.'));
+      appFeedback.error('Enter a customer name first.');
       return;
     }
     if (saving) return;
@@ -122,12 +123,11 @@ function CustomersPageContent() {
     }
 
     setSaving(true);
-    setFeedback(null);
 
     const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
-      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
+      appFeedback.error('Workspace setup is still finishing. Refresh and try again.');
       return;
     }
 
@@ -137,7 +137,7 @@ function CustomersPageContent() {
 
     if (!check.allowed) {
       setSaving(false);
-      setFeedback(errorFeedback(check.message || limitMessage('customers', orgPlan)));
+      appFeedback.error(check.message || limitMessage('customers', orgPlan));
       return;
     }
 
@@ -149,7 +149,7 @@ function CustomersPageContent() {
     const serverJson = await serverCheck.json();
     if (!serverJson.allowed) {
       setSaving(false);
-      setFeedback(errorFeedback(serverJson.message || 'Plan limit reached.'));
+      appFeedback.error(serverJson.message || 'Plan limit reached.');
       return;
     }
 
@@ -162,7 +162,7 @@ function CustomersPageContent() {
 
     if (!createRes.ok) {
       setSaving(false);
-      setFeedback(errorFeedback(createJson.error || 'Unable to save customer.'));
+      appFeedback.error(createJson.error || 'Unable to save customer.');
       return;
     }
 
@@ -177,7 +177,7 @@ function CustomersPageContent() {
       );
       if (uploadError) {
         setSaving(false);
-        setFeedback(errorFeedback(`Customer saved, but logo upload failed: ${uploadError}`));
+        appFeedback.error(`Customer saved, but logo upload failed: ${uploadError}`);
         load();
         return;
       }
@@ -190,9 +190,7 @@ function CustomersPageContent() {
         if (!logoRes.ok) {
           const logoJson = (await logoRes.json().catch(() => ({}))) as { error?: string };
           setSaving(false);
-          setFeedback(
-            errorFeedback(`Customer saved, but logo could not be linked: ${logoJson.error || 'Update failed.'}`)
-          );
+          appFeedback.error(`Customer saved, but logo could not be linked: ${logoJson.error || 'Update failed.'}`);
           load();
           return;
         }
@@ -200,7 +198,7 @@ function CustomersPageContent() {
     }
 
     setSaving(false);
-    setFeedback(successFeedback(logoFile ? 'Customer and logo saved.' : 'Customer saved.'));
+    appFeedback.created();
     setDisplayName('');
     setPhone('');
     setEmail('');
@@ -254,15 +252,14 @@ function CustomersPageContent() {
             {logoPreviewUrl ? (
               <img src={logoPreviewUrl} alt="Logo preview" className="customer-logo-preview" width={72} height={72} />
             ) : null}
-            <button className="btn btn-primary" type="button" onClick={addCustomer} disabled={saving}>
-              {saving ? 'Saving...' : 'Save customer'}
+            <button className="btn btn-primary" type="button" onClick={() => void addCustomer()} disabled={saving}>
+              {saving ? FEEDBACK.loading : 'Save customer'}
             </button>
           </div>
         )}
 
         <div className="card">
           {loading && <p className="loading-state" role="status">Loading customers…</p>}
-          <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
           {!loading && customers.length === 0 && (
             <LocalizedEmptyState emptyKey="customers" />
           )}
@@ -287,14 +284,17 @@ function CustomersPageContent() {
                   onRemove={
                     canManage
                       ? async () => {
+                          if (removingId) return;
                           if (!window.confirm(`Remove ${customerDisplayName(customer)}?`)) return;
+                          setRemovingId(customer.id);
                           const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
                           const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+                          setRemovingId(null);
                           if (!res.ok) {
-                            setFeedback(errorFeedback(json.error || 'Unable to remove customer.'));
+                            appFeedback.error(json.error || 'Unable to remove customer.');
                             return;
                           }
-                          setFeedback(successFeedback(json.message || 'Customer removed.'));
+                          appFeedback.label('removed');
                           load();
                         }
                       : undefined

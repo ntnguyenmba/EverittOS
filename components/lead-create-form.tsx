@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { LEAD_SOURCE_OPTIONS } from '@/lib/lead-sources';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
@@ -15,18 +15,17 @@ type LeadCreateFormProps = {
 
 export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateFormProps) {
   const router = useRouter();
+  const appFeedback = useAppFeedback();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [leadSource, setLeadSource] = useState('website');
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   async function saveLead() {
     if (!displayName.trim() || saving) return;
 
     setSaving(true);
-    setFeedback(null);
 
     const {
       data: { user }
@@ -40,7 +39,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
     const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
-      setFeedback(errorFeedback('Workspace setup is still finishing. Wait a moment and try again.'));
+      appFeedback.error('Workspace setup is still finishing. Wait a moment and try again.');
       return;
     }
 
@@ -60,11 +59,11 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save lead.'));
+      appFeedback.error(json.error || 'Unable to save lead.');
       return;
     }
 
-    setFeedback(successFeedback(json.message || 'Lead saved successfully.'));
+    appFeedback.created();
     setDisplayName('');
     setEmail('');
     setPhone('');
@@ -79,7 +78,6 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
   return (
     <div className="card form">
       <h3 className="card-title-sm">New lead</h3>
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       <input className="input" placeholder="Name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -94,7 +92,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
         </select>
       </label>
       <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveLead()}>
-        {saving ? 'Saving…' : 'Save lead'}
+        {saving ? FEEDBACK.loading : 'Save lead'}
       </button>
     </div>
   );

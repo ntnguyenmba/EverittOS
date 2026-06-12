@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatCurrency } from '@/lib/finance-format';
 import type { JobProfitability } from '@/lib/finance-types';
 
@@ -16,11 +16,11 @@ type JobProfitabilityCardProps = {
 
 export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfitabilityCardProps) {
   const router = useRouter();
+  const appFeedback = useAppFeedback();
   const [profitability, setProfitability] = useState<JobProfitability | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -28,11 +28,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to load profitability.'));
+      appFeedback.error(json.error || 'Unable to load profitability.');
       return;
     }
     setProfitability(json.profitability);
-  }, [jobId]);
+  }, [appFeedback, jobId]);
 
   useEffect(() => {
     void load();
@@ -48,7 +48,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     if (saving) return;
     const paid = Number.parseFloat(paymentAmount);
     if (!Number.isFinite(paid) || paid <= 0) {
-      setFeedback(errorFeedback('Enter a valid payment amount.'));
+      appFeedback.error('Enter a valid payment amount.');
       return;
     }
 
@@ -56,12 +56,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     const invJson = await invRes.json();
     const invoice = invJson.invoices?.[0];
     if (!invoice) {
-      setFeedback(errorFeedback('Add an invoice before recording a payment.'));
+      appFeedback.error('Add an invoice before recording a payment.');
       return;
     }
 
     setSaving(true);
-    setFeedback(null);
     const newPaid = Number(invoice.amount_paid || 0) + paid;
     const res = await fetch(`/api/invoices/${invoice.id}`, {
       method: 'PATCH',
@@ -72,11 +71,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to record payment.'));
+      appFeedback.error(json.error || 'Unable to record payment.');
       return;
     }
 
-    setFeedback(successFeedback('Payment recorded.'));
+    appFeedback.label('paymentRecorded');
     setPaymentAmount('');
     void load();
   }
@@ -97,8 +96,6 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     <div className="card finance-card">
       <h3>Job profitability</h3>
       <p className="muted">Simple estimated profit for this job. Not full accounting.</p>
-
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       {!p?.hasInvoice ? (
         <div className="finance-empty-block">
@@ -162,7 +159,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
               onChange={(e) => setPaymentAmount(e.target.value)}
             />
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void recordPayment()}>
-              {saving ? 'Saving...' : 'Record payment'}
+              {saving ? FEEDBACK.loading : 'Record payment'}
             </button>
           </div>
         </div>

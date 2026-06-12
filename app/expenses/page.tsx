@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancialTracking, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
@@ -14,7 +15,6 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 
 type JobOption = { id: string; title: string; customer_id: string | null };
@@ -39,6 +39,7 @@ const EMPTY_FORM = {
 function ExpensesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [expenses, setExpenses] = useState<ExpenseView[]>([]);
@@ -52,7 +53,7 @@ function ExpensesContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
@@ -80,7 +81,7 @@ function ExpensesContent() {
     const res = await fetch(`/api/expenses?${params.toString()}`);
     const json = await res.json();
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to load expenses.'));
+      appFeedback.error(json.error || 'Unable to load expenses.');
       return;
     }
     setExpenses(json.expenses || []);
@@ -104,7 +105,7 @@ function ExpensesContent() {
 
       if (!canSeeOrgWideData(userRole)) {
         setLoading(false);
-        setFeedback(errorFeedback('Your role cannot access expenses.'));
+        appFeedback.error('Your role cannot access expenses.');
         return;
       }
 
@@ -161,12 +162,11 @@ function ExpensesContent() {
     if (saving) return;
     const amount = Number.parseFloat(form.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setFeedback(errorFeedback('Enter a valid amount.'));
+      appFeedback.error('Enter a valid amount.');
       return;
     }
 
     setSaving(true);
-    setFeedback(null);
 
     const payload = {
       date: form.date,
@@ -196,7 +196,7 @@ function ExpensesContent() {
     const json = await res.json();
     if (!res.ok) {
       setSaving(false);
-      setFeedback(errorFeedback(json.error || 'Unable to save expense.'));
+      appFeedback.error(json.error || 'Unable to save expense.');
       return;
     }
 
@@ -208,7 +208,7 @@ function ExpensesContent() {
       if (!receiptRes.ok) {
         const receiptJson = await receiptRes.json();
         setSaving(false);
-        setFeedback(errorFeedback(receiptJson.error || 'Expense saved but receipt upload failed.'));
+        appFeedback.error(receiptJson.error || 'Expense saved but receipt upload failed.');
         resetForm();
         await loadExpenses();
         return;
@@ -216,20 +216,27 @@ function ExpensesContent() {
     }
 
     setSaving(false);
-    setFeedback(successFeedback(editingId ? 'Expense updated.' : 'Expense added.'));
+    if (editingId) {
+      appFeedback.updated();
+    } else {
+      appFeedback.created();
+    }
     resetForm();
     await loadExpenses();
   }
 
   async function deleteExpense(id: string) {
+    if (deletingId) return;
     if (!window.confirm('Delete this expense?')) return;
+    setDeletingId(id);
     const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
     const json = await res.json();
+    setDeletingId(null);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to delete expense.'));
+      appFeedback.error(json.error || 'Unable to delete expense.');
       return;
     }
-    setFeedback(successFeedback('Expense deleted.'));
+    appFeedback.deleted();
     await loadExpenses();
   }
 
@@ -277,8 +284,6 @@ function ExpensesContent() {
           ) : undefined
         }
       />
-
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       <div className="finance-filter-bar">
         <button type="button" className="btn" onClick={() => setShowFilters((v) => !v)}>
@@ -417,7 +422,7 @@ function ExpensesContent() {
           <textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           <div className="finance-actions">
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveExpense()}>
-              {saving ? 'Saving...' : editingId ? 'Save changes' : 'Add expense'}
+              {saving ? FEEDBACK.loading : editingId ? 'Save changes' : 'Add expense'}
             </button>
             <button type="button" className="btn" onClick={resetForm}>
               Cancel
@@ -469,8 +474,13 @@ function ExpensesContent() {
                     <button type="button" className="btn" onClick={() => startEdit(expense)}>
                       Edit
                     </button>
-                    <button type="button" className="btn" onClick={() => void deleteExpense(expense.id)}>
-                      Delete
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={deletingId === expense.id}
+                      onClick={() => void deleteExpense(expense.id)}
+                    >
+                      {deletingId === expense.id ? FEEDBACK.loading : 'Delete'}
                     </button>
                   </div>
                 ) : null}

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { leadSourceLabel } from '@/lib/lead-sources';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -25,12 +25,13 @@ type LeadMetrics = {
 
 export default function LeadsPage() {
   const router = useRouter();
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [metrics, setMetrics] = useState<LeadMetrics | null>(null);
   const [leads, setLeads] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [canManage, setCanManage] = useState(false);
 
   async function load() {
@@ -68,12 +69,12 @@ export default function LeadsPage() {
     const metricsJson = await metricsRes.json();
     setLoading(false);
     if (!metricsRes.ok) {
-      setFeedback(errorFeedback(metricsJson.error || 'Unable to load metrics'));
+      appFeedback.error(metricsJson.error || 'Unable to load metrics');
     } else {
       setMetrics(metricsJson.metrics);
     }
     if (leadsRes.error) {
-      setFeedback(errorFeedback(leadsRes.error.message));
+      appFeedback.error(leadsRes.error.message);
     } else {
       setLeads((leadsRes.data || []) as CustomerRecord[]);
     }
@@ -84,14 +85,17 @@ export default function LeadsPage() {
   }, [router]);
 
   async function removeLead(id: string, name: string) {
+    if (removingId) return;
     if (!window.confirm(`Remove lead ${name}?`)) return;
+    setRemovingId(id);
     const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    setRemovingId(null);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to remove lead.'));
+      appFeedback.error(json.error || 'Unable to remove lead.');
       return;
     }
-    setFeedback(successFeedback(json.message || 'Lead removed.'));
+    appFeedback.label('removed');
     void load();
   }
 
@@ -110,8 +114,6 @@ export default function LeadsPage() {
           </div>
         ) : null}
       </header>
-
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       {loading ? <p>Loading metrics…</p> : null}
 
@@ -148,8 +150,13 @@ export default function LeadsPage() {
                   <Link href={`/customers/${lead.id}`}>{customerDisplayName(lead)}</Link>
                   <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
                   {canManage ? (
-                    <button type="button" className="btn btn-sm btn-danger" onClick={() => void removeLead(lead.id, customerDisplayName(lead))}>
-                      Remove
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger"
+                      disabled={removingId === lead.id}
+                      onClick={() => void removeLead(lead.id, customerDisplayName(lead))}
+                    >
+                      {removingId === lead.id ? FEEDBACK.loading : 'Remove'}
                     </button>
                   ) : null}
                 </div>

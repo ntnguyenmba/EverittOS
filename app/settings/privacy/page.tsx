@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTranslation } from '@/components/locale-provider';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -21,6 +23,11 @@ type PrivacyState = {
 export default function PrivacySettingsPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { busy: saving, runResponse, buttonLabel } = useAsyncAction();
+  const { busy: exporting, run: runExport } = useAsyncAction({
+    successMessage: t('settings.privacy.exportSuccess'),
+    errorFallback: t('settings.privacy.exportError')
+  });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [prefs, setPrefs] = useState<PrivacyState>({
@@ -32,9 +39,6 @@ export default function PrivacySettingsPage() {
     privacy_accepted_at: null
   });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -70,36 +74,28 @@ export default function PrivacySettingsPage() {
   }, [router]);
 
   async function save() {
-    setSaving(true);
-    setMessage('');
-    const res = await fetch('/api/account/privacy', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        marketing_emails: prefs.marketing_emails,
-        product_updates: prefs.product_updates,
-        operational_notifications: prefs.operational_notifications,
-        do_not_sell: prefs.do_not_sell
-      })
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || t('settings.privacy.saveError'));
-      return;
-    }
-    setMessage(t('settings.privacy.saved'));
+    await runResponse(
+      () =>
+        fetch('/api/account/privacy', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            marketing_emails: prefs.marketing_emails,
+            product_updates: prefs.product_updates,
+            operational_notifications: prefs.operational_notifications,
+            do_not_sell: prefs.do_not_sell
+          })
+        }),
+      t('settings.privacy.saved')
+    );
   }
 
   async function exportData() {
-    setExporting(true);
-    setMessage('');
-    try {
+    await runExport(async () => {
       const res = await fetch('/api/account/export');
       if (!res.ok) {
         const json = await res.json();
-        setMessage(json.error || t('settings.privacy.exportError'));
-        return;
+        throw new Error(json.error || t('settings.privacy.exportError'));
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -108,12 +104,7 @@ export default function PrivacySettingsPage() {
       anchor.download = `everittos-export-${Date.now()}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      setMessage(t('settings.privacy.exportSuccess'));
-    } catch {
-      setMessage(t('settings.privacy.exportError'));
-    } finally {
-      setExporting(false);
-    }
+    });
   }
 
   if (loading) {
@@ -177,16 +168,16 @@ export default function PrivacySettingsPage() {
             <span className="muted">{t('settings.privacy.doNotSellDesc')}</span>
           </span>
         </label>
-        <button type="button" className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? t('common.loading') : t('settings.privacy.save')}
+        <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
+          {buttonLabel(t('settings.privacy.save'), FEEDBACK.loading)}
         </button>
       </div>
 
       <div className="settings-card" style={{ marginTop: 18 }}>
         <h3>{t('settings.privacy.exportTitle')}</h3>
         <p className="muted">{t('settings.privacy.exportDescription')}</p>
-        <button type="button" className="btn" onClick={exportData} disabled={exporting}>
-          {exporting ? t('common.loading') : t('settings.privacy.exportButton')}
+        <button type="button" className="btn" onClick={() => void exportData()} disabled={exporting}>
+          {exporting ? FEEDBACK.loading : t('settings.privacy.exportButton')}
         </button>
       </div>
 
@@ -207,8 +198,6 @@ export default function PrivacySettingsPage() {
           <Link href="/cookies">{t('legal.cookies')}</Link>
         </p>
       </div>
-
-      {message ? <p className="auth-message auth-message-success" role="status">{message}</p> : null}
     </SettingsShell>
   );
 }

@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +14,8 @@ import type { EverittTemplate, TemplateCategory } from '@/lib/os-types';
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const feedback = useAppFeedback();
+  const { busy: saving, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [templates, setTemplates] = useState<EverittTemplate[]>([]);
@@ -21,8 +26,6 @@ export default function TemplatesPage() {
   const [body, setBody] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [canManage, setCanManage] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -46,7 +49,7 @@ export default function TemplatesPage() {
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load templates');
+      feedback.error(json.error || 'Unable to load templates');
       return;
     }
     setTemplates(json.templates || []);
@@ -59,47 +62,33 @@ export default function TemplatesPage() {
 
   async function saveTemplate() {
     if (!title.trim() || saving) return;
-    setSaving(true);
-    setMessage('');
     const isEdit = Boolean(editingId);
-    const res = await fetch(isEdit ? `/api/templates/${editingId}` : '/api/templates', {
-      method: isEdit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), category, body })
-    });
-    const json = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setMessage(json.error || 'Save failed');
-      return;
-    }
+    const res = await runResponse(
+      () =>
+        fetch(isEdit ? `/api/templates/${editingId}` : '/api/templates', {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title.trim(), category, body })
+        }),
+      isEdit ? 'updated' : 'created'
+    );
+    if (!res) return;
     setTitle('');
     setBody('');
     setEditingId(null);
     setShowCreateForm(false);
-    setMessage(isEdit ? 'Template updated.' : 'Template created.');
     void load();
   }
 
   async function duplicateTemplate(id: string) {
-    const res = await fetch(`/api/templates/${id}`, { method: 'POST' });
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || 'Duplicate failed');
-      return;
-    }
-    void load();
+    const res = await runResponse(() => fetch(`/api/templates/${id}`, { method: 'POST' }), 'created');
+    if (res) void load();
   }
 
   async function deleteTemplate(id: string) {
     if (!confirm('Delete this template?')) return;
-    const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || 'Delete failed');
-      return;
-    }
-    void load();
+    const res = await runResponse(() => fetch(`/api/templates/${id}`, { method: 'DELETE' }), 'deleted');
+    if (res) void load();
   }
 
   function startEdit(t: EverittTemplate) {
@@ -167,7 +156,7 @@ export default function TemplatesPage() {
           />
           <div className="settings-actions">
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveTemplate()}>
-              {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
+              {buttonLabel(editingId ? 'Update' : 'Create', FEEDBACK.loading)}
             </button>
             <button
               type="button"
@@ -185,17 +174,6 @@ export default function TemplatesPage() {
         </div>
       ) : null}
 
-      {message ? (
-        <p
-          className={
-            message.includes('created') || message.includes('updated')
-              ? 'auth-message auth-message-success'
-              : 'auth-message auth-message-error'
-          }
-        >
-          {message}
-        </p>
-      ) : null}
       {loading ? <p>Loading…</p> : null}
       {!loading && templates.length === 0 && !showCreateForm ? (
         <EmptyState
@@ -222,13 +200,13 @@ export default function TemplatesPage() {
             <p className="muted template-preview">{t.body.slice(0, 160)}{t.body.length > 160 ? '…' : ''}</p>
             {canManage ? (
               <div className="settings-actions" style={{ marginTop: 8 }}>
-                <button type="button" className="btn" onClick={() => startEdit(t)}>
+                <button type="button" className="btn" disabled={saving} onClick={() => startEdit(t)}>
                   Edit
                 </button>
-                <button type="button" className="btn" onClick={() => void duplicateTemplate(t.id)}>
+                <button type="button" className="btn" disabled={saving} onClick={() => void duplicateTemplate(t.id)}>
                   Duplicate
                 </button>
-                <button type="button" className="btn btn-danger" onClick={() => void deleteTemplate(t.id)}>
+                <button type="button" className="btn btn-danger" disabled={saving} onClick={() => void deleteTemplate(t.id)}>
                   Delete
                 </button>
               </div>

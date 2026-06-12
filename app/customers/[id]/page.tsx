@@ -12,6 +12,8 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { customerDisplayAddress, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -34,10 +36,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
   >([]);
   const [propName, setPropName] = useState('');
   const [propAddress, setPropAddress] = useState('');
-  const [message, setMessage] = useState('');
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const appFeedback = useAppFeedback();
 
   useEffect(() => {
     params.then((p) => setCustomerId(p.id));
@@ -61,7 +64,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const { data: customer, error } = await supabase.from('customers').select('*').eq('id', customerId).single();
     if (error || !customer) {
       setLoading(false);
-      setMessage(error?.message || 'Customer not found');
+      appFeedback.error(error?.message || 'Customer not found');
       return;
     }
 
@@ -133,7 +136,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     if (!user) return;
     const org = await ensureOrganizationForUser(user.id);
     if (!org?.organizationId) {
-      setMessage('Workspace is not ready yet. Refresh and try again.');
+      appFeedback.error('Workspace is not ready yet. Refresh and try again.');
       return;
     }
 
@@ -141,7 +144,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const { path, error } = await uploadCustomerLogo(supabase, org.organizationId, customerId, file);
     if (error || !path) {
       setLogoUploading(false);
-      setMessage(error || 'Logo upload failed.');
+      appFeedback.error(error || 'Logo upload failed.');
       return;
     }
 
@@ -153,26 +156,28 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const logoJson = (await logoRes.json().catch(() => ({}))) as { error?: string };
     setLogoUploading(false);
     if (!logoRes.ok) {
-      setMessage(logoJson.error || 'Logo could not be saved.');
+      appFeedback.error(logoJson.error || 'Logo could not be saved.');
       return;
     }
     setLogoPath(path);
-    setMessage('Logo saved.');
+    appFeedback.uploadComplete();
   }
 
   async function saveCustomer() {
-    if (!canEdit || !customerId) return;
+    if (!canEdit || !customerId || savingCustomer) return;
+    setSavingCustomer(true);
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName, phone, email, address, notes })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setSavingCustomer(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to save customer.');
+      appFeedback.error(json.error || 'Unable to save customer.');
       return;
     }
-    setMessage('Customer saved.');
+    appFeedback.saved();
     load();
   }
 
@@ -213,7 +218,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-        {message && <p className="card">{message}</p>}
 
         <div className="grid-2">
           <div className="card form">
@@ -236,8 +240,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
                   />
                 </label>
                 {logoUploading ? <p className="loading-state" role="status">Uploading logo…</p> : null}
-                <button type="button" className="btn btn-primary" onClick={saveCustomer}>
-                  Save
+                <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
+                  {savingCustomer ? FEEDBACK.loading : 'Save'}
                 </button>
                 <button
                   type="button"
@@ -248,9 +252,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
                     const json = (await res.json().catch(() => ({}))) as { error?: string };
                     if (!res.ok) {
-                      setMessage(json.error || 'Unable to remove customer.');
+                      appFeedback.error(json.error || 'Unable to remove customer.');
                       return;
                     }
+                    appFeedback.deleted();
                     router.push('/customers');
                   }}
                 >

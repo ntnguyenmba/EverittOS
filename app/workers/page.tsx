@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useTranslation } from '@/components/locale-provider';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -29,6 +29,7 @@ type Worker = {
 export default function WorkersPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const appFeedback = useAppFeedback();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canManage, setCanManage] = useState(false);
@@ -38,7 +39,7 @@ export default function WorkersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function loadWorkers() {
     const {
@@ -83,21 +84,20 @@ export default function WorkersPage() {
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     const userPlan = normalizePlan(profile?.plan);
     if (!limitsForPlan(userPlan).crewAssignment) {
-      setFeedback(errorFeedback('Workers and crew assignment require the Business plan.'));
+      appFeedback.error('Workers and crew assignment require the Business plan.');
       return;
     }
     if (!editingId && crewLimitReached(userPlan, workers.length)) {
-      setFeedback(errorFeedback(limitMessage('crewMembers', userPlan)));
+      appFeedback.error(limitMessage('crewMembers', userPlan));
       return;
     }
 
     setSaving(true);
-    setFeedback(null);
 
     const org = await ensureWorkspaceForSave(user.id);
     if (!org?.organizationId) {
       setSaving(false);
-      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
+      appFeedback.error('Workspace setup is still finishing. Refresh and try again.');
       return;
     }
 
@@ -113,11 +113,15 @@ export default function WorkersPage() {
     setSaving(false);
 
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to save worker.'));
+      appFeedback.error(json.error || 'Unable to save worker.');
       return;
     }
 
-    setFeedback(successFeedback(editingId ? 'Worker updated.' : 'Worker saved.'));
+    if (editingId) {
+      appFeedback.updated();
+    } else {
+      appFeedback.created();
+    }
     setName('');
     setRole('');
     setPhone('');
@@ -133,14 +137,17 @@ export default function WorkersPage() {
   }
 
   async function removeWorker(worker: Worker) {
+    if (removingId) return;
     if (!window.confirm(`Remove ${worker.name}?`)) return;
+    setRemovingId(worker.id);
     const res = await fetch(`/api/workers/${worker.id}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setRemovingId(null);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to remove worker.'));
+      appFeedback.error(json.error || 'Unable to remove worker.');
       return;
     }
-    setFeedback(successFeedback('Worker removed.'));
+    appFeedback.label('removed');
     loadWorkers();
   }
 
@@ -154,8 +161,6 @@ export default function WorkersPage() {
     <AppShell plan={plan}>
       <h1>{t('nav.workers')}</h1>
 
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
-
       {canManage && crewEnabled && (
         <div className="card form" style={{ marginTop: 20 }}>
           <h3 className="card-title-sm">{editingId ? 'Edit worker' : 'Add worker'}</h3>
@@ -165,8 +170,8 @@ export default function WorkersPage() {
           <input id="worker-role" className="input" placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} />
           <label htmlFor="worker-phone">Phone</label>
           <input id="worker-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <button className="btn btn-primary" type="button" onClick={saveWorker} disabled={saving}>
-            {saving ? 'Saving...' : editingId ? 'Save changes' : 'Save worker'}
+          <button className="btn btn-primary" type="button" onClick={() => void saveWorker()} disabled={saving}>
+            {saving ? FEEDBACK.loading : editingId ? 'Save changes' : 'Save worker'}
           </button>
           {editingId ? (
             <button

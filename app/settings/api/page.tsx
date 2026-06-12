@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -21,13 +23,14 @@ type ApiKeyRow = {
 
 export default function ApiSettingsPage() {
   const router = useRouter();
+  const createAction = useAsyncAction({ successMessage: 'Copy this key now. It will not be shown again.' });
+  const revokeAction = useAsyncAction({ successMessage: 'deleted' });
+  const busy = createAction.busy || revokeAction.busy;
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [name, setName] = useState('');
   const [rawKey, setRawKey] = useState('');
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
 
   async function load() {
     const {
@@ -56,36 +59,24 @@ export default function ApiSettingsPage() {
 
   async function createKey() {
     if (!name.trim() || busy) return;
-    setBusy(true);
-    setMessage('');
     setRawKey('');
-    const res = await fetch('/api/keys', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
+    await createAction.run(async () => {
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Unable to create key.');
+      setRawKey(json.rawKey);
+      setName('');
+      load();
     });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to create key.');
-      return;
-    }
-    setRawKey(json.rawKey);
-    setName('');
-    setMessage('Copy this key now. It will not be shown again.');
-    load();
   }
 
   async function revokeKey(id: string) {
-    setBusy(true);
-    const res = await fetch(`/api/keys/${id}`, { method: 'DELETE' });
-    setBusy(false);
-    if (!res.ok) {
-      const json = await res.json();
-      setMessage(json.error || 'Unable to revoke key.');
-      return;
-    }
-    load();
+    const res = await revokeAction.runResponse(() => fetch(`/api/keys/${id}`, { method: 'DELETE' }), 'deleted');
+    if (res) load();
   }
 
   if (loading) {
@@ -106,8 +97,8 @@ export default function ApiSettingsPage() {
             <h3>Create API key</h3>
             <div className="inline-actions">
               <input className="input" placeholder="Key name" value={name} onChange={(e) => setName(e.target.value)} />
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={createKey}>
-                Create API key
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createKey()}>
+                {createAction.buttonLabel('Create API key', FEEDBACK.loading)}
               </button>
             </div>
             {rawKey ? (
@@ -132,7 +123,7 @@ export default function ApiSettingsPage() {
                       {key.last_used_at ? ` · Last used ${new Date(key.last_used_at).toLocaleString()}` : ''}
                     </p>
                   </div>
-                  <button type="button" className="btn" disabled={busy} onClick={() => revokeKey(key.id)}>
+                  <button type="button" className="btn" disabled={busy} onClick={() => void revokeKey(key.id)}>
                     Revoke
                   </button>
                 </div>
@@ -154,8 +145,6 @@ export default function ApiSettingsPage() {
           </div>
         </>
       ) : null}
-
-      {message ? <p>{message}</p> : null}
     </SettingsShell>
   );
 }

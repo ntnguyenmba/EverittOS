@@ -1,12 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { OutboundComposer } from '@/components/outbound/outbound-composer';
 import { OutboundDocumentList } from '@/components/outbound/outbound-document-list';
 import { OutboundStatusTabs } from '@/components/outbound/outbound-status-tabs';
 import { useOutboundAutosave } from '@/components/outbound/use-outbound-autosave';
-import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import type { OutboundDocType, OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
 type OutboundHubProps = {
@@ -26,10 +25,11 @@ export function OutboundHub({
   initialCustomerId,
   footer
 }: OutboundHubProps) {
+  const appFeedback = useAppFeedback();
   const [tab, setTab] = useState<OutboundTab>('sent');
   const [documents, setDocuments] = useState<OutboundDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const autosave = useOutboundAutosave({
     docType,
@@ -44,60 +44,68 @@ export function OutboundHub({
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Unable to load documents'));
+      appFeedback.error(json.error || 'Unable to load documents');
       return;
     }
     setDocuments((json.documents || []) as OutboundDocument[]);
-  }, [docType, tab]);
+  }, [appFeedback, docType, tab]);
 
   useEffect(() => {
     void loadDocuments();
   }, [loadDocuments]);
 
   async function handleSendFromComposer() {
+    if (autosave.sending) return;
     if (!autosave.fields.recipient_email.trim()) {
-      setFeedback(errorFeedback('Enter a recipient email before sending.'));
+      appFeedback.error('Enter a recipient email before sending.');
       return;
     }
     try {
       const result = await autosave.sendNow();
       if (!result) return;
-      const note = result.deliveryNote ? ` ${result.deliveryNote}` : '';
-      setFeedback(successFeedback(`${result.message || 'Sent successfully.'}${note}`));
+      appFeedback.sent();
+      if (result.deliveryNote) {
+        appFeedback.info(result.deliveryNote);
+      }
       setTab('sent');
       void loadDocuments();
     } catch (err) {
-      setFeedback(errorFeedback(err instanceof Error ? err.message : 'Send failed'));
+      appFeedback.error(err instanceof Error ? err.message : 'Send failed');
       setTab('failed');
       void loadDocuments();
     }
   }
 
   async function handleSendExisting(id: string) {
-    setFeedback(null);
+    if (autosave.sending) return;
     const res = await fetch(`/api/outbound/${id}/send`, { method: 'POST' });
     const json = await res.json();
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Send failed'));
+      appFeedback.error(json.error || 'Send failed');
       setTab('failed');
       void loadDocuments();
       return;
     }
-    const note = json.deliveryNote ? ` ${json.deliveryNote}` : '';
-    setFeedback(successFeedback(`${json.message || 'Sent successfully.'}${note}`));
+    appFeedback.sent();
+    if (json.deliveryNote) {
+      appFeedback.info(json.deliveryNote);
+    }
     setTab('sent');
     void loadDocuments();
   }
 
   async function handleDelete(id: string) {
+    if (deletingId) return;
     if (!window.confirm('Remove this item?')) return;
+    setDeletingId(id);
     const res = await fetch(`/api/outbound/${id}`, { method: 'DELETE' });
     const json = await res.json();
+    setDeletingId(null);
     if (!res.ok) {
-      setFeedback(errorFeedback(json.error || 'Delete failed'));
+      appFeedback.error(json.error || 'Delete failed');
       return;
     }
-    setFeedback(successFeedback('Removed.'));
+    appFeedback.deleted();
     void loadDocuments();
   }
 
@@ -120,8 +128,6 @@ export function OutboundHub({
           onReset={autosave.resetComposer}
         />
       ) : null}
-
-      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       <div className="card outbound-history-card">
         <div className="outbound-history-head">

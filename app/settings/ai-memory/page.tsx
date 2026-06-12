@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { canAccessFeature } from '@/lib/plan-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -12,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function AiMemorySettingsPage() {
   const router = useRouter();
+  const { busy: saving, run, buttonLabel } = useAsyncAction({ successMessage: 'saved' });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [orgId, setOrgId] = useState('');
@@ -20,8 +23,6 @@ export default function AiMemorySettingsPage() {
   const [brandVoice, setBrandVoice] = useState('');
   const [pricingRules, setPricingRules] = useState('');
   const [serviceAreas, setServiceAreas] = useState('');
-  const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,21 +68,19 @@ export default function AiMemorySettingsPage() {
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!orgId || saving) return;
-    setSaving(true);
-    setMessage('');
 
-    const { error } = await supabase.from('organization_ai_memory').upsert({
-      organization_id: orgId,
-      company_profile: companyProfile.trim() || null,
-      services: services.trim() || null,
-      brand_voice: brandVoice.trim() || null,
-      pricing_rules: pricingRules.trim() || null,
-      service_areas: serviceAreas.trim() || null,
-      updated_at: new Date().toISOString()
+    await run(async () => {
+      const { error } = await supabase.from('organization_ai_memory').upsert({
+        organization_id: orgId,
+        company_profile: companyProfile.trim() || null,
+        services: services.trim() || null,
+        brand_voice: brandVoice.trim() || null,
+        pricing_rules: pricingRules.trim() || null,
+        service_areas: serviceAreas.trim() || null,
+        updated_at: new Date().toISOString()
+      });
+      if (error) throw new Error(error.message);
     });
-
-    setSaving(false);
-    setMessage(error ? error.message : 'AI memory saved.');
   }
 
   if (loading) {
@@ -117,7 +116,6 @@ export default function AiMemorySettingsPage() {
       title="AI Memory"
       description="Company profile, services, and preferences used by Ask Everitt. Stored per organization."
     >
-      {message ? <p className="auth-message auth-message-success">{message}</p> : null}
       <form className="settings-card form" onSubmit={save}>
         <label>
           Company profile
@@ -140,7 +138,7 @@ export default function AiMemorySettingsPage() {
           <textarea className="input" rows={3} value={brandVoice} onChange={(e) => setBrandVoice(e.target.value)} />
         </label>
         <button type="submit" className="btn btn-primary" disabled={saving}>
-          {saving ? 'Saving...' : 'Save AI memory'}
+          {buttonLabel('Save AI memory', FEEDBACK.loading)}
         </button>
       </form>
     </SettingsShell>
