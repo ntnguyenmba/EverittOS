@@ -11,6 +11,7 @@ import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
+import './everitt-theme.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-display' });
