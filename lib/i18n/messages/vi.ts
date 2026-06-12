@@ -32,8 +32,10 @@ export const messages: Messages = {
     pageTitles: {
       schedule: 'Lịch & công việc',
       analytics: 'Hiệu suất kinh doanh',
-      billing: 'Hóa đơn & thanh toán'
-    }
+      billing: 'Hóa đơn & thanh toán',
+      customers: 'Theo dõi khách hàng, khách tiềm năng và việc cần làm ở một nơi.'
+    },
+    tapHint: 'Chạm để xem chi tiết'
   },
   onboarding: {
     progress: 'Bước {current} / {total}',
@@ -153,23 +155,23 @@ export const messages: Messages = {
   empty: {
     jobs: {
       title: 'Chưa có công việc',
-      description: '',
-      action: 'Công việc mới'
+      description: 'Tạo việc đầu tiên để bắt đầu theo dõi công việc.',
+      action: 'Tạo việc'
     },
     customers: {
       title: 'Chưa có khách hàng',
-      description: '',
-      action: 'Thêm khách hàng'
+      description: 'Thêm khách đầu tiên để theo dõi việc và hóa đơn.',
+      action: 'Thêm khách'
     },
     schedule: {
       title: 'Chưa có lịch',
-      description: '',
-      action: 'Xem công việc'
+      description: 'Lên lịch hẹn đầu tiên để xem công việc trên lịch.',
+      action: 'Lên lịch'
     },
     workers: {
       title: 'Chưa có nhân viên',
-      description: '',
-      action: 'Mời nhóm'
+      description: 'Thêm thành viên nhóm để giao việc.',
+      action: 'Thêm nhân viên'
     },
     activity: {
       title: 'Chưa có hoạt động',
@@ -282,6 +284,7 @@ export const messages: Messages = {
   },
   nav: {
     today: 'Hôm nay',
+    money: 'Tiền',
     more: 'Thêm',
     commandCenter: 'Hôm nay',
     dashboard: 'Bảng điều khiển',
@@ -290,7 +293,7 @@ export const messages: Messages = {
     reviews: 'Đánh giá',
     leads: 'Khách tiềm năng',
     jobs: 'Công việc',
-    crm: 'CRM',
+    crm: 'Khách & tiềm năng',
     customers: 'Khách hàng',
     projects: 'Dự án',
     knowledge: 'Tri thức',
@@ -347,7 +350,14 @@ export const messages: Messages = {
       revenueMonth: 'Đã thu tháng này',
       newCustomersMonth: 'Khách mới tháng này',
       openInvoices: 'Hóa đơn mở',
-      scheduledUpcoming: 'Đã lên lịch'
+      scheduledUpcoming: 'Đã lên lịch',
+      hints: {
+        completedWeek: 'Chạm để xem việc đã hoàn thành',
+        revenueMonth: 'Chạm để xem thanh toán',
+        newCustomersMonth: 'Chạm để xem khách mới',
+        openInvoices: 'Chạm để xem hóa đơn mở',
+        scheduledUpcoming: 'Chạm để xem lịch sắp tới'
+      }
     },
     sidebar: {
       todayTasks: 'Việc hôm nay',
@@ -358,7 +368,13 @@ export const messages: Messages = {
       openInbox: 'Mở hộp thư',
       openSchedule: 'Mở lịch',
       openCrm: 'Mở CRM',
-      leadsClients: '{leads} khách tiềm năng · {clients} khách'
+      leadsClients: '{leads} khách tiềm năng · {clients} khách',
+      hints: {
+        todayTasks: 'Chạm để xem việc đang mở',
+        notifications: 'Chạm để mở hộp thư',
+        upcoming: 'Chạm để xem lịch',
+        crmSnapshot: 'Chạm để mở khách hàng'
+      }
     },
     todaysSchedule: 'Lịch hôm nay',
     viewSchedule: 'Lịch',

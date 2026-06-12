@@ -13,6 +13,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
+import { weekAgoIso } from '@/lib/date-filters';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { supabase } from '@/lib/supabase';
 
@@ -23,6 +24,8 @@ type Job = {
   customer_id: string | null;
   address: string | null;
   status: string | null;
+  completed_at?: string | null;
+  assigned_to?: string | null;
   photo_count?: number;
 };
 
@@ -31,6 +34,9 @@ function JobsList() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const customerFilter = searchParams.get('customer');
+  const statusFilter = searchParams.get('status');
+  const periodFilter = searchParams.get('period');
+  const assignmentFilter = searchParams.get('filter');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [loading, setLoading] = useState(true);
@@ -51,7 +57,7 @@ function JobsList() {
       const org = await fetchOrganizationContext(user.id);
       let query = supabase
         .from('jobs')
-        .select('id, title, customer_name, customer_id, address, status')
+        .select('id, title, customer_name, customer_id, address, status, completed_at, assigned_to')
         .order('created_at', { ascending: false });
 
       if (org?.organizationId) {
@@ -63,19 +69,28 @@ function JobsList() {
       if (customerFilter) {
         query = query.eq('customer_id', customerFilter);
       }
+      if (statusFilter) {
+        query = query.eq('status', statusFilter);
+      }
+      if (periodFilter === 'week' && statusFilter === 'completed') {
+        query = query.gte('completed_at', weekAgoIso());
+      }
 
       const [{ data }, orgIsDemo] = await Promise.all([
         query,
         fetchOrganizationIsDemo(supabase, org?.organizationId)
       ]);
-      const rows = filterDemoSeedJobs(data || [], orgIsDemo);
+      let rows = filterDemoSeedJobs(data || [], orgIsDemo);
+      if (assignmentFilter === 'unassigned') {
+        rows = rows.filter((j) => j.status !== 'completed' && j.status !== 'cancelled' && !j.assigned_to);
+      }
       const photoCounts = await fetchPhotoCountsByJobIds(rows.map((j) => j.id));
       setJobs(rows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
       setLoading(false);
     }
 
     load();
-  }, [router, customerFilter]);
+  }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter]);
 
   return (
     <AppShell plan={plan}>

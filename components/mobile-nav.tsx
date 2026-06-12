@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppNavItems } from '@/components/app-nav-items';
+import { BrandLogo } from '@/components/brand-logo';
 import { useTranslation } from '@/components/locale-provider';
 import {
   isPaidEverittosPlan,
@@ -81,7 +82,7 @@ export function MobileNav({ plan = 'free', role: roleProp, moreOpen, onMoreOpenC
   return (
     <div className="mobile-nav">
       <div className="mobile-nav-bar">
-        <span className="mobile-nav-brand">{t('ux.appName')}</span>
+        <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
         <p className="mobile-nav-plan">
           {showBillingLink ? (
             <Link

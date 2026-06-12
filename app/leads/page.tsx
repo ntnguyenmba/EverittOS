@@ -74,9 +74,9 @@ export default function LeadsPage() {
       {metrics ? (
         <>
           <div className="dashboard-stats-grid">
-            <div className="card stat-card">
-              <span className="stat-label">New leads (30d)</span>
+            <div className="card stat-card metric-stack">
               <strong className="stat-value">{metrics.newLeads30d}</strong>
+              <span className="stat-label">New leads (30d)</span>
             </div>
             <div className="card stat-card">
               <span className="stat-label">Open pipeline</span>

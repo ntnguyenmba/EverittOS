@@ -9,7 +9,7 @@ type EmptyKey = 'jobs' | 'customers' | 'schedule' | 'workers';
 const EMPTY_ACTIONS: Record<EmptyKey, string> = {
   jobs: '/dashboard',
   customers: '/customers',
-  schedule: '/jobs',
+  schedule: '/schedule',
   workers: '/settings/team'
 };
 

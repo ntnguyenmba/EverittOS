@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
@@ -12,11 +13,14 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { daysAheadIso, todayIso } from '@/lib/date-filters';
 import { logClientActivity } from '@/lib/activity';
 import { supabase } from '@/lib/supabase';
 
-export default function SchedulePage() {
+function SchedulePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rangeFilter = searchParams.get('range');
   const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
@@ -70,6 +74,19 @@ export default function SchedulePage() {
     load();
   }, []);
 
+  const visibleJobs = useMemo(() => {
+    if (rangeFilter !== 'upcoming') return jobs;
+    const today = todayIso();
+    const end = daysAheadIso(7);
+    return jobs.filter(
+      (j) =>
+        j.status !== 'completed' &&
+        j.status !== 'cancelled' &&
+        ((j.due_date && j.due_date >= today && j.due_date <= end) ||
+          (j.start_date && j.start_date >= today && j.start_date <= end))
+    );
+  }, [jobs, rangeFilter]);
+
   async function assignWorker(jobId: string, workerId: string | null) {
     const res = await fetch('/api/schedule/update', {
       method: 'POST',
@@ -116,15 +133,15 @@ export default function SchedulePage() {
 
         {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
         {error && <div className="card">{error}</div>}
-        {!loading && !error && jobs.length === 0 && (
+        {!loading && !error && visibleJobs.length === 0 && (
           <div className="card" style={{ marginTop: 18 }}>
             <LocalizedEmptyState emptyKey="schedule" />
           </div>
         )}
-        {!loading && !error && jobs.length > 0 && (
+        {!loading && !error && visibleJobs.length > 0 && (
           <div className="card" style={{ marginTop: 18 }}>
             <ScheduleViews
-              jobs={jobs}
+              jobs={visibleJobs}
               workerNames={workerNames}
               canAssign={canAssign}
               onAssign={assignWorker}
@@ -133,5 +150,13 @@ export default function SchedulePage() {
           </div>
         )}
     </AppShell>
+  );
+}
+
+export default function SchedulePage() {
+  return (
+    <Suspense>
+      <SchedulePageContent />
+    </Suspense>
   );
 }

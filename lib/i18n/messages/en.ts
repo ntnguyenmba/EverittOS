@@ -32,8 +32,10 @@ export const messages: Messages = {
     pageTitles: {
       schedule: 'Calendar & work',
       analytics: 'Business performance',
-      billing: 'Invoices & payments'
-    }
+      billing: 'Invoices & payments',
+      customers: 'Track customers, leads, and follow-ups in one place.'
+    },
+    tapHint: 'Tap to view details'
   },
   onboarding: {
     progress: 'Step {current} of {total}',
@@ -152,23 +154,23 @@ export const messages: Messages = {
   empty: {
     jobs: {
       title: 'No jobs yet',
-      description: '',
-      action: 'New job'
+      description: 'Create your first job to start tracking work.',
+      action: 'Create job'
     },
     customers: {
       title: 'No customers yet',
-      description: '',
+      description: 'Add your first customer to begin tracking jobs and invoices.',
       action: 'Add customer'
     },
     schedule: {
       title: 'Nothing scheduled',
-      description: '',
-      action: 'View jobs'
+      description: 'Schedule your first appointment to see work on the calendar.',
+      action: 'Schedule work'
     },
     workers: {
       title: 'No workers yet',
-      description: '',
-      action: 'Invite team'
+      description: 'Add team members so you can assign jobs and track who is doing what.',
+      action: 'Add worker'
     },
     activity: {
       title: 'No activity yet',
@@ -281,6 +283,7 @@ export const messages: Messages = {
   },
   nav: {
     today: 'Today',
+    money: 'Money',
     more: 'More',
     commandCenter: 'Today',
     dashboard: 'Dashboard',
@@ -289,7 +292,7 @@ export const messages: Messages = {
     reviews: 'Reviews',
     leads: 'Leads',
     jobs: 'Jobs',
-    crm: 'CRM',
+    crm: 'Customers & leads',
     customers: 'Customers',
     projects: 'Projects',
     knowledge: 'Knowledge',
@@ -346,7 +349,14 @@ export const messages: Messages = {
       revenueMonth: 'Collected this month',
       newCustomersMonth: 'New customers this month',
       openInvoices: 'Open invoices',
-      scheduledUpcoming: 'Scheduled ahead'
+      scheduledUpcoming: 'Scheduled ahead',
+      hints: {
+        completedWeek: 'Tap to view completed jobs',
+        revenueMonth: 'Tap to view payments',
+        newCustomersMonth: 'Tap to view new customers',
+        openInvoices: 'Tap to view open invoices',
+        scheduledUpcoming: 'Tap to view upcoming work'
+      }
     },
     sidebar: {
       todayTasks: "Today's tasks",
@@ -357,7 +367,13 @@ export const messages: Messages = {
       openInbox: 'Open inbox',
       openSchedule: 'Open schedule',
       openCrm: 'Open CRM',
-      leadsClients: '{leads} leads · {clients} clients'
+      leadsClients: '{leads} leads · {clients} clients',
+      hints: {
+        todayTasks: 'Tap to view open tasks',
+        notifications: 'Tap to open your inbox',
+        upcoming: 'Tap to view the calendar',
+        crmSnapshot: 'Tap to open customers'
+      }
     },
     todaysSchedule: "Today's schedule",
     viewSchedule: 'Schedule',

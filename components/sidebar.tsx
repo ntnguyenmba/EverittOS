@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AppNavItems } from '@/components/app-nav-items';
+import { BrandLogo } from '@/components/brand-logo';
 import {
   isPaidEverittosPlan,
   normalizePlan,
@@ -63,6 +64,9 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
 
   return (
     <aside className="sidebar" aria-label="App navigation">
+      <div className="sidebar-brand">
+        <BrandLogo href="/dashboard" size={32} showName />
+      </div>
       <div className="sidebar-plan">
         <span className="sidebar-plan-label">Plan</span>
         {showBillingLink ? (

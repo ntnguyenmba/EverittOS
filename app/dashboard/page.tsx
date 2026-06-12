@@ -7,8 +7,12 @@ import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { ActivityFeed } from '@/components/activity-feed';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
+import { MetricCard } from '@/components/metric-card';
+import { SnapshotCard } from '@/components/snapshot-card';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
+import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
+import { monthStartIso, todayIso, weekAgoIso } from '@/lib/date-filters';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
@@ -48,24 +52,6 @@ const LOCALE_TAGS: Record<Locale, string> = {
   es: 'es',
   vi: 'vi-VN'
 };
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function monthStartIso(): string {
-  const d = new Date();
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
-function weekAgoIso(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
 
 function formatMoney(amount: number, locale: Locale): string {
   return new Intl.NumberFormat(LOCALE_TAGS[locale], {
@@ -335,11 +321,11 @@ export default function DashboardPage() {
   }
 
   const attentionItems = [
-    { key: 'overdueInvoices', count: unpaidInvoices, href: '/settings/billing' },
-    { key: 'unassignedJobs', count: unassignedJobs, href: '/jobs' },
-    { key: 'pendingEstimates', count: pendingProposals, href: '/proposals' },
-    { key: 'followUpCustomers', count: leadCount, href: '/customers' },
-    { key: 'upcomingAppointments', count: dueInSevenDays, href: '/schedule' }
+    { key: 'overdueInvoices', count: unpaidInvoices, href: DASHBOARD_LINKS.openInvoices },
+    { key: 'unassignedJobs', count: unassignedJobs, href: '/jobs?filter=unassigned' },
+    { key: 'pendingEstimates', count: pendingProposals, href: DASHBOARD_LINKS.proposals },
+    { key: 'followUpCustomers', count: leadCount, href: DASHBOARD_LINKS.customersLeads },
+    { key: 'upcomingAppointments', count: dueInSevenDays, href: DASHBOARD_LINKS.scheduledUpcoming }
   ].filter((item) => item.count > 0);
 
   const welcomeSubtitle = displayName
@@ -372,26 +358,41 @@ export default function DashboardPage() {
         <section aria-label={t('ux.progressTitle')}>
           <h2 className="section-heading">{t('ux.progressTitle')}</h2>
           <div className="progress-cards">
-            <div className="progress-card">
-              <span>{t('dashboard.progress.completedWeek')}</span>
-              <strong>{loading ? '…' : completedThisWeek}</strong>
-            </div>
-            <div className="progress-card">
-              <span>{t('dashboard.progress.revenueMonth')}</span>
-              <strong>{loading ? '…' : formatMoney(revenueMonth, locale)}</strong>
-            </div>
-            <div className="progress-card">
-              <span>{t('dashboard.progress.newCustomersMonth')}</span>
-              <strong>{loading ? '…' : newCustomersMonth}</strong>
-            </div>
-            <div className="progress-card">
-              <span>{t('dashboard.progress.openInvoices')}</span>
-              <strong>{loading ? '…' : unpaidInvoices}</strong>
-            </div>
-            <div className="progress-card">
-              <span>{t('dashboard.progress.scheduledUpcoming')}</span>
-              <strong>{loading ? '…' : dueInSevenDays}</strong>
-            </div>
+            <MetricCard
+              value={completedThisWeek}
+              label={t('dashboard.progress.completedWeek')}
+              hint={t('dashboard.progress.hints.completedWeek')}
+              href={DASHBOARD_LINKS.completedWeek}
+              loading={loading}
+            />
+            <MetricCard
+              value={formatMoney(revenueMonth, locale)}
+              label={t('dashboard.progress.revenueMonth')}
+              hint={t('dashboard.progress.hints.revenueMonth')}
+              href={DASHBOARD_LINKS.revenueMonth}
+              loading={loading}
+            />
+            <MetricCard
+              value={newCustomersMonth}
+              label={t('dashboard.progress.newCustomersMonth')}
+              hint={t('dashboard.progress.hints.newCustomersMonth')}
+              href={DASHBOARD_LINKS.newCustomersMonth}
+              loading={loading}
+            />
+            <MetricCard
+              value={unpaidInvoices}
+              label={t('dashboard.progress.openInvoices')}
+              hint={t('dashboard.progress.hints.openInvoices')}
+              href={DASHBOARD_LINKS.openInvoices}
+              loading={loading}
+            />
+            <MetricCard
+              value={dueInSevenDays}
+              label={t('dashboard.progress.scheduledUpcoming')}
+              hint={t('dashboard.progress.hints.scheduledUpcoming')}
+              href={DASHBOARD_LINKS.scheduledUpcoming}
+              loading={loading}
+            />
           </div>
         </section>
 
@@ -467,38 +468,40 @@ export default function DashboardPage() {
 
         <div className="command-center-grid">
           <div className="command-center-sidebar">
-            <section className="card">
-              <h3 className="card-title-sm">{t('dashboard.sidebar.todayTasks')}</h3>
-              <strong>{loading ? '…' : todayTasks}</strong>
-              <Link href="/projects" className="dashboard-section-link">
-                {t('dashboard.sidebar.viewTasks')}
-              </Link>
-            </section>
-            <section className="card">
-              <h3 className="card-title-sm">{t('dashboard.sidebar.notifications')}</h3>
-              <strong>{loading ? '…' : unreadNotifications}</strong>
-              <Link href="/notifications" className="dashboard-section-link">
-                {t('dashboard.sidebar.openInbox')}
-              </Link>
-            </section>
-            <section className="card">
-              <h3 className="card-title-sm">{t('dashboard.sidebar.upcoming')}</h3>
-              <strong>{loading ? '…' : dueInSevenDays}</strong>
-              <Link href="/schedule" className="dashboard-section-link">
-                {t('dashboard.sidebar.openSchedule')}
-              </Link>
-            </section>
-            <section className="card">
-              <h3 className="card-title-sm">{t('dashboard.sidebar.crmSnapshot')}</h3>
-              <p className="muted">
-                {loading
-                  ? '…'
-                  : t('dashboard.sidebar.leadsClients', { leads: leadCount, clients: clientCount })}
-              </p>
-              <Link href="/customers" className="dashboard-section-link">
-                {t('dashboard.sidebar.openCrm')}
-              </Link>
-            </section>
+            <SnapshotCard
+              title={t('dashboard.sidebar.todayTasks')}
+              value={todayTasks}
+              actionLabel={t('dashboard.sidebar.viewTasks')}
+              hint={t('dashboard.sidebar.hints.todayTasks')}
+              href={DASHBOARD_LINKS.todayTasks}
+              loading={loading}
+            />
+            <SnapshotCard
+              title={t('dashboard.sidebar.notifications')}
+              value={unreadNotifications}
+              actionLabel={t('dashboard.sidebar.openInbox')}
+              hint={t('dashboard.sidebar.hints.notifications')}
+              href={DASHBOARD_LINKS.notifications}
+              loading={loading}
+            />
+            <SnapshotCard
+              title={t('dashboard.sidebar.upcoming')}
+              value={dueInSevenDays}
+              actionLabel={t('dashboard.sidebar.openSchedule')}
+              hint={t('dashboard.sidebar.hints.upcoming')}
+              href={DASHBOARD_LINKS.scheduledUpcoming}
+              loading={loading}
+            />
+            <SnapshotCard
+              title={t('dashboard.sidebar.crmSnapshot')}
+              value={
+                loading ? '…' : t('dashboard.sidebar.leadsClients', { leads: leadCount, clients: clientCount })
+              }
+              actionLabel={t('dashboard.sidebar.openCrm')}
+              hint={t('dashboard.sidebar.hints.crmSnapshot')}
+              href={DASHBOARD_LINKS.customers}
+              loading={loading}
+            />
           </div>
         </div>
 

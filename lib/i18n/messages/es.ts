@@ -32,8 +32,10 @@ export const messages: Messages = {
     pageTitles: {
       schedule: 'Calendario y trabajo',
       analytics: 'Rendimiento del negocio',
-      billing: 'Facturas y pagos'
-    }
+      billing: 'Facturas y pagos',
+      customers: 'Gestione clientes, prospectos y seguimientos en un solo lugar.'
+    },
+    tapHint: 'Toque para ver detalles'
   },
   onboarding: {
     progress: 'Paso {current} de {total}',
@@ -154,23 +156,23 @@ export const messages: Messages = {
   empty: {
     jobs: {
       title: 'Sin trabajos aún',
-      description: '',
-      action: 'Nuevo trabajo'
+      description: 'Cree su primer trabajo para comenzar a organizar el trabajo.',
+      action: 'Crear trabajo'
     },
     customers: {
       title: 'Sin clientes aún',
-      description: '',
+      description: 'Agregue su primer cliente para rastrear trabajos y facturas.',
       action: 'Agregar cliente'
     },
     schedule: {
       title: 'Sin programación',
-      description: '',
-      action: 'Ver trabajos'
+      description: 'Programe su primera cita para ver el trabajo en el calendario.',
+      action: 'Programar trabajo'
     },
     workers: {
       title: 'Sin trabajadores aún',
-      description: '',
-      action: 'Invitar equipo'
+      description: 'Agregue miembros del equipo para asignar trabajos.',
+      action: 'Agregar trabajador'
     },
     activity: {
       title: 'Sin actividad aún',
@@ -283,6 +285,7 @@ export const messages: Messages = {
   },
   nav: {
     today: 'Hoy',
+    money: 'Dinero',
     more: 'Más',
     commandCenter: 'Hoy',
     dashboard: 'Panel',
@@ -291,7 +294,7 @@ export const messages: Messages = {
     reviews: 'Reseñas',
     leads: 'Prospectos',
     jobs: 'Trabajos',
-    crm: 'CRM',
+    crm: 'Clientes y prospectos',
     customers: 'Clientes',
     projects: 'Proyectos',
     knowledge: 'Conocimiento',
@@ -348,7 +351,14 @@ export const messages: Messages = {
       revenueMonth: 'Cobrado este mes',
       newCustomersMonth: 'Clientes nuevos este mes',
       openInvoices: 'Facturas abiertas',
-      scheduledUpcoming: 'Programados adelante'
+      scheduledUpcoming: 'Programados adelante',
+      hints: {
+        completedWeek: 'Toque para ver trabajos completados',
+        revenueMonth: 'Toque para ver pagos',
+        newCustomersMonth: 'Toque para ver clientes nuevos',
+        openInvoices: 'Toque para ver facturas abiertas',
+        scheduledUpcoming: 'Toque para ver trabajo próximo'
+      }
     },
     sidebar: {
       todayTasks: 'Tareas de hoy',
@@ -359,7 +369,13 @@ export const messages: Messages = {
       openInbox: 'Abrir bandeja',
       openSchedule: 'Abrir horario',
       openCrm: 'Abrir CRM',
-      leadsClients: '{leads} prospectos · {clients} clientes'
+      leadsClients: '{leads} prospectos · {clients} clientes',
+      hints: {
+        todayTasks: 'Toque para ver tareas abiertas',
+        notifications: 'Toque para abrir la bandeja',
+        upcoming: 'Toque para ver el calendario',
+        crmSnapshot: 'Toque para abrir clientes'
+      }
     },
     todaysSchedule: 'Horario de hoy',
     viewSchedule: 'Horario',

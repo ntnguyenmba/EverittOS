@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -22,10 +23,14 @@ import {
   customerDisplayName,
   type CustomerRecord
 } from '@/lib/customer-record';
+import { monthStartIso } from '@/lib/date-filters';
 import { supabase } from '@/lib/supabase';
 
-export default function CustomersPage() {
+function CustomersPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const periodFilter = searchParams.get('period');
+  const stageFilter = searchParams.get('stage');
   const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
@@ -67,6 +72,12 @@ export default function CustomersPage() {
       query = query.eq('organization_id', org.organizationId);
     } else {
       query = query.eq('user_id', user.id);
+    }
+    if (periodFilter === 'month') {
+      query = query.gte('created_at', monthStartIso());
+    }
+    if (stageFilter === 'lead') {
+      query = query.in('pipeline_stage', ['lead', 'qualified']);
     }
 
     const [{ data, error }, orgIsDemo] = await Promise.all([
@@ -149,11 +160,11 @@ export default function CustomersPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [periodFilter, stageFilter]);
 
   return (
     <AppShell plan={plan} role={role}>
-        <PageHeader title={t('nav.crm')} />
+        <PageHeader title={t('nav.crm')} subtitle={t('ux.pageTitles.customers')} />
 
         {!canManage && (
           <div className="card">
@@ -206,5 +217,13 @@ export default function CustomersPage() {
             ))}
         </div>
     </AppShell>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense>
+      <CustomersPageContent />
+    </Suspense>
   );
 }

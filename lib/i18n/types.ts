@@ -31,7 +31,9 @@ export type MessageTree = {
       schedule: string;
       analytics: string;
       billing: string;
+      customers: string;
     };
+    tapHint: string;
   };
   onboarding: {
     progress: string;
@@ -171,6 +173,7 @@ export type MessageTree = {
   };
   nav: {
     today: string;
+    money: string;
     more: string;
     commandCenter: string;
     dashboard: string;
@@ -237,6 +240,13 @@ export type MessageTree = {
       newCustomersMonth: string;
       openInvoices: string;
       scheduledUpcoming: string;
+      hints: {
+        completedWeek: string;
+        revenueMonth: string;
+        newCustomersMonth: string;
+        openInvoices: string;
+        scheduledUpcoming: string;
+      };
     };
     sidebar: {
       todayTasks: string;
@@ -248,6 +258,12 @@ export type MessageTree = {
       openSchedule: string;
       openCrm: string;
       leadsClients: string;
+      hints: {
+        todayTasks: string;
+        notifications: string;
+        upcoming: string;
+        crmSnapshot: string;
+      };
     };
     todaysSchedule: string;
     viewSchedule: string;
