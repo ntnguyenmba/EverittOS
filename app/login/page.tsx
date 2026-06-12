@@ -17,6 +17,7 @@ import { storeTabSessionId } from '@/lib/session-client';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizeEmail } from '@/lib/input-validation';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
+import { PasskeySignInButton } from '@/components/passkey-sign-in-button';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -193,6 +194,8 @@ function LoginForm() {
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
+
+      <PasskeySignInButton next={next} disabled={loading || Boolean(configError)} />
 
       <div className="auth-links">
         <Link href="/forgot-password">Forgot password</Link>

@@ -138,11 +138,11 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
 
         {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) ? (
           <Link
-            href="/settings/billing?upgrade=pro"
+            href="/settings/billing"
             className="btn btn-primary btn-block mobile-nav-drawer-cta"
             onClick={() => setOpen(false)}
           >
-            {t('ux.startPro')}
+            {t('ux.viewPlans')}
           </Link>
         ) : null}
 

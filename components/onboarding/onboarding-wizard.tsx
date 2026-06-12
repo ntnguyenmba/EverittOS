@@ -508,8 +508,8 @@ export function OnboardingWizard() {
           {!hasTeamManagement(plan) ? (
             <div className="settings-warning onboarding-upgrade-note">
               <p>{t('onboarding.teamUpgradeRequired')}</p>
-              <Link className="btn btn-primary" href="/settings/billing?upgrade=business">
-                {t('ux.startPro')}
+              <Link className="btn btn-primary" href="/settings/billing">
+                {t('ux.viewPlans')}
               </Link>
             </div>
           ) : null}

@@ -9,6 +9,7 @@ import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchRecentSecurityEvents } from '@/lib/security-events';
 import { useTranslation } from '@/components/locale-provider';
+import { PasskeyManager } from '@/components/passkey-manager';
 import { SUPPORT_EMAIL } from '@/lib/support';
 import { supabase } from '@/lib/supabase';
 
@@ -108,7 +109,7 @@ export default function SecuritySettingsPage() {
     <SettingsShell plan={plan} title="Security" description="Password and session controls.">
       <div className="settings-card">
         <h3>{t('settings.security.passkeysTitle')}</h3>
-        <p className="muted">{t('settings.security.passkeysBody')}</p>
+        <PasskeyManager />
         <p className="muted">
           {t('settings.security.compromised')}{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.

@@ -24,7 +24,7 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/branding', label: 'Branding' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
-  { href: '/settings/billing', label: 'Billing' },
+  { href: '/settings/billing', label: 'Plans & billing' },
   { href: '/settings/security', label: 'Security' },
   { href: '/settings/privacy', label: 'Privacy' },
   { href: '/settings/notifications', label: 'Notifications' },

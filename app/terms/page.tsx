@@ -25,11 +25,13 @@ export default function TermsPage() {
 
         <h3>Accounts</h3>
         <p>
-          You must provide accurate information and keep credentials secure. You may deactivate your account at any time
-          from Settings. Deletion requests follow the process described in our Privacy Policy.
+          You must provide accurate information and keep credentials secure. EverittOS supports email and password
+          sign-in. You may optionally register passkeys (WebAuthn) for passwordless sign-in on supported devices. You may
+          deactivate your account at any time from Settings. Deletion requests follow the process described in our
+          Privacy Policy.
         </p>
         <p>
-          You are responsible for keeping your devices, passwords, and authentication methods secure. If you
+          You are responsible for keeping your devices, passwords, passkeys, and authentication methods secure. If you
           believe your account or device has been compromised, contact us right away at{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>

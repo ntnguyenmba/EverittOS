@@ -1728,6 +1728,47 @@ p { color: var(--muted); line-height: 1.7; }
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.billing-plans-grid .billing-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.billing-plans-grid .billing-plan-card.current-plan {
+  border-color: var(--accent, #c9a227);
+  box-shadow: 0 0 0 1px var(--accent, #c9a227);
+}
+
+.billing-plan-badge {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--hover);
+}
+
+.billing-plan-features {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.billing-support-fallback {
+  margin-top: 16px;
+}
+
+.passkey-sign-in {
+  margin-top: 12px;
+}
+
+.passkey-setup-prompt {
+  margin-top: 16px;
+}
+
 .promo-code-field {
   margin-bottom: 20px;
 }

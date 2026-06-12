@@ -24,6 +24,7 @@ export const messages: Messages = {
     mobileNavLabel: 'Điều hướng chính',
     logOut: 'Đăng xuất',
     startPro: 'Bắt đầu Pro',
+    viewPlans: 'Xem gói',
     attentionNeeded: 'Cần chú ý',
     progressTitle: 'Tiến độ của bạn',
     advancedTools: 'Công cụ khác',
@@ -277,7 +278,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Passkey',
-      passkeysBody: 'Passkey chưa được bật. Hãy dùng email và mật khẩu hiện tại.',
+      passkeysBody: 'Thêm passkey để đăng nhập nhanh và an toàn hơn trên thiết bị hỗ trợ.',
       compromised: 'Nếu bạn cho rằng tài khoản hoặc thiết bị bị xâm phạm, hãy liên hệ'
     },
     account: {
@@ -316,9 +317,10 @@ export const messages: Messages = {
   auth: {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
+    acceptTermsAndPrivacy: 'Tôi đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư',
     consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
-    signInMethods: 'Đăng nhập bằng email và mật khẩu.',
-    signUpMethods: 'Tạo tài khoản bằng email và mật khẩu.'
+    signInMethods: 'Đăng nhập bằng email và mật khẩu, hoặc dùng passkey nếu đã thêm.',
+    signUpMethods: 'Tạo tài khoản bằng email và mật khẩu. Bạn có thể thêm passkey sau khi đăng ký.'
   },
   nav: {
     today: 'Hôm nay',
@@ -345,7 +347,7 @@ export const messages: Messages = {
     analytics: 'Phân tích',
     workflows: 'Quy trình',
     notifications: 'Thông báo',
-    billing: 'Thanh toán',
+    billing: 'Gói & thanh toán',
     settings: 'Cài đặt',
     clientPortal: 'Cổng khách hàng',
     contractorPortal: 'Cổng nhà thầu'
@@ -356,7 +358,7 @@ export const messages: Messages = {
     branding: 'Thương hiệu',
     integrations: 'Tích hợp',
     account: 'Tài khoản',
-    billing: 'Thanh toán',
+    billing: 'Gói & thanh toán',
     security: 'Bảo mật',
     privacy: 'Quyền riêng tư',
     notifications: 'Thông báo',
@@ -369,6 +371,7 @@ export const messages: Messages = {
     subtitle: 'Những việc cần làm ngay bây giờ.',
     welcome: 'Chào mừng trở lại',
     welcomeName: 'Chào mừng trở lại, {name}',
+    subtitleToday: 'Đây là những gì đang diễn ra hôm nay.',
     newJob: 'Công việc mới',
     quickActions: {
       createJob: 'Tạo việc',
@@ -460,16 +463,26 @@ export const messages: Messages = {
     analyticsEmpty: 'Số liệu sẽ xuất hiện sau khi tạo công việc, báo cáo và hoạt động nhóm.'
   },
   billing: {
-    title: 'Thanh toán',
+    title: 'Gói & thanh toán',
+    description: 'Trạng thái đăng ký, mức sử dụng và thay đổi gói.',
     pricingTitle: 'Gói và giá',
-    pricingSubtitle: 'Chọn gói, áp mã khuyến mãi và thanh toán an toàn qua Stripe.',
+    pricingSubtitle: 'So sánh các gói cạnh nhau. Chọn gói trả phí phù hợp với không gian làm việc.',
+    allPlans: 'Tất cả gói',
     currentPlan: 'Gói',
+    currentPlanBadge: 'Gói hiện tại',
     status: 'Trạng thái',
     renewalDate: 'Ngày gia hạn',
     manageStripe: 'Quản lý thanh toán trên Stripe',
+    manageBilling: 'Quản lý thanh toán',
     noCustomer: 'Chưa có khách hàng Stripe. Chọn gói trả phí bên dưới.',
     cancel: 'Hủy đăng ký',
+    cancelPlan: 'Hủy gói',
     resume: 'Tiếp tục đăng ký',
+    resumePlan: 'Tiếp tục gói',
+    contactBillingSupport: 'Liên hệ hỗ trợ thanh toán',
+    planChangesSupport: 'Thay đổi gói hiện được xử lý qua hỗ trợ thanh toán.',
+    downgradeSupportNote: 'Chuyển sang gói miễn phí cần hỗ trợ thanh toán.',
+    plansFootnote: 'Đăng ký tự gia hạn cho đến khi bạn hủy.',
     portalUnavailable: 'Cổng thanh toán chưa được cấu hình.',
     portalNotConfigured: 'Cổng thanh toán chưa được cấu hình.',
     upgradeOptions: 'Tùy chọn nâng cấp',

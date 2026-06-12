@@ -22,6 +22,7 @@ export type MessageTree = {
     mobileNavLabel: string;
     logOut: string;
     startPro: string;
+    viewPlans: string;
     attentionNeeded: string;
     progressTitle: string;
     advancedTools: string;
@@ -205,6 +206,7 @@ export type MessageTree = {
   auth: {
     acceptTerms: string;
     acceptPrivacy: string;
+    acceptTermsAndPrivacy: string;
     consentRequired: string;
     signInMethods: string;
     signUpMethods: string;
@@ -256,6 +258,7 @@ export type MessageTree = {
   dashboard: {
     title: string;
     subtitle: string;
+    subtitleToday: string;
     welcome: string;
     welcomeName: string;
     newJob: string;
@@ -350,15 +353,25 @@ export type MessageTree = {
   };
   billing: {
     title: string;
+    description: string;
     pricingTitle: string;
     pricingSubtitle: string;
+    allPlans: string;
     currentPlan: string;
+    currentPlanBadge: string;
     status: string;
     renewalDate: string;
     manageStripe: string;
+    manageBilling: string;
     noCustomer: string;
     cancel: string;
+    cancelPlan: string;
     resume: string;
+    resumePlan: string;
+    contactBillingSupport: string;
+    planChangesSupport: string;
+    downgradeSupportNote: string;
+    plansFootnote: string;
     portalUnavailable: string;
     portalNotConfigured: string;
     upgradeOptions: string;

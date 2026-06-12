@@ -13,6 +13,7 @@ import { mapAuthError } from '@/lib/auth-errors';
 import { normalizeEmail } from '@/lib/input-validation';
 import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
 import { resolveClientApiUrl } from '@/lib/client-api-url';
+import { PasskeySetupPrompt } from '@/components/passkey-setup-prompt';
 import { useTranslation } from '@/components/locale-provider';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
@@ -48,8 +49,9 @@ function SignupForm() {
   const [error, setError] = useState(urlError);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [acceptLegal, setAcceptLegal] = useState(false);
+  const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState('');
   const { t } = useTranslation();
   const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
 
@@ -81,7 +83,7 @@ function SignupForm() {
       return;
     }
 
-    if (!acceptTerms || !acceptPrivacy) {
+    if (!acceptLegal) {
       setLoading(false);
       setError(t('auth.consentRequired'));
       return;
@@ -130,12 +132,13 @@ function SignupForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true })
         });
+        setLoading(false);
         if (redirectTarget.startsWith('http')) {
           window.location.href = redirectTarget;
           return;
         }
-        router.push(redirectTarget);
-        router.refresh();
+        setPendingRedirect(redirectTarget);
+        setShowPasskeyPrompt(true);
         return;
       }
 
@@ -227,15 +230,10 @@ function SignupForm() {
         </div>
 
         <label className="auth-consent">
-          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} required />
+          <input type="checkbox" checked={acceptLegal} onChange={(e) => setAcceptLegal(e.target.checked)} required />
           <span>
-            {t('auth.acceptTerms')} (<Link href="/terms">{t('legal.terms')}</Link>)
-          </span>
-        </label>
-        <label className="auth-consent">
-          <input type="checkbox" checked={acceptPrivacy} onChange={(e) => setAcceptPrivacy(e.target.checked)} required />
-          <span>
-            {t('auth.acceptPrivacy')} (<Link href="/privacy">{t('legal.privacy')}</Link>)
+            {t('auth.acceptTermsAndPrivacy')}{' '}
+            <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
           </span>
         </label>
 
@@ -245,6 +243,15 @@ function SignupForm() {
           {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
+
+      {showPasskeyPrompt && pendingRedirect ? (
+        <PasskeySetupPrompt
+          onDone={() => {
+            router.push(pendingRedirect);
+            router.refresh();
+          }}
+        />
+      ) : null}
 
       <div className="auth-links">
         <Link href={loginHref}>Already have an account? Sign in</Link>

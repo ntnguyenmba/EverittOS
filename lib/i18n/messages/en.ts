@@ -24,6 +24,7 @@ export const messages: Messages = {
     mobileNavLabel: 'Main navigation',
     logOut: 'Log out',
     startPro: 'Start Pro',
+    viewPlans: 'View plans',
     attentionNeeded: 'Attention needed',
     progressTitle: 'Your progress',
     advancedTools: 'More tools',
@@ -276,7 +277,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Passkeys',
-      passkeysBody: 'Passkey support is not enabled yet. Use email and password sign-in for now.',
+      passkeysBody: 'Add passkeys for faster, phishing-resistant sign-in on supported devices.',
       compromised: 'If you believe your account or device has been compromised, contact us at'
     },
     account: {
@@ -315,9 +316,10 @@ export const messages: Messages = {
   auth: {
     acceptTerms: 'I agree to the Terms of Service',
     acceptPrivacy: 'I agree to the Privacy Policy',
+    acceptTermsAndPrivacy: 'I agree to the Terms of Service and Privacy Policy',
     consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.',
-    signInMethods: 'Sign in with your email and password.',
-    signUpMethods: 'Create an account with email and password.'
+    signInMethods: 'Sign in with your email and password, or use a passkey if you added one.',
+    signUpMethods: 'Create an account with email and password. You can add a passkey after signup.'
   },
   nav: {
     today: 'Today',
@@ -344,7 +346,7 @@ export const messages: Messages = {
     analytics: 'Analytics',
     workflows: 'Workflows',
     notifications: 'Notifications',
-    billing: 'Billing',
+    billing: 'Plans & billing',
     settings: 'Settings',
     clientPortal: 'Client portal',
     contractorPortal: 'Contractor portal'
@@ -355,7 +357,7 @@ export const messages: Messages = {
     branding: 'Branding',
     integrations: 'Integrations',
     account: 'Account',
-    billing: 'Billing',
+    billing: 'Plans & billing',
     security: 'Security',
     privacy: 'Privacy',
     notifications: 'Notifications',
@@ -368,6 +370,7 @@ export const messages: Messages = {
     subtitle: 'What needs your attention right now.',
     welcome: 'Welcome back',
     welcomeName: 'Welcome back, {name}',
+    subtitleToday: "Here's what's happening today.",
     newJob: 'New job',
     quickActions: {
       createJob: 'Create job',
@@ -459,16 +462,26 @@ export const messages: Messages = {
     analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.'
   },
   billing: {
-    title: 'Billing',
+    title: 'Plans & billing',
+    description: 'Subscription status, usage, and plan changes.',
     pricingTitle: 'Plans and pricing',
-    pricingSubtitle: 'Choose a plan, apply a promo code, and checkout securely with Stripe.',
+    pricingSubtitle: 'Compare plans side by side. Choose any paid plan that fits your workspace.',
+    allPlans: 'All plans',
     currentPlan: 'Plan',
+    currentPlanBadge: 'Current plan',
     status: 'Status',
     renewalDate: 'Renewal date',
     manageStripe: 'Manage billing in Stripe',
+    manageBilling: 'Manage billing',
     noCustomer: 'No Stripe customer on file yet. Choose a paid plan below to start checkout.',
     cancel: 'Cancel subscription',
+    cancelPlan: 'Cancel plan',
     resume: 'Resume subscription',
+    resumePlan: 'Resume plan',
+    contactBillingSupport: 'Contact billing support',
+    planChangesSupport: 'Plan changes are handled through billing support for now.',
+    downgradeSupportNote: 'Moving to the free plan requires billing support.',
+    plansFootnote: 'Subscriptions renew automatically until canceled. Cancel anytime from billing or the customer portal.',
     portalUnavailable: 'Billing portal is not configured yet.',
     portalNotConfigured: 'Billing portal is not configured yet.',
     upgradeOptions: 'Upgrade options',

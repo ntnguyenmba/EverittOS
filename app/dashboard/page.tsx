@@ -20,6 +20,7 @@ import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { workspaceBusinessName } from '@/lib/workspace-display';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -58,7 +59,7 @@ export default function DashboardPage() {
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
-  const [displayName, setDisplayName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [orgId, setOrgId] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -79,13 +80,13 @@ export default function DashboardPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('plan, role, full_name, business_name')
+      .select('plan, role, business_name')
       .eq('id', user.id)
       .maybeSingle();
     const org = await ensureOrganizationForUser(user.id);
     const userPlan = normalizePlan(profile?.plan);
     setRole(normalizeRole(profile?.role));
-    setDisplayName(profile?.full_name?.trim() || profile?.business_name?.trim() || '');
+    setBusinessName(workspaceBusinessName(profile) || '');
     setOrgId(org?.organizationId || '');
     setPlan(userPlan);
 
@@ -179,9 +180,8 @@ export default function DashboardPage() {
     return '/workers';
   }
 
-  const welcomeSubtitle = displayName
-    ? t('dashboard.welcomeName', { name: displayName })
-    : t('dashboard.subtitle');
+  const welcomeTitle = businessName || t('dashboard.welcome');
+  const welcomeSubtitle = businessName ? t('dashboard.subtitleToday') : t('dashboard.subtitle');
 
   const coreActions = [
     { key: 'newJob', href: null, onClick: () => setShowNewJob(true), primary: true },
@@ -205,7 +205,7 @@ export default function DashboardPage() {
 
       <div className="today-page">
         <PageHeader
-          title={t('dashboard.title')}
+          title={welcomeTitle}
           subtitle={welcomeSubtitle}
           action={
             <button type="button" className="btn btn-primary" onClick={() => setShowNewJob((v) => !v)}>

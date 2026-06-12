@@ -12,12 +12,8 @@ type UsageDashboardProps = {
 };
 
 function upgradeLink(plan: EverittosPlan): string | null {
-  if (plan === 'free') return '/settings/billing?upgrade=pro';
-  if (plan === 'pro') return '/settings/billing?upgrade=business';
-  if (plan === 'business') return '/settings/billing?upgrade=operations';
-  if (plan === 'operations') return '/settings/billing?upgrade=growth';
-  if (plan === 'growth') return '/settings/billing?upgrade=enterprise';
-  return null;
+  if (plan === 'enterprise') return null;
+  return '/settings/billing';
 }
 
 export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
@@ -36,7 +32,7 @@ export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
         <p className="muted">{planDisplayName(plan)}</p>
         {link ? (
           <Link className="btn btn-sm" href={link}>
-            Upgrade
+            View plans
           </Link>
         ) : null}
       </div>
@@ -48,7 +44,7 @@ export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
       </div>
       {nearLimit && (
         <p className="usage-dashboard-note">
-          Near plan limit. <Link href="/settings/billing">View billing</Link>
+          Near plan limit. <Link href="/settings/billing">View plans</Link>
         </p>
       )}
     </div>

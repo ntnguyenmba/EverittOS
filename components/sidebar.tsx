@@ -94,8 +94,8 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
       {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) && (
         <div className="sidebar-upgrade">
           <p>Need more jobs, photos, or team members?</p>
-          <Link href="/settings/billing?upgrade=pro" className="btn btn-primary">
-            {t('ux.startPro')}
+          <Link href="/settings/billing" className="btn btn-primary">
+            {t('ux.viewPlans')}
           </Link>
         </div>
       )}

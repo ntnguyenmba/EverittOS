@@ -8,7 +8,7 @@ const CORE_NAV = [
   { label: 'Workers', href: '/workers' },
   { label: 'Expenses', href: '/expenses' },
   { label: 'Analytics', href: '/analytics' },
-  { label: 'Billing', href: '/settings/billing' },
+  { label: 'Plans & billing', href: '/settings/billing' },
   { label: 'Settings', href: '/settings' }
 ] as const;
 

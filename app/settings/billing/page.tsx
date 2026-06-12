@@ -9,7 +9,8 @@ import { SettingsShell } from '@/components/settings/settings-shell';
 import { AiUsagePanel } from '@/components/ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
-import { PricingCheckoutPanel } from '@/components/pricing-checkout-panel';
+import { BillingPlansGrid } from '@/components/billing-plans-grid';
+import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -64,6 +65,12 @@ function BillingSettingsContent() {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [stripeCapabilities, setStripeCapabilities] = useState<{
+    checkout: boolean;
+    portal: boolean;
+    cancel: boolean;
+    resume: boolean;
+  } | null>(null);
   const [couponName, setCouponName] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [couponPercentOff, setCouponPercentOff] = useState<number | null>(null);
@@ -125,6 +132,17 @@ function BillingSettingsContent() {
       const org = await fetchOrganizationContext(user.id);
       const counts = await fetchUsageCounts(user.id, org?.organizationId);
       setUsage(counts);
+      const capsRes = await fetch('/api/stripe/capabilities', { cache: 'no-store' });
+      if (capsRes.ok) {
+        const caps = await capsRes.json();
+        setStripeCapabilities({
+          checkout: Boolean(caps.checkout),
+          portal: Boolean(caps.portal),
+          cancel: Boolean(caps.cancel),
+          resume: Boolean(caps.resume)
+        });
+      }
+
       setLoading(false);
     }
 
@@ -194,7 +212,12 @@ function BillingSettingsContent() {
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus);
 
   return (
-    <SettingsShell plan={plan} role={role} title={t('billing.title')} description="Subscription status, usage, and plan changes.">
+    <SettingsShell
+      plan={plan}
+      role={role}
+      title={t('billing.title')}
+      description={t('billing.description')}
+    >
       {accessNotice ? (
         <AccessBlockedBanner
           title={accessNotice.title}
@@ -279,31 +302,40 @@ function BillingSettingsContent() {
 
         {canBilling ? (
           <div className="settings-actions">
-            {stripeCustomerId ? (
-              <>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={portalLoading}
-                  onClick={openBillingPortal}
-                  aria-label="Open Stripe customer portal in a new tab"
-                >
-                  {portalLoading ? 'Opening…' : t('billing.manageStripe')}
-                </button>
-                {canCancelSubscription(subscriptionStatus) ? (
-                  <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
-                    {cancelLoading ? 'Working...' : t('billing.cancel')}
-                  </button>
-                ) : null}
-                {canResumeSubscription(subscriptionStatus) ? (
-                  <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
-                    {resumeLoading ? 'Working...' : t('billing.resume')}
-                  </button>
-                ) : null}
-              </>
-            ) : (
-              <p className="muted">{t('billing.noCustomer')}</p>
-            )}
+            {stripeCustomerId && stripeCapabilities?.portal ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={portalLoading}
+                onClick={openBillingPortal}
+                aria-label="Open billing portal"
+              >
+                {portalLoading ? 'Opening…' : t('billing.manageBilling')}
+              </button>
+            ) : null}
+            {stripeCustomerId &&
+            stripeCapabilities?.cancel &&
+            canCancelSubscription(subscriptionStatus) ? (
+              <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
+                {cancelLoading ? 'Working...' : t('billing.cancelPlan')}
+              </button>
+            ) : null}
+            {stripeCustomerId &&
+            stripeCapabilities?.resume &&
+            canResumeSubscription(subscriptionStatus) ? (
+              <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
+                {resumeLoading ? 'Working...' : t('billing.resumePlan')}
+              </button>
+            ) : null}
+            {!stripeCustomerId ? <p className="muted">{t('billing.noCustomer')}</p> : null}
+            {stripeCustomerId &&
+            (!stripeCapabilities?.portal || !stripeCapabilities?.cancel) &&
+            plan !== 'free' ? (
+              <p className="billing-support-fallback">
+                {t('billing.planChangesSupport')}{' '}
+                <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -320,17 +352,13 @@ function BillingSettingsContent() {
 
       {canBilling ? (
         <div className="settings-card">
-          <h3>{t('billing.upgradeOptions')}</h3>
-          <PricingCheckoutPanel
-            selectedPlan={checkoutPlan === 'free' ? 'pro' : checkoutPlan}
+          <h3>{t('billing.allPlans')}</h3>
+          <p className="muted">{t('billing.pricingSubtitle')}</p>
+          <BillingPlansGrid
+            currentPlan={plan}
             initialPromoCode={initialPromo}
-            authenticated
-            compact
+            highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
           />
-          <p className="muted" style={{ marginTop: 16 }}>
-            Subscriptions renew automatically until canceled. Cancel anytime from billing or the Stripe customer portal.{' '}
-            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link>
-          </p>
         </div>
       ) : null}
     </SettingsShell>

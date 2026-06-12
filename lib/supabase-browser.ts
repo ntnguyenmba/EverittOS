@@ -24,7 +24,11 @@ let browserClient: BrowserClient | undefined;
 export function getBrowserSupabase(): BrowserClient {
   if (!browserClient) {
     const { url, anonKey } = resolveBrowserConfig();
-    browserClient = createBrowserClient(url, anonKey);
+    browserClient = createBrowserClient(url, anonKey, {
+      auth: {
+        experimental: { passkey: true }
+      }
+    });
   }
   return browserClient;
 }

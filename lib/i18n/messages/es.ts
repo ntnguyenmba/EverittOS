@@ -24,6 +24,7 @@ export const messages: Messages = {
     mobileNavLabel: 'Navegación principal',
     logOut: 'Cerrar sesión',
     startPro: 'Empezar Pro',
+    viewPlans: 'Ver planes',
     attentionNeeded: 'Requiere atención',
     progressTitle: 'Su progreso',
     advancedTools: 'Más herramientas',
@@ -278,7 +279,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Llaves de acceso',
-      passkeysBody: 'Las llaves de acceso aún no están habilitadas. Use correo y contraseña por ahora.',
+      passkeysBody: 'Agregue passkeys para un inicio de sesión más rápido y seguro en dispositivos compatibles.',
       compromised: 'Si cree que su cuenta o dispositivo se ha visto comprometido, contáctenos en'
     },
     account: {
@@ -317,9 +318,10 @@ export const messages: Messages = {
   auth: {
     acceptTerms: 'Acepto los Términos de servicio',
     acceptPrivacy: 'Acepto la Política de privacidad',
+    acceptTermsAndPrivacy: 'Acepto los Términos de servicio y la Política de privacidad',
     consentRequired: 'Debe aceptar los Términos y la Política de privacidad para crear una cuenta.',
-    signInMethods: 'Inicie sesión con su correo y contraseña.',
-    signUpMethods: 'Cree una cuenta con correo y contraseña.'
+    signInMethods: 'Inicie sesión con correo y contraseña, o use una passkey si la agregó.',
+    signUpMethods: 'Cree una cuenta con correo y contraseña. Puede agregar una passkey después del registro.'
   },
   nav: {
     today: 'Hoy',
@@ -346,7 +348,7 @@ export const messages: Messages = {
     analytics: 'Analítica',
     workflows: 'Flujos',
     notifications: 'Notificaciones',
-    billing: 'Facturación',
+    billing: 'Planes y facturación',
     settings: 'Configuración',
     clientPortal: 'Portal del cliente',
     contractorPortal: 'Portal del contratista'
@@ -357,7 +359,7 @@ export const messages: Messages = {
     branding: 'Marca',
     integrations: 'Integraciones',
     account: 'Cuenta',
-    billing: 'Facturación',
+    billing: 'Planes y facturación',
     security: 'Seguridad',
     privacy: 'Privacidad',
     notifications: 'Notificaciones',
@@ -370,6 +372,7 @@ export const messages: Messages = {
     subtitle: 'Lo que necesita su atención ahora.',
     welcome: 'Bienvenido de nuevo',
     welcomeName: 'Bienvenido de nuevo, {name}',
+    subtitleToday: 'Esto es lo que ocurre hoy.',
     newJob: 'Nuevo trabajo',
     quickActions: {
       createJob: 'Crear trabajo',
@@ -461,16 +464,26 @@ export const messages: Messages = {
     analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.'
   },
   billing: {
-    title: 'Facturación',
+    title: 'Planes y facturación',
+    description: 'Estado de suscripción, uso y cambios de plan.',
     pricingTitle: 'Planes y precios',
-    pricingSubtitle: 'Elija un plan, aplique un código promocional y pague de forma segura con Stripe.',
+    pricingSubtitle: 'Compare planes lado a lado. Elija cualquier plan de pago que se ajuste a su espacio.',
+    allPlans: 'Todos los planes',
     currentPlan: 'Plan',
+    currentPlanBadge: 'Plan actual',
     status: 'Estado',
     renewalDate: 'Fecha de renovación',
     manageStripe: 'Gestionar facturación en Stripe',
+    manageBilling: 'Gestionar facturación',
     noCustomer: 'Aún no hay cliente de Stripe. Elija un plan de pago abajo.',
     cancel: 'Cancelar suscripción',
+    cancelPlan: 'Cancelar plan',
     resume: 'Reanudar suscripción',
+    resumePlan: 'Reanudar plan',
+    contactBillingSupport: 'Contactar soporte de facturación',
+    planChangesSupport: 'Los cambios de plan se gestionan por soporte de facturación por ahora.',
+    downgradeSupportNote: 'Pasar al plan gratuito requiere soporte de facturación.',
+    plansFootnote: 'Las suscripciones se renuevan automáticamente hasta cancelarlas.',
     portalUnavailable: 'El portal de facturación aún no está configurado.',
     portalNotConfigured: 'El portal de facturación aún no está configurado.',
     upgradeOptions: 'Opciones de actualización',

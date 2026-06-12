@@ -19,7 +19,9 @@ export default function PrivacyPage() {
 
         <h3>Data we collect</h3>
         <ul>
-          <li>Account data: email, name, role, authentication events, and workspace settings.</li>
+          <li>
+            Account data: email, role, authentication events (email/password and passkey sign-in), and workspace settings.
+          </li>
           <li>Operational data: jobs, schedules, customers, workers, photos, reports, and activity logs.</li>
           <li>Billing data: plan, subscription status, and Stripe customer references (payment details stay with Stripe).</li>
           <li>Technical data: session cookies, device/browser metadata, and security logs.</li>
@@ -51,8 +53,12 @@ export default function PrivacyPage() {
           period.
         </p>
 
-        <h3>Passkeys</h3>
-        <p>Passkey support is not enabled yet. If added later, credentials would stay on your device or password manager.</p>
+        <h3>Authentication</h3>
+        <p>
+          EverittOS supports email and password sign-in. You may optionally register passkeys (WebAuthn) for passwordless
+          sign-in. Passkey credentials stay on your device or password manager; we store only the public key metadata
+          required to verify sign-in. Google sign-in is not offered unless explicitly enabled in your deployment.
+        </p>
 
         <h3>Security</h3>
         <p>
