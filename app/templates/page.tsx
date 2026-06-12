@@ -24,6 +24,7 @@ export default function TemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [canManage, setCanManage] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -75,6 +76,8 @@ export default function TemplatesPage() {
     setTitle('');
     setBody('');
     setEditingId(null);
+    setShowCreateForm(false);
+    setMessage(isEdit ? 'Template updated.' : 'Template created.');
     void load();
   }
 
@@ -101,9 +104,18 @@ export default function TemplatesPage() {
 
   function startEdit(t: EverittTemplate) {
     setEditingId(t.id);
+    setShowCreateForm(true);
     setTitle(t.title);
     setCategory(t.category);
     setBody(t.body);
+  }
+
+  function openCreateForm() {
+    setEditingId(null);
+    setTitle('');
+    setBody('');
+    setCategory('sop');
+    setShowCreateForm(true);
   }
 
   return (
@@ -127,7 +139,15 @@ export default function TemplatesPage() {
         </label>
       </div>
 
-      {canManage ? (
+      {canManage && !showCreateForm && !editingId ? (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <button type="button" className="btn btn-primary" onClick={openCreateForm}>
+            New template
+          </button>
+        </div>
+      ) : null}
+
+      {canManage && (showCreateForm || editingId) ? (
         <div className="card form" style={{ marginBottom: 18 }}>
           <h3>{editingId ? 'Edit template' : 'New template'}</h3>
           <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -149,27 +169,47 @@ export default function TemplatesPage() {
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveTemplate()}>
               {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
             </button>
-            {editingId ? (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setEditingId(null);
-                  setTitle('');
-                  setBody('');
-                }}
-              >
-                Cancel
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setEditingId(null);
+                setShowCreateForm(false);
+                setTitle('');
+                setBody('');
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       ) : null}
 
-      {message ? <p className="auth-message auth-message-error">{message}</p> : null}
+      {message ? (
+        <p
+          className={
+            message.includes('created') || message.includes('updated')
+              ? 'auth-message auth-message-success'
+              : 'auth-message auth-message-error'
+          }
+        >
+          {message}
+        </p>
+      ) : null}
       {loading ? <p>Loading…</p> : null}
-      {!loading && templates.length === 0 ? (
-        <EmptyState compact title="No templates" description="Create reusable templates for proposals, SOPs, and emails." />
+      {!loading && templates.length === 0 && !showCreateForm ? (
+        <EmptyState
+          compact
+          title="No templates"
+          description="Create reusable templates for proposals, SOPs, and emails."
+          action={
+            canManage ? (
+              <button type="button" className="btn btn-primary" onClick={openCreateForm}>
+                New template
+              </button>
+            ) : null
+          }
+        />
       ) : null}
 
       <div className="card-list">

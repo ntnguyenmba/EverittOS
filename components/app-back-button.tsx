@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
+import { useTranslation } from '@/components/locale-provider';
 import { hasAppBackTarget, navigateAppBack } from '@/lib/app-navigation-stack';
 
 type AppBackButtonProps = {
@@ -13,6 +14,7 @@ type AppBackButtonProps = {
 export function AppBackButton({ role, className }: AppBackButtonProps) {
   const router = useRouter();
   const pathname = usePathname() || '/';
+  const { t } = useTranslation();
   const fallback = dashboardPathForRole(role);
   const [visible, setVisible] = useState(false);
 
@@ -29,11 +31,11 @@ export function AppBackButton({ role, className }: AppBackButtonProps) {
   const classes = className ? `app-back-button ${className}` : 'app-back-button';
 
   return (
-    <button type="button" className={classes} onClick={handleBack} aria-label="Go back">
+    <button type="button" className={classes} onClick={handleBack} aria-label={t('common.back')}>
       <span className="app-back-arrow" aria-hidden="true">
         ←
       </span>
-      <span className="app-back-label">Back</span>
+      <span className="app-back-label">{t('common.back')}</span>
     </button>
   );
 }

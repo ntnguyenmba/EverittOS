@@ -10,6 +10,8 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
@@ -22,7 +24,7 @@ export default function SettingsPage() {
   const [website, setWebsite] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [orgId, setOrgId] = useState('');
@@ -34,20 +36,18 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/New_York');
   const [teamSize, setTeamSize] = useState('');
   const [industry, setIndustry] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [restartBusy, setRestartBusy] = useState(false);
   const { t } = useTranslation();
 
   async function restartOnboarding() {
     if (!window.confirm(t('onboarding.settings.restartConfirm'))) return;
     setRestartBusy(true);
-    setMessage('');
+    setFeedback(null);
     const res = await fetch('/api/onboarding/restart', { method: 'POST' });
     setRestartBusy(false);
     if (!res.ok) {
       const json = await res.json();
-      setMessage(json.error || 'Unable to restart onboarding.');
-      setSaveSuccess(false);
+      setFeedback(errorFeedback(json.error || 'Unable to restart onboarding.'));
       return;
     }
     try {
@@ -55,8 +55,7 @@ export default function SettingsPage() {
     } catch {
       /* ignore */
     }
-    setMessage(t('onboarding.settings.restartSuccess'));
-    setSaveSuccess(true);
+    setFeedback(successFeedback(t('onboarding.settings.restartSuccess')));
     router.push('/onboarding');
   }
 
@@ -116,24 +115,26 @@ export default function SettingsPage() {
     const {
       data: { user }
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push('/login?next=/settings');
+      return;
+    }
 
     setSaving(true);
-    setMessage('');
-    setSaveSuccess(false);
+    setFeedback(null);
 
-    const { error } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ business_name: businessName.trim() || null })
       .eq('id', user.id);
 
-    if (error) {
+    if (profileError) {
       setSaving(false);
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(profileError)));
       return;
     }
 
-    await supabase.from('business_profiles').upsert({
+    const { error: bizError } = await supabase.from('business_profiles').upsert({
       user_id: user.id,
       business_name: businessName.trim() || null,
       phone: phone.trim() || null,
@@ -142,8 +143,14 @@ export default function SettingsPage() {
       email
     });
 
+    if (bizError) {
+      setSaving(false);
+      setFeedback(errorFeedback(formatSupabaseError(bizError)));
+      return;
+    }
+
     if (orgId) {
-      await supabase.from('organization_settings').upsert({
+      const { error: settingsError } = await supabase.from('organization_settings').upsert({
         organization_id: orgId,
         company_phone: phone.trim() || null,
         company_email: email,
@@ -159,12 +166,25 @@ export default function SettingsPage() {
         team_size: teamSize.trim() || null,
         industry: industry.trim() || null
       });
-      await supabase.from('organizations').update({ name: businessName.trim() || 'My Business' }).eq('id', orgId);
+      if (settingsError) {
+        setSaving(false);
+        setFeedback(errorFeedback(formatSupabaseError(settingsError)));
+        return;
+      }
+
+      const { error: orgError } = await supabase
+        .from('organizations')
+        .update({ name: businessName.trim() || 'My Business' })
+        .eq('id', orgId);
+      if (orgError) {
+        setSaving(false);
+        setFeedback(errorFeedback(formatSupabaseError(orgError)));
+        return;
+      }
     }
 
     setSaving(false);
-    setSaveSuccess(true);
-    setMessage('Settings saved successfully.');
+    setFeedback(successFeedback('Settings saved successfully.'));
   }
 
   async function uploadLogo(file: File | null) {
@@ -173,13 +193,19 @@ export default function SettingsPage() {
     const path = `${orgId}/logo-${Date.now()}.${file.name.split('.').pop() || 'png'}`;
     const { error } = await supabase.storage.from('org-logos').upload(path, file, { upsert: true });
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       setLogoUploading(false);
       return;
     }
-    await supabase.from('organization_settings').upsert({ organization_id: orgId, logo_path: path });
+    const { error: settingsError } = await supabase
+      .from('organization_settings')
+      .upsert({ organization_id: orgId, logo_path: path });
     setLogoUploading(false);
-    setMessage('Logo uploaded.');
+    if (settingsError) {
+      setFeedback(errorFeedback(formatSupabaseError(settingsError)));
+      return;
+    }
+    setFeedback(successFeedback('Logo uploaded.'));
   }
 
   async function logout() {
@@ -284,11 +310,7 @@ export default function SettingsPage() {
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
             <Link href="/disclaimer">Disclaimer</Link>
           </p>
-          {message && (
-            <p className={saveSuccess ? 'auth-message auth-message-success' : 'auth-message auth-message-error'} role={saveSuccess ? 'status' : 'alert'}>
-              {message}
-            </p>
-          )}
+          <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
         </div>
     </SettingsShell>
   );

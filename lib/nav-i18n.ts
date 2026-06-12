@@ -6,6 +6,7 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/customers': 'crm',
   '/projects': 'projects',
   '/schedule': 'schedule',
+  '/expenses': 'expenses',
   '/knowledge': 'knowledge',
   '/automations': 'automations',
   '/clients': 'clients',

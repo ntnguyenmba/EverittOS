@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { AI_REQUIRED_PLAN, planHasAiAccess } from '@/lib/ai-features';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { getAiUsageStats } from '@/lib/ai-server';
-import { openAiConfigured } from '@/lib/ai-config';
+import { aiConfigured, getActiveAiProviderInfo } from '@/lib/ai/config';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -23,7 +23,8 @@ export async function GET() {
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  const configured = openAiConfigured();
+  const providerInfo = getActiveAiProviderInfo();
+  const configured = aiConfigured();
   const allowed = planHasAiAccess(plan);
 
   const admin = createAdminSupabase();
@@ -45,6 +46,9 @@ export async function GET() {
   return NextResponse.json({
     allowed: allowed && gateStatus.ok,
     configured,
+    provider: providerInfo.id,
+    providerLabel: providerInfo.displayName,
+    model: providerInfo.model,
     plan,
     requiredPlan: AI_REQUIRED_PLAN,
     locked: !allowed,

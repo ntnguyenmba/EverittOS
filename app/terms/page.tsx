@@ -29,7 +29,7 @@ export default function TermsPage() {
           from Settings. Deletion requests follow the process described in our Privacy Policy.
         </p>
         <p>
-          You are responsible for keeping your devices, passkeys, passwords, and authentication methods secure. If you
+          You are responsible for keeping your devices, passwords, and authentication methods secure. If you
           believe your account or device has been compromised, contact us right away at{' '}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>

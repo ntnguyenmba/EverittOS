@@ -3,7 +3,10 @@
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
+import { BusinessPerformanceSection } from '@/components/business-performance-section';
 import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
+import { canAccessFinancialTracking } from '@/lib/finance-access';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canSeeOrgWideData } from '@/lib/permissions';
@@ -55,14 +58,16 @@ export default function AnalyticsPage() {
         return;
       }
 
-      const res = await fetch('/api/analytics/summary');
-      const json = await res.json();
-      setLoading(false);
-      if (!res.ok) {
-        setError(json.error || 'Unable to load analytics.');
-        return;
+      if (limitsForPlan(p).advancedReporting) {
+        const res = await fetch('/api/analytics/summary');
+        const json = await res.json();
+        if (!res.ok) {
+          setError(json.error || 'Unable to load analytics.');
+        } else {
+          setSummary(json);
+        }
       }
-      setSummary(json);
+      setLoading(false);
     }
     load();
   }, [router]);
@@ -76,11 +81,17 @@ export default function AnalyticsPage() {
       {loading ? <p className="loading-state">{t('common.loading')}</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
-      {!loading && !error && summary && !hasData ? (
+      {!loading && !error && limitsForPlan(plan).advancedReporting && summary && !hasData ? (
         <EmptyState title={t('dashboard.metricsEmpty')} description={t('dashboard.analyticsEmpty')} />
       ) : null}
 
-      {summary && hasData ? (
+      {canAccessFinancialTracking(plan) ? (
+        <div style={{ marginBottom: 28 }}>
+          <BusinessPerformanceSection />
+        </div>
+      ) : null}
+
+      {limitsForPlan(plan).advancedReporting && summary && hasData ? (
         <div className="charts-grid">
           <SimpleBarChart title={t('analytics.adoption')} points={summary.adoptionMetrics} />
           <SimpleBarChart title={t('analytics.growth')} points={summary.growthMetrics} />

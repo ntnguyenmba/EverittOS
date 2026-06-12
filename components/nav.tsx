@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { supabase } from '@/lib/supabase';
 
@@ -49,6 +50,7 @@ export function Nav() {
         </nav>
 
         <div className="nav-actions">
+          <LanguageSwitcher id="legal-nav-language" variant="compact" />
           {loggedIn ? (
             <>
               <Link className="btn btn-primary" href="/dashboard">

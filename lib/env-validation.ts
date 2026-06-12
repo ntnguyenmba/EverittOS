@@ -1,3 +1,4 @@
+import { aiConfigured, aiProviderId, getActiveAiProvider } from '@/lib/ai/config';
 import { isSupabaseConfigured } from '@/lib/supabase-config';
 
 export type EnvValidationIssue = {
@@ -83,11 +84,12 @@ export function validateEnvAtStartup(): EnvValidationResult {
     });
   }
 
-  if (!hasValue('OPENAI_API_KEY')) {
+  if (!aiConfigured()) {
+    const provider = getActiveAiProvider();
     issues.push({
       level: 'info',
-      key: 'OPENAI_API_KEY',
-      message: 'OpenAI not configured. Ask Everitt AI will be unavailable until OPENAI_API_KEY is set server-side.'
+      key: 'AI_PROVIDER',
+      message: `${provider.displayName} (${aiProviderId()}) not configured. Ask Everitt AI will be unavailable until provider credentials are set server-side.`
     });
   }
 

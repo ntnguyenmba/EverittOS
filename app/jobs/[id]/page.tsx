@@ -9,7 +9,10 @@ import { JobChecklist } from '@/components/job-checklist';
 import { ClientAccessPanel } from '@/components/client-access-panel';
 import { JobWorkflow } from '@/components/job-workflow';
 import { JobPhotosSection } from '@/components/job-photos-section';
+import { JobLaborSection } from '@/components/job-labor-section';
+import { JobProfitabilityCard } from '@/components/job-profitability-card';
 import { AppShell } from '@/components/app-shell';
+import { canAccessFinancialTracking } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { logClientActivity, createNotification } from '@/lib/activity';
 import { StatusPill } from '@/components/status-pill';
@@ -24,6 +27,8 @@ import {
 } from '@/lib/everittos-usage';
 import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -43,6 +48,7 @@ type Job = {
   due_date: string | null;
   assigned_to: string | null;
   organization_id: string | null;
+  customer_id: string | null;
   priority: string | null;
   internal_notes: string | null;
   customer_notes: string | null;
@@ -80,7 +86,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [creatingReport, setCreatingReport] = useState(false);
   const [photoRefresh, setPhotoRefresh] = useState(0);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   useEffect(() => {
     params.then((p) => setJobId(p.id));
@@ -138,7 +144,13 @@ export default function JobDetailPage({ params }: PageProps) {
     setActivity(activityRows || []);
 
     if (limitsForPlan(userPlan).crewAssignment) {
-      const { data: crew } = await supabase.from('workers').select('id, name').order('name');
+      let workersQuery = supabase.from('workers').select('id, name').order('name');
+      if (org?.organizationId) {
+        workersQuery = workersQuery.eq('organization_id', org.organizationId);
+      } else {
+        workersQuery = workersQuery.eq('user_id', user.id);
+      }
+      const { data: crew } = await workersQuery;
       setWorkers(crew || []);
     } else {
       setWorkers([]);
@@ -147,7 +159,7 @@ export default function JobDetailPage({ params }: PageProps) {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       return;
     }
 
@@ -159,9 +171,10 @@ export default function JobDetailPage({ params }: PageProps) {
     if (!canEditStatus) return;
     const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       return;
     }
+    setFeedback(successFeedback(`Status updated to ${status.replace('_', ' ')}.`));
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'status_changed', `Status set to ${status}`);
       if (status === 'completed') {
@@ -185,18 +198,20 @@ export default function JobDetailPage({ params }: PageProps) {
         completion_verified: job.completion_verified
       })
       .eq('id', jobId);
-    if (error) setMessage(error.message);
-    else {
-      if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
-      loadJob();
+    if (error) {
+      setFeedback(errorFeedback(formatSupabaseError(error)));
+      return;
     }
+    setFeedback(successFeedback('Job details saved.'));
+    if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
+    loadJob();
   }
 
   async function saveSchedule() {
     if (!job || !canManage || savingSchedule) return;
 
     setSavingSchedule(true);
-    setMessage('');
+    setFeedback(null);
 
     const { error } = await supabase
       .from('jobs')
@@ -210,10 +225,11 @@ export default function JobDetailPage({ params }: PageProps) {
     setSavingSchedule(false);
 
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError(error)));
       return;
     }
 
+    setFeedback(successFeedback('Schedule saved.'));
     loadJob();
   }
 
@@ -223,15 +239,18 @@ export default function JobDetailPage({ params }: PageProps) {
     const {
       data: { user }
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push(`/login?next=/jobs/${jobId}`);
+      return;
+    }
 
     setCreatingReport(true);
-    setMessage('');
+    setFeedback(null);
 
     const usage = await fetchUsageCounts(user.id);
     if (reportLimitReached(plan, usage)) {
       setCreatingReport(false);
-      setMessage(limitMessage('reports', plan));
+      setFeedback(errorFeedback(limitMessage('reports', plan)));
       return;
     }
 
@@ -245,9 +264,9 @@ export default function JobDetailPage({ params }: PageProps) {
 
     if (error) {
       if (error.message.includes('PLAN_LIMIT_REPORTS')) {
-        setMessage(limitMessage('reports', plan));
+        setFeedback(errorFeedback(limitMessage('reports', plan)));
       } else {
-        setMessage(error.message);
+        setFeedback(errorFeedback(formatSupabaseError(error)));
       }
       return;
     }
@@ -274,7 +293,9 @@ export default function JobDetailPage({ params }: PageProps) {
   if (!job) {
     return (
       <AppShell plan={plan} role={userRole}>
-        <div className="card">{message || 'Job not found or access denied.'}</div>
+        <div className="card">
+          {feedback?.message || 'Job not found or access denied.'}
+        </div>
       </AppShell>
     );
   }
@@ -291,7 +312,7 @@ export default function JobDetailPage({ params }: PageProps) {
           <StatusPill status={job.status} />
         </div>
 
-        {message && <p className="card">{message}</p>}
+        <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
         <div className="grid-2">
           <div className="card">
@@ -448,11 +469,25 @@ export default function JobDetailPage({ params }: PageProps) {
           hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
         />
 
+        {canAccessFinancialTracking(plan) ? (
+          <>
+            <div style={{ marginTop: 18 }}>
+              <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} />
+            </div>
+            <div style={{ marginTop: 18 }}>
+              <JobLaborSection jobId={job.id} workers={workers} canManage={canManage} />
+            </div>
+          </>
+        ) : null}
+
         <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
 
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Photos</h3>
-          <p className="muted">Before, progress, and after photos for this job. Drag and drop on desktop or capture from your phone.</p>
+        <div className="card job-photos-card" style={{ marginTop: 18 }}>
+          <h3>Before &amp; after photos</h3>
+          <p className="muted">
+            Document the job with before and after photos. Upload from your phone camera or desktop. Files are stored
+            securely in your workspace.
+          </p>
           <JobPhotosSection
             jobId={job.id}
             organizationId={orgId || job.organization_id}

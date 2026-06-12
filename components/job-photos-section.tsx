@@ -2,18 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PhotoComparisonSection } from '@/components/before-after-comparison';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
 import { EmptyState } from '@/components/empty-state';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { compressImageFile } from '@/lib/image-compress';
 import { JOB_PHOTO_TAGS, photoTagLabel, type JobPhotoTag } from '@/lib/job-photo-tags';
 import type { JobPhotoView } from '@/lib/job-photos-types';
+import {
+  buildJobPhotoInsertPayload,
+  fetchJobPhotosWithUrls,
+  resolvePhotoType
+} from '@/lib/job-photos-client';
 import { normalizePlan, photoUploadAllowed, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { normalizeRole, isManagerRole } from '@/lib/roles';
 import { logClientActivity } from '@/lib/activity';
-import { friendlyErrorMessage } from '@/lib/user-errors';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { supabase } from '@/lib/supabase';
+
+const PRIMARY_PHOTO_TYPES: JobPhotoTag[] = ['before', 'after'];
 
 type JobPhotosSectionProps = {
   jobId: string;
@@ -26,9 +34,23 @@ type JobPhotosSectionProps = {
   showComparison?: boolean;
 };
 
+type UploadProgress = {
+  current: number;
+  total: number;
+  step: 'compressing' | 'uploading' | 'saving';
+  fileName: string;
+};
+
 function formatPhotoWhen(value: string | null) {
   if (!value) return '';
   return new Date(value).toLocaleString();
+}
+
+function formatFileSize(bytes: number | null | undefined) {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function JobPhotosSection({
@@ -44,10 +66,12 @@ export function JobPhotosSection({
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [message, setMessage] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [activeTag, setActiveTag] = useState<JobPhotoTag>('before');
-  const [dragOver, setDragOver] = useState(false);
+  const [dragOverTag, setDragOverTag] = useState<JobPhotoTag | null>(null);
   const [currentUserId, setCurrentUserId] = useState('');
   const [canDeleteAny, setCanDeleteAny] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,29 +79,13 @@ export function JobPhotosSection({
 
   const loadPhotos = useCallback(async () => {
     setLoading(true);
-    setMessage('');
-
-    const { data, error } = await supabase
-      .from('job_photos')
-      .select('id, job_id, user_id, storage_path, label, created_at, uploader_display_name, file_size_bytes, mime_type')
-      .eq('job_id', jobId)
-      .order('created_at', { ascending: false });
-
+    const { photos: loaded, error } = await fetchJobPhotosWithUrls(supabase, jobId);
     if (error) {
-      setMessage(error.message);
+      setFeedback(errorFeedback(formatSupabaseError({ message: error })));
       setLoading(false);
       return;
     }
-
-    const rows = data || [];
-    const withUrls = await Promise.all(
-      rows.map(async (row) => {
-        const { data: signed } = await supabase.storage.from('job-photos').createSignedUrl(row.storage_path, 3600);
-        return { ...row, url: signed?.signedUrl || '' } as JobPhotoView;
-      })
-    );
-
-    setPhotos(withUrls.filter((p) => p.url));
+    setPhotos(loaded);
     setLoading(false);
   }, [jobId]);
 
@@ -99,15 +107,16 @@ export function JobPhotosSection({
   async function uploadFiles(files: FileList | File[] | null, tag: JobPhotoTag) {
     if (!files?.length || readOnly || !canUpload) return;
 
+    const fileList = Array.from(files);
     setUploading(true);
-    setMessage('');
+    setFeedback(null);
 
     const {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) {
       setUploading(false);
-      setMessage('Sign in to upload photos.');
+      setFeedback(errorFeedback('Sign in to upload photos.'));
       return;
     }
 
@@ -119,33 +128,50 @@ export function JobPhotosSection({
     const userPlan = normalizePlan(profile?.plan);
     if (!photoUploadAllowed(userPlan)) {
       setUploading(false);
-      setMessage('Photo uploads are not available on your plan.');
+      setFeedback(errorFeedback('Photo uploads are not available on your plan.'));
       return;
     }
 
     let usage = await fetchUsageCounts(user.id, organizationId);
     const uploaderName = profile?.full_name || profile?.email || user.email || 'Team member';
+    let uploadedCount = 0;
 
-    for (const rawFile of Array.from(files)) {
+    for (let index = 0; index < fileList.length; index += 1) {
+      const rawFile = fileList[index];
       if (photoLimitReached(userPlan, usage)) {
-        setMessage(limitMessage('photos', userPlan));
+        setFeedback(errorFeedback(limitMessage('photos', userPlan)));
         break;
       }
 
       const validation = validateImageUpload(rawFile);
       if (!validation.ok) {
-        setMessage(validation.error);
+        setFeedback(errorFeedback(validation.error));
         continue;
       }
+
+      setUploadProgress({
+        current: index + 1,
+        total: fileList.length,
+        step: 'compressing',
+        fileName: rawFile.name
+      });
 
       const file = await compressImageFile(rawFile);
       const revalidation = validateImageUpload(file);
       if (!revalidation.ok) {
-        setMessage(revalidation.error);
+        setFeedback(errorFeedback(revalidation.error));
         continue;
       }
 
       const path = buildSafePhotoStoragePath(user.id, jobId, revalidation.extension);
+      const fileName = file.name || `${revalidation.sanitizedBaseName}.${revalidation.extension}`;
+
+      setUploadProgress({
+        current: index + 1,
+        total: fileList.length,
+        step: 'uploading',
+        fileName
+      });
 
       const { error: uploadError } = await supabase.storage.from('job-photos').upload(path, file, {
         cacheControl: '3600',
@@ -154,54 +180,94 @@ export function JobPhotosSection({
       });
 
       if (uploadError) {
-        setMessage(uploadError.message);
+        setFeedback(errorFeedback(uploadError.message));
         continue;
       }
 
-      const { error: rowError } = await supabase.from('job_photos').insert({
-        user_id: user.id,
-        job_id: jobId,
-        organization_id: organizationId,
-        storage_path: path,
-        label: tag,
-        uploader_display_name: uploaderName,
-        file_size_bytes: file.size,
-        mime_type: file.type || 'image/jpeg'
+      setUploadProgress({
+        current: index + 1,
+        total: fileList.length,
+        step: 'saving',
+        fileName
       });
 
+      const payload = buildJobPhotoInsertPayload({
+        userId: user.id,
+        jobId,
+        organizationId,
+        storagePath: path,
+        photoType: tag,
+        fileName,
+        uploaderDisplayName: uploaderName,
+        fileSizeBytes: file.size,
+        mimeType: file.type || 'image/jpeg'
+      });
+
+      const { data: inserted, error: rowError } = await supabase
+        .from('job_photos')
+        .insert(payload)
+        .select('id, job_id, user_id, organization_id, storage_path, label, photo_type, uploaded_by, file_name, public_url, created_at, uploader_display_name, file_size_bytes, mime_type')
+        .single();
+
       if (rowError) {
-        setMessage(rowError.message);
+        setFeedback(errorFeedback(formatSupabaseError(rowError)));
         await supabase.storage.from('job-photos').remove([path]);
         continue;
       }
 
+      const previewUrl = URL.createObjectURL(file);
+      const optimistic: JobPhotoView = {
+        ...(inserted as JobPhotoView),
+        label: tag,
+        photo_type: tag,
+        url: previewUrl
+      };
+      setPhotos((prev) => [optimistic, ...prev]);
+
       if (organizationId) {
         await logClientActivity(organizationId, 'job', jobId, 'photo_uploaded', `Uploaded ${tag} photo`, {
-          label: tag
+          label: tag,
+          photo_type: tag
         });
       }
 
       usage = { ...usage, photos: usage.photos + 1 };
+      uploadedCount += 1;
+
+      void fetchJobPhotosWithUrls(supabase, jobId).then(({ photos: refreshed }) => {
+        setPhotos(refreshed);
+        URL.revokeObjectURL(previewUrl);
+      });
     }
 
     setUploading(false);
-    await loadPhotos();
-    onChange?.();
+    setUploadProgress(null);
+
+    if (uploadedCount > 0) {
+      setFeedback(
+        successFeedback(uploadedCount === 1 ? `${photoTagLabel(tag)} photo saved.` : `${uploadedCount} photos saved.`)
+      );
+      onChange?.();
+    }
   }
 
   async function deletePhoto(photoId: string) {
     setDeletingId(photoId);
-    setMessage('');
+    setFeedback(null);
     const res = await fetch(`/api/jobs/${jobId}/photos?photoId=${encodeURIComponent(photoId)}`, {
       method: 'DELETE'
     });
     const json = await res.json();
     setDeletingId(null);
+    setConfirmDeleteId(null);
+
     if (!res.ok) {
-      setMessage(json.error || 'Unable to delete photo.');
+      setFeedback(errorFeedback(json.error || 'Unable to delete photo.'));
       return;
     }
-    await loadPhotos();
+
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    setFeedback(successFeedback('Photo removed.'));
     onChange?.();
   }
 
@@ -210,48 +276,73 @@ export function JobPhotosSection({
     fileInputRef.current?.click();
   }
 
-  function onDrop(event: React.DragEvent) {
+  function onDrop(event: React.DragEvent, tag: JobPhotoTag) {
     event.preventDefault();
-    setDragOver(false);
+    setDragOverTag(null);
     if (readOnly || !canUpload) return;
-    void uploadFiles(event.dataTransfer.files, activeTag);
+    void uploadFiles(event.dataTransfer.files, tag);
   }
 
   const uploadEnabled = canUpload && !readOnly && photoUploadAllowed(normalizedPlan);
+
   const grouped = JOB_PHOTO_TAGS.map((tag) => ({
     tag,
-    items: photos.filter((p) => p.label === tag)
+    items: photos.filter((p) => resolvePhotoType(p) === tag)
   }));
 
+  const progressLabel = uploadProgress
+    ? uploadProgress.step === 'compressing'
+      ? `Compressing ${uploadProgress.current} of ${uploadProgress.total}: ${uploadProgress.fileName}`
+      : uploadProgress.step === 'uploading'
+        ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}: ${uploadProgress.fileName}`
+        : `Saving ${uploadProgress.current} of ${uploadProgress.total}…`
+    : null;
+
   return (
-    <section className="job-photos-section" aria-label="Job photos">
+    <section className="job-photos-section" aria-label="Before and after photos">
       {showComparison && photos.length > 0 ? <PhotoComparisonSection photos={photos} /> : null}
 
-      {uploadEnabled ? (
-        <div
-          className={`photo-dropzone${dragOver ? ' photo-dropzone-active' : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-        >
-          <p className="photo-dropzone-title">Add photos</p>
-          <p className="muted">Drag and drop images here, or tap a button below. Works on phone and desktop.</p>
+      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
-          <div className="photo-capture-buttons" role="group" aria-label="Photo category">
-            {JOB_PHOTO_TAGS.map((tag) => (
+      {uploadEnabled ? (
+        <div className="before-after-upload-grid">
+          {PRIMARY_PHOTO_TYPES.map((tag) => (
+            <div
+              key={tag}
+              className={`photo-dropzone photo-dropzone-${tag}${dragOverTag === tag ? ' photo-dropzone-active' : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverTag(tag);
+                setActiveTag(tag);
+              }}
+              onDragLeave={() => setDragOverTag(null)}
+              onDrop={(e) => onDrop(e, tag)}
+            >
+              <p className="photo-dropzone-title">{photoTagLabel(tag)} photos</p>
+              <p className="muted">
+                Drag images here or use your camera. Large files are compressed automatically before upload.
+              </p>
               <button
-                key={tag}
                 type="button"
-                className={`btn photo-capture-btn${activeTag === tag ? ' btn-primary' : ''}`}
+                className="btn btn-primary photo-capture-btn"
                 disabled={uploading}
                 onClick={() => openFilePicker(tag)}
               >
-                {photoTagLabel(tag)}
+                {uploading && activeTag === tag ? 'Uploading…' : `Add ${photoTagLabel(tag).toLowerCase()} photo`}
               </button>
-            ))}
+            </div>
+          ))}
+
+          <div className="photo-progress-upload">
+            <p className="muted">Optional progress photos during the job:</p>
+            <button
+              type="button"
+              className="btn photo-capture-btn"
+              disabled={uploading}
+              onClick={() => openFilePicker('progress')}
+            >
+              Add progress photo
+            </button>
           </div>
 
           <input
@@ -268,8 +359,16 @@ export function JobPhotosSection({
             }}
           />
 
-          <p className="photo-upload-status">{uploading ? 'Uploading and compressing…' : `Selected category: ${photoTagLabel(activeTag)}`}</p>
+          {progressLabel ? (
+            <p className="photo-upload-status" role="status" aria-live="polite">
+              {progressLabel}
+            </p>
+          ) : null}
         </div>
+      ) : null}
+
+      {!uploadEnabled && !readOnly ? (
+        <p className="muted">Photo uploads are not available on your current plan.</p>
       ) : null}
 
       {loading ? <p className="loading-state" role="status">Loading photos…</p> : null}
@@ -282,28 +381,59 @@ export function JobPhotosSection({
         grouped.map(({ tag, items }) =>
           items.length > 0 ? (
             <div key={tag} className="photo-tag-group">
-              <h4>{photoTagLabel(tag)}</h4>
+              <h4>{photoTagLabel(tag)} ({items.length})</h4>
               <div className="photo-grid">
                 {items.map((photo) => {
                   const canDelete = canDeleteAny || photo.user_id === currentUserId;
+                  const photoType = resolvePhotoType(photo);
                   return (
                     <figure key={photo.id} className="photo-thumb">
-                      <img src={photo.url} alt={`${photoTagLabel(tag)} photo`} loading="lazy" />
+                      {photo.url ? (
+                        <img src={photo.url} alt={`${photoTagLabel(photoType)} photo`} loading="lazy" />
+                      ) : (
+                        <div className="before-after-empty">Preview unavailable</div>
+                      )}
                       <figcaption>
-                        <span className="photo-tag-pill">{photoTagLabel(tag)}</span>
+                        <span className="photo-tag-pill">{photoTagLabel(photoType)}</span>
                         <span className="photo-meta-line">{formatPhotoWhen(photo.created_at)}</span>
                         {photo.uploader_display_name ? (
                           <span className="photo-meta-line">By {photo.uploader_display_name}</span>
                         ) : null}
+                        {photo.file_name ? <span className="photo-meta-line">{photo.file_name}</span> : null}
+                        {photo.file_size_bytes ? (
+                          <span className="photo-meta-line">{formatFileSize(photo.file_size_bytes)}</span>
+                        ) : null}
                         {canDelete && !readOnly ? (
-                          <button
-                            type="button"
-                            className="btn photo-delete-btn"
-                            disabled={deletingId === photo.id}
-                            onClick={() => void deletePhoto(photo.id)}
-                          >
-                            {deletingId === photo.id ? 'Removing…' : 'Remove'}
-                          </button>
+                          confirmDeleteId === photo.id ? (
+                            <div className="photo-delete-confirm">
+                              <p>Remove this photo?</p>
+                              <button
+                                type="button"
+                                className="btn btn-primary photo-delete-btn"
+                                disabled={deletingId === photo.id}
+                                onClick={() => void deletePhoto(photo.id)}
+                              >
+                                {deletingId === photo.id ? 'Removing…' : 'Confirm remove'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn photo-delete-btn"
+                                disabled={deletingId === photo.id}
+                                onClick={() => setConfirmDeleteId(null)}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn photo-delete-btn"
+                              disabled={deletingId === photo.id}
+                              onClick={() => setConfirmDeleteId(photo.id)}
+                            >
+                              Remove
+                            </button>
+                          )
                         ) : null}
                       </figcaption>
                     </figure>
@@ -313,12 +443,6 @@ export function JobPhotosSection({
             </div>
           ) : null
         )}
-
-      {message ? (
-        <p className="auth-message auth-message-error" role="alert">
-          {friendlyErrorMessage(message)}
-        </p>
-      ) : null}
     </section>
   );
 }

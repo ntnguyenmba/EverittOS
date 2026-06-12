@@ -9,13 +9,9 @@ import { SettingsShell } from '@/components/settings/settings-shell';
 import { AiUsagePanel } from '@/components/ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
-import {
-  EVERITTOS_PLANS,
-  EVERITTOS_STRIPE_LINKS,
-  normalizePlan,
-  planDisplayName,
-  type EverittosPlan
-} from '@/lib/everittos-plans';
+import { PricingCheckoutPanel } from '@/components/pricing-checkout-panel';
+import { formatCouponDuration } from '@/lib/stripe-promo';
+import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
@@ -68,6 +64,15 @@ function BillingSettingsContent() {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [couponName, setCouponName] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+  const [couponPercentOff, setCouponPercentOff] = useState<number | null>(null);
+  const [couponAmountOff, setCouponAmountOff] = useState<number | null>(null);
+  const [couponDuration, setCouponDuration] = useState<string | null>(null);
+  const [couponDurationInMonths, setCouponDurationInMonths] = useState<number | null>(null);
+  const [couponExpiresAt, setCouponExpiresAt] = useState<string | null>(null);
+  const initialPromo = (searchParams.get('promo') || '').trim();
+  const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
 
   useEffect(() => {
     async function load() {
@@ -81,7 +86,9 @@ function BillingSettingsContent() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('plan, role, subscription_status, stripe_customer_id')
+        .select(
+          'plan, role, subscription_status, stripe_customer_id, stripe_promotion_code, coupon_name, coupon_percent_off, coupon_amount_off, coupon_duration, coupon_duration_in_months, coupon_expires_at'
+        )
         .eq('id', user.id)
         .maybeSingle();
 
@@ -90,6 +97,15 @@ function BillingSettingsContent() {
       setRole(normalizeRole(profile?.role));
       setSubscriptionStatus(profile?.subscription_status || 'free');
       setStripeCustomerId(profile?.stripe_customer_id || '');
+      setCouponCode(profile?.stripe_promotion_code || null);
+      setCouponName(profile?.coupon_name || null);
+      setCouponPercentOff(profile?.coupon_percent_off != null ? Number(profile.coupon_percent_off) : null);
+      setCouponAmountOff(profile?.coupon_amount_off != null ? Number(profile.coupon_amount_off) : null);
+      setCouponDuration(profile?.coupon_duration || null);
+      setCouponDurationInMonths(
+        profile?.coupon_duration_in_months != null ? Number(profile.coupon_duration_in_months) : null
+      );
+      setCouponExpiresAt(profile?.coupon_expires_at || null);
 
       const { data: subscription } = await supabase
         .from('everittos_subscriptions')
@@ -123,7 +139,11 @@ function BillingSettingsContent() {
     setPortalLoading(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to open billing portal.');
+      if (res.status === 503) {
+        setMessage(t('billing.portalNotConfigured'));
+      } else {
+        setMessage(json.error || 'Unable to open billing portal.');
+      }
       return;
     }
 
@@ -182,9 +202,53 @@ function BillingSettingsContent() {
           details={accessNotice.details}
         />
       ) : null}
+      {searchParams.get('checkout') === 'success' ? (
+        <p className="auth-message auth-message-success">{t('billing.promo.checkoutSuccess')}</p>
+      ) : null}
+      {searchParams.get('checkout') === 'cancelled' ? (
+        <p className="auth-message auth-message-error">{t('billing.promo.checkoutCancelled')}</p>
+      ) : null}
       {searchParams.get('upgrade') ? (
         <div className="settings-warning" style={{ marginBottom: 18 }}>
           {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.
+        </div>
+      ) : null}
+      {couponName ? (
+        <div className="settings-card promo-active-discount">
+          <h3>{t('billing.promo.activeTitle')}</h3>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.promo.couponName')}</span>
+            <span className="settings-row-value">{couponName}</span>
+          </div>
+          {couponCode ? (
+            <div className="settings-row">
+              <span className="settings-row-label">{t('billing.promo.code')}</span>
+              <span className="settings-row-value">{couponCode}</span>
+            </div>
+          ) : null}
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.promo.discount')}</span>
+            <span className="settings-row-value">
+              {formatCouponDuration(
+                (couponDuration as 'forever' | 'once' | 'repeating') || 'once',
+                couponDurationInMonths,
+                couponPercentOff,
+                couponAmountOff
+              )}
+            </span>
+          </div>
+          {couponExpiresAt ? (
+            <div className="settings-row">
+              <span className="settings-row-label">{t('billing.promo.expiresLabel')}</span>
+              <span className="settings-row-value">
+                {new Date(couponExpiresAt).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </span>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="settings-card">
@@ -216,31 +280,30 @@ function BillingSettingsContent() {
         {canBilling ? (
           <div className="settings-actions">
             {stripeCustomerId ? (
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={portalLoading}
-                onClick={openBillingPortal}
-                aria-label="Open Stripe customer portal in a new tab"
-              >
-                {portalLoading ? 'Opening…' : t('billing.manageStripe')}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={portalLoading}
+                  onClick={openBillingPortal}
+                  aria-label="Open Stripe customer portal in a new tab"
+                >
+                  {portalLoading ? 'Opening…' : t('billing.manageStripe')}
+                </button>
+                {canCancelSubscription(subscriptionStatus) ? (
+                  <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
+                    {cancelLoading ? 'Working...' : t('billing.cancel')}
+                  </button>
+                ) : null}
+                {canResumeSubscription(subscriptionStatus) ? (
+                  <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
+                    {resumeLoading ? 'Working...' : t('billing.resume')}
+                  </button>
+                ) : null}
+              </>
             ) : (
               <p className="muted">{t('billing.noCustomer')}</p>
             )}
-            {stripeCustomerId && canCancelSubscription(subscriptionStatus) ? (
-              <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
-                {cancelLoading ? 'Working...' : t('billing.cancel')}
-              </button>
-            ) : null}
-            {stripeCustomerId && canResumeSubscription(subscriptionStatus) ? (
-              <button type="button" className="btn btn-primary" disabled={resumeLoading} onClick={resumeSubscription}>
-                {resumeLoading ? 'Working...' : t('billing.resume')}
-              </button>
-            ) : null}
-            {!stripeCustomerId && canBilling ? (
-              <p className="muted">{t('billing.portalUnavailable')}</p>
-            ) : null}
           </div>
         ) : null}
 
@@ -255,40 +318,21 @@ function BillingSettingsContent() {
         <AiUsagePanel plan={plan} />
       </div>
 
-      <div className="settings-card">
-        <h3>{t('billing.upgradeOptions')}</h3>
-        <div className="pricing-grid compact">
-          {EVERITTOS_PLANS.filter((tier) => tier.id !== 'free').map((tier) => (
-            <div key={tier.id} className="card" style={{ marginTop: 0 }}>
-              <h4>{tier.name}</h4>
-              <p>{tier.priceLabel}</p>
-              <p className="muted">{tier.limits.join(' · ')}</p>
-              {tier.stripeLink && canBilling ? (
-                <a
-                  className="btn btn-primary"
-                  href={tier.stripeLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${tier.buttonLabel} (opens Stripe in a new tab)`}
-                >
-                  {tier.buttonLabel}
-                </a>
-              ) : null}
-            </div>
-          ))}
+      {canBilling ? (
+        <div className="settings-card">
+          <h3>{t('billing.upgradeOptions')}</h3>
+          <PricingCheckoutPanel
+            selectedPlan={checkoutPlan === 'free' ? 'pro' : checkoutPlan}
+            initialPromoCode={initialPromo}
+            authenticated
+            compact
+          />
+          <p className="muted" style={{ marginTop: 16 }}>
+            Subscriptions renew automatically until canceled. Cancel anytime from billing or the Stripe customer portal.{' '}
+            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link>
+          </p>
         </div>
-        <div className="settings-actions">
-          {canBilling && plan === 'free' ? (
-            <a className="btn btn-primary" href={EVERITTOS_STRIPE_LINKS.pro} target="_blank" rel="noopener noreferrer">
-              Start Pro
-            </a>
-          ) : null}
-        </div>
-        <p className="muted" style={{ marginTop: 16 }}>
-          Subscriptions renew automatically until canceled. Cancel anytime from billing or the Stripe customer portal.{' '}
-          <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link>
-        </p>
-      </div>
+      ) : null}
     </SettingsShell>
   );
 }

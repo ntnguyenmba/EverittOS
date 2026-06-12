@@ -105,7 +105,7 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Security" description="Password, passkeys, and session controls.">
+    <SettingsShell plan={plan} title="Security" description="Password and session controls.">
       <div className="settings-card">
         <h3>{t('settings.security.passkeysTitle')}</h3>
         <p className="muted">{t('settings.security.passkeysBody')}</p>

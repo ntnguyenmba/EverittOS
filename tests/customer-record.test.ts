@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   buildCustomerUpdatePayload,
   buildCustomerWritePayload,
+  customerDisplayAddress,
   customerDisplayName
 } from '../lib/customer-record';
 
@@ -16,6 +17,20 @@ test('customerDisplayName falls back to email then phone', () => {
   assert.equal(customerDisplayName({}), 'Unnamed contact');
 });
 
+test('customerDisplayAddress prefers service_address', () => {
+  assert.equal(
+    customerDisplayAddress({ service_address: '100 Main St', city: 'Austin' }),
+    '100 Main St'
+  );
+});
+
+test('customerDisplayAddress joins structured fields', () => {
+  assert.equal(
+    customerDisplayAddress({ address_line1: '100 Main St', city: 'Austin', state: 'TX' }),
+    '100 Main St, Austin, TX'
+  );
+});
+
 test('buildCustomerWritePayload uses company_name', () => {
   const payload = buildCustomerWritePayload({
     displayName: 'Riverfront',
@@ -26,7 +41,14 @@ test('buildCustomerWritePayload uses company_name', () => {
   });
   assert.equal(payload.company_name, 'Riverfront');
   assert.equal(payload.name, 'Riverfront');
+  assert.equal(payload.address_line1, undefined);
   assert.equal(payload.record_type, 'lead');
+});
+
+test('buildCustomerWritePayload maps address to address_line1', () => {
+  const payload = buildCustomerWritePayload({ displayName: 'Acme', address: '100 Main St' });
+  assert.equal(payload.address_line1, '100 Main St');
+  assert.equal(payload.service_address, '100 Main St');
 });
 
 test('buildCustomerUpdatePayload maps displayName to company_name', () => {

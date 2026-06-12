@@ -76,6 +76,7 @@ function ClientPortalContent() {
   const [profile, setProfile] = useState<ClientProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [photoAccessByJob, setPhotoAccessByJob] = useState<Record<string, boolean>>({});
 
   const jobMap = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
@@ -111,14 +112,26 @@ function ClientPortalContent() {
       }
 
       const { data: access } = portalToken
-        ? await supabase.from('job_client_access').select('job_id, client_user_id').eq('portal_token', portalToken)
-        : await supabase.from('job_client_access').select('job_id, client_user_id').eq('client_user_id', user.id);
+        ? await supabase
+            .from('job_client_access')
+            .select('job_id, client_user_id, can_view_photos')
+            .eq('portal_token', portalToken)
+        : await supabase
+            .from('job_client_access')
+            .select('job_id, client_user_id, can_view_photos')
+            .eq('client_user_id', user.id);
 
       if (portalToken && access?.[0]?.client_user_id && access[0].client_user_id !== user.id) {
         setMessage('This portal link belongs to a different client account.');
         setLoading(false);
         return;
       }
+
+      const accessMap: Record<string, boolean> = {};
+      (access || []).forEach((row) => {
+        accessMap[row.job_id as string] = row.can_view_photos !== false;
+      });
+      setPhotoAccessByJob(accessMap);
 
       const jobIds = (access || []).map((a) => a.job_id);
       if (jobIds.length === 0) {
@@ -293,7 +306,13 @@ function ClientPortalContent() {
                     >
                       {selectedJob === job.id ? 'Hide photos' : 'View photos'}
                     </button>
-                    {selectedJob === job.id && <PhotoGallery jobId={job.id} refreshKey={0} />}
+                    {selectedJob === job.id ? (
+                      <PhotoGallery
+                        jobId={job.id}
+                        refreshKey={0}
+                        canView={photoAccessByJob[job.id] !== false}
+                      />
+                    ) : null}
                     {reports
                       .filter((r) => r.job_id === job.id)
                       .map((r) => (

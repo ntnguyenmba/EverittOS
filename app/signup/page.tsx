@@ -7,6 +7,7 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { safeNextPath } from '@/lib/app-url';
+import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { normalizeEmail } from '@/lib/input-validation';
@@ -16,11 +17,11 @@ import { useTranslation } from '@/components/locale-provider';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
 
-function signupRedirect(plan: EverittosPlan, next: string): string {
+function signupRedirect(plan: EverittosPlan, next: string, promoCode = ''): string {
   if (plan !== 'free') {
-    const tier = EVERITTOS_PLANS.find((item) => item.id === plan);
-    if (tier?.stripeLink) return tier.stripeLink;
-    return `/billing?plan=${plan}`;
+    const params = new URLSearchParams({ upgrade: plan });
+    if (promoCode.trim()) params.set('promo', promoCode.trim().toUpperCase());
+    return `/settings/billing?${params.toString()}`;
   }
   return safeNextPath(next, '/onboarding');
 }
@@ -30,6 +31,8 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'), '/onboarding');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
+  const initialPromo = (searchParams.get('promo') || '').trim();
+  const [promoCode, setPromoCode] = useState(initialPromo);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,7 +98,7 @@ function SignupForm() {
       /* continue; Supabase still enforces auth limits */
     }
 
-    const redirectTarget = signupRedirect(selectedPlan, next);
+    const redirectTarget = signupRedirect(selectedPlan, next, promoCode);
 
     try {
       const { response, url, method } = await authApiFetch(SIGNUP_API_PATH, {
@@ -198,6 +201,16 @@ function SignupForm() {
             required
           />
         </div>
+
+        {selectedPlan !== 'free' ? (
+          <StripePromoCodeField
+            plan={selectedPlan}
+            initialCode={initialPromo}
+            onValidated={(preview) => {
+              if (preview) setPromoCode(preview.code);
+            }}
+          />
+        ) : null}
 
         <div className="auth-field">
           <label htmlFor="confirm_password">Confirm password</label>

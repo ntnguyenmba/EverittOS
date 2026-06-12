@@ -22,6 +22,7 @@ import { isManagerRole, normalizeRole } from '@/lib/roles';
 import {
   buildCustomerWritePayload,
   CUSTOMER_LIST_SELECT,
+  customerDisplayAddress,
   customerDisplayName,
   type CustomerRecord
 } from '@/lib/customer-record';
@@ -274,7 +275,7 @@ function CustomersPageContent() {
                 </p>
                 <p>{customer.phone || 'No phone'}</p>
                 <p>{customer.email || 'No email'}</p>
-                <p>{customer.address || 'No address'}</p>
+                <p>{customerDisplayAddress(customer, 'No address')}</p>
                 <Link className="btn" href={`/customers/${customer.id}`}>
                   View customer
                 </Link>

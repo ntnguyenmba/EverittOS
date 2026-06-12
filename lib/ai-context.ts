@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { customerDisplayName } from '@/lib/customer-record';
 
 function tomorrowRange(): { start: string; end: string } {
   const d = new Date();
@@ -117,14 +118,14 @@ export async function buildOrganizationAiContext(
   const openJobs = openJobsRes.data || [];
   if (openJobs.length) {
     sections.push(
-      `Open/active jobs:\n${openJobs.map((j) => `- ${j.title} (${j.customer_name || '—'}) [${j.status}]`).join('\n')}`
+      `Open/active jobs:\n${openJobs.map((j) => `- ${j.title} (${j.customer_name || 'n/a'}) [${j.status}]`).join('\n')}`
     );
   }
 
   const leads = leadsRes.data || [];
   if (leads.length) {
     sections.push(
-      `Leads this month:\n${leads.map((l) => `- ${l.company_name || 'Unnamed'} [${l.pipeline_stage}] source=${l.lead_source}`).join('\n')}`
+      `Leads this month:\n${leads.map((l) => `- ${customerDisplayName(l)} [${l.pipeline_stage}] source=${l.lead_source}`).join('\n')}`
     );
   } else {
     sections.push('Leads this month: none');
@@ -134,7 +135,7 @@ export async function buildOrganizationAiContext(
   const pending = proposals.filter((p) => p.status === 'draft' || p.status === 'sent');
   if (proposals.length) {
     sections.push(
-      `Proposals:\n${proposals.map((p) => `- ${p.title} [$${p.amount ?? '—'}] status=${p.status}`).join('\n')}`
+      `Proposals:\n${proposals.map((p) => `- ${p.title} [$${p.amount ?? 'n/a'}] status=${p.status}`).join('\n')}`
     );
   }
   if (pending.length) {

@@ -233,7 +233,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
             Open command bar <span className="muted">{kbd}</span>
           </button>
         </div>
-        <p className="muted">Your business command center — jobs, leads, proposals, and actions in one place.</p>
+        <p className="muted">Your business command center: jobs, leads, proposals, and actions in one place.</p>
         {aiLocked ? (
           <button type="button" className="btn" onClick={() => setUpgradeOpen(true)}>
             Unlock AI on Business plan

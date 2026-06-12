@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useTranslation } from '@/components/locale-provider';
-import { friendlyErrorMessage } from '@/lib/user-errors';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
@@ -15,6 +16,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type Worker = {
   id: string;
@@ -34,7 +36,7 @@ export default function WorkersPage() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   async function loadWorkers() {
     const {
@@ -71,26 +73,34 @@ export default function WorkersPage() {
     const {
       data: { user }
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push('/login?next=/workers');
+      return;
+    }
 
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
     const userPlan = normalizePlan(profile?.plan);
     if (!limitsForPlan(userPlan).crewAssignment) {
-      setMessage('Workers and crew assignment require the Business plan.');
+      setFeedback(errorFeedback('Workers and crew assignment require the Business plan.'));
       return;
     }
     if (crewLimitReached(userPlan, workers.length)) {
-      setMessage(limitMessage('crewMembers', userPlan));
+      setFeedback(errorFeedback(limitMessage('crewMembers', userPlan)));
       return;
     }
 
     setSaving(true);
-    setMessage('');
+    setFeedback(null);
 
-    const org = await fetchOrganizationContext(user.id);
+    const org = await ensureOrganizationForUser(user.id);
+    if (!org?.organizationId) {
+      setSaving(false);
+      setFeedback(errorFeedback('Workspace setup is still finishing. Refresh and try again.'));
+      return;
+    }
     const { error } = await supabase.from('workers').insert({
       user_id: user.id,
-      organization_id: org?.organizationId || null,
+      organization_id: org.organizationId,
       name: name.trim(),
       role: role.trim() || null,
       phone: phone.trim() || null
@@ -100,13 +110,14 @@ export default function WorkersPage() {
 
     if (error) {
       if (error.message.includes('PLAN_LIMIT_CREW')) {
-        setMessage('Workers and crew assignment require the Business plan.');
+        setFeedback(errorFeedback('Workers and crew assignment require the Business plan.'));
       } else {
-        setMessage(error.message);
+        setFeedback(errorFeedback(formatSupabaseError(error)));
       }
       return;
     }
 
+    setFeedback(successFeedback('Worker saved.'));
     setName('');
     setRole('');
     setPhone('');
@@ -123,11 +134,7 @@ export default function WorkersPage() {
     <AppShell plan={plan}>
       <h1>{t('nav.workers')}</h1>
 
-      {message ? (
-        <p className="auth-message auth-message-error" role="alert">
-          {friendlyErrorMessage(message)}
-        </p>
-      ) : null}
+      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       {canManage && crewEnabled && (
         <div className="card form" style={{ marginTop: 20 }}>

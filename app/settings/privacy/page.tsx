@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LanguageSwitcher } from '@/components/language-switcher';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -181,11 +180,6 @@ export default function PrivacySettingsPage() {
         <button type="button" className="btn btn-primary" onClick={save} disabled={saving}>
           {saving ? t('common.loading') : t('settings.privacy.save')}
         </button>
-      </div>
-
-      <div className="settings-card" style={{ marginTop: 18 }}>
-        <h3>{t('settings.privacy.languageTitle')}</h3>
-        <LanguageSwitcher />
       </div>
 
       <div className="settings-card" style={{ marginTop: 18 }}>

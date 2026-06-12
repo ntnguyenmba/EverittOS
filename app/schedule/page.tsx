@@ -48,11 +48,18 @@ function SchedulePageContent() {
     setOrgId(org?.organizationId || '');
     setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(normalizeRole(profile?.role)));
 
-    const { data, error: fetchError } = await supabase
+    let jobsQuery = supabase
       .from('jobs')
       .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
       .not('status', 'eq', 'cancelled')
       .order('due_date', { ascending: true, nullsFirst: false });
+    if (org?.organizationId) {
+      jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
+    } else {
+      jobsQuery = jobsQuery.eq('user_id', user.id);
+    }
+
+    const { data, error: fetchError } = await jobsQuery;
 
     setLoading(false);
     if (fetchError) {
@@ -62,7 +69,13 @@ function SchedulePageContent() {
 
     setJobs((data || []) as ScheduleJob[]);
 
-    const { data: workers } = await supabase.from('workers').select('id, name');
+    let workersQuery = supabase.from('workers').select('id, name').order('name');
+    if (org?.organizationId) {
+      workersQuery = workersQuery.eq('organization_id', org.organizationId);
+    } else {
+      workersQuery = workersQuery.eq('user_id', user.id);
+    }
+    const { data: workers } = await workersQuery;
     const map: Record<string, string> = {};
     (workers || []).forEach((w) => {
       map[w.id] = w.name;
@@ -132,7 +145,11 @@ function SchedulePageContent() {
       <PageHeader title={t('ux.pageTitles.schedule')} subtitle={t('ux.helperSchedule')} />
 
         {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
-        {error && <div className="card">{error}</div>}
+        {error && (
+          <p className="auth-message auth-message-error" role="alert">
+            {error}
+          </p>
+        )}
         {!loading && !error && visibleJobs.length === 0 && (
           <div className="card" style={{ marginTop: 18 }}>
             <LocalizedEmptyState emptyKey="schedule" />

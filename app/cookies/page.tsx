@@ -30,12 +30,6 @@ export default function CookiesPage() {
           </li>
         </ul>
 
-        <h3>Passkeys</h3>
-        <p>
-          If you use passkey sign-in, your device, browser, or password manager stores the credential. EverittOS does
-          not receive or store biometric data such as fingerprint or face scan data.
-        </p>
-
         <h3>Authenticated app</h3>
         <p>
           Inside the signed-in EverittOS application, we do not load marketing analytics scripts. Essential session
@@ -44,8 +38,8 @@ export default function CookiesPage() {
 
         <h3>Managing preferences</h3>
         <p>
-          Use the cookie banner on your first visit to accept all, reject non-essential, or manage preferences by
-          category. Your choice is stored locally and the banner will not reappear unless you clear site data.
+          On marketing and legal pages, you can accept or reject optional analytics and marketing cookies from the
+          banner. Inside the signed-in app, only essential session cookies are used.
         </p>
 
         <h3>Third parties</h3>

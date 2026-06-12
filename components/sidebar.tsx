@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AppNavItems } from '@/components/app-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTranslation } from '@/components/locale-provider';
 import {
   isPaidEverittosPlan,
   normalizePlan,
@@ -23,7 +25,9 @@ type SidebarProps = {
 
 export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/';
+  const hideUpgradeCta = pathname.startsWith('/settings/billing');
+  const { t } = useTranslation();
   const normalized = normalizePlan(plan);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
@@ -67,8 +71,11 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
       <div className="sidebar-brand">
         <BrandLogo href="/dashboard" size={32} showName />
       </div>
+      <div className="sidebar-language">
+        <LanguageSwitcher id="sidebar-language" variant="default" />
+      </div>
       <div className="sidebar-plan">
-        <span className="sidebar-plan-label">Plan</span>
+        <span className="sidebar-plan-label">{t('billing.currentPlan')}</span>
         {showBillingLink ? (
           <Link
             href="/settings/billing"
@@ -84,17 +91,17 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
 
       <AppNavItems plan={normalized} role={role} unread={unread} />
 
-      {!isPaidEverittosPlan(normalized) && canManageBilling(role) && (
+      {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) && (
         <div className="sidebar-upgrade">
           <p>Need more jobs, photos, or team members?</p>
           <Link href="/settings/billing?upgrade=pro" className="btn btn-primary">
-            Start Pro
+            {t('ux.startPro')}
           </Link>
         </div>
       )}
 
       <button className="btn sidebar-logout" type="button" onClick={logout}>
-        Log out
+        {t('ux.logOut')}
       </button>
     </aside>
   );

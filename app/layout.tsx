@@ -8,6 +8,7 @@ import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
+import { AppConnectivityBanner } from '@/components/app-connectivity-banner';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}>
       <body>
         <SupabaseRuntimeConfig />
+        <AppConnectivityBanner />
         <SuppressVercelToolbar />
         <LocaleProvider>
           <LocaleSync />

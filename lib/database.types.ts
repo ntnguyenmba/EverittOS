@@ -85,6 +85,39 @@ export type Job = {
   customers?: Customer | null;
 };
 
+export type Expense = {
+  id: string;
+  organization_id: string;
+  job_id: string | null;
+  customer_id: string | null;
+  worker_id: string | null;
+  date: string;
+  category: string;
+  vendor: string | null;
+  description: string | null;
+  amount: number;
+  payment_method: string | null;
+  receipt_url: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JobLabor = {
+  id: string;
+  organization_id: string;
+  job_id: string;
+  worker_id: string | null;
+  worker_name: string | null;
+  hours: number;
+  hourly_cost: number;
+  total_cost: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type JobPhoto = {
   id: string;
   user_id: string;
@@ -120,6 +153,14 @@ export type Profile = {
   plan?: EverittosPlan | string | null;
   subscription_status?: string | null;
   stripe_customer_id?: string | null;
+  stripe_promotion_code?: string | null;
+  stripe_coupon_id?: string | null;
+  coupon_name?: string | null;
+  coupon_percent_off?: number | null;
+  coupon_amount_off?: number | null;
+  coupon_duration?: string | null;
+  coupon_duration_in_months?: number | null;
+  coupon_expires_at?: string | null;
   account_status?: string | null;
   business_name?: string | null;
   full_name?: string | null;
@@ -137,6 +178,14 @@ export type EverittosSubscription = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_session_id: string | null;
+  stripe_promotion_code?: string | null;
+  stripe_coupon_id?: string | null;
+  coupon_name?: string | null;
+  coupon_percent_off?: number | null;
+  coupon_amount_off?: number | null;
+  coupon_duration?: string | null;
+  coupon_duration_in_months?: number | null;
+  coupon_expires_at?: string | null;
   status: string;
   current_period_end: string | null;
   created_at: string;

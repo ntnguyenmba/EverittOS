@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openAiConfigured } from '@/lib/ai-config';
+import { aiConfigured, getActiveAiProvider } from '@/lib/ai/config';
 import { aiMonthlyCap, assertAiAllowed, countAiGenerationsThisMonth } from '@/lib/ai-server';
 import type { AiFeatureId } from '@/lib/ai-features';
 import { isAiFeatureAvailable, AI_REQUIRED_PLAN } from '@/lib/ai-features';
@@ -72,11 +72,12 @@ export async function verifyAiRequest(
     };
   }
 
-  if (!openAiConfigured()) {
+  if (!aiConfigured()) {
+    const provider = getActiveAiProvider();
     return {
       ok: false,
       code: 'not_configured',
-      message: 'AI is not configured on this server.'
+      message: `${provider.displayName} is not configured on this server.`
     };
   }
 

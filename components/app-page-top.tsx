@@ -1,6 +1,7 @@
 'use client';
 
 import { AppBackButton } from '@/components/app-back-button';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { OrgSwitcher } from '@/components/org-switcher';
 
 type AppPageTopProps = {
@@ -13,7 +14,10 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   return (
     <div className="app-page-top">
       <OrgSwitcher />
-      {showBackButton ? <AppBackButton role={role} /> : null}
+      <div className="app-page-top-actions">
+        <LanguageSwitcher id="page-top-language" variant="compact" className="app-page-top-language" />
+        {showBackButton ? <AppBackButton role={role} /> : null}
+      </div>
     </div>
   );
 }

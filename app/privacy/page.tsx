@@ -51,12 +51,8 @@ export default function PrivacyPage() {
           period.
         </p>
 
-        <h3>Passkeys and WebAuthn</h3>
-        <p>
-          EverittOS may support passkey authentication through WebAuthn. If you choose to use a passkey, your device,
-          browser, operating system, or password manager may store a cryptographic credential used to verify your
-          sign-in. EverittOS does not receive or store your biometric data, such as fingerprint or face scan data.
-        </p>
+        <h3>Passkeys</h3>
+        <p>Passkey support is not enabled yet. If added later, credentials would stay on your device or password manager.</p>
 
         <h3>Security</h3>
         <p>

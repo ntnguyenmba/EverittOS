@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, formatSupabaseError, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 
 type ChecklistItem = {
@@ -22,25 +24,39 @@ type JobChecklistProps = {
 export function JobChecklist({ jobId, organizationId, userId, items, canEdit, onChange }: JobChecklistProps) {
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
 
   async function addItem() {
     if (!label.trim() || !canEdit) return;
     setBusy(true);
-    await supabase.from('job_checklist_items').insert({
+    setFeedback(null);
+    const { error } = await supabase.from('job_checklist_items').insert({
       job_id: jobId,
       organization_id: organizationId,
       user_id: userId,
       label: label.trim(),
       sort_order: items.length
     });
-    setLabel('');
     setBusy(false);
+    if (error) {
+      setFeedback(errorFeedback(formatSupabaseError(error)));
+      return;
+    }
+    setLabel('');
     onChange();
   }
 
   async function toggleItem(item: ChecklistItem) {
     if (!canEdit) return;
-    await supabase.from('job_checklist_items').update({ completed: !item.completed }).eq('id', item.id);
+    setFeedback(null);
+    const { error } = await supabase
+      .from('job_checklist_items')
+      .update({ completed: !item.completed })
+      .eq('id', item.id);
+    if (error) {
+      setFeedback(errorFeedback(formatSupabaseError(error)));
+      return;
+    }
     onChange();
   }
 
@@ -63,6 +79,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
           </button>
         </>
       )}
+      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
     </div>
   );
 }

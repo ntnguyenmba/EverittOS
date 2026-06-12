@@ -26,12 +26,28 @@ Copy `.env.example` to `.env.local` for local development.
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
 | `RESEND_API_KEY` | Optional. Team/client invite email only (not auth). Copy-link fallback when unset. |
 | `EMAIL_FROM` | Optional. Sender for invite email when Resend is configured. |
-| `OPENAI_API_KEY` | Optional. Server-only Ask Everitt AI (Business and Enterprise). |
+| `AI_PROVIDER` | Optional. Ask Everitt AI backend: `openai` (default), `deepseek`, `ollama`, `qwen`, `gemini`, `anthropic`. |
+| `OPENAI_API_KEY` | Optional. OpenAI credentials when `AI_PROVIDER=openai` (or set generic `AI_API_KEY`). |
 | `ADMIN_EMAILS` | Comma-separated emails for `/admin/launch-status` and platform metrics |
 
 Optional:
 
 - `AUTH_DEBUG=1` — development auth diagnostics (no secrets)
+
+### Ask Everitt AI providers
+
+AI runs server-side only (Business and Enterprise plans). Set `AI_PROVIDER` and the matching credentials in `.env.local` / production env — never use `NEXT_PUBLIC_` for API keys.
+
+| Provider | Key variables | Notes |
+|----------|---------------|-------|
+| OpenAI (default) | `OPENAI_API_KEY`, optional `OPENAI_MODEL` | Also accepts `AI_API_KEY` / `AI_MODEL` |
+| DeepSeek | `DEEPSEEK_API_KEY`, optional `DEEPSEEK_MODEL` | OpenAI-compatible API |
+| Ollama | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Local; no API key required |
+| Qwen | `QWEN_API_KEY` or `DASHSCOPE_API_KEY` | DashScope compatible mode |
+| Gemini | `GEMINI_API_KEY` or `GOOGLE_AI_API_KEY` | Google Generative Language API |
+| Anthropic | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` | Claude Messages API |
+
+Shared overrides: `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL` apply to whichever provider is active. App features (Ask Everitt, drafts, usage tracking) work the same regardless of provider.
 
 **Important:** `NEXT_PUBLIC_*` variables are embedded at build time. After changing them, redeploy `main`.
 

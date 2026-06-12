@@ -12,6 +12,7 @@ import { canManageBilling, isOwner, normalizeRole } from '@/lib/roles';
 import { roleDisplayName } from '@/lib/role-routes';
 import { normalizeAccountStatus } from '@/lib/account-status';
 import { SUPPORT_EMAIL } from '@/lib/support';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { supabase } from '@/lib/supabase';
 
@@ -93,6 +94,12 @@ export default function AccountSettingsPage() {
 
   return (
     <SettingsShell plan={plan} role={role} title={t('settingsNav.account')} description={t('settings.account.description')}>
+      <div className="settings-card">
+        <h3>{t('settings.account.languageTitle')}</h3>
+        <p className="muted">{t('settings.account.languageNote')}</p>
+        <LanguageSwitcher />
+      </div>
+
       <div className="settings-card">
         <h3>{t('settings.account.profile')}</h3>
         <div className="settings-row">

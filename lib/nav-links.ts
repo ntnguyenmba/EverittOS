@@ -5,6 +5,7 @@ const CORE_NAV = [
   { label: 'CRM', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
   { label: 'Schedule', href: '/schedule' },
+  { label: 'Expenses', href: '/expenses' },
   { label: 'Analytics', href: '/analytics' },
   { label: 'Billing', href: '/settings/billing' },
   { label: 'Settings', href: '/settings' }

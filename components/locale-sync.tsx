@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/components/locale-provider';
-import { normalizeLocale } from '@/lib/i18n/config';
+import { LOCALE_STORAGE_KEY, normalizeLocale } from '@/lib/i18n/config';
 import { isSessionExemptPath } from '@/lib/session-policy';
 import { supabase } from '@/lib/supabase';
 
@@ -32,7 +32,13 @@ export function LocaleSync() {
             ? json.preferred_locale
             : null;
       if (stored) {
-        setLocale(normalizeLocale(stored));
+        const next = normalizeLocale(stored);
+        setLocale(next);
+        try {
+          localStorage.setItem(LOCALE_STORAGE_KEY, next);
+        } catch {
+          /* ignore */
+        }
       }
     }
 

@@ -268,9 +268,32 @@ function IntegrationsContent() {
         ) : null}
 
         <p className="muted integration-callback-note" style={{ marginTop: 16 }}>
-          OAuth redirect URI for setup:{' '}
-          <code>{status?.configured ? googleCalendarRedirectUri() : GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI}</code>
+          OAuth redirect URI for Google Cloud Console: <code>{GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI}</code>
         </p>
+        {status?.configured ? (
+          <p className="muted">
+            Active callback for this deployment: <code>{googleCalendarRedirectUri()}</code>
+          </p>
+        ) : null}
+      </div>
+
+      <div className="settings-card" style={{ marginTop: 20 }}>
+        <h3>Accounting integrations</h3>
+        <p className="muted">
+          QuickBooks, Xero, and Wave connections are planned for later. EverittOS keeps performance tracking simple
+          for now.
+        </p>
+        <ul className="integration-coming-list">
+          <li>
+            <strong>QuickBooks</strong> <span className="muted">Coming later</span>
+          </li>
+          <li>
+            <strong>Xero</strong> <span className="muted">Coming later</span>
+          </li>
+          <li>
+            <strong>Wave</strong> <span className="muted">Coming later</span>
+          </li>
+        </ul>
       </div>
     </SettingsShell>
   );

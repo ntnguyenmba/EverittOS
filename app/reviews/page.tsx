@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, successFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -28,8 +30,9 @@ export default function ReviewsPage() {
   const [messageText, setMessageText] = useState('We would love your feedback on our recent work.');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [canManage, setCanManage] = useState(false);
+  const [lastDraftId, setLastDraftId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -50,7 +53,7 @@ export default function ReviewsPage() {
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load reviews');
+      setFeedback(errorFeedback(json.error || 'Unable to load reviews'));
       return;
     }
     setRequests(json.requests || []);
@@ -61,23 +64,35 @@ export default function ReviewsPage() {
     void load();
   }, [router]);
 
-  async function createRequest(send: boolean) {
-    if (!email.trim() || saving) return;
+  async function createDraft() {
+    if (!email.trim()) {
+      setFeedback(errorFeedback('Enter a customer email first.'));
+      return;
+    }
+    if (saving) return;
     setSaving(true);
-    setMessage('');
+    setFeedback(null);
     const res = await fetch('/api/reviews', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_email: email.trim(), message: messageText, send })
+      body: JSON.stringify({ customer_email: email.trim(), message: messageText, send: false })
     });
     const json = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setMessage(json.error || 'Failed to create request');
+      setFeedback(errorFeedback(json.error || 'Failed to save draft'));
       return;
     }
+    setLastDraftId(json.request?.id || null);
+    setFeedback(successFeedback('Review request saved as a draft.'));
     setEmail('');
     void load();
+  }
+
+  function copyRequestMessage() {
+    const text = `Hi,\n\n${messageText.trim()}\n\nThank you.`;
+    void navigator.clipboard.writeText(text);
+    setFeedback(successFeedback('Request message copied. Send it from your email app.'));
   }
 
   async function markSubmitted(id: string) {
@@ -91,9 +106,10 @@ export default function ReviewsPage() {
     });
     if (!res.ok) {
       const json = await res.json();
-      setMessage(json.error || 'Update failed');
+      setFeedback(errorFeedback(json.error || 'Update failed'));
       return;
     }
+    setFeedback(successFeedback('Review recorded.'));
     void load();
   }
 
@@ -102,7 +118,8 @@ export default function ReviewsPage() {
       <header className="page-header">
         <h1>Review Center</h1>
         <p className="page-subtitle">
-          Request and track customer reviews. Google, Facebook, and Yelp integrations are planned. Architecture is ready.
+          Save review requests and record responses. Automated email delivery is not enabled yet. Copy your message and
+          send it from your email app.
         </p>
       </header>
 
@@ -118,23 +135,26 @@ export default function ReviewsPage() {
           />
           <textarea className="input" rows={3} value={messageText} onChange={(e) => setMessageText(e.target.value)} />
           <div className="settings-actions">
-            <button type="button" className="btn" disabled={saving} onClick={() => void createRequest(false)}>
-              Save draft
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void createDraft()}>
+              {saving ? 'Saving…' : 'Save draft'}
             </button>
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void createRequest(true)}>
-              Mark as sent
+            <button type="button" className="btn" onClick={copyRequestMessage}>
+              Copy request message
             </button>
           </div>
+          {lastDraftId ? (
+            <p className="muted">Latest draft id: {lastDraftId}. Track status below after you send the message.</p>
+          ) : null}
         </div>
       ) : null}
 
-      {message ? <p className="auth-message auth-message-error">{message}</p> : null}
+      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Requests</h3>
         {loading ? <p>Loading…</p> : null}
         {!loading && requests.length === 0 ? (
-          <EmptyState compact title="No review requests" description="Send a request after a job is completed." />
+          <EmptyState compact title="No review requests" description="Save a draft after a job is completed." />
         ) : null}
         {requests.map((r) => (
           <div key={r.id} className="dashboard-today-row">

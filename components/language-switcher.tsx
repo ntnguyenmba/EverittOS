@@ -2,31 +2,44 @@
 
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n/config';
 import { useTranslation } from '@/components/locale-provider';
+import { persistLocaleChoice } from '@/lib/locale-persist';
 
 type LanguageSwitcherProps = {
   className?: string;
   id?: string;
+  /** compact = select only (header bars); drawer = full-width in mobile menu */
+  variant?: 'default' | 'compact' | 'drawer';
 };
 
-export function LanguageSwitcher({ className, id = 'app-language' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({
+  className,
+  id = 'app-language',
+  variant = 'default'
+}: LanguageSwitcherProps) {
   const { locale, setLocale, t } = useTranslation();
 
+  async function onChange(next: Locale) {
+    setLocale(next);
+    await persistLocaleChoice(next);
+  }
+
+  const showLabel = variant !== 'compact';
+
   return (
-    <label className={className ? `language-switcher ${className}` : 'language-switcher'} htmlFor={id}>
-      <span className="language-switcher-label">{t('common.language')}</span>
+    <label
+      className={
+        className
+          ? `language-switcher language-switcher-${variant} ${className}`
+          : `language-switcher language-switcher-${variant}`
+      }
+      htmlFor={id}
+    >
+      {showLabel ? <span className="language-switcher-label">{t('common.language')}</span> : null}
       <select
         id={id}
         className="input language-switcher-select"
         value={locale}
-        onChange={(event) => {
-          const next = event.target.value as Locale;
-          setLocale(next);
-          void fetch('/api/account/privacy', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ preferred_locale: next, locale: next })
-          });
-        }}
+        onChange={(event) => void onChange(event.target.value as Locale)}
         aria-label={t('common.language')}
       >
         {LOCALES.map((code) => (

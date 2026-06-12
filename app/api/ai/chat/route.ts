@@ -94,6 +94,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     reply: cleanReply,
     model: result.model,
+    provider: result.provider,
     action,
     usage: {
       monthlyUsed: gate.monthlyUsed + 1,

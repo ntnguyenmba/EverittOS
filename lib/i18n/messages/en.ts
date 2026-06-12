@@ -233,7 +233,7 @@ export const messages: Messages = {
       collectOperations: 'Operational data: jobs, customers, workers, schedules, and photos you create.',
       collectActivity: 'Activity logs: actions taken in your workspace for audit and support.',
       collectPasskeys:
-        'Passkeys (optional): cryptographic credentials stored on your device or password manager. EverittOS does not receive or store biometric data.',
+        'Passkey support is not enabled yet. If added later, credentials would stay on your device. EverittOS would not receive or store biometric data.',
       retention: 'Data is retained while your account is active and deleted per your account deletion request.',
       preferencesTitle: 'Communication preferences',
       marketingEmails: 'Marketing emails',
@@ -275,8 +275,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Passkeys',
-      passkeysBody:
-        'Passkeys let you sign in with your device, browser, password manager, biometric unlock, or security key. EverittOS does not receive or store biometric data.',
+      passkeysBody: 'Passkey support is not enabled yet. Use email and password sign-in for now.',
       compromised: 'If you believe your account or device has been compromised, contact us at'
     },
     account: {
@@ -293,6 +292,8 @@ export const messages: Messages = {
       subscriptionNote: 'Cancel, resume, or change plans from billing settings.',
       subscriptionOwnerOnly: 'Only workspace owners and admins can change billing.',
       openBilling: 'Open billing settings',
+      languageTitle: 'Language',
+      languageNote: 'Applies to navigation, dashboard, jobs, customers, workers, schedule, billing, settings, and common buttons.',
       disableTitle: 'Disable account',
       disableNote:
         'Disabling signs you out and blocks sign-in. Your organization data stays stored. Nothing is deleted.',
@@ -314,7 +315,7 @@ export const messages: Messages = {
     acceptTerms: 'I agree to the Terms of Service',
     acceptPrivacy: 'I agree to the Privacy Policy',
     consentRequired: 'You must accept the Terms of Service and Privacy Policy to create an account.',
-    signInMethods: 'Sign in with email, Google, or passkey.'
+    signInMethods: 'Sign in with email or Google.'
   },
   nav: {
     today: 'Today',
@@ -334,6 +335,7 @@ export const messages: Messages = {
     automations: 'Automations',
     clients: 'Clients',
     schedule: 'Schedule',
+    expenses: 'Expenses',
     workers: 'Workers',
     team: 'Team',
     activity: 'Activity',
@@ -456,6 +458,8 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Billing',
+    pricingTitle: 'Plans and pricing',
+    pricingSubtitle: 'Choose a plan, apply a promo code, and checkout securely with Stripe.',
     currentPlan: 'Plan',
     status: 'Status',
     renewalDate: 'Renewal date',
@@ -463,8 +467,31 @@ export const messages: Messages = {
     noCustomer: 'No Stripe customer on file yet. Choose a paid plan below to start checkout.',
     cancel: 'Cancel subscription',
     resume: 'Resume subscription',
-    portalUnavailable: 'Stripe billing portal is not configured. Contact support for billing changes.',
-    upgradeOptions: 'Upgrade options'
+    portalUnavailable: 'Billing portal is not configured yet.',
+    portalNotConfigured: 'Billing portal is not configured yet.',
+    upgradeOptions: 'Upgrade options',
+    promo: {
+      label: 'Promo code',
+      placeholder: 'FOUNDING',
+      apply: 'Apply',
+      validating: 'Validating…',
+      invalid: 'This promo code is not valid.',
+      applied: '{name} applied',
+      savings: 'You save {amount} per month',
+      expires: 'Code expires {date}',
+      expiresLabel: 'Expires',
+      activeTitle: 'Active discount',
+      couponName: 'Coupon',
+      code: 'Promo code',
+      discount: 'Discount',
+      checkoutNote: 'Discounts are validated by Stripe before checkout. Prices update after you apply a code.',
+      checkoutSuccess: 'Checkout completed. Your subscription will update shortly.',
+      checkoutCancelled: 'Checkout was cancelled. No charge was made.',
+      checkoutFailed: 'Unable to start checkout. Try again or contact support.',
+      startingCheckout: 'Starting checkout…',
+      applyFirst: 'Apply a valid promo code before checkout.',
+      signInNote: 'Already have an account?'
+    }
   },
   language: {
     title: 'Language',

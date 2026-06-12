@@ -33,14 +33,9 @@ export function SuppressVercelToolbar() {
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) {
-            if (
-              node.matches?.('vercel-live-feedback, [data-vercel-toolbar], #vercel-toolbar') ||
-              node.querySelector?.('vercel-live-feedback, [data-vercel-toolbar], #vercel-toolbar, iframe[src*="vercel.live"]')
-            ) {
-              node.remove();
-              return;
-            }
+          if (node instanceof HTMLElement && node.matches(TOOLBAR_SELECTORS.join(', '))) {
+            node.remove();
+            return;
           }
           if (isVercelToolbarScript(node)) {
             node.parentNode?.removeChild(node);

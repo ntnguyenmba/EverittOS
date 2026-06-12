@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { extractSubscriptionDiscount, type StoredCouponDiscount } from '@/lib/stripe-promo';
 
 export const runtime = 'nodejs';
 
@@ -53,7 +54,8 @@ async function updateProfilePlan(
   status: string,
   stripeCustomerId: string | null,
   stripeSubscriptionId?: string | null,
-  currentPeriodEnd?: number | null
+  currentPeriodEnd?: number | null,
+  discount?: StoredCouponDiscount
 ) {
   const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
 
@@ -63,7 +65,8 @@ async function updateProfilePlan(
       .update({
         plan,
         subscription_status: status,
-        stripe_customer_id: stripeCustomerId
+        stripe_customer_id: stripeCustomerId,
+        ...(discount || {})
       })
       .eq('id', profile.id);
   }
@@ -78,7 +81,8 @@ async function updateProfilePlan(
         stripe_subscription_id: stripeSubscriptionId,
         status: status.startsWith('everittos_') ? 'active' : status,
         current_period_end: currentPeriodEnd ? new Date(currentPeriodEnd * 1000).toISOString() : null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        ...(discount || {})
       },
       { onConflict: 'stripe_subscription_id' }
     );
@@ -126,15 +130,19 @@ export async function POST(request: Request) {
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
       const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
       let periodEnd: number | null = null;
+      let discount: StoredCouponDiscount | undefined;
       if (subId) {
         try {
-          const sub = await stripe.subscriptions.retrieve(subId);
+          const sub = await stripe.subscriptions.retrieve(subId, {
+            expand: ['discount.coupon', 'discount.promotion_code']
+          });
           periodEnd = sub.current_period_end;
+          discount = await extractSubscriptionDiscount(stripe, sub);
         } catch {
           /* ignore */
         }
       }
-      await updateProfilePlan(admin, email, plan, `everittos_${plan}`, customerId, subId, periodEnd);
+      await updateProfilePlan(admin, email, plan, `everittos_${plan}`, customerId, subId, periodEnd, discount);
       const { data: profile } = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
       await admin.from('everittos_subscriptions').upsert(
         {
@@ -146,7 +154,8 @@ export async function POST(request: Request) {
           stripe_subscription_id: subId,
           status: 'active',
           current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          ...(discount || {})
         },
         { onConflict: 'stripe_session_id' }
       );
@@ -159,6 +168,10 @@ export async function POST(request: Request) {
     const plan = planFromSubscription(sub);
     if (email && plan) {
       const status = sub.status === 'active' || sub.status === 'trialing' ? `everittos_${plan}` : sub.status;
+      const expandedSub = await stripe.subscriptions.retrieve(sub.id, {
+        expand: ['discount.coupon', 'discount.promotion_code']
+      });
+      const discount = await extractSubscriptionDiscount(stripe, expandedSub);
       await updateProfilePlan(
         admin,
         email,
@@ -166,7 +179,8 @@ export async function POST(request: Request) {
         status,
         typeof sub.customer === 'string' ? sub.customer : null,
         sub.id,
-        sub.current_period_end
+        sub.current_period_end,
+        discount
       );
     }
   }

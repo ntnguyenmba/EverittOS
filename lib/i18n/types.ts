@@ -183,6 +183,8 @@ export type MessageTree = {
       subscriptionNote: string;
       subscriptionOwnerOnly: string;
       openBilling: string;
+      languageTitle: string;
+      languageNote: string;
       disableTitle: string;
       disableNote: string;
       ownerDisableWarning: string;
@@ -223,6 +225,7 @@ export type MessageTree = {
     automations: string;
     clients: string;
     schedule: string;
+    expenses: string;
     workers: string;
     team: string;
     activity: string;
@@ -345,6 +348,8 @@ export type MessageTree = {
   };
   billing: {
     title: string;
+    pricingTitle: string;
+    pricingSubtitle: string;
     currentPlan: string;
     status: string;
     renewalDate: string;
@@ -353,7 +358,30 @@ export type MessageTree = {
     cancel: string;
     resume: string;
     portalUnavailable: string;
+    portalNotConfigured: string;
     upgradeOptions: string;
+    promo: {
+      label: string;
+      placeholder: string;
+      apply: string;
+      validating: string;
+      invalid: string;
+      applied: string;
+      savings: string;
+      expires: string;
+      expiresLabel: string;
+      activeTitle: string;
+      couponName: string;
+      code: string;
+      discount: string;
+      checkoutNote: string;
+      checkoutSuccess: string;
+      checkoutCancelled: string;
+      checkoutFailed: string;
+      startingCheckout: string;
+      applyFirst: string;
+      signInNote: string;
+    };
   };
   language: {
     title: string;

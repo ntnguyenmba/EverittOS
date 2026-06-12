@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 type AuthShellProps = {
   title: string;
@@ -15,6 +16,9 @@ export function AuthShell({ title, children }: AuthShellProps) {
         <div className="auth-shell-main">
           <header className="auth-shell-header auth-shell-header-centered">
             <BrandLogo href="/" size={40} showName />
+            <div className="auth-shell-language">
+              <LanguageSwitcher id="auth-language" variant="compact" />
+            </div>
           </header>
 
           <div className="auth-shell-content">

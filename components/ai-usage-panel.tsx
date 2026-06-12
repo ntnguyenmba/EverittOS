@@ -83,7 +83,7 @@ export function AiUsagePanel({ plan: planProp }: AiUsagePanelProps) {
           <strong className="stat-value">{usage.totalTokens.toLocaleString()}</strong>
         </div>
         <div className="card stat-card">
-          <span className="stat-label">Est. OpenAI cost</span>
+          <span className="stat-label">Est. AI cost</span>
           <strong className="stat-value">${usage.estimatedCostUsd.toFixed(2)}</strong>
         </div>
         <div className="card stat-card">

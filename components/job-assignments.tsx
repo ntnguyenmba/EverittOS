@@ -107,7 +107,11 @@ export function JobAssignments({
           </button>
         </>
       )}
-      {message && <p>{message}</p>}
+      {message ? (
+        <p className="auth-message auth-message-error" role="alert">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,14 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openAiApiKey, openAiConfigured, openAiModel } from '@/lib/ai-config';
+import { aiConfigured, getActiveAiProvider } from '@/lib/ai/config';
+import type { AiChatMessage } from '@/lib/ai/providers/types';
 import type { AiFeatureId } from '@/lib/ai-features';
 import { canAccessFeature } from '@/lib/plan-access';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 
-export type AiChatMessage = {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-};
+export type { AiChatMessage };
 
 export type AiUsageStats = {
   requests: number;
@@ -28,6 +26,7 @@ export type AiChatResult =
       ok: true;
       reply: string;
       model: string;
+      provider: string;
       usage: { promptTokens: number; completionTokens: number; totalTokens: number; estimatedCostUsd: number };
     }
   | { ok: false; code: 'not_configured' | 'plan_required' | 'rate_limited' | 'upstream_error'; message: string };
@@ -41,12 +40,8 @@ const MONTHLY_AI_CAP: Record<EverittosPlan, number> = {
   enterprise: -1
 };
 
-/** Rough gpt-4o-mini pricing per token (USD). */
-const COST_PER_INPUT_TOKEN = 0.15 / 1_000_000;
-const COST_PER_OUTPUT_TOKEN = 0.6 / 1_000_000;
-
 export function estimateOpenAiCost(promptTokens: number, completionTokens: number): number {
-  return Number((promptTokens * COST_PER_INPUT_TOKEN + completionTokens * COST_PER_OUTPUT_TOKEN).toFixed(6));
+  return getActiveAiProvider().estimateCost(promptTokens, completionTokens);
 }
 
 export function aiMonthlyCap(plan: EverittosPlan): number {
@@ -124,11 +119,12 @@ export async function assertAiAllowed(
     };
   }
 
-  if (!openAiConfigured()) {
+  if (!aiConfigured()) {
+    const provider = getActiveAiProvider();
     return {
       ok: false,
       code: 'not_configured',
-      message: 'AI is not configured on this server. Contact your administrator.'
+      message: `${provider.displayName} is not configured on this server. Contact your administrator.`
     };
   }
 
@@ -152,9 +148,14 @@ export async function runAiChat(
   context?: string,
   options?: { feature?: AiFeatureId }
 ): Promise<AiChatResult> {
-  const apiKey = openAiApiKey();
-  if (!apiKey) {
-    return { ok: false, code: 'not_configured', message: 'OPENAI_API_KEY is not configured.' };
+  const provider = getActiveAiProvider();
+
+  if (!provider.isConfigured()) {
+    return {
+      ok: false,
+      code: 'not_configured',
+      message: `${provider.displayName} is not configured. Set AI_PROVIDER and the provider API key.`
+    };
   }
 
   const featureHint = options?.feature ? `Feature: ${options.feature}.` : '';
@@ -169,63 +170,33 @@ export async function runAiChat(
     .filter(Boolean)
     .join('\n\n');
 
-  const payload = {
-    model: openAiModel(),
-    messages: [{ role: 'system', content: systemContext }, ...messages],
+  const result = await provider.chatCompletion({
+    messages,
+    systemPrompt: systemContext,
     temperature: 0.35,
-    max_tokens: 1400
-  };
+    maxTokens: 1400
+  });
 
-  let res: Response;
-  try {
-    res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-  } catch {
-    return { ok: false, code: 'upstream_error', message: 'Unable to reach OpenAI. Try again shortly.' };
+  if (!result.ok) {
+    const code =
+      result.code === 'rate_limited'
+        ? 'rate_limited'
+        : result.code === 'not_configured'
+          ? 'not_configured'
+          : 'upstream_error';
+    return { ok: false, code, message: result.message };
   }
-
-  if (res.status === 429) {
-    return { ok: false, code: 'upstream_error', message: 'OpenAI rate limit reached. Please wait a moment.' };
-  }
-
-  if (!res.ok) {
-    return {
-      ok: false,
-      code: 'upstream_error',
-      message: 'AI request failed. Core EverittOS features are unaffected.'
-    };
-  }
-
-  const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-    model?: string;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-  };
-
-  const reply = json.choices?.[0]?.message?.content?.trim();
-  if (!reply) {
-    return { ok: false, code: 'upstream_error', message: 'No response from AI.' };
-  }
-
-  const promptTokens = json.usage?.prompt_tokens || 0;
-  const completionTokens = json.usage?.completion_tokens || 0;
-  const totalTokens = json.usage?.total_tokens || promptTokens + completionTokens;
 
   return {
     ok: true,
-    reply,
-    model: json.model || openAiModel(),
+    reply: result.reply,
+    model: result.model,
+    provider: result.provider,
     usage: {
-      promptTokens,
-      completionTokens,
-      totalTokens,
-      estimatedCostUsd: estimateOpenAiCost(promptTokens, completionTokens)
+      promptTokens: result.usage.promptTokens,
+      completionTokens: result.usage.completionTokens,
+      totalTokens: result.usage.totalTokens,
+      estimatedCostUsd: result.usage.estimatedCostUsd
     }
   };
 }

@@ -89,5 +89,10 @@ export async function POST(request: Request) {
     usage: result.usage
   });
 
-  return NextResponse.json({ content: result.reply, model: result.model, type: genType });
+  return NextResponse.json({
+    content: result.reply,
+    model: result.model,
+    provider: result.provider,
+    type: genType
+  });
 }

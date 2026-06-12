@@ -135,7 +135,7 @@ export function GlobalCommandPalette() {
               ))}
             </ul>
             <p className="muted global-search-footer">
-              Ask Everitt AI is on the floating button — this search finds records across your workspace.
+              Ask Everitt AI is on the floating button. This search finds records across your workspace.
             </p>
           </div>
         </div>

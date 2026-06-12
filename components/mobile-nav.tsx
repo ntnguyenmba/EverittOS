@@ -25,6 +25,7 @@ type MobileNavProps = {
 
 export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
   const pathname = usePathname() || '/';
+  const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const router = useRouter();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -148,7 +149,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
               />
             </div>
 
-            {!isPaidEverittosPlan(normalized) && canManageBilling(role) ? (
+            {!hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role) ? (
               <Link
                 href="/settings/billing?upgrade=pro"
                 className="btn btn-primary btn-block mobile-nav-drawer-cta"

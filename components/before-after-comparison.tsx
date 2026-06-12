@@ -1,6 +1,7 @@
 'use client';
 
 import type { JobPhotoView } from '@/lib/job-photos-types';
+import { resolvePhotoType } from '@/lib/job-photos-client';
 import { photoTagLabel } from '@/lib/job-photo-tags';
 
 function formatPhotoWhen(value: string | null) {
@@ -61,8 +62,8 @@ type PhotoComparisonGridProps = {
 
 /** Side-by-side pairs when both before and after exist; otherwise single highlights. */
 export function PhotoComparisonSection({ photos }: PhotoComparisonGridProps) {
-  const beforePhotos = photos.filter((p) => p.label === 'before');
-  const afterPhotos = photos.filter((p) => p.label === 'after');
+  const beforePhotos = photos.filter((p) => resolvePhotoType(p) === 'before');
+  const afterPhotos = photos.filter((p) => resolvePhotoType(p) === 'after');
 
   if (beforePhotos.length === 0 && afterPhotos.length === 0) return null;
 

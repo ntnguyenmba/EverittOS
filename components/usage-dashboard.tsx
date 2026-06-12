@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { EVERITTOS_STRIPE_LINKS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { usageLabels, type UsageCounts } from '@/lib/everittos-usage';
 import { limitReached } from '@/lib/plan-limit-utils';
@@ -12,11 +12,11 @@ type UsageDashboardProps = {
 };
 
 function upgradeLink(plan: EverittosPlan): string | null {
-  if (plan === 'free') return EVERITTOS_STRIPE_LINKS.pro;
-  if (plan === 'pro') return EVERITTOS_STRIPE_LINKS.business;
-  if (plan === 'business') return EVERITTOS_STRIPE_LINKS.operations;
-  if (plan === 'operations') return EVERITTOS_STRIPE_LINKS.growth;
-  if (plan === 'growth') return EVERITTOS_STRIPE_LINKS.enterprise;
+  if (plan === 'free') return '/settings/billing?upgrade=pro';
+  if (plan === 'pro') return '/settings/billing?upgrade=business';
+  if (plan === 'business') return '/settings/billing?upgrade=operations';
+  if (plan === 'operations') return '/settings/billing?upgrade=growth';
+  if (plan === 'growth') return '/settings/billing?upgrade=enterprise';
   return null;
 }
 
@@ -35,9 +35,9 @@ export function UsageDashboard({ plan, counts }: UsageDashboardProps) {
       <div className="usage-dashboard-head">
         <p className="muted">{planDisplayName(plan)}</p>
         {link ? (
-          <a className="btn btn-sm" href={link} target="_blank" rel="noopener noreferrer">
+          <Link className="btn btn-sm" href={link}>
             Upgrade
-          </a>
+          </Link>
         ) : null}
       </div>
       <div className="usage-dashboard-stats">

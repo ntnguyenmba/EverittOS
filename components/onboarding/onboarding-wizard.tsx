@@ -32,6 +32,8 @@ import {
   trackOnboardingStepCompleted,
   trackOnboardingStepSkipped
 } from '@/lib/onboarding/analytics';
+import { ActionFeedbackBanner } from '@/components/action-feedback';
+import { errorFeedback, type ActionFeedback } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/lib/roles';
 
@@ -55,7 +57,8 @@ export function OnboardingWizard() {
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const [workspaceError, setWorkspaceError] = useState('');
   const startedTrackedRef = useRef(false);
 
   const [companyName, setCompanyName] = useState('');
@@ -73,6 +76,12 @@ export function OnboardingWizard() {
     if (step >= ONBOARDING_STEP_COUNT - 1) return undefined;
     return t('onboarding.progress', { current: step + 1, total: ONBOARDING_STEP_COUNT });
   }, [step, t]);
+
+  const requireWorkspace = useCallback(() => {
+    if (orgId) return true;
+    setFeedback(errorFeedback('Workspace is still loading. Wait a moment and try again.'));
+    return false;
+  }, [orgId]);
 
   const persistSettings = useCallback(
     async (nextStep: number, options?: { completed?: boolean; skipped?: boolean }) => {
@@ -92,7 +101,7 @@ export function OnboardingWizard() {
 
   const dismissSetup = useCallback(
     async (action: 'skip_all' | 'cancel') => {
-      if (!orgId) return;
+      if (!requireWorkspace()) return;
       setBusy(true);
       const res = await fetch('/api/onboarding/dismiss', {
         method: 'POST',
@@ -102,12 +111,12 @@ export function OnboardingWizard() {
       setBusy(false);
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setMessage(typeof json.error === 'string' ? json.error : 'Unable to leave setup right now.');
+        setFeedback(errorFeedback(typeof json.error === 'string' ? json.error : 'Unable to leave setup right now.'));
         return;
       }
       router.push(dashboardPathForRole(role));
     },
-    [orgId, role, router, step]
+    [requireWorkspace, role, router, step]
   );
 
   const skipAllSetup = useCallback(() => dismissSetup('skip_all'), [dismissSetup]);
@@ -123,7 +132,7 @@ export function OnboardingWizard() {
         return;
       }
       setStep(nextStep);
-      setMessage('');
+      setFeedback(null);
       setBusy(false);
     },
     [orgId, persistSettings, role, router]
@@ -131,29 +140,29 @@ export function OnboardingWizard() {
 
   const completeStep = useCallback(
     async (nextStep: number) => {
-      if (!orgId) return;
+      if (!requireWorkspace()) return;
       setBusy(true);
       await trackOnboardingStepCompleted(orgId, step);
       await advance(nextStep);
       setBusy(false);
     },
-    [advance, orgId, step]
+    [advance, orgId, requireWorkspace, step]
   );
 
   const skipStep = useCallback(
     async (nextStep: number) => {
-      if (!orgId) return;
+      if (!requireWorkspace()) return;
       setBusy(true);
       await trackOnboardingStepSkipped(orgId, step);
       await advance(nextStep);
       setBusy(false);
     },
-    [advance, orgId, step]
+    [advance, orgId, requireWorkspace, step]
   );
 
   const goBack = useCallback((prevStep: number) => {
     setStep(prevStep);
-    setMessage('');
+    setFeedback(null);
   }, []);
 
   const actionLabels = useMemo(
@@ -196,6 +205,10 @@ export function OnboardingWizard() {
       if (!org) {
         await fetch('/api/auth/setup', { method: 'POST' });
         org = await fetchOrganizationContext(user.id);
+      }
+
+      if (!org) {
+        setWorkspaceError('Could not load your workspace. Refresh the page or sign in again.');
       }
 
       if (org) {
@@ -254,7 +267,7 @@ export function OnboardingWizard() {
   }, [router]);
 
   async function saveBusinessProfile() {
-    if (!orgId || !userId) return;
+    if (!requireWorkspace() || !userId) return;
     const trimmed = companyName.trim();
     if (trimmed) {
       await supabase.from('organizations').update({ name: trimmed }).eq('id', orgId);
@@ -271,13 +284,13 @@ export function OnboardingWizard() {
 
   async function sendInvites() {
     if (!hasTeamManagement(plan)) {
-      setMessage(t('onboarding.teamUpgradeRequired'));
+      setFeedback(errorFeedback(t('onboarding.teamUpgradeRequired')));
       return;
     }
 
     const valid = invites.filter((row) => row.email.trim());
     if (valid.length === 0) {
-      setMessage('');
+      setFeedback(null);
       setInviteLinks([]);
       await completeStep(4);
       return;
@@ -297,7 +310,7 @@ export function OnboardingWizard() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setMessage(json.error || t('onboarding.inviteFailed'));
+        setFeedback(errorFeedback(json.error || t('onboarding.inviteFailed')));
         return;
       }
       if (json.acceptUrl) links.push(json.acceptUrl);
@@ -306,11 +319,11 @@ export function OnboardingWizard() {
 
     setInviteLinks(links);
     if (needsCopy) {
-      setMessage(t('onboarding.inviteLinkReady'));
+      setFeedback({ kind: 'info', message: t('onboarding.inviteLinkReady') });
       return;
     }
 
-    setMessage('');
+    setFeedback(null);
     await completeStep(4);
   }
 
@@ -350,7 +363,7 @@ export function OnboardingWizard() {
       await createJobRecord(title, jobCustomer.trim() || null, jobDate || null);
       await completeStep(6);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Unable to create job.');
+      setFeedback(errorFeedback(err instanceof Error ? err.message : 'Unable to create job.'));
     }
   }
 
@@ -368,6 +381,12 @@ export function OnboardingWizard() {
 
   return (
     <OnboardingShell role={role}>
+      {workspaceError ? (
+        <p className="auth-message auth-message-error" role="alert">
+          {workspaceError}
+        </p>
+      ) : null}
+      <ActionFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       <div className="onboarding-progress" aria-hidden={step >= ONBOARDING_STEP_COUNT - 1}>
         <div
           className="onboarding-progress-bar"
@@ -540,11 +559,6 @@ export function OnboardingWizard() {
               {t('common.addAnother')}
             </button>
           </div>
-          {message ? (
-            <p className="auth-message auth-message-error" role="alert">
-              {message}
-            </p>
-          ) : null}
           {inviteLinks.length > 0 ? (
             <div className="invite-link-row">
               {inviteLinks.map((url) => (
@@ -634,11 +648,6 @@ export function OnboardingWizard() {
               <input className="input" type="date" value={jobDate} onChange={(e) => setJobDate(e.target.value)} />
             </label>
           </div>
-          {message ? (
-            <p className="auth-message auth-message-error" role="alert">
-              {message}
-            </p>
-          ) : null}
           <OnboardingActions
             continueLabel={actionLabels.continue}
             skipThisStepLabel={exitActions.skipThisStepLabel}

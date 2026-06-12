@@ -1,11 +1,42 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { JOB_PHOTO_SELECT, attachSignedUrls } from '@/lib/job-photos-client';
 import { isValidUuid } from '@/lib/input-validation';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
+import type { JobPhotoRecord } from '@/lib/job-photos-types';
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, { params }: RouteParams) {
+  const { id: jobId } = await params;
+  if (!isValidUuid(jobId)) {
+    return NextResponse.json({ error: 'Invalid job id' }, { status: 400 });
+  }
+
+  const supabase = await createServerSupabase();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from('job_photos')
+    .select(JOB_PHOTO_SELECT)
+    .eq('job_id', jobId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  const photos = await attachSignedUrls(supabase, (data || []) as JobPhotoRecord[]);
+  return NextResponse.json({ photos });
+}
 
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { id: jobId } = await params;

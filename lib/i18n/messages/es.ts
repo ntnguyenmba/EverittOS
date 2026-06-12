@@ -235,7 +235,7 @@ export const messages: Messages = {
       collectOperations: 'Datos operativos: trabajos, clientes, trabajadores, horarios y fotos.',
       collectActivity: 'Registros de actividad: acciones en su espacio de trabajo.',
       collectPasskeys:
-        'Llaves de acceso (opcional): credenciales criptográficas en su dispositivo o gestor de contraseñas. EverittOS no recibe ni almacena datos biométricos.',
+        'Las llaves de acceso aún no están habilitadas. Si se agregan después, las credenciales permanecerían en su dispositivo.',
       retention: 'Los datos se conservan mientras su cuenta esté activa y se eliminan según su solicitud.',
       preferencesTitle: 'Preferencias de comunicación',
       marketingEmails: 'Correos de marketing',
@@ -277,8 +277,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Llaves de acceso',
-      passkeysBody:
-        'Las llaves de acceso le permiten iniciar sesión con su dispositivo, navegador, gestor de contraseñas, desbloqueo biométrico o llave de seguridad. EverittOS no recibe ni almacena datos biométricos.',
+      passkeysBody: 'Las llaves de acceso aún no están habilitadas. Use correo y contraseña por ahora.',
       compromised: 'Si cree que su cuenta o dispositivo se ha visto comprometido, contáctenos en'
     },
     account: {
@@ -295,6 +294,8 @@ export const messages: Messages = {
       subscriptionNote: 'Cancele, reanude o cambie planes desde facturación.',
       subscriptionOwnerOnly: 'Solo propietarios y administradores pueden cambiar la facturación.',
       openBilling: 'Abrir facturación',
+      languageTitle: 'Idioma',
+      languageNote: 'Aplica a navegación, panel, trabajos, clientes, trabajadores, horario, facturación y ajustes.',
       disableTitle: 'Desactivar cuenta',
       disableNote:
         'Desactivar cierra su sesión y bloquea el acceso. Los datos de su organización se conservan. Nada se elimina.',
@@ -316,7 +317,7 @@ export const messages: Messages = {
     acceptTerms: 'Acepto los Términos de servicio',
     acceptPrivacy: 'Acepto la Política de privacidad',
     consentRequired: 'Debe aceptar los Términos y la Política de privacidad para crear una cuenta.',
-    signInMethods: 'Inicie sesión con correo, Google o llave de acceso.'
+    signInMethods: 'Inicie sesión con correo o Google.'
   },
   nav: {
     today: 'Hoy',
@@ -336,6 +337,7 @@ export const messages: Messages = {
     automations: 'Automatizaciones',
     clients: 'Clientes portal',
     schedule: 'Horario',
+    expenses: 'Gastos',
     workers: 'Trabajadores',
     team: 'Equipo',
     activity: 'Actividad',
@@ -458,6 +460,8 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Facturación',
+    pricingTitle: 'Planes y precios',
+    pricingSubtitle: 'Elija un plan, aplique un código promocional y pague de forma segura con Stripe.',
     currentPlan: 'Plan',
     status: 'Estado',
     renewalDate: 'Fecha de renovación',
@@ -465,8 +469,31 @@ export const messages: Messages = {
     noCustomer: 'Aún no hay cliente de Stripe. Elija un plan de pago abajo.',
     cancel: 'Cancelar suscripción',
     resume: 'Reanudar suscripción',
-    portalUnavailable: 'El portal de Stripe no está configurado. Contacte soporte.',
-    upgradeOptions: 'Opciones de actualización'
+    portalUnavailable: 'El portal de facturación aún no está configurado.',
+    portalNotConfigured: 'El portal de facturación aún no está configurado.',
+    upgradeOptions: 'Opciones de actualización',
+    promo: {
+      label: 'Código promocional',
+      placeholder: 'FOUNDING',
+      apply: 'Aplicar',
+      validating: 'Validando…',
+      invalid: 'Este código promocional no es válido.',
+      applied: '{name} aplicado',
+      savings: 'Ahorra {amount} por mes',
+      expires: 'El código vence el {date}',
+      expiresLabel: 'Vence',
+      activeTitle: 'Descuento activo',
+      couponName: 'Cupón',
+      code: 'Código promocional',
+      discount: 'Descuento',
+      checkoutNote: 'Los descuentos los valida Stripe antes del pago. Los precios se actualizan al aplicar un código.',
+      checkoutSuccess: 'Pago completado. Su suscripción se actualizará en breve.',
+      checkoutCancelled: 'El pago fue cancelado. No se realizó ningún cargo.',
+      checkoutFailed: 'No se pudo iniciar el pago. Inténtelo de nuevo o contacte soporte.',
+      startingCheckout: 'Iniciando pago…',
+      applyFirst: 'Aplique un código promocional válido antes del pago.',
+      signInNote: '¿Ya tiene una cuenta?'
+    }
   },
   language: {
     title: 'Idioma',

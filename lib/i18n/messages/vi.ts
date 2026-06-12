@@ -234,7 +234,7 @@ export const messages: Messages = {
       collectOperations: 'Dữ liệu vận hành: công việc, khách hàng, nhân viên, lịch và ảnh.',
       collectActivity: 'Nhật ký hoạt động: hành động trong không gian làm việc.',
       collectPasskeys:
-        'Passkey (tùy chọn): thông tin xác thực mã hóa trên thiết bị hoặc trình quản lý mật khẩu. EverittOS không nhận hoặc lưu dữ liệu sinh trắc học.',
+        'Passkey chưa được bật. Nếu thêm sau này, thông tin xác thực sẽ ở trên thiết bị của bạn.',
       retention: 'Dữ liệu được giữ khi tài khoản hoạt động và xóa theo yêu cầu của bạn.',
       preferencesTitle: 'Tùy chọn liên lạc',
       marketingEmails: 'Email marketing',
@@ -276,8 +276,7 @@ export const messages: Messages = {
     },
     security: {
       passkeysTitle: 'Passkey',
-      passkeysBody:
-        'Passkey cho phép bạn đăng nhập bằng thiết bị, trình duyệt, trình quản lý mật khẩu, mở khóa sinh trắc học hoặc khóa bảo mật. EverittOS không nhận hoặc lưu dữ liệu sinh trắc học.',
+      passkeysBody: 'Passkey chưa được bật. Hãy dùng email và mật khẩu hiện tại.',
       compromised: 'Nếu bạn cho rằng tài khoản hoặc thiết bị bị xâm phạm, hãy liên hệ'
     },
     account: {
@@ -294,6 +293,8 @@ export const messages: Messages = {
       subscriptionNote: 'Hủy, tiếp tục hoặc đổi gói trong cài đặt thanh toán.',
       subscriptionOwnerOnly: 'Chỉ chủ sở hữu và quản trị viên mới có thể thay đổi thanh toán.',
       openBilling: 'Mở cài đặt thanh toán',
+      languageTitle: 'Ngôn ngữ',
+      languageNote: 'Áp dụng cho điều hướng, bảng điều khiển, công việc, khách hàng, nhân sự, lịch, thanh toán và cài đặt.',
       disableTitle: 'Vô hiệu hóa tài khoản',
       disableNote:
         'Vô hiệu hóa sẽ đăng xuất và chặn đăng nhập. Dữ liệu tổ chức được giữ nguyên. Không có gì bị xóa.',
@@ -315,7 +316,7 @@ export const messages: Messages = {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
     consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
-    signInMethods: 'Đăng nhập bằng email, Google hoặc passkey.'
+    signInMethods: 'Đăng nhập bằng email hoặc Google.'
   },
   nav: {
     today: 'Hôm nay',
@@ -335,6 +336,7 @@ export const messages: Messages = {
     automations: 'Tự động hóa',
     clients: 'Khách hàng portal',
     schedule: 'Lịch',
+    expenses: 'Chi phí',
     workers: 'Nhân viên',
     team: 'Nhóm',
     activity: 'Hoạt động',
@@ -457,6 +459,8 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Thanh toán',
+    pricingTitle: 'Gói và giá',
+    pricingSubtitle: 'Chọn gói, áp mã khuyến mãi và thanh toán an toàn qua Stripe.',
     currentPlan: 'Gói',
     status: 'Trạng thái',
     renewalDate: 'Ngày gia hạn',
@@ -464,8 +468,31 @@ export const messages: Messages = {
     noCustomer: 'Chưa có khách hàng Stripe. Chọn gói trả phí bên dưới.',
     cancel: 'Hủy đăng ký',
     resume: 'Tiếp tục đăng ký',
-    portalUnavailable: 'Cổng Stripe chưa được cấu hình. Liên hệ hỗ trợ.',
-    upgradeOptions: 'Tùy chọn nâng cấp'
+    portalUnavailable: 'Cổng thanh toán chưa được cấu hình.',
+    portalNotConfigured: 'Cổng thanh toán chưa được cấu hình.',
+    upgradeOptions: 'Tùy chọn nâng cấp',
+    promo: {
+      label: 'Mã khuyến mãi',
+      placeholder: 'FOUNDING',
+      apply: 'Áp dụng',
+      validating: 'Đang xác minh…',
+      invalid: 'Mã khuyến mãi này không hợp lệ.',
+      applied: 'Đã áp dụng {name}',
+      savings: 'Tiết kiệm {amount} mỗi tháng',
+      expires: 'Mã hết hạn {date}',
+      expiresLabel: 'Hết hạn',
+      activeTitle: 'Giảm giá đang áp dụng',
+      couponName: 'Phiếu giảm giá',
+      code: 'Mã khuyến mãi',
+      discount: 'Giảm giá',
+      checkoutNote: 'Stripe xác minh giảm giá trước khi thanh toán. Giá cập nhật sau khi áp mã.',
+      checkoutSuccess: 'Thanh toán hoàn tất. Đăng ký sẽ cập nhật trong giây lát.',
+      checkoutCancelled: 'Thanh toán đã hủy. Không có khoản phí nào.',
+      checkoutFailed: 'Không thể bắt đầu thanh toán. Thử lại hoặc liên hệ hỗ trợ.',
+      startingCheckout: 'Đang bắt đầu thanh toán…',
+      applyFirst: 'Áp dụng mã khuyến mãi hợp lệ trước khi thanh toán.',
+      signInNote: 'Đã có tài khoản?'
+    }
   },
   language: {
     title: 'Ngôn ngữ',

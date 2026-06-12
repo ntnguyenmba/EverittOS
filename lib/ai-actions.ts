@@ -168,7 +168,7 @@ export async function executeAiAction(
       });
       return {
         ok: true,
-        message: 'Email draft ready — copy from the conversation.',
+        message: 'Email draft ready. Copy from the conversation.',
         entityType: 'email',
         entityId: null
       };

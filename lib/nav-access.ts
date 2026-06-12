@@ -72,6 +72,7 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/workers':
     case '/activity':
     case '/analytics':
+    case '/expenses':
     case '/workflows':
       return canSeeOrgWideData(role);
     case '/team':
@@ -150,9 +151,6 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
     return 'business';
   }
   if (path === '/activity' && !limits.activityLog) {
-    return 'business';
-  }
-  if (path === '/analytics' && !limits.advancedReporting) {
     return 'business';
   }
   if (path === '/portal/client' && !limits.clientPortal) {

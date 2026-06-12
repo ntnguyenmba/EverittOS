@@ -11,6 +11,7 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import {
   buildCustomerUpdatePayload,
+  customerDisplayAddress,
   customerDisplayName,
   type CustomerRecord
 } from '@/lib/customer-record';
@@ -72,7 +73,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     setDisplayName(customerDisplayName(customer as CustomerRecord));
     setPhone(customer.phone || '');
     setEmail(customer.email || '');
-    setAddress(customer.address || '');
+    setAddress(customerDisplayAddress(customer as CustomerRecord, ''));
     setNotes(customer.notes || '');
     setLogoPath((customer as CustomerRecord).logo_path || null);
 
