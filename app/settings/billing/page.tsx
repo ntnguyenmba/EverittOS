@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { AiUsagePanel } from '@/components/ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import {
@@ -245,6 +246,10 @@ function BillingSettingsContent() {
 
       <div className="settings-card">
         <UsageDashboard plan={plan} counts={usage} />
+      </div>
+
+      <div className="settings-card">
+        <AiUsagePanel plan={plan} />
       </div>
 
       <div className="settings-card">

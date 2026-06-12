@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveActiveOrganizationId } from '@/lib/organization-active';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 
 export type OrganizationContext = {
@@ -10,7 +11,8 @@ export type OrganizationContext = {
 
 export async function fetchOrganizationContextForUser(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  preferredOrgId?: string | null
 ): Promise<OrganizationContext | null> {
   const { data: profile } = await supabase
     .from('profiles')
@@ -18,18 +20,7 @@ export async function fetchOrganizationContextForUser(
     .eq('id', userId)
     .maybeSingle();
 
-  let orgId = profile?.organization_id;
-
-  if (!orgId) {
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('organization_id, role')
-      .eq('user_id', userId)
-      .eq('active', true)
-      .limit(1)
-      .maybeSingle();
-    orgId = membership?.organization_id;
-  }
+  const orgId = await resolveActiveOrganizationId(supabase, userId, preferredOrgId || profile?.organization_id);
 
   if (!orgId) return null;
 

@@ -1,0 +1,50 @@
+import type { EverittosPlan } from '@/lib/everittos-plans';
+import { canAccessFeature } from '@/lib/plan-access';
+
+/** AI capability identifiers — extend without breaking callers. */
+export type AiFeatureId =
+  | 'ask_everitt'
+  | 'ai_chat'
+  | 'ai_memory'
+  | 'knowledge_search'
+  | 'proposal_generation'
+  | 'sop_generation'
+  | 'email_drafting'
+  | 'meeting_summary'
+  | 'workflow_suggestions'
+  | 'ai_actions'
+  | 'business_insights';
+
+export const AI_FEATURE_LABELS: Record<AiFeatureId, string> = {
+  ask_everitt: 'Ask Everitt',
+  ai_chat: 'AI Chat',
+  ai_memory: 'AI Memory',
+  knowledge_search: 'Knowledge Vault AI Search',
+  proposal_generation: 'AI Proposal Generation',
+  sop_generation: 'AI SOP Generation',
+  email_drafting: 'AI Email Drafting',
+  meeting_summary: 'AI Meeting Summaries',
+  workflow_suggestions: 'AI Workflow Suggestions',
+  ai_actions: 'AI Actions',
+  business_insights: 'AI Business Insights'
+};
+
+/** Plans with any AI access (Business + Enterprise in EverittOS). */
+export const AI_REQUIRED_PLAN = 'business' as const;
+
+export function planHasAiAccess(plan: EverittosPlan): boolean {
+  return canAccessFeature(plan, 'aiAccess');
+}
+
+export function isAiFeatureAvailable(_feature: AiFeatureId, plan: EverittosPlan): boolean {
+  return planHasAiAccess(plan);
+}
+
+export const ASK_EVERITT_SUGGESTIONS = [
+  'What jobs are scheduled tomorrow?',
+  'Which leads came in this month?',
+  'Show proposals awaiting approval',
+  'Draft a follow-up email for a new lead',
+  'Create an onboarding SOP for new clients',
+  'What is our pipeline looking like?'
+] as const;

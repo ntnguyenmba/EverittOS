@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import {
-  assertAiAllowed,
-  logAiGeneration,
-  runAiChat,
-  type AiChatMessage
-} from '@/lib/ai-server';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
+import { AI_ACTION_SYSTEM_HINT, parseProposedAction } from '@/lib/ai-actions';
+import { buildOrganizationAiContext } from '@/lib/ai-context';
+import type { AiFeatureId } from '@/lib/ai-features';
+import { verifyAiRequest } from '@/lib/ai-gate';
+import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
+import { canSeeOrgWideData } from '@/lib/permissions';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -21,62 +18,87 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
   }
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
-    return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
-  }
-
-  const { plan } = await resolveOrganizationPlan(supabase, user.id);
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+    return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
   }
 
-  const gate = await assertAiAllowed(admin, plan, org.organizationId);
+  const body = (await request.json()) as {
+    prompt?: string;
+    messages?: AiChatMessage[];
+    feature?: AiFeatureId;
+  };
+  const feature = body.feature || 'ask_everitt';
+
+  const gate = await verifyAiRequest(supabase, admin, user.id, { feature });
   if (!gate.ok) {
-    const status = gate.code === 'plan_required' ? 403 : gate.code === 'rate_limited' ? 429 : 503;
-    return NextResponse.json({ error: gate.message, code: gate.code, requiredPlan: 'business' }, { status });
+    const status =
+      gate.code === 'plan_required' || gate.code === 'subscription_inactive' || gate.code === 'permission_denied'
+        ? 403
+        : gate.code === 'rate_limited'
+          ? 429
+          : gate.code === 'unauthorized' || gate.code === 'no_organization'
+            ? 401
+            : 503;
+    return NextResponse.json(
+      {
+        error: gate.message,
+        code: gate.code,
+        requiredPlan: gate.requiredPlan || 'business',
+        locked: gate.code === 'plan_required'
+      },
+      { status }
+    );
   }
 
-  const body = (await request.json()) as { prompt?: string; messages?: AiChatMessage[] };
+  if (!canSeeOrgWideData(gate.org.role)) {
+    return NextResponse.json(
+      { error: 'Your role cannot use Ask Everitt.', code: 'permission_denied', locked: false },
+      { status: 403 }
+    );
+  }
+
   const prompt = body.prompt?.trim();
   if (!prompt) {
     return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
   }
 
-  const { data: memory } = await admin
-    .from('organization_ai_memory')
-    .select('company_profile, services, brand_voice, pricing_rules')
-    .eq('organization_id', org.organizationId)
-    .maybeSingle();
+  const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
 
-  const contextParts = [
-    memory?.company_profile,
-    memory?.services ? `Services: ${memory.services}` : null,
-    memory?.brand_voice ? `Brand voice: ${memory.brand_voice}` : null,
-    memory?.pricing_rules ? `Pricing: ${memory.pricing_rules}` : null
-  ].filter(Boolean);
+  const messages: AiChatMessage[] = body.messages?.length
+    ? [...body.messages, { role: 'user', content: prompt }]
+    : [{ role: 'user', content: prompt }];
 
-  const result = await runAiChat(
-    body.messages?.length ? [...body.messages, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }],
-    contextParts.join('\n')
-  );
+  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${orgContext}`, { feature });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.message, code: result.code }, { status: 503 });
+    const status = result.code === 'rate_limited' ? 429 : 503;
+    return NextResponse.json({ error: result.message, code: result.code }, { status });
   }
 
+  const { cleanReply, action } = parseProposedAction(result.reply);
+
   await logAiGeneration(admin, {
-    organizationId: org.organizationId,
+    organizationId: gate.org.organizationId,
     userId: user.id,
     prompt,
-    response: result.reply,
+    response: cleanReply,
     model: result.model,
-    feature: 'ask_everitt'
+    feature,
+    usage: result.usage
   });
 
-  return NextResponse.json({ reply: result.reply, model: result.model });
+  return NextResponse.json({
+    reply: cleanReply,
+    model: result.model,
+    action,
+    usage: {
+      monthlyUsed: gate.monthlyUsed + 1,
+      monthlyCap: gate.monthlyCap,
+      unlimited: gate.unlimited
+    }
+  });
 }

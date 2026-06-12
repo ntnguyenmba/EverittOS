@@ -38,7 +38,11 @@ const AUTH_PREFIXES = [
   '/billing',
   '/workflows',
   '/portal',
-  '/admin'
+  '/admin',
+  '/forms',
+  '/templates',
+  '/reviews',
+  '/leads'
 ];
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
@@ -56,7 +60,8 @@ const PUBLIC_API_PREFIXES = [
   '/api/auth/sign-out',
   '/api/auth/signup-rate-limit',
   '/api/stripe/webhook',
-  '/api/team/accept'
+  '/api/team/accept',
+  '/api/forms/public'
 ];
 
 function isPublicApiPath(pathname: string) {
@@ -363,6 +368,10 @@ export async function middleware(request: NextRequest) {
     '/knowledge',
     '/automations',
     '/clients',
+    '/forms',
+    '/templates',
+    '/reviews',
+    '/leads',
     '/workers',
     '/team',
     '/activity',
@@ -428,6 +437,11 @@ export const config = {
     '/workflows/:path*',
     '/portal/:path*',
     '/admin/:path*',
+    '/forms/:path*',
+    '/templates/:path*',
+    '/reviews/:path*',
+    '/leads/:path*',
+    '/f/:path*',
     '/login',
     '/signup'
   ]

@@ -77,5 +77,18 @@ export const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   photo_uploaded: 'Photo uploaded',
   report_generated: 'Report generated',
   status_changed: 'Status changed',
-  schedule_changed: 'Schedule changed'
+  schedule_changed: 'Schedule changed',
+  org_switched: 'Workspace switched',
+  form_created: 'Form created',
+  form_updated: 'Form updated',
+  form_deleted: 'Form deleted',
+  lead_created: 'Lead created',
+  template_created: 'Template created',
+  template_updated: 'Template updated',
+  template_deleted: 'Template deleted',
+  template_duplicated: 'Template duplicated',
+  review_request_created: 'Review request created',
+  review_request_updated: 'Review request updated',
+  review_submitted: 'Review submitted',
+  ai_action_executed: 'AI action executed'
 };

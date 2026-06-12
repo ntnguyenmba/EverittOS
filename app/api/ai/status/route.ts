@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { AI_REQUIRED_PLAN, planHasAiAccess } from '@/lib/ai-features';
+import { verifyAiRequest } from '@/lib/ai-gate';
+import { getAiUsageStats } from '@/lib/ai-server';
 import { openAiConfigured } from '@/lib/ai-config';
-import { aiMonthlyCap, countAiGenerationsThisMonth } from '@/lib/ai-server';
-import { canAccessFeature } from '@/lib/plan-access';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -21,28 +22,36 @@ export async function GET() {
   }
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org) {
-    return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
-  }
-
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  const allowed = canAccessFeature(plan, 'aiAccess');
   const configured = openAiConfigured();
+  const allowed = planHasAiAccess(plan);
 
-  let used = 0;
-  const cap = aiMonthlyCap(plan);
   const admin = createAdminSupabase();
-  if (admin && allowed) {
-    used = await countAiGenerationsThisMonth(admin, org.organizationId);
+  let usage = null;
+  let gateStatus: { ok: boolean; code?: string; message?: string } = { ok: allowed && configured };
+
+  if (admin && org) {
+    if (allowed) {
+      const gate = await verifyAiRequest(supabase, admin, user.id);
+      gateStatus = gate.ok
+        ? { ok: true }
+        : { ok: false, code: gate.code, message: gate.message };
+      if (gate.ok || gate.code === 'rate_limited') {
+        usage = await getAiUsageStats(admin, org.organizationId, plan);
+      }
+    }
   }
 
   return NextResponse.json({
-    allowed,
+    allowed: allowed && gateStatus.ok,
     configured,
     plan,
-    requiredPlan: 'business',
-    monthlyCap: cap,
-    monthlyUsed: used,
-    unlimited: cap < 0
+    requiredPlan: AI_REQUIRED_PLAN,
+    locked: !allowed,
+    lockedMessage: allowed
+      ? null
+      : 'Ask Everitt is available on Business and Enterprise plans.',
+    gate: gateStatus,
+    usage
   });
 }

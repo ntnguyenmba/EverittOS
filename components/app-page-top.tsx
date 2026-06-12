@@ -1,19 +1,19 @@
 'use client';
 
 import { AppBackButton } from '@/components/app-back-button';
+import { OrgSwitcher } from '@/components/org-switcher';
 
 type AppPageTopProps = {
   role?: string | null;
   showBackButton?: boolean;
 };
 
-/** Shared top row for back navigation, aligned with page content. */
+/** Shared top row: org switcher and back navigation. */
 export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
-  if (!showBackButton) return null;
-
   return (
     <div className="app-page-top">
-      <AppBackButton role={role} />
+      <OrgSwitcher />
+      {showBackButton ? <AppBackButton role={role} /> : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { AskEveritt } from '@/components/ask-everitt';
+import { AskEverittCommand } from '@/components/ask-everitt-command';
 import { AppFooter } from '@/components/app-footer';
 import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageTop } from '@/components/app-page-top';
@@ -31,10 +31,10 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       <Sidebar plan={plan} role={role} />
       <main id="main-content" className="main">
         <AppPageTop role={role} showBackButton={showBackButton} />
+        {showAi ? <AskEverittCommand plan={plan} /> : null}
         {children}
         <AppFooter />
       </main>
-      {showAi ? <AskEveritt plan={plan} /> : null}
     </div>
   );
 }

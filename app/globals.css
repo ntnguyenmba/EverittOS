@@ -2913,7 +2913,200 @@ html[data-deployment='production'] #vercel-toolbar {
   line-height: 1.55;
 }
 
-/* Ask Everitt global */
+/* Ask Everitt command bar (Spotlight-style) */
+.everitt-cmd-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.everitt-cmd-trigger-inline {
+  max-width: none;
+  width: auto;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.everitt-cmd-placeholder {
+  color: var(--text-muted);
+}
+
+.everitt-cmd-kbd {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text-muted);
+}
+
+.everitt-cmd-kbd-muted {
+  flex-shrink: 0;
+}
+
+.everitt-cmd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(42, 42, 42, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh 16px 24px;
+}
+
+.everitt-cmd-palette {
+  width: min(680px, 100%);
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+}
+
+.everitt-cmd-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+
+.everitt-cmd-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  padding: 10px 4px;
+  outline: none;
+}
+
+.everitt-cmd-locked {
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.everitt-cmd-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 8px 8px;
+}
+
+.everitt-cmd-chip {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.everitt-cmd-hint,
+.everitt-cmd-usage,
+.everitt-cmd-notice {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.everitt-cmd-notice {
+  color: var(--text);
+}
+
+.everitt-cmd-reply {
+  margin: 8px 10px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.everitt-cmd-action {
+  margin: 8px 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.everitt-cmd-search {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.everitt-cmd-section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  margin: 0;
+}
+
+.everitt-cmd-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.everitt-cmd-result {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 2px 10px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.everitt-cmd-result:hover {
+  background: var(--bg);
+}
+
+.everitt-cmd-result-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.everitt-cmd-footer {
+  padding: 10px;
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+}
+
+.ai-usage-panel h3 {
+  margin-top: 0;
+}
+
+.ai-usage-locked {
+  text-align: left;
+}
+
+/* Legacy FAB — removed from UI */
 .ask-everitt-fab {
   position: fixed;
   right: 20px;
@@ -2978,6 +3171,159 @@ html[data-deployment='production'] #vercel-toolbar {
   margin-top: 18px;
 }
 
+/* Global search */
+.global-search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.global-search-palette {
+  width: min(640px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.global-search-input {
+  width: 100%;
+}
+
+.global-search-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.global-search-results {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.global-search-result {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 4px 12px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+}
+
+.global-search-result:hover {
+  background: var(--bg);
+}
+
+.global-search-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.global-search-title {
+  font-weight: 500;
+}
+
+.global-search-sub {
+  grid-column: 2;
+  font-size: 13px;
+}
+
+.global-search-footer {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+/* Organization switcher */
+.org-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 13px;
+}
+
+.org-switcher-label {
+  color: var(--text-muted);
+}
+
+.org-switcher-select {
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.org-switcher-single,
+.org-switcher-loading {
+  margin-left: auto;
+  font-size: 13px;
+}
+
+/* Public forms */
+.public-form-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.public-form-card {
+  width: min(480px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.public-form-field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.public-form-field span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.code-block {
+  overflow: auto;
+  padding: 12px;
+  margin: 8px 0;
+  font-size: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.template-preview {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 960px) {
   .command-center-grid {
     grid-template-columns: 1fr;
@@ -2985,5 +3331,14 @@ html[data-deployment='production'] #vercel-toolbar {
 
   .command-center-sidebar {
     order: 2;
+  }
+
+  .org-switcher {
+    flex-wrap: wrap;
+  }
+
+  .global-search-trigger {
+    width: 100%;
+    justify-content: space-between;
   }
 }

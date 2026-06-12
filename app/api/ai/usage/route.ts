@@ -1,0 +1,44 @@
+import { NextResponse } from 'next/server';
+import { verifyAiRequest } from '@/lib/ai-gate';
+import { getAiUsageStats } from '@/lib/ai-server';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
+import { createServerSupabase } from '@/lib/supabase-server';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
+  }
+
+  const orgCtx = await fetchOrganizationContextForUser(supabase, user.id);
+  const { plan } = await resolveOrganizationPlan(supabase, user.id);
+
+  if (!orgCtx) {
+    return NextResponse.json({ hasAccess: false, plan, usage: null, canViewBilling: false });
+  }
+
+  const stats = await getAiUsageStats(admin, orgCtx.organizationId, plan);
+  const gate = await verifyAiRequest(supabase, admin, user.id);
+
+  return NextResponse.json({
+    hasAccess: gate.ok,
+    plan,
+    usage: stats,
+    canViewBilling: canManageBilling(normalizeRole(orgCtx.role))
+  });
+}

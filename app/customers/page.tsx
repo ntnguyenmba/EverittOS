@@ -23,6 +23,9 @@ type Customer = {
   email: string | null;
   address: string | null;
   notes: string | null;
+  pipeline_stage: string | null;
+  lead_source: string | null;
+  record_type: string | null;
   created_at: string | null;
 };
 
@@ -62,7 +65,7 @@ export default function CustomersPage() {
     const org = await fetchOrganizationContext(user.id);
     let query = supabase
       .from('customers')
-      .select('id, name, phone, email, address, notes, created_at')
+      .select('id, name, phone, email, address, notes, pipeline_stage, lead_source, record_type, created_at')
       .order('created_at', { ascending: false });
     if (org?.organizationId) {
       query = query.eq('organization_id', org.organizationId);
@@ -192,6 +195,10 @@ export default function CustomersPage() {
             customers.map((customer) => (
               <div key={customer.id} className="card" style={{ marginTop: 12 }}>
                 <h3>{customer.name}</h3>
+                <p className="muted">
+                  {(customer.pipeline_stage || 'lead').replace('_', ' ')}
+                  {customer.lead_source ? ` · ${customer.lead_source}` : ''}
+                </p>
                 <p>{customer.phone || 'No phone'}</p>
                 <p>{customer.email || 'No email'}</p>
                 <p>{customer.address || 'No address'}</p>
