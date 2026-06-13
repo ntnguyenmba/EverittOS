@@ -1,0 +1,163 @@
+/* Dashboard repair layer.
+   Keep this small and loaded after the luxury refresh so it fixes layout only. */
+
+body:has(.today-page) .app-page-content,
+body:has(.today-page) .today-page {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+.today-page {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(18px, 2.5vw, 28px);
+  align-items: start;
+}
+
+.today-page > .page-header,
+.today-page > .dashboard-revenue-snapshot,
+.today-page > .dashboard-business-activity,
+.today-page > .onboarding-support-promo,
+.today-page > .card:last-child {
+  grid-column: 1 / -1;
+}
+
+.today-page > .dashboard-quick-actions-card {
+  grid-column: span 5;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.today-page > .dashboard-today-card {
+  grid-column: span 7;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.today-page > .dashboard-today-card:nth-of-type(3) {
+  grid-column: span 6;
+}
+
+.dashboard-quick-actions-card h2,
+.dashboard-today-card h2 {
+  position: static;
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-quick-actions-grid,
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.quick-action-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 112px;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.quick-action-tile::before {
+  position: static;
+  flex: 0 0 auto;
+  display: block;
+  margin: 0 0 18px;
+}
+
+.quick-action-tile,
+.dashboard-section-link,
+.dashboard-today-row {
+  text-decoration: none;
+}
+
+.dashboard-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-section-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dashboard-quiet-empty,
+.loading-state {
+  position: static;
+  display: block;
+  margin: 0;
+  width: 100%;
+}
+
+.app-authenticated-header {
+  max-width: 1180px;
+  margin: 0 auto clamp(24px, 4vw, 44px);
+}
+
+.app-authenticated-header-search,
+.app-authenticated-header-search-only {
+  width: min(100%, 620px);
+  margin-inline: auto;
+}
+
+.everitt-cmd-trigger-header {
+  width: 100%;
+}
+
+@media (min-width: 1180px) {
+  .dashboard-quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .today-page > .dashboard-quick-actions-card,
+  .today-page > .dashboard-today-card,
+  .today-page > .dashboard-today-card:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-quick-actions-grid,
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .today-page {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .today-page > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .dashboard-quick-actions-grid,
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-section-head {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-section-links {
+    justify-content: flex-start;
+  }
+}
