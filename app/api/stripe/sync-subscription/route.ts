@@ -27,12 +27,17 @@ function planFromAmount(amount: number | null | undefined): EverittosPlan | null
   return null;
 }
 
+function productPlanMetadata(product: string | Stripe.Product | Stripe.DeletedProduct | null | undefined): string | null {
+  if (!product || typeof product === 'string') return null;
+  if ('deleted' in product && product.deleted) return null;
+  return product.metadata?.plan || null;
+}
+
 function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
   if (!price) return null;
-  const product = typeof price.product === 'string' ? null : price.product;
   return (
     normalizeStripePlan(price.metadata?.plan) ||
-    normalizeStripePlan(product?.metadata?.plan) ||
+    normalizeStripePlan(productPlanMetadata(price.product)) ||
     planFromAmount(price.unit_amount)
   );
 }
