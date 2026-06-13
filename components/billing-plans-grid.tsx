@@ -21,7 +21,6 @@ type StripeCapabilities = {
 type BillingPlansGridProps = {
   currentPlan: EverittosPlan;
   highlightPlan?: EverittosPlan;
-  /** Applied promo code passed to Stripe checkout */
   promoCode?: string;
   promoPreview?: PromoDiscountPreview | null;
 };
@@ -44,7 +43,7 @@ export function BillingPlansGrid({
   }, []);
 
   const checkoutEnabled = Boolean(capabilities?.checkout);
-  const selfServePlanChanges = checkoutEnabled || Boolean(capabilities?.portal);
+  const selfServePlanChanges = checkoutEnabled || Boolean(capabilities?.portal) || Object.keys(EVERITTOS_STRIPE_LINKS).length > 0;
   const appliedPromoCode = promoPreview?.code || promoCode.trim();
 
   return (
@@ -54,9 +53,10 @@ export function BillingPlansGrid({
           const action = planCardAction(normalizedCurrent, tier.id);
           const isCurrent = action.type === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS];
+          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
           const canCheckoutThisPlan =
             checkoutEnabled && tier.id !== 'free' && (capabilities?.checkoutPlans || []).includes(tier.id);
+          const canUsePaymentLink = tier.id !== 'free' && Boolean(fallbackHref);
           const showPromoPricing =
             promoPreview &&
             tier.id === (highlightPlan && highlightPlan !== 'free' ? highlightPlan : 'pro');
@@ -107,7 +107,13 @@ export function BillingPlansGrid({
                 />
               ) : null}
 
-              {action.type === 'choose' && !canCheckoutThisPlan ? (
+              {action.type === 'choose' && !canCheckoutThisPlan && canUsePaymentLink ? (
+                <a className="btn btn-primary btn-block" href={fallbackHref}>
+                  {action.label}
+                </a>
+              ) : null}
+
+              {action.type === 'choose' && !canCheckoutThisPlan && !canUsePaymentLink ? (
                 <a className="btn btn-primary btn-block" href={supportMailtoHref(`EverittOS ${tier.name} plan`)}>
                   {t('billing.contactBillingSupport')}
                 </a>
@@ -143,5 +149,4 @@ export function BillingPlansGrid({
   );
 }
 
-/** Exported for tests and reuse */
 export { choosePlanButtonLabel };
