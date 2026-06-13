@@ -88,11 +88,12 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
         </p>
       ) : null}
 
-      <p className="muted billing-plans-footnote">
-        {t('billing.plansFootnote')}{' '}
-        <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
-      </p>
-      <p className="muted billing-plans-footnote">Discount and promotional codes can be entered during Stripe checkout.</p>
+      <div className="billing-plans-footnote-group">
+        <p className="muted billing-plans-footnote">{t('billing.plansFootnote')}</p>
+        <p className="muted billing-plans-footnote billing-legal-links">
+          <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
+        </p>
+      </div>
     </div>
   );
 }
