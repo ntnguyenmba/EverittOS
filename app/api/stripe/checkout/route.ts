@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { appUrl } from '@/lib/app-url';
-import { normalizePlan } from '@/lib/everittos-plans';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
 import { getStripeClient } from '@/lib/stripe-server';
@@ -11,6 +12,105 @@ import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
 
 export const runtime = 'nodejs';
+
+function planFromAmount(amount: number | null | undefined): EverittosPlan | null {
+  const cents = amount || 0;
+  if (cents === 900 || cents === 9) return 'pro';
+  if (cents === 3900 || cents === 39) return 'business';
+  if (cents === 14900 || cents === 149) return 'operations';
+  if (cents === 39900 || cents === 399) return 'growth';
+  if (cents === 79900 || cents === 799) return 'enterprise';
+  return null;
+}
+
+function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
+  if (!price) return null;
+  const product =
+    typeof price.product === 'string'
+      ? null
+      : 'deleted' in price.product && price.product.deleted
+        ? null
+        : price.product;
+
+  const fromPrice = normalizePlan(price.metadata?.plan);
+  if (fromPrice !== 'free') return fromPrice;
+
+  const fromProduct = normalizePlan(product?.metadata?.plan);
+  if (fromProduct !== 'free') return fromProduct;
+
+  return planFromAmount(price.unit_amount);
+}
+
+function planFromSubscription(sub: Stripe.Subscription): EverittosPlan | null {
+  const direct = normalizePlan(sub.metadata?.plan || sub.metadata?.planKey);
+  if (direct !== 'free') return direct;
+
+  for (const item of sub.items.data) {
+    const plan = planFromPrice(item.price);
+    if (plan && plan !== 'free') return plan;
+  }
+
+  return null;
+}
+
+async function activeSubscriptionForCustomer(stripe: NonNullable<ReturnType<typeof getStripeClient>>, customerId: string) {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'all',
+    limit: 20,
+    expand: ['data.items.data.price.product']
+  });
+
+  return (
+    subscriptions.data.find((subscription) => subscription.status === 'active' || subscription.status === 'trialing') ||
+    subscriptions.data.find((subscription) => subscription.status === 'past_due' || subscription.status === 'unpaid') ||
+    null
+  );
+}
+
+async function findExistingCustomer(stripe: NonNullable<ReturnType<typeof getStripeClient>>, email: string) {
+  const customers = await stripe.customers.list({ email, limit: 10 });
+  return customers.data.find((customer) => !customer.deleted) || null;
+}
+
+async function syncExistingSubscription(input: {
+  userId: string;
+  email: string;
+  customerId: string;
+  subscription: Stripe.Subscription;
+  plan: EverittosPlan;
+}) {
+  const admin = createAdminSupabase();
+  if (!admin) return;
+
+  const status = input.subscription.status === 'active' || input.subscription.status === 'trialing' ? `everittos_${input.plan}` : input.subscription.status;
+  const periodEnd = input.subscription.current_period_end
+    ? new Date(input.subscription.current_period_end * 1000).toISOString()
+    : null;
+
+  await admin
+    .from('profiles')
+    .update({
+      plan: input.plan,
+      subscription_status: status,
+      stripe_customer_id: input.customerId
+    })
+    .eq('id', input.userId);
+
+  await admin.from('everittos_subscriptions').upsert(
+    {
+      user_id: input.userId,
+      email: input.email,
+      plan: input.plan,
+      stripe_customer_id: input.customerId,
+      stripe_subscription_id: input.subscription.id,
+      status: input.subscription.status === 'active' || input.subscription.status === 'trialing' ? 'active' : input.subscription.status,
+      current_period_end: periodEnd,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'stripe_subscription_id' }
+  );
+}
 
 export async function POST(request: Request) {
   const stripe = getStripeClient();
@@ -49,6 +149,50 @@ export async function POST(request: Request) {
 
   if (!email) {
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
+  }
+
+  let customerId = profile?.stripe_customer_id || null;
+  let customer: Stripe.Customer | null = null;
+
+  if (customerId) {
+    try {
+      const retrievedCustomer = await stripe.customers.retrieve(customerId);
+      if (!('deleted' in retrievedCustomer && retrievedCustomer.deleted)) {
+        customer = retrievedCustomer;
+      }
+    } catch {
+      customerId = null;
+    }
+  }
+
+  if (!customerId) {
+    customer = await findExistingCustomer(stripe, email);
+    customerId = customer?.id || null;
+  }
+
+  if (customerId) {
+    const existingSubscription = await activeSubscriptionForCustomer(stripe, customerId);
+    if (existingSubscription) {
+      const existingPlan = planFromSubscription(existingSubscription) || plan;
+      await syncExistingSubscription({
+        userId: user.id,
+        email,
+        customerId,
+        subscription: existingSubscription,
+        plan: existingPlan
+      });
+
+      return NextResponse.json(
+        {
+          error: 'You already have an active subscription. We refreshed your billing status instead of creating another checkout.',
+          code: 'already_subscribed',
+          plan: existingPlan,
+          status: existingSubscription.status,
+          redirect: '/settings/billing'
+        },
+        { status: 409 }
+      );
+    }
   }
 
   const priceId = stripePriceIdForPlan(plan);
@@ -111,8 +255,8 @@ export async function POST(request: Request) {
     subscription_data: { metadata }
   };
 
-  if (profile?.stripe_customer_id) {
-    sessionParams.customer = profile.stripe_customer_id;
+  if (customerId) {
+    sessionParams.customer = customerId;
     delete sessionParams.customer_creation;
   } else {
     sessionParams.customer_email = email;
