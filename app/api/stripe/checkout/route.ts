@@ -33,16 +33,22 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!canManageBilling(normalizeRole(profile?.role))) {
-    return NextResponse.json({ error: 'Only workspace owners and admins can start checkout.' }, { status: 403 });
+  const role = normalizeRole(profile?.role || 'owner');
+  if (!canManageBilling(role)) {
+    return NextResponse.json({ error: 'Only workspace owners and admins can start checkout.', role }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => ({}))) as { plan?: string; promoCode?: string };
   const plan = normalizePlan(body.plan);
   const promoCode = (body.promoCode || '').trim();
+  const email = (profile?.email || user.email || '').trim().toLowerCase();
 
   if (!isPaidCheckoutPlan(plan)) {
     return NextResponse.json({ error: 'Select a paid plan to checkout.' }, { status: 400 });
+  }
+
+  if (!email) {
+    return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
   }
 
   const priceId = stripePriceIdForPlan(plan);
@@ -84,31 +90,32 @@ export async function POST(request: Request) {
     };
   }
 
+  const metadata = {
+    plan,
+    planKey: plan,
+    user_id: user.id,
+    userId: user.id,
+    email,
+    organization_id: profile?.organization_id || '',
+    ...(promoCode ? { promotion_code: promoCode.toUpperCase(), promoCode: promoCode.toUpperCase() } : {})
+  };
+
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: appUrl('/settings/billing?checkout=success'),
     cancel_url: appUrl('/settings/billing?checkout=cancelled'),
     client_reference_id: plan,
-    metadata: {
-      plan,
-      user_id: user.id,
-      ...(promoCode ? { promotion_code: promoCode.toUpperCase() } : {})
-    },
-    subscription_data: {
-      metadata: {
-        plan,
-        email: profile?.email || user.email || '',
-        user_id: user.id,
-        ...(promoCode ? { promotion_code: promoCode.toUpperCase() } : {})
-      }
-    }
+    metadata,
+    customer_creation: 'always',
+    subscription_data: { metadata }
   };
 
   if (profile?.stripe_customer_id) {
     sessionParams.customer = profile.stripe_customer_id;
-  } else if (profile?.email || user.email) {
-    sessionParams.customer_email = profile?.email || user.email || undefined;
+    delete sessionParams.customer_creation;
+  } else {
+    sessionParams.customer_email = email;
   }
 
   Object.assign(sessionParams, checkoutPromotionParams(promotionCodeId));
