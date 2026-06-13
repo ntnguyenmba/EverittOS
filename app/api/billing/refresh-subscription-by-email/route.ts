@@ -141,8 +141,9 @@ async function refreshByEmail(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!canManageBilling(normalizeRole(profile?.role))) {
-    return NextResponse.json({ error: 'Only workspace owners and admins can refresh billing.' }, { status: 403 });
+  const role = normalizeRole(profile?.role || 'owner');
+  if (!canManageBilling(role)) {
+    return NextResponse.json({ error: 'Only workspace owners and admins can refresh billing.', role }, { status: 403 });
   }
 
   const admin = createAdminSupabase();
@@ -184,7 +185,7 @@ async function refreshByEmail(request: Request) {
 
   if (!selectedCustomerId || !selectedPlan) {
     return NextResponse.json(
-      { error: `Stripe customer was found for ${checkoutEmail}, but no matching paid plan or subscription was found.` },
+      { error: `Stripe customer was found for ${checkoutEmail}, but no matching paid plan or subscription was found.`, customerIds },
       { status: 404 }
     );
   }
@@ -197,7 +198,7 @@ async function refreshByEmail(request: Request) {
     : null;
   const discount = selectedSubscription ? await extractSubscriptionDiscount(stripe, selectedSubscription) : undefined;
 
-  await admin
+  const { error: profileUpdateError } = await admin
     .from('profiles')
     .update({
       plan,
@@ -207,8 +208,12 @@ async function refreshByEmail(request: Request) {
     })
     .eq('id', user.id);
 
+  if (profileUpdateError) {
+    return NextResponse.json({ error: profileUpdateError.message, step: 'profile_update' }, { status: 500 });
+  }
+
   if (selectedSubscription) {
-    await admin.from('everittos_subscriptions').upsert(
+    const { error: subscriptionUpsertError } = await admin.from('everittos_subscriptions').upsert(
       {
         user_id: user.id,
         email: (profile?.email || user.email).trim().toLowerCase(),
@@ -222,7 +227,17 @@ async function refreshByEmail(request: Request) {
       },
       { onConflict: 'stripe_subscription_id' }
     );
+
+    if (subscriptionUpsertError) {
+      return NextResponse.json({ error: subscriptionUpsertError.message, step: 'subscription_upsert' }, { status: 500 });
+    }
   }
+
+  const { data: refreshedProfile } = await admin
+    .from('profiles')
+    .select('plan, subscription_status, stripe_customer_id')
+    .eq('id', user.id)
+    .maybeSingle();
 
   await admin.from('subscription_events').insert({
     email: (profile?.email || user.email).trim().toLowerCase(),
@@ -246,7 +261,8 @@ async function refreshByEmail(request: Request) {
     stripeCustomerId: selectedCustomerId,
     stripeSubscriptionId: selectedSubscription?.id || null,
     checkoutSessionId: completedCheckout?.session.id || null,
-    currentPeriodEnd
+    currentPeriodEnd,
+    refreshedProfile
   });
 }
 
