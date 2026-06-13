@@ -15,7 +15,7 @@ import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everit
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { canCancelSubscription, canResumeSubscription } from '@/lib/stripe-subscription';
+import { canResumeSubscription } from '@/lib/stripe-subscription';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { useTranslation } from '@/components/locale-provider';
 import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
@@ -61,14 +61,12 @@ function BillingSettingsContent() {
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [stripeCapabilities, setStripeCapabilities] = useState<{
     checkout: boolean;
     portal: boolean;
-    cancel: boolean;
     resume: boolean;
   } | null>(null);
   const [couponName, setCouponName] = useState<string | null>(null);
@@ -135,7 +133,6 @@ function BillingSettingsContent() {
         setStripeCapabilities({
           checkout: Boolean(caps.checkout),
           portal: Boolean(caps.portal),
-          cancel: Boolean(caps.cancel),
           resume: Boolean(caps.resume)
         });
       }
@@ -159,22 +156,6 @@ function BillingSettingsContent() {
     }
 
     window.location.href = json.url;
-  }
-
-  async function cancelSubscription() {
-    setCancelLoading(true);
-    setMessage('');
-    const res = await fetch('/api/stripe/cancel-subscription', { method: 'POST' });
-    const json = await res.json();
-    setCancelLoading(false);
-
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to cancel subscription.');
-      return;
-    }
-
-    setSubscriptionStatus('canceled');
-    setMessage(json.message || 'Subscription updated.');
   }
 
   async function resumeSubscription() {
@@ -202,6 +183,8 @@ function BillingSettingsContent() {
   }
 
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus);
+  const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
+  const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
 
   return (
     <SettingsShell plan={plan} role={role} title={t('billing.title')} description={t('billing.description')}>
@@ -284,14 +267,14 @@ function BillingSettingsContent() {
         ) : null}
 
         <div className="settings-actions">
-          {stripeCustomerId && stripeCapabilities?.portal ? (
+          {canOpenPortal ? (
             <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-              {portalLoading ? 'Opening…' : t('billing.manageBilling')}
+              {portalLoading ? 'Opening...' : t('billing.manageBilling')}
             </button>
           ) : null}
-          {stripeCustomerId && stripeCapabilities?.cancel && canCancelSubscription(subscriptionStatus) ? (
-            <button type="button" className="btn" disabled={cancelLoading} onClick={cancelSubscription}>
-              {cancelLoading ? 'Working...' : t('billing.cancelPlan')}
+          {showPortalCancel ? (
+            <button type="button" className="btn" disabled={portalLoading} onClick={openBillingPortal}>
+              {portalLoading ? 'Opening...' : t('billing.cancelPlan')}
             </button>
           ) : null}
           {stripeCustomerId && stripeCapabilities?.resume && canResumeSubscription(subscriptionStatus) ? (
@@ -300,20 +283,13 @@ function BillingSettingsContent() {
             </button>
           ) : null}
           {!stripeCustomerId ? <p className="muted">{t('billing.noCustomer')}</p> : null}
-          {stripeCustomerId && (!stripeCapabilities?.portal || !stripeCapabilities?.cancel) && plan !== 'free' ? (
+          {stripeCustomerId && !stripeCapabilities?.portal && plan !== 'free' ? (
             <p className="billing-support-fallback">
               {t('billing.planChangesSupport')} <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
             </p>
           ) : null}
         </div>
         {message ? <p>{message}</p> : null}
-      </div>
-
-      <div className="settings-card billing-promo-card">
-        <h3>Promo codes</h3>
-        <p className="muted">
-          Discount and promotional codes can be entered securely during Stripe checkout. Use your EverittOS code on the Stripe payment page.
-        </p>
       </div>
 
       <div className="settings-card">
