@@ -45,12 +45,8 @@ export function OrgSwitcher() {
   }
 
   if (!isFeatureEnabled('multiOrgSwitcher')) return null;
-  if (loading) return <span className="org-switcher-loading muted">…</span>;
-  if (memberships.length <= 1) {
-    const only = memberships[0];
-    if (!only) return null;
-    return <span className="org-switcher-single">{only.organizationName}</span>;
-  }
+  if (loading) return null;
+  if (memberships.length <= 1) return null;
 
   return (
     <label className="org-switcher">
