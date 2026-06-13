@@ -1,50 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { choosePlanButtonLabel, planCardAction } from '@/lib/billing-plan-actions';
 import { EVERITTOS_PLANS, EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
-import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 import { useTranslation } from '@/components/locale-provider';
-
-type StripeCapabilities = {
-  stripeConfigured: boolean;
-  checkout: boolean;
-  portal: boolean;
-  cancel: boolean;
-  resume: boolean;
-  checkoutPlans: EverittosPlan[];
-};
 
 type BillingPlansGridProps = {
   currentPlan: EverittosPlan;
   highlightPlan?: EverittosPlan;
-  promoCode?: string;
-  promoPreview?: PromoDiscountPreview | null;
 };
 
-export function BillingPlansGrid({
-  currentPlan,
-  highlightPlan,
-  promoCode = '',
-  promoPreview = null
-}: BillingPlansGridProps) {
+export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
-  const [capabilities, setCapabilities] = useState<StripeCapabilities | null>(null);
-
-  useEffect(() => {
-    fetch('/api/stripe/capabilities', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => setCapabilities(json))
-      .catch(() => setCapabilities(null));
-  }, []);
-
-  const checkoutEnabled = Boolean(capabilities?.checkout);
-  const selfServePlanChanges = checkoutEnabled || Boolean(capabilities?.portal) || Object.keys(EVERITTOS_STRIPE_LINKS).length > 0;
-  const appliedPromoCode = promoPreview?.code || promoCode.trim();
+  const selfServePlanChanges = Object.keys(EVERITTOS_STRIPE_LINKS).length > 0;
 
   return (
     <div className="billing-plans-grid-wrap">
@@ -53,13 +23,8 @@ export function BillingPlansGrid({
           const action = planCardAction(normalizedCurrent, tier.id);
           const isCurrent = action.type === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
-          const canCheckoutThisPlan =
-            checkoutEnabled && tier.id !== 'free' && (capabilities?.checkoutPlans || []).includes(tier.id);
-          const canUsePaymentLink = tier.id !== 'free' && Boolean(fallbackHref);
-          const showPromoPricing =
-            promoPreview &&
-            tier.id === (highlightPlan && highlightPlan !== 'free' ? highlightPlan : 'pro');
+          const paymentLink = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
+          const canUsePaymentLink = tier.id !== 'free' && Boolean(paymentLink);
 
           return (
             <div
@@ -76,15 +41,7 @@ export function BillingPlansGrid({
             >
               {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
               <h3>{tier.name}</h3>
-              {showPromoPricing && promoPreview ? (
-                <p className="pricing-plan-price">
-                  <span className="promo-code-price-original">{promoPreview.originalPriceLabel}</span>{' '}
-                  <strong>{promoPreview.discountedPriceLabel}</strong>
-                  <span className="muted"> / mo</span>
-                </p>
-              ) : (
-                <p className="pricing-plan-price">{tier.priceLabel}</p>
-              )}
+              <p className="pricing-plan-price">{tier.priceLabel}</p>
               <p className="muted">{tier.headline}</p>
               <ul className="billing-plan-features">
                 {tier.features.slice(0, 4).map((feature) => (
@@ -96,24 +53,13 @@ export function BillingPlansGrid({
                 <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
               ) : null}
 
-              {action.type === 'choose' && canCheckoutThisPlan ? (
-                <PlanCheckoutButton
-                  plan={action.plan}
-                  label={action.label}
-                  promoCode={appliedPromoCode}
-                  promoPreview={promoPreview}
-                  fallbackHref={fallbackHref}
-                  className="btn btn-primary btn-block"
-                />
-              ) : null}
-
-              {action.type === 'choose' && !canCheckoutThisPlan && canUsePaymentLink ? (
-                <a className="btn btn-primary btn-block" href={fallbackHref}>
+              {action.type === 'choose' && canUsePaymentLink ? (
+                <a className="btn btn-primary btn-block" href={paymentLink}>
                   {action.label}
                 </a>
               ) : null}
 
-              {action.type === 'choose' && !canCheckoutThisPlan && !canUsePaymentLink ? (
+              {action.type === 'choose' && !canUsePaymentLink ? (
                 <a className="btn btn-primary btn-block" href={supportMailtoHref(`EverittOS ${tier.name} plan`)}>
                   {t('billing.contactBillingSupport')}
                 </a>
@@ -144,7 +90,9 @@ export function BillingPlansGrid({
         {t('billing.plansFootnote')}{' '}
         <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
       </p>
-      <p className="muted billing-plans-footnote">{t('billing.promo.checkoutNote')}</p>
+      <p className="muted billing-plans-footnote">
+        Discount and promotional codes can be entered during Stripe checkout.
+      </p>
     </div>
   );
 }
