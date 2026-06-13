@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { navLabel, navSectionLabel } from '@/lib/nav-i18n';
@@ -71,7 +70,7 @@ function NavLinkRow({
   const active = isNavLinkActive(pathname, href);
 
   return (
-    <Link
+    <a
       href={destination}
       className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName)}
       aria-current={active ? 'page' : undefined}
@@ -85,7 +84,7 @@ function NavLinkRow({
           <span className="nav-plan-chip">{planShortBadgeName(requiredPlan)}</span>
         </span>
       ) : null}
-    </Link>
+    </a>
   );
 }
 
@@ -199,14 +198,14 @@ export function AppNavItems({
       })}
 
       {unread > 0 ? (
-        <Link
+        <a
           href="/notifications"
           className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`}
           onClick={onNavigate}
         >
           <span className="nav-item-label">{t('nav.notifications')}</span>
           <span className="nav-unread-chip">{unread}</span>
-        </Link>
+        </a>
       ) : null}
     </nav>
   );
