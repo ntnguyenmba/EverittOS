@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { choosePlanButtonLabel, planCardAction } from '@/lib/billing-plan-actions';
 import { EVERITTOS_PLANS, EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
@@ -23,8 +24,8 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
           const action = planCardAction(normalizedCurrent, tier.id);
           const isCurrent = action.type === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const paymentLink = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
-          const canUsePaymentLink = tier.id !== 'free' && Boolean(paymentLink);
+          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
+          const isPaidChoice = action.type === 'choose' && tier.id !== 'free';
 
           return (
             <div
@@ -49,17 +50,18 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
                 ))}
               </ul>
 
-              {action.type === 'current' ? (
-                <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
+              {action.type === 'current' ? <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p> : null}
+
+              {isPaidChoice ? (
+                <PlanCheckoutButton
+                  plan={action.plan}
+                  label={action.label}
+                  fallbackHref={fallbackHref}
+                  className="btn btn-primary btn-block"
+                />
               ) : null}
 
-              {action.type === 'choose' && canUsePaymentLink ? (
-                <a className="btn btn-primary btn-block" href={paymentLink}>
-                  {action.label}
-                </a>
-              ) : null}
-
-              {action.type === 'choose' && !canUsePaymentLink ? (
+              {action.type === 'choose' && !isPaidChoice ? (
                 <a className="btn btn-primary btn-block" href={supportMailtoHref(`EverittOS ${tier.name} plan`)}>
                   {t('billing.contactBillingSupport')}
                 </a>
@@ -90,9 +92,7 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
         {t('billing.plansFootnote')}{' '}
         <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
       </p>
-      <p className="muted billing-plans-footnote">
-        Discount and promotional codes can be entered during Stripe checkout.
-      </p>
+      <p className="muted billing-plans-footnote">Discount and promotional codes can be entered during Stripe checkout.</p>
     </div>
   );
 }
