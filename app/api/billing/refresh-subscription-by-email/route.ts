@@ -56,6 +56,7 @@ function planFromSubscription(sub: Stripe.Subscription): PaidPlan | null {
 function planFromSession(session: Stripe.Checkout.Session, lineItems: Stripe.ApiList<Stripe.LineItem> | null): PaidPlan | null {
   const direct =
     normalizePaidPlan(session.metadata?.plan) ||
+    normalizePaidPlan(session.metadata?.planKey) ||
     normalizePaidPlan(session.client_reference_id) ||
     planFromAmount(session.amount_subtotal) ||
     planFromAmount(session.amount_total);
@@ -97,6 +98,25 @@ async function getLatestCompletedCheckoutPlan(stripe: Stripe, customerId: string
     if (plan) {
       return { session, plan };
     }
+  }
+
+  return null;
+}
+
+async function getLatestCompletedCheckoutPlanByEmail(stripe: Stripe, email: string) {
+  const sessions = await stripe.checkout.sessions.list({ limit: 100 });
+  for (const session of sessions.data) {
+    if (session.status !== 'complete') continue;
+
+    const sessionEmail = (session.customer_details?.email || session.customer_email || '').trim().toLowerCase();
+    if (sessionEmail !== email) continue;
+
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+      limit: 5,
+      expand: ['data.price.product']
+    });
+    const plan = planFromSession(session, lineItems);
+    if (plan) return { session, plan };
   }
 
   return null;
@@ -153,9 +173,6 @@ async function refreshByEmail(request: Request) {
 
   const stripe = new Stripe(stripeKey);
   const customerIds = await findStripeCustomerIds(stripe, checkoutEmail, profile?.stripe_customer_id);
-  if (customerIds.length === 0) {
-    return NextResponse.json({ error: `No Stripe customer found for ${checkoutEmail}.` }, { status: 404 });
-  }
 
   let selectedCustomerId: string | null = null;
   let selectedSubscription: Stripe.Subscription | null = null;
@@ -183,9 +200,22 @@ async function refreshByEmail(request: Request) {
     }
   }
 
-  if (!selectedCustomerId || !selectedPlan) {
+  if (!selectedPlan) {
+    const checkout = await getLatestCompletedCheckoutPlanByEmail(stripe, checkoutEmail);
+    if (checkout) {
+      const customerId = typeof checkout.session.customer === 'string' ? checkout.session.customer : checkout.session.customer?.id || null;
+      selectedCustomerId = customerId;
+      completedCheckout = checkout;
+      selectedPlan = checkout.plan;
+    }
+  }
+
+  if (!selectedPlan) {
     return NextResponse.json(
-      { error: `Stripe customer was found for ${checkoutEmail}, but no matching paid plan or subscription was found.`, customerIds },
+      {
+        error: `No matching paid Stripe subscription or completed checkout was found for ${checkoutEmail}.`,
+        customerIds
+      },
       { status: 404 }
     );
   }
@@ -243,7 +273,7 @@ async function refreshByEmail(request: Request) {
     email: (profile?.email || user.email).trim().toLowerCase(),
     event_type: 'manual.subscription.refresh_by_checkout_email',
     plan,
-    stripe_event_id: `manual_${selectedSubscription?.id || completedCheckout?.session.id || selectedCustomerId}_${Date.now()}`,
+    stripe_event_id: `manual_${selectedSubscription?.id || completedCheckout?.session.id || selectedCustomerId || checkoutEmail}_${Date.now()}`,
     payload: {
       checkout_email: checkoutEmail,
       customer_id: selectedCustomerId,
