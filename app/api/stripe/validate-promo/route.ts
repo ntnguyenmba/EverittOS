@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   const stripe = getStripeClient();
   if (!stripe) {
-    return NextResponse.json({ error: 'Stripe is not configured.' }, { status: 503 });
+    return NextResponse.json({ error: 'Stripe is not configured.', errorCode: 'stripe_not_configured' }, { status: 503 });
   }
 
   const body = (await request.json().catch(() => ({}))) as { code?: string; plan?: string };
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   const result = await validatePromotionCodeForPlan(stripe, code, plan);
   if (!result.valid) {
-    await logPromoCodeFailure({
+    void logPromoCodeFailure({
       userId: user?.id || null,
       organizationId: profile?.organization_id || null,
       stage: 'validate',
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
       plan,
       errorCode: result.errorCode,
       error: result.error
-    });
+    }).catch((error) => console.warn('[promo] failure log skipped', error));
+
     return NextResponse.json(result, { status: 400 });
   }
 
