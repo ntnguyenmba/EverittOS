@@ -18,7 +18,6 @@ import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canResumeSubscription } from '@/lib/stripe-subscription';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { useTranslation } from '@/components/locale-provider';
-import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
@@ -58,7 +57,6 @@ function BillingSettingsContent() {
     locations: 0
   });
   const [subscriptionStatus, setSubscriptionStatus] = useState('free');
-  const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -114,13 +112,12 @@ function BillingSettingsContent() {
 
       const { data: subscription } = await supabase
         .from('everittos_subscriptions')
-        .select('current_period_end, status')
+        .select('status')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (subscription?.current_period_end) setRenewalDate(subscription.current_period_end);
       if (subscription?.status && !profile?.subscription_status) setSubscriptionStatus(subscription.status);
 
       const org = await fetchOrganizationContext(user.id).catch(() => null);
@@ -182,7 +179,6 @@ function BillingSettingsContent() {
     );
   }
 
-  const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus);
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
 
@@ -243,28 +239,11 @@ function BillingSettingsContent() {
       ) : null}
 
       <div className="settings-card">
-        <h3>Current subscription</h3>
+        <h3>Current plan</h3>
         <div className="settings-row">
           <span className="settings-row-label">{t('billing.currentPlan')}</span>
           <span className="settings-row-value">{planDisplayName(plan)}</span>
         </div>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('billing.status')}</span>
-          <span className="settings-row-value">{subscriptionStatus}</span>
-        </div>
-        {renewalDate ? (
-          <div className="settings-row">
-            <span className="settings-row-label">{t('billing.renewalDate')}</span>
-            <span className="settings-row-value">
-              {new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-        ) : null}
-        <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
-        <p className="muted">{subscriptionInfo.message}</p>
-        {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
-          <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
-        ) : null}
 
         <div className="settings-actions">
           {canOpenPortal ? (
