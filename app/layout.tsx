@@ -21,6 +21,7 @@ import './nav.css';
 import './outbound.css';
 import './feedback-toast.css';
 import './everitt-luxury-refresh.css';
+import './dashboard-repair.css';
 
 const inter = Inter({
   subsets: ['latin'],
