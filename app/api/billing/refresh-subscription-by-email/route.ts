@@ -111,7 +111,7 @@ async function findStripeCustomerIds(stripe: Stripe, email: string, existingCust
     if (!customer.deleted) ids.add(customer.id);
   }
 
-  return [...ids];
+  return Array.from(ids);
 }
 
 async function refreshByEmail(request: Request) {
