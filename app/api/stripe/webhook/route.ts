@@ -31,7 +31,12 @@ function planFromAmount(amount: number | null | undefined): EverittosPlan | null
 
 function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
   if (!price) return null;
-  const product = typeof price.product === 'string' ? null : price.product;
+  const product =
+    typeof price.product === 'string'
+      ? null
+      : 'deleted' in price.product && price.product.deleted
+        ? null
+        : price.product;
   return (
     normalizeStripePlan(price.metadata?.plan) ||
     normalizeStripePlan(product?.metadata?.plan) ||
