@@ -106,10 +106,10 @@ async function logSubscriptionEvent(
   stripeEventId: string,
   payload: Record<string, unknown>
 ) {
-  await admin
+  const { error } = await admin
     .from('subscription_events')
-    .insert({ email, event_type: eventType, plan, stripe_event_id: stripeEventId, payload })
-    .catch((error) => console.warn('[stripe-webhook] Subscription event log skipped', error));
+    .insert({ email, event_type: eventType, plan, stripe_event_id: stripeEventId, payload });
+  if (error) console.warn('[stripe-webhook] Subscription event log skipped', error);
 }
 
 async function updateProfilePlan(
