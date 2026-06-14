@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapBookingApiError } from '@/lib/booking/schema';
+import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
+import { processBookingSideEffects } from '@/lib/booking/process-side-effects';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +13,15 @@ export const dynamic = 'force-dynamic';
 function bookingErrorResponse(message: string, fallback: string, status = 400) {
   const mapped = mapBookingApiError(message, fallback);
   return NextResponse.json(mapped, { status: mapped.code === 'schema_missing' ? 503 : status });
+}
+
+async function loadWorkspaceContact(admin: NonNullable<ReturnType<typeof createAdminSupabase>>, orgId: string) {
+  const { data: settings } = await admin
+    .from('organization_settings')
+    .select('timezone, company_phone, company_email')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+  return settings;
 }
 
 export async function GET(request: Request) {
@@ -23,9 +35,7 @@ export async function GET(request: Request) {
 
   let query = ctx.supabase
     .from('bookings')
-    .select(
-      '*, services(name, duration_minutes, price_cents), workers(name)'
-    )
+    .select('*, services(name, duration_minutes, price_cents), workers(name)')
     .eq('organization_id', ctx.workspace.organizationId)
     .order('starts_at', { ascending: true });
 
@@ -48,41 +58,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
-  const body = (await request.json()) as {
-    service_id?: string;
-    worker_id?: string | null;
-    client_name?: string;
-    client_email?: string;
-    client_phone?: string;
-    starts_at?: string;
-    ends_at?: string;
-    notes?: string;
-    status?: string;
-  };
-
-  if (!body.service_id || !body.client_name?.trim() || !body.starts_at || !body.ends_at) {
-    return NextResponse.json({ error: 'Service, client name, and time are required.' }, { status: 400 });
+  const body = (await request.json()) as Record<string, unknown>;
+  const parsed = parseManualBookingInput(body as Parameters<typeof parseManualBookingInput>[0]);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
   const workspaceId = ctx.workspace.organizationId;
+  const admin = createAdminSupabase();
 
   const { data, error } = await ctx.supabase
     .from('bookings')
     .insert({
       organization_id: workspaceId,
       workspace_id: workspaceId,
-      service_id: body.service_id,
-      worker_id: body.worker_id || null,
-      client_name: body.client_name.trim(),
-      client_email: body.client_email?.trim() || null,
-      client_phone: body.client_phone?.trim() || null,
-      starts_at: body.starts_at,
-      ends_at: body.ends_at,
-      notes: body.notes?.trim() || null,
-      status: body.status || 'confirmed',
+      service_id: parsed.serviceId,
+      manual_service_name: parsed.manualServiceName,
+      worker_id: parsed.workerId,
+      staff_name: parsed.staffName,
+      client_name: parsed.clientName,
+      client_email: parsed.clientEmail,
+      client_phone: parsed.clientPhone,
+      starts_at: parsed.startsAt,
+      ends_at: parsed.endsAt,
+      notes: parsed.notes,
+      status: parsed.status,
       source: 'manual'
     })
-    .select('*')
+    .select('*, services(name), workers(name)')
     .single();
 
   if (error) {
@@ -102,5 +105,33 @@ export async function POST(request: Request) {
     `Booking created for ${data.client_name}`
   );
 
-  return NextResponse.json({ ok: true, booking: data, message: 'Booking saved successfully.' });
+  const warnings: string[] = [];
+  let confirmationSent = false;
+
+  if (admin) {
+    const settings = await loadWorkspaceContact(admin, workspaceId);
+    const sideEffects = await processBookingSideEffects(admin, {
+      organizationId: workspaceId,
+      organizationName: ctx.workspace.organizationName,
+      timezone: settings?.timezone || 'America/New_York',
+      booking: data,
+      sourceLabel: 'Manual booking',
+      sendCustomerConfirmation: parsed.sendConfirmation,
+      contactEmail: settings?.company_email || null,
+      contactPhone: settings?.company_phone || null
+    });
+    warnings.push(...sideEffects.warnings);
+    confirmationSent = sideEffects.confirmationSent;
+    if (sideEffects.calendarEventId) {
+      data.google_calendar_event_id = sideEffects.calendarEventId;
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    booking: data,
+    message: warnings.length ? 'Booking saved.' : 'Booking saved.',
+    warnings,
+    confirmationSent
+  });
 }

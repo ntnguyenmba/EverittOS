@@ -38,7 +38,7 @@ export type StaffAvailabilityRecord = {
 export type BookingRecord = {
   id: string;
   organization_id: string;
-  service_id: string;
+  service_id: string | null;
   worker_id: string | null;
   customer_id: string | null;
   client_name: string;
@@ -49,7 +49,12 @@ export type BookingRecord = {
   status: BookingStatus;
   source: string;
   notes: string | null;
+  manual_service_name?: string | null;
+  staff_name?: string | null;
   google_calendar_event_id: string | null;
+  calendar_sync_error?: string | null;
+  confirmation_sent_at?: string | null;
+  staff_notified_at?: string | null;
   cancel_token?: string;
   reschedule_token?: string;
   created_at?: string;

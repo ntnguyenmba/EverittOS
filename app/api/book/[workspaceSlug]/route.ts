@@ -89,6 +89,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const result = await createPublicBooking(admin, {
     organizationId: org.id,
+    organizationName: org.name,
     serviceId: body.service_id,
     workerId: body.worker_id,
     startsAt: body.starts_at,
@@ -100,7 +101,7 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: result.status || 400 });
+    return NextResponse.json({ error: result.error, warnings: result.warnings || [] }, { status: result.status || 400 });
   }
 
   const booking = result.booking as {
@@ -109,6 +110,7 @@ export async function POST(request: Request, context: RouteContext) {
     starts_at: string;
     ends_at: string;
     status: string;
+    client_email?: string | null;
   };
 
   return NextResponse.json({
@@ -120,6 +122,10 @@ export async function POST(request: Request, context: RouteContext) {
       ends_at: booking.ends_at,
       status: booking.status
     },
+    organizationName: org.name,
+    serviceName: result.serviceName || null,
+    confirmationSent: Boolean(result.confirmationSent),
+    warnings: result.warnings || [],
     message: 'Booking confirmed.'
   });
 }

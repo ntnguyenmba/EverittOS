@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BookingShareCard } from '@/components/booking-share-actions';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -190,7 +191,6 @@ export default function ServicesPage() {
     }
   }
 
-  const bookingUrl = bookingSlug ? `/book/${bookingSlug}` : null;
 
   return (
     <AppShell plan={plan} role={role}>
@@ -203,24 +203,13 @@ export default function ServicesPage() {
           <Link className="btn" href="/services/availability">
             Availability
           </Link>
-          {bookingUrl ? (
-            <Link className="btn btn-primary" href={bookingUrl} target="_blank" rel="noopener noreferrer">
-              Open booking page
-            </Link>
-          ) : null}
+          <Link className="btn" href="/bookings">
+            Bookings
+          </Link>
         </div>
       </header>
 
-      {bookingUrl ? (
-        <div className="card" style={{ marginBottom: 18 }}>
-          <p className="muted" style={{ margin: 0 }}>
-            Public booking link:{' '}
-            <Link href={bookingUrl} target="_blank" rel="noopener noreferrer">
-              {typeof window !== 'undefined' ? `${window.location.origin}${bookingUrl}` : bookingUrl}
-            </Link>
-          </p>
-        </div>
-      ) : null}
+      <BookingShareCard bookingSlug={bookingSlug} />
 
       {canManage ? (
         <div className="card form" style={{ marginBottom: 18 }}>

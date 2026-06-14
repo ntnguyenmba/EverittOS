@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { deleteBookingGoogleCalendarEvent } from '@/lib/booking/google-calendar-booking';
 import { findBookingConflicts } from '@/lib/booking/conflicts';
+import { defaultBookingEndIso } from '@/lib/booking/display';
 import { mapBookingApiError } from '@/lib/booking/schema';
-import type { BookingStatus } from '@/lib/booking/types';
+import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const ALLOWED_STATUS: BookingStatus[] = ['confirmed', 'pending', 'cancelled', 'completed', 'no-show'];
+const ALLOWED_STATUS = ['confirmed', 'pending', 'cancelled', 'completed', 'no-show'] as const;
 
 function bookingMutationError(message: string, fallback: string) {
   const mapped = mapBookingApiError(message, fallback);
@@ -27,12 +28,14 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   const body = (await request.json()) as {
-    status?: BookingStatus;
+    status?: string;
     notes?: string;
     starts_at?: string;
     ends_at?: string;
     worker_id?: string | null;
-    service_id?: string;
+    service_id?: string | null;
+    manual_service_name?: string | null;
+    staff_name?: string | null;
     client_name?: string;
     client_email?: string;
     client_phone?: string;
@@ -52,15 +55,20 @@ export async function PATCH(request: Request, context: RouteContext) {
   const payload: Record<string, unknown> = {};
   if (body.notes !== undefined) payload.notes = body.notes?.trim() || null;
   if (body.status !== undefined) {
-    if (!ALLOWED_STATUS.includes(body.status)) {
+    if (!ALLOWED_STATUS.includes(body.status as (typeof ALLOWED_STATUS)[number])) {
       return NextResponse.json({ error: 'Invalid booking status.' }, { status: 400 });
     }
     payload.status = body.status;
   }
   if (body.starts_at !== undefined) payload.starts_at = body.starts_at;
   if (body.ends_at !== undefined) payload.ends_at = body.ends_at;
+  else if (body.starts_at !== undefined && !existing.ends_at) {
+    payload.ends_at = defaultBookingEndIso(body.starts_at, 60);
+  }
   if (body.worker_id !== undefined) payload.worker_id = body.worker_id;
-  if (body.service_id !== undefined) payload.service_id = body.service_id;
+  if (body.manual_service_name !== undefined) payload.manual_service_name = body.manual_service_name?.trim() || null;
+  if (body.staff_name !== undefined) payload.staff_name = body.staff_name?.trim() || null;
+  if (body.service_id !== undefined) payload.service_id = body.service_id || null;
   if (body.client_name !== undefined) payload.client_name = body.client_name.trim();
   if (body.client_email !== undefined) payload.client_email = body.client_email?.trim() || null;
   if (body.client_phone !== undefined) payload.client_phone = body.client_phone?.trim() || null;

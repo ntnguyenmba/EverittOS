@@ -87,6 +87,9 @@ export type BookingCalendarInput = {
   startsAt: string;
   endsAt: string;
   bookingId: string;
+  source?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
 };
 
 export async function createBookingGoogleCalendarEvent(
@@ -106,11 +109,14 @@ export async function createBookingGoogleCalendarEvent(
   }
 
   const calendarId = encodeURIComponent(connection.calendar_id || 'primary');
-  const summary = `${input.serviceName} — ${input.clientName}`;
+  const summary = `Booking: ${input.clientName} - ${input.serviceName}`;
   const description = [
+    input.clientEmail ? `Email: ${input.clientEmail}` : null,
+    input.clientPhone ? `Phone: ${input.clientPhone}` : null,
     input.workerName ? `Staff: ${input.workerName}` : null,
     input.notes ? `Notes: ${input.notes}` : null,
-    `Booking ID: ${input.bookingId}`
+    input.source ? `Source: ${input.source}` : null,
+    `EverittOS booking id: ${input.bookingId}`
   ]
     .filter(Boolean)
     .join('\n');

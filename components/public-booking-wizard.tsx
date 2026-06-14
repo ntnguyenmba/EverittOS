@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
-import { formatServicePrice, formatBookingWhen, type PublicBookingPayload } from '@/lib/booking';
+import { formatServicePrice, formatBookingWhen, generateBookingIcs, bookingIcsFilename, type PublicBookingPayload } from '@/lib/booking';
 
 type Slot = { starts_at: string; ends_at: string; worker_id: string };
 
@@ -28,7 +28,18 @@ export function PublicBookingWizard({ workspaceSlug }: PublicBookPageProps) {
   const [clientPhone, setClientPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [confirmed, setConfirmed] = useState<{ client_name: string; starts_at: string; ends_at: string } | null>(null);
+  const [confirmed, setConfirmed] = useState<{
+    client_name: string;
+    starts_at: string;
+    ends_at: string;
+    id?: string;
+  } | null>(null);
+  const [confirmationMeta, setConfirmationMeta] = useState<{
+    serviceName: string | null;
+    organizationName: string;
+    confirmationSent: boolean;
+    warnings: string[];
+  } | null>(null);
 
   const loadPayload = useCallback(async () => {
     setLoading(true);
@@ -103,7 +114,32 @@ export function PublicBookingWizard({ workspaceSlug }: PublicBookPageProps) {
       return;
     }
     setConfirmed(json.booking);
+    setConfirmationMeta({
+      serviceName: json.serviceName || selectedService?.name || null,
+      organizationName: json.organizationName || payload?.organization_name || 'Your business',
+      confirmationSent: Boolean(json.confirmationSent),
+      warnings: Array.isArray(json.warnings) ? json.warnings : []
+    });
     setStep(5);
+  }
+
+  function downloadCalendarFile() {
+    if (!confirmed || !confirmationMeta) return;
+    const ics = generateBookingIcs({
+      uid: confirmed.id || `${confirmed.starts_at}-${confirmed.client_name}`,
+      title: `${confirmationMeta.serviceName || 'Appointment'} — ${confirmationMeta.organizationName}`,
+      description: `Booking for ${confirmed.client_name}`,
+      startsAt: confirmed.starts_at,
+      endsAt: confirmed.ends_at,
+      organizerName: confirmationMeta.organizationName
+    });
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = bookingIcsFilename(confirmed.id || 'booking');
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   if (loading) {
@@ -270,14 +306,28 @@ export function PublicBookingWizard({ workspaceSlug }: PublicBookPageProps) {
             </>
           ) : null}
 
-          {step === 5 && confirmed ? (
+          {step === 5 && confirmed && confirmationMeta ? (
             <>
-              <h2>You are booked</h2>
-              <p>
-                Thanks, {confirmed.client_name}. Your appointment is confirmed for{' '}
-                {formatBookingWhen(confirmed.starts_at, confirmed.ends_at)}.
-              </p>
-              <p className="muted">A confirmation may be sent if you provided an email address.</p>
+              <h2>Your booking request is confirmed.</h2>
+              <div className="public-booking-confirmation">
+                <p>
+                  <strong>{confirmationMeta.serviceName || 'Appointment'}</strong>
+                </p>
+                <p>{formatBookingWhen(confirmed.starts_at, confirmed.ends_at)}</p>
+                <p>{confirmationMeta.organizationName}</p>
+                <p>{confirmed.client_name}</p>
+              </div>
+              <button type="button" className="btn" onClick={downloadCalendarFile}>
+                Add to calendar
+              </button>
+              {confirmationMeta.confirmationSent ? (
+                <p className="muted">We sent a confirmation email.</p>
+              ) : null}
+              {confirmationMeta.warnings.map((warning) => (
+                <p key={warning} className="auth-message auth-message-warning">
+                  {warning}
+                </p>
+              ))}
             </>
           ) : null}
         </div>

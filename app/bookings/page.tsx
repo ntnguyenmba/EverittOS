@@ -1,19 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { BookingShareCard } from '@/components/booking-share-actions';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import {
   BOOKING_STATUS_LABELS,
+  bookingAppointmentName,
+  bookingCalendarSyncLabel,
   bookingSchemaUnavailableMessage,
+  bookingStaffLabel,
+  formatBookingDetailsText,
   formatBookingWhen,
   formatServicePrice,
   googleCalendarEventUrl,
   type BookingRecord,
-  type BookingStatus,
-  type ServiceRecord
+  type BookingStatus
 } from '@/lib/booking';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -24,11 +28,9 @@ type BookingRow = BookingRecord & {
   workers?: { name: string } | null;
 };
 
-type WorkerOption = { id: string; name: string };
-
 type BookingFormState = {
-  service_id: string;
-  worker_id: string;
+  manual_service_name: string;
+  staff_name: string;
   client_name: string;
   client_email: string;
   client_phone: string;
@@ -36,18 +38,20 @@ type BookingFormState = {
   ends_at: string;
   notes: string;
   status: BookingStatus;
+  send_confirmation: boolean;
 };
 
 const EMPTY_FORM: BookingFormState = {
-  service_id: '',
-  worker_id: '',
+  manual_service_name: '',
+  staff_name: '',
   client_name: '',
   client_email: '',
   client_phone: '',
   starts_at: '',
   ends_at: '',
   notes: '',
-  status: 'confirmed'
+  status: 'confirmed',
+  send_confirmation: false
 };
 
 function toLocalInputValue(iso: string): string {
@@ -80,30 +84,21 @@ export default function BookingsPage() {
   const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
-  const [services, setServices] = useState<ServiceRecord[]>([]);
-  const [workers, setWorkers] = useState<WorkerOption[]>([]);
+  const [bookingSlug, setBookingSlug] = useState<string | null>(null);
   const [schemaMissing, setSchemaMissing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [form, setForm] = useState<BookingFormState>(EMPTY_FORM);
 
-  const activeServices = useMemo(
-    () => services.filter((service) => service.is_active !== false),
-    [services]
-  );
-
-  const loadCatalog = useCallback(async () => {
+  const loadMeta = useCallback(async () => {
     const res = await fetch('/api/services');
     const json = await res.json();
     if (!res.ok) {
-      if (json.code === 'schema_missing') {
-        setSchemaMissing(true);
-      }
+      if (json.code === 'schema_missing') setSchemaMissing(true);
       return;
     }
-    setServices(json.services || []);
-    setWorkers(json.workers || []);
+    setBookingSlug(json.bookingSlug || null);
   }, []);
 
   const load = useCallback(async () => {
@@ -138,8 +133,8 @@ export default function BookingsPage() {
 
   useEffect(() => {
     void load();
-    void loadCatalog();
-  }, [load, loadCatalog]);
+    void loadMeta();
+  }, [load, loadMeta]);
 
   function openCreateForm() {
     setEditBookingId(null);
@@ -151,15 +146,16 @@ export default function BookingsPage() {
     setShowCreateForm(false);
     setEditBookingId(booking.id);
     setForm({
-      service_id: booking.service_id,
-      worker_id: booking.worker_id || '',
+      manual_service_name: booking.manual_service_name || booking.services?.name || '',
+      staff_name: booking.staff_name || booking.workers?.name || '',
       client_name: booking.client_name,
       client_email: booking.client_email || '',
       client_phone: booking.client_phone || '',
       starts_at: toLocalInputValue(booking.starts_at),
       ends_at: toLocalInputValue(booking.ends_at),
       notes: booking.notes || '',
-      status: booking.status
+      status: booking.status,
+      send_confirmation: false
     });
   }
 
@@ -172,17 +168,11 @@ export default function BookingsPage() {
   function updateFormField<K extends keyof BookingFormState>(key: K, value: BookingFormState[K]) {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      if (key === 'service_id' && typeof value === 'string') {
-        const service = activeServices.find((item) => item.id === value);
-        if (service && prev.starts_at) {
-          next.ends_at = addMinutesToLocalInput(prev.starts_at, service.duration_minutes);
-        }
+      if (key === 'starts_at' && typeof value === 'string' && value && !prev.ends_at) {
+        next.ends_at = addMinutesToLocalInput(value, 60);
       }
-      if (key === 'starts_at' && typeof value === 'string') {
-        const service = activeServices.find((item) => item.id === prev.service_id);
-        if (service) {
-          next.ends_at = addMinutesToLocalInput(value, service.duration_minutes);
-        }
+      if (key === 'client_email' && typeof value === 'string' && !editBookingId) {
+        next.send_confirmation = Boolean(value.trim());
       }
       return next;
     });
@@ -190,21 +180,22 @@ export default function BookingsPage() {
 
   async function saveBooking() {
     if (busyId) return;
-    if (!form.service_id || !form.client_name.trim() || !form.starts_at || !form.ends_at) {
-      feedback.error('Service, client name, and time are required.');
+    if (!form.manual_service_name.trim() || !form.client_name.trim() || !form.starts_at) {
+      feedback.error('Add an appointment name, client name, and start time.');
       return;
     }
 
     const payload = {
-      service_id: form.service_id,
-      worker_id: form.worker_id || null,
+      manual_service_name: form.manual_service_name.trim(),
+      staff_name: form.staff_name.trim() || undefined,
       client_name: form.client_name.trim(),
       client_email: form.client_email.trim() || undefined,
       client_phone: form.client_phone.trim() || undefined,
       starts_at: fromLocalInputValue(form.starts_at),
-      ends_at: fromLocalInputValue(form.ends_at),
+      ends_at: form.ends_at ? fromLocalInputValue(form.ends_at) : undefined,
       notes: form.notes.trim() || undefined,
-      status: form.status
+      status: editBookingId ? form.status : 'confirmed',
+      send_confirmation: !editBookingId ? form.send_confirmation : undefined
     };
 
     setBusyId(editBookingId || 'create');
@@ -221,6 +212,9 @@ export default function BookingsPage() {
       return;
     }
 
+    if (json.warnings?.length) {
+      json.warnings.forEach((warning: string) => feedback.error(warning));
+    }
     feedback.success(json.message || 'Booking saved.');
     closeForms();
     void load();
@@ -260,35 +254,49 @@ export default function BookingsPage() {
     void load();
   }
 
-  function renderBookingForm(title: string) {
+  async function resendConfirmation(id: string) {
+    if (busyId) return;
+    setBusyId(id);
+    const res = await fetch(`/api/bookings/${id}/resend-confirmation`, { method: 'POST' });
+    const json = await res.json();
+    setBusyId(null);
+    if (!res.ok) {
+      feedback.error(json.error || 'Unable to resend confirmation.');
+      return;
+    }
+    feedback.success(json.message || 'Confirmation email sent.');
+  }
+
+  async function copyDetails(booking: BookingRow) {
+    try {
+      await navigator.clipboard.writeText(formatBookingDetailsText(booking));
+      feedback.success('Booking details copied.');
+    } catch {
+      feedback.error('Unable to copy booking details.');
+    }
+  }
+
+  function renderBookingForm(title: string, isEdit: boolean) {
     return (
       <div className="form booking-form" style={{ marginBottom: 18 }}>
         <h3>{title}</h3>
         <label>
-          Service
-          <select
+          Service or appointment
+          <input
             className="input"
-            value={form.service_id}
-            onChange={(e) => updateFormField('service_id', e.target.value)}
-          >
-            <option value="">Select service</option>
-            {activeServices.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name} ({service.duration_minutes} min)
-              </option>
-            ))}
-          </select>
+            placeholder="Example: Haircut, house cleaning, consultation, estimate visit"
+            value={form.manual_service_name}
+            onChange={(e) => updateFormField('manual_service_name', e.target.value)}
+          />
         </label>
         <label>
           Staff
-          <select className="input" value={form.worker_id} onChange={(e) => updateFormField('worker_id', e.target.value)}>
-            <option value="">Any staff</option>
-            {workers.map((worker) => (
-              <option key={worker.id} value={worker.id}>
-                {worker.name}
-              </option>
-            ))}
-          </select>
+          <input
+            className="input"
+            placeholder="Optional"
+            value={form.staff_name}
+            onChange={(e) => updateFormField('staff_name', e.target.value)}
+          />
         </label>
         <label>
           Client name
@@ -320,20 +328,32 @@ export default function BookingsPage() {
             onChange={(e) => updateFormField('ends_at', e.target.value)}
           />
         </label>
-        <label>
-          Status
-          <select className="input" value={form.status} onChange={(e) => updateFormField('status', e.target.value as BookingStatus)}>
-            {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {isEdit ? (
+          <label>
+            Status
+            <select className="input" value={form.status} onChange={(e) => updateFormField('status', e.target.value as BookingStatus)}>
+              {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label>
           Notes
           <textarea className="input" rows={2} value={form.notes} onChange={(e) => updateFormField('notes', e.target.value)} />
         </label>
+        {!isEdit ? (
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={form.send_confirmation}
+              onChange={(e) => updateFormField('send_confirmation', e.target.checked)}
+            />
+            Send confirmation to customer
+          </label>
+        ) : null}
         <div className="inline-actions">
           <button type="button" className="btn btn-primary" disabled={Boolean(busyId)} onClick={() => void saveBooking()}>
             {busyId ? 'Saving…' : 'Save booking'}
@@ -371,19 +391,25 @@ export default function BookingsPage() {
         </div>
       ) : null}
 
+      {!schemaMissing ? <BookingShareCard bookingSlug={bookingSlug} /> : null}
+
       <div className="card">
-        {showCreateForm && canManage ? renderBookingForm('New booking') : null}
+        {showCreateForm && canManage ? renderBookingForm('New booking', false) : null}
         {loading ? <p>Loading bookings…</p> : null}
         {!loading && !schemaMissing && bookings.length === 0 && !showCreateForm ? (
-          <p className="muted">No bookings yet. Add services and share your booking page.</p>
+          <p className="muted">No bookings yet. Create a manual booking or share your public booking page.</p>
         ) : null}
 
         {bookings.map((booking) => {
           const calendarUrl = googleCalendarEventUrl(booking.google_calendar_event_id);
+          const appointmentName = bookingAppointmentName(booking);
+          const staffLabel = bookingStaffLabel(booking);
+          const calendarLabel = bookingCalendarSyncLabel(booking);
+
           if (editBookingId === booking.id) {
             return (
               <div key={booking.id} className="list-row booking-row">
-                {renderBookingForm('Edit booking')}
+                {renderBookingForm('Edit booking', true)}
               </div>
             );
           }
@@ -392,12 +418,14 @@ export default function BookingsPage() {
             <div key={booking.id} className="list-row booking-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ flex: 1, minWidth: 220 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>{booking.client_name}</strong>
+                  <strong>{appointmentName}</strong>
                   <span className={`status-pill status-${booking.status}`}>{BOOKING_STATUS_LABELS[booking.status] || booking.status}</span>
                 </div>
                 <p className="muted" style={{ margin: '6px 0 0' }}>
-                  {booking.services?.name || 'Service'} · {booking.workers?.name || 'Any staff'} ·{' '}
-                  {formatBookingWhen(booking.starts_at, booking.ends_at)}
+                  {booking.client_name} · {formatBookingWhen(booking.starts_at, booking.ends_at)}
+                </p>
+                <p className="muted">
+                  Staff: {staffLabel} · {calendarLabel}
                 </p>
                 {booking.services?.price_cents != null ? (
                   <p className="muted">{formatServicePrice(booking.services.price_cents)}</p>
@@ -415,11 +443,19 @@ export default function BookingsPage() {
                     Calendar
                   </a>
                 ) : null}
+                <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void copyDetails(booking)}>
+                  Copy details
+                </button>
                 {canManage ? (
                   <>
                     <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => openEditForm(booking)}>
                       Edit
                     </button>
+                    {booking.client_email ? (
+                      <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void resendConfirmation(booking.id)}>
+                        Resend confirmation
+                      </button>
+                    ) : null}
                     {booking.status !== 'completed' ? (
                       <button
                         type="button"

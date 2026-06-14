@@ -1,13 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findBookingConflicts } from '@/lib/booking/conflicts';
-import {
-  createBookingGoogleCalendarEvent,
-  fetchGoogleCalendarBusyPeriods
-} from '@/lib/booking/google-calendar-booking';
+import { fetchGoogleCalendarBusyPeriods } from '@/lib/booking/google-calendar-booking';
+import { processBookingSideEffects } from '@/lib/booking/process-side-effects';
 import { buildCustomerWritePayload } from '@/lib/customer-record';
 
 export type CreatePublicBookingInput = {
   organizationId: string;
+  organizationName: string;
   serviceId: string;
   workerId?: string | null;
   startsAt: string;
@@ -18,10 +17,19 @@ export type CreatePublicBookingInput = {
   notes?: string;
 };
 
+export type CreatePublicBookingResult = {
+  booking: Record<string, unknown>;
+  error?: string;
+  status?: number;
+  warnings?: string[];
+  confirmationSent?: boolean;
+  serviceName?: string;
+};
+
 export async function createPublicBooking(
   admin: SupabaseClient,
   input: CreatePublicBookingInput
-): Promise<{ booking: Record<string, unknown>; error?: string; status?: number }> {
+): Promise<CreatePublicBookingResult> {
   const { data: service } = await admin
     .from('services')
     .select('*')
@@ -114,6 +122,7 @@ export async function createPublicBooking(
     .from('bookings')
     .insert({
       organization_id: input.organizationId,
+      workspace_id: input.organizationId,
       service_id: input.serviceId,
       worker_id: workerId,
       customer_id: customerId,
@@ -126,42 +135,39 @@ export async function createPublicBooking(
       status: 'confirmed',
       source: 'public_booking'
     })
-    .select('*')
+    .select('*, services(name), workers(name)')
     .single();
 
   if (error || !booking) {
     return { booking: {}, error: 'Unable to create booking. Please try again.', status: 400 };
   }
 
-  const { data: worker } = workerId
-    ? await admin.from('workers').select('name').eq('id', workerId).maybeSingle()
-    : { data: null };
-
   const { data: settings } = await admin
     .from('organization_settings')
-    .select('timezone')
+    .select('timezone, company_phone, company_email')
     .eq('organization_id', input.organizationId)
     .maybeSingle();
 
-  const calendar = await createBookingGoogleCalendarEvent(
-    admin,
-    input.organizationId,
-    settings?.timezone || 'America/New_York',
-    {
-      bookingId: booking.id,
-      clientName: booking.client_name,
-      serviceName: service.name,
-      workerName: worker?.name,
-      notes: booking.notes,
-      startsAt: booking.starts_at,
-      endsAt: booking.ends_at
-    }
-  );
+  const sideEffects = await processBookingSideEffects(admin, {
+    organizationId: input.organizationId,
+    organizationName: input.organizationName,
+    timezone: settings?.timezone || 'America/New_York',
+    booking,
+    appointmentName: service.name,
+    sourceLabel: 'Public booking page',
+    sendCustomerConfirmation: Boolean(input.clientEmail?.trim()),
+    contactEmail: settings?.company_email || null,
+    contactPhone: settings?.company_phone || null
+  });
 
-  if (calendar.eventId) {
-    await admin.from('bookings').update({ google_calendar_event_id: calendar.eventId }).eq('id', booking.id);
-    booking.google_calendar_event_id = calendar.eventId;
+  if (sideEffects.calendarEventId) {
+    booking.google_calendar_event_id = sideEffects.calendarEventId;
   }
 
-  return { booking };
+  return {
+    booking,
+    warnings: sideEffects.warnings,
+    confirmationSent: sideEffects.confirmationSent,
+    serviceName: service.name
+  };
 }
