@@ -64,20 +64,36 @@ describe('booking time validation', () => {
 });
 
 describe('manual booking parse', () => {
-  it('requires appointment, client, and start time', () => {
+  it('requires client, start, and end time', () => {
     const result = parseManualBookingInput({ client_name: 'Alex', starts_at: '2026-06-15T14:00:00.000Z' });
     assert.equal(result.ok, false);
   });
 
-  it('defaults end time to 60 minutes', () => {
+  it('accepts booking without appointment name', () => {
     const result = parseManualBookingInput({
-      manual_service_name: 'Consultation',
       client_name: 'Alex',
-      starts_at: '2026-06-15T14:00:00.000Z'
+      starts_at: '2026-06-15T14:00:00.000Z',
+      ends_at: '2026-06-15T15:00:00.000Z'
     });
     assert.equal(result.ok, true);
     if (result.ok) {
-      assert.equal(result.endsAt, defaultBookingEndIso('2026-06-15T14:00:00.000Z', 60));
+      assert.equal(result.manualServiceName, null);
+      assert.equal(result.serviceId, null);
+    }
+  });
+
+  it('preserves manual_service_name and optional staff_name', () => {
+    const result = parseManualBookingInput({
+      manual_service_name: 'Consultation',
+      staff_name: 'Jordan',
+      client_name: 'Alex',
+      starts_at: '2026-06-15T14:00:00.000Z',
+      ends_at: defaultBookingEndIso('2026-06-15T14:00:00.000Z', 60)
+    });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.manualServiceName, 'Consultation');
+      assert.equal(result.staffName, 'Jordan');
     }
   });
 });

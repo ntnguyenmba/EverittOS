@@ -1,4 +1,3 @@
-import { defaultBookingEndIso } from '@/lib/booking/display';
 import { validateBookingTimeRange } from '@/lib/booking/schema';
 
 export type ManualBookingBody = {
@@ -48,12 +47,10 @@ export function parseManualBookingInput(
   const manualServiceName =
     body.manual_service_name?.trim() || body.service_name?.trim() || null;
 
-  if (!clientName || !startsAt) {
-    return { ok: false, error: 'Add an appointment name, client name, and start time.' };
-  }
+  const endsAtRaw = body.ends_at?.trim() || '';
 
-  if (!serviceId && !manualServiceName) {
-    return { ok: false, error: 'Add an appointment name, client name, and start time.' };
+  if (!clientName || !startsAt || !endsAtRaw) {
+    return { ok: false, error: 'Add client name, start time, and end time.' };
   }
 
   const startDate = new Date(startsAt);
@@ -61,9 +58,7 @@ export function parseManualBookingInput(
     return { ok: false, error: 'Start time is invalid.' };
   }
 
-  const endsAt = body.ends_at?.trim()
-    ? body.ends_at.trim()
-    : defaultBookingEndIso(startsAt, 60);
+  const endsAt = endsAtRaw;
 
   const timeError = validateBookingTimeRange(startsAt, endsAt);
   if (timeError) {

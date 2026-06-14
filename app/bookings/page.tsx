@@ -29,13 +29,8 @@ type BookingRow = BookingRecord & {
   workers?: { name: string } | null;
 };
 
-type ServiceOption = { id: string; name: string; duration_minutes: number };
-type WorkerOption = { id: string; name: string };
-
 type BookingFormState = {
-  service_id: string;
   manual_service_name: string;
-  worker_id: string;
   staff_name: string;
   client_name: string;
   client_email: string;
@@ -48,9 +43,7 @@ type BookingFormState = {
 };
 
 const EMPTY_FORM: BookingFormState = {
-  service_id: '',
   manual_service_name: '',
-  worker_id: '',
   staff_name: '',
   client_name: '',
   client_email: '',
@@ -93,8 +86,6 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [bookingSlug, setBookingSlug] = useState<string | null>(null);
-  const [services, setServices] = useState<ServiceOption[]>([]);
-  const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [schemaMissing, setSchemaMissing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -110,16 +101,6 @@ export default function BookingsPage() {
     }
     setSchemaMissing(false);
     setBookingSlug(json.bookingSlug || null);
-    setServices(
-      (json.services || [])
-        .filter((service: ServiceOption & { is_active?: boolean }) => service.is_active !== false)
-        .map((service: ServiceOption) => ({
-          id: service.id,
-          name: service.name,
-          duration_minutes: service.duration_minutes
-        }))
-    );
-    setWorkers((json.workers || []).map((worker: WorkerOption) => ({ id: worker.id, name: worker.name })));
   }, []);
 
   const load = useCallback(async (): Promise<BookingRow[]> => {
@@ -170,9 +151,7 @@ export default function BookingsPage() {
     setShowCreateForm(false);
     setEditBookingId(booking.id);
     setForm({
-      service_id: booking.service_id || '',
       manual_service_name: booking.manual_service_name || booking.services?.name || '',
-      worker_id: booking.worker_id || '',
       staff_name: booking.staff_name || booking.workers?.name || '',
       client_name: booking.client_name,
       client_email: booking.client_email || '',
@@ -194,22 +173,8 @@ export default function BookingsPage() {
   function updateFormField<K extends keyof BookingFormState>(key: K, value: BookingFormState[K]) {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
-      if (key === 'service_id' && typeof value === 'string') {
-        const service = services.find((item) => item.id === value);
-        if (service) {
-          next.manual_service_name = service.name;
-          if (prev.starts_at && !prev.ends_at) {
-            next.ends_at = addMinutesToLocalInput(prev.starts_at, service.duration_minutes || 60);
-          }
-        }
-      }
-      if (key === 'worker_id' && typeof value === 'string') {
-        const worker = workers.find((item) => item.id === value);
-        if (worker) next.staff_name = worker.name;
-      }
       if (key === 'starts_at' && typeof value === 'string' && value && !prev.ends_at) {
-        const duration = services.find((item) => item.id === prev.service_id)?.duration_minutes || 60;
-        next.ends_at = addMinutesToLocalInput(value, duration);
+        next.ends_at = addMinutesToLocalInput(value, 60);
       }
       if (key === 'client_email' && typeof value === 'string' && !editBookingId) {
         next.send_confirmation = Boolean(value.trim());
@@ -220,24 +185,21 @@ export default function BookingsPage() {
 
   async function saveBooking() {
     if (busyId) return;
-    if (!form.manual_service_name.trim() || !form.client_name.trim() || !form.starts_at) {
-      feedback.error('Add an appointment name, client name, and start time.');
+    if (!form.client_name.trim() || !form.starts_at || !form.ends_at) {
+      feedback.error('Add client name, start time, and end time.');
       return;
     }
 
     const startsAt = fromLocalInputValue(form.starts_at);
-    const endsAt = form.ends_at ? fromLocalInputValue(form.ends_at) : fromLocalInputValue(addMinutesToLocalInput(form.starts_at, 60));
+    const endsAt = fromLocalInputValue(form.ends_at);
     const timeError = validateBookingTimeRange(startsAt, endsAt);
     if (timeError) {
       feedback.error(timeError);
       return;
     }
 
-    const payload = {
-      service_id: form.service_id || undefined,
-      manual_service_name: form.manual_service_name.trim(),
-      worker_id: form.worker_id || undefined,
-      staff_name: form.staff_name.trim() || undefined,
+    const payload: Record<string, unknown> = {
+      manual_service_name: form.manual_service_name.trim() || undefined,
       client_name: form.client_name.trim(),
       client_email: form.client_email.trim() || undefined,
       client_phone: form.client_phone.trim() || undefined,
@@ -247,6 +209,10 @@ export default function BookingsPage() {
       status: editBookingId ? form.status : 'confirmed',
       send_confirmation: !editBookingId ? form.send_confirmation : undefined
     };
+
+    if (editBookingId) {
+      payload.staff_name = form.staff_name.trim() || undefined;
+    }
 
     setBusyId(editBookingId || 'create');
     const res = await fetch(editBookingId ? `/api/bookings/${editBookingId}` : '/api/bookings', {
@@ -360,70 +326,31 @@ export default function BookingsPage() {
 
   function renderBookingForm(title: string, isEdit: boolean) {
     return (
-      <div className="form booking-form" style={{ marginBottom: 18 }}>
+      <div className="form booking-form" style={{ marginBottom: isEdit ? 0 : 18 }}>
         <h3>{title}</h3>
         <label>
-          Saved service (optional)
-          <select
-            className="input"
-            value={form.service_id}
-            onChange={(e) => updateFormField('service_id', e.target.value)}
-          >
-            <option value="">Custom appointment name</option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Service or appointment
-          <input
-            className="input"
-            placeholder="Example: Haircut, house cleaning, consultation, estimate visit"
-            value={form.manual_service_name}
-            onChange={(e) => updateFormField('manual_service_name', e.target.value)}
-          />
-        </label>
-        <label>
-          Staff member (optional)
-          <select
-            className="input"
-            value={form.worker_id}
-            onChange={(e) => updateFormField('worker_id', e.target.value)}
-          >
-            <option value="">Custom staff name</option>
-            {workers.map((worker) => (
-              <option key={worker.id} value={worker.id}>
-                {worker.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Staff name
-          <input
-            className="input"
-            placeholder="Optional"
-            value={form.staff_name}
-            onChange={(e) => updateFormField('staff_name', e.target.value)}
-          />
-        </label>
-        <label>
-          Client name
+          Client name *
           <input className="input" value={form.client_name} onChange={(e) => updateFormField('client_name', e.target.value)} />
-        </label>
-        <label>
-          Client email
-          <input className="input" type="email" value={form.client_email} onChange={(e) => updateFormField('client_email', e.target.value)} />
         </label>
         <label>
           Client phone
           <input className="input" value={form.client_phone} onChange={(e) => updateFormField('client_phone', e.target.value)} />
         </label>
         <label>
-          Starts
+          Client email
+          <input className="input" type="email" value={form.client_email} onChange={(e) => updateFormField('client_email', e.target.value)} />
+        </label>
+        <label>
+          Service or appointment
+          <input
+            className="input"
+            placeholder="Example: Haircut, house cleaning, consultation"
+            value={form.manual_service_name}
+            onChange={(e) => updateFormField('manual_service_name', e.target.value)}
+          />
+        </label>
+        <label>
+          Starts *
           <input
             className="input"
             type="datetime-local"
@@ -432,7 +359,7 @@ export default function BookingsPage() {
           />
         </label>
         <label>
-          Ends
+          Ends *
           <input
             className="input"
             type="datetime-local"
@@ -441,16 +368,27 @@ export default function BookingsPage() {
           />
         </label>
         {isEdit ? (
-          <label>
-            Status
-            <select className="input" value={form.status} onChange={(e) => updateFormField('status', e.target.value as BookingStatus)}>
-              {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <>
+            <label>
+              Staff name
+              <input
+                className="input"
+                placeholder="Optional"
+                value={form.staff_name}
+                onChange={(e) => updateFormField('staff_name', e.target.value)}
+              />
+            </label>
+            <label>
+              Status
+              <select className="input" value={form.status} onChange={(e) => updateFormField('status', e.target.value as BookingStatus)}>
+                {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
         ) : null}
         <label>
           Notes
