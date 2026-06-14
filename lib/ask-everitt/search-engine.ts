@@ -8,7 +8,8 @@ import {
   resolveSearchSourcesFromQuery,
   type SearchSourceId
 } from '@/lib/ask-everitt/search-sources';
-import { buildRecord, groupResults, response, runMatchedQueryHandler } from '@/lib/ask-everitt/query-handlers';
+import { buildRecord, groupResults, response } from '@/lib/ask-everitt/search-helpers';
+import { runMatchedQueryHandler } from '@/lib/ask-everitt/query-handlers';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 async function searchSource(
@@ -173,6 +174,141 @@ async function searchSource(
         })
       );
     }
+    case 'bookings': {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(
+          'id, client_name, client_email, starts_at, ends_at, status, source, staff_name, manual_service_name, services(name), workers(name)'
+        )
+        .eq('organization_id', orgId)
+        .or(
+          `client_name.ilike.${quoted},client_email.ilike.${quoted},manual_service_name.ilike.${quoted},staff_name.ilike.${quoted},notes.ilike.${quoted}`
+        )
+        .order('starts_at', { ascending: false })
+        .limit(8);
+      if (error && isMissingSchemaError(error)) return [];
+      return (data || []).map((b) => {
+        const serviceName = (b.services as { name?: string } | null)?.name || b.manual_service_name || 'Appointment';
+        const staffName = (b.workers as { name?: string } | null)?.name || b.staff_name || null;
+        return buildRecord('bookings', {
+          id: b.id,
+          type: 'booking',
+          title: `${b.client_name} — ${serviceName}`,
+          subtitle: staffName ? `Staff: ${staffName}` : b.source || null,
+          status: b.status,
+          date: b.starts_at?.slice(0, 10) || null,
+          owner: staffName,
+          href: '/bookings'
+        });
+      });
+    }
+    case 'services': {
+      const { data, error } = await supabase
+        .from('services')
+        .select('id, name, category, duration_minutes, price_cents, is_active')
+        .eq('organization_id', orgId)
+        .or(`name.ilike.${quoted},category.ilike.${quoted},description.ilike.${quoted}`)
+        .limit(8);
+      if (error && isMissingSchemaError(error)) return [];
+      return (data || []).map((s) =>
+        buildRecord('services', {
+          id: s.id,
+          type: 'service',
+          title: s.name,
+          subtitle: s.category || `${s.duration_minutes} min`,
+          status: s.is_active ? 'Active' : 'Inactive',
+          date: null,
+          href: '/services'
+        })
+      );
+    }
+    case 'availability': {
+      const { data, error } = await supabase
+        .from('staff_availability')
+        .select('id, day_of_week, starts_at, ends_at, is_active, workers(name)')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .limit(12);
+      if (error && isMissingSchemaError(error)) return [];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return (data || [])
+        .filter((row) => {
+          const workerName = (row.workers as { name?: string } | null)?.name || '';
+          return !query.trim() || workerName.toLowerCase().includes(query.trim().toLowerCase());
+        })
+        .slice(0, 8)
+        .map((row) => {
+          const workerName = (row.workers as { name?: string } | null)?.name || 'Staff';
+          const day = dayNames[row.day_of_week] || `Day ${row.day_of_week}`;
+          return buildRecord('availability', {
+            id: row.id,
+            type: 'availability',
+            title: `${workerName} — ${day}`,
+            subtitle: `${String(row.starts_at).slice(0, 5)} – ${String(row.ends_at).slice(0, 5)}`,
+            status: 'Available',
+            date: null,
+            owner: workerName,
+            href: '/services'
+          });
+        });
+    }
+    case 'calendar': {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(
+          'id, client_name, starts_at, ends_at, status, manual_service_name, services(name), workers(name), google_calendar_event_id'
+        )
+        .eq('organization_id', orgId)
+        .gte('starts_at', new Date().toISOString())
+        .not('status', 'eq', 'cancelled')
+        .or(
+          `client_name.ilike.${quoted},manual_service_name.ilike.${quoted},notes.ilike.${quoted}`
+        )
+        .order('starts_at', { ascending: true })
+        .limit(8);
+      if (error && isMissingSchemaError(error)) return [];
+      return (data || []).map((b) => {
+        const serviceName = (b.services as { name?: string } | null)?.name || b.manual_service_name || 'Event';
+        return buildRecord('calendar', {
+          id: b.id,
+          type: 'calendar',
+          title: `${b.client_name} — ${serviceName}`,
+          subtitle: b.google_calendar_event_id ? 'Calendar synced' : 'Scheduled',
+          status: b.status,
+          date: b.starts_at?.slice(0, 10) || null,
+          href: '/bookings'
+        });
+      });
+    }
+    case 'staff_services': {
+      const { data, error } = await supabase
+        .from('staff_services')
+        .select('id, workers(name), services(name)')
+        .eq('organization_id', orgId)
+        .limit(20);
+      if (error && isMissingSchemaError(error)) return [];
+      return (data || [])
+        .filter((row) => {
+          const workerName = (row.workers as { name?: string } | null)?.name || '';
+          const serviceName = (row.services as { name?: string } | null)?.name || '';
+          const q = query.trim().toLowerCase();
+          return !q || workerName.toLowerCase().includes(q) || serviceName.toLowerCase().includes(q);
+        })
+        .slice(0, 8)
+        .map((row) => {
+          const workerName = (row.workers as { name?: string } | null)?.name || 'Staff';
+          const serviceName = (row.services as { name?: string } | null)?.name || 'Service';
+          return buildRecord('staff_services', {
+            id: row.id,
+            title: `${workerName} → ${serviceName}`,
+            subtitle: 'Staff assignment',
+            status: null,
+            date: null,
+            owner: workerName,
+            href: '/services'
+          });
+        });
+    }
     default:
       return [];
   }
@@ -223,7 +359,7 @@ export async function runAskEverittSearchEngine(
 ): Promise<AskEverittSearchResponse> {
   const trimmed = query.trim();
   if (!trimmed) {
-    return { mode: 'search', summary: 'Ask about customers, jobs, leads, invoices, or documents.', results: [] };
+    return { mode: 'search', summary: 'Ask about customers, jobs, bookings, leads, invoices, or documents.', results: [] };
   }
 
   const matched = await runMatchedQueryHandler(supabase, organizationId, trimmed);

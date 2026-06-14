@@ -42,10 +42,12 @@ export function isAiFeatureAvailable(_feature: AiFeatureId, plan: EverittosPlan)
 
 export const ASK_EVERITT_SEARCH_SUGGESTIONS = [
   'Which jobs are scheduled tomorrow?',
+  'Show tomorrow\'s appointments.',
+  'How many bookings this week?',
+  'Show cancelled bookings.',
+  'Which services are booked most often?',
   'Show customers who have not booked in 90 days.',
   'Show unpaid invoices.',
-  'Find my onboarding SOP.',
-  'Show customers in Frisco.',
   'Show revenue this month.'
 ] as const;
 

@@ -3,17 +3,13 @@ import { fetchDashboardRevenueMetrics, formatCurrency } from '@/lib/dashboard-me
 import { CUSTOMER_LIST_SELECT, customerDisplayName } from '@/lib/customer-record';
 import type {
   AskEverittSearchRecord,
-  AskEverittSearchResponse,
-  AskEverittMetric
+  AskEverittSearchResponse
 } from '@/lib/ask-everitt/types';
-import { getSearchSource, resolveHref, type SearchSourceId } from '@/lib/ask-everitt/search-sources';
+import { ASK_EVERITT_BOOKING_QUERY_HANDLERS } from '@/lib/ask-everitt/booking-query-handlers';
+import { buildRecord, groupResults, response, type QueryHandler } from '@/lib/ask-everitt/search-helpers';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
-export type QueryHandler = (
-  supabase: SupabaseClient,
-  orgId: string,
-  query: string
-) => Promise<AskEverittSearchResponse | null>;
+export type { QueryHandler } from '@/lib/ask-everitt/search-helpers';
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -43,64 +39,6 @@ function monthStartIso(): string {
 
 function monthStartDate(): string {
   return isoDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-}
-
-function buildRecord(
-  sourceId: SearchSourceId,
-  partial: Pick<AskEverittSearchRecord, 'id' | 'title'> & {
-    type?: AskEverittSearchRecord['type'];
-    subtitle?: string | null;
-    status?: string | null;
-    date?: string | null;
-    owner?: string | null;
-    href?: string;
-  }
-): AskEverittSearchRecord {
-  const source = getSearchSource(sourceId);
-  const type = partial.type || source?.recordType || 'document';
-  return {
-    id: partial.id,
-    type,
-    sourceId,
-    title: partial.title,
-    subtitle: partial.subtitle ?? null,
-    status: partial.status ?? null,
-    date: partial.date ?? null,
-    owner: partial.owner ?? null,
-    href: partial.href || (source ? resolveHref(source, partial.id) : '/dashboard'),
-    actionLabel: source?.actionLabel || 'Open'
-  };
-}
-
-function response(
-  summary: string,
-  results: AskEverittSearchRecord[],
-  opts?: { sourcesUsed?: SearchSourceId[]; metrics?: AskEverittMetric[]; noResultsHint?: string }
-): AskEverittSearchResponse {
-  const groups = groupResults(results);
-  return {
-    mode: 'search',
-    summary,
-    results,
-    groups: groups.length > 1 ? groups : undefined,
-    metrics: opts?.metrics,
-    sourcesUsed: opts?.sourcesUsed?.map(String),
-    noResultsHint: opts?.noResultsHint
-  };
-}
-
-function groupResults(results: AskEverittSearchRecord[]) {
-  const bySource = new Map<string, AskEverittSearchRecord[]>();
-  for (const r of results) {
-    const list = bySource.get(r.sourceId) || [];
-    list.push(r);
-    bySource.set(r.sourceId, list);
-  }
-  return Array.from(bySource.entries()).map(([sourceId, items]) => ({
-    sourceId,
-    label: getSearchSource(sourceId as SearchSourceId)?.label || sourceId,
-    results: items
-  }));
 }
 
 function extractCity(query: string): string | null {
@@ -732,8 +670,9 @@ async function queryCustomersOweMoney(
   );
 }
 
-/** Pattern-matched handlers run before universal source search. */
+/** Pattern-matched handlers run before universal source search. Booking handlers first. */
 export const ASK_EVERITT_QUERY_HANDLERS: { match: RegExp; run: QueryHandler }[] = [
+  ...ASK_EVERITT_BOOKING_QUERY_HANDLERS,
   {
     match: /\b(tomorrow|scheduled tomorrow)\b.*\b(job|schedule|work|appointment)\b|\b(job|schedule)\b.*\btomorrow\b/,
     run: (s, o) => queryJobsTomorrow(s, o)

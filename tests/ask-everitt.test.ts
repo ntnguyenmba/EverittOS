@@ -18,6 +18,9 @@ describe('ask-everitt-intent', () => {
     assert.equal(detectAskEverittMode('Show unpaid invoices'), 'search');
     assert.equal(detectAskEverittMode('Which leads came in this month?'), 'search');
     assert.equal(detectAskEverittMode('Find the cleaning checklist for kitchens'), 'search');
+    assert.equal(detectAskEverittMode('How many bookings this week?'), 'search');
+    assert.equal(detectAskEverittMode('Show tomorrow\'s appointments.'), 'search');
+    assert.equal(detectAskEverittMode('Which staff member is busiest?'), 'search');
   });
 
   it('routes generative tasks to AI mode', () => {
@@ -61,6 +64,10 @@ describe('search-sources registry', () => {
     assert.ok(ids.includes('jobs'));
     assert.ok(ids.includes('invoices'));
     assert.ok(ids.includes('expenses'));
+    assert.ok(ids.includes('bookings'));
+    assert.ok(ids.includes('services'));
+    assert.ok(ids.includes('availability'));
+    assert.ok(ids.includes('calendar'));
   });
 
   it('allows registering new searchable modules', () => {

@@ -18,6 +18,11 @@ export type SearchSourceId =
   | 'revenue'
   | 'photos'
   | 'activity'
+  | 'bookings'
+  | 'services'
+  | 'availability'
+  | 'calendar'
+  | 'staff_services'
   | (string & {});
 
 export type SearchSourceDefinition = {
@@ -191,6 +196,67 @@ const SOURCE_LIST: SearchSourceDefinition[] = [
     href: '/activity',
     actionLabel: 'Open Activity',
     listPath: '/activity'
+  },
+  {
+    id: 'bookings',
+    label: 'Bookings',
+    recordType: 'booking',
+    table: 'bookings',
+    keywords: [
+      'booking',
+      'bookings',
+      'appointment',
+      'appointments',
+      'reserved',
+      'cancelled',
+      'canceled',
+      'no-show',
+      'no show',
+      'scheduled revenue'
+    ],
+    href: '/bookings',
+    actionLabel: 'Open Booking',
+    listPath: '/bookings'
+  },
+  {
+    id: 'services',
+    label: 'Services',
+    recordType: 'service',
+    table: 'services',
+    keywords: ['service', 'services', 'offering', 'menu', 'popular service'],
+    href: '/services',
+    actionLabel: 'Open Service',
+    listPath: '/services'
+  },
+  {
+    id: 'availability',
+    label: 'Staff availability',
+    recordType: 'availability',
+    table: 'staff_availability',
+    keywords: ['availability', 'available', 'time slot', 'open hours', 'staff hours'],
+    href: '/services',
+    actionLabel: 'View Availability',
+    listPath: '/services'
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    recordType: 'calendar',
+    table: 'bookings',
+    keywords: ['calendar', 'event', 'events', 'upcoming event', 'next on schedule', 'what is next'],
+    href: '/bookings',
+    actionLabel: 'Open Calendar',
+    listPath: '/bookings'
+  },
+  {
+    id: 'staff_services',
+    label: 'Staff assignments',
+    recordType: 'worker',
+    table: 'staff_services',
+    keywords: ['staff assignment', 'staff service', 'assigned service', 'who performs', 'staff assigned'],
+    href: '/services',
+    actionLabel: 'View Assignments',
+    listPath: '/services'
   }
 ];
 
@@ -221,7 +287,7 @@ export function resolveSearchSourcesFromQuery(query: string): SearchSourceId[] {
   const q = query.toLowerCase();
   const matched = getSearchSources().filter((s) => s.keywords.some((kw) => q.includes(kw)));
   if (matched.length > 0) return matched.map((s) => s.id);
-  return ['customers', 'jobs', 'leads', 'invoices', 'documents', 'forms'];
+  return ['customers', 'jobs', 'leads', 'bookings', 'services', 'invoices', 'documents', 'forms'];
 }
 
 export function sourceLabel(id: SearchSourceId): string {
