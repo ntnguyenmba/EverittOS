@@ -583,6 +583,10 @@ export const messages: Messages = {
       discount: 'Giảm giá',
       checkoutNote: 'Stripe xác minh giảm giá trước khi thanh toán. Giá cập nhật sau khi áp mã.',
       checkoutSuccess: 'Thanh toán hoàn tất. Đăng ký sẽ cập nhật trong giây lát.',
+      checkoutActivated: 'Thanh toán thành công — gói của bạn đã được kích hoạt.',
+      checkoutSyncing:
+        'Đã nhận thanh toán, nhưng kích hoạt gói vẫn đang đồng bộ. Hãy làm mới hoặc liên hệ hỗ trợ nếu không cập nhật.',
+      checkoutInactive: 'Thanh toán thất bại hoặc đăng ký không hoạt động.',
       checkoutCancelled: 'Thanh toán đã hủy. Không có khoản phí nào.',
       checkoutFailed: 'Không thể bắt đầu thanh toán. Thử lại hoặc liên hệ hỗ trợ.',
       startingCheckout: 'Đang bắt đầu thanh toán…',

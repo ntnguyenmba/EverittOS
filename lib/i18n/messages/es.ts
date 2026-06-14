@@ -585,6 +585,10 @@ export const messages: Messages = {
       discount: 'Descuento',
       checkoutNote: 'Los descuentos los valida Stripe antes del pago. Los precios se actualizan al aplicar un código.',
       checkoutSuccess: 'Pago completado. Su suscripción se actualizará en breve.',
+      checkoutActivated: 'Pago exitoso: su plan ya está activo.',
+      checkoutSyncing:
+        'Pago recibido, pero la activación del plan aún se está sincronizando. Actualice o contacte soporte si no se actualiza.',
+      checkoutInactive: 'Pago fallido o suscripción inactiva.',
       checkoutCancelled: 'El pago fue cancelado. No se realizó ningún cargo.',
       checkoutFailed: 'No se pudo iniciar el pago. Inténtelo de nuevo o contacte soporte.',
       startingCheckout: 'Iniciando pago…',

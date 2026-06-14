@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { canResumeSubscription } from '@/lib/stripe-subscription';
@@ -11,6 +12,11 @@ export async function POST() {
   }
 
   const supabase = await createServerSupabase();
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });
+  }
+
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -57,12 +63,15 @@ export async function POST() {
 
   const planStatus = profile?.plan && profile.plan !== 'free' ? `everittos_${profile.plan}` : 'active';
 
-  await supabase
+  await admin
     .from('everittos_subscriptions')
-    .update({ status: updated.status })
+    .update({
+      status: updated.status,
+      cancel_at_period_end: false
+    })
     .eq('stripe_subscription_id', subscriptionId);
 
-  await supabase.from('profiles').update({ subscription_status: planStatus }).eq('id', user.id);
+  await admin.from('profiles').update({ subscription_status: planStatus }).eq('id', user.id);
 
   return NextResponse.json({
     ok: true,

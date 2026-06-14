@@ -49,6 +49,10 @@ export function PlanCheckoutButton({
       const json = await res.json();
 
       if (!res.ok) {
+        if (json.code === 'already_subscribed') {
+          window.location.href = json.redirect || '/settings/billing';
+          return;
+        }
         if (json.code === 'checkout_not_configured' && fallbackHref) {
           window.location.href = fallbackHref;
           return;

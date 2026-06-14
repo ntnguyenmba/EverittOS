@@ -104,8 +104,10 @@ async function syncExistingSubscription(input: {
       plan: input.plan,
       stripe_customer_id: input.customerId,
       stripe_subscription_id: input.subscription.id,
+      stripe_price_id: input.subscription.items.data[0]?.price?.id || null,
       status: input.subscription.status === 'active' || input.subscription.status === 'trialing' ? 'active' : input.subscription.status,
       current_period_end: periodEnd,
+      cancel_at_period_end: input.subscription.cancel_at_period_end,
       updated_at: new Date().toISOString()
     },
     { onConflict: 'stripe_subscription_id' }
@@ -234,20 +236,24 @@ export async function POST(request: Request) {
     };
   }
 
+  const workspaceId = profile?.organization_id || '';
   const metadata = {
     plan,
     planKey: plan,
+    selected_plan: plan,
     user_id: user.id,
     userId: user.id,
     email,
-    organization_id: profile?.organization_id || '',
+    workspace_id: workspaceId,
+    organization_id: workspaceId,
+    price_id: priceId,
     ...(promoCode ? { promotion_code: promoCode.toUpperCase(), promoCode: promoCode.toUpperCase() } : {})
   };
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: appUrl('/settings/billing?checkout=success'),
+    success_url: appUrl('/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}'),
     cancel_url: appUrl('/settings/billing?checkout=cancelled'),
     client_reference_id: plan,
     metadata,

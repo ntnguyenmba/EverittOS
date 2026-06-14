@@ -4,50 +4,17 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
+import {
+  everittosStatusForSubscription,
+  logBillingSync,
+  syncBillingToSupabase,
+  syncStripeSubscriptionRecord
+} from '@/lib/stripe-billing-sync';
+import { planFromSession, planFromSubscription, primaryStripePriceId } from '@/lib/stripe-plan-mapping';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
+import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
 export const runtime = 'nodejs';
-
-const PAID_PLANS = ['pro', 'business', 'operations', 'growth', 'enterprise'] as const;
-
-type PaidPlan = (typeof PAID_PLANS)[number];
-
-function normalizePaidPlan(value: string | null | undefined): PaidPlan | null {
-  const raw = (value || '').trim().toLowerCase();
-  if (!raw) return null;
-  const normalized = normalizePlan(raw);
-  if (PAID_PLANS.includes(normalized as PaidPlan)) return normalized as PaidPlan;
-  return null;
-}
-
-function planFromAmount(amount: number | null | undefined): PaidPlan | null {
-  const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
-  if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'operations';
-  if (cents === 39900 || cents === 399) return 'growth';
-  if (cents === 79900 || cents === 799) return 'enterprise';
-  return null;
-}
-
-function planFromSubscription(sub: Stripe.Subscription): PaidPlan | null {
-  const direct = normalizePaidPlan(sub.metadata?.plan);
-  if (direct) return direct;
-
-  for (const item of sub.items.data) {
-    const price = item.price;
-    const product =
-      typeof price.product === 'string'
-        ? null
-        : 'deleted' in price.product && price.product.deleted
-          ? null
-          : price.product;
-    const plan = normalizePaidPlan(price.metadata?.plan) || normalizePaidPlan(product?.metadata?.plan) || planFromAmount(price.unit_amount);
-    if (plan) return plan;
-  }
-
-  return null;
-}
 
 async function findCustomerId(stripe: Stripe, email: string, existingCustomerId?: string | null) {
   if (existingCustomerId) return existingCustomerId;
@@ -57,7 +24,85 @@ async function findCustomerId(stripe: Stripe, email: string, existingCustomerId?
   return activeCustomer?.id || null;
 }
 
-async function refreshSubscription() {
+async function refreshFromCheckoutSession(
+  stripe: Stripe,
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>,
+  userId: string,
+  sessionId: string
+) {
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ['subscription', 'line_items.data.price.product']
+  });
+
+  const sessionUserId = session.metadata?.user_id || session.metadata?.userId;
+  if (sessionUserId && sessionUserId !== userId) {
+    return NextResponse.json({ error: 'Checkout session does not belong to this account.' }, { status: 403 });
+  }
+
+  const email = (session.customer_details?.email || session.customer_email || session.metadata?.email || '').trim().toLowerCase();
+  const plan = await planFromSession(stripe, session);
+  const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
+
+  logBillingSync('refresh_from_session', {
+    sessionId,
+    userId,
+    subscriptionId: subId,
+    plan
+  });
+
+  if (subId) {
+    const sub = await stripe.subscriptions.retrieve(subId, {
+      expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
+    });
+    await syncStripeSubscriptionRecord(admin, stripe, sub, {
+      userId,
+      email: email || null,
+      workspaceId: session.metadata?.workspace_id || session.metadata?.organization_id || null,
+      stripeSessionId: session.id
+    });
+
+    const detectedPlan = planFromSubscription(sub);
+    const active = sub.status === 'active' || sub.status === 'trialing';
+    const effectivePlan = active && detectedPlan ? detectedPlan : normalizePlan(plan || 'free');
+    const status = everittosStatusForSubscription(effectivePlan, sub.status, sub.cancel_at_period_end);
+
+    return NextResponse.json({
+      plan: effectivePlan,
+      status,
+      synced: true,
+      stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id || null,
+      stripeSubscriptionId: subId,
+      currentPeriodEnd: sub.current_period_end
+        ? new Date(sub.current_period_end * 1000).toISOString()
+        : null
+    });
+  }
+
+  if (!email || !plan) {
+    return NextResponse.json({ error: 'Checkout session is missing plan details.' }, { status: 422 });
+  }
+
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
+  await syncBillingToSupabase(admin, {
+    userId,
+    email,
+    workspaceId: session.metadata?.workspace_id || session.metadata?.organization_id || null,
+    plan,
+    subscriptionStatus: `everittos_${plan}`,
+    stripeCustomerId: customerId,
+    stripeSessionId: session.id,
+    stripePriceId: session.metadata?.price_id || null
+  });
+
+  return NextResponse.json({
+    plan,
+    status: `everittos_${plan}`,
+    synced: true,
+    stripeCustomerId: customerId
+  });
+}
+
+async function refreshSubscription(request: Request) {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
     return NextResponse.json({ error: 'Stripe is not configured.' }, { status: 503 });
@@ -72,9 +117,12 @@ async function refreshSubscription() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const body = (await request.json().catch(() => ({}))) as { sessionId?: string; session_id?: string };
+  const sessionId = (body.sessionId || body.session_id || '').trim();
+
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, role, stripe_customer_id')
+    .select('id, email, role, stripe_customer_id, organization_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -88,6 +136,11 @@ async function refreshSubscription() {
   }
 
   const stripe = new Stripe(stripeKey);
+
+  if (sessionId) {
+    return refreshFromCheckoutSession(stripe, admin, user.id, sessionId);
+  }
+
   const email = (profile?.email || user.email).trim().toLowerCase();
   const customerId = await findCustomerId(stripe, email, profile?.stripe_customer_id);
 
@@ -114,42 +167,23 @@ async function refreshSubscription() {
       .update({ plan: 'free', subscription_status: 'free', stripe_customer_id: customerId })
       .eq('id', user.id);
 
-    return NextResponse.json({ plan: 'free', status: 'free', stripeCustomerId: customerId });
+    return NextResponse.json({ plan: 'free', status: 'free', stripeCustomerId: customerId, synced: true });
   }
 
+  await syncStripeSubscriptionRecord(admin, stripe, subscription, {
+    userId: user.id,
+    email,
+    workspaceId: profile?.organization_id || null
+  });
+
   const detectedPlan = planFromSubscription(subscription);
-  const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-  const plan: EverittosPlan = isActive && detectedPlan ? detectedPlan : 'free';
-  const status = isActive && detectedPlan ? `everittos_${detectedPlan}` : subscription.status;
+  const active = subscription.status === 'active' || subscription.status === 'trialing';
+  const plan: EverittosPlan = active && detectedPlan ? detectedPlan : detectedPlan || 'free';
+  const status = everittosStatusForSubscription(plan, subscription.status, subscription.cancel_at_period_end);
   const discount = await extractSubscriptionDiscount(stripe, subscription);
   const currentPeriodEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end * 1000).toISOString()
     : null;
-
-  await admin
-    .from('profiles')
-    .update({
-      plan,
-      subscription_status: status,
-      stripe_customer_id: customerId,
-      ...(discount || {})
-    })
-    .eq('id', user.id);
-
-  await admin.from('everittos_subscriptions').upsert(
-    {
-      user_id: user.id,
-      email,
-      plan,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscription.id,
-      status: isActive ? 'active' : subscription.status,
-      current_period_end: currentPeriodEnd,
-      updated_at: new Date().toISOString(),
-      ...(discount || {})
-    },
-    { onConflict: 'stripe_subscription_id' }
-  );
 
   await admin.from('subscription_events').insert({
     email,
@@ -162,16 +196,32 @@ async function refreshSubscription() {
   return NextResponse.json({
     plan,
     status,
+    synced: true,
+    active: isPaidPlanActive(plan, status),
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
-    currentPeriodEnd
+    stripePriceId: primaryStripePriceId(subscription),
+    currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    discountApplied: Boolean(discount)
   });
 }
 
-export async function GET() {
-  return refreshSubscription();
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get('session_id');
+  if (sessionId) {
+    return refreshSubscription(
+      new Request(request.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      })
+    );
+  }
+  return refreshSubscription(request);
 }
 
-export async function POST() {
-  return refreshSubscription();
+export async function POST(request: Request) {
+  return refreshSubscription(request);
 }

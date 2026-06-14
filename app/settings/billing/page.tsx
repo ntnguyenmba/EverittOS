@@ -17,7 +17,10 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
+import { SyncSubscriptionButton } from '@/components/sync-subscription-button';
+import { canManageBilling } from '@/lib/roles';
 import { subscriptionAccess } from '@/lib/subscription-access';
+import { isPaidPlanActive } from '@/lib/workspace-subscription';
 import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
@@ -38,9 +41,12 @@ function BillingSettingsContent() {
     }
     if (reason === 'subscription') {
       const mapped = mapAccessError('subscription');
+      const billingMessage = status
+        ? subscriptionAccess(upgradePlan, status).message
+        : mapped.message;
       return {
         ...mapped,
-        message: status ? subscriptionAccess(upgradePlan, status).message : mapped.message,
+        message: billingMessage,
         details: detail || status || mapped.details
       };
     }
@@ -90,6 +96,11 @@ function BillingSettingsContent() {
   const [couponDuration, setCouponDuration] = useState<string | null>(null);
   const [couponDurationInMonths, setCouponDurationInMonths] = useState<number | null>(null);
   const [couponExpiresAt, setCouponExpiresAt] = useState<string | null>(null);
+  const [checkoutBanner, setCheckoutBanner] = useState<{
+    tone: 'success' | 'warning' | 'error';
+    message: string;
+  } | null>(null);
+  const [checkoutSyncing, setCheckoutSyncing] = useState(false);
 
   const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
 
@@ -106,15 +117,6 @@ function BillingSettingsContent() {
     if (workspaceSubscriptionStatus) {
       setSubscriptionStatus(workspaceSubscriptionStatus);
     }
-
-    console.log({
-      profilePlan,
-      subscriptionStatus: workspaceSubscriptionStatus,
-      billingPlan,
-      organizationPlan,
-      rawProfilePlan,
-      rawSubscriptionStatus
-    });
   }, [
     planLoading,
     profilePlan,
@@ -122,10 +124,97 @@ function BillingSettingsContent() {
     organizationPlan,
     workspacePlan,
     workspaceRole,
-    workspaceSubscriptionStatus,
-    rawProfilePlan,
-    rawSubscriptionStatus
+    workspaceSubscriptionStatus
   ]);
+
+  useEffect(() => {
+    const checkout = searchParams.get('checkout');
+    const sessionId = searchParams.get('session_id');
+
+    if (checkout === 'cancelled') {
+      setCheckoutBanner({ tone: 'error', message: t('billing.promo.checkoutCancelled') });
+      return;
+    }
+
+    if (checkout !== 'success') return;
+
+    let cancelled = false;
+
+    async function syncAfterCheckout() {
+      setCheckoutSyncing(true);
+      setCheckoutBanner(null);
+
+      try {
+        const res = await fetch('/api/billing/refresh-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId || undefined })
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          plan?: string;
+          status?: string;
+          active?: boolean;
+          synced?: boolean;
+        };
+
+        if (cancelled) return;
+
+        await refreshWorkspacePlan();
+
+        const refreshedPlan = json.plan ? normalizePlan(json.plan) : null;
+        const refreshedStatus = json.status || workspaceSubscriptionStatus || 'free';
+        const activated =
+          refreshedPlan &&
+          refreshedPlan !== 'free' &&
+          (json.active ?? isPaidPlanActive(refreshedPlan, refreshedStatus));
+
+        if (activated) {
+          setPlan(refreshedPlan);
+          setSubscriptionStatus(refreshedStatus);
+          setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
+          return;
+        }
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          const retry = await fetch('/api/billing/refresh-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: sessionId || undefined })
+          });
+          const retryJson = (await retry.json().catch(() => ({}))) as { plan?: string; status?: string; active?: boolean };
+          await refreshWorkspacePlan();
+
+          const retryPlan = retryJson.plan ? normalizePlan(retryJson.plan) : null;
+          const retryStatus = retryJson.status || 'free';
+          if (
+            retryPlan &&
+            retryPlan !== 'free' &&
+            (retryJson.active ?? isPaidPlanActive(retryPlan, retryStatus))
+          ) {
+            setPlan(retryPlan);
+            setSubscriptionStatus(retryStatus);
+            setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
+            return;
+          }
+        }
+
+        setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
+      } catch {
+        if (!cancelled) {
+          setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
+        }
+      } finally {
+        if (!cancelled) setCheckoutSyncing(false);
+      }
+    }
+
+    void syncAfterCheckout();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, refreshWorkspacePlan, t, workspaceSubscriptionStatus]);
 
   useEffect(() => {
     async function load() {
@@ -222,10 +311,12 @@ function BillingSettingsContent() {
   if (loading || planLoading || !plan) {
     return (
       <AppShell role={role}>
-        <p>Loading billing...</p>
+        <p>{checkoutSyncing ? 'Activating your plan…' : 'Loading billing...'}</p>
       </AppShell>
     );
   }
+
+  const canManageWorkspaceBilling = canManageBilling(role);
 
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
@@ -233,15 +324,30 @@ function BillingSettingsContent() {
 
   return (
     <SettingsShell plan={plan} role={role} title={t('billing.title')} description={t('billing.description')}>
-      {accessNotice ? (
+      {accessNotice && !canManageWorkspaceBilling ? (
         <AccessBlockedBanner title={accessNotice.title} message={accessNotice.message} details={accessNotice.details} />
+      ) : accessNotice && canManageWorkspaceBilling ? (
+        <AccessBlockedBanner
+          title={accessNotice.title}
+          message={subscriptionInfo.message}
+          details={accessNotice.details}
+        />
       ) : null}
-      {searchParams.get('checkout') === 'success' ? (
-        <p className="auth-message auth-message-success">{t('billing.promo.checkoutSuccess')}</p>
+      {checkoutBanner ? (
+        <p
+          className={[
+            'auth-message',
+            checkoutBanner.tone === 'success'
+              ? 'auth-message-success'
+              : checkoutBanner.tone === 'warning'
+                ? 'auth-message-warning'
+                : 'auth-message-error'
+          ].join(' ')}
+        >
+          {checkoutBanner.message}
+        </p>
       ) : null}
-      {searchParams.get('checkout') === 'cancelled' ? (
-        <p className="auth-message auth-message-error">{t('billing.promo.checkoutCancelled')}</p>
-      ) : null}
+      {checkoutSyncing ? <p className="muted">Syncing your subscription with Stripe…</p> : null}
       {searchParams.get('upgrade') ? (
         <div className="settings-warning" style={{ marginBottom: 18 }}>
           {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.
@@ -341,6 +447,15 @@ function BillingSettingsContent() {
           ) : null}
         </div>
         {message ? <p>{message}</p> : null}
+        {canManageWorkspaceBilling ? (
+          <SyncSubscriptionButton
+            onSynced={(nextPlan, nextStatus) => {
+              setPlan(normalizePlan(nextPlan));
+              setSubscriptionStatus(nextStatus);
+              void refreshWorkspacePlan();
+            }}
+          />
+        ) : null}
       </div>
 
       <div className="settings-card">

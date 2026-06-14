@@ -27,6 +27,20 @@ export function stripePriceIdForPlan(plan: Exclude<EverittosPlan, 'free'>): stri
   return value || null;
 }
 
+/** Map a Stripe price ID back to an EverittOS plan (server-side env lookup). */
+export function planFromStripePriceId(priceId: string | null | undefined): EverittosPlan | null {
+  const id = (priceId || '').trim();
+  if (!id) return null;
+
+  for (const plan of Object.keys(PLAN_AMOUNT_CENTS) as Exclude<EverittosPlan, 'free'>[]) {
+    if (stripePriceIdForPlan(plan) === id) {
+      return plan;
+    }
+  }
+
+  return null;
+}
+
 export function stripeCheckoutConfigured(): boolean {
   return Object.keys(PLAN_AMOUNT_CENTS).every((tier) =>
     Boolean(stripePriceIdForPlan(tier as Exclude<EverittosPlan, 'free'>))

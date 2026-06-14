@@ -583,6 +583,10 @@ export const messages: Messages = {
       discount: 'Discount',
       checkoutNote: 'Discounts are validated by Stripe before checkout. Prices update after you apply a code.',
       checkoutSuccess: 'Checkout completed. Your subscription will update shortly.',
+      checkoutActivated: 'Payment successful — your plan is now active.',
+      checkoutSyncing:
+        'Payment received, but plan activation is still syncing. Refresh or contact support if it does not update.',
+      checkoutInactive: 'Payment failed or subscription inactive.',
       checkoutCancelled: 'Checkout was cancelled. No charge was made.',
       checkoutFailed: 'Unable to start checkout. Try again or contact support.',
       startingCheckout: 'Starting checkout…',

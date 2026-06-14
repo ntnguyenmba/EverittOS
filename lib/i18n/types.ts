@@ -439,6 +439,9 @@ export type MessageTree = {
       discount: string;
       checkoutNote: string;
       checkoutSuccess: string;
+      checkoutActivated: string;
+      checkoutSyncing: string;
+      checkoutInactive: string;
       checkoutCancelled: string;
       checkoutFailed: string;
       startingCheckout: string;
