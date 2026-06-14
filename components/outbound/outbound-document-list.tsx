@@ -19,6 +19,12 @@ function formatWhen(doc: OutboundDocument): string {
   return new Date(iso).toLocaleString();
 }
 
+function removeLabel(tab: OutboundTab): string {
+  if (tab === 'sent') return 'Hide from history';
+  if (tab === 'scheduled') return 'Cancel schedule';
+  return 'Delete draft';
+}
+
 export function OutboundDocumentList({
   documents,
   tab,
@@ -42,6 +48,11 @@ export function OutboundDocumentList({
 
   return (
     <div className="outbound-document-list">
+      {tab === 'sent' ? (
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Sent items cannot be unsent. Hiding an item only removes it from this history list.
+        </p>
+      ) : null}
       {documents.map((doc) => (
         <div key={doc.id} className="outbound-document-row">
           <div className="outbound-document-main">
@@ -71,7 +82,7 @@ export function OutboundDocumentList({
                 </button>
               ) : null}
               <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(doc.id)}>
-                Remove
+                {removeLabel(tab)}
               </button>
             </div>
           ) : null}
