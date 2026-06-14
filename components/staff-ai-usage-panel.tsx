@@ -15,6 +15,7 @@ type StaffUsagePayload = {
   staffPromptsToday: number;
   staffBudgetUsedUsd: number;
   staffBudgetCapUsd: number;
+  staffLimitsApply?: boolean;
   staffUsersThisMonth: StaffUserRow[];
   searchDoesNotCountAsAi?: boolean;
 };
@@ -53,8 +54,14 @@ export function StaffAiUsagePanel() {
       <h3>Staff AI usage</h3>
       <p className="muted">
         Ask Everitt search does not count as paid AI. Staff AI prompts and cost apply only to Everitt AI writing,
-        analysis, and generation.
+        analysis, and generation. Staff usage is tracked separately and does not reduce the workspace owner&apos;s
+        plan AI quota.
       </p>
+      {data.staffLimitsApply === false ? (
+        <p className="muted" style={{ marginTop: 8 }}>
+          Staff AI caps are not applied on Enterprise plans.
+        </p>
+      ) : null}
       <div className="dashboard-stats-grid" style={{ marginTop: 12 }}>
         <div className="card stat-card">
           <span className="stat-label">Staff AI prompts today</span>

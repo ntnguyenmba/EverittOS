@@ -4,6 +4,8 @@ import type { AiFeatureId } from '@/lib/ai-features';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat } from '@/lib/ai-server';
 import { canSeeOrgWideData } from '@/lib/permissions';
+import { aiModeUsageEvent, recordAiUsage } from '@/lib/ai-usage-events';
+import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -93,6 +95,20 @@ export async function POST(request: Request) {
     feature,
     usage: result.usage
   });
+
+  await recordAiUsage(
+    admin,
+    aiModeUsageEvent({
+      workspaceId: gate.org.organizationId,
+      userId: user.id,
+      userRole: normalizeRole(gate.org.role),
+      feature,
+      prompt: userInput,
+      inputTokens: result.usage.promptTokens,
+      outputTokens: result.usage.completionTokens,
+      estimatedCost: result.usage.estimatedCostUsd
+    })
+  );
 
   return NextResponse.json({
     content: result.reply,

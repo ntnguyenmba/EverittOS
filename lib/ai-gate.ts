@@ -63,7 +63,7 @@ export async function verifyAiRequest(
     };
   }
 
-  const staffGate = await canUseAiMode(admin, userId, org.organizationId, org.role);
+  const staffGate = await canUseAiMode(admin, userId, org.organizationId, org.role, plan);
   if (!staffGate.ok) {
     return {
       ok: false,
@@ -121,7 +121,7 @@ export async function verifyAiRequest(
   }
 
   const cap = aiMonthlyCap(plan);
-  const used = await countAiGenerationsThisMonth(admin, org.organizationId);
+  const used = await countAiGenerationsThisMonth(admin, org.organizationId, 'billable');
 
   return {
     ok: true,

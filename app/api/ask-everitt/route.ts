@@ -7,7 +7,7 @@ import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
-import { canUseAiMode, recordAiUsage } from '@/lib/ai-usage-events';
+import { recordAiUsage } from '@/lib/ai-usage-events';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -76,26 +76,16 @@ export async function POST(request: Request) {
     return NextResponse.json(searchResult);
   }
 
-  // Everitt AI Mode — premium, cost-controlled
-  const staffGate = await canUseAiMode(admin, user.id, org.organizationId, org.role);
-  if (!staffGate.ok) {
-    return NextResponse.json(
-      {
-        error: staffGate.message,
-        code: staffGate.code,
-        mode: 'ai',
-        searchAvailable: true
-      },
-      { status: 429 }
-    );
-  }
-
+  // Everitt AI Mode — premium, cost-controlled (staff/plan gates inside verifyAiRequest)
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
     const status =
       gate.code === 'plan_required' || gate.code === 'subscription_inactive'
         ? 403
-        : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted'
+        : gate.code === 'rate_limited' ||
+            gate.code === 'everittteam_budget_exhausted' ||
+            gate.code === 'staff_daily_limit' ||
+            gate.code === 'staff_budget_exhausted'
           ? 429
           : 503;
     return NextResponse.json(

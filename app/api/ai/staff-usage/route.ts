@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStaffAiUsageSummary, STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD } from '@/lib/ai-usage-events';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -34,7 +35,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Server not configured' }, { status: 503 });
   }
 
-  const summary = await getStaffAiUsageSummary(admin, org.organizationId);
+  const { plan } = await resolveOrganizationPlan(supabase, user.id);
+  const summary = await getStaffAiUsageSummary(admin, org.organizationId, plan);
 
   return NextResponse.json({
     ...summary,

@@ -15,6 +15,8 @@ import { isClientRole, isOwner, isStaffRole, normalizeRole } from '@/lib/roles';
 import {
   getDailyAiPromptCount,
   getMonthlyStaffAiSpend,
+  getStaffAiUsageSummary,
+  shouldApplyStaffAiLimits,
   STAFF_DAILY_AI_PROMPT_LIMIT,
   STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
 } from '@/lib/ai-usage-events';
@@ -80,16 +82,29 @@ export async function GET() {
       }
     }
 
+    const staffLimitsApply = shouldApplyStaffAiLimits(plan, role);
     if (isStaffRole(role)) {
-      const [dailyCount, monthlySpend] = await Promise.all([
-        getDailyAiPromptCount(admin, user.id),
-        getMonthlyStaffAiSpend(admin, org.organizationId)
-      ]);
+      const summary = await getStaffAiUsageSummary(admin, org.organizationId, plan);
+      const dailyUsed = staffLimitsApply ? await getDailyAiPromptCount(admin, user.id) : 0;
       staffAi = {
-        dailyUsed: dailyCount,
+        applies: staffLimitsApply,
+        dailyUsed,
+        dailyCap: STAFF_DAILY_AI_PROMPT_LIMIT,
+        monthlySpendUsd: summary.staffBudgetUsedUsd,
+        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
+        workspaceStaffSpendUsd: summary.staffBudgetUsedUsd,
+        usersThisMonth: summary.staffUsersThisMonth
+      };
+    } else if (!staffLimitsApply && everittteamApplies) {
+      const monthlySpend = await getMonthlyStaffAiSpend(admin, org.organizationId);
+      staffAi = {
+        applies: false,
+        dailyUsed: 0,
         dailyCap: STAFF_DAILY_AI_PROMPT_LIMIT,
         monthlySpendUsd: monthlySpend,
-        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
+        workspaceStaffSpendUsd: monthlySpend,
+        usersThisMonth: []
       };
     }
   }

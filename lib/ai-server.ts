@@ -5,6 +5,7 @@ import type { AiFeatureId } from '@/lib/ai-features';
 import { canAccessFeature } from '@/lib/plan-access';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
+import { isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 
 export type { AiChatMessage };
 
@@ -19,7 +20,11 @@ export type AiUsageStats = {
   remaining: number | null;
   unlimited: boolean;
   periodStart: string;
+  billableRequests: number;
+  staffRequests: number;
 };
+
+export type AiGenerationAudience = 'billable' | 'staff' | 'all';
 
 export type AiChatResult =
   | {
@@ -58,17 +63,60 @@ function monthStartIso(): string {
   return monthStart.toISOString();
 }
 
-export async function countAiGenerationsThisMonth(
+async function fetchWorkspaceMemberRoles(
   admin: SupabaseClient,
   organizationId: string
-): Promise<number> {
-  const { count } = await admin
-    .from('ai_generations')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
-    .gte('created_at', monthStartIso());
+): Promise<Map<string, UserRole>> {
+  const [{ data: members }, { data: org }] = await Promise.all([
+    admin
+      .from('organization_members')
+      .select('user_id, role')
+      .eq('organization_id', organizationId)
+      .eq('active', true),
+    admin.from('organizations').select('owner_user_id').eq('id', organizationId).maybeSingle()
+  ]);
 
-  return count || 0;
+  const roleMap = new Map<string, UserRole>();
+  for (const member of members || []) {
+    roleMap.set(member.user_id, normalizeRole(member.role));
+  }
+
+  if (org?.owner_user_id && !roleMap.has(org.owner_user_id)) {
+    roleMap.set(org.owner_user_id, 'owner');
+  }
+
+  return roleMap;
+}
+
+function classifyGenerationAudience(userId: string, roleMap: Map<string, UserRole>): AiGenerationAudience {
+  const role = roleMap.get(userId) || 'employee';
+  return isStaffRole(role) ? 'staff' : 'billable';
+}
+
+export async function countAiGenerationsThisMonth(
+  admin: SupabaseClient,
+  organizationId: string,
+  audience: AiGenerationAudience = 'all'
+): Promise<number> {
+  const periodStart = monthStartIso();
+
+  if (audience === 'all') {
+    const { count } = await admin
+      .from('ai_generations')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .gte('created_at', periodStart);
+    return count || 0;
+  }
+
+  const roleMap = await fetchWorkspaceMemberRoles(admin, organizationId);
+  const { data: rows } = await admin
+    .from('ai_generations')
+    .select('user_id')
+    .eq('organization_id', organizationId)
+    .gte('created_at', periodStart);
+
+  return (rows || []).filter((row) => classifyGenerationAudience(row.user_id, roleMap) === audience).length;
 }
 
 export async function getAiUsageStats(
@@ -78,22 +126,37 @@ export async function getAiUsageStats(
 ): Promise<AiUsageStats> {
   const periodStart = monthStartIso();
   const cap = aiMonthlyCap(plan);
+  const roleMap = await fetchWorkspaceMemberRoles(admin, organizationId);
 
   const { data: rows } = await admin
     .from('ai_generations')
-    .select('prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd')
+    .select('user_id, prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd')
     .eq('organization_id', organizationId)
     .gte('created_at', periodStart);
 
   const generations = rows || [];
-  const promptTokens = generations.reduce((s, r) => s + (r.prompt_tokens || 0), 0);
-  const completionTokens = generations.reduce((s, r) => s + (r.completion_tokens || 0), 0);
-  const totalTokens = generations.reduce((s, r) => s + (r.total_tokens || 0), 0);
-  const estimatedCostUsd = generations.reduce((s, r) => s + Number(r.estimated_cost_usd || 0), 0);
-  const monthlyUsed = generations.length;
+  let billableRequests = 0;
+  let staffRequests = 0;
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let totalTokens = 0;
+  let estimatedCostUsd = 0;
+
+  for (const row of generations) {
+    const audience = classifyGenerationAudience(row.user_id, roleMap);
+    if (audience === 'billable') billableRequests += 1;
+    else staffRequests += 1;
+
+    promptTokens += row.prompt_tokens || 0;
+    completionTokens += row.completion_tokens || 0;
+    totalTokens += row.total_tokens || 0;
+    estimatedCostUsd += Number(row.estimated_cost_usd || 0);
+  }
+
+  const monthlyUsed = billableRequests;
 
   return {
-    requests: monthlyUsed,
+    requests: generations.length,
     promptTokens,
     completionTokens,
     totalTokens,
@@ -102,7 +165,9 @@ export async function getAiUsageStats(
     monthlyUsed,
     remaining: cap < 0 ? null : Math.max(0, cap - monthlyUsed),
     unlimited: cap < 0,
-    periodStart
+    periodStart,
+    billableRequests,
+    staffRequests
   };
 }
 
@@ -130,7 +195,7 @@ export async function assertAiAllowed(
 
   const cap = aiMonthlyCap(plan);
   if (cap >= 0) {
-    const used = await countAiGenerationsThisMonth(admin, organizationId);
+    const used = await countAiGenerationsThisMonth(admin, organizationId, 'billable');
     if (used >= cap) {
       return {
         ok: false,

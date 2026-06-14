@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { executeAiAction, type ProposedAiAction } from '@/lib/ai-actions';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration } from '@/lib/ai-server';
+import { aiModeUsageEvent, recordAiUsage } from '@/lib/ai-usage-events';
+import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -58,6 +60,17 @@ export async function POST(request: Request) {
     model: 'action',
     feature: 'ai_actions'
   });
+
+  await recordAiUsage(
+    admin,
+    aiModeUsageEvent({
+      workspaceId: gate.org.organizationId,
+      userId: user.id,
+      userRole: normalizeRole(gate.org.role),
+      feature: 'ai_actions',
+      prompt: `Execute action: ${body.action.type}`
+    })
+  );
 
   return NextResponse.json(result);
 }

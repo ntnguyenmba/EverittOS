@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { estimateOpenAiCost } from '@/lib/ai-server';
+import type { EverittosPlan } from '@/lib/everittos-plans';
+import { limitsForPlan } from '@/lib/everittos-limits';
 import { isAdminRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
@@ -20,8 +22,10 @@ export type AiUsageEventInput = {
 };
 
 export type StaffAiGateResult =
-  | { ok: true; isStaff: boolean }
+  | { ok: true; isStaff: boolean; staffLimitsApplied: boolean }
   | { ok: false; code: 'staff_daily_limit' | 'staff_budget_exhausted'; message: string };
+
+const STAFF_ROLES = new Set<UserRole>(['employee', 'contractor', 'viewer']);
 
 function calendarDayStartIso(): string {
   const d = new Date();
@@ -38,6 +42,43 @@ function calendarMonthStartIso(): string {
 
 export function estimateAiCost(inputTokens: number, outputTokens: number, _model?: string): number {
   return estimateOpenAiCost(inputTokens, outputTokens);
+}
+
+/** Staff AI caps apply only to staff roles on non-unlimited workspace plans. */
+export function shouldApplyStaffAiLimits(plan: EverittosPlan, roleInput: string): boolean {
+  const limits = limitsForPlan(plan);
+  if (!limits.aiAccess || limits.aiUnlimited) return false;
+
+  const role = normalizeRole(roleInput);
+  if (isAdminRole(role) || role === 'manager') return false;
+  return isStaffRole(role);
+}
+
+export function isStaffAiRole(roleInput: string): boolean {
+  return STAFF_ROLES.has(normalizeRole(roleInput));
+}
+
+export function aiModeUsageEvent(input: {
+  workspaceId: string;
+  userId: string;
+  userRole: string;
+  feature: string;
+  prompt?: string | null;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCost?: number;
+}): AiUsageEventInput {
+  return {
+    workspaceId: input.workspaceId,
+    userId: input.userId,
+    userRole: input.userRole,
+    feature: input.feature,
+    mode: 'ai',
+    prompt: input.prompt,
+    inputTokens: input.inputTokens ?? 0,
+    outputTokens: input.outputTokens ?? 0,
+    estimatedCost: input.estimatedCost ?? 0
+  };
 }
 
 export async function getDailyAiPromptCount(admin: SupabaseClient, userId: string): Promise<number> {
@@ -70,7 +111,7 @@ export async function getDailySearchCount(admin: SupabaseClient, userId: string)
   return count || 0;
 }
 
-/** Combined staff AI spend for the workspace in the current calendar month. */
+/** Combined staff AI spend for one workspace in the current calendar month. */
 export async function getMonthlyStaffAiSpend(admin: SupabaseClient, workspaceId: string): Promise<number> {
   const { data, error } = await admin
     .from('ai_usage_events')
@@ -84,9 +125,8 @@ export async function getMonthlyStaffAiSpend(admin: SupabaseClient, workspaceId:
     throw error;
   }
 
-  const staffRoles = new Set(['employee', 'contractor', 'viewer']);
   const total = (data || [])
-    .filter((row) => staffRoles.has(normalizeRole(row.user_role)))
+    .filter((row) => isStaffAiRole(row.user_role))
     .reduce((sum, row) => sum + Number(row.estimated_cost || 0), 0);
 
   return Number(total.toFixed(6));
@@ -114,16 +154,11 @@ export async function canUseAiMode(
   admin: SupabaseClient,
   userId: string,
   workspaceId: string,
-  roleInput: string
+  roleInput: string,
+  plan: EverittosPlan
 ): Promise<StaffAiGateResult> {
-  const role = normalizeRole(roleInput);
-
-  if (isAdminRole(role) || role === 'manager') {
-    return { ok: true, isStaff: false };
-  }
-
-  if (!isStaffRole(role)) {
-    return { ok: true, isStaff: false };
+  if (!shouldApplyStaffAiLimits(plan, roleInput)) {
+    return { ok: true, isStaff: isStaffRole(normalizeRole(roleInput)), staffLimitsApplied: false };
   }
 
   const [dailyCount, monthlySpend] = await Promise.all([
@@ -149,23 +184,77 @@ export async function canUseAiMode(
     };
   }
 
-  return { ok: true, isStaff: true };
+  return { ok: true, isStaff: true, staffLimitsApplied: true };
 }
 
 export type StaffAiUsageSummary = {
   staffPromptsToday: number;
   staffBudgetUsedUsd: number;
   staffBudgetCapUsd: number;
+  staffLimitsApply: boolean;
   staffUsersThisMonth: { userId: string; role: UserRole; prompts: number; costUsd: number }[];
 };
 
+export type WorkspaceUserAiUsage = {
+  userId: string;
+  role: UserRole;
+  aiPromptsThisMonth: number;
+  searchQueriesToday: number;
+  estimatedCostUsd: number;
+};
+
+export async function getWorkspaceUserAiUsage(
+  admin: SupabaseClient,
+  workspaceId: string,
+  monthStart = calendarMonthStartIso(),
+  dayStart = calendarDayStartIso()
+): Promise<WorkspaceUserAiUsage[]> {
+  const { data, error } = await admin
+    .from('ai_usage_events')
+    .select('user_id, user_role, mode, estimated_cost, created_at')
+    .eq('workspace_id', workspaceId)
+    .gte('created_at', monthStart);
+
+  if (error) {
+    if (isMissingSchemaError(error)) return [];
+    throw error;
+  }
+
+  const byUser = new Map<string, WorkspaceUserAiUsage>();
+  for (const row of data || []) {
+    const userId = row.user_id as string;
+    const existing = byUser.get(userId) || {
+      userId,
+      role: normalizeRole(row.user_role),
+      aiPromptsThisMonth: 0,
+      searchQueriesToday: 0,
+      estimatedCostUsd: 0
+    };
+
+    if (row.mode === 'ai') {
+      existing.aiPromptsThisMonth += 1;
+      existing.estimatedCostUsd += Number(row.estimated_cost || 0);
+    } else if (row.mode === 'search' && row.created_at >= dayStart) {
+      existing.searchQueriesToday += 1;
+    }
+
+    byUser.set(userId, existing);
+  }
+
+  return Array.from(byUser.values()).map((entry) => ({
+    ...entry,
+    estimatedCostUsd: Number(entry.estimatedCostUsd.toFixed(4))
+  }));
+}
+
 export async function getStaffAiUsageSummary(
   admin: SupabaseClient,
-  workspaceId: string
+  workspaceId: string,
+  plan: EverittosPlan
 ): Promise<StaffAiUsageSummary> {
   const monthStart = calendarMonthStartIso();
   const dayStart = calendarDayStartIso();
-  const staffRoles = new Set(['employee', 'contractor', 'viewer']);
+  const staffLimitsApply = limitsForPlan(plan).aiAccess && !limitsForPlan(plan).aiUnlimited;
 
   const { data: monthRows, error } = await admin
     .from('ai_usage_events')
@@ -178,7 +267,7 @@ export async function getStaffAiUsageSummary(
     throw error;
   }
 
-  const rows = (monthRows || []).filter((r) => staffRoles.has(normalizeRole(r.user_role)));
+  const rows = (monthRows || []).filter((r) => isStaffAiRole(r.user_role));
   const staffPromptsToday = rows.filter((r) => r.created_at >= dayStart).length;
   const staffBudgetUsedUsd = Number(
     rows.reduce((s, r) => s + Number(r.estimated_cost || 0), 0).toFixed(4)
@@ -201,6 +290,7 @@ export async function getStaffAiUsageSummary(
     staffPromptsToday,
     staffBudgetUsedUsd,
     staffBudgetCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
+    staffLimitsApply,
     staffUsersThisMonth: Array.from(byUser.entries()).map(([userId, stats]) => ({
       userId,
       role: stats.role,
