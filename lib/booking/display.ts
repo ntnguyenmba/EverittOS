@@ -18,7 +18,7 @@ export type BookingDisplayRow = {
 export function bookingAppointmentName(booking: BookingDisplayRow): string {
   if (booking.services?.name?.trim()) return booking.services.name.trim();
   if (booking.manual_service_name?.trim()) return booking.manual_service_name.trim();
-  return 'Appointment';
+  return 'Manual booking';
 }
 
 export function bookingStaffLabel(booking: BookingDisplayRow): string {

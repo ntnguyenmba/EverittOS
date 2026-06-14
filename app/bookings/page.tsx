@@ -122,14 +122,15 @@ export default function BookingsPage() {
     setWorkers((json.workers || []).map((worker: WorkerOption) => ({ id: worker.id, name: worker.name })));
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<BookingRow[]> => {
     setLoading(true);
     const {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
-      return;
+      setLoading(false);
+      return [];
     }
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const userRole = normalizeRole(profile?.role);
@@ -137,19 +138,21 @@ export default function BookingsPage() {
     setRole(userRole);
     setCanManage(isManagerRole(userRole));
 
-    const res = await fetch('/api/bookings?upcoming=1');
+    const res = await fetch('/api/bookings?upcoming=1', { cache: 'no-store' });
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
       if (json.code === 'schema_missing' || json.schemaReady === false) {
         setSchemaMissing(true);
-        return;
+        return [];
       }
       feedback.error(json.error || 'Unable to load bookings.');
-      return;
+      return [];
     }
     setSchemaMissing(false);
-    setBookings(json.bookings || []);
+    const rows = (json.bookings || []) as BookingRow[];
+    setBookings(rows);
+    return rows;
   }, [feedback, router]);
 
   useEffect(() => {
@@ -264,12 +267,39 @@ export default function BookingsPage() {
       return;
     }
 
+    if (!json.ok || !json.booking?.id) {
+      feedback.error(json.error || 'Booking could not be saved.');
+      return;
+    }
+
+    const savedBooking = json.booking as BookingRow;
+    closeForms();
+    setBookings((prev) => {
+      const without = prev.filter((row) => row.id !== savedBooking.id);
+      return [...without, savedBooking].sort(
+        (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+      );
+    });
+
+    const refreshed = await load();
+    const visible = refreshed.some((row) => row.id === savedBooking.id);
+    if (!visible) {
+      console.warn('[bookings] saved booking not visible after refetch', {
+        bookingId: savedBooking.id,
+        workspaceId: json.workspaceId,
+        startsAt: savedBooking.starts_at,
+        endsAt: savedBooking.ends_at
+      });
+      feedback.error(
+        'Booking saved, but it is not visible in the current list. Please refresh or contact support.'
+      );
+      return;
+    }
+
     if (json.warnings?.length) {
       json.warnings.forEach((warning: string) => feedback.error(warning));
     }
     feedback.success(json.message || 'Booking saved.');
-    closeForms();
-    void load();
   }
 
   async function patchBooking(id: string, payload: Record<string, unknown>, successMessage: string) {
@@ -479,7 +509,7 @@ export default function BookingsPage() {
         {showCreateForm && canManage ? renderBookingForm('New booking', false) : null}
         {loading ? <p>Loading bookings…</p> : null}
         {!loading && !schemaMissing && bookings.length === 0 && !showCreateForm ? (
-          <p className="muted">No bookings yet. Create a manual booking or share your public booking page.</p>
+          <p className="muted">No upcoming bookings. Create a manual booking or share your public booking page.</p>
         ) : null}
 
         {bookings.map((booking) => {

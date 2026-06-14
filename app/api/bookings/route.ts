@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import {
+  assertBookingInsertResult,
+  BOOKING_LIST_SELECT,
+  upcomingBookingCutoffIso
+} from '@/lib/booking/list-query';
 import { mapBookingApiError, probeBookingSchemaReady, validateBookingTimeRange } from '@/lib/booking/schema';
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { processBookingSideEffects } from '@/lib/booking/process-side-effects';
@@ -15,6 +20,13 @@ function bookingErrorResponse(message: string, fallback: string, status = 400) {
   return NextResponse.json(mapped, { status: mapped.code === 'schema_missing' ? 503 : status });
 }
 
+function applyWorkspaceScope<T extends { or: (filters: string) => T }>(
+  query: T,
+  workspaceId: string
+): T {
+  return query.or(`organization_id.eq.${workspaceId},workspace_id.eq.${workspaceId}`);
+}
+
 async function loadWorkspaceContact(admin: NonNullable<ReturnType<typeof createAdminSupabase>>, orgId: string) {
   const { data: settings } = await admin
     .from('organization_settings')
@@ -28,6 +40,14 @@ export async function GET(request: Request) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const workspaceId = ctx.workspace.organizationId;
+  if (!workspaceId) {
+    return NextResponse.json(
+      { error: 'No active workspace found. Select or create a workspace before viewing bookings.', code: 'no_workspace' },
+      { status: 403 }
+    );
   }
 
   const schema = await probeBookingSchemaReady(ctx.supabase);
@@ -47,14 +67,15 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const upcoming = url.searchParams.get('upcoming') === '1';
 
-  let query = ctx.supabase
-    .from('bookings')
-    .select('*, services(name, duration_minutes, price_cents), workers(name)')
-    .eq('organization_id', ctx.workspace.organizationId)
-    .order('starts_at', { ascending: true });
+  let query = applyWorkspaceScope(
+    ctx.supabase.from('bookings').select(BOOKING_LIST_SELECT),
+    workspaceId
+  ).order('starts_at', { ascending: true });
 
   if (upcoming) {
-    query = query.gte('starts_at', new Date().toISOString()).not('status', 'eq', 'cancelled');
+    query = query
+      .gte('ends_at', upcomingBookingCutoffIso())
+      .not('status', 'eq', 'cancelled');
   }
 
   const { data, error } = await query.limit(100);
@@ -63,13 +84,25 @@ export async function GET(request: Request) {
     return bookingErrorResponse(error.message, 'Unable to load bookings.');
   }
 
-  return NextResponse.json({ schemaReady: true, bookings: data || [] });
+  return NextResponse.json({
+    schemaReady: true,
+    workspaceId,
+    bookings: data || []
+  });
 }
 
 export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const workspaceId = ctx.workspace.organizationId;
+  if (!workspaceId) {
+    return NextResponse.json(
+      { error: 'No active workspace found. Select or create a workspace before saving bookings.', code: 'no_workspace' },
+      { status: 403 }
+    );
   }
 
   const body = (await request.json()) as Record<string, unknown>;
@@ -91,7 +124,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: timeError }, { status: 400 });
   }
 
-  const workspaceId = ctx.workspace.organizationId;
   const admin = createAdminSupabase();
 
   const { data, error } = await ctx.supabase
@@ -112,7 +144,7 @@ export async function POST(request: Request) {
       status: parsed.status,
       source: 'manual'
     })
-    .select('*, services(name), workers(name)')
+    .select(BOOKING_LIST_SELECT)
     .single();
 
   if (error) {
@@ -123,14 +155,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    'booking',
-    data.id,
-    'booking_created',
-    `Booking created for ${data.client_name}`
-  );
+  if (!assertBookingInsertResult(data)) {
+    console.error('[bookings] insert returned no row', { workspaceId, startsAt: parsed.startsAt });
+    return NextResponse.json(
+      { error: 'Booking could not be saved. Supabase did not return the new booking row.', code: 'insert_no_row' },
+      { status: 500 }
+    );
+  }
+
+  await logWorkspaceActivity(workspaceId, ctx.userId, 'booking', data.id, 'booking_created', `Booking created for ${data.client_name}`);
 
   const warnings: string[] = [];
   let confirmationSent = false;
@@ -141,7 +174,7 @@ export async function POST(request: Request) {
       organizationId: workspaceId,
       organizationName: ctx.workspace.organizationName,
       timezone: settings?.timezone || 'America/New_York',
-      booking: data,
+      booking: data as unknown as Parameters<typeof processBookingSideEffects>[1]['booking'],
       sourceLabel: 'Manual booking',
       sendCustomerConfirmation: parsed.sendConfirmation,
       contactEmail: settings?.company_email || null,
@@ -157,7 +190,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     booking: data,
-    message: warnings.length ? 'Booking saved.' : 'Booking saved.',
+    workspaceId,
+    message: 'Booking saved.',
     warnings,
     confirmationSent
   });
