@@ -53,5 +53,5 @@ test('buildCustomerWritePayload maps address to address_line1', () => {
 
 test('buildCustomerUpdatePayload maps displayName to company_name', () => {
   const payload = buildCustomerUpdatePayload({ displayName: 'Updated label' });
-  assert.deepEqual(payload, { company_name: 'Updated label', name: 'Updated label' });
+  assert.deepEqual(payload, { company_name: 'Updated label', name: 'Updated label', full_name: 'Updated label' });
 });

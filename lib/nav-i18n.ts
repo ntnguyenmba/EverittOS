@@ -22,6 +22,8 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/invoices': 'invoices',
   '/messages': 'messages',
   '/leads': 'leads',
+  '/services': 'services',
+  '/bookings': 'bookings',
   '/workflows': 'workflows',
   '/notifications': 'notifications',
   '/settings/billing': 'billing',

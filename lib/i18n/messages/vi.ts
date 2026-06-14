@@ -372,6 +372,8 @@ export const messages: Messages = {
     invoices: 'Hóa đơn',
     messages: 'Tin nhắn',
     leads: 'Khách tiềm năng',
+    services: 'Dịch vụ',
+    bookings: 'Lịch hẹn',
     jobs: 'Công việc',
     crm: 'Khách hàng',
     customers: 'Khách hàng',

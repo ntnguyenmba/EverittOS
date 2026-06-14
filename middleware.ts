@@ -42,7 +42,9 @@ const AUTH_PREFIXES = [
   '/forms',
   '/templates',
   '/reviews',
-  '/leads'
+  '/leads',
+  '/services',
+  '/bookings'
 ];
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
@@ -61,7 +63,8 @@ const PUBLIC_API_PREFIXES = [
   '/api/auth/signup-rate-limit',
   '/api/stripe/webhook',
   '/api/team/accept',
-  '/api/forms/public'
+  '/api/forms/public',
+  '/api/book'
 ];
 
 function isPublicApiPath(pathname: string) {
@@ -441,6 +444,9 @@ export const config = {
     '/templates/:path*',
     '/reviews/:path*',
     '/leads/:path*',
+    '/services/:path*',
+    '/bookings/:path*',
+    '/book/:path*',
     '/f/:path*',
     '/login',
     '/signup'

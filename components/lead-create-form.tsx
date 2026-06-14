@@ -75,7 +75,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
 
     if (json.customer?.id) {
       onCreated?.(json.customer.id);
-      setTimeout(() => router.push(`/leads/${json.customer.id}`), 600);
+      setTimeout(() => router.push(`/leads/${json.customer!.id}`), 600);
     } else {
       appFeedback.error('Lead saved but could not open the record. Refresh and try again.');
     }

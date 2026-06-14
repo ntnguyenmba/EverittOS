@@ -372,6 +372,8 @@ export const messages: Messages = {
     invoices: 'Invoices',
     messages: 'Messages',
     leads: 'Leads',
+    services: 'Services',
+    bookings: 'Bookings',
     jobs: 'Jobs',
     crm: 'Customers',
     customers: 'Customers',

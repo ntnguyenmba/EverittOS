@@ -69,6 +69,8 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/forms':
     case '/templates':
     case '/reviews':
+    case '/services':
+    case '/bookings':
     case '/leads':
     case '/workers':
     case '/activity':

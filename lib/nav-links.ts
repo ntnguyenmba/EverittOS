@@ -28,6 +28,8 @@ const TOOLS_NAV: NavLinkDef[] = [
   { label: 'Forms', href: '/forms', flag: 'formsNav' },
   { label: 'Templates', href: '/templates', flag: 'templatesNav' },
   { label: 'Reviews', href: '/reviews', flag: 'reviewsNav' },
+  { label: 'Services', href: '/services', flag: 'servicesNav' },
+  { label: 'Bookings', href: '/bookings', flag: 'bookingsNav' },
   { label: 'Proposals', href: '/proposals', flag: 'proposalsNav' },
   { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
   { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
@@ -73,6 +75,8 @@ export const SECONDARY_APP_ROUTES = [
   '/knowledge',
   '/automations',
   '/clients',
+  '/services',
+  '/bookings',
   '/portal/client',
   '/portal/contractor'
 ] as const;

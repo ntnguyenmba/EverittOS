@@ -232,6 +232,8 @@ export type MessageTree = {
     invoices: string;
     messages: string;
     leads: string;
+    services: string;
+    bookings: string;
     jobs: string;
     crm: string;
     customers: string;
