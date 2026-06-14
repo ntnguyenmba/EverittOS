@@ -19,8 +19,13 @@ export default function TermsPage() {
 
         <h3>Service</h3>
         <p>
-          EverittOS is provided for business operations and field documentation. You are responsible for accurate job
-          records, customer data, and compliance with laws that apply to your business and industry.
+          EverittOS is provided for business operations and field documentation. You are responsible for all information
+          uploaded, stored, entered, or managed within your EverittOS workspace. You represent that you have the
+          necessary rights, permissions, and authority to collect, store, manage, process, and use such information in
+          connection with your business and use of the Services. You are responsible for accurate job records, customer
+          data, and compliance with laws that apply to your business and industry. You remain responsible for verifying
+          the accuracy and appropriateness of information, recommendations, summaries, drafts, and other content generated
+          through the Services.
         </p>
 
         <h3>Accounts</h3>
@@ -47,7 +52,9 @@ export default function TermsPage() {
         <h3>Acceptable use</h3>
         <p>
           You may not misuse the platform, attempt unauthorized access, upload malicious content, or use EverittOS in
-          violation of applicable law. We may suspend accounts that violate these terms or pose a security risk.
+          violation of applicable law. You agree not to upload or use content in violation of applicable laws, regulations,
+          privacy rights, contractual obligations, or third-party rights. We may suspend accounts that violate these terms
+          or pose a security risk.
         </p>
 
         <h3>Changes</h3>

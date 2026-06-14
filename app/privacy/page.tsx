@@ -26,6 +26,16 @@ export default function PrivacyPage() {
           <li>Billing data: plan, subscription status, and Stripe customer references (payment details stay with Stripe).</li>
           <li>Technical data: session cookies, device/browser metadata, and security logs.</li>
         </ul>
+        <p>
+          EverittOS allows users to store and manage business information, including customer records, leads, jobs,
+          schedules, forms, documents, invoices, reviews, photos, notes, and other workspace content. Users are
+          responsible for ensuring they have the appropriate rights and authorization to collect, store, manage, and use
+          information uploaded to EverittOS.
+        </p>
+        <p>
+          Workspace content may be indexed and searched to support platform functionality, including search and business
+          intelligence features such as Ask Everitt.
+        </p>
 
         <h3>Why we process data</h3>
         <ul>
@@ -33,6 +43,18 @@ export default function PrivacyPage() {
           <li>To send operational notifications you request (legitimate interest / consent where required).</li>
           <li>To comply with legal obligations and respond to lawful requests.</li>
         </ul>
+        <p>
+          Ask Everitt may retrieve, organize, summarize, and present information stored within your workspace in order
+          to answer questions, locate records, and provide requested business insights.
+        </p>
+
+        <h3>AI-assisted features</h3>
+        <p>
+          Certain features may use artificial intelligence to generate summaries, recommendations, drafts, analyses, or
+          other requested content. When AI-assisted features are used, relevant workspace information may be processed for
+          the purpose of generating the requested response.
+        </p>
+        <p>Users should review AI-generated content before relying on or distributing it.</p>
 
         <h3>Retention</h3>
         <p>
