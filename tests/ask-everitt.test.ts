@@ -8,6 +8,11 @@ import {
 } from '@/lib/ai-usage-events';
 
 describe('ask-everitt-intent', () => {
+  it('routes predict and explain to AI mode', () => {
+    assert.equal(detectAskEverittMode('Predict workload next month'), 'ai');
+    assert.equal(detectAskEverittMode('Explain revenue trends'), 'ai');
+  });
+
   it('routes lookup questions to search mode', () => {
     assert.equal(detectAskEverittMode('Which jobs are scheduled tomorrow?'), 'search');
     assert.equal(detectAskEverittMode('Show unpaid invoices'), 'search');
@@ -44,6 +49,32 @@ describe('ai-usage-events constants', () => {
 
   it('estimateAiCost returns a non-negative number', () => {
     assert.ok(estimateAiCost(1000, 500) >= 0);
+  });
+});
+
+import { getSearchSources, registerSearchSource } from '@/lib/ask-everitt/search-sources';
+
+describe('search-sources registry', () => {
+  it('includes core business modules', () => {
+    const ids = getSearchSources().map((s) => s.id);
+    assert.ok(ids.includes('customers'));
+    assert.ok(ids.includes('jobs'));
+    assert.ok(ids.includes('invoices'));
+    assert.ok(ids.includes('expenses'));
+  });
+
+  it('allows registering new searchable modules', () => {
+    registerSearchSource({
+      id: 'custom_module',
+      label: 'Custom',
+      recordType: 'document',
+      table: 'custom_table',
+      keywords: ['custom'],
+      href: '/custom',
+      actionLabel: 'Open Custom',
+      listPath: '/custom'
+    });
+    assert.ok(getSearchSources().some((s) => s.id === 'custom_module'));
   });
 });
 

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { AI_ACTION_SYSTEM_HINT, parseProposedAction } from '@/lib/ai-actions';
 import { assertAskEverittSearchAccess, searchUsageEvent } from '@/lib/ask-everitt-access';
 import { detectAskEverittMode } from '@/lib/ask-everitt-intent';
-import { runAskEverittSearch } from '@/lib/ask-everitt-search';
+import { formatPrefetchedContextForAi, prefetchAskEverittContextForAi } from '@/lib/ask-everitt/ai-prefetch';
+import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const searchResult = await runAskEverittSearch(supabase, org.organizationId, prompt);
+    const searchResult = await runAskEverittSearchEngine(supabase, org.organizationId, prompt);
     await recordAiUsage(admin, searchUsageEvent({
       workspaceId: org.organizationId,
       userId: user.id,
@@ -110,8 +111,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, prompt);
+  const dataContext = formatPrefetchedContextForAi(prefetched);
+
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
-  const messages: AiChatMessage[] = [{ role: 'user', content: prompt }];
+  const messages: AiChatMessage[] = [
+    {
+      role: 'user',
+      content: `${prompt}\n\n--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
+    }
+  ];
   const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${orgContext}`, {
     feature: 'ask_everitt'
   });
@@ -153,6 +162,7 @@ export async function POST(request: Request) {
     model: result.model,
     provider: result.provider,
     action,
+    prefetchedSummary: prefetched.summary,
     usage: {
       monthlyUsed: gate.monthlyUsed + 1,
       monthlyCap: gate.monthlyCap,

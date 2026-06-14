@@ -9,7 +9,11 @@ import {
   ASK_EVERITT_SEARCH_SUGGESTIONS
 } from '@/lib/ai-features';
 import type { ProposedAiAction } from '@/lib/ai-actions';
-import type { AskEverittSearchRecord } from '@/lib/ask-everitt-search';
+import type {
+  AskEverittMetric,
+  AskEverittSearchGroup,
+  AskEverittSearchRecord
+} from '@/lib/ask-everitt/types';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { supabase } from '@/lib/supabase';
@@ -25,7 +29,11 @@ const RECORD_TYPE_LABELS: Record<AskEverittSearchRecord['type'], string> = {
   document: 'Document',
   review: 'Review',
   note: 'Note',
-  invoice: 'Invoice'
+  invoice: 'Invoice',
+  expense: 'Expense',
+  revenue: 'Revenue',
+  activity: 'Activity',
+  photo: 'Photo'
 };
 
 type AskEverittStatus = {
@@ -48,6 +56,8 @@ type SearchResponse = {
   mode: 'search';
   summary: string;
   results: AskEverittSearchRecord[];
+  groups?: AskEverittSearchGroup[];
+  metrics?: AskEverittMetric[];
   noResultsHint?: string;
 };
 
@@ -73,6 +83,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
   const [query, setQuery] = useState('');
   const [searchSummary, setSearchSummary] = useState('');
   const [searchResults, setSearchResults] = useState<AskEverittSearchRecord[]>([]);
+  const [searchGroups, setSearchGroups] = useState<AskEverittSearchGroup[]>([]);
+  const [searchMetrics, setSearchMetrics] = useState<AskEverittMetric[]>([]);
   const [searchHint, setSearchHint] = useState<string | null>(null);
   const [aiReply, setAiReply] = useState('');
   const [pendingAction, setPendingAction] = useState<ProposedAiAction | null>(null);
@@ -131,6 +143,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     setAiReply('');
     setSearchSummary('');
     setSearchResults([]);
+    setSearchGroups([]);
+    setSearchMetrics([]);
     setSearchHint(null);
     setPendingAction(null);
     setLastMode(null);
@@ -162,6 +176,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     setAiReply('');
     setSearchSummary('');
     setSearchResults([]);
+    setSearchGroups([]);
+    setSearchMetrics([]);
     setSearchHint(null);
     setPendingAction(null);
 
@@ -196,6 +212,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
       setLastMode('search');
       setSearchSummary(payload.summary);
       setSearchResults(payload.results || []);
+      setSearchGroups(payload.groups || []);
+      setSearchMetrics(payload.metrics || []);
       setSearchHint(payload.noResultsHint || null);
       return;
     }
@@ -256,6 +274,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
             busy={busy}
             searchSummary={searchSummary}
             searchResults={searchResults}
+            searchGroups={searchGroups}
+            searchMetrics={searchMetrics}
             searchHint={searchHint}
             aiReply={aiReply}
             notice={notice}
@@ -277,7 +297,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
   return (
     <>
       <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label="Ask Everitt">
-        <span className="everitt-cmd-placeholder">Ask about customers, jobs, leads…</span>
+        <span className="everitt-cmd-placeholder">Ask about customers, jobs, leads, workers, schedule, invoices…</span>
         <span className="everitt-cmd-kbd">{kbd}</span>
       </button>
       {open ? (
@@ -290,6 +310,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
           busy={busy}
           searchSummary={searchSummary}
           searchResults={searchResults}
+          searchGroups={searchGroups}
+          searchMetrics={searchMetrics}
           searchHint={searchHint}
           aiReply={aiReply}
           notice={notice}
@@ -318,6 +340,8 @@ type OverlayProps = {
   busy: boolean;
   searchSummary: string;
   searchResults: AskEverittSearchRecord[];
+  searchGroups: AskEverittSearchGroup[];
+  searchMetrics: AskEverittMetric[];
   searchHint: string | null;
   aiReply: string;
   notice: string;
@@ -341,6 +365,8 @@ function CommandOverlay({
   busy,
   searchSummary,
   searchResults,
+  searchGroups,
+  searchMetrics,
   searchHint,
   aiReply,
   notice,
@@ -361,7 +387,7 @@ function CommandOverlay({
           <input
             ref={inputRef}
             className="everitt-cmd-input"
-            placeholder="Ask about customers, jobs, leads, workers, schedule, forms, SOPs, documents, or reviews…"
+            placeholder="Ask about customers, jobs, leads, workers, schedule, invoices, reviews, documents, or SOPs…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -371,7 +397,7 @@ function CommandOverlay({
           <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span>
         </div>
 
-        <p className="everitt-cmd-tagline muted">Searches your business data first.</p>
+        <p className="everitt-cmd-tagline muted">Searches your business records first.</p>
 
         {!query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
@@ -429,28 +455,47 @@ function CommandOverlay({
           <div className="everitt-cmd-search-answer">
             <p className="everitt-cmd-summary">{searchSummary}</p>
             {searchHint ? <p className="muted everitt-cmd-hint">{searchHint}</p> : null}
-            {searchResults.length > 0 ? (
-              <ul className="everitt-cmd-result-cards">
-                {searchResults.map((item) => (
-                  <li key={`${item.type}-${item.id}`} className="everitt-cmd-result-card">
-                    <div className="everitt-cmd-result-card-head">
-                      <span className="everitt-cmd-result-type">{RECORD_TYPE_LABELS[item.type]}</span>
-                      {item.status ? <span className="everitt-cmd-result-status">{item.status}</span> : null}
-                      {item.date ? <span className="muted everitt-cmd-result-date">{item.date}</span> : null}
-                    </div>
-                    <p className="everitt-cmd-result-title">{item.title}</p>
-                    {item.subtitle ? <p className="muted everitt-cmd-result-sub">{item.subtitle}</p> : null}
-                    <button type="button" className="btn btn-sm" onClick={() => navigate(item.href)}>
-                      {item.actionLabel}
-                    </button>
-                  </li>
+
+            {searchMetrics.length > 0 ? (
+              <div className="everitt-cmd-metrics">
+                {searchMetrics.map((m) => (
+                  <div key={m.label} className="everitt-cmd-metric-card">
+                    <span className="everitt-cmd-metric-label">{m.label}</span>
+                    <strong className="everitt-cmd-metric-value">{m.value}</strong>
+                    {m.href ? (
+                      <button type="button" className="btn btn-sm" onClick={() => navigate(m.href!)}>
+                        View
+                      </button>
+                    ) : null}
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : null}
+
+            {(searchGroups.length > 0 ? searchGroups : [{ sourceId: 'all', label: 'Results', results: searchResults }]).map(
+              (group) =>
+                group.results.length > 0 ? (
+                  <div key={group.sourceId} className="everitt-cmd-result-group">
+                    {searchGroups.length > 1 ? (
+                      <p className="everitt-cmd-section-label">{group.label}</p>
+                    ) : null}
+                    <ul className="everitt-cmd-result-cards">
+                      {group.results.map((item) => (
+                        <RecordResultCard key={`${item.type}-${item.id}`} item={item} onOpen={navigate} />
+                      ))}
+                    </ul>
+                  </div>
+                ) : null
+            )}
           </div>
         ) : null}
 
-        {aiReply ? <div className="everitt-cmd-reply">{aiReply}</div> : null}
+        {aiReply ? (
+          <div className="everitt-cmd-ai-block">
+            <p className="everitt-cmd-section-label">Everitt AI</p>
+            <div className="everitt-cmd-reply">{aiReply}</div>
+          </div>
+        ) : null}
 
         {pendingAction ? (
           <div className="everitt-cmd-action">
@@ -471,10 +516,34 @@ function CommandOverlay({
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
 
         <p className="muted everitt-cmd-footer">
-          Press Enter to ask · Esc to close ·{' '}
-          <Link href="/settings/billing">Billing & usage</Link>
+          Search uses your workspace data · AI only when needed · Esc to close ·{' '}
+          <Link href="/settings/billing">Usage</Link>
         </p>
       </div>
     </div>
+  );
+}
+
+function RecordResultCard({
+  item,
+  onOpen
+}: {
+  item: AskEverittSearchRecord;
+  onOpen: (href: string) => void;
+}) {
+  return (
+    <li className="everitt-cmd-result-card">
+      <div className="everitt-cmd-result-card-head">
+        <span className="everitt-cmd-result-type">{RECORD_TYPE_LABELS[item.type]}</span>
+        {item.status ? <span className="everitt-cmd-result-status">{item.status}</span> : null}
+        {item.date ? <span className="muted everitt-cmd-result-date">{item.date}</span> : null}
+      </div>
+      <p className="everitt-cmd-result-title">{item.title}</p>
+      {item.subtitle ? <p className="muted everitt-cmd-result-sub">{item.subtitle}</p> : null}
+      {item.owner ? <p className="muted everitt-cmd-result-owner">Owner: {item.owner}</p> : null}
+      <button type="button" className="btn btn-sm" onClick={() => onOpen(item.href)}>
+        {item.actionLabel}
+      </button>
+    </li>
   );
 }

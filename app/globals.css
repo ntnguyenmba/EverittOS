@@ -3796,6 +3796,48 @@ html[data-deployment='production'] #vercel-toolbar {
   font: inherit;
 }
 
+.everitt-cmd-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.everitt-cmd-metric-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--surface, #fff);
+}
+
+.everitt-cmd-metric-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.everitt-cmd-metric-value {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.everitt-cmd-result-group {
+  margin-bottom: 8px;
+}
+
+.everitt-cmd-result-owner {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.everitt-cmd-ai-block {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 10px;
+}
+
 .staff-ai-usage-list {
   list-style: none;
   margin: 8px 0 0;

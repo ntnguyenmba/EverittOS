@@ -42,18 +42,18 @@ export function isAiFeatureAvailable(_feature: AiFeatureId, plan: EverittosPlan)
 
 export const ASK_EVERITT_SEARCH_SUGGESTIONS = [
   'Which jobs are scheduled tomorrow?',
-  'Show customers who haven\'t booked in 90 days.',
-  'Find all jobs with before-and-after photos.',
-  'Which leads came in this month?',
+  'Show customers who have not booked in 90 days.',
   'Show unpaid invoices.',
-  'Show recent reviews.'
+  'Find my onboarding SOP.',
+  'Show customers in Frisco.',
+  'Show revenue this month.'
 ] as const;
 
 export const ASK_EVERITT_AI_SUGGESTIONS = [
-  { text: 'Write a follow-up message for this lead.', premium: true },
-  { text: 'Summarize this month\'s reviews.', premium: true },
-  { text: 'Draft a follow-up email for a new lead.', premium: true },
-  { text: 'Create an onboarding SOP for new clients.', premium: true }
+  { text: 'Summarize recent reviews.', premium: true },
+  { text: 'Write a follow-up email for inactive customers.', premium: true },
+  { text: 'Analyze revenue trends this month.', premium: true },
+  { text: 'Draft a reactivation message for customers inactive 90 days.', premium: true }
 ] as const;
 
 /** @deprecated Use ASK_EVERITT_SEARCH_SUGGESTIONS + ASK_EVERITT_AI_SUGGESTIONS */
