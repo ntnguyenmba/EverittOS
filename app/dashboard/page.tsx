@@ -36,9 +36,7 @@ function DashboardAccessNotice() {
   const detail = searchParams.get('detail');
   if (!reason) return null;
   const mapped = mapAccessError(reason);
-  return (
-    <AccessBlockedBanner title={mapped.title} message={mapped.message} details={detail || mapped.details} />
-  );
+  return <AccessBlockedBanner title={mapped.title} message={mapped.message} details={detail || mapped.details} />;
 }
 
 export default function DashboardPage() {
@@ -118,16 +116,15 @@ export default function DashboardPage() {
 
     const metricsPromise = fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
 
-    const [jobsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] =
-      await Promise.all([
-        jobsQuery,
-        activityQuery,
-        fetchOrganizationIsDemo(supabase, org?.organizationId),
-        jobCountQuery,
-        customerCountQuery,
-        workerCountQuery,
-        metricsPromise
-      ]);
+    const [jobsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] = await Promise.all([
+      jobsQuery,
+      activityQuery,
+      fetchOrganizationIsDemo(supabase, org?.organizationId),
+      jobCountQuery,
+      customerCountQuery,
+      workerCountQuery,
+      metricsPromise
+    ]);
 
     setLoading(false);
 
@@ -151,27 +148,46 @@ export default function DashboardPage() {
   const setupItems = [
     {
       label: 'Add first customer',
+      detail: 'Store customer details and job history.',
       href: '/customers/new',
       done: totalCustomers > 0
     },
     {
       label: 'Create first job',
+      detail: 'Schedule and track your first service.',
       href: '/jobs/new',
       done: totalJobs > 0
     },
     {
       label: 'Invite worker',
+      detail: 'Assign work to your team or contractors.',
       href: '/workers',
       done: totalWorkers > 0
     },
     {
-      label: 'Review schedule',
-      href: '/schedule',
-      done: totalJobs > 0
+      label: 'Connect calendar',
+      detail: 'Review scheduling and calendar settings.',
+      href: '/settings',
+      done: false
     }
   ];
   const setupComplete = setupItems.filter((item) => item.done).length;
+  const showSetup = !loading && setupComplete < setupItems.length;
   const showActivityLink = limitsForPlan(plan).activityLog && Boolean(orgId);
+
+  const focusItems = loading
+    ? [{ title: 'Loading your workspace', detail: 'Checking customers, jobs and activity.', href: '/dashboard' }]
+    : totalCustomers === 0 || totalJobs === 0
+      ? [
+          { title: 'Add your first customer', detail: 'Start with the person or company you serve.', href: '/customers/new' },
+          { title: 'Create your first job', detail: 'Track the work, date and status in one place.', href: '/jobs/new' },
+          { title: 'Use Ask Everitt', detail: 'Ask what needs attention once your data is in.', href: '/dashboard' }
+        ]
+      : [
+          { title: `${totalJobs} job${totalJobs === 1 ? '' : 's'} in your workspace`, detail: 'Open jobs to review work status.', href: '/jobs' },
+          { title: `${totalCustomers} customer${totalCustomers === 1 ? '' : 's'} tracked`, detail: 'Review customers and recent work.', href: '/customers' },
+          { title: 'Review schedule', detail: 'Check what is booked or needs follow-up.', href: '/schedule' }
+        ];
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -191,33 +207,9 @@ export default function DashboardPage() {
           subtitle="Manage customers, jobs, schedule, workers, invoices and business performance."
         />
 
-        <section className="card dashboard-start-card" aria-label="Get your business set up">
-          <div className="dashboard-start-copy">
-            <p className="dashboard-eyebrow">Start here</p>
-            <h2>Get your business set up</h2>
-            <p>Complete these first steps so EverittOS can start tracking your work clearly.</p>
-          </div>
-          <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
-            <span>{setupComplete} of {setupItems.length} complete</span>
-            <div className="dashboard-progress-track">
-              <span style={{ width: `${(setupComplete / setupItems.length) * 100}%` }} />
-            </div>
-          </div>
-          <div className="dashboard-start-list">
-            {setupItems.map((item) => (
-              <Link key={item.label} href={item.href} className="dashboard-start-item">
-                <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
-                  {item.done ? '✓' : ''}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
         <section className="card dashboard-actions-card" aria-label={t('dashboard.primaryActions')}>
           <div className="dashboard-section-head">
-            <h2>{t('dashboard.primaryActions')}</h2>
+            <h2>Quick actions</h2>
           </div>
           <div className="dashboard-action-row">
             <Link href="/customers/new">New customer</Link>
@@ -227,6 +219,51 @@ export default function DashboardPage() {
             <Link href="/workers">Worker</Link>
           </div>
         </section>
+
+        <section className="card dashboard-focus-card" aria-label="Today&apos;s focus">
+          <div className="dashboard-section-head">
+            <h2>Today&apos;s focus</h2>
+          </div>
+          <div className="dashboard-focus-list">
+            {focusItems.map((item) => (
+              <Link key={item.title} href={item.href} className="dashboard-focus-item">
+                <span>{item.title}</span>
+                <small>{item.detail}</small>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {showSetup ? (
+          <section className="card dashboard-start-card" aria-label="Get your business set up">
+            <div className="dashboard-start-copy">
+              <p className="dashboard-eyebrow">Start here</p>
+              <h2>Get your business set up</h2>
+              <p>Complete these first steps so EverittOS can start tracking your work clearly.</p>
+            </div>
+            <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
+              <span>
+                {setupComplete} of {setupItems.length} complete
+              </span>
+              <div className="dashboard-progress-track">
+                <span style={{ width: `${(setupComplete / setupItems.length) * 100}%` }} />
+              </div>
+            </div>
+            <div className="dashboard-start-list">
+              {setupItems.map((item) => (
+                <Link key={item.label} href={item.href} className="dashboard-start-item">
+                  <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
+                    {item.done ? '✓' : ''}
+                  </span>
+                  <span className="dashboard-start-item-copy">
+                    <strong>{item.label}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
 
