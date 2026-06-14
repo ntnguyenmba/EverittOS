@@ -1,20 +1,28 @@
 :root {
-  --dashboard-max-width: 980px;
+  --dashboard-max-width: 1040px;
   --dashboard-card-radius: 16px;
-  --dashboard-card-pad: 22px;
-  --dashboard-grid-gap: 18px;
+  --dashboard-card-pad: 24px;
+  --dashboard-grid-gap: 22px;
   --dashboard-title-size: clamp(26px, 2vw, 34px);
-  --dashboard-card-title-size: clamp(20px, 1.45vw, 24px);
+  --dashboard-card-title-size: clamp(20px, 1.35vw, 24px);
   --dashboard-body-size: 14px;
   --dashboard-label-size: 12px;
-  --dashboard-stat-size: clamp(24px, 2.1vw, 30px);
+  --dashboard-stat-size: clamp(24px, 2vw, 30px);
+  --everitt-bg: #FAFAF8;
+  --everitt-card: #FFFFFF;
+  --everitt-border: #E6E3DE;
+  --everitt-border-soft: #EFEEEA;
+  --everitt-text: #252525;
+  --everitt-muted: #6D6D6D;
+  --everitt-soft: #F5F4F1;
+  --everitt-navy: #234A84;
 }
 
 .main:has(.today-page) {
   width: 100%;
   max-width: none !important;
   padding-inline: clamp(24px, 5vw, 64px) !important;
-  background: #FAFCFF !important;
+  background: var(--everitt-bg) !important;
 }
 
 .today-page {
@@ -28,15 +36,16 @@
 .today-page > .page-header,
 .today-page > .dashboard-header {
   grid-column: 1 / -1 !important;
-  margin-bottom: 2px !important;
+  margin-bottom: 4px !important;
 }
 
 .today-page h1,
 .today-page .page-header h1,
 .today-page .dashboard-header h1 {
   max-width: 720px !important;
+  color: var(--everitt-text) !important;
   font-size: var(--dashboard-title-size) !important;
-  line-height: 1.12 !important;
+  line-height: 1.1 !important;
   letter-spacing: -0.035em !important;
   font-weight: 720 !important;
 }
@@ -45,7 +54,7 @@
 .today-page .dashboard-header p,
 .today-page .page-header p {
   max-width: 58ch !important;
-  color: var(--muted) !important;
+  color: var(--everitt-muted) !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
 }
@@ -53,14 +62,12 @@
 .today-page > .dashboard-today-card,
 .today-page > .dashboard-activity-card,
 .today-page > .card,
-.today-page > .panel,
-.today-page > .onboarding-support-promo,
-.today-page > [class*='promo'] {
+.today-page > .panel {
   border-radius: var(--dashboard-card-radius) !important;
   padding: var(--dashboard-card-pad) !important;
-  border: 1px solid #DDE6F2 !important;
-  background: #FFFFFF !important;
-  box-shadow: 0 10px 26px rgba(23, 32, 51, 0.045) !important;
+  border: 1px solid var(--everitt-border) !important;
+  background: var(--everitt-card) !important;
+  box-shadow: none !important;
 }
 
 .today-page > .dashboard-today-card {
@@ -86,18 +93,24 @@
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
-  gap: 18px !important;
-  padding: 18px 20px !important;
-  background: #F7FAFE !important;
+  gap: 22px !important;
+  padding: 20px 0 !important;
+  border-top: 1px solid var(--everitt-border) !important;
+  border-bottom: 1px solid var(--everitt-border) !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
 .today-page > .onboarding-support-promo h2,
 .today-page > [class*='promo'] h2,
 .today-page > [class*='help'] h2 {
-  margin: 0 0 6px !important;
+  margin: 0 0 5px !important;
   max-width: none !important;
-  font-size: 20px !important;
+  color: var(--everitt-text) !important;
+  font-size: 19px !important;
   line-height: 1.18 !important;
   letter-spacing: -0.025em !important;
   font-weight: 700 !important;
@@ -106,9 +119,9 @@
 .today-page > .onboarding-support-promo p,
 .today-page > [class*='promo'] p,
 .today-page > [class*='help'] p {
-  max-width: 70ch !important;
+  max-width: 74ch !important;
   margin: 0 !important;
-  color: var(--muted) !important;
+  color: var(--everitt-muted) !important;
   font-size: 14px !important;
   line-height: 1.45 !important;
 }
@@ -120,7 +133,16 @@
 .today-page > [class*='promo'] a,
 .today-page > [class*='help'] a {
   justify-self: end !important;
+  min-height: 40px !important;
+  padding: 9px 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--everitt-border) !important;
+  background: var(--everitt-card) !important;
+  color: var(--everitt-text) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
   white-space: nowrap !important;
+  box-shadow: none !important;
 }
 
 .today-page h2,
@@ -128,6 +150,7 @@
 .today-page .card h2,
 .today-page .panel h2 {
   margin: 0 !important;
+  color: var(--everitt-text) !important;
   font-size: var(--dashboard-card-title-size) !important;
   line-height: 1.15 !important;
   letter-spacing: -0.03em !important;
@@ -140,6 +163,7 @@
 .today-page .muted,
 .today-page .dashboard-quiet-empty,
 .today-page .empty-state p {
+  color: var(--everitt-muted) !important;
   font-size: var(--dashboard-body-size) !important;
   line-height: 1.5 !important;
 }
@@ -148,8 +172,8 @@
   display: flex !important;
   align-items: flex-start !important;
   justify-content: space-between !important;
-  gap: 14px !important;
-  margin-bottom: 14px !important;
+  gap: 16px !important;
+  margin-bottom: 16px !important;
 }
 
 .today-page .dashboard-section-links {
@@ -158,40 +182,45 @@
   justify-content: flex-end !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
-  gap: 8px !important;
+  gap: 10px !important;
   flex-shrink: 0 !important;
   padding-top: 2px !important;
 }
 
 .today-page .dashboard-section-link,
 .today-page .snapshot-card-action {
-  min-height: 32px !important;
+  min-height: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
-  padding: 6px 10px !important;
-  border-radius: 999px !important;
-  background: #EAF2FF !important;
-  color: var(--navy-primary) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--everitt-navy) !important;
   font-size: 13px !important;
-  line-height: 1.1 !important;
+  line-height: 1.2 !important;
   font-weight: 700 !important;
   text-decoration: none !important;
+  box-shadow: none !important;
 }
 
 .today-page .dashboard-section-link:hover,
 .today-page .snapshot-card-action:hover {
-  background: #DCEAFF !important;
-  text-decoration: none !important;
+  background: transparent !important;
+  color: var(--everitt-text) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
 }
 
 .today-page .dashboard-quiet-empty,
 .today-page .empty-state,
 .today-page [class*='empty'] {
-  border-radius: 14px !important;
-  padding: 16px 18px !important;
-  background: #F7FAFE !important;
-  color: var(--muted) !important;
-  border: 1px dashed #DDE6F2 !important;
+  border-radius: 12px !important;
+  padding: 16px 0 0 !important;
+  background: transparent !important;
+  color: var(--everitt-muted) !important;
+  border: 0 !important;
+  border-top: 1px solid var(--everitt-border-soft) !important;
   box-shadow: none !important;
 }
 
@@ -203,7 +232,8 @@
 .today-page .dashboard-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 10px !important;
+  gap: 0 !important;
+  border-top: 1px solid var(--everitt-border-soft) !important;
 }
 
 .today-page .stat,
@@ -212,16 +242,26 @@
 .today-page .snapshot-card,
 .today-page .dashboard-glance-card,
 .today-page .dashboard-metric-card {
-  min-height: 88px !important;
-  padding: 14px !important;
-  border-radius: 13px !important;
+  min-height: 76px !important;
+  padding: 14px 16px 0 0 !important;
+  border-radius: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
   gap: 8px !important;
-  background: #FFFFFF !important;
+  background: transparent !important;
   box-shadow: none !important;
-  border: 1px solid #E7EEF7 !important;
+  border: 0 !important;
+  border-right: 1px solid var(--everitt-border-soft) !important;
+}
+
+.today-page .stat:last-child,
+.today-page .stat-card:last-child,
+.today-page .metric-stack:last-child,
+.today-page .snapshot-card:last-child,
+.today-page .dashboard-glance-card:last-child,
+.today-page .dashboard-metric-card:last-child {
+  border-right: 0 !important;
 }
 
 .today-page .stat span,
@@ -232,7 +272,7 @@
 .today-page .dashboard-metric-card span,
 .today-page .snapshot-card-label {
   max-width: none !important;
-  color: var(--muted) !important;
+  color: var(--everitt-muted) !important;
   font-size: var(--dashboard-label-size) !important;
   font-weight: 650 !important;
   line-height: 1.22 !important;
@@ -245,7 +285,7 @@
 .today-page .dashboard-metric-card strong,
 .today-page .stat-value,
 .today-page .snapshot-card-value {
-  color: var(--text) !important;
+  color: var(--everitt-text) !important;
   font-size: var(--dashboard-stat-size) !important;
   line-height: 1 !important;
   letter-spacing: -0.035em !important;
@@ -253,7 +293,7 @@
 }
 
 .today-page .dashboard-activity-card .dashboard-section-head {
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
 }
 
 .today-page .dashboard-activity-card h2 {
@@ -265,9 +305,9 @@
 .today-page .dashboard-activity-row,
 .today-page [class*='activity-row'] {
   min-height: 42px !important;
-  padding: 10px 0 !important;
+  padding: 12px 0 !important;
   gap: 12px !important;
-  border-bottom: 1px solid var(--divider) !important;
+  border-bottom: 1px solid var(--everitt-border-soft) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -282,6 +322,7 @@
 
 .today-page .dashboard-activity-title,
 .today-page [class*='activity-title'] {
+  color: var(--everitt-text) !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   line-height: 1.3 !important;
@@ -291,14 +332,14 @@
 .today-page .dashboard-activity-detail,
 .today-page [class*='activity-subtitle'],
 .today-page [class*='activity-detail'] {
-  color: var(--muted) !important;
+  color: var(--everitt-muted) !important;
   font-size: 12px !important;
   line-height: 1.35 !important;
 }
 
 .sidebar {
   padding: 20px 16px 16px !important;
-  background: #F3F7FC !important;
+  background: #F3F2EF !important;
 }
 
 .sidebar-brand {
@@ -312,12 +353,12 @@
 .nav-section-spaced {
   margin-top: 12px !important;
   padding-top: 12px !important;
-  border-top: 1px solid rgba(221, 230, 242, 0.9) !important;
+  border-top: 1px solid var(--everitt-border) !important;
 }
 
 .nav-section-label {
   padding: 16px 12px 8px !important;
-  color: var(--muted) !important;
+  color: var(--everitt-muted) !important;
   font-size: 11px !important;
   letter-spacing: 0.05em !important;
 }
@@ -327,22 +368,25 @@
 .mobile-nav-drawer-link.nav-item {
   min-height: 40px !important;
   padding: 8px 12px 8px 14px !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
+  color: var(--everitt-muted) !important;
 }
 
 .nav-item.active,
 .sidebar a.nav-item.active,
 .mobile-nav-drawer-link.nav-item.active {
-  background: #EAF2FF !important;
+  background: var(--everitt-card) !important;
+  color: var(--everitt-text) !important;
   box-shadow: none !important;
+  border-left-color: var(--everitt-navy) !important;
 }
 
 .sidebar-plan-card {
   padding: 14px !important;
   border-radius: 14px !important;
-  background: #FFFFFF !important;
+  background: var(--everitt-card) !important;
   box-shadow: none !important;
-  border-color: #DDE6F2 !important;
+  border-color: var(--everitt-border) !important;
 }
 
 .sidebar-footer {
@@ -358,6 +402,8 @@
 .sidebar-logout {
   min-height: 36px !important;
   border-radius: 10px !important;
+  border-color: var(--everitt-border) !important;
+  background: var(--everitt-card) !important;
 }
 
 @media (max-width: 1180px) {
@@ -388,7 +434,7 @@
 @media (max-width: 720px) {
   :root {
     --dashboard-card-pad: 18px;
-    --dashboard-grid-gap: 14px;
+    --dashboard-grid-gap: 16px;
     --dashboard-body-size: 14px;
   }
 
@@ -417,6 +463,16 @@
   .today-page .finance-metric-grid,
   .today-page .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .today-page .stat,
+  .today-page .stat-card,
+  .today-page .metric-stack,
+  .today-page .snapshot-card,
+  .today-page .dashboard-glance-card,
+  .today-page .dashboard-metric-card {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--everitt-border-soft) !important;
   }
 }
 
