@@ -23,6 +23,7 @@ import './outbound.css';
 import './feedback-toast.css';
 import './everitt-luxury-refresh.css';
 import './dashboard-repair.css';
+import './dashboard-visual-balance.css';
 
 const inter = Inter({
   subsets: ['latin'],
