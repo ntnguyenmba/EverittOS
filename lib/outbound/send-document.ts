@@ -5,6 +5,9 @@ import { syncOutboundEntityOnSend } from '@/lib/outbound/sync-on-send';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+const FEEDBACK_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLScKoDhMAuGu8RyvFQE9dBbrazjpGhPxm-C7lAlrdnDurGhDgQ/viewform?usp=header';
+
 export type SendOutboundResult = {
   document: OutboundDocument;
   emailSent: boolean;
@@ -24,13 +27,20 @@ function defaultSubject(docType: OutboundDocType, subject: string | null): strin
 }
 
 function emailHtml(doc: OutboundDocument): string {
-  const body = (doc.body || '').replace(/\n/g, '<br />');
+  const reviewPlainLink = `\n\nShare Feedback: ${FEEDBACK_FORM_URL}`;
+  const plainBody = doc.doc_type === 'review' ? (doc.body || '').replace(reviewPlainLink, '') : doc.body || '';
+  const body = plainBody.replace(/\n/g, '<br />');
   const amount =
     doc.amount != null && doc.doc_type !== 'review'
       ? `<p><strong>Amount:</strong> $${Number(doc.amount).toFixed(2)}</p>`
       : '';
+  const feedbackButton =
+    doc.doc_type === 'review'
+      ? `<p><a href="${FEEDBACK_FORM_URL}" style="display:inline-block;background:#234A84;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 20px;font-weight:700">Share Feedback</a></p>`
+      : '';
   return `<div style="font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#25364A">
     <p>${body}</p>
+    ${feedbackButton}
     ${amount}
   </div>`;
 }
