@@ -1,21 +1,18 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { DashboardBusinessActivity } from '@/components/dashboard-business-activity';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
-import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { filterBusinessActivity, type ActivityLogRow } from '@/lib/business-activity';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
-import { todayIso, daysAheadIso } from '@/lib/date-filters';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
-import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -47,9 +44,6 @@ function DashboardAccessNotice() {
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
-  const [leads, setLeads] = useState<CustomerRecord[]>([]);
   const [activity, setActivity] = useState<ActivityLogRow[]>([]);
   const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>({
     revenueThisMonth: 0,
@@ -101,38 +95,6 @@ export default function DashboardPage() {
       org?.organizationId
     );
 
-    const customersQuery = org?.organizationId
-      ? supabase
-          .from('customers')
-          .select(CUSTOMER_LIST_SELECT)
-          .eq('organization_id', org.organizationId)
-          .not('pipeline_stage', 'in', '("lead","qualified")')
-          .order('created_at', { ascending: false })
-          .limit(5)
-      : supabase
-          .from('customers')
-          .select(CUSTOMER_LIST_SELECT)
-          .eq('user_id', user.id)
-          .not('pipeline_stage', 'in', '("lead","qualified")')
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-    const leadsQuery = org?.organizationId
-      ? supabase
-          .from('customers')
-          .select(CUSTOMER_LIST_SELECT)
-          .eq('organization_id', org.organizationId)
-          .in('pipeline_stage', ['lead', 'qualified'])
-          .order('created_at', { ascending: false })
-          .limit(5)
-      : supabase
-          .from('customers')
-          .select(CUSTOMER_LIST_SELECT)
-          .eq('user_id', user.id)
-          .in('pipeline_stage', ['lead', 'qualified'])
-          .order('created_at', { ascending: false })
-          .limit(5);
-
     const activityQuery = org?.organizationId
       ? supabase
           .from('activity_logs')
@@ -156,11 +118,9 @@ export default function DashboardPage() {
 
     const metricsPromise = fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
 
-    const [jobsRes, customersRes, leadsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] =
+    const [jobsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] =
       await Promise.all([
         jobsQuery,
-        customersQuery,
-        leadsQuery,
         activityQuery,
         fetchOrganizationIsDemo(supabase, org?.organizationId),
         jobCountQuery,
@@ -177,10 +137,7 @@ export default function DashboardPage() {
     }
 
     const filteredJobs = filterDemoSeedJobs((jobsRes.data || []) as Job[], orgIsDemo) as Job[];
-    setJobs(filteredJobs);
-    setCustomers((customersRes.data || []) as CustomerRecord[]);
-    setLeads((leadsRes.data || []) as CustomerRecord[]);
-    setActivity(filterBusinessActivity((activityRes.data || []) as ActivityLogRow[]).slice(0, 8));
+    setActivity(filterBusinessActivity((activityRes.data || []) as ActivityLogRow[]).slice(0, 6));
     setRevenueMetrics(metrics);
     setTotalJobs(orgIsDemo ? filteredJobs.length : jobCountRes.count || 0);
     setTotalCustomers(customerCountRes.count || 0);
@@ -191,31 +148,29 @@ export default function DashboardPage() {
     void loadDashboard();
   }, []);
 
-  const today = todayIso();
-  const upcomingEnd = daysAheadIso(14);
-
-  const todayJobs = useMemo(
-    () =>
-      jobs
-        .filter((j) => j.status !== 'cancelled' && (j.start_date === today || j.due_date === today))
-        .slice(0, 8),
-    [jobs, today]
-  );
-
-  const upcomingJobs = useMemo(
-    () =>
-      jobs
-        .filter((j) => {
-          if (j.status === 'cancelled' || j.status === 'completed') return false;
-          const date = j.due_date || j.start_date;
-          return date && date >= today && date <= upcomingEnd;
-        })
-        .sort((a, b) => (a.due_date || a.start_date || '').localeCompare(b.due_date || b.start_date || ''))
-        .slice(0, 8),
-    [jobs, today, upcomingEnd]
-  );
-
-  const showSetupSupportCard = !loading && (totalCustomers === 0 || totalJobs === 0 || totalWorkers === 0);
+  const setupItems = [
+    {
+      label: 'Add first customer',
+      href: '/customers/new',
+      done: totalCustomers > 0
+    },
+    {
+      label: 'Create first job',
+      href: '/jobs/new',
+      done: totalJobs > 0
+    },
+    {
+      label: 'Invite worker',
+      href: '/workers',
+      done: totalWorkers > 0
+    },
+    {
+      label: 'Review schedule',
+      href: '/schedule',
+      done: totalJobs > 0
+    }
+  ];
+  const setupComplete = setupItems.filter((item) => item.done).length;
   const showActivityLink = limitsForPlan(plan).activityLog && Boolean(orgId);
 
   return (
@@ -230,99 +185,62 @@ export default function DashboardPage() {
         </p>
       ) : null}
 
-      <div className="today-page">
-        <PageHeader title={t('dashboard.welcome')} subtitle={t('dashboard.subtitleToday')} />
+      <div className="today-page dashboard-home">
+        <PageHeader
+          title={t('dashboard.welcome')}
+          subtitle="Manage customers, jobs, schedule, workers, invoices and business performance."
+        />
 
-        <section className="card dashboard-quick-actions-card" aria-label={t('dashboard.primaryActions')}>
-          <h2>{t('dashboard.primaryActions')}</h2>
-          <div className="quick-actions-grid dashboard-quick-actions-grid">
-            <Link href="/jobs/new" className="quick-action-tile quick-action-tile-primary">
-              {t('dashboard.quickActions.createJob')}
-            </Link>
-            <Link href="/customers/new" className="quick-action-tile">
-              {t('dashboard.quickActions.addCustomer')}
-            </Link>
-            <Link href="/invoices" className="quick-action-tile">
-              {t('dashboard.quickActions.sendInvoice')}
-            </Link>
-            <Link href="/schedule/new" className="quick-action-tile">
-              {t('dashboard.quickActions.scheduleWork')}
-            </Link>
-            <Link href="/workers" className="quick-action-tile">
-              {t('dashboard.quickActions.addWorker')}
-            </Link>
+        <section className="card dashboard-start-card" aria-label="Get your business set up">
+          <div className="dashboard-start-copy">
+            <p className="dashboard-eyebrow">Start here</p>
+            <h2>Get your business set up</h2>
+            <p>Complete these first steps so EverittOS can start tracking your work clearly.</p>
+          </div>
+          <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
+            <span>{setupComplete} of {setupItems.length} complete</span>
+            <div className="dashboard-progress-track">
+              <span style={{ width: `${(setupComplete / setupItems.length) * 100}%` }} />
+            </div>
+          </div>
+          <div className="dashboard-start-list">
+            {setupItems.map((item) => (
+              <Link key={item.label} href={item.href} className="dashboard-start-item">
+                <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
+                  {item.done ? '✓' : ''}
+                </span>
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
         </section>
 
-        <section className="card dashboard-today-card" aria-label={t('dashboard.todaysSchedule')}>
+        <section className="card dashboard-actions-card" aria-label={t('dashboard.primaryActions')}>
           <div className="dashboard-section-head">
-            <h2>{t('dashboard.todaysSchedule')}</h2>
-            <Link href="/schedule" className="dashboard-section-link">
-              {t('dashboard.viewSchedule')}
-            </Link>
+            <h2>{t('dashboard.primaryActions')}</h2>
           </div>
-          {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
-          {!loading &&
-            todayJobs.map((job) => (
-              <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
-                <span>{job.title}</span>
-                <span className="muted">{job.due_date || job.start_date}</span>
-              </Link>
-            ))}
-
-          {!loading && upcomingJobs.length > 0 ? (
-            <div className="dashboard-schedule-upcoming">
-              <h3 className="dashboard-schedule-subhead">{t('dashboard.upcomingJobs')}</h3>
-              {upcomingJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="dashboard-today-row">
-                  <span>{job.title}</span>
-                  <span className="muted">{job.due_date || job.start_date}</span>
-                </Link>
-              ))}
-            </div>
-          ) : null}
-
-          {!loading && todayJobs.length === 0 && upcomingJobs.length === 0 ? (
-            <p className="dashboard-quiet-empty">{t('dashboard.noScheduleToday')}</p>
-          ) : null}
-        </section>
-
-        <section className="card dashboard-today-card" aria-label={t('dashboard.customersAndLeads')}>
-          <div className="dashboard-section-head">
-            <h2>{t('dashboard.customersAndLeads')}</h2>
-            <div className="dashboard-section-links">
-              <Link href="/customers" className="dashboard-section-link">
-                {t('nav.customers')}
-              </Link>
-              <Link href="/leads" className="dashboard-section-link">
-                {t('nav.leads')}
-              </Link>
-            </div>
+          <div className="dashboard-action-row">
+            <Link href="/customers/new">New customer</Link>
+            <Link href="/jobs/new">New job</Link>
+            <Link href="/schedule/new">Schedule</Link>
+            <Link href="/invoices">Invoice</Link>
+            <Link href="/workers">Worker</Link>
           </div>
-          {!loading && customers.length === 0 && leads.length === 0 ? (
-            <p className="dashboard-quiet-empty">{t('dashboard.noCustomersOrLeads')}</p>
-          ) : null}
-          {!loading &&
-            customers.map((customer) => (
-              <Link key={customer.id} href={`/customers/${customer.id}`} className="dashboard-today-row">
-                <span>{customerDisplayName(customer)}</span>
-                <span className="muted">{customer.pipeline_stage || 'customer'}</span>
-              </Link>
-            ))}
-          {!loading &&
-            leads.map((lead) => (
-              <Link key={lead.id} href={`/customers/${lead.id}`} className="dashboard-today-row">
-                <span>{customerDisplayName(lead)}</span>
-                <span className="muted">{lead.lead_source || 'lead'}</span>
-              </Link>
-            ))}
         </section>
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
 
         <DashboardBusinessActivity items={activity} loading={loading} showViewAll={showActivityLink} />
 
-        {showSetupSupportCard ? <OnboardingSupportPromo variant="dashboard" /> : null}
+        <section className="dashboard-help-strip" aria-label="Need help setting up EverittOS">
+          <div>
+            <h2>Need help setting up?</h2>
+            <p>Book a free onboarding call and we will help set up customers, jobs, workers, scheduling and invoicing.</p>
+          </div>
+          <Link href="/support" className="dashboard-help-link">
+            Book free call
+          </Link>
+        </section>
       </div>
     </AppShell>
   );
