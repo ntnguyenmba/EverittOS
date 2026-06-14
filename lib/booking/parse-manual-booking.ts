@@ -1,4 +1,5 @@
 import { defaultBookingEndIso } from '@/lib/booking/display';
+import { validateBookingTimeRange } from '@/lib/booking/schema';
 
 export type ManualBookingBody = {
   service_id?: string | null;
@@ -64,9 +65,9 @@ export function parseManualBookingInput(
     ? body.ends_at.trim()
     : defaultBookingEndIso(startsAt, 60);
 
-  const endDate = new Date(endsAt);
-  if (Number.isNaN(endDate.getTime()) || endDate <= startDate) {
-    return { ok: false, error: 'End time must be after the start time.' };
+  const timeError = validateBookingTimeRange(startsAt, endsAt);
+  if (timeError) {
+    return { ok: false, error: timeError };
   }
 
   const clientEmail = body.client_email?.trim() || null;

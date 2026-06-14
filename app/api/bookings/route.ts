@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
-import { mapBookingApiError } from '@/lib/booking/schema';
+import { mapBookingApiError, probeBookingSchemaReady, validateBookingTimeRange } from '@/lib/booking/schema';
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { processBookingSideEffects } from '@/lib/booking/process-side-effects';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
@@ -30,6 +30,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
+  const schema = await probeBookingSchemaReady(ctx.supabase);
+  if (!schema.ready) {
+    return NextResponse.json(
+      {
+        schemaReady: false,
+        code: schema.code,
+        missing: schema.missing,
+        error: schema.error,
+        bookings: []
+      },
+      { status: 503 }
+    );
+  }
+
   const url = new URL(request.url);
   const upcoming = url.searchParams.get('upcoming') === '1';
 
@@ -49,7 +63,7 @@ export async function GET(request: Request) {
     return bookingErrorResponse(error.message, 'Unable to load bookings.');
   }
 
-  return NextResponse.json({ bookings: data || [] });
+  return NextResponse.json({ schemaReady: true, bookings: data || [] });
 }
 
 export async function POST(request: Request) {
@@ -62,6 +76,19 @@ export async function POST(request: Request) {
   const parsed = parseManualBookingInput(body as Parameters<typeof parseManualBookingInput>[0]);
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+
+  const schema = await probeBookingSchemaReady(ctx.supabase);
+  if (!schema.ready) {
+    return NextResponse.json(
+      { code: schema.code, error: schema.error, schemaReady: false },
+      { status: 503 }
+    );
+  }
+
+  const timeError = validateBookingTimeRange(parsed.startsAt, parsed.endsAt);
+  if (timeError) {
+    return NextResponse.json({ error: timeError }, { status: 400 });
   }
 
   const workspaceId = ctx.workspace.organizationId;

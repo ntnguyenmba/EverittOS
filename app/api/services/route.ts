@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
-import { mapBookingApiError } from '@/lib/booking/schema';
+import { mapBookingApiError, probeBookingSchemaReady } from '@/lib/booking/schema';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -17,7 +17,23 @@ export async function GET() {
 
   const orgId = ctx.workspace.organizationId;
 
-  const [{ data: services, error: servicesError }, { data: staffServices }, { data: workers }] =
+  const schema = await probeBookingSchemaReady(ctx.supabase);
+  if (!schema.ready) {
+    return NextResponse.json(
+      {
+        schemaReady: false,
+        code: schema.code,
+        missing: schema.missing,
+        error: schema.error,
+        services: [],
+        staffServices: [],
+        workers: []
+      },
+      { status: 503 }
+    );
+  }
+
+  const [{ data: services, error: servicesError }, { data: staffServices, error: staffError }, { data: workers, error: workersError }] =
     await Promise.all([
       ctx.supabase
         .from('services')
@@ -28,9 +44,13 @@ export async function GET() {
       ctx.supabase.from('workers').select('id, name').eq('organization_id', orgId).order('name')
     ]);
 
-  if (servicesError) {
-    const mapped = mapBookingApiError(servicesError.message, 'Unable to load services.');
-    return NextResponse.json(mapped, { status: mapped.code === 'schema_missing' ? 503 : 400 });
+  const tableError = servicesError || staffError || workersError;
+  if (tableError) {
+    const mapped = mapBookingApiError(tableError.message, 'Unable to load services.');
+    return NextResponse.json(
+      { ...mapped, schemaReady: false, services: [], staffServices: [], workers: [] },
+      { status: mapped.code === 'schema_missing' ? 503 : 400 }
+    );
   }
 
   const { data: org } = await ctx.supabase
@@ -48,6 +68,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    schemaReady: true,
     services: services || [],
     staffServices: staffServices || [],
     workers: workers || [],

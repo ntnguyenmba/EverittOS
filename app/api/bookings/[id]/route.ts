@@ -3,7 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { deleteBookingGoogleCalendarEvent } from '@/lib/booking/google-calendar-booking';
 import { findBookingConflicts } from '@/lib/booking/conflicts';
 import { defaultBookingEndIso } from '@/lib/booking/display';
-import { mapBookingApiError } from '@/lib/booking/schema';
+import { mapBookingApiError, validateBookingTimeRange } from '@/lib/booking/schema';
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -78,6 +78,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const nextWorker = body.worker_id !== undefined ? body.worker_id : existing.worker_id;
 
   if (payload.starts_at || payload.ends_at) {
+    const timeError = validateBookingTimeRange(nextStart, nextEnd);
+    if (timeError) {
+      return NextResponse.json({ error: timeError }, { status: 400 });
+    }
+
     const admin = createAdminSupabase();
     if (admin) {
       const conflicts = await findBookingConflicts(admin, {

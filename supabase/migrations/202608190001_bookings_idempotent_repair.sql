@@ -1,9 +1,8 @@
--- Bookings workspace repair: ensure salon booking tables, workspace_id, and RLS exist.
--- Safe to run multiple times on production.
+-- Idempotent booking schema repair for deployments missing prior migrations.
+-- Safe to run multiple times in Supabase SQL Editor or via migration push.
 
 create extension if not exists "pgcrypto";
 
--- RLS helpers (required by booking policies)
 create or replace function public.member_role_in_org(org_id uuid)
 returns text
 language sql
@@ -39,8 +38,45 @@ as $$
   );
 $$;
 
-alter table public.organizations
-  add column if not exists booking_slug text;
+create or replace function public.booking_schema_ready()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public' and table_name = 'bookings'
+  )
+  and exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public' and table_name = 'services'
+  )
+  and exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public' and table_name = 'staff_services'
+  )
+  and exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'bookings'
+      and column_name = 'manual_service_name'
+  )
+  and exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'bookings'
+      and column_name = 'workspace_id'
+  );
+$$;
+
+alter table public.organizations add column if not exists booking_slug text;
 
 create unique index if not exists organizations_booking_slug_idx
   on public.organizations (booking_slug)
@@ -109,12 +145,14 @@ create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete cascade,
   workspace_id uuid references public.organizations (id) on delete cascade,
-  service_id uuid not null references public.services (id) on delete restrict,
+  service_id uuid references public.services (id) on delete restrict,
   worker_id uuid references public.workers (id) on delete set null,
   customer_id uuid references public.customers (id) on delete set null,
   client_name text not null,
   client_email text,
   client_phone text,
+  manual_service_name text,
+  staff_name text,
   starts_at timestamptz not null,
   ends_at timestamptz not null,
   status text not null default 'confirmed'
@@ -122,6 +160,9 @@ create table if not exists public.bookings (
   source text not null default 'public_booking',
   notes text,
   google_calendar_event_id text,
+  confirmation_sent_at timestamptz,
+  staff_notified_at timestamptz,
+  calendar_sync_error text,
   cancel_token text not null default encode(gen_random_bytes(16), 'hex'),
   reschedule_token text not null default encode(gen_random_bytes(16), 'hex'),
   created_at timestamptz not null default now(),
@@ -130,21 +171,13 @@ create table if not exists public.bookings (
 );
 
 alter table public.bookings add column if not exists workspace_id uuid references public.organizations (id) on delete cascade;
+alter table public.bookings add column if not exists manual_service_name text;
+alter table public.bookings add column if not exists staff_name text;
+alter table public.bookings add column if not exists confirmation_sent_at timestamptz;
+alter table public.bookings add column if not exists staff_notified_at timestamptz;
+alter table public.bookings add column if not exists calendar_sync_error text;
+
 update public.bookings set workspace_id = organization_id where workspace_id is null;
-
-create index if not exists bookings_org_starts_idx on public.bookings (organization_id, starts_at);
-create index if not exists bookings_workspace_starts_idx on public.bookings (workspace_id, starts_at);
-create index if not exists bookings_worker_starts_idx on public.bookings (worker_id, starts_at);
-create index if not exists bookings_status_idx on public.bookings (organization_id, status);
-create index if not exists bookings_workspace_status_idx on public.bookings (workspace_id, status);
-
--- Manual booking columns (merged from 202608180001; safe if already applied)
-alter table public.bookings
-  add column if not exists manual_service_name text,
-  add column if not exists staff_name text,
-  add column if not exists confirmation_sent_at timestamptz,
-  add column if not exists staff_notified_at timestamptz,
-  add column if not exists calendar_sync_error text;
 
 alter table public.bookings alter column service_id drop not null;
 
@@ -152,16 +185,12 @@ alter table public.bookings drop constraint if exists bookings_service_or_manual
 alter table public.bookings add constraint bookings_service_or_manual_check
   check (service_id is not null or nullif(trim(manual_service_name), '') is not null);
 
-comment on column public.bookings.manual_service_name is 'Free-text appointment name for manual bookings without a saved service';
-comment on column public.bookings.staff_name is 'Free-text staff name when no worker_id is assigned';
-
-create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
+create index if not exists bookings_org_starts_idx on public.bookings (organization_id, starts_at);
+create index if not exists bookings_workspace_starts_idx on public.bookings (workspace_id, starts_at);
+create index if not exists bookings_worker_starts_idx on public.bookings (worker_id, starts_at);
+create index if not exists bookings_status_idx on public.bookings (organization_id, status);
+create index if not exists bookings_workspace_status_idx on public.bookings (workspace_id, status);
+create index if not exists bookings_customer_idx on public.bookings (customer_id);
 
 create or replace function public.sync_booking_workspace_id()
 returns trigger language plpgsql as $$
@@ -179,6 +208,14 @@ drop trigger if exists bookings_sync_workspace_id on public.bookings;
 create trigger bookings_sync_workspace_id
   before insert or update on public.bookings
   for each row execute function public.sync_booking_workspace_id();
+
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
 drop trigger if exists services_touch_updated_at on public.services;
 create trigger services_touch_updated_at
@@ -249,5 +286,5 @@ create policy bookings_workspace_manage on public.bookings
   using (public.can_manage_organization(coalesce(workspace_id, organization_id)))
   with check (public.can_manage_organization(coalesce(workspace_id, organization_id)));
 
-comment on table public.bookings is 'Workspace appointments (organization_id and workspace_id refer to the same org)';
-comment on column public.bookings.workspace_id is 'Workspace scope for RLS; kept in sync with organization_id';
+comment on table public.staff_services is 'Worker-to-service assignments for booking (staff_services junction)';
+comment on table public.bookings is 'Workspace appointments; organization_id and workspace_id refer to the same org';

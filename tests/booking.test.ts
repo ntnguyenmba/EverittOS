@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { slugifyBookingSlug } from '@/lib/booking/slug';
 import { hasBookingConflict } from '@/lib/booking/conflicts';
-import { isBookingSchemaError, bookingSchemaUnavailableMessage } from '@/lib/booking/schema';
+import { isBookingSchemaError, bookingSchemaUnavailableMessage, validateBookingTimeRange } from '@/lib/booking/schema';
 import { bookingAppointmentName, bookingStaffLabel, defaultBookingEndIso } from '@/lib/booking/display';
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { generateBookingIcs } from '@/lib/booking/ics';
@@ -29,8 +29,31 @@ describe('booking schema', () => {
     );
   });
 
+  it('detects missing booking columns', () => {
+    assert.equal(
+      isBookingSchemaError('column bookings.manual_service_name does not exist'),
+      true
+    );
+  });
+
   it('returns setup message', () => {
     assert.match(bookingSchemaUnavailableMessage(), /migration/i);
+  });
+});
+
+describe('booking time validation', () => {
+  it('rejects end before start', () => {
+    assert.equal(
+      validateBookingTimeRange('2026-06-15T14:00:00.000Z', '2026-06-15T13:00:00.000Z'),
+      'End time must be after the start time.'
+    );
+  });
+
+  it('accepts valid ranges', () => {
+    assert.equal(
+      validateBookingTimeRange('2026-06-15T14:00:00.000Z', '2026-06-15T15:00:00.000Z'),
+      null
+    );
   });
 });
 
