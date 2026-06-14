@@ -43,6 +43,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
       return;
     }
     setLabel('');
+    appFeedback.success('Checklist item added.');
     onChange();
   }
 

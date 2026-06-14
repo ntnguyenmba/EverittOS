@@ -86,6 +86,8 @@ export type CustomerWriteInput = {
   lead_source?: string;
 };
 
+export type CustomerUpdateInput = Partial<CustomerWriteInput>;
+
 function addressWriteFields(address?: string | null): Record<string, unknown> {
   const line = address?.trim() || null;
   if (!line) return {};
@@ -111,7 +113,7 @@ export function buildCustomerWritePayload(input: CustomerWriteInput): Record<str
   };
 }
 
-export function buildCustomerUpdatePayload(input: Partial<CustomerWriteInput>): Record<string, unknown> {
+export function buildCustomerUpdatePayload(input: CustomerUpdateInput): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
   if (input.displayName !== undefined) {
     const label = input.displayName.trim();
@@ -125,5 +127,8 @@ export function buildCustomerUpdatePayload(input: Partial<CustomerWriteInput>): 
   if (input.address !== undefined) {
     Object.assign(payload, addressWriteFields(input.address));
   }
+  if (input.pipeline_stage !== undefined) payload.pipeline_stage = input.pipeline_stage;
+  if (input.lead_source !== undefined) payload.lead_source = input.lead_source;
+  if (input.record_type !== undefined) payload.record_type = input.record_type;
   return payload;
 }

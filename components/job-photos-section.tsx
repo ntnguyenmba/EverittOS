@@ -10,8 +10,8 @@ import { compressImageFile } from '@/lib/image-compress';
 import { JOB_PHOTO_TAGS, photoTagLabel, type JobPhotoTag } from '@/lib/job-photo-tags';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import {
-  buildJobPhotoInsertPayload,
   fetchJobPhotosWithUrls,
+  insertJobPhotoRow,
   resolvePhotoType
 } from '@/lib/job-photos-client';
 import { normalizePlan, photoUploadAllowed, type EverittosPlan } from '@/lib/everittos-plans';
@@ -191,7 +191,7 @@ export function JobPhotosSection({
         fileName
       });
 
-      const payload = buildJobPhotoInsertPayload({
+      const { data: inserted, error: rowError } = await insertJobPhotoRow(supabase, {
         userId: user.id,
         jobId,
         organizationId,
@@ -203,14 +203,8 @@ export function JobPhotosSection({
         mimeType: file.type || 'image/jpeg'
       });
 
-      const { data: inserted, error: rowError } = await supabase
-        .from('job_photos')
-        .insert(payload)
-        .select('id, job_id, user_id, organization_id, storage_path, label, photo_type, uploaded_by, file_name, public_url, created_at, uploader_display_name, file_size_bytes, mime_type')
-        .single();
-
       if (rowError) {
-        appFeedback.error(formatSupabaseError(rowError));
+        appFeedback.error(formatSupabaseError({ message: rowError }));
         await supabase.storage.from('job-photos').remove([path]);
         continue;
       }

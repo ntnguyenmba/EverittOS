@@ -145,9 +145,12 @@ export default function LeadsPage() {
               <LocalizedEmptyState emptyKey="leads" compact />
             ) : (
               leads.map((lead) => (
-                <div key={lead.id} className="dashboard-today-row" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <Link href={`/customers/${lead.id}`}>{customerDisplayName(lead)}</Link>
+                <div key={lead.id} className="dashboard-today-row" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
                   <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
+                  <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
+                    Edit
+                  </Link>
                   {canManage ? (
                     <button
                       type="button"

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
-import { JOB_PHOTO_SELECT, attachSignedUrls } from '@/lib/job-photos-client';
+import { fetchJobPhotosWithUrls } from '@/lib/job-photos-client';
 import { isValidUuid } from '@/lib/input-validation';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
-import type { JobPhotoRecord } from '@/lib/job-photos-types';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -24,17 +23,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from('job_photos')
-    .select(JOB_PHOTO_SELECT)
-    .eq('job_id', jobId)
-    .order('created_at', { ascending: false });
+  const { photos, error } = await fetchJobPhotosWithUrls(supabase, jobId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error }, { status: 400 });
   }
 
-  const photos = await attachSignedUrls(supabase, (data || []) as JobPhotoRecord[]);
   return NextResponse.json({ photos });
 }
 

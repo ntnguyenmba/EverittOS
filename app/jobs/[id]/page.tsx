@@ -30,6 +30,12 @@ import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } fro
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
+import {
+  combineDateAndTime,
+  formatScheduleDuration,
+  hoursBetween,
+  localTimeFromIso
+} from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -47,6 +53,8 @@ type Job = {
   status: string | null;
   start_date: string | null;
   due_date: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
   assigned_to: string | null;
   organization_id: string | null;
   customer_id: string | null;
@@ -90,6 +98,9 @@ export default function JobDetailPage({ params }: PageProps) {
   const [loadError, setLoadError] = useState('');
   const [savingDetails, setSavingDetails] = useState(false);
   const [removingJob, setRemovingJob] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
   const appFeedback = useAppFeedback();
 
   useEffect(() => {
@@ -170,6 +181,8 @@ export default function JobDetailPage({ params }: PageProps) {
     }
 
     setJob(data);
+    setStartTime(localTimeFromIso(data.scheduled_start, '09:00'));
+    setEndTime(localTimeFromIso(data.scheduled_end, '17:00'));
     setTimeline(notes || []);
   }
 
@@ -189,8 +202,10 @@ export default function JobDetailPage({ params }: PageProps) {
   }
 
   async function updateStatus(status: string) {
-    if (!canEditStatus) return;
+    if (!canEditStatus || updatingStatus) return;
+    setUpdatingStatus(true);
     const ok = await patchJob({ status }, `Status updated to ${status.replace('_', ' ')}.`);
+    setUpdatingStatus(false);
     if (!ok) return;
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'status_changed', `Status set to ${status}`);
@@ -206,9 +221,18 @@ export default function JobDetailPage({ params }: PageProps) {
 
   async function saveJobFields() {
     if (!job || !canManage || savingDetails) return;
+    if (!job.title?.trim()) {
+      appFeedback.error('Job title is required.');
+      return;
+    }
     setSavingDetails(true);
     const ok = await patchJob(
       {
+        title: job.title.trim(),
+        customer_name: job.customer_name,
+        phone: job.phone,
+        address: job.address,
+        notes: job.notes,
         priority: job.priority,
         internal_notes: job.internal_notes,
         customer_notes: job.customer_notes,
@@ -227,18 +251,35 @@ export default function JobDetailPage({ params }: PageProps) {
 
     setSavingSchedule(true);
 
-    const ok = await patchJob(
-      {
+    const startDate = job.start_date || job.due_date;
+    const dueDate = job.due_date || job.start_date;
+    const scheduledStart = startDate ? combineDateAndTime(startDate, startTime) : null;
+    const scheduledEnd = dueDate ? combineDateAndTime(dueDate, endTime) : null;
+
+    const res = await fetch('/api/schedule/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jobId: job.id,
         start_date: job.start_date || null,
         due_date: job.due_date || null,
+        scheduled_start: scheduledStart,
+        scheduled_end: scheduledEnd,
         assigned_to: job.assigned_to || null
-      },
-      'Schedule saved.'
-    );
-
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
     setSavingSchedule(false);
 
-    if (!ok) return;
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to save schedule.');
+      return;
+    }
+
+    appFeedback.success(json.message || 'Schedule saved.');
+    if (orgId) {
+      await logClientActivity(orgId, 'job', jobId, 'schedule_changed', 'Schedule updated from job detail');
+    }
     loadJob();
   }
 
@@ -283,6 +324,7 @@ export default function JobDetailPage({ params }: PageProps) {
       await logClientActivity(orgId, 'job', job.id, 'report_generated', 'Proof report created');
       await createNotification(orgId, user.id, 'report', 'Report generated', job.title, job.id);
     }
+    appFeedback.success('Report created.');
     router.push(`/jobs/${job.id}/report`);
   }
 
@@ -309,6 +351,10 @@ export default function JobDetailPage({ params }: PageProps) {
   }
 
   const crewEnabled = limitsForPlan(plan).crewAssignment;
+  const scheduleHours = hoursBetween(
+    job.scheduled_start || (job.start_date ? combineDateAndTime(job.start_date, startTime) : null),
+    job.scheduled_end || (job.due_date ? combineDateAndTime(job.due_date, endTime) : null)
+  );
 
   return (
     <AppShell plan={plan} role={userRole}>
@@ -323,20 +369,39 @@ export default function JobDetailPage({ params }: PageProps) {
         <div className="grid-2">
           <div className="card">
             <h3>Job details</h3>
-            <p>
-              <strong>Customer:</strong> {job.customer_name || 'Not set'}
-            </p>
-            <p>
-              <strong>Phone:</strong> {job.phone || 'Not set'}
-            </p>
-            <p>
-              <strong>Notes:</strong> {job.notes || 'No notes'}
-            </p>
-            <p>
-              <strong>Priority:</strong> {job.priority || 'normal'}
-            </p>
-            {canManage && (
-              <div className="form" style={{ marginTop: 12 }}>
+            {canManage ? (
+              <div className="form">
+                <label>Title</label>
+                <input
+                  className="input"
+                  value={job.title}
+                  onChange={(e) => setJob({ ...job, title: e.target.value })}
+                />
+                <label>Customer</label>
+                <input
+                  className="input"
+                  value={job.customer_name || ''}
+                  onChange={(e) => setJob({ ...job, customer_name: e.target.value })}
+                />
+                <label>Phone</label>
+                <input
+                  className="input"
+                  value={job.phone || ''}
+                  onChange={(e) => setJob({ ...job, phone: e.target.value })}
+                />
+                <label>Address</label>
+                <input
+                  className="input"
+                  value={job.address || ''}
+                  onChange={(e) => setJob({ ...job, address: e.target.value })}
+                />
+                <label>Job notes</label>
+                <textarea
+                  className="input"
+                  rows={2}
+                  value={job.notes || ''}
+                  onChange={(e) => setJob({ ...job, notes: e.target.value })}
+                />
                 <label>Priority</label>
                 <select
                   className="input"
@@ -374,7 +439,7 @@ export default function JobDetailPage({ params }: PageProps) {
                   />{' '}
                   Completion verified
                 </label>
-                <button type="button" className="btn" disabled={savingDetails} onClick={() => void saveJobFields()}>
+                <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
                   {savingDetails ? FEEDBACK.loading : 'Save details'}
                 </button>
                 <button
@@ -399,6 +464,21 @@ export default function JobDetailPage({ params }: PageProps) {
                   {removingJob ? FEEDBACK.loading : 'Remove job'}
                 </button>
               </div>
+            ) : (
+              <>
+                <p>
+                  <strong>Customer:</strong> {job.customer_name || 'Not set'}
+                </p>
+                <p>
+                  <strong>Phone:</strong> {job.phone || 'Not set'}
+                </p>
+                <p>
+                  <strong>Notes:</strong> {job.notes || 'No notes'}
+                </p>
+                <p>
+                  <strong>Priority:</strong> {job.priority || 'normal'}
+                </p>
+              </>
             )}
             <p>
               <strong>Created:</strong> {job.created_at ? new Date(job.created_at).toLocaleString() : 'Just created'}
@@ -406,11 +486,21 @@ export default function JobDetailPage({ params }: PageProps) {
 
             {canEditStatus && (
               <div className="form" style={{ marginTop: 16 }}>
-                <button className="btn" type="button" onClick={() => updateStatus('in_progress')}>
-                  Start job
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={updatingStatus || job.status === 'in_progress'}
+                  onClick={() => updateStatus('in_progress')}
+                >
+                  {updatingStatus ? FEEDBACK.loading : 'Start job'}
                 </button>
-                <button className="btn btn-primary" type="button" onClick={() => updateStatus('completed')}>
-                  Mark completed
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  disabled={updatingStatus || job.status === 'completed'}
+                  onClick={() => updateStatus('completed')}
+                >
+                  {updatingStatus ? FEEDBACK.loading : 'Mark completed'}
                 </button>
               </div>
             )}
@@ -426,6 +516,14 @@ export default function JobDetailPage({ params }: PageProps) {
               value={job.start_date || ''}
               onChange={(e) => setJob({ ...job, start_date: e.target.value })}
             />
+            <label>Start time</label>
+            <input
+              className="input"
+              type="time"
+              disabled={!canManage}
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
             <label>Due date</label>
             <input
               className="input"
@@ -434,6 +532,22 @@ export default function JobDetailPage({ params }: PageProps) {
               value={job.due_date || ''}
               onChange={(e) => setJob({ ...job, due_date: e.target.value })}
             />
+            <label>End time</label>
+            <input
+              className="input"
+              type="time"
+              disabled={!canManage}
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+            {scheduleHours != null ? (
+              <p className="muted">
+                Scheduled duration: {formatScheduleDuration(
+                  combineDateAndTime(job.start_date || '', startTime),
+                  combineDateAndTime(job.due_date || job.start_date || '', endTime)
+                )}
+              </p>
+            ) : null}
             {crewEnabled ? (
               <>
                 <label>Assigned worker</label>

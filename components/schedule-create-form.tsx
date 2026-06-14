@@ -7,6 +7,7 @@ import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
+import { combineDateAndTime } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 
 type JobOption = { id: string; title: string };
@@ -18,6 +19,8 @@ export function ScheduleCreateForm() {
   const [jobId, setJobId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -44,8 +47,20 @@ export function ScheduleCreateForm() {
   }, [router]);
 
   async function saveSchedule() {
-    if (!jobId || !startDate || saving) return;
+    if (!jobId) {
+      appFeedback.error('Select a job to schedule.');
+      return;
+    }
+    if (!startDate) {
+      appFeedback.error('Start date is required.');
+      return;
+    }
+    if (saving) return;
+
     setSaving(true);
+    const effectiveDue = dueDate || startDate;
+    const scheduledStart = combineDateAndTime(startDate, startTime);
+    const scheduledEnd = combineDateAndTime(effectiveDue, endTime);
 
     const res = await fetch('/api/schedule/update', {
       method: 'POST',
@@ -53,7 +68,9 @@ export function ScheduleCreateForm() {
       body: JSON.stringify({
         jobId,
         start_date: startDate,
-        due_date: dueDate || startDate
+        due_date: effectiveDue,
+        scheduled_start: scheduledStart,
+        scheduled_end: scheduledEnd
       })
     });
     const json = (await res.json()) as { error?: string; message?: string };
@@ -96,8 +113,16 @@ export function ScheduleCreateForm() {
             <input className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </label>
           <label className="auth-field">
+            <span>Start time</span>
+            <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </label>
+          <label className="auth-field">
             <span>Due date</span>
             <input className="input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </label>
+          <label className="auth-field">
+            <span>End time</span>
+            <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </label>
           <button type="button" className="btn btn-primary" disabled={saving || !startDate} onClick={() => void saveSchedule()}>
             {saving ? FEEDBACK.loading : 'Save schedule'}

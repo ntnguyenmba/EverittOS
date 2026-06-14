@@ -23,7 +23,11 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
   const [saving, setSaving] = useState(false);
 
   async function saveLead() {
-    if (!displayName.trim() || saving) return;
+    if (saving) return;
+    if (!displayName.trim()) {
+      appFeedback.error('Name is required.');
+      return;
+    }
 
     setSaving(true);
 
@@ -71,7 +75,9 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
 
     if (json.customer?.id) {
       onCreated?.(json.customer.id);
-      setTimeout(() => router.push(redirectTo), 600);
+      setTimeout(() => router.push(`/leads/${json.customer.id}`), 600);
+    } else {
+      appFeedback.error('Lead saved but could not open the record. Refresh and try again.');
     }
   }
 

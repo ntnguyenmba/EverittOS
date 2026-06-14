@@ -17,6 +17,8 @@ const ALLOWED_FIELDS = new Set([
   'status',
   'start_date',
   'due_date',
+  'scheduled_start',
+  'scheduled_end',
   'assigned_to',
   'priority',
   'internal_notes',

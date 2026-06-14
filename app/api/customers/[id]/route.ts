@@ -23,11 +23,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     address?: string;
     notes?: string;
     logo_path?: string | null;
+    pipeline_stage?: string;
+    lead_source?: string;
+    record_type?: string;
   };
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id, display_name, name, company_name')
+    .select('id, display_name, name, company_name, pipeline_stage, record_type')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -44,7 +47,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     phone: body.phone,
     email: body.email,
     address: body.address,
-    notes: body.notes
+    notes: body.notes,
+    pipeline_stage: body.pipeline_stage,
+    lead_source: body.lead_source,
+    record_type: body.record_type
   });
 
   if (body.logo_path !== undefined) {

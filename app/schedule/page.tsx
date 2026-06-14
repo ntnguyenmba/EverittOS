@@ -8,7 +8,9 @@ import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { combineDateAndTime } from '@/lib/schedule-times';
 import { canAssignJobs, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -21,6 +23,7 @@ function SchedulePageContent() {
   const searchParams = useSearchParams();
   const rangeFilter = searchParams.get('range');
   const { t } = useTranslation();
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
@@ -105,11 +108,15 @@ function SchedulePageContent() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId, assigned_to: workerId })
     });
+    const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const json = await res.json();
-      setError(json.error || 'Unable to update assignment.');
+      const msg = json.error || 'Unable to update assignment.';
+      setError(msg);
+      appFeedback.error(msg);
       return;
     }
+    setError('');
+    appFeedback.success('Assignment updated.');
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', workerId ? 'Worker assigned on schedule' : 'Worker unassigned');
     }
@@ -124,15 +131,19 @@ function SchedulePageContent() {
         jobId,
         start_date: dateKey,
         due_date: dateKey,
-        scheduled_start: `${dateKey}T09:00:00.000Z`,
-        scheduled_end: `${dateKey}T17:00:00.000Z`
+        scheduled_start: combineDateAndTime(dateKey, '09:00'),
+        scheduled_end: combineDateAndTime(dateKey, '17:00')
       })
     });
+    const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const json = await res.json();
-      setError(json.error || 'Unable to reschedule job.');
+      const msg = json.error || 'Unable to reschedule job.';
+      setError(msg);
+      appFeedback.error(msg);
       return;
     }
+    setError('');
+    appFeedback.success('Schedule updated.');
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', `Moved to ${dateKey}`);
     }

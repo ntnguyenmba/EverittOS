@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { formatScheduleTimeRange } from '@/lib/schedule-times';
 
 export type ScheduleJob = {
   id: string;
@@ -214,8 +215,8 @@ function ScheduleRow({
       <div>
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
         <p className="muted">
-          {job.start_date || job.scheduled_start?.slice(0, 10) || 'No start'} to{' '}
-          {job.due_date || job.scheduled_end?.slice(0, 10) || 'No due'} · {job.customer_name || 'No customer'}
+          {formatScheduleTimeRange(job.scheduled_start, job.scheduled_end, job.start_date, job.due_date)} ·{' '}
+          {job.customer_name || 'No customer'}
         </p>
       </div>
       <div className="inline-actions">

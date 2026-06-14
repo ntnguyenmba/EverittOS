@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { supabase } from '@/lib/supabase';
 import { logClientActivity } from '@/lib/activity';
 
@@ -31,14 +33,13 @@ export function JobAssignments({
   canManage,
   onChange
 }: JobAssignmentsProps) {
+  const appFeedback = useAppFeedback();
   const [workerId, setWorkerId] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
 
   async function addAssignment() {
-    if (!workerId || !canManage) return;
+    if (!workerId || !canManage || busy) return;
     setBusy(true);
-    setMessage('');
     const { error } = await supabase.from('job_assignments').insert({
       job_id: jobId,
       worker_id: workerId,
@@ -47,27 +48,29 @@ export function JobAssignments({
     });
     setBusy(false);
     if (error) {
-      setMessage(error.message);
+      appFeedback.error(error.message);
       return;
     }
     const worker = workers.find((w) => w.id === workerId);
     await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'worker'}`, {
       worker_id: workerId
     });
+    appFeedback.success('Worker assigned.');
     setWorkerId('');
     onChange();
   }
 
   async function removeAssignment(assignmentId: string, workerName: string) {
-    if (!canManage) return;
+    if (!canManage || busy) return;
     setBusy(true);
     const { error } = await supabase.from('job_assignments').delete().eq('id', assignmentId);
     setBusy(false);
     if (error) {
-      setMessage(error.message);
+      appFeedback.error(error.message);
       return;
     }
     await logClientActivity(organizationId, 'job', jobId, 'worker_removed', `Removed ${workerName}`);
+    appFeedback.label('removed');
     onChange();
   }
 
@@ -102,16 +105,11 @@ export function JobAssignments({
                 </option>
               ))}
           </select>
-          <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={addAssignment}>
-            Assign worker
+          <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={() => void addAssignment()}>
+            {busy ? FEEDBACK.loading : 'Assign worker'}
           </button>
         </>
       )}
-      {message ? (
-        <p className="auth-message auth-message-error" role="alert">
-          {message}
-        </p>
-      ) : null}
     </div>
   );
 }
