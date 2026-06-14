@@ -1,6 +1,7 @@
 /**
  * Customer row helpers. Production uses `company_name` for the display label.
- * Do not query `customers.name` or `customers.address` unless confirmed present.
+ * Keep legacy name fields populated because older production schemas may still
+ * require `name` or `full_name` as NOT NULL.
  */
 
 export const CUSTOMER_ADDRESS_FIELDS =
@@ -99,6 +100,7 @@ export function buildCustomerWritePayload(input: CustomerWriteInput): Record<str
   return {
     company_name: label,
     name: label,
+    full_name: label,
     phone: input.phone?.trim() || null,
     email: input.email?.trim() || null,
     notes: input.notes?.trim() || null,
@@ -115,6 +117,7 @@ export function buildCustomerUpdatePayload(input: Partial<CustomerWriteInput>): 
     const label = input.displayName.trim();
     payload.company_name = label;
     payload.name = label;
+    payload.full_name = label;
   }
   if (input.phone !== undefined) payload.phone = input.phone?.trim() || null;
   if (input.email !== undefined) payload.email = input.email?.trim() || null;
