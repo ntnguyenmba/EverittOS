@@ -7,24 +7,34 @@ import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
-import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { planDisplayName } from '@/lib/everittos-plans';
 import { canManageBilling, isOwner, normalizeRole } from '@/lib/roles';
 import { roleDisplayName } from '@/lib/role-routes';
 import { normalizeAccountStatus } from '@/lib/account-status';
 import { SUPPORT_EMAIL } from '@/lib/support';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { AuthMessages } from '@/components/auth/auth-messages';
+import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const disableDialogRef = useRef<HTMLDialogElement>(null);
-  const [plan, setPlan] = useState<EverittosPlan>('free');
-  const [role, setRole] = useState(normalizeRole('owner'));
+  const {
+    profilePlan,
+    billingPlan,
+    organizationPlan,
+    plan: workspacePlan,
+    role: workspaceRole,
+    subscriptionStatus: workspaceSubscriptionStatus,
+    loading: planLoading
+  } = useWorkspacePlan();
+  const plan = billingPlan ?? profilePlan ?? workspacePlan ?? organizationPlan;
+  const role = workspaceRole ?? normalizeRole('owner');
+  const subscriptionStatus = workspaceSubscriptionStatus || 'free';
   const [email, setEmail] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
-  const [subscriptionStatus, setSubscriptionStatus] = useState('free');
   const [message, setMessage] = useState<{ title?: string; body: string; details?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -41,13 +51,10 @@ export default function AccountSettingsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('plan, subscription_status, account_status, role')
+        .select('account_status')
         .eq('id', user.id)
         .maybeSingle();
 
-      setPlan(normalizePlan(profile?.plan));
-      setRole(normalizeRole(profile?.role));
-      setSubscriptionStatus(profile?.subscription_status || 'free');
       setAccountStatus(normalizeAccountStatus(profile?.account_status));
       setEmail(user.email || '');
       setLoading(false);
@@ -82,9 +89,9 @@ export default function AccountSettingsPage() {
     window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent(t('settings.account.disabledDetail'));
   }
 
-  if (loading) {
+  if (loading || planLoading || !plan) {
     return (
-      <AppShell plan={plan} role={role}>
+      <AppShell role={role}>
         <p>{t('common.loading')}</p>
       </AppShell>
     );
