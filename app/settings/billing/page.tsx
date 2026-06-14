@@ -15,9 +15,10 @@ import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everit
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { canResumeSubscription } from '@/lib/stripe-subscription';
+import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { useTranslation } from '@/components/locale-provider';
+import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
@@ -45,7 +46,20 @@ function BillingSettingsContent() {
     return null;
   }, [searchParams, upgradePlan]);
 
-  const [plan, setPlan] = useState<EverittosPlan>('free');
+  const {
+    profilePlan,
+    subscriptionStatus: workspaceSubscriptionStatus,
+    billingPlan,
+    organizationPlan,
+    plan: workspacePlan,
+    role: workspaceRole,
+    rawProfilePlan,
+    rawSubscriptionStatus,
+    loading: planLoading,
+    refresh: refreshWorkspacePlan
+  } = useWorkspacePlan();
+
+  const [plan, setPlan] = useState<EverittosPlan | null>(null);
   const [role, setRole] = useState(normalizeRole('owner'));
   const [usage, setUsage] = useState({
     jobs: 0,
@@ -56,7 +70,8 @@ function BillingSettingsContent() {
     teamMembers: 1,
     locations: 0
   });
-  const [subscriptionStatus, setSubscriptionStatus] = useState('free');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -78,6 +93,40 @@ function BillingSettingsContent() {
   const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
 
   useEffect(() => {
+    if (planLoading) return;
+
+    const resolvedBillingPlan = billingPlan ?? profilePlan ?? workspacePlan;
+    if (resolvedBillingPlan) {
+      setPlan(resolvedBillingPlan);
+    }
+    if (workspaceRole) {
+      setRole(workspaceRole);
+    }
+    if (workspaceSubscriptionStatus) {
+      setSubscriptionStatus(workspaceSubscriptionStatus);
+    }
+
+    console.log({
+      profilePlan,
+      subscriptionStatus: workspaceSubscriptionStatus,
+      billingPlan,
+      organizationPlan,
+      rawProfilePlan,
+      rawSubscriptionStatus
+    });
+  }, [
+    planLoading,
+    profilePlan,
+    billingPlan,
+    organizationPlan,
+    workspacePlan,
+    workspaceRole,
+    workspaceSubscriptionStatus,
+    rawProfilePlan,
+    rawSubscriptionStatus
+  ]);
+
+  useEffect(() => {
     async function load() {
       const {
         data: { user }
@@ -90,15 +139,12 @@ function BillingSettingsContent() {
       const { data: profile } = await supabase
         .from('profiles')
         .select(
-          'plan, role, subscription_status, stripe_customer_id, stripe_promotion_code, coupon_name, coupon_percent_off, coupon_amount_off, coupon_duration, coupon_duration_in_months, coupon_expires_at'
+          'role, stripe_customer_id, stripe_promotion_code, coupon_name, coupon_percent_off, coupon_amount_off, coupon_duration, coupon_duration_in_months, coupon_expires_at'
         )
         .eq('id', user.id)
         .maybeSingle();
 
-      const resolvedPlan = normalizePlan(profile?.plan);
-      setPlan(resolvedPlan);
-      setRole(normalizeRole(profile?.role || 'owner'));
-      setSubscriptionStatus(profile?.subscription_status || 'free');
+      setRole(normalizeRole(profile?.role || workspaceRole || 'owner'));
       setStripeCustomerId(profile?.stripe_customer_id || '');
       setCouponCode(profile?.stripe_promotion_code || null);
       setCouponName(profile?.coupon_name || null);
@@ -112,13 +158,13 @@ function BillingSettingsContent() {
 
       const { data: subscription } = await supabase
         .from('everittos_subscriptions')
-        .select('status')
+        .select('current_period_end')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (subscription?.status && !profile?.subscription_status) setSubscriptionStatus(subscription.status);
+      if (subscription?.current_period_end) setRenewalDate(subscription.current_period_end);
 
       const org = await fetchOrganizationContext(user.id).catch(() => null);
       const counts = await fetchUsageCounts(user.id, org?.organizationId).catch(() => usage);
@@ -138,7 +184,7 @@ function BillingSettingsContent() {
     }
 
     void load();
-  }, [router]);
+  }, [router, workspaceRole]);
 
   async function openBillingPortal() {
     setPortalLoading(true);
@@ -169,11 +215,12 @@ function BillingSettingsContent() {
 
     setSubscriptionStatus(json.status || 'active');
     setMessage(json.message || 'Subscription resumed.');
+    await refreshWorkspacePlan();
   }
 
-  if (loading) {
+  if (loading || planLoading || !plan) {
     return (
-      <AppShell plan={plan} role={role}>
+      <AppShell role={role}>
         <p>Loading billing...</p>
       </AppShell>
     );
@@ -181,6 +228,7 @@ function BillingSettingsContent() {
 
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
+  const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free');
 
   return (
     <SettingsShell plan={plan} role={role} title={t('billing.title')} description={t('billing.description')}>
@@ -244,6 +292,29 @@ function BillingSettingsContent() {
           <span className="settings-row-label">{t('billing.currentPlan')}</span>
           <span className="settings-row-value">{planDisplayName(plan)}</span>
         </div>
+        <div className="settings-row">
+          <span className="settings-row-label">{t('billing.status')}</span>
+          <span className="settings-row-value">{subscriptionStatus || rawSubscriptionStatus || '—'}</span>
+        </div>
+        {rawProfilePlan && rawProfilePlan !== plan ? (
+          <div className="settings-row">
+            <span className="settings-row-label">Database plan</span>
+            <span className="settings-row-value">{rawProfilePlan}</span>
+          </div>
+        ) : null}
+        {renewalDate ? (
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.renewalDate')}</span>
+            <span className="settings-row-value">
+              {new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+        ) : null}
+        <p className="muted">{subscriptionStatusMessage(subscriptionStatus || undefined)}</p>
+        <p className="muted">{subscriptionInfo.message}</p>
+        {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
+          <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
+        ) : null}
 
         <div className="settings-actions">
           {canOpenPortal ? (

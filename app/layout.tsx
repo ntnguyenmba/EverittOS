@@ -9,6 +9,7 @@ import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
+import { WorkspacePlanProvider } from '@/components/workspace-plan-provider';
 import { AppConnectivityBanner } from '@/components/app-connectivity-banner';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
@@ -71,12 +72,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastProvider>
             <LocaleSync />
             <SessionGuard />
-            <WorkspaceBootstrap />
-            <SkipToMain />
-            <SiteChrome />
-            <AnalyticsGate />
-            <CookieConsentBanner />
-            {children}
+            <WorkspacePlanProvider>
+              <WorkspaceBootstrap />
+              <SkipToMain />
+              <SiteChrome />
+              <AnalyticsGate />
+              <CookieConsentBanner />
+              {children}
+            </WorkspacePlanProvider>
           </ToastProvider>
         </LocaleProvider>
       </body>

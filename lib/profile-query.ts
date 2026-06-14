@@ -31,9 +31,37 @@ function withBillingDefaults(profile: ProfileRow | null): ProfileRow | null {
   if (!profile) return null;
   return {
     ...profile,
-    plan: profile.plan || 'free',
-    subscription_status: profile.subscription_status || 'free'
+    plan: profile.plan?.trim() ? profile.plan : 'free',
+    subscription_status: profile.subscription_status?.trim() ? profile.subscription_status : 'free'
   };
+}
+
+/** Load billing columns individually so one missing column does not wipe the other. */
+async function fetchProfileBillingFields(
+  client: SupabaseClient,
+  userId: string
+): Promise<{ plan?: string | null; subscription_status?: string | null }> {
+  const billing: { plan?: string | null; subscription_status?: string | null } = {};
+
+  const { data: planRow, error: planError } = await client
+    .from('profiles')
+    .select('plan')
+    .eq('id', userId)
+    .maybeSingle();
+  if (!planError && planRow?.plan?.trim()) {
+    billing.plan = planRow.plan;
+  }
+
+  const { data: statusRow, error: statusError } = await client
+    .from('profiles')
+    .select('subscription_status')
+    .eq('id', userId)
+    .maybeSingle();
+  if (!statusError && statusRow?.subscription_status?.trim()) {
+    billing.subscription_status = statusRow.subscription_status;
+  }
+
+  return billing;
 }
 
 /** Read profile with fallback when billing columns are missing from production schema. */
@@ -77,8 +105,10 @@ export async function fetchProfileByUserId(
     };
   }
 
+  const billing = await fetchProfileBillingFields(client, userId);
+
   return {
-    profile: withBillingDefaults(coreProfile as ProfileRow),
+    profile: withBillingDefaults({ ...(coreProfile as ProfileRow), ...billing }),
     schemaMismatch: { column: missingColumn, message: fullError.message },
     usedCoreSelect: true
   };

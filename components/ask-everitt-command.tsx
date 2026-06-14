@@ -8,6 +8,7 @@ import { ASK_EVERITT_SUGGESTIONS } from '@/lib/ai-features';
 import type { ProposedAiAction } from '@/lib/ai-actions';
 import type { SearchResultItem } from '@/lib/os-types';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { supabase } from '@/lib/supabase';
 
 const SEARCH_TYPE_LABELS: Record<SearchResultItem['type'], string> = {
@@ -43,9 +44,12 @@ type AskEverittCommandProps = {
 
 export function AskEverittCommand({ plan: planProp, embedded = false }: AskEverittCommandProps) {
   const router = useRouter();
+  const workspacePlan = useWorkspacePlanOptional();
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [plan, setPlan] = useState<EverittosPlan>(normalizePlan(planProp));
+  const [plan, setPlan] = useState<EverittosPlan | null>(
+    workspacePlan?.plan ?? (planProp != null ? normalizePlan(planProp) : null)
+  );
   const [query, setQuery] = useState('');
   const [reply, setReply] = useState('');
   const [pendingAction, setPendingAction] = useState<ProposedAiAction | null>(null);
@@ -66,21 +70,27 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
   const aiReady = Boolean(aiStatus?.allowed && aiStatus?.configured);
 
   useEffect(() => {
-    if (planProp) setPlan(normalizePlan(planProp));
-  }, [planProp]);
+    if (workspacePlan?.plan) {
+      setPlan(workspacePlan.plan);
+      return;
+    }
+    if (planProp != null) setPlan(normalizePlan(planProp));
+  }, [planProp, workspacePlan?.plan]);
 
   useEffect(() => {
+    if (workspacePlan?.plan || planProp != null) return;
     async function loadPlan() {
-      if (planProp) return;
       const {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
-      setPlan(normalizePlan(profile?.plan));
+      const res = await fetch('/api/workspace/plan', { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.profilePlan) setPlan(normalizePlan(json.profilePlan));
     }
     void loadPlan();
-  }, [planProp]);
+  }, [planProp, workspacePlan?.plan]);
 
   const loadStatus = useCallback(async () => {
     const res = await fetch('/api/ai/status', { cache: 'no-store' });

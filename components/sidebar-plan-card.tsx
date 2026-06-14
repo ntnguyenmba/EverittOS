@@ -18,20 +18,21 @@ type SidebarPlanCardProps = {
 };
 
 export function SidebarPlanCard({
-  plan = 'free',
+  plan,
   showBillingLink = false,
   showUpgrade = false,
   billingActive = false,
   onNavigate
 }: SidebarPlanCardProps) {
   const { t } = useTranslation();
-  const normalized = normalizePlan(plan);
+  const normalized = plan != null ? normalizePlan(plan) : null;
   const [usageSummary, setUsageSummary] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadUsage() {
+      if (!normalized) return;
       const {
         data: { user }
       } = await supabase.auth.getUser();
@@ -50,7 +51,7 @@ export function SidebarPlanCard({
     };
   }, [normalized]);
 
-  const planName = sidebarPlanDisplayName(normalized);
+  const planName = normalized ? sidebarPlanDisplayName(normalized) : '…';
 
   return (
     <div className="sidebar-plan-card">

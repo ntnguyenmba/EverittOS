@@ -9,6 +9,7 @@ import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { SidebarPlanCard } from '@/components/sidebar-plan-card';
+import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling } from '@/lib/roles';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -19,20 +20,27 @@ type MobileNavProps = {
   role?: UserRole | string | null;
 };
 
-export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
+export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const pathname = usePathname() || '/';
   const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const router = useRouter();
   const { t } = useTranslation();
+  const workspacePlan = useWorkspacePlanOptional();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const normalized = normalizePlan(plan);
-  const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
+  const normalized =
+    workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
+  const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
+  const [role, setRole] = useState<UserRole>(resolvedRole);
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setRole(resolvedRole);
+  }, [resolvedRole]);
 
   useEffect(() => {
     if (roleProp) setRole(normalizeRole(roleProp));
@@ -44,7 +52,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) return;
-      if (!roleProp) {
+      if (!roleProp && !workspacePlan?.role) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
         setRole(normalizeRole(profile?.role));
       }
@@ -56,7 +64,7 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
       setUnread(count || 0);
     }
     load();
-  }, [roleProp]);
+  }, [roleProp, workspacePlan?.role]);
 
   useEffect(() => {
     setOpen(false);
@@ -84,8 +92,9 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
     await performClientLogout(router);
   }
 
-  const showBillingLink = canManageBilling(role);
-  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const showBillingLink = normalized != null && canManageBilling(role);
+  const showUpgrade =
+    normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
 
   const drawer = open ? (
     <div className="mobile-nav-overlay mobile-nav-overlay-portal" role="presentation" onClick={() => setOpen(false)}>
@@ -103,13 +112,15 @@ export function MobileNav({ plan = 'free', role: roleProp }: MobileNavProps) {
         </div>
 
         <div className="mobile-nav-panel">
-          <AppNavItems
-            plan={normalized}
-            role={role}
-            unread={unread}
-            linkClassName="mobile-nav-drawer-link"
-            onNavigate={() => setOpen(false)}
-          />
+          {normalized ? (
+            <AppNavItems
+              plan={normalized}
+              role={role}
+              unread={unread}
+              linkClassName="mobile-nav-drawer-link"
+              onNavigate={() => setOpen(false)}
+            />
+          ) : null}
         </div>
 
         <div className="mobile-nav-drawer-footer">

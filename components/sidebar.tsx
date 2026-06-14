@@ -7,6 +7,7 @@ import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { SidebarPlanCard } from '@/components/sidebar-plan-card';
+import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling } from '@/lib/roles';
 import { canAccessNavHref } from '@/lib/nav-access';
@@ -18,20 +19,21 @@ type SidebarProps = {
   role?: UserRole | string | null;
 };
 
-export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
+export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname() || '/';
   const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const { t } = useTranslation();
-  const normalized = normalizePlan(plan);
+  const workspacePlan = useWorkspacePlanOptional();
+  const normalized =
+    workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
+  const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
   const [unread, setUnread] = useState(0);
-  const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
+  const [role, setRole] = useState<UserRole>(resolvedRole);
 
   useEffect(() => {
-    if (roleProp) {
-      setRole(normalizeRole(roleProp));
-    }
-  }, [roleProp]);
+    setRole(resolvedRole);
+  }, [resolvedRole]);
 
   useEffect(() => {
     async function load() {
@@ -39,7 +41,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) return;
-      if (!roleProp) {
+      if (!roleProp && !workspacePlan?.role) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
         setRole(normalizeRole(profile?.role));
       }
@@ -51,15 +53,17 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
       setUnread(count || 0);
     }
     load();
-  }, [roleProp]);
+  }, [roleProp, workspacePlan?.role]);
 
   async function logout() {
     const { performClientLogout } = await import('@/lib/client-logout');
     await performClientLogout(router);
   }
 
-  const showBillingLink = canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
-  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const showBillingLink =
+    normalized != null && canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
+  const showUpgrade =
+    normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
 
   return (
     <aside className="sidebar" aria-label="App navigation">
@@ -68,7 +72,7 @@ export function Sidebar({ plan = 'free', role: roleProp }: SidebarProps) {
       </div>
 
       <div className="sidebar-nav">
-        <AppNavItems plan={normalized} role={role} unread={unread} />
+        {normalized ? <AppNavItems plan={normalized} role={role} unread={unread} /> : null}
       </div>
 
       <div className="sidebar-footer">
