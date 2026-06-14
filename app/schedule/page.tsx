@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
@@ -152,28 +151,37 @@ function SchedulePageContent() {
         }
       />
 
-        {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
-        {error && (
-          <p className="auth-message auth-message-error" role="alert">
-            {error}
-          </p>
-        )}
-        {!loading && !error && visibleJobs.length === 0 && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <LocalizedEmptyState emptyKey="schedule" />
+      {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
+      {error && (
+        <p className="auth-message auth-message-error" role="alert">
+          {error}
+        </p>
+      )}
+      {!loading && !error && visibleJobs.length === 0 && (
+        <div className="card empty-action-card" style={{ marginTop: 18 }}>
+          <h3>Nothing scheduled</h3>
+          <p className="muted">Create a job first, then schedule it here so it appears on the calendar.</p>
+          <div className="settings-actions">
+            <Link className="btn btn-primary" href="/jobs/new">
+              Create job
+            </Link>
+            <Link className="btn" href="/schedule/new">
+              Schedule existing job
+            </Link>
           </div>
-        )}
-        {!loading && !error && visibleJobs.length > 0 && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <ScheduleViews
-              jobs={visibleJobs}
-              workerNames={workerNames}
-              canAssign={canAssign}
-              onAssign={assignWorker}
-              onReschedule={canAssign ? rescheduleJob : undefined}
-            />
-          </div>
-        )}
+        </div>
+      )}
+      {!loading && !error && visibleJobs.length > 0 && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <ScheduleViews
+            jobs={visibleJobs}
+            workerNames={workerNames}
+            canAssign={canAssign}
+            onAssign={assignWorker}
+            onReschedule={canAssign ? rescheduleJob : undefined}
+          />
+        </div>
+      )}
     </AppShell>
   );
 }
