@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
-import { isValidUuid } from '@/lib/input-validation';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
 const CONFIRMATION_PHRASE = 'DELETE MY ACCOUNT';
@@ -37,15 +36,23 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
+  await admin
+    .from('profiles')
+    .update({
+      data_deletion_requested_at: new Date().toISOString(),
+      account_status: 'deletion_requested'
+    })
+    .eq('id', user.id);
+
   if (profile?.organization_id) {
     await admin.from('activity_logs').insert({
       organization_id: profile.organization_id,
-      actor_id: user.id,
+      user_id: user.id,
       actor_name: profile.email || user.email || 'User',
       entity_type: 'account',
       entity_id: user.id,
       action: 'deletion_requested',
-      message: 'User requested permanent account deletion from account settings.'
+      message: 'User requested permanent account and data deletion from account settings.'
     });
   }
 
