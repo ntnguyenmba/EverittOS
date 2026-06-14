@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { mapBookingApiError } from '@/lib/booking/schema';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+function bookingErrorResponse(message: string, fallback: string, status = 400) {
+  const mapped = mapBookingApiError(message, fallback);
+  return NextResponse.json(mapped, { status: mapped.code === 'schema_missing' ? 503 : status });
+}
 
 export async function GET(request: Request) {
   const ctx = await requireWorkspaceSession();
@@ -30,7 +36,7 @@ export async function GET(request: Request) {
   const { data, error } = await query.limit(100);
 
   if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+    return bookingErrorResponse(error.message, 'Unable to load bookings.');
   }
 
   return NextResponse.json({ bookings: data || [] });
@@ -58,10 +64,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Service, client name, and time are required.' }, { status: 400 });
   }
 
+  const workspaceId = ctx.workspace.organizationId;
+
   const { data, error } = await ctx.supabase
     .from('bookings')
     .insert({
-      organization_id: ctx.workspace.organizationId,
+      organization_id: workspaceId,
+      workspace_id: workspaceId,
       service_id: body.service_id,
       worker_id: body.worker_id || null,
       client_name: body.client_name.trim(),
@@ -77,6 +86,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
+    const mapped = mapBookingApiError(error.message, 'Unable to save booking.');
+    if (mapped.code === 'schema_missing') {
+      return NextResponse.json(mapped, { status: 503 });
+    }
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 

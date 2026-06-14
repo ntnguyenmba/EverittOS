@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { mapBookingApiError } from '@/lib/booking/schema';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -28,7 +29,8 @@ export async function GET() {
     ]);
 
   if (servicesError) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(servicesError.message) }, { status: 400 });
+    const mapped = mapBookingApiError(servicesError.message, 'Unable to load services.');
+    return NextResponse.json(mapped, { status: mapped.code === 'schema_missing' ? 503 : 400 });
   }
 
   const { data: org } = await ctx.supabase
@@ -87,6 +89,7 @@ export async function POST(request: Request) {
     .from('services')
     .insert({
       organization_id: ctx.workspace.organizationId,
+      workspace_id: ctx.workspace.organizationId,
       name: body.name.trim(),
       category: body.category?.trim() || null,
       description: body.description?.trim() || null,
@@ -98,6 +101,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
+    const mapped = mapBookingApiError(error.message, 'Unable to save service.');
+    if (mapped.code === 'schema_missing') {
+      return NextResponse.json(mapped, { status: 503 });
+    }
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 

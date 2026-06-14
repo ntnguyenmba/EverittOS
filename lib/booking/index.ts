@@ -1,4 +1,5 @@
 export * from '@/lib/booking/types';
+export * from '@/lib/booking/schema';
 export * from '@/lib/booking/slug';
 export * from '@/lib/booking/conflicts';
 export * from '@/lib/booking/availability';
