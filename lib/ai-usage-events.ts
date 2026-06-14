@@ -6,7 +6,8 @@ import { isAdminRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/ro
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 export const STAFF_DAILY_AI_PROMPT_LIMIT = 2;
-export const STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD = 10;
+/** Per staff user — not shared across the workspace. */
+export const STAFF_MONTHLY_AI_PROMPT_LIMIT = 40;
 export const FREE_PLAN_SEARCH_DAILY_LIMIT = 100;
 
 export type AiUsageEventInput = {
@@ -23,7 +24,7 @@ export type AiUsageEventInput = {
 
 export type StaffAiGateResult =
   | { ok: true; isStaff: boolean; staffLimitsApplied: boolean }
-  | { ok: false; code: 'staff_daily_limit' | 'staff_budget_exhausted'; message: string };
+  | { ok: false; code: 'staff_daily_limit' | 'staff_monthly_limit'; message: string };
 
 const STAFF_ROLES = new Set<UserRole>(['employee', 'contractor', 'viewer']);
 
@@ -111,7 +112,22 @@ export async function getDailySearchCount(admin: SupabaseClient, userId: string)
   return count || 0;
 }
 
-/** Combined staff AI spend for one workspace in the current calendar month. */
+export async function getMonthlyAiPromptCount(admin: SupabaseClient, userId: string): Promise<number> {
+  const { count, error } = await admin
+    .from('ai_usage_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('mode', 'ai')
+    .gte('created_at', calendarMonthStartIso());
+
+  if (error) {
+    if (isMissingSchemaError(error)) return 0;
+    throw error;
+  }
+  return count || 0;
+}
+
+/** Workspace-wide staff AI spend — informational only, not used for gating. */
 export async function getMonthlyStaffAiSpend(admin: SupabaseClient, workspaceId: string): Promise<number> {
   const { data, error } = await admin
     .from('ai_usage_events')
@@ -161,9 +177,9 @@ export async function canUseAiMode(
     return { ok: true, isStaff: isStaffRole(normalizeRole(roleInput)), staffLimitsApplied: false };
   }
 
-  const [dailyCount, monthlySpend] = await Promise.all([
+  const [dailyCount, monthlyCount] = await Promise.all([
     getDailyAiPromptCount(admin, userId),
-    getMonthlyStaffAiSpend(admin, workspaceId)
+    getMonthlyAiPromptCount(admin, userId)
   ]);
 
   if (dailyCount >= STAFF_DAILY_AI_PROMPT_LIMIT) {
@@ -175,12 +191,11 @@ export async function canUseAiMode(
     };
   }
 
-  if (monthlySpend >= STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD) {
+  if (monthlyCount >= STAFF_MONTHLY_AI_PROMPT_LIMIT) {
     return {
       ok: false,
-      code: 'staff_budget_exhausted',
-      message:
-        'Your workspace staff AI allowance has been reached for this month. Ask Everitt search is still available, and AI access will reset next month.'
+      code: 'staff_monthly_limit',
+      message: `You've reached your ${STAFF_MONTHLY_AI_PROMPT_LIMIT} AI prompts for this month. Ask Everitt search is still available, and your AI access will reset next month.`
     };
   }
 
@@ -189,10 +204,16 @@ export async function canUseAiMode(
 
 export type StaffAiUsageSummary = {
   staffPromptsToday: number;
-  staffBudgetUsedUsd: number;
-  staffBudgetCapUsd: number;
+  staffMonthlyPromptCap: number;
   staffLimitsApply: boolean;
-  staffUsersThisMonth: { userId: string; role: UserRole; prompts: number; costUsd: number }[];
+  workspaceStaffSpendUsd: number;
+  staffUsersThisMonth: {
+    userId: string;
+    role: UserRole;
+    prompts: number;
+    costUsd: number;
+    monthlyPromptCap: number;
+  }[];
 };
 
 export type WorkspaceUserAiUsage = {
@@ -269,7 +290,7 @@ export async function getStaffAiUsageSummary(
 
   const rows = (monthRows || []).filter((r) => isStaffAiRole(r.user_role));
   const staffPromptsToday = rows.filter((r) => r.created_at >= dayStart).length;
-  const staffBudgetUsedUsd = Number(
+  const workspaceStaffSpendUsd = Number(
     rows.reduce((s, r) => s + Number(r.estimated_cost || 0), 0).toFixed(4)
   );
 
@@ -288,14 +309,15 @@ export async function getStaffAiUsageSummary(
 
   return {
     staffPromptsToday,
-    staffBudgetUsedUsd,
-    staffBudgetCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
+    staffMonthlyPromptCap: STAFF_MONTHLY_AI_PROMPT_LIMIT,
     staffLimitsApply,
+    workspaceStaffSpendUsd,
     staffUsersThisMonth: Array.from(byUser.entries()).map(([userId, stats]) => ({
       userId,
       role: stats.role,
       prompts: stats.prompts,
-      costUsd: Number(stats.costUsd.toFixed(4))
+      costUsd: Number(stats.costUsd.toFixed(4)),
+      monthlyPromptCap: STAFF_MONTHLY_AI_PROMPT_LIMIT
     }))
   };
 }

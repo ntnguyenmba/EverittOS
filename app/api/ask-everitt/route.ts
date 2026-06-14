@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         : gate.code === 'rate_limited' ||
             gate.code === 'everittteam_budget_exhausted' ||
             gate.code === 'staff_daily_limit' ||
-            gate.code === 'staff_budget_exhausted'
+            gate.code === 'staff_monthly_limit'
           ? 429
           : 503;
     return NextResponse.json(

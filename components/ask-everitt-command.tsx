@@ -49,10 +49,11 @@ type AskEverittStatus = {
   lockedMessage: string | null;
   usage?: { monthlyUsed: number; monthlyCap: number; unlimited: boolean; remaining: number | null };
   staffAi?: {
+    applies?: boolean;
     dailyUsed: number;
     dailyCap: number;
-    monthlySpendUsd: number;
-    monthlyCapUsd: number;
+    monthlyUsed: number;
+    monthlyCap: number;
   };
 };
 
@@ -202,7 +203,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
         }
         return;
       }
-      if (json.searchAvailable && (json.code === 'staff_daily_limit' || json.code === 'staff_budget_exhausted')) {
+      if (json.searchAvailable && (json.code === 'staff_daily_limit' || json.code === 'staff_monthly_limit')) {
         setNotice(json.error);
         void loadStatus();
         return;
@@ -433,8 +434,8 @@ function CommandOverlay({
 
         {status?.staffAi ? (
           <p className="muted everitt-cmd-usage">
-            Staff AI today: {status.staffAi.dailyUsed}/{status.staffAi.dailyCap} · Workspace staff budget: $
-            {status.staffAi.monthlySpendUsd.toFixed(2)}/${status.staffAi.monthlyCapUsd.toFixed(0)}
+            Your AI today: {status.staffAi.dailyUsed}/{status.staffAi.dailyCap} · This month:{' '}
+            {status.staffAi.monthlyUsed}/{status.staffAi.monthlyCap} prompts
           </p>
         ) : status?.usage && status.aiModeAvailable ? (
           <p className="muted everitt-cmd-usage">

@@ -23,7 +23,7 @@ export type AiGateFailureCode =
   | 'everittteam_budget_exhausted'
   | 'budget_verification_failed'
   | 'staff_daily_limit'
-  | 'staff_budget_exhausted';
+  | 'staff_monthly_limit';
 
 export type AiGateResult =
   | {

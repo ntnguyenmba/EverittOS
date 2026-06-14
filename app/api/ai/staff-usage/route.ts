@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getStaffAiUsageSummary, STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD } from '@/lib/ai-usage-events';
+import {
+  getStaffAiUsageSummary,
+  STAFF_DAILY_AI_PROMPT_LIMIT,
+  STAFF_MONTHLY_AI_PROMPT_LIMIT
+} from '@/lib/ai-usage-events';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
@@ -9,7 +13,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Staff AI budget summary for owners/admins (Billing / Settings). */
+/** Staff AI usage summary for owners/admins (Billing / Settings). */
 export async function GET() {
   const supabase = await createServerSupabase();
   const {
@@ -40,7 +44,8 @@ export async function GET() {
 
   return NextResponse.json({
     ...summary,
-    staffBudgetCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
+    staffDailyPromptCap: STAFF_DAILY_AI_PROMPT_LIMIT,
+    staffMonthlyPromptCap: STAFF_MONTHLY_AI_PROMPT_LIMIT,
     searchDoesNotCountAsAi: true
   });
 }

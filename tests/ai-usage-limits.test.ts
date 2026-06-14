@@ -4,7 +4,7 @@ import {
   isStaffAiRole,
   shouldApplyStaffAiLimits,
   STAFF_DAILY_AI_PROMPT_LIMIT,
-  STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+  STAFF_MONTHLY_AI_PROMPT_LIMIT
 } from '@/lib/ai-usage-events';
 import { aiMonthlyCap } from '@/lib/ai-server';
 
@@ -40,9 +40,9 @@ describe('ai usage limits by role and plan', () => {
     assert.equal(isStaffAiRole('manager'), false);
   });
 
-  it('documents internal staff caps separately from customer plan caps', () => {
+  it('uses per-user staff caps separate from customer plan caps', () => {
     assert.equal(STAFF_DAILY_AI_PROMPT_LIMIT, 2);
-    assert.equal(STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD, 10);
+    assert.equal(STAFF_MONTHLY_AI_PROMPT_LIMIT, 40);
     assert.equal(aiMonthlyCap('business'), 200);
   });
 });

@@ -4,7 +4,7 @@ import { detectAskEverittMode, isAiSuggestion } from '@/lib/ask-everitt-intent';
 import {
   estimateAiCost,
   STAFF_DAILY_AI_PROMPT_LIMIT,
-  STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+  STAFF_MONTHLY_AI_PROMPT_LIMIT
 } from '@/lib/ai-usage-events';
 
 describe('ask-everitt-intent', () => {
@@ -46,8 +46,8 @@ describe('ai-usage-events constants', () => {
     assert.equal(STAFF_DAILY_AI_PROMPT_LIMIT, 2);
   });
 
-  it('uses $10 workspace staff AI monthly cap', () => {
-    assert.equal(STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD, 10);
+  it('uses per-user staff monthly prompt cap', () => {
+    assert.equal(STAFF_MONTHLY_AI_PROMPT_LIMIT, 40);
   });
 
   it('estimateAiCost returns a non-negative number', () => {
@@ -93,10 +93,11 @@ describe('staff AI block messages', () => {
     assert.match(msg, /search is still available/);
   });
 
-  it('documents expected monthly budget copy', () => {
+  it('documents expected monthly limit copy', () => {
     const msg =
-      'Your workspace staff AI allowance has been reached for this month. Ask Everitt search is still available, and AI access will reset next month.';
-    assert.match(msg, /\$10|allowance|month/);
+      "You've reached your 40 AI prompts for this month. Ask Everitt search is still available, and your AI access will reset next month.";
+    assert.match(msg, /40 AI prompts/);
+    assert.match(msg, /your AI access will reset next month/);
     assert.match(msg, /search is still available/);
   });
 });

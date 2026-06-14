@@ -14,11 +14,11 @@ import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { isClientRole, isOwner, isStaffRole, normalizeRole } from '@/lib/roles';
 import {
   getDailyAiPromptCount,
-  getMonthlyStaffAiSpend,
+  getMonthlyAiPromptCount,
   getStaffAiUsageSummary,
   shouldApplyStaffAiLimits,
   STAFF_DAILY_AI_PROMPT_LIMIT,
-  STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+  STAFF_MONTHLY_AI_PROMPT_LIMIT
 } from '@/lib/ai-usage-events';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -85,26 +85,20 @@ export async function GET() {
     const staffLimitsApply = shouldApplyStaffAiLimits(plan, role);
     if (isStaffRole(role)) {
       const summary = await getStaffAiUsageSummary(admin, org.organizationId, plan);
-      const dailyUsed = staffLimitsApply ? await getDailyAiPromptCount(admin, user.id) : 0;
+      const [dailyUsed, monthlyUsed] = staffLimitsApply
+        ? await Promise.all([
+            getDailyAiPromptCount(admin, user.id),
+            getMonthlyAiPromptCount(admin, user.id)
+          ])
+        : [0, 0];
       staffAi = {
         applies: staffLimitsApply,
         dailyUsed,
         dailyCap: STAFF_DAILY_AI_PROMPT_LIMIT,
-        monthlySpendUsd: summary.staffBudgetUsedUsd,
-        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
-        workspaceStaffSpendUsd: summary.staffBudgetUsedUsd,
+        monthlyUsed,
+        monthlyCap: STAFF_MONTHLY_AI_PROMPT_LIMIT,
+        workspaceStaffSpendUsd: summary.workspaceStaffSpendUsd,
         usersThisMonth: summary.staffUsersThisMonth
-      };
-    } else if (!staffLimitsApply && everittteamApplies) {
-      const monthlySpend = await getMonthlyStaffAiSpend(admin, org.organizationId);
-      staffAi = {
-        applies: false,
-        dailyUsed: 0,
-        dailyCap: STAFF_DAILY_AI_PROMPT_LIMIT,
-        monthlySpendUsd: monthlySpend,
-        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD,
-        workspaceStaffSpendUsd: monthlySpend,
-        usersThisMonth: []
       };
     }
   }

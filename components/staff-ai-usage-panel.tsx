@@ -1,21 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD } from '@/lib/ai-usage-events';
+import { STAFF_DAILY_AI_PROMPT_LIMIT, STAFF_MONTHLY_AI_PROMPT_LIMIT } from '@/lib/ai-usage-events';
 
 type StaffUserRow = {
   userId: string;
   role: string;
   prompts: number;
   costUsd: number;
+  monthlyPromptCap: number;
 };
 
 type StaffUsagePayload = {
   staffPromptsToday: number;
-  staffBudgetUsedUsd: number;
-  staffBudgetCapUsd: number;
+  staffMonthlyPromptCap: number;
+  staffDailyPromptCap?: number;
   staffLimitsApply?: boolean;
+  workspaceStaffSpendUsd: number;
   staffUsersThisMonth: StaffUserRow[];
   searchDoesNotCountAsAi?: boolean;
 };
@@ -47,31 +48,34 @@ export function StaffAiUsagePanel() {
   if (error) return null;
   if (!data) return null;
 
-  const cap = data.staffBudgetCapUsd ?? STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD;
+  const dailyCap = data.staffDailyPromptCap ?? STAFF_DAILY_AI_PROMPT_LIMIT;
+  const monthlyCap = data.staffMonthlyPromptCap ?? STAFF_MONTHLY_AI_PROMPT_LIMIT;
 
   return (
     <div className="ai-usage-panel staff-ai-usage-panel">
       <h3>Staff AI usage</h3>
       <p className="muted">
-        Ask Everitt search does not count as paid AI. Staff AI prompts and cost apply only to Everitt AI writing,
-        analysis, and generation. Staff usage is tracked separately and does not reduce the workspace owner&apos;s
-        plan AI quota.
+        Ask Everitt search does not count as paid AI. Staff limits are per user — one team member
+        cannot use up another&apos;s allowance. Staff usage is tracked separately and does not reduce
+        the workspace owner&apos;s plan AI quota.
       </p>
       {data.staffLimitsApply === false ? (
         <p className="muted" style={{ marginTop: 8 }}>
           Staff AI caps are not applied on Enterprise plans.
         </p>
-      ) : null}
+      ) : (
+        <p className="muted" style={{ marginTop: 8 }}>
+          Each staff member: {dailyCap} AI prompts per day, {monthlyCap} per month.
+        </p>
+      )}
       <div className="dashboard-stats-grid" style={{ marginTop: 12 }}>
         <div className="card stat-card">
-          <span className="stat-label">Staff AI prompts today</span>
+          <span className="stat-label">Staff AI prompts today (all staff)</span>
           <strong className="stat-value">{data.staffPromptsToday}</strong>
         </div>
         <div className="card stat-card">
-          <span className="stat-label">Staff AI budget this month</span>
-          <strong className="stat-value">
-            ${data.staffBudgetUsedUsd.toFixed(2)} / ${cap.toFixed(2)}
-          </strong>
+          <span className="stat-label">Estimated staff AI cost this month</span>
+          <strong className="stat-value">${data.workspaceStaffSpendUsd.toFixed(2)}</strong>
         </div>
       </div>
       {data.staffUsersThisMonth.length > 0 ? (
@@ -82,7 +86,7 @@ export function StaffAiUsagePanel() {
               <li key={row.userId} className="settings-row">
                 <span className="settings-row-value">{row.role}</span>
                 <span className="muted">
-                  {row.prompts} prompt{row.prompts === 1 ? '' : 's'} · ${row.costUsd.toFixed(2)}
+                  {row.prompts} / {row.monthlyPromptCap || monthlyCap} prompts · ${row.costUsd.toFixed(2)}
                 </span>
               </li>
             ))}
@@ -93,10 +97,6 @@ export function StaffAiUsagePanel() {
           No staff AI usage recorded this month.
         </p>
       )}
-      <p className="muted" style={{ marginTop: 10 }}>
-        Monthly staff AI cap: ${cap.toFixed(2)} per workspace (combined across all staff). Resets on the first of
-        each month.
-      </p>
     </div>
   );
 }
