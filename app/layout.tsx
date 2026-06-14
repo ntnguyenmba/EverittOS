@@ -25,7 +25,7 @@ import './everitt-luxury-refresh.css';
 import './dashboard-repair.css';
 import './dashboard-visual-balance.css';
 import './dashboard-final-polish.css';
-import './dashboard-final-polish.css';
+import './app-readability-pass.css';
 
 const inter = Inter({
   subsets: ['latin'],
