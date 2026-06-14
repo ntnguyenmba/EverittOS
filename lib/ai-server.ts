@@ -115,7 +115,7 @@ export async function assertAiAllowed(
     return {
       ok: false,
       code: 'plan_required',
-      message: 'Ask Everitt is available on Business and Enterprise plans.'
+      message: 'Everitt AI is available on Business and Enterprise plans.'
     };
   }
 

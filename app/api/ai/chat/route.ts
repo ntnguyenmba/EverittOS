@@ -5,6 +5,7 @@ import type { AiFeatureId } from '@/lib/ai-features';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
 import { canSeeOrgWideData } from '@/lib/permissions';
+import { normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -38,7 +39,10 @@ export async function POST(request: Request) {
     const status =
       gate.code === 'plan_required' || gate.code === 'subscription_inactive' || gate.code === 'permission_denied'
         ? 403
-        : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted'
+        : gate.code === 'rate_limited' ||
+            gate.code === 'everittteam_budget_exhausted' ||
+            gate.code === 'staff_daily_limit' ||
+            gate.code === 'staff_budget_exhausted'
           ? 429
           : gate.code === 'unauthorized' || gate.code === 'no_organization'
             ? 401
@@ -54,9 +58,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!canSeeOrgWideData(gate.org.role)) {
+  if (!canSeeOrgWideData(gate.org.role) && normalizeRole(gate.org.role) !== 'employee') {
     return NextResponse.json(
-      { error: 'Your role cannot use Ask Everitt.', code: 'permission_denied', locked: false },
+      { error: 'Your role cannot use Everitt AI.', code: 'permission_denied', locked: false },
       { status: 403 }
     );
   }

@@ -40,11 +40,24 @@ export function isAiFeatureAvailable(_feature: AiFeatureId, plan: EverittosPlan)
   return planHasAiAccess(plan);
 }
 
-export const ASK_EVERITT_SUGGESTIONS = [
-  'What jobs are scheduled tomorrow?',
+export const ASK_EVERITT_SEARCH_SUGGESTIONS = [
+  'Which jobs are scheduled tomorrow?',
+  'Show customers who haven\'t booked in 90 days.',
+  'Find all jobs with before-and-after photos.',
   'Which leads came in this month?',
-  'Show proposals awaiting approval',
-  'Draft a follow-up email for a new lead',
-  'Create an onboarding SOP for new clients',
-  'What is our pipeline looking like?'
+  'Show unpaid invoices.',
+  'Show recent reviews.'
+] as const;
+
+export const ASK_EVERITT_AI_SUGGESTIONS = [
+  { text: 'Write a follow-up message for this lead.', premium: true },
+  { text: 'Summarize this month\'s reviews.', premium: true },
+  { text: 'Draft a follow-up email for a new lead.', premium: true },
+  { text: 'Create an onboarding SOP for new clients.', premium: true }
+] as const;
+
+/** @deprecated Use ASK_EVERITT_SEARCH_SUGGESTIONS + ASK_EVERITT_AI_SUGGESTIONS */
+export const ASK_EVERITT_SUGGESTIONS = [
+  ...ASK_EVERITT_SEARCH_SUGGESTIONS,
+  ...ASK_EVERITT_AI_SUGGESTIONS.map((s) => s.text)
 ] as const;

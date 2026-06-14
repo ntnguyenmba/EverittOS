@@ -4,37 +4,57 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AiUpgradeModal } from '@/components/ai-upgrade-modal';
-import { ASK_EVERITT_SUGGESTIONS } from '@/lib/ai-features';
+import {
+  ASK_EVERITT_AI_SUGGESTIONS,
+  ASK_EVERITT_SEARCH_SUGGESTIONS
+} from '@/lib/ai-features';
 import type { ProposedAiAction } from '@/lib/ai-actions';
-import type { SearchResultItem } from '@/lib/os-types';
+import type { AskEverittSearchRecord } from '@/lib/ask-everitt-search';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { supabase } from '@/lib/supabase';
 
-const SEARCH_TYPE_LABELS: Record<SearchResultItem['type'], string> = {
-  customer: 'CRM',
+const RECORD_TYPE_LABELS: Record<AskEverittSearchRecord['type'], string> = {
+  customer: 'Customer',
   job: 'Job',
-  task: 'Task',
+  lead: 'Lead',
+  worker: 'Worker',
+  schedule: 'Schedule',
+  form: 'Form',
+  sop: 'SOP',
   document: 'Document',
-  template: 'Template',
-  form: 'Form'
+  review: 'Review',
+  note: 'Note',
+  invoice: 'Invoice'
 };
 
-type AiStatus = {
-  allowed: boolean;
+type AskEverittStatus = {
+  searchAvailable: boolean;
+  aiModeAvailable: boolean;
   configured: boolean;
-  locked: boolean;
-  lockedMessage: string | null;
+  aiLocked: boolean;
   planLocked: boolean;
-  budgetLocked: boolean;
-  everittteamWarning: string | null;
+  lockedMessage: string | null;
   usage?: { monthlyUsed: number; monthlyCap: number; unlimited: boolean; remaining: number | null };
-  everittteam?: {
-    budgetUsd: number;
-    usedUsd: number;
-    remainingUsd: number;
-    percentUsed: number;
+  staffAi?: {
+    dailyUsed: number;
+    dailyCap: number;
+    monthlySpendUsd: number;
+    monthlyCapUsd: number;
   };
+};
+
+type SearchResponse = {
+  mode: 'search';
+  summary: string;
+  results: AskEverittSearchRecord[];
+  noResultsHint?: string;
+};
+
+type AiResponse = {
+  mode: 'ai';
+  reply: string;
+  action?: ProposedAiAction | null;
 };
 
 type AskEverittCommandProps = {
@@ -51,62 +71,37 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     workspacePlan?.plan ?? (planProp != null ? normalizePlan(planProp) : null)
   );
   const [query, setQuery] = useState('');
-  const [reply, setReply] = useState('');
+  const [searchSummary, setSearchSummary] = useState('');
+  const [searchResults, setSearchResults] = useState<AskEverittSearchRecord[]>([]);
+  const [searchHint, setSearchHint] = useState<string | null>(null);
+  const [aiReply, setAiReply] = useState('');
   const [pendingAction, setPendingAction] = useState<ProposedAiAction | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
-  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [status, setStatus] = useState<AskEverittStatus | null>(null);
   const [busy, setBusy] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [lastMode, setLastMode] = useState<'search' | 'ai' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchDebounce = useRef<number | null>(null);
 
   const kbd =
     typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K';
-  const aiLocked = aiStatus?.locked ?? !aiStatus?.allowed;
-  const aiPlanLocked = aiStatus?.planLocked ?? false;
-  const aiBudgetLocked = aiStatus?.budgetLocked ?? false;
-  const aiReady = Boolean(aiStatus?.allowed && aiStatus?.configured);
 
   useEffect(() => {
-    if (workspacePlan?.plan) {
-      setPlan(workspacePlan.plan);
-      return;
-    }
-    if (planProp != null) setPlan(normalizePlan(planProp));
-  }, [planProp, workspacePlan?.plan]);
-
-  useEffect(() => {
-    if (workspacePlan?.plan || planProp != null) return;
-    async function loadPlan() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const res = await fetch('/api/workspace/plan', { cache: 'no-store' });
-      if (!res.ok) return;
-      const json = await res.json();
-      if (json.profilePlan) setPlan(normalizePlan(json.profilePlan));
-    }
-    void loadPlan();
+    if (workspacePlan?.plan) setPlan(workspacePlan.plan);
+    else if (planProp != null) setPlan(normalizePlan(planProp));
   }, [planProp, workspacePlan?.plan]);
 
   const loadStatus = useCallback(async () => {
     const res = await fetch('/api/ai/status', { cache: 'no-store' });
     if (!res.ok) return;
     const json = await res.json();
-    setAiStatus({
-      allowed: Boolean(json.allowed),
+    setStatus({
+      searchAvailable: Boolean(json.searchAvailable ?? true),
+      aiModeAvailable: Boolean(json.aiModeAvailable),
       configured: Boolean(json.configured),
-      locked: Boolean(json.locked),
-      lockedMessage: json.lockedMessage || null,
+      aiLocked: Boolean(json.aiLocked ?? !json.aiModeAvailable),
       planLocked: Boolean(json.locked && json.gate?.code === 'plan_required'),
-      budgetLocked: Boolean(
-        json.gate?.code === 'everittteam_budget_exhausted' ||
-          (json.everittteam?.budgetExhausted && !json.everittteam?.ownerBypass)
-      ),
-      everittteamWarning: json.everittteam?.warning || null,
+      lockedMessage: json.lockedMessage || null,
       usage: json.usage
         ? {
             monthlyUsed: json.usage.monthlyUsed,
@@ -115,14 +110,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
             remaining: json.usage.remaining
           }
         : undefined,
-      everittteam: json.everittteam?.applies
-        ? {
-            budgetUsd: json.everittteam.budgetUsd,
-            usedUsd: json.everittteam.usedUsd,
-            remainingUsd: json.everittteam.remainingUsd,
-            percentUsed: json.everittteam.percentUsed
-          }
-        : undefined
+      staffAi: json.staffAi || undefined
     });
   }, []);
 
@@ -137,37 +125,15 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     return () => window.clearTimeout(t);
   }, [open, loadStatus]);
 
-  const runSearch = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
-      const json = await res.json();
-      setSearchResults(res.ok ? json.results || [] : []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    if (searchDebounce.current) window.clearTimeout(searchDebounce.current);
-    searchDebounce.current = window.setTimeout(() => void runSearch(query), 220);
-    return () => {
-      if (searchDebounce.current) window.clearTimeout(searchDebounce.current);
-    };
-  }, [query, open, runSearch]);
-
   const openCommand = useCallback(() => {
     setOpen(true);
     setNotice('');
-    setReply('');
+    setAiReply('');
+    setSearchSummary('');
+    setSearchResults([]);
+    setSearchHint(null);
     setPendingAction(null);
+    setLastMode(null);
   }, []);
 
   useEffect(() => {
@@ -187,52 +153,57 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [openCommand]);
 
-  async function submitAi(text?: string) {
+  async function submitAsk(text?: string, forceMode?: 'search' | 'ai') {
     const value = (text ?? query).trim();
     if (!value || busy) return;
 
-    if (aiLocked) {
-      if (aiPlanLocked) setUpgradeOpen(true);
-      return;
-    }
-    if (!aiReady) {
-      setNotice('AI is not available right now. Core EverittOS features are unaffected.');
-      return;
-    }
-
     setBusy(true);
     setNotice('');
-    setReply('');
+    setAiReply('');
+    setSearchSummary('');
+    setSearchResults([]);
+    setSearchHint(null);
     setPendingAction(null);
 
-    const res = await fetch('/api/ai/chat', {
+    const res = await fetch('/api/ask-everitt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: value, feature: 'ask_everitt' })
+      body: JSON.stringify({ prompt: value, forceMode })
     });
     const json = await res.json();
     setBusy(false);
 
     if (!res.ok) {
-      if (json.locked || json.code === 'plan_required') {
-        setUpgradeOpen(true);
+      if (json.code === 'plan_required' || json.locked) {
+        if (json.searchAvailable) {
+          setNotice(json.error || 'Everitt AI is unavailable on your plan. Try a search question instead.');
+        } else {
+          setUpgradeOpen(true);
+        }
         return;
       }
-      if (json.code === 'rate_limited') {
-        setNotice('Monthly AI limit reached. Upgrade to Enterprise for unlimited usage.');
-        return;
-      }
-      if (json.code === 'everittteam_budget_exhausted' || json.code === 'budget_verification_failed') {
-        setNotice(json.error || 'AI is temporarily unavailable.');
+      if (json.searchAvailable && (json.code === 'staff_daily_limit' || json.code === 'staff_budget_exhausted')) {
+        setNotice(json.error);
         void loadStatus();
         return;
       }
-      setNotice(json.error || 'AI is temporarily unavailable.');
+      setNotice(json.error || 'Unable to complete your request.');
       return;
     }
 
-    setReply(json.reply || '');
-    if (json.action) setPendingAction(json.action);
+    if (json.mode === 'search') {
+      const payload = json as SearchResponse;
+      setLastMode('search');
+      setSearchSummary(payload.summary);
+      setSearchResults(payload.results || []);
+      setSearchHint(payload.noResultsHint || null);
+      return;
+    }
+
+    const payload = json as AiResponse;
+    setLastMode('ai');
+    setAiReply(payload.reply || '');
+    if (payload.action) setPendingAction(payload.action);
     void loadStatus();
   }
 
@@ -247,11 +218,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     const json = await res.json();
     setActionBusy(false);
     if (!res.ok) {
-      if (json.locked) {
-        setUpgradeOpen(true);
-        return;
-      }
-      setNotice(json.error || 'Action could not be completed.');
+      if (json.locked) setUpgradeOpen(true);
+      else setNotice(json.error || 'Action could not be completed.');
       return;
     }
     setNotice(json.message || 'Action completed.');
@@ -270,114 +238,121 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
         <div className="command-ask-head">
           <h2>Ask Everitt</h2>
           <button type="button" className="everitt-cmd-trigger everitt-cmd-trigger-inline" onClick={openCommand}>
-            Open command bar <span className="muted">{kbd}</span>
+            Ask your business anything <span className="muted">{kbd}</span>
           </button>
         </div>
-        <p className="muted">Your business command center: jobs, leads, proposals, and actions in one place.</p>
-        {aiLocked ? (
-          <button type="button" className="btn" onClick={() => (aiPlanLocked ? setUpgradeOpen(true) : openCommand())}>
-            {aiPlanLocked ? 'Unlock AI on Business plan' : 'View AI status'}
-          </button>
-        ) : (
-          <button type="button" className="btn btn-primary" onClick={openCommand}>
-            Ask Everitt…
-          </button>
-        )}
+        <p className="muted">Search customers, jobs, leads, schedule, forms, and documents from your workspace.</p>
+        <button type="button" className="btn btn-primary" onClick={openCommand}>
+          Ask about customers, jobs, leads…
+        </button>
         <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
-        {open ? <CommandOverlay {...overlayProps()} /> : null}
+        {open ? (
+          <CommandOverlay
+            query={query}
+            setQuery={setQuery}
+            inputRef={inputRef}
+            kbd={kbd}
+            status={status}
+            busy={busy}
+            searchSummary={searchSummary}
+            searchResults={searchResults}
+            searchHint={searchHint}
+            aiReply={aiReply}
+            notice={notice}
+            pendingAction={pendingAction}
+            lastMode={lastMode}
+            submitAsk={submitAsk}
+            confirmAction={confirmAction}
+            actionBusy={actionBusy}
+            navigate={navigate}
+            setPendingAction={setPendingAction}
+            setUpgradeOpen={setUpgradeOpen}
+            onClose={() => setOpen(false)}
+          />
+        ) : null}
       </section>
     );
   }
 
-  function overlayProps() {
-    return {
-      open,
-      onClose: () => setOpen(false),
-      query,
-      setQuery,
-      inputRef,
-      kbd,
-      aiLocked,
-      aiPlanLocked,
-      aiBudgetLocked,
-      aiReady,
-      aiStatus,
-      busy,
-      searching,
-      searchResults,
-      reply,
-      notice,
-      pendingAction,
-      setPendingAction,
-      submitAi,
-      confirmAction,
-      actionBusy,
-      navigate,
-      setUpgradeOpen
-    };
-  }
-
   return (
     <>
-      <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label="Ask Everitt command bar">
-        <span className="everitt-cmd-placeholder">Ask Everitt…</span>
+      <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label="Ask Everitt">
+        <span className="everitt-cmd-placeholder">Ask about customers, jobs, leads…</span>
         <span className="everitt-cmd-kbd">{kbd}</span>
       </button>
-      {open ? <CommandOverlay {...overlayProps()} /> : null}
+      {open ? (
+        <CommandOverlay
+          query={query}
+          setQuery={setQuery}
+          inputRef={inputRef}
+          kbd={kbd}
+          status={status}
+          busy={busy}
+          searchSummary={searchSummary}
+          searchResults={searchResults}
+          searchHint={searchHint}
+          aiReply={aiReply}
+          notice={notice}
+          pendingAction={pendingAction}
+          lastMode={lastMode}
+          submitAsk={submitAsk}
+          confirmAction={confirmAction}
+          actionBusy={actionBusy}
+          navigate={navigate}
+          setPendingAction={setPendingAction}
+          setUpgradeOpen={setUpgradeOpen}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
       <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
   );
 }
 
 type OverlayProps = {
-  open: boolean;
-  onClose: () => void;
   query: string;
   setQuery: (v: string) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   kbd: string;
-  aiLocked: boolean;
-  aiPlanLocked: boolean;
-  aiBudgetLocked: boolean;
-  aiReady: boolean;
-  aiStatus: AiStatus | null;
+  status: AskEverittStatus | null;
   busy: boolean;
-  searching: boolean;
-  searchResults: SearchResultItem[];
-  reply: string;
+  searchSummary: string;
+  searchResults: AskEverittSearchRecord[];
+  searchHint: string | null;
+  aiReply: string;
   notice: string;
   pendingAction: ProposedAiAction | null;
-  setPendingAction: (a: ProposedAiAction | null) => void;
-  submitAi: (text?: string) => Promise<void>;
+  lastMode: 'search' | 'ai' | null;
+  submitAsk: (text?: string, forceMode?: 'search' | 'ai') => Promise<void>;
   confirmAction: () => Promise<void>;
   actionBusy: boolean;
   navigate: (href: string) => void;
+  setPendingAction: (a: ProposedAiAction | null) => void;
   setUpgradeOpen: (v: boolean) => void;
+  onClose: () => void;
 };
 
 function CommandOverlay({
-  onClose,
   query,
   setQuery,
   inputRef,
   kbd,
-  aiLocked,
-  aiPlanLocked,
-  aiBudgetLocked,
-  aiReady,
-  aiStatus,
+  status,
   busy,
-  searching,
+  searchSummary,
   searchResults,
-  reply,
+  searchHint,
+  aiReply,
   notice,
   pendingAction,
-  setPendingAction,
-  submitAi,
+  lastMode,
+  submitAsk,
   confirmAction,
   actionBusy,
   navigate,
-  setUpgradeOpen
+  setPendingAction,
+  setUpgradeOpen,
+  onClose
 }: OverlayProps) {
   return (
     <div className="everitt-cmd-overlay" role="presentation" onClick={onClose}>
@@ -386,107 +361,118 @@ function CommandOverlay({
           <input
             ref={inputRef}
             className="everitt-cmd-input"
-            placeholder="Ask Everitt…"
+            placeholder="Ask about customers, jobs, leads, workers, schedule, forms, SOPs, documents, or reviews…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (aiLocked) {
-                  if (aiPlanLocked) setUpgradeOpen(true);
-                  return;
-                }
-                void submitAi();
-              }
+              if (e.key === 'Enter') void submitAsk();
             }}
           />
           <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span>
         </div>
 
-        {aiLocked ? (
-          <div className="everitt-cmd-locked">
-            <p>{aiStatus?.lockedMessage || 'Ask Everitt is available on Business and Enterprise plans.'}</p>
-            {aiPlanLocked ? (
-              <button type="button" className="btn btn-primary" onClick={() => setUpgradeOpen(true)}>
-                Upgrade to unlock AI
+        <p className="everitt-cmd-tagline muted">Searches your business data first.</p>
+
+        {!query && !lastMode ? (
+          <div className="everitt-cmd-suggestions">
+            <p className="everitt-cmd-section-label">Try asking</p>
+            {ASK_EVERITT_SEARCH_SUGGESTIONS.map((s) => (
+              <button key={s} type="button" className="everitt-cmd-chip" onClick={() => void submitAsk(s, 'search')}>
+                {s}
               </button>
+            ))}
+            {ASK_EVERITT_AI_SUGGESTIONS.map((s) => (
+              <button
+                key={s.text}
+                type="button"
+                className="everitt-cmd-chip everitt-cmd-chip-premium"
+                onClick={() => {
+                  if (status?.aiLocked && status.planLocked) {
+                    setUpgradeOpen(true);
+                    return;
+                  }
+                  void submitAsk(s.text, 'ai');
+                }}
+              >
+                {s.text}
+                <span className="everitt-cmd-premium-badge">AI</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {status?.staffAi ? (
+          <p className="muted everitt-cmd-usage">
+            Staff AI today: {status.staffAi.dailyUsed}/{status.staffAi.dailyCap} · Workspace staff budget: $
+            {status.staffAi.monthlySpendUsd.toFixed(2)}/${status.staffAi.monthlyCapUsd.toFixed(0)}
+          </p>
+        ) : status?.usage && status.aiModeAvailable ? (
+          <p className="muted everitt-cmd-usage">
+            {status.usage.unlimited
+              ? 'Everitt AI unlimited (Enterprise)'
+              : `Everitt AI: ${status.usage.monthlyUsed} / ${status.usage.monthlyCap} this month`}
+          </p>
+        ) : null}
+
+        {status?.aiLocked && status.planLocked ? (
+          <p className="everitt-cmd-hint muted">
+            Everitt AI writing and analysis requires Business or Enterprise.{' '}
+            <button type="button" className="link-button" onClick={() => setUpgradeOpen(true)}>
+              View plans
+            </button>
+          </p>
+        ) : null}
+
+        {busy ? <p className="everitt-cmd-hint">Searching your workspace…</p> : null}
+
+        {searchSummary ? (
+          <div className="everitt-cmd-search-answer">
+            <p className="everitt-cmd-summary">{searchSummary}</p>
+            {searchHint ? <p className="muted everitt-cmd-hint">{searchHint}</p> : null}
+            {searchResults.length > 0 ? (
+              <ul className="everitt-cmd-result-cards">
+                {searchResults.map((item) => (
+                  <li key={`${item.type}-${item.id}`} className="everitt-cmd-result-card">
+                    <div className="everitt-cmd-result-card-head">
+                      <span className="everitt-cmd-result-type">{RECORD_TYPE_LABELS[item.type]}</span>
+                      {item.status ? <span className="everitt-cmd-result-status">{item.status}</span> : null}
+                      {item.date ? <span className="muted everitt-cmd-result-date">{item.date}</span> : null}
+                    </div>
+                    <p className="everitt-cmd-result-title">{item.title}</p>
+                    {item.subtitle ? <p className="muted everitt-cmd-result-sub">{item.subtitle}</p> : null}
+                    <button type="button" className="btn btn-sm" onClick={() => navigate(item.href)}>
+                      {item.actionLabel}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             ) : null}
           </div>
         ) : null}
 
-        {!aiLocked && aiStatus?.everittteamWarning ? (
-          <p className="everittteam-ai-warning everitt-cmd-hint">{aiStatus.everittteamWarning}</p>
-        ) : null}
+        {aiReply ? <div className="everitt-cmd-reply">{aiReply}</div> : null}
 
-        {!aiLocked && !aiReady ? (
-          <p className="muted everitt-cmd-hint">AI is not configured on this server. CRM, jobs, and billing still work normally.</p>
-        ) : null}
-
-        {!aiLocked && aiReady ? (
-          <>
-            <div className="everitt-cmd-suggestions">
-              {ASK_EVERITT_SUGGESTIONS.map((s) => (
-                <button key={s} type="button" className="everitt-cmd-chip" onClick={() => void submitAi(s)}>
-                  {s}
-                </button>
-              ))}
+        {pendingAction ? (
+          <div className="everitt-cmd-action">
+            <p>
+              <strong>Confirm action:</strong> {pendingAction.label}
+            </p>
+            <div className="settings-actions">
+              <button type="button" className="btn btn-primary" disabled={actionBusy} onClick={() => void confirmAction()}>
+                {actionBusy ? 'Running…' : 'Confirm'}
+              </button>
+              <button type="button" className="btn" onClick={() => setPendingAction(null)}>
+                Cancel
+              </button>
             </div>
-            {aiStatus?.everittteam ? (
-              <p className="muted everitt-cmd-usage">
-                EVERITTTEAM AI: ${aiStatus.everittteam.usedUsd.toFixed(2)} / ${aiStatus.everittteam.budgetUsd.toFixed(2)} used
-              </p>
-            ) : aiStatus?.usage ? (
-              <p className="muted everitt-cmd-usage">
-                {aiStatus.usage.unlimited
-                  ? 'Unlimited AI (Enterprise)'
-                  : `${aiStatus.usage.monthlyUsed} / ${aiStatus.usage.monthlyCap} requests this month`}
-              </p>
-            ) : null}
-            {busy ? <p className="everitt-cmd-hint">Everitt is thinking…</p> : null}
-            {reply ? <div className="everitt-cmd-reply">{reply}</div> : null}
-            {pendingAction ? (
-              <div className="everitt-cmd-action">
-                <p>
-                  <strong>Confirm action:</strong> {pendingAction.label}
-                </p>
-                <div className="settings-actions">
-                  <button type="button" className="btn btn-primary" disabled={actionBusy} onClick={() => void confirmAction()}>
-                    {actionBusy ? 'Running…' : 'Confirm'}
-                  </button>
-                  <button type="button" className="btn" onClick={() => setPendingAction(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </>
+          </div>
         ) : null}
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
 
-        {query.length >= 2 ? (
-          <div className="everitt-cmd-search">
-            <p className="everitt-cmd-section-label">Workspace records</p>
-            {searching ? <p className="muted everitt-cmd-hint">Searching…</p> : null}
-            {!searching && searchResults.length === 0 ? (
-              <p className="muted everitt-cmd-hint">No matching records</p>
-            ) : null}
-            <ul className="everitt-cmd-results">
-              {searchResults.map((item) => (
-                <li key={`${item.type}-${item.id}`}>
-                  <button type="button" className="everitt-cmd-result" onClick={() => navigate(item.href)}>
-                    <span className="everitt-cmd-result-type">{SEARCH_TYPE_LABELS[item.type]}</span>
-                    <span>{item.title}</span>
-                    {item.subtitle ? <span className="muted">{item.subtitle}</span> : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
         <p className="muted everitt-cmd-footer">
-          Press Enter to ask Everitt · Esc to close ·{' '}
-          <Link href="/settings/billing">Billing & AI usage</Link>
+          Press Enter to ask · Esc to close ·{' '}
+          <Link href="/settings/billing">Billing & usage</Link>
         </p>
       </div>
     </div>

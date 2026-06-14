@@ -10,6 +10,7 @@ import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchProfileByUserId, resolveProfileSubscriptionStatus } from '@/lib/profile-query';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { assertEverittteamBudgetAllowed } from '@/lib/everittteam-ai-budget';
+import { canUseAiMode } from '@/lib/ai-usage-events';
 
 export type AiGateFailureCode =
   | 'unauthorized'
@@ -20,7 +21,9 @@ export type AiGateFailureCode =
   | 'not_configured'
   | 'rate_limited'
   | 'everittteam_budget_exhausted'
-  | 'budget_verification_failed';
+  | 'budget_verification_failed'
+  | 'staff_daily_limit'
+  | 'staff_budget_exhausted';
 
 export type AiGateResult =
   | {
@@ -55,8 +58,17 @@ export async function verifyAiRequest(
     return {
       ok: false,
       code: 'plan_required',
-      message: 'Ask Everitt is available on Business and Enterprise plans.',
+      message: 'Everitt AI writing and analysis is available on Business and Enterprise plans.',
       requiredPlan: AI_REQUIRED_PLAN
+    };
+  }
+
+  const staffGate = await canUseAiMode(admin, userId, org.organizationId, org.role);
+  if (!staffGate.ok) {
+    return {
+      ok: false,
+      code: staffGate.code,
+      message: staffGate.message
     };
   }
 

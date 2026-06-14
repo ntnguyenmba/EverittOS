@@ -3707,6 +3707,101 @@ html[data-deployment='production'] #vercel-toolbar {
   margin-top: 8px;
 }
 
+.everitt-cmd-tagline {
+  padding: 0 12px 8px;
+  font-size: 13px;
+  margin: 0;
+}
+
+.everitt-cmd-chip-premium {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.everitt-cmd-premium-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(15, 45, 92, 0.08);
+  color: var(--brand-navy, #0f2d5c);
+}
+
+.everitt-cmd-summary {
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 10px;
+  padding: 0 12px;
+}
+
+.everitt-cmd-search-answer {
+  padding: 8px 0 4px;
+}
+
+.everitt-cmd-result-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.everitt-cmd-result-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: var(--surface, #fff);
+}
+
+.everitt-cmd-result-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.everitt-cmd-result-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.everitt-cmd-result-sub {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.everitt-cmd-result-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 45, 92, 0.06);
+}
+
+.everitt-cmd-result-date {
+  font-size: 12px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--brand-navy, #0f2d5c);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.staff-ai-usage-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
 .ai-usage-panel h3 {
   margin-top: 0;
 }

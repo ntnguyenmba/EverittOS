@@ -20,10 +20,10 @@ export function AiUpgradeModal({ open, onClose, plan = 'business' }: AiUpgradeMo
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="ai-upgrade-title">Ask Everitt</h2>
+        <h2 id="ai-upgrade-title">Everitt AI</h2>
         <p className="muted">
-          Ask Everitt is available on Business and Enterprise plans. Upgrade to unlock guided workflows, proposals,
-          email drafting, and your business command center.
+          Ask Everitt search is included on every plan. Everitt AI writing, summarizing, and analysis is available on
+          Business and Enterprise plans.
         </p>
         <div className="ai-modal-actions">
           <Link className="btn btn-primary" href={`/settings/billing?upgrade=${plan}&reason=ai`} onClick={onClose}>

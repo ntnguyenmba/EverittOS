@@ -11,7 +11,13 @@ import {
 } from '@/lib/everittteam-ai-budget';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { isOwner, normalizeRole } from '@/lib/roles';
+import { isClientRole, isOwner, isStaffRole, normalizeRole } from '@/lib/roles';
+import {
+  getDailyAiPromptCount,
+  getMonthlyStaffAiSpend,
+  STAFF_DAILY_AI_PROMPT_LIMIT,
+  STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+} from '@/lib/ai-usage-events';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 
@@ -32,11 +38,13 @@ export async function GET() {
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   const providerInfo = getActiveAiProviderInfo();
   const configured = aiConfigured();
+  const searchAvailable = Boolean(org && !isClientRole(org.role));
   const allowed = planHasAiAccess(plan);
 
   const admin = createAdminSupabase();
   let usage = null;
   let everittteam = null;
+  let staffAi = null;
   let gateStatus: { ok: boolean; code?: string; message?: string } = { ok: allowed && configured };
 
   if (admin && org) {
@@ -71,6 +79,19 @@ export async function GET() {
         usage = await getAiUsageStats(admin, org.organizationId, plan);
       }
     }
+
+    if (isStaffRole(role)) {
+      const [dailyCount, monthlySpend] = await Promise.all([
+        getDailyAiPromptCount(admin, user.id),
+        getMonthlyStaffAiSpend(admin, org.organizationId)
+      ]);
+      staffAi = {
+        dailyUsed: dailyCount,
+        dailyCap: STAFF_DAILY_AI_PROMPT_LIMIT,
+        monthlySpendUsd: monthlySpend,
+        monthlyCapUsd: STAFF_WORKSPACE_MONTHLY_AI_BUDGET_USD
+      };
+    }
   }
 
   const everittteamLocked =
@@ -78,8 +99,10 @@ export async function GET() {
     everittteam.budgetExhausted &&
     !everittteam.ownerBypass;
 
+  const aiModeAvailable = allowed && gateStatus.ok && !everittteamLocked;
+
   const lockedMessage = !allowed
-    ? 'Ask Everitt is available on Business and Enterprise plans.'
+    ? 'Everitt AI writing and analysis is available on Business and Enterprise plans. Ask Everitt search still works.'
     : everittteamLocked
       ? EVERITTTEAM_BUDGET_EXHAUSTED_MESSAGE
       : gateStatus.ok
@@ -87,17 +110,21 @@ export async function GET() {
         : gateStatus.message || null;
 
   return NextResponse.json({
-    allowed: allowed && gateStatus.ok && !everittteamLocked,
+    searchAvailable,
+    aiModeAvailable,
+    allowed: aiModeAvailable,
     configured,
     provider: providerInfo.id,
     providerLabel: providerInfo.displayName,
     model: providerInfo.model,
     plan,
     requiredPlan: AI_REQUIRED_PLAN,
-    locked: !allowed || everittteamLocked || (!gateStatus.ok && gateStatus.code === 'plan_required'),
+    locked: !aiModeAvailable && gateStatus.code === 'plan_required',
+    aiLocked: !aiModeAvailable,
     lockedMessage,
     gate: gateStatus,
     everittteam,
+    staffAi,
     usage
   });
 }

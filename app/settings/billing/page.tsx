@@ -6,6 +6,7 @@ import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { AiUsagePanel } from '@/components/ai-usage-panel';
+import { StaffAiUsagePanel } from '@/components/staff-ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
@@ -354,6 +355,10 @@ function BillingSettingsContent() {
 
       <div className="settings-card">
         <AiUsagePanel plan={plan} />
+      </div>
+
+      <div className="settings-card">
+        <StaffAiUsagePanel />
       </div>
     </SettingsShell>
   );

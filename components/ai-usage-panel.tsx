@@ -46,7 +46,7 @@ export function AiUsagePanel({ plan: planProp }: AiUsagePanelProps) {
       <div className="ai-usage-panel ai-usage-locked">
         <h3>AI Usage</h3>
         <p className="muted">
-          Ask Everitt and AI features are available on {planDisplayName(AI_REQUIRED_PLAN)} and Enterprise plans.
+          Ask Everitt search is included on every plan. Everitt AI is available on {planDisplayName(AI_REQUIRED_PLAN)} and Enterprise plans.
         </p>
         <Link className="btn btn-primary" href={`/settings/billing?upgrade=${AI_REQUIRED_PLAN}&reason=ai`}>
           Upgrade to unlock AI
