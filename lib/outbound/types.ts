@@ -45,7 +45,7 @@ export function defaultComposerFields(docType: OutboundDocType): OutboundCompose
   const defaults: Record<OutboundDocType, Partial<OutboundComposerFields>> = {
     review: {
       subject: 'We would love your feedback',
-      body: 'We would love your feedback on our recent work. Please take a moment to share your experience.'
+      body: 'Thank you for choosing us. We hope you had a great experience. We would love to hear your feedback. Please take a moment to complete our short feedback form.\n\nShare Feedback: https://docs.google.com/forms/d/e/1FAIpQLScKoDhMAuGu8RyvFQE9dBbrazjpGhPxm-C7lAlrdnDurGhDgQ/viewform?usp=header'
     },
     proposal: {
       subject: 'Proposal for your project',
