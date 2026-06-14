@@ -9,6 +9,7 @@ import { mapBookingApiError, probeBookingSchemaReady, validateBookingTimeRange }
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { processBookingSideEffects } from '@/lib/booking/process-side-effects';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
+import { requireBookingsPlan } from '@/lib/booking/plan-gate';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -40,6 +41,11 @@ export async function GET(request: Request) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const planCheck = await requireBookingsPlan(ctx.supabase, ctx.userId);
+  if (!planCheck.ok) {
+    return NextResponse.json(planCheck.payload, { status: 403 });
   }
 
   const workspaceId = ctx.workspace.organizationId;
@@ -95,6 +101,11 @@ export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const planCheck = await requireBookingsPlan(ctx.supabase, ctx.userId);
+  if (!planCheck.ok) {
+    return NextResponse.json(planCheck.payload, { status: 403 });
   }
 
   const workspaceId = ctx.workspace.organizationId;

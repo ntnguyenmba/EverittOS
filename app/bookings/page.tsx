@@ -5,7 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { BookingShareCard } from '@/components/booking-share-actions';
+import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import {
   BOOKING_STATUS_LABELS,
   bookingAppointmentName,
@@ -21,6 +23,8 @@ import {
   type BookingStatus
 } from '@/lib/booking';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { canUseBookings } from '@/lib/plan-access';
+import { billingUpgradeHref } from '@/lib/nav-access';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -80,6 +84,7 @@ function addMinutesToLocalInput(startValue: string, minutes: number): string {
 export default function BookingsPage() {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const workspacePlan = useWorkspacePlanOptional();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
@@ -92,7 +97,11 @@ export default function BookingsPage() {
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [form, setForm] = useState<BookingFormState>(EMPTY_FORM);
 
+  const effectivePlan = workspacePlan?.plan ?? plan;
+  const bookingsLocked = !canUseBookings(effectivePlan);
+
   const loadMeta = useCallback(async () => {
+    if (bookingsLocked) return;
     const res = await fetch('/api/services');
     const json = await res.json();
     if (!res.ok) {
@@ -101,9 +110,13 @@ export default function BookingsPage() {
     }
     setSchemaMissing(false);
     setBookingSlug(json.bookingSlug || null);
-  }, []);
+  }, [bookingsLocked]);
 
   const load = useCallback(async (): Promise<BookingRow[]> => {
+    if (bookingsLocked) {
+      setLoading(false);
+      return [];
+    }
     setLoading(true);
     const {
       data: { user }
@@ -134,7 +147,12 @@ export default function BookingsPage() {
     const rows = (json.bookings || []) as BookingRow[];
     setBookings(rows);
     return rows;
-  }, [feedback, router]);
+  }, [bookingsLocked, feedback, router]);
+
+  useEffect(() => {
+    if (workspacePlan?.plan) setPlan(workspacePlan.plan);
+    if (workspacePlan?.role) setRole(normalizeRole(workspacePlan.role));
+  }, [workspacePlan?.plan, workspacePlan?.role]);
 
   useEffect(() => {
     void load();
@@ -424,10 +442,15 @@ export default function BookingsPage() {
           <p className="page-subtitle">Upcoming appointments from your public booking page and manual entries.</p>
         </div>
         <div className="inline-actions">
-          {canManage && !schemaMissing ? (
+          {canManage && !schemaMissing && !bookingsLocked ? (
             <button type="button" className="btn btn-primary" onClick={openCreateForm}>
               New booking
             </button>
+          ) : null}
+          {bookingsLocked ? (
+            <a className="btn btn-primary" href={billingUpgradeHref('pro', 'Bookings')}>
+              Upgrade to Pro
+            </a>
           ) : null}
           <Link className="btn" href="/services">
             Manage services
@@ -435,14 +458,19 @@ export default function BookingsPage() {
         </div>
       </header>
 
-      {schemaMissing ? (
+      {bookingsLocked ? (
+        <PlanLockedMessage feature="Bookings" requiredPlan="Pro" />
+      ) : null}
+
+      {!bookingsLocked && schemaMissing ? (
         <div className="settings-warning" style={{ marginBottom: 18 }}>
           {bookingSchemaUnavailableMessage()}
         </div>
       ) : null}
 
-      {!schemaMissing ? <BookingShareCard bookingSlug={bookingSlug} /> : null}
+      {!bookingsLocked && !schemaMissing ? <BookingShareCard bookingSlug={bookingSlug} /> : null}
 
+      {!bookingsLocked ? (
       <div className="card">
         {showCreateForm && canManage ? renderBookingForm('New booking', false) : null}
         {loading ? <p>Loading bookings…</p> : null}
@@ -533,6 +561,7 @@ export default function BookingsPage() {
           );
         })}
       </div>
+      ) : null}
     </AppShell>
   );
 }

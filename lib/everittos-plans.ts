@@ -49,6 +49,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     headline: 'Add before/after photos, reports, and professional job records.',
     features: [
       'Everything in Free',
+      'Bookings & appointments',
       'Before and after photos',
       'Job records with notes',
       'Standard reports',

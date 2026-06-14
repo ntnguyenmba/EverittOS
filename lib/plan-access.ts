@@ -21,7 +21,10 @@ export type PlanFeature =
   | 'aiAccess'
   | 'aiUnlimited'
   | 'apiAccess'
-  | 'prioritySupport';
+  | 'prioritySupport'
+  | 'bookings';
+
+export const BOOKINGS_REQUIRED_PLAN: EverittosPlan = 'pro';
 
 export const PLAN_ORDER: Record<EverittosPlan, number> = {
   free: 0,
@@ -46,6 +49,34 @@ export function canAccessFeature(plan: EverittosPlan, feature: PlanFeature): boo
   const limits = limitsForPlan(normalizePlan(plan));
   const value = limits[feature as keyof typeof limits];
   return typeof value === 'boolean' ? value : Boolean(value);
+}
+
+export function canUseBookings(plan: EverittosPlan): boolean {
+  return canAccessFeature(plan, 'bookings');
+}
+
+export function bookingsPlanGate(plan: EverittosPlan): RequirePlanResult {
+  const normalized = normalizePlan(plan);
+  if (canUseBookings(normalized)) {
+    return { ok: true, plan: normalized };
+  }
+  return {
+    ok: false,
+    plan: normalized,
+    requiredPlan: BOOKINGS_REQUIRED_PLAN,
+    message: 'Bookings requires EverittOS Pro ($9/month) or higher.'
+  };
+}
+
+export function bookingsPlanDeniedPayload(plan: EverittosPlan) {
+  const gate = bookingsPlanGate(plan);
+  return {
+    error: gate.ok ? 'Bookings requires EverittOS Pro ($9/month) or higher.' : gate.message,
+    code: 'plan_required' as const,
+    locked: true,
+    requiredPlan: BOOKINGS_REQUIRED_PLAN,
+    plan: normalizePlan(plan)
+  };
 }
 
 export function limitsForUserPlan(plan: EverittosPlan): PlanLimits {
@@ -95,6 +126,7 @@ export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
   { prefix: '/settings/ai-memory', plan: 'business' },
   { prefix: '/knowledge', plan: 'pro' },
   { prefix: '/proposals', plan: 'pro' },
+  { prefix: '/bookings', plan: 'pro' },
   { prefix: '/automations', plan: 'business' },
   { prefix: '/admin', plan: 'enterprise' }
 ];

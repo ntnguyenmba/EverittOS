@@ -28,6 +28,7 @@ export type PlanLimits = {
   aiUnlimited: boolean;
   apiAccess: boolean;
   prioritySupport: boolean;
+  bookings: boolean;
 };
 
 function cap(value: number): number {
@@ -61,7 +62,8 @@ export function limitsForPlan(plan: EverittosPlan): PlanLimits {
     aiAccess: row.aiAccess,
     aiUnlimited: row.aiUnlimited,
     apiAccess: row.apiAccess,
-    prioritySupport: row.prioritySupport
+    prioritySupport: row.prioritySupport,
+    bookings: row.bookings
   };
 }
 

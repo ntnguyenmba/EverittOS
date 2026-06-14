@@ -3,6 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { bookingAppointmentName } from '@/lib/booking/display';
 import { mapBookingApiError } from '@/lib/booking/schema';
 import { resendBookingConfirmation } from '@/lib/booking/process-side-effects';
+import { requireBookingsPlan } from '@/lib/booking/plan-gate';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -15,6 +16,11 @@ export async function POST(_request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const planCheck = await requireBookingsPlan(ctx.supabase, ctx.userId);
+  if (!planCheck.ok) {
+    return NextResponse.json(planCheck.payload, { status: 403 });
   }
 
   const { id } = await context.params;

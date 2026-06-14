@@ -32,6 +32,7 @@ export type PlanTierRow = {
   aiUnlimited: boolean;
   apiAccess: boolean;
   prioritySupport: boolean;
+  bookings: boolean;
 };
 
 /** -1 = unlimited */
@@ -64,7 +65,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: false,
     aiUnlimited: false,
     apiAccess: false,
-    prioritySupport: false
+    prioritySupport: false,
+    bookings: false
   },
   {
     id: 'pro',
@@ -92,7 +94,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: false,
     aiUnlimited: false,
     apiAccess: false,
-    prioritySupport: false
+    prioritySupport: false,
+    bookings: true
   },
   {
     id: 'business',
@@ -120,7 +123,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: true,
     aiUnlimited: false,
     apiAccess: false,
-    prioritySupport: false
+    prioritySupport: false,
+    bookings: true
   },
   {
     id: 'operations',
@@ -148,7 +152,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: false,
     aiUnlimited: false,
     apiAccess: false,
-    prioritySupport: true
+    prioritySupport: true,
+    bookings: true
   },
   {
     id: 'growth',
@@ -176,7 +181,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: false,
     aiUnlimited: false,
     apiAccess: true,
-    prioritySupport: true
+    prioritySupport: true,
+    bookings: true
   },
   {
     id: 'enterprise',
@@ -204,7 +210,8 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     aiAccess: true,
     aiUnlimited: true,
     apiAccess: true,
-    prioritySupport: true
+    prioritySupport: true,
+    bookings: true
   }
 ];
 

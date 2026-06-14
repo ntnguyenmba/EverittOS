@@ -374,6 +374,8 @@ export async function middleware(request: NextRequest) {
     '/forms',
     '/templates',
     '/reviews',
+    '/services',
+    '/bookings',
     '/leads',
     '/workers',
     '/team',

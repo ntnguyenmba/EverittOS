@@ -4,6 +4,7 @@ import { deleteBookingGoogleCalendarEvent } from '@/lib/booking/google-calendar-
 import { findBookingConflicts } from '@/lib/booking/conflicts';
 import { defaultBookingEndIso } from '@/lib/booking/display';
 import { mapBookingApiError, validateBookingTimeRange } from '@/lib/booking/schema';
+import { requireBookingsPlan } from '@/lib/booking/plan-gate';
 import { parseManualBookingInput } from '@/lib/booking/parse-manual-booking';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -24,6 +25,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const planCheck = await requireBookingsPlan(ctx.supabase, ctx.userId);
+  if (!planCheck.ok) {
+    return NextResponse.json(planCheck.payload, { status: 403 });
   }
 
   const { id } = await context.params;
@@ -137,6 +143,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const planCheck = await requireBookingsPlan(ctx.supabase, ctx.userId);
+  if (!planCheck.ok) {
+    return NextResponse.json(planCheck.payload, { status: 403 });
   }
 
   const { id } = await context.params;

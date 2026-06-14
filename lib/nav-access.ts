@@ -133,6 +133,7 @@ export function requiredPlanForNavHref(href: string): EverittosPlan | null {
       return 'business';
     case '/knowledge':
     case '/proposals':
+    case '/bookings':
       return 'pro';
     default:
       return null;
@@ -156,6 +157,9 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
   }
   if (path === '/activity' && !limits.activityLog) {
     return 'business';
+  }
+  if (path === '/bookings' && !limits.bookings) {
+    return 'pro';
   }
   if (path === '/portal/client' && !limits.clientPortal) {
     return 'operations';
