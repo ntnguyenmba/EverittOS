@@ -2755,6 +2755,8 @@ html[data-deployment='production'] #vercel-toolbar {
   background: var(--surface);
   border-top: 1px solid var(--line);
   box-shadow: 0 -4px 24px rgba(45, 55, 72, 0.08);
+  /* Let sidebar/footer controls outside the banner content stay clickable. */
+  pointer-events: none;
 }
 
 .cookie-banner-inner {
@@ -2763,6 +2765,7 @@ html[data-deployment='production'] #vercel-toolbar {
   padding: 20px 0;
   display: grid;
   gap: 16px;
+  pointer-events: auto;
 }
 
 .cookie-banner-title {
@@ -4277,9 +4280,27 @@ html[data-deployment='production'] #vercel-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   padding: 10px 0 12px;
   min-height: 56px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mobile-nav-back {
+  flex-shrink: 0;
+}
+
+.mobile-nav-brand-logo {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mobile-nav-brand-logo .brand-logo-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-nav-bar-actions {
@@ -4378,6 +4399,16 @@ html[data-deployment='production'] #vercel-toolbar {
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* Desktop: closed mobile drawer overlays must not intercept clicks. */
+@media (min-width: 901px) {
+  body:not(.mobile-nav-open) .mobile-nav-overlay,
+  body:not(.mobile-nav-open) .mobile-nav-overlay-portal {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 }
 
 .customer-card-row {

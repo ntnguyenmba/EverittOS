@@ -99,9 +99,11 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
   const [notice, setNotice] = useState('');
   const [lastMode, setLastMode] = useState<'search' | 'ai' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [kbd, setKbd] = useState('Ctrl+K');
 
-  const kbd =
-    typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K';
+  useEffect(() => {
+    setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
+  }, []);
 
   useEffect(() => {
     if (workspacePlan?.plan) setPlan(workspacePlan.plan);

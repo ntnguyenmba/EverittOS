@@ -21,8 +21,13 @@ export function GlobalCommandPalette() {
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [kbd, setKbd] = useState('Ctrl+K');
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
+  }, []);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -91,8 +96,6 @@ export function GlobalCommandPalette() {
   }
 
   if (!isFeatureEnabled('globalSearch')) return null;
-
-  const kbd = typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K';
 
   return (
     <>

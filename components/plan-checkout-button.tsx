@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { buildStripePaymentLinkUrl } from '@/lib/stripe-payment-link';
 import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 
 type PlanCheckoutButtonProps = {
@@ -32,6 +33,20 @@ export function PlanCheckoutButton({
     if (requireValidPromo && promoCode.trim() && !promoPreview) {
       setError(t('billing.promo.applyFirst'));
       return;
+    }
+
+    const trimmedPromo = promoCode.trim();
+    if (!trimmedPromo && plan !== 'free') {
+      try {
+        const url = buildStripePaymentLinkUrl(plan);
+        window.location.href = url;
+        return;
+      } catch {
+        if (fallbackHref) {
+          window.location.href = fallbackHref;
+          return;
+        }
+      }
     }
 
     setLoading(true);
