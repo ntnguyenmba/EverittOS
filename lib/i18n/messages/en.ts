@@ -332,7 +332,7 @@ export const messages: Messages = {
       subscriptionOwnerOnly: 'Only workspace owners and admins can change billing.',
       openBilling: 'Open billing settings',
       languageTitle: 'Language',
-      languageNote: 'Applies to navigation, dashboard, jobs, customers, workers, schedule, billing, settings, and common buttons.',
+      languageNote: 'Applies to navigation, dashboard, jobs, customers, bookings, workers, schedule, billing, settings, and common buttons.',
       disableTitle: 'Disable account',
       disableNote:
         'Disabling signs you out and blocks sign-in. Your organization data stays stored. Nothing is deleted.',

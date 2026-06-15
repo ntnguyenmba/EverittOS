@@ -334,7 +334,7 @@ export const messages: Messages = {
       subscriptionOwnerOnly: 'Solo propietarios y administradores pueden cambiar la facturación.',
       openBilling: 'Abrir facturación',
       languageTitle: 'Idioma',
-      languageNote: 'Aplica a navegación, panel, trabajos, clientes, trabajadores, horario, facturación y ajustes.',
+      languageNote: 'Aplica a navegación, panel, trabajos, clientes, reservas, trabajadores, horario, facturación y ajustes.',
       disableTitle: 'Desactivar cuenta',
       disableNote:
         'Desactivar cierra su sesión y bloquea el acceso. Los datos de su organización se conservan. Nada se elimina.',

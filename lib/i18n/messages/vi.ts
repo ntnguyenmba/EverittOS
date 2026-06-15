@@ -332,7 +332,7 @@ export const messages: Messages = {
       subscriptionOwnerOnly: 'Chỉ chủ sở hữu và quản trị viên mới có thể thay đổi thanh toán.',
       openBilling: 'Mở cài đặt thanh toán',
       languageTitle: 'Ngôn ngữ',
-      languageNote: 'Áp dụng cho điều hướng, bảng điều khiển, công việc, khách hàng, nhân sự, lịch, thanh toán và cài đặt.',
+      languageNote: 'Áp dụng cho điều hướng, bảng điều khiển, công việc, khách hàng, lịch hẹn, nhân sự, lịch, thanh toán và cài đặt.',
       disableTitle: 'Vô hiệu hóa tài khoản',
       disableNote:
         'Vô hiệu hóa sẽ đăng xuất và chặn đăng nhập. Dữ liệu tổ chức được giữ nguyên. Không có gì bị xóa.',

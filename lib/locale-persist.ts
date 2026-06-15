@@ -1,7 +1,8 @@
 import { LOCALE_STORAGE_KEY, normalizeLocale, type Locale } from '@/lib/i18n/config';
+import { readLocaleCookie, writeLocaleCookie } from '@/lib/i18n/cookie';
 import { supabase } from '@/lib/supabase';
 
-/** Persist locale in localStorage (all users) and profile when signed in. */
+/** Persist locale in localStorage, cookie, and profile when signed in. */
 export async function persistLocaleChoice(locale: Locale): Promise<void> {
   const normalized = normalizeLocale(locale);
   try {
@@ -10,18 +11,15 @@ export async function persistLocaleChoice(locale: Locale): Promise<void> {
     /* ignore */
   }
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  if (!user) return;
+  writeLocaleCookie(normalized);
 
   try {
-    await fetch('/api/account/privacy', {
-      method: 'PATCH',
+    await fetch('/api/account/locale', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preferred_locale: normalized, locale: normalized })
+      body: JSON.stringify({ locale: normalized })
     });
   } catch {
-    /* profile sync is best-effort; localStorage still applies */
+    /* profile/cookie sync is best-effort; local preference still applies */
   }
 }

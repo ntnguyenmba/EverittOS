@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY, normalizeLocale, type Locale } from '@/lib/i18n/config';
+import { readLocaleCookie, writeLocaleCookie } from '@/lib/i18n/cookie';
 import { formatMessage, getMessages, type Messages } from '@/lib/i18n/get-messages';
 
 type LocaleContextValue = {
@@ -16,10 +17,12 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 function readStoredLocale(): Locale {
   if (typeof window === 'undefined') return DEFAULT_LOCALE;
   try {
-    return normalizeLocale(localStorage.getItem(LOCALE_STORAGE_KEY));
+    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (stored) return normalizeLocale(stored);
   } catch {
-    return DEFAULT_LOCALE;
+    /* ignore */
   }
+  return readLocaleCookie() || DEFAULT_LOCALE;
 }
 
 function resolvePath(messages: Messages, path: string): string | undefined {
@@ -50,6 +53,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
+    writeLocaleCookie(next);
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
