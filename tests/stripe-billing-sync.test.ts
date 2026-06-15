@@ -6,7 +6,7 @@ import {
   isValidStripeCustomerId,
   isValidStripeSubscriptionId
 } from '@/lib/stripe-ids';
-import { everittosStatusForSubscription } from '@/lib/stripe-billing-sync';
+import { everittosStatusForSubscription, subscriptionGrantsPaidAccess } from '@/lib/stripe-billing-sync';
 
 test('isValidStripeCustomerId rejects placeholders and requires cus_ prefix', () => {
   assert.equal(isValidStripeCustomerId('cus_abc123'), true);
@@ -37,4 +37,21 @@ test('isValidStripeCheckoutSessionId validates checkout session ids', () => {
 test('everittosStatusForSubscription maps active paid plans', () => {
   assert.equal(everittosStatusForSubscription('enterprise', 'active'), 'everittos_enterprise');
   assert.equal(everittosStatusForSubscription('enterprise', 'active', true), 'canceled');
+});
+
+test('subscriptionGrantsPaidAccess includes active and trialing subscriptions', () => {
+  assert.equal(
+    subscriptionGrantsPaidAccess({
+      status: 'active',
+      current_period_end: Math.floor(Date.now() / 1000) + 3600
+    } as import('stripe').Stripe.Subscription),
+    true
+  );
+  assert.equal(
+    subscriptionGrantsPaidAccess({
+      status: 'trialing',
+      current_period_end: Math.floor(Date.now() / 1000) + 3600
+    } as import('stripe').Stripe.Subscription),
+    true
+  );
 });

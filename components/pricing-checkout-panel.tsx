@@ -7,7 +7,6 @@ import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { useTranslation } from '@/components/locale-provider';
 import {
   EVERITTOS_PLANS,
-  EVERITTOS_STRIPE_LINKS,
   normalizePlan,
   type EverittosPlan,
   type PlanDefinition
@@ -54,7 +53,6 @@ export function PricingCheckoutPanel({
       <div className={compact ? 'pricing-grid compact' : 'pricing-grid'}>
         {tiers.map((tier) => {
           const isSelected = tier.id === plan;
-          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS];
           return (
             <div key={tier.id} className={isSelected ? 'card pricing-plan-card selected' : 'card pricing-plan-card'}>
               <button type="button" className="pricing-plan-select" onClick={() => setPlan(tier.id)}>
@@ -75,7 +73,6 @@ export function PricingCheckoutPanel({
                   label={tier.buttonLabel}
                   promoCode={isSelected ? promoCode : ''}
                   promoPreview={isSelected ? promoPreview : null}
-                  fallbackHref={fallbackHref}
                 />
               ) : (
                 <Link className="btn btn-primary" href={signupHref(tier)}>

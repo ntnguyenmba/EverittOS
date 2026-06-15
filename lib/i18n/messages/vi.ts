@@ -567,6 +567,23 @@ export const messages: Messages = {
     portalNotConfigured: 'Cổng thanh toán chưa được cấu hình.',
     upgradeOptions: 'Tùy chọn nâng cấp',
     upgrade: 'Nâng cấp',
+    health: {
+      title: 'Kiểm tra thanh toán',
+      description: 'Trạng thái đồng bộ Stripe cho tài khoản chủ workspace.',
+      loading: 'Đang tải trạng thái thanh toán…',
+      loadFailed: 'Không thể tải trạng thái thanh toán.',
+      profilePlan: 'Gói trên hồ sơ',
+      subscriptionStatus: 'Trạng thái đăng ký',
+      stripeCustomerId: 'Stripe customer ID',
+      stripeSubscriptionId: 'Stripe subscription ID',
+      latestWebhook: 'Đồng bộ webhook gần nhất',
+      missing: 'Chưa có',
+      noWebhookYet: 'Chưa có đồng bộ webhook',
+      webhookSuccess: 'Đã đồng bộ từ {event}',
+      webhookFailed: 'Đồng bộ thất bại: {reason}',
+      unknown: 'không rõ',
+      allGood: 'Đồng bộ thanh toán trông ổn.'
+    },
     promo: {
       label: 'Mã khuyến mãi',
       placeholder: 'Nhập mã khuyến mãi',

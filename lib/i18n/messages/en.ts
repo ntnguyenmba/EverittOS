@@ -567,6 +567,23 @@ export const messages: Messages = {
     portalNotConfigured: 'Billing portal is not configured yet.',
     upgradeOptions: 'Upgrade options',
     upgrade: 'Upgrade',
+    health: {
+      title: 'Billing health check',
+      description: 'Stripe sync status for this workspace owner account.',
+      loading: 'Loading billing health…',
+      loadFailed: 'Unable to load billing health.',
+      profilePlan: 'Profile plan',
+      subscriptionStatus: 'Subscription status',
+      stripeCustomerId: 'Stripe customer ID',
+      stripeSubscriptionId: 'Stripe subscription ID',
+      latestWebhook: 'Latest webhook sync',
+      missing: 'Not set',
+      noWebhookYet: 'No webhook sync recorded yet',
+      webhookSuccess: 'Synced from {event}',
+      webhookFailed: 'Sync failed: {reason}',
+      unknown: 'unknown',
+      allGood: 'Billing sync looks healthy.'
+    },
     promo: {
       label: 'Promo code',
       placeholder: 'Enter promo code',

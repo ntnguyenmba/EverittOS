@@ -423,6 +423,23 @@ export type MessageTree = {
     portalNotConfigured: string;
     upgradeOptions: string;
     upgrade: string;
+    health: {
+      title: string;
+      description: string;
+      loading: string;
+      loadFailed: string;
+      profilePlan: string;
+      subscriptionStatus: string;
+      stripeCustomerId: string;
+      stripeSubscriptionId: string;
+      latestWebhook: string;
+      missing: string;
+      noWebhookYet: string;
+      webhookSuccess: string;
+      webhookFailed: string;
+      unknown: string;
+      allGood: string;
+    };
     promo: {
       label: string;
       placeholder: string;

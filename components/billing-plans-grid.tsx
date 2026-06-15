@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { choosePlanButtonLabel, planCardAction } from '@/lib/billing-plan-actions';
-import { EVERITTOS_PLANS, EVERITTOS_STRIPE_LINKS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { EVERITTOS_PLANS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { useTranslation } from '@/components/locale-provider';
 
@@ -15,7 +15,6 @@ type BillingPlansGridProps = {
 export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
-  const selfServePlanChanges = Object.keys(EVERITTOS_STRIPE_LINKS).length > 0;
 
   return (
     <div className="billing-plans-grid-wrap">
@@ -24,7 +23,6 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
           const action = planCardAction(normalizedCurrent, tier.id);
           const isCurrent = action.type === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const fallbackHref = EVERITTOS_STRIPE_LINKS[tier.id as keyof typeof EVERITTOS_STRIPE_LINKS] || tier.stripeLink || '';
           const isPaidChoice = action.type === 'choose' && tier.id !== 'free';
 
           return (
@@ -56,7 +54,6 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
                 <PlanCheckoutButton
                   plan={action.plan}
                   label={action.label}
-                  fallbackHref={fallbackHref}
                   className="btn btn-primary btn-block"
                 />
               ) : null}
@@ -80,13 +77,6 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
           );
         })}
       </div>
-
-      {!selfServePlanChanges ? (
-        <p className="billing-support-fallback">
-          {t('billing.planChangesSupport')}{' '}
-          <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
-        </p>
-      ) : null}
 
       <div className="billing-plans-footnote-group">
         <p className="muted billing-plans-footnote">{t('billing.plansFootnote')}</p>

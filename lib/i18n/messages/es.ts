@@ -569,6 +569,23 @@ export const messages: Messages = {
     portalNotConfigured: 'El portal de facturación aún no está configurado.',
     upgradeOptions: 'Opciones de actualización',
     upgrade: 'Actualizar',
+    health: {
+      title: 'Estado de facturación',
+      description: 'Estado de sincronización de Stripe para esta cuenta de propietario.',
+      loading: 'Cargando estado de facturación…',
+      loadFailed: 'No se pudo cargar el estado de facturación.',
+      profilePlan: 'Plan del perfil',
+      subscriptionStatus: 'Estado de suscripción',
+      stripeCustomerId: 'ID de cliente de Stripe',
+      stripeSubscriptionId: 'ID de suscripción de Stripe',
+      latestWebhook: 'Última sincronización webhook',
+      missing: 'No configurado',
+      noWebhookYet: 'Aún no hay sincronización webhook',
+      webhookSuccess: 'Sincronizado desde {event}',
+      webhookFailed: 'Error de sincronización: {reason}',
+      unknown: 'desconocido',
+      allGood: 'La sincronización de facturación se ve correcta.'
+    },
     promo: {
       label: 'Código promocional',
       placeholder: 'Ingrese código promocional',

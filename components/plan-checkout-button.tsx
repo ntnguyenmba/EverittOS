@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import type { EverittosPlan } from '@/lib/everittos-plans';
-import { buildStripePaymentLinkUrl } from '@/lib/stripe-payment-link';
 import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 
 type PlanCheckoutButtonProps = {
@@ -13,7 +12,6 @@ type PlanCheckoutButtonProps = {
   promoPreview?: PromoDiscountPreview | null;
   requireValidPromo?: boolean;
   className?: string;
-  fallbackHref?: string;
 };
 
 export function PlanCheckoutButton({
@@ -22,8 +20,7 @@ export function PlanCheckoutButton({
   promoCode = '',
   promoPreview = null,
   requireValidPromo = false,
-  className = 'btn btn-primary',
-  fallbackHref
+  className = 'btn btn-primary'
 }: PlanCheckoutButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -33,20 +30,6 @@ export function PlanCheckoutButton({
     if (requireValidPromo && promoCode.trim() && !promoPreview) {
       setError(t('billing.promo.applyFirst'));
       return;
-    }
-
-    const trimmedPromo = promoCode.trim();
-    if (!trimmedPromo && plan !== 'free') {
-      try {
-        const url = buildStripePaymentLinkUrl(plan);
-        window.location.href = url;
-        return;
-      } catch {
-        if (fallbackHref) {
-          window.location.href = fallbackHref;
-          return;
-        }
-      }
     }
 
     setLoading(true);
@@ -68,11 +51,7 @@ export function PlanCheckoutButton({
           window.location.href = json.redirect || '/settings/billing';
           return;
         }
-        if (json.code === 'checkout_not_configured' && fallbackHref) {
-          window.location.href = fallbackHref;
-          return;
-        }
-        setError(json.error || t('billing.promo.checkoutFailed'));
+        setError(json.error || json.message || t('billing.promo.checkoutFailed'));
         return;
       }
 

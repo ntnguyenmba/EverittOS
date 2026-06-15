@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
-import type { EverittosPlan } from '@/lib/everittos-plans';
-import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import {
   everittosStatusForSubscription,
   logBillingSync,
+  logBillingSyncIssue,
+  recordBillingWebhookResult,
   resolveBillingProfile,
   resolveStripeCustomerEmail,
+  subscriptionGrantsPaidAccess,
   syncBillingToSupabase,
   syncStripeSubscriptionRecord
 } from '@/lib/stripe-billing-sync';
@@ -28,20 +29,6 @@ async function customerEmail(
   customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
 ): Promise<string | null> {
   return resolveStripeCustomerEmail(stripe, customer);
-}
-
-async function logSubscriptionEvent(
-  admin: AdminClient,
-  email: string,
-  eventType: string,
-  plan: string | null,
-  stripeEventId: string,
-  payload: Record<string, unknown>
-) {
-  const { error } = await admin
-    .from('subscription_events')
-    .insert({ email, event_type: eventType, plan, stripe_event_id: stripeEventId, payload });
-  if (error) console.warn('[stripe-webhook] Subscription event log skipped', error);
 }
 
 function metadataUserId(metadata: Stripe.Metadata | null | undefined): string | null {
@@ -86,32 +73,50 @@ async function handleCheckoutCompleted(
   stripe: Stripe,
   admin: AdminClient,
   session: Stripe.Checkout.Session,
-  eventId: string
+  eventId: string,
+  eventType: string
 ) {
-  const userId = metadataUserId(session.metadata);
+  const sessionUserId = metadataUserId(session.metadata);
   const workspaceId = metadataWorkspaceId(session.metadata);
   const { customerId, subId } = await resolveCheckoutSessionIds(stripe, session);
   const email =
-    session.customer_details?.email ||
-    session.customer_email ||
-    session.metadata?.email ||
+    session.metadata?.email?.trim().toLowerCase() ||
+    session.customer_details?.email?.trim().toLowerCase() ||
+    session.customer_email?.trim().toLowerCase() ||
     (await customerEmail(stripe, session.customer)) ||
     (customerId ? await customerEmail(stripe, customerId) : null);
 
   const plan = await planFromSession(stripe, session);
 
-  logBillingSync('checkout.session.completed', {
+  logBillingSync(eventType, {
     sessionId: session.id,
     customerId,
     subscriptionId: subId,
     workspaceId,
-    userId,
+    sessionUserId,
     plan,
-    email: email || null
+    email: email || null,
+    paymentStatus: session.payment_status,
+    amountTotal: session.amount_total
   });
 
   if (!email || !plan) {
-    console.warn('[stripe-webhook] Checkout sync skipped', { email: Boolean(email), plan, sessionId: session.id });
+    logBillingSyncIssue(!email ? 'missing_email' : 'missing_plan', {
+      sessionId: session.id,
+      customerId,
+      subscriptionId: subId,
+      sessionUserId
+    });
+    if (email) {
+      await recordBillingWebhookResult(admin, {
+        email,
+        stripeEventId: eventId,
+        eventType,
+        plan,
+        success: false,
+        reason: !plan ? 'missing_plan' : 'missing_email'
+      });
+    }
     return;
   }
 
@@ -119,47 +124,99 @@ async function handleCheckoutCompleted(
     const sub = await stripe.subscriptions.retrieve(subId, {
       expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
     });
-    await syncStripeSubscriptionRecord(admin, stripe, sub, {
-      userId,
+    const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+      sessionUserId,
       email,
       workspaceId,
       stripeSessionId: session.id
     });
-    await logSubscriptionEvent(admin, email, 'checkout.session.completed', planFromSubscription(sub), eventId, {
-      session_id: session.id,
-      subscription_id: subId,
-      workspace_id: workspaceId
+    const resolvedPlan = planFromSubscription(sub);
+    await recordBillingWebhookResult(admin, {
+      email,
+      stripeEventId: eventId,
+      eventType,
+      plan: resolvedPlan,
+      success: synced,
+      reason: synced ? undefined : 'subscription_sync_failed',
+      details: {
+        session_id: session.id,
+        subscription_id: subId,
+        customer_id: customerId
+      }
     });
     return;
   }
 
-  let periodEnd: number | null = null;
-  let cancelAtPeriodEnd = false;
-  let stripeStatus: Stripe.Subscription.Status = 'active';
-  let discount: Awaited<ReturnType<typeof extractSubscriptionDiscount>> | undefined;
   const stripePriceId = stripePriceIdFromSession(session);
-  const effectivePlan: EverittosPlan = plan;
-  const subscriptionStatus = everittosStatusForSubscription(effectivePlan, stripeStatus, cancelAtPeriodEnd);
-
-  await syncBillingToSupabase(admin, {
-    userId,
+  const subscriptionStatus = everittosStatusForSubscription(plan, 'active', false);
+  const synced = await syncBillingToSupabase(admin, {
+    sessionUserId,
     email,
     workspaceId,
-    plan: effectivePlan,
+    plan,
     subscriptionStatus,
     stripeCustomerId: customerId,
     stripeSubscriptionId: null,
     stripePriceId,
     stripeSessionId: session.id,
-    currentPeriodEnd: periodEnd,
-    cancelAtPeriodEnd,
-    discount
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false
   });
 
-  await logSubscriptionEvent(admin, email, 'checkout.session.completed', effectivePlan, eventId, {
-    session_id: session.id,
-    subscription_id: null,
-    workspace_id: workspaceId
+  await recordBillingWebhookResult(admin, {
+    email,
+    stripeEventId: eventId,
+    eventType,
+    plan,
+    success: synced,
+    reason: synced ? undefined : 'profile_sync_failed',
+    details: { session_id: session.id, customer_id: customerId }
+  });
+}
+
+async function handleSubscriptionEvent(
+  stripe: Stripe,
+  admin: AdminClient,
+  sub: Stripe.Subscription,
+  eventId: string,
+  eventType: string
+) {
+  const subscriptionUserId = metadataUserId(sub.metadata);
+  const workspaceId = metadataWorkspaceId(sub.metadata);
+  const email = sub.metadata?.email?.trim().toLowerCase() || (await customerEmail(stripe, sub.customer));
+
+  logBillingSync(eventType, {
+    subscriptionId: sub.id,
+    customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null,
+    workspaceId,
+    subscriptionUserId,
+    plan: planFromSubscription(sub),
+    status: sub.status
+  });
+
+  if (!email) {
+    logBillingSyncIssue('missing_email', {
+      subscriptionId: sub.id,
+      subscriptionUserId,
+      eventType
+    });
+    return;
+  }
+
+  const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+    subscriptionUserId,
+    email,
+    workspaceId
+  });
+
+  await recordBillingWebhookResult(admin, {
+    email,
+    stripeEventId: eventId,
+    eventType,
+    plan: planFromSubscription(sub),
+    success: synced,
+    reason: synced ? undefined : 'subscription_sync_failed',
+    details: { subscription_id: sub.id }
   });
 }
 
@@ -169,24 +226,28 @@ async function handleSubscriptionDeleted(
   sub: Stripe.Subscription,
   eventId: string
 ) {
-  const userId = metadataUserId(sub.metadata);
+  const sessionUserId = metadataUserId(sub.metadata);
+  const subscriptionUserId = metadataUserId(sub.metadata);
   const workspaceId = metadataWorkspaceId(sub.metadata);
-  const email = sub.metadata?.email || (await customerEmail(stripe, sub.customer));
+  const email = sub.metadata?.email?.trim().toLowerCase() || (await customerEmail(stripe, sub.customer));
 
   logBillingSync('customer.subscription.deleted', {
     subscriptionId: sub.id,
     customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null,
     workspaceId,
-    userId,
+    subscriptionUserId,
     email: email || null
   });
 
-  if (!email) return;
+  if (!email) {
+    logBillingSyncIssue('missing_email', { subscriptionId: sub.id, eventType: 'customer.subscription.deleted' });
+    return;
+  }
 
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
-
-  await syncBillingToSupabase(admin, {
-    userId,
+  const synced = await syncBillingToSupabase(admin, {
+    sessionUserId,
+    subscriptionUserId,
     email,
     workspaceId,
     plan: 'free',
@@ -204,39 +265,77 @@ async function handleSubscriptionDeleted(
     .update({ status: 'canceled', cancelled_at: new Date().toISOString() })
     .eq('stripe_subscription_id', sub.id);
 
-  await logSubscriptionEvent(admin, email, 'subscription.deleted', 'free', eventId, { subscription_id: sub.id });
+  await recordBillingWebhookResult(admin, {
+    email,
+    stripeEventId: eventId,
+    eventType: 'customer.subscription.deleted',
+    plan: 'free',
+    success: synced,
+    reason: synced ? undefined : 'delete_sync_failed',
+    details: { subscription_id: sub.id }
+  });
 }
 
-async function handleInvoicePayment(
+async function handleInvoiceEvent(
   admin: AdminClient,
   stripe: Stripe,
   invoice: Stripe.Invoice,
   eventId: string,
+  eventType: string,
   succeeded: boolean
 ) {
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id || null;
   const email =
-    invoice.customer_email ||
+    invoice.customer_email?.trim().toLowerCase() ||
     (await customerEmail(stripe, invoice.customer as string | null)) ||
     null;
 
-  logBillingSync(succeeded ? 'invoice.payment_succeeded' : 'invoice.payment_failed', {
+  logBillingSync(eventType, {
     invoiceId: invoice.id,
     subscriptionId: subId,
     customerId: typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id || null,
-    email: email || null
+    email: email || null,
+    amountPaid: invoice.amount_paid,
+    total: invoice.total,
+    status: invoice.status
   });
 
-  if (!email) return;
+  if (!email) {
+    logBillingSyncIssue('missing_email', { invoiceId: invoice.id, eventType });
+    return;
+  }
 
   if (subId && succeeded) {
     const sub = await stripe.subscriptions.retrieve(subId, {
       expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
     });
-    await syncStripeSubscriptionRecord(admin, stripe, sub, { email });
-    await logSubscriptionEvent(admin, email, 'invoice.payment_succeeded', planFromSubscription(sub), eventId, {
-      invoice_id: invoice.id,
-      subscription_id: subId
+
+    if (!subscriptionGrantsPaidAccess(sub) && invoice.amount_paid === 0 && invoice.total === 0) {
+      logBillingSyncIssue('zero_invoice_inactive_subscription', {
+        subscriptionId: subId,
+        status: sub.status,
+        invoiceId: invoice.id
+      });
+    }
+
+    const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+      subscriptionUserId: metadataUserId(sub.metadata),
+      email: sub.metadata?.email?.trim().toLowerCase() || email
+    });
+
+    await recordBillingWebhookResult(admin, {
+      email,
+      stripeEventId: eventId,
+      eventType,
+      plan: planFromSubscription(sub),
+      success: synced,
+      reason: synced ? undefined : 'invoice_subscription_sync_failed',
+      details: {
+        invoice_id: invoice.id,
+        subscription_id: subId,
+        amount_paid: invoice.amount_paid,
+        total: invoice.total
+      }
     });
     return;
   }
@@ -246,8 +345,19 @@ async function handleInvoicePayment(
     if (profile) {
       await admin.from('profiles').update({ subscription_status: 'past_due' }).eq('id', profile.id);
     }
-    await admin.from('everittos_subscriptions').update({ last_payment_status: 'past_due' }).ilike('email', email.trim().toLowerCase());
-    await logSubscriptionEvent(admin, email, 'invoice.payment_failed', null, eventId, { invoice_id: invoice.id });
+    await admin
+      .from('everittos_subscriptions')
+      .update({ last_payment_status: 'past_due' })
+      .ilike('email', email.trim().toLowerCase());
+    await recordBillingWebhookResult(admin, {
+      email,
+      stripeEventId: eventId,
+      eventType,
+      plan: null,
+      success: false,
+      reason: 'payment_failed',
+      details: { invoice_id: invoice.id }
+    });
   }
 }
 
@@ -283,40 +393,27 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded':
-        await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session, event.id);
+        await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session, event.id, event.type);
         break;
       case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const sub = event.data.object as Stripe.Subscription;
-        logBillingSync(event.type, {
-          subscriptionId: sub.id,
-          customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null,
-          workspaceId: metadataWorkspaceId(sub.metadata),
-          userId: metadataUserId(sub.metadata),
-          plan: planFromSubscription(sub),
-          status: sub.status
-        });
-        await syncStripeSubscriptionRecord(admin, stripe, sub, {
-          userId: metadataUserId(sub.metadata),
-          email: sub.metadata?.email || null,
-          workspaceId: metadataWorkspaceId(sub.metadata)
-        });
-        const syncEmail = sub.metadata?.email || (await customerEmail(stripe, sub.customer));
-        if (syncEmail) {
-          await logSubscriptionEvent(admin, syncEmail, event.type, planFromSubscription(sub), event.id, {
-            subscription_id: sub.id
-          });
-        }
+      case 'customer.subscription.updated':
+        await handleSubscriptionEvent(
+          stripe,
+          admin,
+          event.data.object as Stripe.Subscription,
+          event.id,
+          event.type
+        );
         break;
-      }
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(stripe, admin, event.data.object as Stripe.Subscription, event.id);
         break;
+      case 'invoice.paid':
       case 'invoice.payment_succeeded':
-        await handleInvoicePayment(admin, stripe, event.data.object as Stripe.Invoice, event.id, true);
+        await handleInvoiceEvent(admin, stripe, event.data.object as Stripe.Invoice, event.id, event.type, true);
         break;
       case 'invoice.payment_failed':
-        await handleInvoicePayment(admin, stripe, event.data.object as Stripe.Invoice, event.id, false);
+        await handleInvoiceEvent(admin, stripe, event.data.object as Stripe.Invoice, event.id, event.type, false);
         break;
       default:
         break;

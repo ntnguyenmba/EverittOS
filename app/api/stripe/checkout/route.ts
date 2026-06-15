@@ -11,6 +11,7 @@ import { logPromoCodeFailure } from '@/lib/promo-code-logging';
 import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
+import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
 
 export const runtime = 'nodejs';
 
@@ -75,44 +76,20 @@ async function findExistingCustomer(stripe: NonNullable<ReturnType<typeof getStr
 }
 
 async function syncExistingSubscription(input: {
+  stripe: NonNullable<ReturnType<typeof getStripeClient>>;
   userId: string;
   email: string;
-  customerId: string;
+  organizationId: string | null;
   subscription: Stripe.Subscription;
-  plan: EverittosPlan;
 }) {
   const admin = createAdminSupabase();
   if (!admin) return;
 
-  const status = input.subscription.status === 'active' || input.subscription.status === 'trialing' ? `everittos_${input.plan}` : input.subscription.status;
-  const periodEnd = input.subscription.current_period_end
-    ? new Date(input.subscription.current_period_end * 1000).toISOString()
-    : null;
-
-  await admin
-    .from('profiles')
-    .update({
-      plan: input.plan,
-      subscription_status: status,
-      stripe_customer_id: input.customerId
-    })
-    .eq('id', input.userId);
-
-  await admin.from('everittos_subscriptions').upsert(
-    {
-      user_id: input.userId,
-      email: input.email,
-      plan: input.plan,
-      stripe_customer_id: input.customerId,
-      stripe_subscription_id: input.subscription.id,
-      stripe_price_id: input.subscription.items.data[0]?.price?.id || null,
-      status: input.subscription.status === 'active' || input.subscription.status === 'trialing' ? 'active' : input.subscription.status,
-      current_period_end: periodEnd,
-      cancel_at_period_end: input.subscription.cancel_at_period_end,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: 'stripe_subscription_id' }
-  );
+  await syncStripeSubscriptionRecord(admin, input.stripe, input.subscription, {
+    sessionUserId: input.userId,
+    email: input.email,
+    workspaceId: input.organizationId
+  });
 }
 
 export async function POST(request: Request) {
@@ -179,11 +156,11 @@ export async function POST(request: Request) {
     if (existingSubscription) {
       const existingPlan = planFromSubscription(existingSubscription) || plan;
       await syncExistingSubscription({
+        stripe,
         userId: user.id,
         email,
-        customerId,
-        subscription: existingSubscription,
-        plan: existingPlan
+        organizationId: profile?.organization_id || null,
+        subscription: existingSubscription
       });
 
       return NextResponse.json(
@@ -239,6 +216,7 @@ export async function POST(request: Request) {
   }
 
   const workspaceId = profile?.organization_id || '';
+  const normalizedPromo = promoCode ? promoCode.toUpperCase() : '';
   const metadata = {
     plan,
     planKey: plan,
@@ -249,7 +227,13 @@ export async function POST(request: Request) {
     workspace_id: workspaceId,
     organization_id: workspaceId,
     price_id: priceId,
-    ...(promoCode ? { promotion_code: promoCode.toUpperCase(), promoCode: promoCode.toUpperCase() } : {})
+    ...(normalizedPromo
+      ? {
+          promotion_code: normalizedPromo,
+          promoCode: normalizedPromo,
+          promo_code: normalizedPromo
+        }
+      : {})
   };
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
