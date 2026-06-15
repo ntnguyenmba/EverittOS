@@ -25,6 +25,11 @@ test('buildStripePaymentLinkUrl adds email and client reference', () => {
   assert.equal(url.searchParams.get('client_reference_id'), 'business');
 });
 
+test('buildStripePaymentLinkUrl defaults client_reference_id to plan', () => {
+  const url = new URL(buildStripePaymentLinkUrl('enterprise'));
+  assert.equal(url.searchParams.get('client_reference_id'), 'enterprise');
+});
+
 test('stripePaymentLinksConfigured is true for all paid plans', () => {
   assert.equal(stripePaymentLinksConfigured(), true);
   assert.equal(stripePaymentLinkPlans().length, 5);

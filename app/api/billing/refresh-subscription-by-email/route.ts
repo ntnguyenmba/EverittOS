@@ -5,6 +5,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 
 export const runtime = 'nodejs';
 
@@ -124,7 +125,7 @@ async function getLatestCompletedCheckoutPlanByEmail(stripe: Stripe, email: stri
 
 async function findStripeCustomerIds(stripe: Stripe, email: string, existingCustomerId?: string | null) {
   const ids = new Set<string>();
-  if (existingCustomerId) ids.add(existingCustomerId);
+  if (isValidStripeCustomerId(existingCustomerId)) ids.add(existingCustomerId);
 
   const customers = await stripe.customers.list({ email, limit: 20 });
   for (const customer of customers.data) {

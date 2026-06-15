@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { appUrl } from '@/lib/app-url';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 
 export async function POST() {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -24,7 +25,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Only workspace owners and admins can manage billing.' }, { status: 403 });
   }
 
-  const customerId = profile?.stripe_customer_id;
+  const rawCustomerId = profile?.stripe_customer_id;
+  const customerId = isValidStripeCustomerId(rawCustomerId) ? rawCustomerId : null;
   if (!customerId) {
     return NextResponse.json(
       { error: 'No Stripe customer on file. Complete a paid checkout first or contact support.' },

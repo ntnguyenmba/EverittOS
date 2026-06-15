@@ -5,12 +5,13 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import {
   everittosStatusForSubscription,
-  effectivePlanFromStripe,
   logBillingSync,
   resolveBillingProfile,
+  resolveStripeCustomerEmail,
   syncBillingToSupabase,
   syncStripeSubscriptionRecord
 } from '@/lib/stripe-billing-sync';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import {
   planFromSession,
   planFromSubscription,
@@ -26,20 +27,7 @@ async function customerEmail(
   stripe: Stripe,
   customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
 ): Promise<string | null> {
-  if (!customer) return null;
-  if (typeof customer !== 'string') {
-    if ('deleted' in customer && customer.deleted) return null;
-    return 'email' in customer ? customer.email || null : null;
-  }
-
-  try {
-    const retrieved = await stripe.customers.retrieve(customer);
-    if ('deleted' in retrieved && retrieved.deleted) return null;
-    return retrieved.email || null;
-  } catch (error) {
-    console.warn('[stripe-webhook] Could not retrieve customer email', error);
-    return null;
-  }
+  return resolveStripeCustomerEmail(stripe, customer);
 }
 
 async function logSubscriptionEvent(
@@ -64,6 +52,36 @@ function metadataWorkspaceId(metadata: Stripe.Metadata | null | undefined): stri
   return metadata?.workspace_id?.trim() || metadata?.organization_id?.trim() || null;
 }
 
+async function resolveCheckoutSessionIds(stripe: Stripe, session: Stripe.Checkout.Session) {
+  let customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
+  let subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
+
+  if (!customerId || !subId) {
+    const refreshed = await stripe.checkout.sessions.retrieve(session.id, {
+      expand: ['customer', 'subscription']
+    });
+    customerId =
+      customerId ||
+      (typeof refreshed.customer === 'string' ? refreshed.customer : refreshed.customer?.id || null);
+    subId =
+      subId ||
+      (typeof refreshed.subscription === 'string' ? refreshed.subscription : refreshed.subscription?.id || null);
+  }
+
+  if (!isValidStripeCustomerId(customerId) && subId) {
+    const sub = await stripe.subscriptions.retrieve(subId);
+    const fromSub = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
+    if (isValidStripeCustomerId(fromSub)) {
+      customerId = fromSub;
+    }
+  }
+
+  return {
+    customerId: isValidStripeCustomerId(customerId) ? customerId : null,
+    subId
+  };
+}
+
 async function handleCheckoutCompleted(
   stripe: Stripe,
   admin: AdminClient,
@@ -72,15 +90,15 @@ async function handleCheckoutCompleted(
 ) {
   const userId = metadataUserId(session.metadata);
   const workspaceId = metadataWorkspaceId(session.metadata);
+  const { customerId, subId } = await resolveCheckoutSessionIds(stripe, session);
   const email =
     session.customer_details?.email ||
     session.customer_email ||
     session.metadata?.email ||
-    (await customerEmail(stripe, session.customer));
+    (await customerEmail(stripe, session.customer)) ||
+    (customerId ? await customerEmail(stripe, customerId) : null);
 
   const plan = await planFromSession(stripe, session);
-  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
-  const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
 
   logBillingSync('checkout.session.completed', {
     sessionId: session.id,
@@ -97,29 +115,30 @@ async function handleCheckoutCompleted(
     return;
   }
 
+  if (subId) {
+    const sub = await stripe.subscriptions.retrieve(subId, {
+      expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
+    });
+    await syncStripeSubscriptionRecord(admin, stripe, sub, {
+      userId,
+      email,
+      workspaceId,
+      stripeSessionId: session.id
+    });
+    await logSubscriptionEvent(admin, email, 'checkout.session.completed', planFromSubscription(sub), eventId, {
+      session_id: session.id,
+      subscription_id: subId,
+      workspace_id: workspaceId
+    });
+    return;
+  }
+
   let periodEnd: number | null = null;
   let cancelAtPeriodEnd = false;
   let stripeStatus: Stripe.Subscription.Status = 'active';
   let discount: Awaited<ReturnType<typeof extractSubscriptionDiscount>> | undefined;
-  let stripePriceId = stripePriceIdFromSession(session);
-
-  if (subId) {
-    try {
-      const sub = await stripe.subscriptions.retrieve(subId, {
-        expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
-      });
-      periodEnd = sub.current_period_end;
-      cancelAtPeriodEnd = sub.cancel_at_period_end;
-      stripeStatus = sub.status;
-      stripePriceId = stripePriceId || primaryStripePriceId(sub);
-      discount = await extractSubscriptionDiscount(stripe, sub);
-    } catch (error) {
-      console.warn('[stripe-webhook] Could not enrich checkout subscription', error);
-    }
-  }
-
-  const effectivePlan: EverittosPlan =
-    stripeStatus === 'active' || stripeStatus === 'trialing' ? plan : effectivePlanFromStripe(stripeStatus, plan, periodEnd);
+  const stripePriceId = stripePriceIdFromSession(session);
+  const effectivePlan: EverittosPlan = plan;
   const subscriptionStatus = everittosStatusForSubscription(effectivePlan, stripeStatus, cancelAtPeriodEnd);
 
   await syncBillingToSupabase(admin, {
@@ -129,7 +148,7 @@ async function handleCheckoutCompleted(
     plan: effectivePlan,
     subscriptionStatus,
     stripeCustomerId: customerId,
-    stripeSubscriptionId: subId,
+    stripeSubscriptionId: null,
     stripePriceId,
     stripeSessionId: session.id,
     currentPeriodEnd: periodEnd,
@@ -139,7 +158,7 @@ async function handleCheckoutCompleted(
 
   await logSubscriptionEvent(admin, email, 'checkout.session.completed', effectivePlan, eventId, {
     session_id: session.id,
-    subscription_id: subId,
+    subscription_id: null,
     workspace_id: workspaceId
   });
 }
@@ -196,7 +215,10 @@ async function handleInvoicePayment(
   succeeded: boolean
 ) {
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id || null;
-  const email = invoice.customer_email || (await customerEmail(stripe, invoice.customer as string | null));
+  const email =
+    invoice.customer_email ||
+    (await customerEmail(stripe, invoice.customer as string | null)) ||
+    null;
 
   logBillingSync(succeeded ? 'invoice.payment_succeeded' : 'invoice.payment_failed', {
     invoiceId: invoice.id,
@@ -260,6 +282,7 @@ export async function POST(request: Request) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
         await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session, event.id);
         break;
       case 'customer.subscription.created':
@@ -278,8 +301,7 @@ export async function POST(request: Request) {
           email: sub.metadata?.email || null,
           workspaceId: metadataWorkspaceId(sub.metadata)
         });
-        const syncEmail =
-          sub.metadata?.email || (await customerEmail(stripe, sub.customer));
+        const syncEmail = sub.metadata?.email || (await customerEmail(stripe, sub.customer));
         if (syncEmail) {
           await logSubscriptionEvent(admin, syncEmail, event.type, planFromSubscription(sub), event.id, {
             subscription_id: sub.id

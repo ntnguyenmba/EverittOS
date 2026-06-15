@@ -33,7 +33,7 @@ export function buildStripePaymentLinkUrl(
   if (email) {
     url.searchParams.set('prefilled_email', email);
   }
-  const ref = (options?.clientReferenceId || '').trim();
+  const ref = (options?.clientReferenceId || plan).trim();
   if (ref) {
     url.searchParams.set('client_reference_id', ref);
   }

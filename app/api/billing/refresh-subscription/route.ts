@@ -10,6 +10,7 @@ import {
   syncBillingToSupabase,
   syncStripeSubscriptionRecord
 } from '@/lib/stripe-billing-sync';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { planFromSession, planFromSubscription, primaryStripePriceId } from '@/lib/stripe-plan-mapping';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
@@ -17,7 +18,7 @@ import { isPaidPlanActive } from '@/lib/workspace-subscription';
 export const runtime = 'nodejs';
 
 async function findCustomerId(stripe: Stripe, email: string, existingCustomerId?: string | null) {
-  if (existingCustomerId) return existingCustomerId;
+  if (isValidStripeCustomerId(existingCustomerId)) return existingCustomerId;
 
   const customers = await stripe.customers.list({ email, limit: 10 });
   const activeCustomer = customers.data.find((customer) => !customer.deleted);

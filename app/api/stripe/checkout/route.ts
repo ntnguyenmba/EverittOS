@@ -10,6 +10,7 @@ import { getStripeClient } from '@/lib/stripe-server';
 import { logPromoCodeFailure } from '@/lib/promo-code-logging';
 import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 
 export const runtime = 'nodejs';
 
@@ -153,7 +154,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
   }
 
-  let customerId = profile?.stripe_customer_id || null;
+  const storedCustomerId = profile?.stripe_customer_id;
+  let customerId = isValidStripeCustomerId(storedCustomerId) ? storedCustomerId : null;
   let customer: Stripe.Customer | null = null;
 
   if (customerId) {

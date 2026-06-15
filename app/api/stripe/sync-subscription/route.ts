@@ -5,6 +5,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { getStripeClient } from '@/lib/stripe-server';
+import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,7 @@ function planFromSubscription(subscription: Stripe.Subscription): EverittosPlan 
 }
 
 async function findCustomer(stripe: Stripe, email: string, profileCustomerId?: string | null) {
-  if (profileCustomerId) {
+  if (isValidStripeCustomerId(profileCustomerId)) {
     try {
       const customer = await stripe.customers.retrieve(profileCustomerId);
       if (!('deleted' in customer && customer.deleted)) return customer;

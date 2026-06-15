@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import type { createAdminSupabase } from '@/lib/supabase-admin';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import type { StoredCouponDiscount } from '@/lib/stripe-promo';
+import { coalesceStripeCustomerId, isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { planFromSubscription, primaryStripePriceId } from '@/lib/stripe-plan-mapping';
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
@@ -59,31 +60,96 @@ export function effectivePlanFromStripe(
 export async function resolveBillingProfile(
   admin: AdminClient,
   input: { userId?: string | null; email: string }
-): Promise<{ id: string; email: string } | null> {
+): Promise<{ id: string; email: string; stripe_customer_id?: string | null } | null> {
   const normalizedEmail = input.email.trim().toLowerCase();
 
   if (input.userId) {
     const { data: byId } = await admin
       .from('profiles')
-      .select('id, email')
+      .select('id, email, stripe_customer_id')
       .eq('id', input.userId)
       .maybeSingle();
     if (byId?.id) {
-      return { id: byId.id, email: (byId.email || normalizedEmail).trim().toLowerCase() };
+      return {
+        id: byId.id,
+        email: (byId.email || normalizedEmail).trim().toLowerCase(),
+        stripe_customer_id: byId.stripe_customer_id
+      };
     }
   }
 
   const { data: byEmail } = await admin
     .from('profiles')
-    .select('id, email')
+    .select('id, email, stripe_customer_id')
     .ilike('email', normalizedEmail)
     .maybeSingle();
 
   if (byEmail?.id) {
-    return { id: byEmail.id, email: (byEmail.email || normalizedEmail).trim().toLowerCase() };
+    return {
+      id: byEmail.id,
+      email: (byEmail.email || normalizedEmail).trim().toLowerCase(),
+      stripe_customer_id: byEmail.stripe_customer_id
+    };
   }
 
   return null;
+}
+
+export async function resolveStripeCustomerEmail(
+  stripe: Stripe,
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined
+): Promise<string | null> {
+  if (!customer) return null;
+
+  if (typeof customer !== 'string') {
+    if ('deleted' in customer && customer.deleted) return null;
+    return customer.email?.trim().toLowerCase() || null;
+  }
+
+  try {
+    const retrieved = await stripe.customers.retrieve(customer);
+    if ('deleted' in retrieved && retrieved.deleted) return null;
+    return retrieved.email?.trim().toLowerCase() || null;
+  } catch (error) {
+    console.warn('[stripe-billing] Could not retrieve customer email', error);
+    return null;
+  }
+}
+
+export function stripeCustomerIdFromSubscription(sub: Stripe.Subscription): string | null {
+  const customer = sub.customer;
+  if (!customer) return null;
+  if (typeof customer === 'string') return isValidStripeCustomerId(customer) ? customer : null;
+  if ('deleted' in customer && customer.deleted) return null;
+  return isValidStripeCustomerId(customer.id) ? customer.id : null;
+}
+
+export async function resolveSubscriptionSyncContext(
+  stripe: Stripe,
+  sub: Stripe.Subscription,
+  context: {
+    userId?: string | null;
+    email?: string | null;
+    workspaceId?: string | null;
+  }
+): Promise<{ userId: string | null; email: string | null; workspaceId: string | null; stripeCustomerId: string | null }> {
+  const email =
+    context.email?.trim().toLowerCase() ||
+    sub.metadata?.email?.trim().toLowerCase() ||
+    (await resolveStripeCustomerEmail(stripe, sub.customer));
+
+  const stripeCustomerId = stripeCustomerIdFromSubscription(sub);
+
+  return {
+    userId: context.userId || sub.metadata?.user_id?.trim() || sub.metadata?.userId?.trim() || null,
+    email,
+    workspaceId:
+      context.workspaceId ||
+      sub.metadata?.workspace_id?.trim() ||
+      sub.metadata?.organization_id?.trim() ||
+      null,
+    stripeCustomerId
+  };
 }
 
 export async function syncBillingToSupabase(admin: AdminClient, input: BillingSyncInput): Promise<boolean> {
@@ -102,24 +168,45 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
   }
 
   const normalizedEmail = profile.email;
+  const stripeCustomerId = coalesceStripeCustomerId(input.stripeCustomerId, profile.stripe_customer_id);
+  const stripeSubscriptionId = isValidStripeSubscriptionId(input.stripeSubscriptionId)
+    ? input.stripeSubscriptionId
+    : null;
 
-  await admin
-    .from('profiles')
-    .update({
-      plan: input.plan,
-      subscription_status: input.subscriptionStatus,
-      stripe_customer_id: input.stripeCustomerId ?? null,
-      ...(input.discount || {})
-    })
-    .eq('id', profile.id);
+  if (input.stripeCustomerId && !isValidStripeCustomerId(input.stripeCustomerId)) {
+    logBillingSync('invalid_stripe_customer_id_ignored', {
+      userId: profile.id,
+      value: input.stripeCustomerId
+    });
+  }
 
-  if (input.stripeSubscriptionId || input.stripeSessionId) {
+  const profileUpdate: Record<string, unknown> = {
+    plan: input.plan,
+    subscription_status: input.subscriptionStatus,
+    ...(input.discount || {})
+  };
+
+  if (stripeCustomerId) {
+    profileUpdate.stripe_customer_id = stripeCustomerId;
+  }
+
+  const { error: profileError } = await admin.from('profiles').update(profileUpdate).eq('id', profile.id);
+  if (profileError) {
+    logBillingSync('profile_update_failed', {
+      userId: profile.id,
+      error: profileError.message,
+      code: profileError.code
+    });
+    return false;
+  }
+
+  if (stripeSubscriptionId || input.stripeSessionId) {
     const subscriptionRow: Record<string, unknown> = {
       user_id: profile.id,
       email: normalizedEmail,
       plan: input.plan,
-      stripe_customer_id: input.stripeCustomerId ?? null,
-      stripe_subscription_id: input.stripeSubscriptionId ?? null,
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: stripeSubscriptionId,
       stripe_price_id: input.stripePriceId ?? null,
       stripe_session_id: input.stripeSessionId ?? null,
       status: input.subscriptionStatus.startsWith('everittos_') ? 'active' : input.subscriptionStatus,
@@ -139,8 +226,20 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
       subscriptionRow.organization_id = input.workspaceId;
     }
 
-    const conflictTarget = input.stripeSubscriptionId ? 'stripe_subscription_id' : 'stripe_session_id';
-    await admin.from('everittos_subscriptions').upsert(subscriptionRow, { onConflict: conflictTarget });
+    const conflictTarget = stripeSubscriptionId ? 'stripe_subscription_id' : 'stripe_session_id';
+    const { error: subscriptionError } = await admin
+      .from('everittos_subscriptions')
+      .upsert(subscriptionRow, { onConflict: conflictTarget });
+
+    if (subscriptionError) {
+      logBillingSync('subscription_upsert_failed', {
+        userId: profile.id,
+        error: subscriptionError.message,
+        code: subscriptionError.code,
+        conflictTarget
+      });
+      return false;
+    }
   }
 
   logBillingSync('synced', {
@@ -148,8 +247,8 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
     workspaceId: input.workspaceId || null,
     plan: input.plan,
     status: input.subscriptionStatus,
-    stripeCustomerId: input.stripeCustomerId || null,
-    stripeSubscriptionId: input.stripeSubscriptionId || null,
+    stripeCustomerId,
+    stripeSubscriptionId,
     stripeSessionId: input.stripeSessionId || null
   });
 
@@ -168,17 +267,15 @@ export async function syncStripeSubscriptionRecord(
   }
 ): Promise<boolean> {
   const detectedPlan = planFromSubscription(sub);
-  const email =
-    context.email?.trim().toLowerCase() ||
-    sub.metadata?.email?.trim().toLowerCase() ||
-    null;
+  const syncContext = await resolveSubscriptionSyncContext(stripe, sub, context);
 
-  if (!email || !detectedPlan) {
+  if (!syncContext.email || !detectedPlan) {
     logBillingSync('subscription_sync_skipped', {
       subscriptionId: sub.id,
-      email: Boolean(email),
+      email: Boolean(syncContext.email),
       plan: detectedPlan,
-      workspaceId: context.workspaceId || sub.metadata?.workspace_id || sub.metadata?.organization_id || null
+      workspaceId: syncContext.workspaceId,
+      customerId: syncContext.stripeCustomerId
     });
     return false;
   }
@@ -201,16 +298,12 @@ export async function syncStripeSubscriptionRecord(
   const discount = await extractSubscriptionDiscount(stripe, expandedSub);
 
   return syncBillingToSupabase(admin, {
-    userId: context.userId || sub.metadata?.user_id || sub.metadata?.userId || null,
-    email,
-    workspaceId:
-      context.workspaceId ||
-      sub.metadata?.workspace_id ||
-      sub.metadata?.organization_id ||
-      null,
+    userId: syncContext.userId,
+    email: syncContext.email,
+    workspaceId: syncContext.workspaceId,
     plan,
     subscriptionStatus: status,
-    stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null,
+    stripeCustomerId: syncContext.stripeCustomerId,
     stripeSubscriptionId: sub.id,
     stripePriceId: primaryStripePriceId(sub),
     stripeSessionId: context.stripeSessionId || null,
