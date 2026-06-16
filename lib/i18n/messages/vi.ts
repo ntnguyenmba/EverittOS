@@ -568,21 +568,114 @@ export const messages: Messages = {
     upgradeOptions: 'Tùy chọn nâng cấp',
     upgrade: 'Nâng cấp',
     health: {
-      title: 'Kiểm tra thanh toán',
-      description: 'Trạng thái đồng bộ Stripe cho tài khoản chủ workspace.',
+      title: 'Trạng thái thanh toán',
+      description: 'Tổng quan nhanh về cách thanh toán workspace của bạn được kết nối và đồng bộ.',
       loading: 'Đang tải trạng thái thanh toán…',
-      loadFailed: 'Không thể tải trạng thái thanh toán.',
-      profilePlan: 'Gói trên hồ sơ',
-      subscriptionStatus: 'Trạng thái đăng ký',
-      stripeCustomerId: 'Stripe customer ID',
-      stripeSubscriptionId: 'Stripe subscription ID',
-      latestWebhook: 'Đồng bộ webhook gần nhất',
-      missing: 'Chưa có',
-      noWebhookYet: 'Chưa có đồng bộ webhook',
-      webhookSuccess: 'Đã đồng bộ từ {event}',
-      webhookFailed: 'Đồng bộ thất bại: {reason}',
-      unknown: 'không rõ',
-      allGood: 'Đồng bộ thanh toán trông ổn.'
+      loadFailed: 'Không thể tải trạng thái thanh toán lúc này. Vui lòng thử lại sau.',
+      currentPlan: 'Gói hiện tại',
+      accountStatus: 'Trạng thái tài khoản',
+      technicalDetails: 'Xem chi tiết kỹ thuật',
+      status: {
+        connected: 'Đã kết nối',
+        needs_attention: 'Cần chú ý',
+        action_required: 'Cần xử lý'
+      },
+      summary: {
+        connected: 'Thanh toán của bạn đã được kết nối và đồng bộ đầy đủ.',
+        needs_attention: 'Một số mục thanh toán cần chú ý. Xem trạng thái bên dưới.',
+        action_required: 'Thanh toán cần được xử lý trước khi các tính năng trả phí hoạt động ổn định.'
+      },
+      cards: {
+        stripeAccount: {
+          connected: {
+            title: 'Tài khoản Stripe đã kết nối',
+            description: 'Workspace của bạn đã được liên kết với tài khoản khách hàng Stripe.'
+          },
+          needs_attention: {
+            title: 'Tài khoản Stripe chưa được kết nối',
+            description: 'Hoàn tất thanh toán hoặc đồng bộ billing để kết nối tài khoản Stripe.'
+          },
+          action_required: {
+            title: 'Tài khoản Stripe chưa được kết nối',
+            description: 'Hoàn tất thanh toán hoặc đồng bộ billing để kết nối tài khoản Stripe.'
+          }
+        },
+        subscriptionInfo: {
+          connected: {
+            title: 'Thông tin đăng ký đã được cập nhật',
+            description: 'Chi tiết gói và đăng ký của bạn đã có trong EverittOS.'
+          },
+          needs_attention: {
+            title: 'Thông tin đăng ký vẫn đang đồng bộ',
+            description: 'Chúng tôi đang hoàn tất liên kết giữa gói của bạn và Stripe. Thường sẽ xong sau thanh toán hoặc đồng bộ.'
+          },
+          action_required: {
+            title: 'Thông tin đăng ký vẫn đang đồng bộ',
+            description: 'Chúng tôi đang hoàn tất liên kết giữa gói của bạn và Stripe. Thường sẽ xong sau thanh toán hoặc đồng bộ.'
+          }
+        },
+        billingConfiguration: {
+          connected: {
+            title: 'Cấu hình thanh toán đã sẵn sàng',
+            description: 'Đường nâng cấp và giá gói đã khả dụng cho workspace này.'
+          },
+          needs_attention: {
+            title: 'Cấu hình thanh toán cần được xem xét',
+            description: 'Một số giá gói vẫn cần hoàn thiện. Liên hệ hỗ trợ nếu không thể nâng cấp.'
+          },
+          action_required: {
+            title: 'Cấu hình thanh toán cần được xem xét',
+            description: 'Một số giá gói vẫn cần hoàn thiện. Liên hệ hỗ trợ nếu không thể nâng cấp.'
+          }
+        },
+        subscriptionSync: {
+          connected: {
+            title: 'Đồng bộ đăng ký đã hoàn tất',
+            description: 'Các cập nhật đăng ký từ Stripe đã được nhận thành công.'
+          },
+          needs_attention: {
+            title: 'Đồng bộ đăng ký chưa hoàn tất',
+            description: 'Chúng tôi chưa ghi nhận đồng bộ Stripe hoàn tất cho tài khoản này. Hãy thử đồng bộ lại sau thanh toán.'
+          },
+          action_required: {
+            title: 'Đồng bộ đăng ký cần được xử lý',
+            description: 'Lần đồng bộ Stripe gần nhất không thành công. Hãy thử đồng bộ lại hoặc liên hệ hỗ trợ.'
+          }
+        },
+        billingService: {
+          connected: {
+            title: 'Dịch vụ thanh toán đang hoạt động',
+            description: 'EverittOS có thể giao tiếp với Stripe cho workspace này.'
+          },
+          needs_attention: {
+            title: 'Dịch vụ thanh toán cần chú ý',
+            description: 'Kết nối thanh toán hiện bị hạn chế. Hãy thử lại sau hoặc liên hệ hỗ trợ.'
+          },
+          action_required: {
+            title: 'Dịch vụ thanh toán cần chú ý',
+            description: 'Kết nối thanh toán hiện bị hạn chế. Hãy thử lại sau hoặc liên hệ hỗ trợ.'
+          }
+        }
+      },
+      technical: {
+        profilePlan: 'Gói trên hồ sơ (raw)',
+        subscriptionStatus: 'Trạng thái đăng ký (raw)',
+        stripeCustomerId: 'Stripe customer ID',
+        stripeSubscriptionId: 'Stripe subscription ID',
+        stripePriceId: 'Stripe price ID',
+        latestWebhook: 'Đồng bộ webhook gần nhất',
+        notSet: 'Chưa có',
+        noWebhookYet: 'Chưa có đồng bộ webhook',
+        webhookSuccess: 'Đã đồng bộ từ {event}',
+        webhookFailed: 'Đồng bộ thất bại: {reason}',
+        unknown: 'không rõ',
+        stripeConfigured: 'Stripe API đã cấu hình',
+        webhookConfigured: 'Stripe webhook đã cấu hình',
+        checkoutConfigured: 'Giá checkout đã cấu hình',
+        yes: 'Có',
+        no: 'Không',
+        noIssues: 'Không có mã chẩn đoán nội bộ.'
+      }
     },
     promo: {
       label: 'Mã khuyến mãi',

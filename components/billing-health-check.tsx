@@ -1,7 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
+import {
+  billingHealthSummaryLevel,
+  buildBillingHealthStatusCards,
+  type BillingHealthStatusCard,
+  type BillingHealthStatusLevel
+} from '@/lib/billing-health-status';
+import { normalizePlan, planDisplayName } from '@/lib/everittos-plans';
+import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
 
 type BillingHealthResponse = {
   profile: {
@@ -37,6 +45,12 @@ type BillingHealthResponse = {
   healthy: boolean;
 };
 
+function statusCardClass(level: BillingHealthStatusLevel): string {
+  if (level === 'connected') return 'billing-health-status-connected';
+  if (level === 'action_required') return 'billing-health-status-action-required';
+  return 'billing-health-status-needs-attention';
+}
+
 export function BillingHealthCheck() {
   const { t } = useTranslation();
   const [health, setHealth] = useState<BillingHealthResponse | null>(null);
@@ -54,7 +68,7 @@ export function BillingHealthCheck() {
       if (cancelled) return;
 
       if (!res.ok) {
-        setError(json.error || t('billing.health.loadFailed'));
+        setError(t('billing.health.loadFailed'));
         setHealth(null);
       } else {
         setHealth(json);
@@ -68,6 +82,19 @@ export function BillingHealthCheck() {
     };
   }, [t]);
 
+  const statusCards = useMemo(() => {
+    if (!health) return [] as BillingHealthStatusCard[];
+    return buildBillingHealthStatusCards({
+      profile: health.profile,
+      subscription: health.subscription,
+      latestWebhookSync: health.latestWebhookSync,
+      stripe: health.stripe,
+      issues: health.issues
+    });
+  }, [health]);
+
+  const summaryLevel = useMemo(() => billingHealthSummaryLevel(statusCards), [statusCards]);
+
   if (loading) {
     return <p className="muted">{t('billing.health.loading')}</p>;
   }
@@ -78,51 +105,113 @@ export function BillingHealthCheck() {
 
   if (!health) return null;
 
+  const plan = normalizePlan(health.profile.plan);
+
   return (
     <div className="billing-health-check">
       <h3>{t('billing.health.title')}</h3>
       <p className="muted">{t('billing.health.description')}</p>
 
-      <div className="settings-row">
-        <span className="settings-row-label">{t('billing.health.profilePlan')}</span>
-        <span className="settings-row-value">{health.profile.plan}</span>
-      </div>
-      <div className="settings-row">
-        <span className="settings-row-label">{t('billing.health.subscriptionStatus')}</span>
-        <span className="settings-row-value">{health.profile.subscriptionStatus}</span>
-      </div>
-      <div className="settings-row">
-        <span className="settings-row-label">{t('billing.health.stripeCustomerId')}</span>
-        <span className="settings-row-value">{health.profile.stripeCustomerId || t('billing.health.missing')}</span>
-      </div>
-      <div className="settings-row">
-        <span className="settings-row-label">{t('billing.health.stripeSubscriptionId')}</span>
-        <span className="settings-row-value">
-          {health.subscription?.stripeSubscriptionId || t('billing.health.missing')}
-        </span>
-      </div>
-      <div className="settings-row">
-        <span className="settings-row-label">{t('billing.health.latestWebhook')}</span>
-        <span className="settings-row-value">
-          {health.latestWebhookSync
-            ? health.latestWebhookSync.success
-              ? t('billing.health.webhookSuccess', { event: health.latestWebhookSync.sourceEvent || health.latestWebhookSync.eventType })
-              : t('billing.health.webhookFailed', {
-                  reason: health.latestWebhookSync.reason || t('billing.health.unknown')
-                })
-            : t('billing.health.noWebhookYet')}
-        </span>
+      <div className={`billing-health-summary ${statusCardClass(summaryLevel)}`}>
+        <p className="billing-health-summary-message">{t(`billing.health.summary.${summaryLevel}`)}</p>
+        <div className="billing-health-summary-meta">
+          <div>
+            <span className="billing-health-summary-label">{t('billing.health.currentPlan')}</span>
+            <span className="billing-health-summary-value">{planDisplayName(plan)}</span>
+          </div>
+          <div>
+            <span className="billing-health-summary-label">{t('billing.health.accountStatus')}</span>
+            <span className="billing-health-summary-value">
+              {subscriptionStatusMessage(health.profile.subscriptionStatus)}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {health.issues.length > 0 ? (
-        <ul className="billing-health-issues muted">
-          {health.issues.map((issue) => (
-            <li key={issue}>{issue}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="auth-message auth-message-success">{t('billing.health.allGood')}</p>
-      )}
+      <div className="billing-health-status-cards">
+        {statusCards.map((card) => (
+          <article key={card.key} className={`billing-health-status-card ${statusCardClass(card.level)}`}>
+            <span className="billing-health-status-badge">{t(`billing.health.status.${card.level}`)}</span>
+            <h4>{t(`billing.health.cards.${card.key}.${card.level}.title`)}</h4>
+            <p>{t(`billing.health.cards.${card.key}.${card.level}.description`)}</p>
+          </article>
+        ))}
+      </div>
+
+      <details className="billing-health-technical">
+        <summary>{t('billing.health.technicalDetails')}</summary>
+        <div className="billing-health-technical-body">
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.profilePlan')}</span>
+            <span className="settings-row-value">{health.profile.plan}</span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.subscriptionStatus')}</span>
+            <span className="settings-row-value">{health.profile.subscriptionStatus}</span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.stripeCustomerId')}</span>
+            <span className="settings-row-value">
+              {health.profile.stripeCustomerId || t('billing.health.technical.notSet')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.stripeSubscriptionId')}</span>
+            <span className="settings-row-value">
+              {health.subscription?.stripeSubscriptionId || t('billing.health.technical.notSet')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.stripePriceId')}</span>
+            <span className="settings-row-value">
+              {health.subscription?.stripePriceId || t('billing.health.technical.notSet')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.latestWebhook')}</span>
+            <span className="settings-row-value">
+              {health.latestWebhookSync
+                ? health.latestWebhookSync.success
+                  ? t('billing.health.technical.webhookSuccess', {
+                      event: health.latestWebhookSync.sourceEvent || health.latestWebhookSync.eventType
+                    })
+                  : t('billing.health.technical.webhookFailed', {
+                      reason: health.latestWebhookSync.reason || t('billing.health.technical.unknown')
+                    })
+                : t('billing.health.technical.noWebhookYet')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.stripeConfigured')}</span>
+            <span className="settings-row-value">
+              {health.stripe.configured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.webhookConfigured')}</span>
+            <span className="settings-row-value">
+              {health.stripe.webhookConfigured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">{t('billing.health.technical.checkoutConfigured')}</span>
+            <span className="settings-row-value">
+              {health.stripe.checkoutConfigured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
+            </span>
+          </div>
+          {health.issues.length > 0 ? (
+            <ul className="billing-health-technical-issues">
+              {health.issues.map((issue) => (
+                <li key={issue}>
+                  <code>{issue}</code>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">{t('billing.health.technical.noIssues')}</p>
+          )}
+        </div>
+      </details>
     </div>
   );
 }

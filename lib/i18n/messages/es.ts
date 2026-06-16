@@ -571,20 +571,113 @@ export const messages: Messages = {
     upgrade: 'Actualizar',
     health: {
       title: 'Estado de facturación',
-      description: 'Estado de sincronización de Stripe para esta cuenta de propietario.',
+      description: 'Resumen de cómo la facturación de su workspace está conectada y sincronizada.',
       loading: 'Cargando estado de facturación…',
-      loadFailed: 'No se pudo cargar el estado de facturación.',
-      profilePlan: 'Plan del perfil',
-      subscriptionStatus: 'Estado de suscripción',
-      stripeCustomerId: 'ID de cliente de Stripe',
-      stripeSubscriptionId: 'ID de suscripción de Stripe',
-      latestWebhook: 'Última sincronización webhook',
-      missing: 'No configurado',
-      noWebhookYet: 'Aún no hay sincronización webhook',
-      webhookSuccess: 'Sincronizado desde {event}',
-      webhookFailed: 'Error de sincronización: {reason}',
-      unknown: 'desconocido',
-      allGood: 'La sincronización de facturación se ve correcta.'
+      loadFailed: 'No se pudo cargar el estado de facturación. Inténtelo de nuevo en un momento.',
+      currentPlan: 'Plan actual',
+      accountStatus: 'Estado de la cuenta',
+      technicalDetails: 'Ver detalles técnicos',
+      status: {
+        connected: 'Conectado',
+        needs_attention: 'Requiere atención',
+        action_required: 'Acción requerida'
+      },
+      summary: {
+        connected: 'Su facturación está totalmente conectada y sincronizada.',
+        needs_attention: 'Algunos elementos de facturación requieren atención. Revise el estado a continuación.',
+        action_required: 'La facturación necesita atención antes de que las funciones de pago sean confiables.'
+      },
+      cards: {
+        stripeAccount: {
+          connected: {
+            title: 'Cuenta de Stripe conectada',
+            description: 'Su workspace está vinculado a una cuenta de cliente de Stripe.'
+          },
+          needs_attention: {
+            title: 'La cuenta de Stripe aún no está conectada',
+            description: 'Complete el pago o sincronice la facturación para conectar su cuenta de Stripe.'
+          },
+          action_required: {
+            title: 'La cuenta de Stripe aún no está conectada',
+            description: 'Complete el pago o sincronice la facturación para conectar su cuenta de Stripe.'
+          }
+        },
+        subscriptionInfo: {
+          connected: {
+            title: 'La información de suscripción está actualizada',
+            description: 'Los detalles de su plan y suscripción están disponibles en EverittOS.'
+          },
+          needs_attention: {
+            title: 'La información de suscripción aún se está sincronizando',
+            description: 'Estamos terminando de vincular su plan con Stripe. Suele resolverse después del pago o una sincronización.'
+          },
+          action_required: {
+            title: 'La información de suscripción aún se está sincronizando',
+            description: 'Estamos terminando de vincular su plan con Stripe. Suele resolverse después del pago o una sincronización.'
+          }
+        },
+        billingConfiguration: {
+          connected: {
+            title: 'La configuración de facturación está lista',
+            description: 'Las rutas de actualización y precios del plan están disponibles para este workspace.'
+          },
+          needs_attention: {
+            title: 'La configuración de facturación requiere revisión',
+            description: 'Algunos precios de plan aún deben finalizarse. Contacte soporte si las actualizaciones no están disponibles.'
+          },
+          action_required: {
+            title: 'La configuración de facturación requiere revisión',
+            description: 'Algunos precios de plan aún deben finalizarse. Contacte soporte si las actualizaciones no están disponibles.'
+          }
+        },
+        subscriptionSync: {
+          connected: {
+            title: 'Sincronización de suscripción completada',
+            description: 'Las actualizaciones de suscripción de Stripe se recibieron correctamente.'
+          },
+          needs_attention: {
+            title: 'La sincronización de suscripción aún no se ha completado',
+            description: 'Aún no hemos registrado una sincronización de Stripe completada para esta cuenta. Intente sincronizar de nuevo después del pago.'
+          },
+          action_required: {
+            title: 'La sincronización de suscripción requiere atención',
+            description: 'La última sincronización de Stripe no se completó correctamente. Intente sincronizar de nuevo o contacte soporte.'
+          }
+        },
+        billingService: {
+          connected: {
+            title: 'El servicio de facturación está disponible',
+            description: 'EverittOS puede comunicarse con Stripe para este workspace.'
+          },
+          needs_attention: {
+            title: 'El servicio de facturación requiere atención',
+            description: 'La conectividad de facturación es limitada en este momento. Inténtelo de nuevo o contacte soporte.'
+          },
+          action_required: {
+            title: 'El servicio de facturación requiere atención',
+            description: 'La conectividad de facturación es limitada en este momento. Inténtelo de nuevo o contacte soporte.'
+          }
+        }
+      },
+      technical: {
+        profilePlan: 'Plan del perfil (raw)',
+        subscriptionStatus: 'Estado de suscripción (raw)',
+        stripeCustomerId: 'ID de cliente de Stripe',
+        stripeSubscriptionId: 'ID de suscripción de Stripe',
+        stripePriceId: 'ID de precio de Stripe',
+        latestWebhook: 'Última sincronización webhook',
+        notSet: 'No configurado',
+        noWebhookYet: 'Aún no hay sincronización webhook',
+        webhookSuccess: 'Sincronizado desde {event}',
+        webhookFailed: 'Error de sincronización: {reason}',
+        unknown: 'desconocido',
+        stripeConfigured: 'API de Stripe configurada',
+        webhookConfigured: 'Webhook de Stripe configurado',
+        checkoutConfigured: 'Precios de checkout configurados',
+        yes: 'Sí',
+        no: 'No',
+        noIssues: 'No se reportaron códigos de diagnóstico internos.'
+      }
     },
     promo: {
       label: 'Código promocional',

@@ -32,7 +32,7 @@ export async function GET() {
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });
+    return NextResponse.json({ error: 'Billing health is temporarily unavailable.' }, { status: 503 });
   }
 
   const email = (profile?.email || user.email).trim().toLowerCase();

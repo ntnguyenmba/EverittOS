@@ -428,17 +428,65 @@ export type MessageTree = {
       description: string;
       loading: string;
       loadFailed: string;
-      profilePlan: string;
-      subscriptionStatus: string;
-      stripeCustomerId: string;
-      stripeSubscriptionId: string;
-      latestWebhook: string;
-      missing: string;
-      noWebhookYet: string;
-      webhookSuccess: string;
-      webhookFailed: string;
-      unknown: string;
-      allGood: string;
+      currentPlan: string;
+      accountStatus: string;
+      technicalDetails: string;
+      status: {
+        connected: string;
+        needs_attention: string;
+        action_required: string;
+      };
+      summary: {
+        connected: string;
+        needs_attention: string;
+        action_required: string;
+      };
+      cards: {
+        stripeAccount: {
+          connected: { title: string; description: string };
+          needs_attention: { title: string; description: string };
+          action_required: { title: string; description: string };
+        };
+        subscriptionInfo: {
+          connected: { title: string; description: string };
+          needs_attention: { title: string; description: string };
+          action_required: { title: string; description: string };
+        };
+        billingConfiguration: {
+          connected: { title: string; description: string };
+          needs_attention: { title: string; description: string };
+          action_required: { title: string; description: string };
+        };
+        subscriptionSync: {
+          connected: { title: string; description: string };
+          needs_attention: { title: string; description: string };
+          action_required: { title: string; description: string };
+        };
+        billingService: {
+          connected: { title: string; description: string };
+          needs_attention: { title: string; description: string };
+          action_required: { title: string; description: string };
+        };
+      };
+      technical: {
+        profilePlan: string;
+        subscriptionStatus: string;
+        stripeCustomerId: string;
+        stripeSubscriptionId: string;
+        stripePriceId: string;
+        latestWebhook: string;
+        notSet: string;
+        noWebhookYet: string;
+        webhookSuccess: string;
+        webhookFailed: string;
+        unknown: string;
+        stripeConfigured: string;
+        webhookConfigured: string;
+        checkoutConfigured: string;
+        yes: string;
+        no: string;
+        noIssues: string;
+      };
     };
     promo: {
       label: string;

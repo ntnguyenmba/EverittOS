@@ -568,21 +568,114 @@ export const messages: Messages = {
     upgradeOptions: 'Upgrade options',
     upgrade: 'Upgrade',
     health: {
-      title: 'Billing health check',
-      description: 'Stripe sync status for this workspace owner account.',
-      loading: 'Loading billing health…',
-      loadFailed: 'Unable to load billing health.',
-      profilePlan: 'Profile plan',
-      subscriptionStatus: 'Subscription status',
-      stripeCustomerId: 'Stripe customer ID',
-      stripeSubscriptionId: 'Stripe subscription ID',
-      latestWebhook: 'Latest webhook sync',
-      missing: 'Not set',
-      noWebhookYet: 'No webhook sync recorded yet',
-      webhookSuccess: 'Synced from {event}',
-      webhookFailed: 'Sync failed: {reason}',
-      unknown: 'unknown',
-      allGood: 'Billing sync looks healthy.'
+      title: 'Billing status',
+      description: 'A quick overview of how your workspace billing is connected and syncing.',
+      loading: 'Loading billing status…',
+      loadFailed: 'Unable to load billing status right now. Please try again in a moment.',
+      currentPlan: 'Current plan',
+      accountStatus: 'Account status',
+      technicalDetails: 'View technical details',
+      status: {
+        connected: 'Connected',
+        needs_attention: 'Needs attention',
+        action_required: 'Action required'
+      },
+      summary: {
+        connected: 'Your billing is fully connected and syncing.',
+        needs_attention: 'Some billing items need attention. Review the status below.',
+        action_required: 'Billing needs attention before paid features can stay reliable.'
+      },
+      cards: {
+        stripeAccount: {
+          connected: {
+            title: 'Stripe account connected',
+            description: 'Your workspace is linked to a Stripe customer account.'
+          },
+          needs_attention: {
+            title: 'Stripe account not connected yet',
+            description: 'Complete checkout or sync billing to connect your Stripe account.'
+          },
+          action_required: {
+            title: 'Stripe account not connected yet',
+            description: 'Complete checkout or sync billing to connect your Stripe account.'
+          }
+        },
+        subscriptionInfo: {
+          connected: {
+            title: 'Subscription information is up to date',
+            description: 'Your plan and subscription details are available in EverittOS.'
+          },
+          needs_attention: {
+            title: 'Subscription information is still syncing',
+            description: 'We are finishing the link between your plan and Stripe. This usually resolves after checkout or a sync.'
+          },
+          action_required: {
+            title: 'Subscription information is still syncing',
+            description: 'We are finishing the link between your plan and Stripe. This usually resolves after checkout or a sync.'
+          }
+        },
+        billingConfiguration: {
+          connected: {
+            title: 'Billing configuration is ready',
+            description: 'Upgrade paths and plan pricing are available for this workspace.'
+          },
+          needs_attention: {
+            title: 'Billing configuration requires review',
+            description: 'Some plan pricing still needs to be finalized. Contact support if upgrades are unavailable.'
+          },
+          action_required: {
+            title: 'Billing configuration requires review',
+            description: 'Some plan pricing still needs to be finalized. Contact support if upgrades are unavailable.'
+          }
+        },
+        subscriptionSync: {
+          connected: {
+            title: 'Subscription sync completed',
+            description: 'Stripe subscription updates have been received successfully.'
+          },
+          needs_attention: {
+            title: 'Subscription sync has not completed yet',
+            description: 'We have not recorded a completed Stripe sync for this account yet. Try syncing again after checkout.'
+          },
+          action_required: {
+            title: 'Subscription sync needs attention',
+            description: 'The latest Stripe sync did not complete successfully. Try syncing again or contact support.'
+          }
+        },
+        billingService: {
+          connected: {
+            title: 'Billing service is available',
+            description: 'EverittOS can communicate with Stripe for this workspace.'
+          },
+          needs_attention: {
+            title: 'Billing service needs attention',
+            description: 'Billing connectivity is limited right now. Try again shortly or contact support.'
+          },
+          action_required: {
+            title: 'Billing service needs attention',
+            description: 'Billing connectivity is limited right now. Try again shortly or contact support.'
+          }
+        }
+      },
+      technical: {
+        profilePlan: 'Profile plan (raw)',
+        subscriptionStatus: 'Subscription status (raw)',
+        stripeCustomerId: 'Stripe customer ID',
+        stripeSubscriptionId: 'Stripe subscription ID',
+        stripePriceId: 'Stripe price ID',
+        latestWebhook: 'Latest webhook sync',
+        notSet: 'Not set',
+        noWebhookYet: 'No webhook sync recorded yet',
+        webhookSuccess: 'Synced from {event}',
+        webhookFailed: 'Sync failed: {reason}',
+        unknown: 'unknown',
+        stripeConfigured: 'Stripe API configured',
+        webhookConfigured: 'Stripe webhook configured',
+        checkoutConfigured: 'Checkout prices configured',
+        yes: 'Yes',
+        no: 'No',
+        noIssues: 'No internal diagnostic codes reported.'
+      }
     },
     promo: {
       label: 'Promo code',
