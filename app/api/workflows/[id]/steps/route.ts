@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   if (!limitsForPlan(plan).workflowCustomization) {
-    return NextResponse.json({ error: 'Workflows require Operations or higher.' }, { status: 403 });
+    return NextResponse.json({ error: 'Workflows require Growth or higher.' }, { status: 403 });
   }
 
   const body = (await request.json()) as {

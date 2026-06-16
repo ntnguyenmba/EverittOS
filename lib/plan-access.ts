@@ -30,9 +30,8 @@ export const PLAN_ORDER: Record<EverittosPlan, number> = {
   free: 0,
   pro: 1,
   business: 2,
-  operations: 3,
-  growth: 4,
-  enterprise: 5
+  growth: 3,
+  enterprise: 4
 };
 
 export const planLimits = PLAN_LIMITS;
@@ -119,9 +118,9 @@ export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
   { prefix: '/activity', plan: 'business' },
   { prefix: '/expenses', plan: 'pro' },
   { prefix: '/analytics', plan: 'pro' },
-  { prefix: '/workflows', plan: 'operations' },
-  { prefix: '/portal/client', plan: 'operations' },
-  { prefix: '/portal/contractor', plan: 'operations' },
+  { prefix: '/workflows', plan: 'growth' },
+  { prefix: '/portal/client', plan: 'growth' },
+  { prefix: '/portal/contractor', plan: 'growth' },
   { prefix: '/settings/api', plan: 'growth' },
   { prefix: '/settings/ai-memory', plan: 'business' },
   { prefix: '/knowledge', plan: 'pro' },

@@ -98,7 +98,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     return (
       <div className="card" style={{ marginTop: 18 }}>
         <h3>Client access</h3>
-        <p className="muted">Client portal access requires Operations plan or higher.</p>
+        <p className="muted">Client portal access requires Growth plan or higher.</p>
       </div>
     );
   }

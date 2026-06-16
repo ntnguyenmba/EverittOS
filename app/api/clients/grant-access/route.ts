@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   if (!limitsForPlan(plan).clientPortal) {
-    return NextResponse.json({ error: 'Client portal requires Operations plan or higher.' }, { status: 403 });
+    return NextResponse.json({ error: 'Client portal requires Growth plan or higher.' }, { status: 403 });
   }
 
   const body = (await request.json()) as { email?: string; jobId?: string };

@@ -11,7 +11,6 @@ const CHOOSE_LABELS: Record<EverittosPlan, string> = {
   free: 'Free plan',
   pro: 'Choose Pro',
   business: 'Choose Business',
-  operations: 'Choose Operations',
   growth: 'Choose Growth',
   enterprise: 'Choose Enterprise'
 };

@@ -113,7 +113,7 @@ export default function ActivityPage() {
       </p>
       {!enabled && (
         <div className="card" style={{ marginTop: 18 }}>
-          Activity log requires Business, Operations, Growth, or Enterprise.
+          Activity log requires Business, Growth, or Enterprise.
         </div>
       )}
       {enabled && (

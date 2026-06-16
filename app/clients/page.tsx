@@ -9,7 +9,7 @@ export default function ClientsPage() {
     <OsModulePage
       title="Clients"
       description="Client portal access, shared jobs, and secure client-facing records."
-      requiredPlan="operations"
+      requiredPlan="growth"
       requiredFeature="Client portal"
       featureCheck={(plan) => limitsForPlan(plan).clientPortal}
       actions={[
@@ -23,7 +23,7 @@ export default function ClientsPage() {
           the portal.
         </p>
         <p className="muted" style={{ marginTop: 12 }}>
-          Requires Operations or higher. Manage branding under <Link href="/settings/branding">Branding</Link>.
+          Requires Growth or higher. Manage branding under <Link href="/settings/branding">Branding</Link>.
         </p>
       </div>
     </OsModulePage>

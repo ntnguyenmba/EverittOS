@@ -11,8 +11,8 @@ Generated from pricing page and codebase audit. Status: **Functional** = works e
 | Pro: 25 jobs, 100 customers, 3 users | Functional | Owner plan enforced server-side |
 | Pro: photos | Functional | Pro+ only |
 | Business: team, crew, 150/1000/15 limits | Functional | Business+ |
-| Operations: client + contractor portals | Functional | Portals + job grant/revoke + portal token links |
-| Operations: branded reports | Functional | Branded header, plan-gated photos, print/PDF |
+| Growth: client + contractor portals | Functional | Portals + job grant/revoke + portal token links |
+| Growth: branded reports | Functional | Branded header, plan-gated photos, print/PDF |
 | Growth: API access | Functional | API keys + `/api/v1/*` routes |
 | Growth: custom workflows | Functional | Templates, steps, job progress UI |
 | Growth: department visibility | Functional | Departments + memberships + settings UI |

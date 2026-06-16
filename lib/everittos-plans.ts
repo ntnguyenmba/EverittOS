@@ -7,7 +7,6 @@ export type EverittosPlan = PlanTierId;
 export const EVERITTOS_STRIPE_LINKS = {
   pro: 'https://buy.stripe.com/eVq7sEcXCbX08Kn8P993y0c',
   business: 'https://buy.stripe.com/fZuaEQ6zegdg2lZe9t93y0b',
-  operations: 'https://buy.stripe.com/cNi4gs8Hm3qu8Kn7L593y08',
   growth: 'https://buy.stripe.com/9B6aEQcXCbX06Cf7L593y09',
   enterprise: 'https://buy.stripe.com/3cI6oA5va6CG5yb5CX93y0a'
 } as const;
@@ -80,34 +79,19 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     stripeLink: EVERITTOS_STRIPE_LINKS.business
   },
   {
-    id: 'operations',
-    name: 'EverittOS Operations',
-    priceLabel: '$149/month',
-    headline: 'Run contractor and client portals with role controls.',
+    id: 'growth',
+    name: 'EverittOS Growth',
+    priceLabel: '$399/month',
+    headline: 'For larger teams with portals, workflows, and API access.',
     features: [
       'Everything in Business',
       'Workflows',
       'Client and contractor portals',
-      'Role-based permissions',
       'Branded reports',
-      'Priority support'
-    ],
-    limits: ['500 active jobs', '5,000 customers', '50 users'],
-    buttonLabel: 'Start Operations',
-    stripeLink: EVERITTOS_STRIPE_LINKS.operations
-  },
-  {
-    id: 'growth',
-    name: 'EverittOS Growth',
-    priceLabel: '$399/month',
-    headline: 'For larger teams with departments and API access.',
-    features: [
-      'Everything in Operations',
       'Departments',
       'Dashboard totals by team',
       'API access',
-      'Custom workflows',
-      'Extra reporting'
+      'Priority support'
     ],
     limits: ['2,500 active jobs', '25,000 customers', '250 users'],
     buttonLabel: 'Start Growth',
@@ -159,7 +143,6 @@ export function planShortBadgeName(plan: EverittosPlan): string {
     free: 'Free',
     pro: 'Pro',
     business: 'Business',
-    operations: 'Operations',
     growth: 'Growth',
     enterprise: 'Enterprise'
   };

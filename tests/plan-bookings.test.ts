@@ -18,7 +18,7 @@ describe('bookings plan feature', () => {
   });
 
   it('unlocks bookings on Pro and every higher paid plan', () => {
-    for (const plan of ['pro', 'business', 'operations', 'growth', 'enterprise'] as const) {
+    for (const plan of ['pro', 'business', 'growth', 'enterprise'] as const) {
       assert.equal(canAccessFeature(plan, 'bookings'), true, plan);
       assert.equal(canUseBookings(plan), true, plan);
       assert.equal(limitsForPlan(plan).bookings, true, plan);

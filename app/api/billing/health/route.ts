@@ -65,7 +65,7 @@ export async function GET() {
 
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
   const webhookConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim());
-  const checkoutConfigured = (['pro', 'business', 'operations', 'growth', 'enterprise'] as EverittosPlan[]).some(
+  const checkoutConfigured = (['pro', 'business', 'growth', 'enterprise'] as EverittosPlan[]).some(
     (tier) => isPaidCheckoutPlan(tier) && Boolean(stripePriceIdForPlan(tier))
   );
 

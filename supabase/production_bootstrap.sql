@@ -871,10 +871,11 @@ begin
   if public._table_exists('profiles') then
     if public._col_exists('profiles', 'plan') then
       execute $sql$ update public.profiles set plan = 'free' where plan is null $sql$;
-      execute $sql$ update public.profiles set plan = 'operations' where lower(plan) = 'starter' $sql$;
+      execute $sql$ update public.profiles set plan = 'pro' where lower(plan) = 'starter' $sql$;
+      execute $sql$ update public.profiles set plan = 'growth' where plan = 'operations' $sql$;
       execute $sql$
         update public.profiles set plan = 'free'
-        where plan not in ('free', 'pro', 'business', 'operations', 'growth', 'enterprise')
+        where plan not in ('free', 'pro', 'business', 'growth', 'enterprise')
       $sql$;
     end if;
     if public._col_exists('profiles', 'role') then
@@ -919,7 +920,7 @@ end $norm$;
 -- ---------------------------------------------------------------------------
 alter table public.profiles drop constraint if exists profiles_plan_check;
 alter table public.profiles add constraint profiles_plan_check
-  check (plan in ('free', 'pro', 'business', 'operations', 'growth', 'enterprise'));
+  check (plan in ('free', 'pro', 'business', 'growth', 'enterprise'));
 
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check
@@ -931,7 +932,7 @@ alter table public.profiles add constraint profiles_account_status_check
 
 alter table public.everittos_subscriptions drop constraint if exists everittos_subscriptions_plan_check;
 alter table public.everittos_subscriptions add constraint everittos_subscriptions_plan_check
-  check (plan in ('pro', 'business', 'operations', 'growth', 'enterprise'));
+  check (plan in ('pro', 'business', 'growth', 'enterprise'));
 
 alter table public.organization_members drop constraint if exists organization_members_role_check;
 alter table public.organization_members add constraint organization_members_role_check
@@ -1118,7 +1119,6 @@ insert into public.plan_tier_limits (
   ('free', 3, 0, 10, 10, 1, 0, 1, false, false, true, false, false, false, false, false, true),
   ('pro', 25, -1, 100, -1, 3, 0, 1, false, false, true, false, false, false, false, false, true),
   ('business', 150, -1, 1000, -1, 15, 100, 1, true, true, true, true, false, false, false, false, true),
-  ('operations', 500, -1, 5000, -1, 50, 200, 5, true, true, true, true, true, false, false, true, true),
   ('growth', 2500, -1, 25000, -1, 250, -1, 25, true, true, true, true, true, true, true, true, true),
   ('enterprise', -1, -1, -1, -1, -1, -1, -1, true, true, true, true, true, true, true, true, true)
 on conflict (plan_id) do update set
@@ -1139,7 +1139,7 @@ on conflict (plan_id) do update set
   custom_branding = excluded.custom_branding,
   pdf_reports = excluded.pdf_reports;
 
-delete from public.plan_tier_limits where plan_id = 'starter';
+delete from public.plan_tier_limits where plan_id in ('starter', 'operations');
 
 -- ---------------------------------------------------------------------------
 -- 9. Helper functions

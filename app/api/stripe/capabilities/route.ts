@@ -5,7 +5,7 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PAID_PLANS: EverittosPlan[] = ['pro', 'business', 'operations', 'growth', 'enterprise'];
+const PAID_PLANS: EverittosPlan[] = ['pro', 'business', 'growth', 'enterprise'];
 
 export async function GET() {
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());

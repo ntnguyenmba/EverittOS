@@ -113,7 +113,7 @@ export function limitMessage(resource: keyof PlanLimits, plan: EverittosPlan): s
   }
   if (resource === 'customers') return `Your plan allows up to ${limits.customers} customers. Upgrade to continue.`;
   if (resource === 'reports') return `Your plan allows up to ${limits.reports} reports. Upgrade to continue.`;
-  if (resource === 'crewMembers') return 'Crew workers require Business, Operations, Growth, or Enterprise.';
+  if (resource === 'crewMembers') return 'Crew workers require Business, Growth, or Enterprise.';
   if (resource === 'teamMembers') return 'Additional team members require a plan with team management.';
   return 'Plan limit reached. Upgrade to continue.';
 }

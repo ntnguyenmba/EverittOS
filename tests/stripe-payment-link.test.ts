@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EVERITTOS_STRIPE_LINKS } from '@/lib/everittos-plans';
+import { normalizePlanId } from '@/lib/plan-config';
 import {
   buildStripePaymentLinkUrl,
   resolveStripePaymentLink,
@@ -10,7 +11,12 @@ import {
 
 test('stripe payment links use canonical EverittOS plan URLs', () => {
   assert.equal(resolveStripePaymentLink('pro'), EVERITTOS_STRIPE_LINKS.pro);
-  assert.equal(resolveStripePaymentLink('operations'), EVERITTOS_STRIPE_LINKS.operations);
+  assert.equal(resolveStripePaymentLink('growth'), EVERITTOS_STRIPE_LINKS.growth);
+});
+
+test('legacy plan aliases normalize to supported tiers', () => {
+  assert.equal(normalizePlanId('operations'), 'growth');
+  assert.equal(normalizePlanId('starter'), 'pro');
 });
 
 test('buildStripePaymentLinkUrl adds email and client reference', () => {
@@ -32,5 +38,5 @@ test('buildStripePaymentLinkUrl defaults client_reference_id to plan', () => {
 
 test('stripePaymentLinksConfigured is true for all paid plans', () => {
   assert.equal(stripePaymentLinksConfigured(), true);
-  assert.equal(stripePaymentLinkPlans().length, 5);
+  assert.equal(stripePaymentLinkPlans().length, 4);
 });

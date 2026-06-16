@@ -4,7 +4,6 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 export const PLAN_AMOUNT_CENTS: Record<Exclude<EverittosPlan, 'free'>, number> = {
   pro: 900,
   business: 3900,
-  operations: 14900,
   growth: 39900,
   enterprise: 79900
 };
@@ -12,7 +11,6 @@ export const PLAN_AMOUNT_CENTS: Record<Exclude<EverittosPlan, 'free'>, number> =
 const PRICE_ENV_KEYS: Record<Exclude<EverittosPlan, 'free'>, string> = {
   pro: 'STRIPE_PRICE_PRO',
   business: 'STRIPE_PRICE_BUSINESS',
-  operations: 'STRIPE_PRICE_OPERATIONS',
   growth: 'STRIPE_PRICE_GROWTH',
   enterprise: 'STRIPE_PRICE_ENTERPRISE'
 };

@@ -128,7 +128,7 @@ export function requiredPlanForNavHref(href: string): EverittosPlan | null {
 
   switch (path) {
     case '/workflows':
-      return 'operations';
+      return 'growth';
     case '/automations':
       return 'business';
     case '/knowledge':
@@ -150,7 +150,7 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
     return 'business';
   }
   if (path === '/workflows' && !limits.workflowCustomization) {
-    return 'operations';
+    return 'growth';
   }
   if (path === '/automations' && !limits.aiAccess) {
     return 'business';
@@ -162,10 +162,10 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
     return 'pro';
   }
   if (path === '/portal/client' && !limits.clientPortal) {
-    return 'operations';
+    return 'growth';
   }
   if (path === '/portal/contractor' && !limits.contractorPortal) {
-    return 'operations';
+    return 'growth';
   }
 
   return null;

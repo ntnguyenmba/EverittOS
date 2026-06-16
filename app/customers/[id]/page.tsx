@@ -299,7 +299,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Client portal access</h3>
           {!limitsForPlan(plan).clientPortal ? (
-            <p className="muted">Client portal requires Operations plan or higher.</p>
+            <p className="muted">Client portal requires Growth plan or higher.</p>
           ) : portalAccess.length === 0 ? (
             <p className="muted">No client portal access granted for this customer&apos;s jobs yet. Grant access from a job detail page.</p>
           ) : (

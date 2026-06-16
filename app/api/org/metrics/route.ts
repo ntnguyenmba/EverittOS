@@ -7,7 +7,6 @@ import { createServerSupabase } from '@/lib/supabase-server';
 const PLAN_MRR: Record<string, number> = {
   pro: 9,
   business: 39,
-  operations: 149,
   growth: 399,
   enterprise: 799
 };

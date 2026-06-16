@@ -9,7 +9,7 @@ import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 
 export const runtime = 'nodejs';
 
-const PAID_PLANS = ['pro', 'business', 'operations', 'growth', 'enterprise'] as const;
+const PAID_PLANS = ['pro', 'business', 'growth', 'enterprise'] as const;
 type PaidPlan = (typeof PAID_PLANS)[number];
 
 function normalizePaidPlan(value: string | null | undefined): PaidPlan | null {
@@ -24,7 +24,7 @@ function planFromAmount(amount: number | null | undefined): PaidPlan | null {
   const cents = amount || 0;
   if (cents === 900 || cents === 9) return 'pro';
   if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'operations';
+  if (cents === 14900 || cents === 149) return 'growth';
   if (cents === 39900 || cents === 399) return 'growth';
   if (cents === 79900 || cents === 799) return 'enterprise';
   return null;

@@ -1,9 +1,9 @@
+import { normalizePlan } from '@/lib/everittos-plans';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
 const PLAN_MRR: Record<string, number> = {
   pro: 9,
   business: 39,
-  operations: 149,
   growth: 399,
   enterprise: 799
 };
@@ -96,7 +96,7 @@ export async function fetchPlatformMetrics(): Promise<PlatformMetrics | null> {
   (subs.data || []).forEach((s) => {
     if (s.status === 'active' || String(s.status).startsWith('everittos_')) {
       activeSubscriptionsByPlan[s.plan] = (activeSubscriptionsByPlan[s.plan] || 0) + 1;
-      mrrEstimate += PLAN_MRR[s.plan] || 0;
+      mrrEstimate += PLAN_MRR[normalizePlan(s.plan)] || 0;
       activeCustomerCount += 1;
     }
     if (s.status === 'trialing') trialingCount += 1;

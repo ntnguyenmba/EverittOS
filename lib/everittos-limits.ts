@@ -71,7 +71,6 @@ export const PLAN_LIMITS: Record<EverittosPlan, PlanLimits> = {
   free: limitsForPlan('free'),
   pro: limitsForPlan('pro'),
   business: limitsForPlan('business'),
-  operations: limitsForPlan('operations'),
   growth: limitsForPlan('growth'),
   enterprise: limitsForPlan('enterprise')
 };

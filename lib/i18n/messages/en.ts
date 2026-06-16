@@ -66,7 +66,7 @@ export const messages: Messages = {
         teamSize: 'Team size'
       },
       operations: {
-        title: 'Operations setup',
+        title: 'Work focus',
         subtitle: 'What do you manage? Select all that apply.'
       },
       team: {
@@ -143,7 +143,7 @@ export const messages: Messages = {
       steps: [
         'Welcome',
         'Business profile',
-        'Operations',
+        'Work focus',
         'Team invites',
         'Calendar',
         'First job',

@@ -3,7 +3,7 @@
  * DB table `plan_tier_limits` is seeded from these values in migrations.
  */
 
-export type PlanTierId = 'free' | 'pro' | 'business' | 'operations' | 'growth' | 'enterprise';
+export type PlanTierId = 'free' | 'pro' | 'business' | 'growth' | 'enterprise';
 
 export type PlanTierRow = {
   id: PlanTierId;
@@ -127,35 +127,6 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     bookings: true
   },
   {
-    id: 'operations',
-    jobs: 500,
-    photos: UNLIMITED_CAP,
-    customers: 5000,
-    reports: UNLIMITED_CAP,
-    teamMembers: 50,
-    crewMembers: 200,
-    locations: 5,
-    crewAssignment: true,
-    teamManagement: true,
-    scheduling: true,
-    activityLog: true,
-    advancedReporting: true,
-    workflowCustomization: true,
-    multiLocation: false,
-    customBranding: true,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: true,
-    contractorPortal: true,
-    brandedReports: true,
-    beforeAfterPhotos: true,
-    aiAccess: false,
-    aiUnlimited: false,
-    apiAccess: false,
-    prioritySupport: true,
-    bookings: true
-  },
-  {
     id: 'growth',
     jobs: 2500,
     photos: UNLIMITED_CAP,
@@ -225,11 +196,12 @@ export function planTierRow(id: PlanTierId): PlanTierRow {
   return row;
 }
 
-/** Legacy alias */
+/** Legacy aliases */
 export function normalizePlanId(value: string | null | undefined): PlanTierId {
   const v = (value || 'free').toLowerCase();
-  if (v === 'starter') return 'operations';
-  const allowed: PlanTierId[] = ['free', 'pro', 'business', 'operations', 'growth', 'enterprise'];
+  if (v === 'starter') return 'pro';
+  if (v === 'operations') return 'growth';
+  const allowed: PlanTierId[] = ['free', 'pro', 'business', 'growth', 'enterprise'];
   if (allowed.includes(v as PlanTierId)) return v as PlanTierId;
   return 'free';
 }

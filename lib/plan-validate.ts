@@ -26,7 +26,7 @@ export function validatePlanAction({ plan, resource, currentCount }: PlanValidat
   const limits = limitsForPlan(plan);
 
   if (resource === 'workers' && !limits.crewAssignment) {
-    return { allowed: false, message: 'Crew workers require Business, Operations, Growth, or Enterprise.' };
+    return { allowed: false, message: 'Crew workers require Business, Growth, or Enterprise.' };
   }
 
   if (resource === 'photos' && !limits.photoUpload) {

@@ -46,7 +46,7 @@ export default function ContractorPortalPage() {
       setPlan(p);
 
       if (!isContractorRole(role) && !limitsForPlan(p).contractorPortal) {
-        setMessage('Contractor portal requires Operations plan or a contractor role.');
+        setMessage('Contractor portal requires Growth plan or a contractor role.');
         setLoading(false);
         return;
       }

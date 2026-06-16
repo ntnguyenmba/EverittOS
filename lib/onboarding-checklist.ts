@@ -9,7 +9,7 @@ export {
 export const ONBOARDING_STEP_LABELS = [
   'Welcome',
   'Business profile',
-  'Operations',
+  'Work focus',
   'Team invites',
   'Calendar',
   'First job',

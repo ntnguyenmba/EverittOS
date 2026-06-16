@@ -370,7 +370,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
     <>
       {!teamEnabled && (
         <div className="settings-card plan-gate-card">
-          <p>Team management requires Business, Operations, Growth, or Enterprise.</p>
+          <p>Team management requires Business, Growth, or Enterprise.</p>
           <a className="btn btn-primary" href="/settings/billing?upgrade=business">
             Upgrade to Business
           </a>

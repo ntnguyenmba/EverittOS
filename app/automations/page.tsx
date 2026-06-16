@@ -97,7 +97,7 @@ export default function AutomationsPage() {
         ))}
       </div>
       <p className="muted" style={{ marginTop: 16 }}>
-        Advanced job workflows live under <Link href="/workflows">Workflows</Link> on Operations and higher.
+        Advanced job workflows live under <Link href="/workflows">Workflows</Link> on Growth and higher.
       </p>
     </OsModulePage>
   );
