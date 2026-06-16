@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { logSecurityEvent, requestClientMeta } from '@/lib/security-events';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -14,7 +15,9 @@ export async function PATCH(request: Request) {
 
   const body = (await request.json()) as {
     businessName?: string;
+    legalBusinessName?: string;
     phone?: string;
+    businessEmail?: string;
     serviceType?: string;
     bookingUrl?: string;
     website?: string;
@@ -27,9 +30,22 @@ export async function PATCH(request: Request) {
     timezone?: string;
     teamSize?: string;
     industry?: string;
+    taxId?: string;
+    invoiceFooter?: string;
+    defaultCustomerMessage?: string;
+    teamDisplayName?: string;
+    brandPrimaryColor?: string;
+    brandAccentColor?: string;
   };
 
   const businessName = body.businessName?.trim() || null;
+  const businessEmail = body.businessEmail?.trim() || body.email?.trim() || ctx.email;
+
+  const { data: beforeOrg } = await ctx.supabase
+    .from('organizations')
+    .select('name')
+    .eq('id', ctx.workspace.organizationId)
+    .maybeSingle();
 
   const { error: profileError } = await ctx.supabase
     .from('profiles')
@@ -46,7 +62,7 @@ export async function PATCH(request: Request) {
     phone: body.phone?.trim() || null,
     service_type: body.serviceType?.trim() || null,
     booking_url: body.bookingUrl?.trim() || null,
-    email: body.email?.trim() || ctx.email
+    email: businessEmail
   });
 
   if (bizError) {
@@ -56,7 +72,7 @@ export async function PATCH(request: Request) {
   const { error: settingsError } = await ctx.supabase.from('organization_settings').upsert({
     organization_id: ctx.workspace.organizationId,
     company_phone: body.phone?.trim() || null,
-    company_email: body.email?.trim() || ctx.email,
+    company_email: businessEmail,
     website: body.website?.trim() || null,
     company_address: body.companyAddress?.trim() || null,
     service_type: body.serviceType?.trim() || null,
@@ -67,7 +83,14 @@ export async function PATCH(request: Request) {
     notification_reports: body.notifyReports ?? true,
     timezone: body.timezone?.trim() || 'America/New_York',
     team_size: body.teamSize?.trim() || null,
-    industry: body.industry?.trim() || null
+    industry: body.industry?.trim() || null,
+    legal_business_name: body.legalBusinessName?.trim() || null,
+    tax_id: body.taxId?.trim() || null,
+    invoice_footer: body.invoiceFooter?.trim() || null,
+    default_customer_message: body.defaultCustomerMessage?.trim() || null,
+    team_display_name: body.teamDisplayName?.trim() || null,
+    brand_primary_color: body.brandPrimaryColor?.trim() || null,
+    brand_accent_color: body.brandAccentColor?.trim() || null
   });
 
   if (settingsError) {
@@ -84,14 +107,36 @@ export async function PATCH(request: Request) {
     }
   }
 
-  await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    'settings',
-    ctx.workspace.organizationId,
-    'user_updated',
-    'Company settings saved'
-  );
+  const meta = requestClientMeta(request);
+  if (beforeOrg?.name && businessName && beforeOrg.name !== businessName) {
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      'organization',
+      ctx.workspace.organizationId,
+      'business_name_changed',
+      `Business name changed to ${businessName}`
+    );
+    await logSecurityEvent({
+      organizationId: ctx.workspace.organizationId,
+      userId: ctx.userId,
+      eventType: 'suspicious_activity',
+      severity: 'info',
+      message: 'Workspace business name updated.',
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+      metadata: { previousName: beforeOrg.name, nextName: businessName }
+    });
+  } else {
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      'settings',
+      ctx.workspace.organizationId,
+      'user_updated',
+      'Workspace settings saved'
+    );
+  }
 
-  return NextResponse.json({ ok: true, message: 'Settings saved successfully.' });
+  return NextResponse.json({ ok: true, message: 'Workspace settings saved.' });
 }

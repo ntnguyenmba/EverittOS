@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { WorkspaceDeleteSection } from '@/components/settings/workspace-delete-section';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { canManageOrganizationSettings, isOwner, normalizeRole } from '@/lib/roles';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -26,12 +27,21 @@ export default function SettingsPage() {
     errorFallback: 'Unable to restart onboarding.'
   });
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState(normalizeRole('owner'));
   const [businessName, setBusinessName] = useState('');
+  const [legalBusinessName, setLegalBusinessName] = useState('');
+  const [teamDisplayName, setTeamDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [bookingUrl, setBookingUrl] = useState('');
   const [website, setWebsite] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
+  const [taxId, setTaxId] = useState('');
+  const [invoiceFooter, setInvoiceFooter] = useState('');
+  const [defaultCustomerMessage, setDefaultCustomerMessage] = useState('');
+  const [brandPrimaryColor, setBrandPrimaryColor] = useState('');
+  const [brandAccentColor, setBrandAccentColor] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState('');
@@ -73,6 +83,7 @@ export default function SettingsPage() {
       const { data: biz } = await supabase.from('business_profiles').select('*').eq('user_id', user.id).maybeSingle();
 
       setPlan(normalizePlan(profile?.plan));
+      setRole(normalizeRole(profile?.role));
       setBusinessName(biz?.business_name || profile?.business_name || '');
       setPhone(biz?.phone || '');
       setServiceType(biz?.service_type || '');
@@ -93,6 +104,14 @@ export default function SettingsPage() {
           setWebsite(settings.website || '');
           setCompanyAddress(settings.company_address || '');
           setPhone(settings.company_phone || phone);
+          setBusinessEmail(settings.company_email || user.email || '');
+          setLegalBusinessName(settings.legal_business_name || '');
+          setTeamDisplayName(settings.team_display_name || '');
+          setTaxId(settings.tax_id || '');
+          setInvoiceFooter(settings.invoice_footer || '');
+          setDefaultCustomerMessage(settings.default_customer_message || '');
+          setBrandPrimaryColor(settings.brand_primary_color || '');
+          setBrandAccentColor(settings.brand_accent_color || '');
           setNotifyAssignments(settings.notification_assignments ?? true);
           setNotifyDueDates(settings.notification_due_dates ?? true);
           setNotifyCompletions(settings.notification_completions ?? true);
@@ -126,11 +145,19 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName,
+          legalBusinessName,
+          teamDisplayName,
           phone,
+          businessEmail,
           serviceType,
           bookingUrl,
           website,
           companyAddress,
+          taxId,
+          invoiceFooter,
+          defaultCustomerMessage,
+          brandPrimaryColor,
+          brandAccentColor,
           email,
           notifyAssignments,
           notifyDueDates,
@@ -168,32 +195,44 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <AppShell plan={plan}>
-        <p>Loading settings...</p>
-      </AppShell>
+      <SettingsShell plan={plan} role={role} title="Workspace settings">
+        <p className="loading-state" role="status">
+          Loading settings...
+        </p>
+      </SettingsShell>
     );
   }
+
+  const canDeleteWorkspace = isOwner(role);
 
   return (
     <SettingsShell
       plan={plan}
+      role={role}
       title="Workspace settings"
-      description="Optional business profile, logo, and notifications. Add details when you are ready. Solo operators can keep it simple."
+      description="Business profile, branding, and workspace preferences for owners and admins."
     >
-      <div className="settings-card form">
-        <p>
-          Plan: <strong>{plan}</strong>. Manage subscription on{' '}
-          <Link href="/settings/billing">billing settings</Link> or{' '}
-          <Link href="/settings/account">account settings</Link>.
+      <div className="settings-card form settings-form-grid">
+        <p className="muted">
+          Manage subscription on <Link href="/settings/billing">Plans & billing</Link> or personal details on{' '}
+          <Link href="/settings/account">Account</Link>.
         </p>
-          <label htmlFor="org-name">Organization name</label>
+          <label htmlFor="org-name">Business name</label>
           <input id="org-name" className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-          <label htmlFor="org-phone">Phone</label>
+          <label htmlFor="org-legal-name">Legal business name</label>
+          <input id="org-legal-name" className="input" placeholder="Legal business name" value={legalBusinessName} onChange={(e) => setLegalBusinessName(e.target.value)} />
+          <label htmlFor="org-team-display">Team display name</label>
+          <input id="org-team-display" className="input" placeholder="How your team appears in the app" value={teamDisplayName} onChange={(e) => setTeamDisplayName(e.target.value)} />
+          <label htmlFor="org-phone">Business phone</label>
           <input id="org-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <label htmlFor="org-business-email">Business email</label>
+          <input id="org-business-email" className="input" type="email" placeholder="Business email" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
           <label htmlFor="org-website">Website</label>
           <input id="org-website" className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
           <label htmlFor="org-address">Address</label>
           <input id="org-address" className="input" placeholder="Business address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
+          <label htmlFor="org-tax-id">Tax ID</label>
+          <input id="org-tax-id" className="input" placeholder="Tax ID (optional)" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
           <label htmlFor="org-industry">Business type</label>
           <input id="org-industry" className="input" placeholder="e.g. Landscaping, HVAC" value={industry} onChange={(e) => setIndustry(e.target.value)} />
           <label htmlFor="org-team-size">Employee count</label>
@@ -220,7 +259,15 @@ export default function SettingsPage() {
             value={bookingUrl}
             onChange={(e) => setBookingUrl(e.target.value)}
           />
-          <label htmlFor="org-email">Email</label>
+          <label htmlFor="org-invoice-footer">Invoice footer</label>
+          <textarea id="org-invoice-footer" className="input" rows={3} placeholder="Footer text for invoices" value={invoiceFooter} onChange={(e) => setInvoiceFooter(e.target.value)} />
+          <label htmlFor="org-default-message">Default customer message</label>
+          <textarea id="org-default-message" className="input" rows={3} placeholder="Default message for customer communications" value={defaultCustomerMessage} onChange={(e) => setDefaultCustomerMessage(e.target.value)} />
+          <label htmlFor="org-brand-primary">Brand primary color</label>
+          <input id="org-brand-primary" className="input" placeholder="#2f5f8f" value={brandPrimaryColor} onChange={(e) => setBrandPrimaryColor(e.target.value)} />
+          <label htmlFor="org-brand-accent">Brand accent color</label>
+          <input id="org-brand-accent" className="input" placeholder="#4A6354" value={brandAccentColor} onChange={(e) => setBrandAccentColor(e.target.value)} />
+          <label htmlFor="org-email">Your sign-in email</label>
           <input id="org-email" className="input" placeholder="Email" value={email} disabled />
           <h3>Logo</h3>
           <input type="file" accept="image/*" aria-label="Upload organization logo" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />
@@ -264,6 +311,8 @@ export default function SettingsPage() {
             <Link href="/disclaimer">Disclaimer</Link>
           </p>
         </div>
+
+      <WorkspaceDeleteSection canManage={canDeleteWorkspace} />
     </SettingsShell>
   );
 }

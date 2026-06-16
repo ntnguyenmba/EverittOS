@@ -250,16 +250,29 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAccountDeleted(profile?.deleted_at)) {
-    await supabase.auth.signOut();
-    const login = new URL('/login', request.url);
-    login.searchParams.set('reason', 'deleted');
-    login.searchParams.set(
-      'detail',
-      'This account has been deleted. Contact support if you need to recover it during the grace period.'
-    );
-    const deletedRedirect = redirectWithCookies(login, supabaseResponse);
-    clearSessionMarkers(deletedRedirect);
-    return deletedRedirect;
+    const withinRecovery =
+      profile?.deletion_scheduled_at && new Date(profile.deletion_scheduled_at) > new Date();
+    const recoveryPath =
+      pathname.startsWith('/settings/account') ||
+      pathname.startsWith('/api/account/restore') ||
+      pathname.startsWith('/api/account/profile');
+
+    if (withinRecovery && recoveryPath) {
+      // Allow signed-in recovery during grace period.
+    } else {
+      await supabase.auth.signOut();
+      const login = new URL('/login', request.url);
+      login.searchParams.set('reason', 'deleted');
+      login.searchParams.set(
+        'detail',
+        withinRecovery
+          ? 'This account is scheduled for deletion. Sign in again to restore it from Account settings.'
+          : 'This account has been deleted. Contact support if you need help.'
+      );
+      const deletedRedirect = redirectWithCookies(login, supabaseResponse);
+      clearSessionMarkers(deletedRedirect);
+      return deletedRedirect;
+    }
   }
 
   if (!isAccountActive(profile?.account_status)) {
@@ -283,6 +296,25 @@ export async function middleware(request: NextRequest) {
       .limit(1)
       .maybeSingle();
     resolvedOrgId = membership?.organization_id || null;
+  }
+
+  if (resolvedOrgId && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('deleted_at, owner_user_id, deletion_scheduled_at')
+      .eq('id', resolvedOrgId)
+      .maybeSingle();
+
+    if (org?.deleted_at && org.owner_user_id !== user.id) {
+      await supabase.auth.signOut();
+      const login = new URL('/login', request.url);
+      login.searchParams.set('reason', 'workspace_deleted');
+      login.searchParams.set(
+        'detail',
+        'This workspace is scheduled for deletion and is no longer available.'
+      );
+      return redirectWithCookies(login, supabaseResponse);
+    }
   }
 
   const role = normalizeRole(profile?.role || 'owner');

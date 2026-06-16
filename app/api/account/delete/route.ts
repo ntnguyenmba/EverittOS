@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createAdminSupabase } from '@/lib/supabase-admin';
+import { ACCOUNT_DELETION_CONFIRMATION } from '@/lib/deletion-policy';
+import {
+  canDeletePersonalAccount,
+  scheduleAccountDeletion,
+  verifyAccountPassword
+} from '@/lib/account-deletion-server';
 import { clearSessionMarkers } from '@/lib/auth-cookies';
+import { normalizeRole } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
-
-const CONFIRMATION_PHRASE = 'DELETE MY ACCOUNT';
-const RECOVERY_DAYS = 14;
 
 export const runtime = 'nodejs';
 
@@ -15,63 +19,68 @@ export async function POST(request: Request) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
   const confirmation = String(body.confirmation || '').trim();
+  const password = String(body.password || '');
 
-  if (confirmation !== CONFIRMATION_PHRASE) {
+  if (confirmation !== ACCOUNT_DELETION_CONFIRMATION) {
     return NextResponse.json(
-      { error: `Type "${CONFIRMATION_PHRASE}" exactly to delete your account.` },
+      { error: `Type ${ACCOUNT_DELETION_CONFIRMATION} to confirm account deletion.` },
       { status: 400 }
     );
   }
 
-  const now = new Date();
-  const scheduled = new Date(now.getTime() + RECOVERY_DAYS * 24 * 60 * 60 * 1000);
+  if (!password) {
+    return NextResponse.json({ error: 'Enter your password to confirm account deletion.' }, { status: 400 });
+  }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      deleted_at: now.toISOString(),
-      deletion_scheduled_at: scheduled.toISOString(),
-      account_status: 'disabled'
-    })
-    .eq('id', user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const passwordOk = await verifyAccountPassword(supabase, user.email, password);
+  if (!passwordOk) {
+    return NextResponse.json({ error: 'Password confirmation failed.' }, { status: 401 });
   }
 
   const admin = createAdminSupabase();
-  if (admin) {
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('organization_id, email')
-      .eq('id', user.id)
-      .maybeSingle();
+  const { data: profile } = await (admin || supabase)
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .maybeSingle();
 
-    if (profile?.organization_id) {
-      await admin.from('activity_logs').insert({
-        organization_id: profile.organization_id,
-        actor_id: user.id,
-        actor_name: profile.email || user.email || 'User',
-        entity_type: 'account',
-        entity_id: user.id,
-        action: 'account_soft_deleted',
-        message: `Account scheduled for deletion after ${RECOVERY_DAYS}-day recovery window.`
-      });
+  if (admin) {
+    const allowed = await canDeletePersonalAccount(
+      admin,
+      user.id,
+      profile?.role || 'employee',
+      profile?.organization_id || null
+    );
+    if (!allowed.ok) {
+      return NextResponse.json({ error: allowed.error }, { status: 409 });
     }
+  }
+
+  const result = await scheduleAccountDeletion({
+    supabase,
+    admin,
+    userId: user.id,
+    email: user.email,
+    organizationId: profile?.organization_id || null
+  });
+
+  if ('error' in result) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
   await supabase.auth.signOut();
   const response = attachCookies(
     NextResponse.json({
       ok: true,
-      recoveryDays: RECOVERY_DAYS,
-      deletionScheduledAt: scheduled.toISOString()
+      recoveryDays: 30,
+      deletionScheduledAt: result.deletionScheduledAt,
+      role: normalizeRole(profile?.role)
     })
   );
   clearSessionMarkers(response);

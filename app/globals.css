@@ -1118,6 +1118,45 @@ p { color: var(--muted); line-height: 1.7; }
   font-size: 13px;
 }
 
+.settings-danger-zone {
+  border-color: rgba(180, 35, 24, 0.18);
+  background: rgba(180, 35, 24, 0.03);
+}
+
+.settings-danger-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.settings-form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-field {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-field > span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  .settings-form-grid .settings-actions,
+  .confirm-dialog-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .settings-subnav-pills {
+    flex-wrap: wrap;
+  }
+}
+
 .settings-row {
   display: flex;
   justify-content: space-between;

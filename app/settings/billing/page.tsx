@@ -18,7 +18,6 @@ import { normalizeRole } from '@/lib/roles';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { SyncSubscriptionButton } from '@/components/sync-subscription-button';
-import { BillingHealthCheck } from '@/components/billing-health-check';
 import { canManageBilling } from '@/lib/roles';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
@@ -458,12 +457,6 @@ function BillingSettingsContent() {
           />
         ) : null}
       </div>
-
-      {canManageWorkspaceBilling ? (
-        <div className="settings-card">
-          <BillingHealthCheck />
-        </div>
-      ) : null}
 
       <div className="settings-card">
         <h3>{t('billing.allPlans')}</h3>

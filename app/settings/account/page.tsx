@@ -1,26 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { AccountDeleteSection } from '@/components/settings/account-delete-section';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
 import { planDisplayName } from '@/lib/everittos-plans';
-import { canManageBilling, isOwner, normalizeRole } from '@/lib/roles';
+import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { roleDisplayName } from '@/lib/role-routes';
 import { normalizeAccountStatus } from '@/lib/account-status';
-import { SUPPORT_EMAIL } from '@/lib/support';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { AuthMessages } from '@/components/auth/auth-messages';
+import { useAsyncAction } from '@/hooks/use-async-action';
+import { FEEDBACK } from '@/lib/feedback-labels';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const disableDialogRef = useRef<HTMLDialogElement>(null);
+  const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
+    successMessage: 'Account settings saved.'
+  });
+  const [saveMessage, setSaveMessage] = useState('');
   const {
     profilePlan,
     billingPlan,
@@ -33,11 +36,26 @@ export default function AccountSettingsPage() {
   const plan = billingPlan ?? profilePlan ?? workspacePlan ?? organizationPlan;
   const role = workspaceRole ?? normalizeRole('owner');
   const subscriptionStatus = workspaceSubscriptionStatus || 'free';
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
-  const [message, setMessage] = useState<{ title?: string; body: string; details?: string } | null>(null);
+  const [scheduledForDeletion, setScheduledForDeletion] = useState(false);
+  const [deletionScheduledAt, setDeletionScheduledAt] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState({
+    marketingEmails: false,
+    productUpdates: true,
+    operationalNotifications: true,
+    emailNotifications: true,
+    pushNotifications: false,
+    smsNotifications: false
+  });
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -49,51 +67,59 @@ export default function AccountSettingsPage() {
         return;
       }
 
+      const res = await fetch('/api/account/profile', { cache: 'no-store' });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setFirstName(json.firstName || '');
+        setLastName(json.lastName || '');
+        setDisplayName(json.displayName || '');
+        setEmail(json.email || user.email || '');
+        setPhone(json.phone || '');
+        setScheduledForDeletion(Boolean(json.deletedAt));
+        setDeletionScheduledAt(json.deletionScheduledAt || null);
+        setNotifications(json.notifications || notifications);
+      } else {
+        setEmail(user.email || '');
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('account_status')
         .eq('id', user.id)
         .maybeSingle();
-
       setAccountStatus(normalizeAccountStatus(profile?.account_status));
-      setEmail(user.email || '');
       setLoading(false);
     }
 
-    load();
+    void load();
   }, [router]);
 
-  function openDisableModal() {
-    disableDialogRef.current?.showModal();
-  }
-
-  function closeDisableModal() {
-    disableDialogRef.current?.close();
-  }
-
-  async function disableAccount() {
-    if (busy) return;
-    setBusy(true);
-    setMessage(null);
-    closeDisableModal();
-
-    const res = await fetch('/api/account/disable', { method: 'POST' });
-    const json = await res.json();
-    setBusy(false);
-
-    if (!res.ok) {
-      setMessage({ title: t('settings.account.disableFailed'), body: json.error || t('settings.account.disableFailed'), details: json.code });
-      return;
-    }
-
-    window.location.href = '/login?reason=disabled&detail=' + encodeURIComponent(t('settings.account.disabledDetail'));
+  async function saveProfile() {
+    const ok = await runResponse(() =>
+      fetch('/api/account/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          displayName,
+          phone,
+          newEmail: newEmail.trim() || undefined,
+          newPassword: newPassword.trim() || undefined,
+          notifications
+        })
+      })
+    );
+    if (ok) setSaveMessage('Account settings saved.');
+    setNewPassword('');
+    setNewEmail('');
   }
 
   if (loading || planLoading || !plan) {
     return (
-      <AppShell role={role}>
+      <SettingsShell plan={plan || 'free'} role={role} title={t('settingsNav.account')}>
         <p>{t('common.loading')}</p>
-      </AppShell>
+      </SettingsShell>
     );
   }
 
@@ -101,6 +127,95 @@ export default function AccountSettingsPage() {
 
   return (
     <SettingsShell plan={plan} role={role} title={t('settingsNav.account')} description={t('settings.account.description')}>
+      <div className="settings-card form settings-form-grid">
+        <h3>Profile</h3>
+        <p className="muted">Update how your name and contact details appear across EverittOS.</p>
+        <label className="settings-field">
+          <span>First name</span>
+          <input className="input" value={firstName} onChange={(event) => setFirstName(event.target.value)} />
+        </label>
+        <label className="settings-field">
+          <span>Last name</span>
+          <input className="input" value={lastName} onChange={(event) => setLastName(event.target.value)} />
+        </label>
+        <label className="settings-field">
+          <span>Display name</span>
+          <input className="input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+        </label>
+        <label className="settings-field">
+          <span>Phone</span>
+          <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
+        </label>
+        <label className="settings-field">
+          <span>Email</span>
+          <input className="input" value={email} disabled />
+        </label>
+        <label className="settings-field">
+          <span>New email</span>
+          <input
+            className="input"
+            type="email"
+            value={newEmail}
+            onChange={(event) => setNewEmail(event.target.value)}
+            placeholder="Leave blank to keep current email"
+          />
+        </label>
+        <label className="settings-field">
+          <span>New password</span>
+          <input
+            className="input"
+            type="password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            placeholder="Leave blank to keep current password"
+          />
+        </label>
+        <div className="settings-actions">
+          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveProfile()}>
+            {buttonLabel('Save account', FEEDBACK.loading)}
+          </button>
+        </div>
+        {saveMessage ? <p className="auth-message auth-message-success">{saveMessage}</p> : null}
+      </div>
+
+      <div className="settings-card form settings-form-grid">
+        <h3>Notification preferences</h3>
+        <label>
+          <input
+            type="checkbox"
+            checked={notifications.emailNotifications}
+            onChange={(event) => setNotifications((current) => ({ ...current, emailNotifications: event.target.checked }))}
+          />{' '}
+          Email notifications
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={notifications.operationalNotifications}
+            onChange={(event) =>
+              setNotifications((current) => ({ ...current, operationalNotifications: event.target.checked }))
+            }
+          />{' '}
+          Operational updates
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={notifications.productUpdates}
+            onChange={(event) => setNotifications((current) => ({ ...current, productUpdates: event.target.checked }))}
+          />{' '}
+          Product updates
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={notifications.marketingEmails}
+            onChange={(event) => setNotifications((current) => ({ ...current, marketingEmails: event.target.checked }))}
+          />{' '}
+          Marketing emails
+        </label>
+      </div>
+
       <div className="settings-card">
         <h3>{t('settings.account.languageTitle')}</h3>
         <p className="muted">{t('settings.account.languageNote')}</p>
@@ -109,10 +224,6 @@ export default function AccountSettingsPage() {
 
       <div className="settings-card">
         <h3>{t('settings.account.profile')}</h3>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('settings.account.email')}</span>
-          <span className="settings-row-value">{email}</span>
-        </div>
         <div className="settings-row">
           <span className="settings-row-label">{t('settings.account.role')}</span>
           <span className="settings-row-value">{roleDisplayName(role)}</span>
@@ -149,65 +260,17 @@ export default function AccountSettingsPage() {
         </div>
       </div>
 
-      {canBilling ? (
-        <div className="settings-card">
-          <h3>{t('settings.account.subscription')}</h3>
-          <p className="muted">{t('settings.account.subscriptionNote')}</p>
-          <div className="settings-actions">
-            <Link href="/settings/billing" className="btn btn-primary">
-              {t('settings.account.openBilling')}
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="settings-card">
-          <h3>{t('settings.account.subscription')}</h3>
-          <p className="muted">{t('settings.account.subscriptionOwnerOnly')}</p>
-        </div>
-      )}
-
-      <div className="settings-card">
-        <h3>{t('settings.account.disableTitle')}</h3>
-        <p className="muted">{t('settings.account.disableNote')}</p>
-        {isOwner(role) ? (
-          <div className="settings-warning">
-            {t('settings.account.ownerDisableWarning')}{' '}
-            <Link href="/team">{t('nav.team')}</Link>
-          </div>
-        ) : null}
-        <div className="settings-warning">
-          {t('settings.account.restoreContact')}{' '}
-          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-        </div>
-        <div className="settings-actions">
-          <button type="button" className="btn" disabled={busy} onClick={openDisableModal}>
-            {busy ? t('settings.account.disabling') : t('settings.account.disableTitle')}
-          </button>
-        </div>
-      </div>
-
-      <dialog ref={disableDialogRef} className="confirm-dialog" aria-labelledby="disable-account-title">
-        <form method="dialog" className="confirm-dialog-body">
-          <h3 id="disable-account-title">{t('settings.account.disableConfirmTitle')}</h3>
-          <p className="muted">{t('settings.account.disableConfirmBody')}</p>
-          <div className="confirm-dialog-actions">
-            <button type="button" className="btn" onClick={closeDisableModal}>
-              {t('common.cancel')}
-            </button>
-            <button type="button" className="btn" disabled={busy} onClick={() => void disableAccount()}>
-              {t('settings.account.disableTitle')}
-            </button>
-          </div>
-        </form>
-      </dialog>
-
-      {message ? (
-        message.title ? (
-          <AuthMessages error={message.body} errorTitle={message.title} errorDetails={message.details} />
-        ) : (
-          <p className="auth-message auth-message-success">{message.body}</p>
-        )
-      ) : null}
+      <AccountDeleteSection
+        busy={saving}
+        scheduledForDeletion={scheduledForDeletion}
+        deletionScheduledAt={deletionScheduledAt}
+        onDeleted={() => setScheduledForDeletion(true)}
+        onRestored={() => {
+          setScheduledForDeletion(false);
+          setDeletionScheduledAt(null);
+          setAccountStatus('active');
+        }}
+      />
     </SettingsShell>
   );
 }
