@@ -1128,6 +1128,20 @@ p { color: var(--muted); line-height: 1.7; }
   padding-left: 18px;
 }
 
+.settings-danger-block {
+  margin-top: 12px;
+}
+
+.settings-danger-block h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.settings-danger-block .settings-warning {
+  margin-top: 12px;
+}
+
 .settings-form-grid {
   display: grid;
   gap: 12px;

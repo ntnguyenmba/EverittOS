@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { ACCOUNT_DELETION_CONFIRMATION } from '@/lib/deletion-policy';
 import {
-  canDeletePersonalAccount,
-  scheduleAccountDeletion,
-  verifyAccountPassword
+  permanentlyDeletePersonalAccount,
+  subscriptionBlocksAccountDeletion
 } from '@/lib/account-deletion-server';
 import { clearSessionMarkers } from '@/lib/auth-cookies';
 import { normalizeRole } from '@/lib/roles';
@@ -12,7 +11,7 @@ import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
 
-/** Soft-delete account with recovery window; signs user out immediately. */
+/** Permanently delete the authenticated user's account and auth record. */
 export async function POST(request: Request) {
   const { supabase, attachCookies } = await createRouteHandlerSupabase();
   const {
@@ -25,7 +24,6 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const confirmation = String(body.confirmation || '').trim();
-  const password = String(body.password || '');
 
   if (confirmation !== ACCOUNT_DELETION_CONFIRMATION) {
     return NextResponse.json(
@@ -34,53 +32,53 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!password) {
-    return NextResponse.json({ error: 'Enter your password to confirm account deletion.' }, { status: 400 });
-  }
-
-  const passwordOk = await verifyAccountPassword(supabase, user.email, password);
-  if (!passwordOk) {
-    return NextResponse.json({ error: 'Password confirmation failed.' }, { status: 401 });
-  }
-
   const admin = createAdminSupabase();
-  const { data: profile } = await (admin || supabase)
+  if (!admin) {
+    return NextResponse.json(
+      { error: 'Account deletion is temporarily unavailable. Contact support.' },
+      { status: 503 }
+    );
+  }
+
+  const { data: profile } = await admin
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, plan, subscription_status')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (admin) {
-    const allowed = await canDeletePersonalAccount(
-      admin,
-      user.id,
-      profile?.role || 'employee',
-      profile?.organization_id || null
+  const role = normalizeRole(profile?.role || 'employee');
+  const organizationId = profile?.organization_id || null;
+
+  if (subscriptionBlocksAccountDeletion(profile?.plan, profile?.subscription_status)) {
+    return NextResponse.json(
+      {
+        error: 'Active subscriptions must be cancelled before account deletion.',
+        code: 'active_subscription'
+      },
+      { status: 409 }
     );
-    if (!allowed.ok) {
-      return NextResponse.json({ error: allowed.error }, { status: 409 });
-    }
   }
 
-  const result = await scheduleAccountDeletion({
-    supabase,
+  const result = await permanentlyDeletePersonalAccount({
     admin,
     userId: user.id,
     email: user.email,
-    organizationId: profile?.organization_id || null
+    role,
+    organizationId,
+    plan: profile?.plan,
+    subscriptionStatus: profile?.subscription_status
   });
 
-  if ('error' in result) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+  if (!result.ok) {
+    const status = result.code === 'active_subscription' ? 409 : 500;
+    return NextResponse.json({ error: result.error, code: result.code }, { status });
   }
 
   await supabase.auth.signOut();
   const response = attachCookies(
     NextResponse.json({
       ok: true,
-      recoveryDays: 30,
-      deletionScheduledAt: result.deletionScheduledAt,
-      role: normalizeRole(profile?.role)
+      message: 'Your account has been permanently deleted.'
     })
   );
   clearSessionMarkers(response);

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { subscriptionStatusMessage } from '@/lib/stripe-subscription';
@@ -45,8 +44,6 @@ export default function AccountSettingsPage() {
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
-  const [scheduledForDeletion, setScheduledForDeletion] = useState(false);
-  const [deletionScheduledAt, setDeletionScheduledAt] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     marketingEmails: false,
     productUpdates: true,
@@ -75,8 +72,6 @@ export default function AccountSettingsPage() {
         setDisplayName(json.displayName || '');
         setEmail(json.email || user.email || '');
         setPhone(json.phone || '');
-        setScheduledForDeletion(Boolean(json.deletedAt));
-        setDeletionScheduledAt(json.deletionScheduledAt || null);
         setNotifications(json.notifications || notifications);
       } else {
         setEmail(user.email || '');
@@ -260,17 +255,10 @@ export default function AccountSettingsPage() {
         </div>
       </div>
 
-      <AccountDeleteSection
-        busy={saving}
-        scheduledForDeletion={scheduledForDeletion}
-        deletionScheduledAt={deletionScheduledAt}
-        onDeleted={() => setScheduledForDeletion(true)}
-        onRestored={() => {
-          setScheduledForDeletion(false);
-          setDeletionScheduledAt(null);
-          setAccountStatus('active');
-        }}
-      />
+      <p className="muted">
+        To permanently delete your account, go to{' '}
+        <Link href="/settings">Workspace settings</Link> and scroll to the Danger Zone section.
+      </p>
     </SettingsShell>
   );
 }

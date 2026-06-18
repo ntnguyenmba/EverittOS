@@ -43,6 +43,7 @@ function LoginForm() {
 
   const verified = searchParams.get('verified');
   const passwordReset = searchParams.get('reset');
+  const accountDeleted = searchParams.get('deleted') === '1';
   const configError = isBrowserSupabaseMisconfigured();
 
   const [email, setEmail] = useState('');
@@ -130,11 +131,13 @@ function LoginForm() {
     }
   }
 
-  const successMessage = passwordReset
-    ? 'Password updated. Sign in with your new password.'
-    : verified
-      ? 'Email verified. You can sign in now.'
-      : undefined;
+  const successMessage = accountDeleted
+    ? 'Your account has been permanently deleted.'
+    : passwordReset
+      ? 'Password updated. Sign in with your new password.'
+      : verified
+        ? 'Email verified. You can sign in now.'
+        : undefined;
 
   return (
     <AuthShell title="Sign in">

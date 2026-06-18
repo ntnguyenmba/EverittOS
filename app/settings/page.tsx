@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { WorkspaceDeleteSection } from '@/components/settings/workspace-delete-section';
+import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, isOwner, normalizeRole } from '@/lib/roles';
 import { useTranslation } from '@/components/locale-provider';
@@ -15,6 +16,8 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { subscriptionBlocksAccountDeletion } from '@/lib/account-deletion-server';
+import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -53,6 +56,14 @@ export default function SettingsPage() {
   const [teamSize, setTeamSize] = useState('');
   const [industry, setIndustry] = useState('');
   const { t } = useTranslation();
+  const {
+    profilePlan,
+    billingPlan,
+    organizationPlan,
+    plan: workspacePlan,
+    subscriptionStatus: workspaceSubscriptionStatus,
+    loading: planLoading
+  } = useWorkspacePlan();
 
   async function restartOnboarding() {
     if (!window.confirm(t('onboarding.settings.restartConfirm'))) return;
@@ -193,7 +204,7 @@ export default function SettingsPage() {
     await performClientLogout(router);
   }
 
-  if (loading) {
+  if (loading || planLoading) {
     return (
       <SettingsShell plan={plan} role={role} title="Workspace settings">
         <p className="loading-state" role="status">
@@ -202,6 +213,12 @@ export default function SettingsPage() {
       </SettingsShell>
     );
   }
+
+  const effectivePlan = billingPlan ?? profilePlan ?? workspacePlan ?? organizationPlan ?? plan;
+  const hasActiveSubscription = subscriptionBlocksAccountDeletion(
+    effectivePlan,
+    workspaceSubscriptionStatus
+  );
 
   const canDeleteWorkspace = isOwner(role);
 
@@ -314,6 +331,8 @@ export default function SettingsPage() {
         </div>
 
       <WorkspaceDeleteSection canManage={canDeleteWorkspace} />
+
+      <AccountDeleteSection hasActiveSubscription={hasActiveSubscription} busy={saving} />
     </SettingsShell>
   );
 }
