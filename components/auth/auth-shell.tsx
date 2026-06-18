@@ -30,14 +30,16 @@ export function AuthShell({ title, children }: AuthShellProps) {
           <p className="auth-card-subtitle">Run your business from one place.</p>
           {children}
           <p className="auth-legal-note">
-            By continuing, you agree to the <Link href="/terms">Terms</Link> and acknowledge the{' '}
-            <Link href="/privacy">Privacy Policy</Link>.
+            By continuing, you agree to the <Link href="/terms">Terms</Link>, acknowledge the{' '}
+            <Link href="/privacy">Privacy Policy</Link>, and understand our{' '}
+            <Link href="/refund-policy">No Refund Policy</Link>.
           </p>
         </section>
 
         <footer className="auth-tech-footer">
           <p>
-            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> ·{' '}
+            <Link href="/refund-policy">No Refund Policy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
             <Link href="/security">Security</Link>
           </p>
         </footer>

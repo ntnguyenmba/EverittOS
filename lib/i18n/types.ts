@@ -98,6 +98,7 @@ export type MessageTree = {
   legal: {
     terms: string;
     privacy: string;
+    refundPolicy: string;
     cookies: string;
     security: string;
     footerLabel: string;
@@ -512,6 +513,13 @@ export type MessageTree = {
       startingCheckout: string;
       applyFirst: string;
       signInNote: string;
+    };
+    noRefund: {
+      policyShort: string;
+      policyFull: string;
+      checkoutAck: string;
+      ackRequired: string;
+      cancelNote: string;
     };
   };
   language: {

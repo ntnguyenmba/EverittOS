@@ -11,6 +11,7 @@ type PlanCheckoutButtonProps = {
   promoCode?: string;
   promoPreview?: PromoDiscountPreview | null;
   requireValidPromo?: boolean;
+  requireRefundAck?: boolean;
   className?: string;
 };
 
@@ -20,15 +21,24 @@ export function PlanCheckoutButton({
   promoCode = '',
   promoPreview = null,
   requireValidPromo = false,
+  requireRefundAck = true,
   className = 'btn btn-primary'
 }: PlanCheckoutButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [acceptedRefundPolicy, setAcceptedRefundPolicy] = useState(false);
+
+  const checkoutBlocked = requireRefundAck && !acceptedRefundPolicy;
 
   async function startCheckout() {
     if (requireValidPromo && promoCode.trim() && !promoPreview) {
       setError(t('billing.promo.applyFirst'));
+      return;
+    }
+
+    if (checkoutBlocked) {
+      setError(t('billing.noRefund.ackRequired'));
       return;
     }
 
@@ -41,7 +51,8 @@ export function PlanCheckoutButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan,
-          promoCode: promoCode.trim() || undefined
+          promoCode: promoCode.trim() || undefined,
+          refundPolicyAcknowledged: requireRefundAck ? true : undefined
         })
       });
       const json = await res.json();
@@ -70,7 +81,22 @@ export function PlanCheckoutButton({
 
   return (
     <div className="plan-checkout-button">
-      <button type="button" className={className} disabled={loading} onClick={() => void startCheckout()}>
+      {requireRefundAck ? (
+        <label className="no-refund-checkout-ack">
+          <input
+            type="checkbox"
+            checked={acceptedRefundPolicy}
+            onChange={(e) => setAcceptedRefundPolicy(e.target.checked)}
+          />
+          <span>{t('billing.noRefund.checkoutAck')}</span>
+        </label>
+      ) : null}
+      <button
+        type="button"
+        className={className}
+        disabled={loading || checkoutBlocked}
+        onClick={() => void startCheckout()}
+      >
         {loading ? t('billing.promo.startingCheckout') : label}
       </button>
       {error ? (

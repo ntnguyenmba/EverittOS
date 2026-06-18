@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
+import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { choosePlanButtonLabel, planCardAction } from '@/lib/billing-plan-actions';
 import { EVERITTOS_PLANS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
@@ -18,6 +19,8 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
 
   return (
     <div className="billing-plans-grid-wrap">
+      <NoRefundDisclosure variant="card" className="billing-plans-policy" />
+
       <div className="billing-plans-grid pricing-grid">
         {EVERITTOS_PLANS.map((tier) => {
           const action = planCardAction(normalizedCurrent, tier.id);
@@ -80,8 +83,10 @@ export function BillingPlansGrid({ currentPlan, highlightPlan }: BillingPlansGri
 
       <div className="billing-plans-footnote-group">
         <p className="muted billing-plans-footnote">{t('billing.plansFootnote')}</p>
+        <p className="muted billing-plans-footnote">{t('billing.noRefund.cancelNote')}</p>
         <p className="muted billing-plans-footnote billing-legal-links">
-          <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
+          <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link> ·{' '}
+          <Link href="/refund-policy">{t('legal.refundPolicy')}</Link>
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
+import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { useTranslation } from '@/components/locale-provider';
 import {
@@ -41,6 +42,8 @@ export function PricingCheckoutPanel({
 
   return (
     <div className={compact ? 'pricing-checkout-panel compact' : 'pricing-checkout-panel'}>
+      <NoRefundDisclosure variant="compact" className="pricing-checkout-policy" />
+
       <StripePromoCodeField
         plan={plan}
         initialCode={initialPromoCode}
@@ -85,6 +88,7 @@ export function PricingCheckoutPanel({
       </div>
 
       <p className="muted pricing-checkout-note">{t('billing.promo.checkoutNote')}</p>
+      <p className="muted pricing-checkout-note">{t('billing.noRefund.cancelNote')}</p>
     </div>
   );
 }

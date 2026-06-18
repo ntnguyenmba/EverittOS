@@ -5,6 +5,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { NO_REFUND_STRIPE_SUBMIT_MESSAGE } from '@/lib/no-refund-policy';
 import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
 import { getStripeClient } from '@/lib/stripe-server';
 import { logPromoCodeFailure } from '@/lib/promo-code-logging';
@@ -118,9 +119,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Only workspace owners and admins can start checkout.', role }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as { plan?: string; promoCode?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    plan?: string;
+    promoCode?: string;
+    refundPolicyAcknowledged?: boolean;
+  };
   const plan = normalizePlan(body.plan);
   const promoCode = (body.promoCode || '').trim();
+  const refundPolicyAcknowledged = body.refundPolicyAcknowledged === true;
   const email = (profile?.email || user.email || '').trim().toLowerCase();
 
   if (!isPaidCheckoutPlan(plan)) {
@@ -227,6 +233,8 @@ export async function POST(request: Request) {
     workspace_id: workspaceId,
     organization_id: workspaceId,
     price_id: priceId,
+    no_refund_policy: 'true',
+    ...(refundPolicyAcknowledged ? { refund_policy_acknowledged: 'true' } : {}),
     ...(normalizedPromo
       ? {
           promotion_code: normalizedPromo,
@@ -244,7 +252,10 @@ export async function POST(request: Request) {
     client_reference_id: plan,
     metadata,
     customer_creation: 'always',
-    subscription_data: { metadata }
+    subscription_data: { metadata },
+    custom_text: {
+      submit: { message: NO_REFUND_STRIPE_SUBMIT_MESSAGE }
+    }
   };
 
   if (customerId) {

@@ -44,9 +44,19 @@ export default function TermsPage() {
         <h3>Billing</h3>
         <p>
           Paid plans are billed through Stripe. Subscriptions renew automatically unless canceled from billing settings or
-          the Stripe customer portal. Canceling stops future charges; access may continue until the end of the current
-          billing period. Refund terms follow Stripe and your selected plan at checkout. We do not change pricing without
-          notice on active subscriptions except as permitted by these Terms.
+          the Stripe customer portal. Canceling stops future renewals; access may continue until the end of the current
+          billing period. Prior charges are not refunded when you cancel. We do not change pricing without notice on
+          active subscriptions except as permitted by these Terms.
+        </p>
+
+        <h3>No Refund Policy</h3>
+        <p>
+          All payments are final. EverittOS does not offer refunds for subscriptions, setup fees, digital services, AI
+          usage, workspace access, add-ons, or partially used billing periods. You may cancel anytime to stop future
+          renewals, but prior charges are non-refundable.
+        </p>
+        <p>
+          See our dedicated <Link href="/refund-policy">No Refund Policy</Link> for full details.
         </p>
 
         <h3>Acceptable use</h3>

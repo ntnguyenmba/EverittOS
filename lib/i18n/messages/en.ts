@@ -235,6 +235,7 @@ export const messages: Messages = {
   legal: {
     terms: 'Terms',
     privacy: 'Privacy',
+    refundPolicy: 'No Refund Policy',
     cookies: 'Cookies',
     security: 'Security',
     support: 'Support',
@@ -562,7 +563,8 @@ export const messages: Messages = {
     contactBillingSupport: 'Contact billing support',
     planChangesSupport: 'Plan changes are handled through billing support for now.',
     downgradeSupportNote: 'Moving to the free plan requires billing support.',
-    plansFootnote: 'Subscriptions renew automatically until canceled. Cancel anytime from billing or the customer portal.',
+    plansFootnote:
+      'Subscriptions renew automatically until canceled. All payments are final and non-refundable once processed.',
     portalUnavailable: 'Billing portal is not configured yet.',
     portalNotConfigured: 'Billing portal is not configured yet.',
     upgradeOptions: 'Upgrade options',
@@ -702,6 +704,14 @@ export const messages: Messages = {
       startingCheckout: 'Starting checkout…',
       applyFirst: 'Apply a valid promo code before checkout.',
       signInNote: 'Already have an account?'
+    },
+    noRefund: {
+      policyShort: 'All payments are final. No refunds once payment is processed.',
+      policyFull:
+        'All payments are final. EverittOS does not offer refunds for subscriptions, setup fees, digital services, AI usage, workspace access, add-ons, or partially used billing periods. You may cancel anytime to stop future renewals, but prior charges are non-refundable.',
+      checkoutAck: 'I understand all payments are final and non-refundable.',
+      ackRequired: 'Confirm the no-refund policy before checkout.',
+      cancelNote: 'Canceling stops future renewals only. Prior charges are non-refundable.'
     }
   },
   language: {

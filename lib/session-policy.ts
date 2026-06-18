@@ -59,6 +59,8 @@ export const SESSION_EXEMPT_PREFIXES = [
   '/api/auth/reset-session',
   '/privacy',
   '/terms',
+  '/refund-policy',
+  '/pricing',
   '/cookies',
   '/disclaimer',
   '/security',

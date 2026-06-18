@@ -5402,3 +5402,114 @@ html[data-deployment='production'] #vercel-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* No-refund policy disclosures */
+.no-refund-disclosure {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.no-refund-disclosure-card {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: rgba(45, 55, 72, 0.02);
+}
+
+.no-refund-disclosure-text {
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.no-refund-disclosure-link-row {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.no-refund-disclosure-link-row a {
+  color: var(--text);
+  opacity: 0.72;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.no-refund-checkout-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+}
+
+.no-refund-checkout-ack input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.plan-checkout-button {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.billing-plans-policy {
+  margin-bottom: 18px;
+}
+
+.pricing-public-page {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.pricing-public-header {
+  margin-bottom: 24px;
+}
+
+.pricing-public-eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pricing-public-header h1 {
+  margin: 0 0 10px;
+}
+
+.pricing-public-lead {
+  margin: 0;
+  max-width: 640px;
+}
+
+.pricing-public-policy {
+  margin-bottom: 24px;
+}
+
+.pricing-public-footer {
+  margin-top: 32px;
+  font-size: 13px;
+}
+
+.pricing-checkout-policy {
+  margin-bottom: 16px;
+}
+
+.auth-plan-refund-note {
+  margin: 0 0 16px;
+}
+
+@media (max-width: 640px) {
+  .no-refund-disclosure-card {
+    padding: 10px 12px;
+  }
+
+  .no-refund-checkout-ack {
+    font-size: 12px;
+  }
+}

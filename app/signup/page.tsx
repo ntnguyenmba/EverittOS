@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
+import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { safeNextPath } from '@/lib/app-url';
@@ -159,9 +160,13 @@ function SignupForm() {
   return (
     <AuthShell title="Create account">
       {selectedPlan !== 'free' ? (
-        <p className="auth-plan-note">
-          You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
-        </p>
+        <>
+          <p className="auth-plan-note">
+            You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that
+            plan.
+          </p>
+          <NoRefundDisclosure variant="card" className="auth-plan-refund-note" />
+        </>
       ) : null}
 
       <p className="auth-methods-note">{t('auth.signUpMethods')}</p>

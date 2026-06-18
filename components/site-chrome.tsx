@@ -3,7 +3,16 @@
 import { usePathname } from 'next/navigation';
 import { Nav } from '@/components/nav';
 
-const LEGAL_PATHS = new Set(['/terms', '/privacy', '/cookies', '/disclaimer', '/security', '/docs/api']);
+const LEGAL_PATHS = new Set([
+  '/terms',
+  '/privacy',
+  '/refund-policy',
+  '/pricing',
+  '/cookies',
+  '/disclaimer',
+  '/security',
+  '/docs/api'
+]);
 
 function isLegalPath(pathname: string): boolean {
   return LEGAL_PATHS.has(pathname);

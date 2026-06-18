@@ -104,6 +104,12 @@ export default function PrivacyPage() {
           .
         </p>
 
+        <h3>Legal and billing policies</h3>
+        <p>
+          Billing, refunds, and subscription terms are covered in our <Link href="/terms">Terms of Service</Link> and{' '}
+          <Link href="/refund-policy">No Refund Policy</Link>.
+        </p>
+
         <LegalNotice />
         <Link className="btn" href="/login">
           Back to login

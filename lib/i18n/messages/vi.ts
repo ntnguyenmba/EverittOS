@@ -235,6 +235,7 @@ export const messages: Messages = {
   legal: {
     terms: 'Điều khoản',
     privacy: 'Quyền riêng tư',
+    refundPolicy: 'Chính sách không hoàn tiền',
     cookies: 'Cookie',
     security: 'Bảo mật',
     support: 'Hỗ trợ',
@@ -562,7 +563,8 @@ export const messages: Messages = {
     contactBillingSupport: 'Liên hệ hỗ trợ thanh toán',
     planChangesSupport: 'Thay đổi gói hiện được xử lý qua hỗ trợ thanh toán.',
     downgradeSupportNote: 'Chuyển sang gói miễn phí cần hỗ trợ thanh toán.',
-    plansFootnote: 'Đăng ký tự gia hạn cho đến khi bạn hủy.',
+    plansFootnote:
+      'Đăng ký tự gia hạn cho đến khi bạn hủy. Mọi khoản thanh toán là cuối cùng và không hoàn tiền sau khi xử lý.',
     portalUnavailable: 'Cổng thanh toán chưa được cấu hình.',
     portalNotConfigured: 'Cổng thanh toán chưa được cấu hình.',
     upgradeOptions: 'Tùy chọn nâng cấp',
@@ -702,6 +704,14 @@ export const messages: Messages = {
       startingCheckout: 'Đang bắt đầu thanh toán…',
       applyFirst: 'Áp dụng mã khuyến mãi hợp lệ trước khi thanh toán.',
       signInNote: 'Đã có tài khoản?'
+    },
+    noRefund: {
+      policyShort: 'Mọi khoản thanh toán là cuối cùng. Không hoàn tiền sau khi xử lý.',
+      policyFull:
+        'Mọi khoản thanh toán là cuối cùng. EverittOS không hoàn tiền cho đăng ký, phí thiết lập, dịch vụ số, sử dụng AI, quyền truy cập workspace, tiện ích bổ sung hoặc kỳ thanh toán đã sử dụng một phần. Bạn có thể hủy bất cứ lúc nào để dừng gia hạn trong tương lai, nhưng các khoản đã thu trước đó không được hoàn lại.',
+      checkoutAck: 'Tôi hiểu mọi khoản thanh toán là cuối cùng và không hoàn tiền.',
+      ackRequired: 'Xác nhận chính sách không hoàn tiền trước khi thanh toán.',
+      cancelNote: 'Hủy chỉ dừng gia hạn trong tương lai. Các khoản đã thu trước đó không được hoàn lại.'
     }
   },
   language: {

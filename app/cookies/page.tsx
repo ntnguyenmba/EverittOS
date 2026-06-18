@@ -50,7 +50,8 @@ export default function CookiesPage() {
 
         <LegalNotice />
         <p>
-          <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link>
+          <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link> ·{' '}
+          <Link href="/refund-policy">No Refund Policy</Link>
         </p>
         <Link className="btn" href="/login">
           Sign in

@@ -237,6 +237,7 @@ export const messages: Messages = {
   legal: {
     terms: 'Términos',
     privacy: 'Privacidad',
+    refundPolicy: 'Política sin reembolsos',
     cookies: 'Cookies',
     security: 'Seguridad',
     support: 'Soporte',
@@ -564,7 +565,8 @@ export const messages: Messages = {
     contactBillingSupport: 'Contactar soporte de facturación',
     planChangesSupport: 'Los cambios de plan se gestionan por soporte de facturación por ahora.',
     downgradeSupportNote: 'Pasar al plan gratuito requiere soporte de facturación.',
-    plansFootnote: 'Las suscripciones se renuevan automáticamente hasta cancelarlas.',
+    plansFootnote:
+      'Las suscripciones se renuevan automáticamente hasta cancelarlas. Todos los pagos son finales y no reembolsables una vez procesados.',
     portalUnavailable: 'El portal de facturación aún no está configurado.',
     portalNotConfigured: 'El portal de facturación aún no está configurado.',
     upgradeOptions: 'Opciones de actualización',
@@ -704,6 +706,14 @@ export const messages: Messages = {
       startingCheckout: 'Iniciando pago…',
       applyFirst: 'Aplique un código promocional válido antes del pago.',
       signInNote: '¿Ya tiene una cuenta?'
+    },
+    noRefund: {
+      policyShort: 'Todos los pagos son finales. No hay reembolsos una vez procesado el pago.',
+      policyFull:
+        'Todos los pagos son finales. EverittOS no ofrece reembolsos por suscripciones, tarifas de configuración, servicios digitales, uso de IA, acceso al workspace, complementos ni periodos de facturación parcialmente usados. Puede cancelar en cualquier momento para detener renovaciones futuras, pero los cargos previos no son reembolsables.',
+      checkoutAck: 'Entiendo que todos los pagos son finales y no reembolsables.',
+      ackRequired: 'Confirme la política de no reembolso antes del pago.',
+      cancelNote: 'Cancelar solo detiene renovaciones futuras. Los cargos previos no son reembolsables.'
     }
   },
   language: {

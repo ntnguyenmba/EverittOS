@@ -10,6 +10,8 @@ import { StaffAiUsagePanel } from '@/components/staff-ai-usage-panel';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
+import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
+import { NO_REFUND_CANCEL_NOTE } from '@/lib/no-refund-policy';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
@@ -419,6 +421,9 @@ function BillingSettingsContent() {
         ) : null}
         <p className="muted">{subscriptionStatusMessage(subscriptionStatus || undefined)}</p>
         <p className="muted">{subscriptionInfo.message}</p>
+        {showPortalCancel ? (
+          <NoRefundDisclosure variant="compact" text={NO_REFUND_CANCEL_NOTE} showLink={false} />
+        ) : null}
         {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
           <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
         ) : null}
