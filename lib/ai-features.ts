@@ -44,22 +44,22 @@ export const ASK_EVERITT_SEARCH_SUGGESTIONS = [
   'What needs attention today?',
   'Show today\'s schedule.',
   'Which jobs are overdue?',
+  'Which invoices are unpaid?',
   'Which leads need follow-up?',
-  'Show unpaid invoices.',
-  'Show new leads this week.',
+  'What changed this week?',
+  'Who are my best customers?',
   'Show revenue this month.',
-  'Show customers who have not booked in 90 days.',
-  'Which jobs are scheduled tomorrow?',
-  'How many bookings this week?'
+  'Show new leads this week.',
+  'Show customers who have not booked in 90 days.'
 ] as const;
 
 export const ASK_EVERITT_AI_SUGGESTIONS = [
-  { text: 'Write a daily business brief for me.', premium: true },
-  { text: 'Analyze what I should focus on next.', premium: true },
+  { text: 'Write today\'s business brief.', premium: true },
+  { text: 'Tell me what to focus on next.', premium: true },
   { text: 'Draft a follow-up message for open leads.', premium: true },
   { text: 'Write a payment reminder for unpaid invoices.', premium: true },
   { text: 'Summarize recent reviews.', premium: true },
-  { text: 'Draft a reactivation message for customers inactive 90 days.', premium: true }
+  { text: 'Draft a reactivation message for inactive customers.', premium: true }
 ] as const;
 
 /** @deprecated Use ASK_EVERITT_SEARCH_SUGGESTIONS + ASK_EVERITT_AI_SUGGESTIONS */
