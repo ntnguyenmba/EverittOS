@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CUSTOMER_LIST_SELECT, customerDisplayName } from '@/lib/customer-record';
+import { formatCurrency } from '@/lib/dashboard-metrics';
 import type { AskEverittSearchRecord, AskEverittSearchResponse } from '@/lib/ask-everitt/types';
 import {
   getSearchSource,
@@ -11,6 +12,292 @@ import {
 import { buildRecord, groupResults, response } from '@/lib/ask-everitt/search-helpers';
 import { runMatchedQueryHandler } from '@/lib/ask-everitt/query-handlers';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function startOfDay(d = new Date()): string {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  return copy.toISOString();
+}
+
+function endOfDay(d = new Date()): string {
+  const copy = new Date(d);
+  copy.setHours(23, 59, 59, 999);
+  return copy.toISOString();
+}
+
+function isClosedStatus(status?: string | null): boolean {
+  const value = String(status || '').toLowerCase();
+  return ['done', 'complete', 'completed', 'paid', 'cancelled', 'canceled', 'closed', 'void'].includes(value);
+}
+
+async function queryTodaysSchedule(supabase: SupabaseClient, orgId: string): Promise<AskEverittSearchResponse | null> {
+  const today = isoDate(new Date());
+  const [jobsRes, bookingsRes] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('id, title, customer_name, status, start_date, due_date, assigned_to')
+      .eq('organization_id', orgId)
+      .or(`start_date.eq.${today},due_date.eq.${today}`)
+      .order('start_date', { ascending: true })
+      .limit(20),
+    supabase
+      .from('bookings')
+      .select('id, client_name, starts_at, ends_at, status, manual_service_name, staff_name, services(name), workers(name)')
+      .eq('organization_id', orgId)
+      .gte('starts_at', startOfDay())
+      .lte('starts_at', endOfDay())
+      .not('status', 'eq', 'cancelled')
+      .order('starts_at', { ascending: true })
+      .limit(20)
+  ]);
+
+  const results: AskEverittSearchRecord[] = [];
+
+  for (const j of jobsRes.data || []) {
+    results.push(
+      buildRecord('schedule', {
+        id: j.id,
+        type: 'job',
+        title: j.title || 'Job',
+        subtitle: j.customer_name || null,
+        status: j.status,
+        date: j.start_date || j.due_date,
+        owner: j.assigned_to ? 'Assigned crew' : null,
+        href: `/jobs/${j.id}`
+      })
+    );
+  }
+
+  if (!bookingsRes.error || !isMissingSchemaError(bookingsRes.error)) {
+    for (const b of bookingsRes.data || []) {
+      const serviceName = (b.services as { name?: string } | null)?.name || b.manual_service_name || 'Appointment';
+      const staffName = (b.workers as { name?: string } | null)?.name || b.staff_name || null;
+      results.push(
+        buildRecord('bookings', {
+          id: b.id,
+          type: 'booking',
+          title: `${b.client_name || 'Customer'} — ${serviceName}`,
+          subtitle: staffName ? `Staff: ${staffName}` : null,
+          status: b.status,
+          date: b.starts_at?.slice(0, 10) || null,
+          owner: staffName,
+          href: '/bookings'
+        })
+      );
+    }
+  }
+
+  return response(
+    results.length > 0
+      ? `${results.length} item${results.length === 1 ? '' : 's'} on today's schedule.`
+      : 'Nothing is scheduled for today yet.',
+    results.slice(0, 24),
+    { sourcesUsed: ['schedule', 'jobs', 'bookings'], noResultsHint: results.length === 0 ? 'Create a job or booking to build today’s schedule.' : undefined }
+  );
+}
+
+async function queryOverdueJobs(supabase: SupabaseClient, orgId: string): Promise<AskEverittSearchResponse | null> {
+  const today = isoDate(new Date());
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('id, title, customer_name, status, start_date, due_date, assigned_to')
+    .eq('organization_id', orgId)
+    .lt('due_date', today)
+    .order('due_date', { ascending: true })
+    .limit(30);
+
+  if (error) return null;
+
+  const openJobs = (data || []).filter((job) => !isClosedStatus(job.status));
+  const results = openJobs.map((j) =>
+    buildRecord('jobs', {
+      id: j.id,
+      type: 'job',
+      title: j.title || 'Job',
+      subtitle: j.customer_name || null,
+      status: j.status || 'Overdue',
+      date: j.due_date,
+      owner: j.assigned_to ? 'Assigned crew' : null,
+      href: `/jobs/${j.id}`
+    })
+  );
+
+  return response(
+    results.length > 0 ? `${results.length} overdue job${results.length === 1 ? '' : 's'} need attention.` : 'No overdue jobs found.',
+    results,
+    { sourcesUsed: ['jobs'], noResultsHint: results.length === 0 ? undefined : 'Open these jobs and update the status, due date, or assignment.' }
+  );
+}
+
+async function queryLeadsNeedingFollowUp(supabase: SupabaseClient, orgId: string): Promise<AskEverittSearchResponse | null> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select(CUSTOMER_LIST_SELECT)
+    .eq('organization_id', orgId)
+    .in('pipeline_stage', ['lead', 'qualified'])
+    .order('updated_at', { ascending: true })
+    .limit(20);
+
+  if (error) return null;
+
+  const results = (data || []).map((c) =>
+    buildRecord('leads', {
+      id: c.id,
+      title: customerDisplayName(c),
+      subtitle: [c.email, c.phone].filter(Boolean).join(' · ') || null,
+      status: c.pipeline_stage || 'Lead',
+      date: c.updated_at?.slice(0, 10) || c.created_at?.slice(0, 10) || null,
+      href: `/customers/${c.id}`
+    })
+  );
+
+  return response(
+    results.length > 0
+      ? `${results.length} lead${results.length === 1 ? '' : 's'} should be reviewed for follow-up.`
+      : 'No open leads need follow-up right now.',
+    results,
+    { sourcesUsed: ['leads', 'customers'], noResultsHint: results.length === 0 ? 'New leads will appear here when their pipeline stage is lead or qualified.' : undefined }
+  );
+}
+
+async function queryBestCustomers(supabase: SupabaseClient, orgId: string): Promise<AskEverittSearchResponse | null> {
+  const { data: invoices, error } = await supabase
+    .from('invoices')
+    .select('customer_id, amount, amount_paid, status')
+    .eq('organization_id', orgId)
+    .not('customer_id', 'is', null)
+    .limit(500);
+
+  if (error) {
+    if (isMissingSchemaError(error)) return null;
+    return null;
+  }
+
+  const totals = new Map<string, number>();
+  for (const inv of invoices || []) {
+    if (!inv.customer_id) continue;
+    const paidAmount = Number(inv.amount_paid || 0) > 0 ? Number(inv.amount_paid || 0) : isClosedStatus(inv.status) ? Number(inv.amount || 0) : 0;
+    if (paidAmount <= 0) continue;
+    totals.set(inv.customer_id, (totals.get(inv.customer_id) || 0) + paidAmount);
+  }
+
+  const ids = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id]) => id);
+  if (ids.length === 0) {
+    return response('No best-customer ranking yet because no paid invoice history was found.', [], {
+      sourcesUsed: ['customers', 'invoices'],
+      noResultsHint: 'Paid invoices will help EverittOS identify top customers.'
+    });
+  }
+
+  const { data: customers } = await supabase
+    .from('customers')
+    .select(CUSTOMER_LIST_SELECT)
+    .eq('organization_id', orgId)
+    .in('id', ids);
+
+  const results = (customers || [])
+    .sort((a, b) => (totals.get(b.id) || 0) - (totals.get(a.id) || 0))
+    .map((c) =>
+      buildRecord('customers', {
+        id: c.id,
+        title: customerDisplayName(c),
+        subtitle: `${formatCurrency(totals.get(c.id) || 0)} paid`,
+        status: 'Top customer',
+        date: null,
+        href: `/customers/${c.id}`
+      })
+    );
+
+  return response(`${results.length} top customer${results.length === 1 ? '' : 's'} by paid invoice history.`, results, {
+    sourcesUsed: ['customers', 'invoices']
+  });
+}
+
+async function queryNeedsAttention(supabase: SupabaseClient, orgId: string): Promise<AskEverittSearchResponse | null> {
+  const today = isoDate(new Date());
+  const [overdueJobs, leads, invoices] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('id, title, customer_name, status, due_date')
+      .eq('organization_id', orgId)
+      .lt('due_date', today)
+      .order('due_date', { ascending: true })
+      .limit(8),
+    supabase
+      .from('customers')
+      .select(CUSTOMER_LIST_SELECT)
+      .eq('organization_id', orgId)
+      .in('pipeline_stage', ['lead', 'qualified'])
+      .order('updated_at', { ascending: true })
+      .limit(8),
+    supabase
+      .from('invoices')
+      .select('id, description, amount, amount_paid, status, due_date')
+      .eq('organization_id', orgId)
+      .in('status', ['sent', 'open', 'overdue', 'unpaid', 'past_due'])
+      .order('due_date', { ascending: true })
+      .limit(8)
+  ]);
+
+  const results: AskEverittSearchRecord[] = [];
+  for (const j of overdueJobs.data || []) {
+    if (isClosedStatus(j.status)) continue;
+    results.push(buildRecord('jobs', { id: j.id, type: 'job', title: j.title || 'Overdue job', subtitle: j.customer_name || null, status: j.status || 'Overdue', date: j.due_date, href: `/jobs/${j.id}` }));
+  }
+  for (const inv of invoices.data || []) {
+    const owed = Number(inv.amount || 0) - Number(inv.amount_paid || 0);
+    results.push(buildRecord('invoices', { id: inv.id, title: inv.description || `Invoice ${formatCurrency(Number(inv.amount || 0))}`, subtitle: owed > 0 ? `${formatCurrency(owed)} outstanding` : null, status: inv.status, date: inv.due_date, href: '/invoices' }));
+  }
+  for (const c of leads.data || []) {
+    results.push(buildRecord('leads', { id: c.id, title: customerDisplayName(c), subtitle: c.email, status: c.pipeline_stage, date: c.updated_at?.slice(0, 10) || c.created_at?.slice(0, 10) || null, href: `/customers/${c.id}` }));
+  }
+
+  const overdueCount = (overdueJobs.data || []).filter((j) => !isClosedStatus(j.status)).length;
+  const invoiceCount = invoices.data?.length || 0;
+  const leadCount = leads.data?.length || 0;
+
+  return response(
+    `Today’s business brief: ${overdueCount} overdue job${overdueCount === 1 ? '' : 's'}, ${invoiceCount} unpaid invoice${invoiceCount === 1 ? '' : 's'}, and ${leadCount} lead${leadCount === 1 ? '' : 's'} to review.`,
+    results.slice(0, 24),
+    {
+      sourcesUsed: ['jobs', 'invoices', 'leads'],
+      metrics: [
+        { label: 'Overdue jobs', value: String(overdueCount), href: '/jobs' },
+        { label: 'Unpaid invoices', value: String(invoiceCount), href: '/invoices' },
+        { label: 'Leads to review', value: String(leadCount), href: '/leads' }
+      ],
+      noResultsHint: results.length === 0 ? 'No urgent items found from jobs, invoices, or leads.' : undefined
+    }
+  );
+}
+
+async function runOwnerQuestionHandler(
+  supabase: SupabaseClient,
+  orgId: string,
+  query: string
+): Promise<AskEverittSearchResponse | null> {
+  const q = query.trim().toLowerCase();
+  if (/\b(what needs attention|needs attention|business brief|focus on today|what should i focus|focus next)\b/.test(q)) {
+    return queryNeedsAttention(supabase, orgId);
+  }
+  if (/\b(today|today's)\b.*\b(schedule|jobs?|appointments?|bookings?)\b|\b(show|what's|what is)\b.*\b(today|today's)\b/.test(q)) {
+    return queryTodaysSchedule(supabase, orgId);
+  }
+  if (/\b(overdue|late|past due)\b.*\b(jobs?|work)\b|\b(jobs?|work)\b.*\b(overdue|late|past due)\b/.test(q)) {
+    return queryOverdueJobs(supabase, orgId);
+  }
+  if (/\b(leads?)\b.*\b(follow.?up|review|call|contact|need)\b|\b(follow.?up)\b.*\b(leads?)\b/.test(q)) {
+    return queryLeadsNeedingFollowUp(supabase, orgId);
+  }
+  if (/\b(best|top|highest value|most valuable)\b.*\b(customers?|clients?)\b/.test(q)) {
+    return queryBestCustomers(supabase, orgId);
+  }
+  return null;
+}
 
 async function searchSource(
   supabase: SupabaseClient,
@@ -361,6 +648,9 @@ export async function runAskEverittSearchEngine(
   if (!trimmed) {
     return { mode: 'search', summary: 'Ask about customers, jobs, bookings, leads, invoices, or documents.', results: [] };
   }
+
+  const ownerQuestion = await runOwnerQuestionHandler(supabase, organizationId, trimmed);
+  if (ownerQuestion) return ownerQuestion;
 
   const matched = await runMatchedQueryHandler(supabase, organizationId, trimmed);
   if (matched) return matched;
