@@ -26,6 +26,7 @@ import './dashboard-repair.css';
 import './dashboard-visual-balance.css';
 import './dashboard-final-polish.css';
 import './app-readability-pass.css';
+import './customer-ready-polish.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -37,12 +38,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0F2D5C'
+  themeColor: '#24302B'
 };
 
 export const metadata: Metadata = {
-  title: 'EverittOS | Field Operations Platform',
-  description: 'Manage jobs, workers, and schedules from one dashboard.',
+  title: 'EverittOS | Business Command Center',
+  description: 'Run customers, jobs, leads, schedules, billing, and daily business operations from one workspace.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
