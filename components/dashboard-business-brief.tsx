@@ -16,7 +16,6 @@ type BriefCounts = {
 
 type DashboardBusinessBriefProps = {
   organizationId: string;
-  userId?: string | null;
   metrics: DashboardRevenueMetrics;
 };
 
@@ -36,7 +35,7 @@ function todayEnd(): string {
   return d.toISOString();
 }
 
-export function DashboardBusinessBrief({ organizationId, userId, metrics }: DashboardBusinessBriefProps) {
+export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBusinessBriefProps) {
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<BriefCounts>({
     overdueJobs: 0,
@@ -50,20 +49,28 @@ export function DashboardBusinessBrief({ organizationId, userId, metrics }: Dash
     let active = true;
 
     async function loadBrief() {
-      if (!organizationId || !userId) {
+      if (!organizationId) {
         setLoading(false);
         return;
       }
 
       setLoading(true);
       const today = todayDate();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const todayJobsQuery = scopeJobsForWorkspace(
         supabase
           .from('jobs')
           .select('id', { count: 'exact', head: true })
           .or(`start_date.eq.${today},due_date.eq.${today}`),
-        userId,
+        user.id,
         organizationId
       );
       const overdueJobsQuery = scopeJobsForWorkspace(
@@ -72,7 +79,7 @@ export function DashboardBusinessBrief({ organizationId, userId, metrics }: Dash
           .select('id', { count: 'exact', head: true })
           .lt('due_date', today)
           .not('status', 'in', '("done","complete","completed","cancelled","canceled","closed")'),
-        userId,
+        user.id,
         organizationId
       );
       const leadsQuery = supabase
@@ -116,7 +123,7 @@ export function DashboardBusinessBrief({ organizationId, userId, metrics }: Dash
     return () => {
       active = false;
     };
-  }, [organizationId, userId]);
+  }, [organizationId]);
 
   const scheduleToday = counts.jobsToday + counts.bookingsToday;
   const hasUrgentWork = counts.overdueJobs > 0 || counts.unpaidInvoices > 0 || counts.leadsNeedingFollowUp > 0;
