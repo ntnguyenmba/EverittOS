@@ -115,15 +115,24 @@ a.btn-primary:hover,
 }
 
 .everitt-cmd-trigger {
-  min-height: 46px;
-  padding: 0 18px !important;
+  width: min(1100px, calc(100vw - 48px)) !important;
+  min-height: 62px !important;
+  padding: 0 24px !important;
   box-shadow: 0 12px 30px rgba(36, 48, 43, 0.16) !important;
 }
 
 .everitt-cmd-trigger .everitt-cmd-placeholder {
-  color: #fffdf9 !important;
-  font-size: clamp(15px, 1.55vw, 17px) !important;
+  color: transparent !important;
+  font-size: 0 !important;
   letter-spacing: -0.01em;
+  white-space: nowrap !important;
+}
+
+.everitt-cmd-trigger .everitt-cmd-placeholder::before {
+  content: 'Ask Everitt about your business...';
+  color: #fffdf9 !important;
+  font-size: clamp(16px, 1.45vw, 18px) !important;
+  line-height: 1 !important;
 }
 
 .everitt-cmd-trigger .everitt-cmd-kbd {
@@ -293,6 +302,12 @@ nav[aria-label='Primary'] a[aria-current='page'] {
   }
 
   .everitt-cmd-trigger {
-    width: 100%;
+    width: 100% !important;
+    min-height: 56px !important;
+    padding: 0 18px !important;
+  }
+
+  .everitt-cmd-trigger .everitt-cmd-placeholder::before {
+    font-size: 16px !important;
   }
 }
