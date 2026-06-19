@@ -116,8 +116,21 @@ a.btn-primary:hover,
 
 .everitt-cmd-trigger {
   min-height: 46px;
-  padding: 0 16px !important;
+  padding: 0 18px !important;
   box-shadow: 0 12px 30px rgba(36, 48, 43, 0.16) !important;
+}
+
+.everitt-cmd-trigger .everitt-cmd-placeholder {
+  color: #fffdf9 !important;
+  font-size: clamp(15px, 1.55vw, 17px) !important;
+  letter-spacing: -0.01em;
+}
+
+.everitt-cmd-trigger .everitt-cmd-kbd {
+  color: #24302b !important;
+  background: rgba(255, 253, 249, 0.92) !important;
+  border-color: rgba(255, 253, 249, 0.78) !important;
+  font-size: 13px !important;
 }
 
 .everitt-cmd-overlay {
@@ -126,19 +139,29 @@ a.btn-primary:hover,
 }
 
 .everitt-cmd-palette {
-  max-width: 880px !important;
-  padding: clamp(18px, 3vw, 28px) !important;
+  max-width: min(980px, calc(100vw - 48px)) !important;
+  padding: clamp(22px, 3vw, 36px) !important;
+  max-height: min(78dvh, 820px) !important;
+  overflow-y: auto !important;
 }
 
 .everitt-cmd-bar {
   border: 1px solid var(--evr-line);
-  border-radius: 20px;
+  border-radius: 24px;
   background: #fffdf9;
-  padding: 6px 10px;
+  padding: 8px 12px;
+  gap: 10px !important;
 }
 
 .everitt-cmd-input {
-  font-size: clamp(16px, 2vw, 18px) !important;
+  font-size: clamp(16px, 2vw, 19px) !important;
+  min-height: 48px !important;
+  padding-inline: 10px !important;
+}
+
+.everitt-cmd-tagline {
+  margin: 18px 4px 20px !important;
+  font-size: 15px !important;
 }
 
 .everitt-cmd-tagline::before {
@@ -148,7 +171,16 @@ a.btn-primary:hover,
 }
 
 .everitt-cmd-suggestions {
-  gap: 10px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+}
+
+.everitt-cmd-section-label {
+  width: 100%;
+  margin-bottom: 2px !important;
+  color: var(--evr-muted) !important;
 }
 
 .everitt-cmd-chip {
@@ -156,7 +188,11 @@ a.btn-primary:hover,
   background: var(--evr-stone-soft) !important;
   color: var(--evr-charcoal) !important;
   border-radius: 999px !important;
-  padding: 10px 14px !important;
+  padding: 10px 16px !important;
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
 }
 
 .everitt-cmd-chip:hover {
@@ -172,6 +208,11 @@ a.btn-primary:hover,
   color: #6e5038 !important;
 }
 
+.everitt-cmd-premium-badge,
+.everitt-cmd-usage {
+  display: none !important;
+}
+
 .everitt-cmd-summary,
 .everitt-cmd-reply,
 .everitt-cmd-result-title {
@@ -182,10 +223,20 @@ a.btn-primary:hover,
 .everitt-cmd-footer {
   border-top: 1px solid var(--evr-line);
   padding-top: 14px;
+  font-size: 0 !important;
+}
+
+.everitt-cmd-footer a {
+  display: none !important;
+}
+
+.everitt-cmd-footer::before {
+  content: 'Esc to close. Do not enter passwords, payment details, or highly sensitive personal details.';
+  font-size: 13px !important;
 }
 
 .everitt-cmd-footer::after {
-  content: ' · Do not enter passwords, full card numbers, or highly sensitive personal details.';
+  content: none !important;
 }
 
 .everitt-cmd-result-cards,
@@ -227,7 +278,18 @@ nav[aria-label='Primary'] a[aria-current='page'] {
 
   .everitt-cmd-palette {
     width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
     max-height: calc(100dvh - 24px) !important;
+    padding: 18px !important;
+  }
+
+  .everitt-cmd-bar {
+    border-radius: 18px !important;
+  }
+
+  .everitt-cmd-input {
+    font-size: 16px !important;
+    min-height: 44px !important;
   }
 
   .everitt-cmd-trigger {
