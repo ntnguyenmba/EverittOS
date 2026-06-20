@@ -36,6 +36,23 @@ type BillingHealthResponse = {
     sourceEvent: string | null;
     syncedAt: string;
   } | null;
+  latestWebhookReceived: {
+    eventType: string;
+    stripeEventId: string;
+    receivedAt: string;
+  } | null;
+  activationErrors: Array<{
+    eventType: string;
+    stripeEventId: string;
+    plan: string | null;
+    reason: string | null;
+    at: string;
+  }>;
+  organization?: {
+    organizationId: string | null;
+    ownerUserId: string | null;
+    effectivePlan: string;
+  };
   stripe: {
     configured: boolean;
     webhookConfigured: boolean;
@@ -181,6 +198,20 @@ export function BillingHealthCheck() {
                 : t('billing.health.technical.noWebhookYet')}
             </span>
           </div>
+          {health.latestWebhookReceived ? (
+            <div className="settings-row">
+              <span className="settings-row-label">Last webhook received</span>
+              <span className="settings-row-value">
+                {health.latestWebhookReceived.eventType} · {new Date(health.latestWebhookReceived.receivedAt).toLocaleString()}
+              </span>
+            </div>
+          ) : null}
+          {health.organization ? (
+            <div className="settings-row">
+              <span className="settings-row-label">Workspace effective plan</span>
+              <span className="settings-row-value">{planDisplayName(normalizePlan(health.organization.effectivePlan))}</span>
+            </div>
+          ) : null}
           <div className="settings-row">
             <span className="settings-row-label">{t('billing.health.technical.stripeConfigured')}</span>
             <span className="settings-row-value">
@@ -199,6 +230,17 @@ export function BillingHealthCheck() {
               {health.stripe.checkoutConfigured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
             </span>
           </div>
+          {health.activationErrors.length > 0 ? (
+            <ul className="billing-health-technical-issues">
+              {health.activationErrors.map((issue) => (
+                <li key={`${issue.stripeEventId}-${issue.at}`}>
+                  <code>
+                    {issue.eventType}: {issue.reason || 'unknown'}
+                  </code>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {health.issues.length > 0 ? (
             <ul className="billing-health-technical-issues">
               {health.issues.map((issue) => (

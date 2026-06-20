@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { type EverittosPlan } from '@/lib/everittos-plans';
-import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
-import { planFromSubscription } from '@/lib/stripe-plan-mapping';
+import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
+import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,69 +26,55 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  const email = user.email.trim().toLowerCase();
-  const stripe = new Stripe(stripeKey);
-  const customers = await stripe.customers.list({ email, limit: 10 });
-
-  let best: {
-    customerId: string;
-    subscription: Stripe.Subscription;
-    plan: EverittosPlan;
-  } | null = null;
-
-  for (const customer of customers.data) {
-    const subs = await stripe.subscriptions.list({
-      customer: customer.id,
-      status: 'all',
-      limit: 10,
-      expand: ['data.items.data.price.product', 'data.discount.coupon', 'data.discount.promotion_code']
-    });
-
-    for (const sub of subs.data) {
-      if (!['active', 'trialing', 'past_due'].includes(sub.status)) continue;
-      const plan = planFromSubscription(sub);
-      if (!plan) continue;
-      if (!best || sub.created > best.subscription.created) {
-        best = { customerId: customer.id, subscription: sub, plan };
-      }
-    }
-  }
-
-  if (!best) {
-    return NextResponse.json({ updated: false, message: 'No active Stripe subscription found for this login email.' });
-  }
-
-  const active = best.subscription.status === 'active' || best.subscription.status === 'trialing';
-  const plan = active ? best.plan : 'free';
-  const status = active ? `everittos_${best.plan}` : best.subscription.status;
-  const discount = await extractSubscriptionDiscount(stripe, best.subscription);
-
-  await admin
+  const { data: profile } = await supabase
     .from('profiles')
-    .update({
-      plan,
-      subscription_status: status,
-      stripe_customer_id: best.customerId,
-      ...discount
-    })
-    .eq('id', user.id);
+    .select('role, email, organization_id')
+    .eq('id', user.id)
+    .maybeSingle();
 
-  await admin.from('everittos_subscriptions').upsert(
-    {
-      user_id: user.id,
-      email,
-      plan,
-      stripe_customer_id: best.customerId,
-      stripe_subscription_id: best.subscription.id,
-      status: active ? 'active' : best.subscription.status,
-      current_period_end: best.subscription.current_period_end
-        ? new Date(best.subscription.current_period_end * 1000).toISOString()
-        : null,
-      updated_at: new Date().toISOString(),
-      ...discount
-    },
-    { onConflict: 'stripe_subscription_id' }
-  );
+  if (!canManageBilling(normalizeRole(profile?.role))) {
+    return NextResponse.json({ error: 'Only workspace owners and admins can sync billing.' }, { status: 403 });
+  }
 
-  return NextResponse.json({ updated: true, plan, status });
+  const email = (profile?.email || user.email).trim().toLowerCase();
+  const stripe = new Stripe(stripeKey);
+
+  const result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
+    userId: user.id,
+    email,
+    workspaceId: profile?.organization_id || null
+  });
+
+  if (!result.synced) {
+    return NextResponse.json({
+      updated: false,
+      message:
+        result.reason === 'no_stripe_subscription'
+          ? 'No active Stripe subscription found for this account email.'
+          : 'Stripe subscription found but could not sync to EverittOS. Check billing health for details.',
+      reason: result.reason
+    });
+  }
+
+  await admin.from('subscription_events').insert({
+    email,
+    event_type: 'manual.subscription.sync_current_user',
+    plan: result.plan,
+    stripe_event_id: `manual_sync_${user.id}_${Date.now()}`,
+    payload: {
+      stripeCustomerId: result.stripeCustomerId,
+      stripeSubscriptionId: result.stripeSubscriptionId,
+      status: result.status
+    }
+  });
+
+  return NextResponse.json({
+    updated: true,
+    plan: result.plan,
+    status: result.status,
+    active: isPaidPlanActive(result.plan, result.status),
+    stripeCustomerId: result.stripeCustomerId,
+    stripeSubscriptionId: result.stripeSubscriptionId,
+    currentPeriodEnd: result.currentPeriodEnd
+  });
 }

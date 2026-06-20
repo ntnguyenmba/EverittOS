@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import {
+  claimStripeWebhookEvent,
   everittosStatusForSubscription,
   logBillingSync,
   logBillingSyncIssue,
@@ -34,6 +35,10 @@ async function customerEmail(
 
 function metadataUserId(metadata: Stripe.Metadata | null | undefined): string | null {
   return metadata?.user_id?.trim() || metadata?.userId?.trim() || null;
+}
+
+function metadataOwnerUserId(metadata: Stripe.Metadata | null | undefined): string | null {
+  return metadata?.owner_user_id?.trim() || metadata?.ownerUserId?.trim() || null;
 }
 
 function metadataWorkspaceId(metadata: Stripe.Metadata | null | undefined): string | null {
@@ -79,6 +84,7 @@ async function handleCheckoutCompleted(
 ) {
   const sessionUserId = metadataUserId(session.metadata);
   const workspaceId = metadataWorkspaceId(session.metadata);
+  const ownerUserId = metadataOwnerUserId(session.metadata);
   const { customerId, subId } = await resolveCheckoutSessionIds(stripe, session);
   const email =
     session.metadata?.email?.trim().toLowerCase() ||
@@ -127,6 +133,7 @@ async function handleCheckoutCompleted(
     });
     const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
       sessionUserId,
+      ownerUserId,
       email,
       workspaceId,
       stripeSessionId: session.id
@@ -152,6 +159,7 @@ async function handleCheckoutCompleted(
   const subscriptionStatus = everittosStatusForSubscription(plan, 'active', false);
   const synced = await syncBillingToSupabase(admin, {
     sessionUserId,
+    ownerUserId,
     email,
     workspaceId,
     plan,
@@ -184,6 +192,7 @@ async function handleSubscriptionEvent(
 ) {
   const subscriptionUserId = metadataUserId(sub.metadata);
   const workspaceId = metadataWorkspaceId(sub.metadata);
+  const ownerUserId = metadataOwnerUserId(sub.metadata);
   const email = sub.metadata?.email?.trim().toLowerCase() || (await customerEmail(stripe, sub.customer));
 
   logBillingSync(eventType, {
@@ -206,6 +215,7 @@ async function handleSubscriptionEvent(
 
   const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
     subscriptionUserId,
+    ownerUserId,
     email,
     workspaceId
   });
@@ -230,6 +240,7 @@ async function handleSubscriptionDeleted(
   const sessionUserId = metadataUserId(sub.metadata);
   const subscriptionUserId = metadataUserId(sub.metadata);
   const workspaceId = metadataWorkspaceId(sub.metadata);
+  const ownerUserId = metadataOwnerUserId(sub.metadata);
   const email = sub.metadata?.email?.trim().toLowerCase() || (await customerEmail(stripe, sub.customer));
 
   logBillingSync('customer.subscription.deleted', {
@@ -249,6 +260,7 @@ async function handleSubscriptionDeleted(
   const synced = await syncBillingToSupabase(admin, {
     sessionUserId,
     subscriptionUserId,
+    ownerUserId,
     email,
     workspaceId,
     plan: 'free',
@@ -321,7 +333,9 @@ async function handleInvoiceEvent(
 
     const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
       subscriptionUserId: metadataUserId(sub.metadata),
-      email: sub.metadata?.email?.trim().toLowerCase() || email
+      ownerUserId: metadataOwnerUserId(sub.metadata),
+      email: sub.metadata?.email?.trim().toLowerCase() || email,
+      workspaceId: metadataWorkspaceId(sub.metadata)
     });
 
     await recordBillingWebhookResult(admin, {
@@ -395,6 +409,14 @@ export async function POST(request: Request) {
 
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });
+
+  logStripeBilling('webhook:validated', { eventId: event.id, eventType: event.type });
+
+  const claim = await claimStripeWebhookEvent(admin, event.id, event.type);
+  if (claim === 'duplicate') {
+    logStripeBilling('webhook:duplicate_skipped', { eventId: event.id, eventType: event.type });
+    return NextResponse.json({ received: true, duplicate: true });
+  }
 
   try {
     switch (event.type) {

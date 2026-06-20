@@ -121,7 +121,8 @@ export async function resolveProfilePlan(
   profile?: ProfileRow | null
 ): Promise<EverittosPlan> {
   if (profile?.plan?.trim()) {
-    return normalizePlan(profile.plan);
+    const normalized = normalizePlan(profile.plan);
+    if (normalized !== 'free') return normalized;
   }
 
   const { data: subscription, error } = await client
@@ -133,7 +134,36 @@ export async function resolveProfilePlan(
     .maybeSingle();
 
   if (!error && subscription?.plan) {
-    return normalizePlan(subscription.plan);
+    const normalized = normalizePlan(subscription.plan);
+    if (normalized !== 'free' || subscription.status === 'active') return normalized;
+  }
+
+  const organizationId = profile?.organization_id?.trim();
+  if (organizationId) {
+    const { data: orgSub } = await client
+      .from('everittos_subscriptions')
+      .select('plan, status')
+      .eq('organization_id', organizationId)
+      .neq('plan', 'free')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (orgSub?.plan) {
+      return normalizePlan(orgSub.plan);
+    }
+
+    const { data: org } = await client.from('organizations').select('owner_user_id').eq('id', organizationId).maybeSingle();
+    if (org?.owner_user_id && org.owner_user_id !== userId) {
+      const { data: ownerProfile } = await client.from('profiles').select('plan').eq('id', org.owner_user_id).maybeSingle();
+      if (ownerProfile?.plan?.trim()) {
+        return normalizePlan(ownerProfile.plan);
+      }
+    }
+  }
+
+  if (profile?.plan?.trim()) {
+    return normalizePlan(profile.plan);
   }
 
   return 'free';

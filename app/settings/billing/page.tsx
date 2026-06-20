@@ -12,6 +12,8 @@ import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole } from '@/lib/roles';
 import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
+import { BillingHealthCheck } from '@/components/billing-health-check';
+import { SyncSubscriptionButton } from '@/components/sync-subscription-button';
 import { canManageBilling } from '@/lib/roles';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
@@ -399,6 +401,15 @@ function BillingSettingsContent() {
                 Need help with billing? <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
               </p>
             ) : null}
+            {canManageWorkspaceBilling ? (
+              <SyncSubscriptionButton
+                onSynced={(nextPlan, nextStatus) => {
+                  setPlan(normalizePlan(nextPlan));
+                  setSubscriptionStatus(nextStatus);
+                  void refreshWorkspacePlan();
+                }}
+              />
+            ) : null}
           </div>
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
         </section>
@@ -460,6 +471,12 @@ function BillingSettingsContent() {
             portalLoading={portalLoading}
           />
         </section>
+
+        {canManageWorkspaceBilling ? (
+          <section className="settings-card">
+            <BillingHealthCheck />
+          </section>
+        ) : null}
 
         <section className="settings-card" style={{ display: 'grid', gap: 8 }}>
           <h3>Billing terms</h3>

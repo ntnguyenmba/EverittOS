@@ -6,7 +6,11 @@ import {
   isValidStripeCustomerId,
   isValidStripeSubscriptionId
 } from '@/lib/stripe-ids';
-import { everittosStatusForSubscription, subscriptionGrantsPaidAccess } from '@/lib/stripe-billing-sync';
+import {
+  everittosStatusForSubscription,
+  pickBestStripeSubscription,
+  subscriptionGrantsPaidAccess
+} from '@/lib/stripe-billing-sync';
 
 test('isValidStripeCustomerId rejects placeholders and requires cus_ prefix', () => {
   assert.equal(isValidStripeCustomerId('cus_abc123'), true);
@@ -54,4 +58,27 @@ test('subscriptionGrantsPaidAccess includes active and trialing subscriptions', 
     } as import('stripe').Stripe.Subscription),
     true
   );
+});
+
+test('pickBestStripeSubscription prefers active paid plans', () => {
+  const activeEnterprise = {
+    id: 'sub_active',
+    status: 'active',
+    created: 200,
+    current_period_end: Math.floor(Date.now() / 1000) + 3600,
+    items: { data: [{ price: { id: 'price_1TbViN2KsjgU9g9yUlok4S2W', product: 'prod_Uah64aXMtVGGqI' } }] },
+    metadata: { plan: 'enterprise' }
+  } as unknown as import('stripe').Stripe.Subscription;
+
+  const canceledPro = {
+    id: 'sub_old',
+    status: 'canceled',
+    created: 100,
+    current_period_end: Math.floor(Date.now() / 1000) - 3600,
+    items: { data: [{ price: { id: 'price_pro', unit_amount: 900 } }] },
+    metadata: { plan: 'pro' }
+  } as unknown as import('stripe').Stripe.Subscription;
+
+  const picked = pickBestStripeSubscription([canceledPro, activeEnterprise]);
+  assert.equal(picked?.id, 'sub_active');
 });

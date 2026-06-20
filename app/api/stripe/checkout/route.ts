@@ -45,6 +45,7 @@ async function findExistingCustomer(stripe: NonNullable<ReturnType<typeof getStr
 async function syncExistingSubscription(input: {
   stripe: NonNullable<ReturnType<typeof getStripeClient>>;
   userId: string;
+  ownerUserId: string;
   email: string;
   organizationId: string | null;
   subscription: Stripe.Subscription;
@@ -54,6 +55,7 @@ async function syncExistingSubscription(input: {
 
   await syncStripeSubscriptionRecord(admin, input.stripe, input.subscription, {
     sessionUserId: input.userId,
+    ownerUserId: input.ownerUserId,
     email: input.email,
     workspaceId: input.organizationId
   });
@@ -106,6 +108,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
   }
 
+  const workspaceId = profile?.organization_id || '';
+  let ownerUserId = user.id;
+  if (workspaceId) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('owner_user_id')
+      .eq('id', workspaceId)
+      .maybeSingle();
+    if (org?.owner_user_id) ownerUserId = org.owner_user_id;
+  }
+
   const checkoutMethod = billingCheckoutMethod(plan);
   if (!checkoutMethod) {
     logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_checkout_target' }, 'warn');
@@ -145,6 +158,7 @@ export async function POST(request: Request) {
       await syncExistingSubscription({
         stripe,
         userId: user.id,
+        ownerUserId,
         email,
         organizationId: profile?.organization_id || null,
         subscription: existingSubscription
@@ -206,7 +220,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const workspaceId = profile?.organization_id || '';
   const metadata = {
     plan,
     planKey: plan,
@@ -215,6 +228,8 @@ export async function POST(request: Request) {
     selected_plan: plan,
     user_id: user.id,
     userId: user.id,
+    owner_user_id: ownerUserId,
+    ownerUserId,
     email,
     workspace_id: workspaceId,
     organization_id: workspaceId,

@@ -4,7 +4,11 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 import type { StoredCouponDiscount } from '@/lib/stripe-promo';
 import { coalesceStripeCustomerId, isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { planFromSubscription, primaryStripePriceId } from '@/lib/stripe-plan-mapping';
-import { logBillingSyncEvent, logBillingSyncIssueEvent } from '@/lib/stripe-billing-logs';
+import {
+  logBillingSyncEvent,
+  logBillingSyncIssueEvent,
+  logStripeBilling
+} from '@/lib/stripe-billing-logs';
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
 
@@ -13,6 +17,8 @@ export type BillingSyncInput = {
   sessionUserId?: string | null;
   /** Subscription metadata user_id */
   subscriptionUserId?: string | null;
+  /** Organization owner user id from checkout/subscription metadata */
+  ownerUserId?: string | null;
   /** @deprecated Use sessionUserId */
   userId?: string | null;
   email: string;
@@ -34,6 +40,162 @@ export type BillingProfileRow = {
   email: string;
   stripe_customer_id?: string | null;
 };
+
+export type BillingTargetResolution = {
+  profile: BillingProfileRow;
+  payerUserId: string | null;
+  workspaceId: string | null;
+  ownerUserId: string | null;
+};
+
+/** Pick the best subscription to sync when multiple exist for a customer. */
+export function pickBestStripeSubscription(
+  subscriptions: Stripe.Subscription[]
+): Stripe.Subscription | null {
+  if (!subscriptions.length) return null;
+
+  const ranked = subscriptions
+    .map((sub) => {
+      const plan = planFromSubscription(sub);
+      const grantsAccess = subscriptionGrantsPaidAccess(sub);
+      const score =
+        (grantsAccess ? 100 : 0) +
+        (sub.status === 'active' ? 40 : sub.status === 'trialing' ? 35 : sub.status === 'past_due' ? 20 : 0) +
+        sub.created;
+      return { sub, plan, grantsAccess, score };
+    })
+    .filter((row) => row.plan && row.grantsAccess)
+    .sort((a, b) => b.score - a.score);
+
+  if (ranked.length) return ranked[0].sub;
+
+  return (
+    subscriptions.find((sub) => sub.status === 'active' || sub.status === 'trialing') ||
+    subscriptions.find((sub) => sub.status === 'past_due' || sub.status === 'unpaid') ||
+    subscriptions[0] ||
+    null
+  );
+}
+
+export async function claimStripeWebhookEvent(
+  admin: AdminClient,
+  eventId: string,
+  eventType: string
+): Promise<'claimed' | 'duplicate'> {
+  const { data: existing } = await admin
+    .from('subscription_events')
+    .select('id')
+    .eq('stripe_event_id', eventId)
+    .ilike('event_type', 'webhook.claimed:%')
+    .maybeSingle();
+
+  if (existing?.id) {
+    return 'duplicate';
+  }
+
+  const { error } = await admin.from('subscription_events').insert({
+    email: 'stripe-webhook@system',
+    event_type: `webhook.claimed:${eventType}`,
+    plan: null,
+    stripe_event_id: eventId,
+    payload: { eventType, claimedAt: new Date().toISOString() }
+  });
+
+  if (error) {
+    if (error.code === '23505') return 'duplicate';
+    logBillingSyncIssue('webhook_claim_insert_failed', { eventId, eventType, error: error.message });
+  }
+
+  return 'claimed';
+}
+
+export async function resolveOrganizationOwnerProfile(
+  admin: AdminClient,
+  workspaceId: string | null | undefined
+): Promise<BillingProfileRow | null> {
+  const orgId = workspaceId?.trim();
+  if (!orgId) return null;
+
+  const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', orgId).maybeSingle();
+  if (!org?.owner_user_id) return null;
+
+  const { data } = await admin
+    .from('profiles')
+    .select('id, email, stripe_customer_id')
+    .eq('id', org.owner_user_id)
+    .maybeSingle();
+
+  if (!data?.id) return null;
+
+  return {
+    id: data.id,
+    email: (data.email || '').trim().toLowerCase(),
+    stripe_customer_id: data.stripe_customer_id
+  };
+}
+
+/** Workspace billing always unlocks the organization owner profile. */
+export async function resolveBillingTargetProfile(
+  admin: AdminClient,
+  input: {
+    sessionUserId?: string | null;
+    subscriptionUserId?: string | null;
+    ownerUserId?: string | null;
+    email?: string | null;
+    workspaceId?: string | null;
+  }
+): Promise<BillingTargetResolution | null> {
+  const workspaceId = input.workspaceId?.trim() || null;
+  const payer = await resolveBillingUser(admin, {
+    sessionUserId: input.sessionUserId,
+    subscriptionUserId: input.subscriptionUserId,
+    email: input.email
+  });
+
+  let owner = await resolveOrganizationOwnerProfile(admin, workspaceId);
+
+  if (!owner && input.ownerUserId?.trim()) {
+    const { data } = await admin
+      .from('profiles')
+      .select('id, email, stripe_customer_id')
+      .eq('id', input.ownerUserId.trim())
+      .maybeSingle();
+    if (data?.id) {
+      owner = {
+        id: data.id,
+        email: (data.email || '').trim().toLowerCase(),
+        stripe_customer_id: data.stripe_customer_id
+      };
+    }
+  }
+
+  if (owner) {
+    logStripeBilling('webhook:workspace_found', {
+      workspaceId,
+      ownerUserId: owner.id,
+      payerUserId: payer?.id || null
+    });
+    return {
+      profile: owner,
+      payerUserId: payer?.id || input.sessionUserId?.trim() || input.subscriptionUserId?.trim() || null,
+      workspaceId,
+      ownerUserId: owner.id
+    };
+  }
+
+  if (workspaceId) {
+    logStripeBilling('webhook:workspace_missing', { workspaceId }, 'warn');
+  }
+
+  if (!payer) return null;
+
+  return {
+    profile: payer,
+    payerUserId: payer.id,
+    workspaceId,
+    ownerUserId: payer.id
+  };
+}
 
 export function logBillingSync(message: string, data: Record<string, unknown>) {
   logBillingSyncEvent(message, data);
@@ -187,17 +349,20 @@ export async function resolveSubscriptionSyncContext(
   context: {
     sessionUserId?: string | null;
     subscriptionUserId?: string | null;
+    ownerUserId?: string | null;
     email?: string | null;
     workspaceId?: string | null;
   }
 ): Promise<{
   sessionUserId: string | null;
   subscriptionUserId: string | null;
+  ownerUserId: string | null;
   email: string | null;
   workspaceId: string | null;
   stripeCustomerId: string | null;
 }> {
   const subscriptionUserId = sub.metadata?.user_id?.trim() || sub.metadata?.userId?.trim() || null;
+  const ownerUserId = sub.metadata?.owner_user_id?.trim() || sub.metadata?.ownerUserId?.trim() || null;
   const email =
     context.email?.trim().toLowerCase() ||
     sub.metadata?.email?.trim().toLowerCase() ||
@@ -206,6 +371,7 @@ export async function resolveSubscriptionSyncContext(
   return {
     sessionUserId: context.sessionUserId?.trim() || null,
     subscriptionUserId: context.subscriptionUserId?.trim() || subscriptionUserId,
+    ownerUserId,
     email,
     workspaceId:
       context.workspaceId ||
@@ -247,18 +413,33 @@ export async function recordBillingWebhookResult(
 
 export async function syncBillingToSupabase(admin: AdminClient, input: BillingSyncInput): Promise<boolean> {
   const sessionUserId = input.sessionUserId ?? input.userId ?? null;
+  const billingEmail = input.email.trim().toLowerCase();
 
-  const profile = await resolveBillingUser(admin, {
+  const target = await resolveBillingTargetProfile(admin, {
     sessionUserId,
     subscriptionUserId: input.subscriptionUserId,
-    email: input.email
+    ownerUserId: input.ownerUserId,
+    email: billingEmail,
+    workspaceId: input.workspaceId
   });
 
-  if (!profile) {
+  if (!target) {
+    logStripeBilling(
+      'webhook:activation_failed',
+      {
+        reason: 'profile_not_found',
+        sessionUserId,
+        subscriptionUserId: input.subscriptionUserId,
+        workspaceId: input.workspaceId || null,
+        email: billingEmail
+      },
+      'error'
+    );
     return false;
   }
 
-  const normalizedEmail = profile.email;
+  const profile = target.profile;
+  const normalizedEmail = billingEmail || profile.email;
   const stripeCustomerId = coalesceStripeCustomerId(input.stripeCustomerId, profile.stripe_customer_id);
   const stripeSubscriptionId = isValidStripeSubscriptionId(input.stripeSubscriptionId)
     ? input.stripeSubscriptionId
@@ -290,6 +471,10 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
     subscription_status: input.subscriptionStatus,
     ...(input.discount || {})
   };
+
+  if (normalizedEmail && normalizedEmail !== profile.email) {
+    profileUpdate.email = normalizedEmail;
+  }
 
   if (stripeCustomerId) {
     profileUpdate.stripe_customer_id = stripeCustomerId;
@@ -349,12 +534,31 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
 
   logBillingSync('synced', {
     userId: profile.id,
-    workspaceId: input.workspaceId || null,
+    payerUserId: target.payerUserId,
+    ownerUserId: target.ownerUserId,
+    workspaceId: target.workspaceId,
     plan: input.plan,
     status: input.subscriptionStatus,
+    billingEmail: normalizedEmail,
     stripeCustomerId,
     stripeSubscriptionId,
     stripeSessionId: input.stripeSessionId || null
+  });
+
+  logStripeBilling('webhook:plan_updated', {
+    userId: profile.id,
+    workspaceId: target.workspaceId,
+    plan: input.plan,
+    status: input.subscriptionStatus,
+    stripeCustomerId,
+    stripeSubscriptionId
+  });
+
+  logStripeBilling('webhook:activation_completed', {
+    userId: profile.id,
+    workspaceId: target.workspaceId,
+    plan: input.plan,
+    stripeSubscriptionId
   });
 
   return true;
@@ -367,6 +571,7 @@ export async function syncStripeSubscriptionRecord(
   context: {
     sessionUserId?: string | null;
     subscriptionUserId?: string | null;
+    ownerUserId?: string | null;
     /** @deprecated Use sessionUserId */
     userId?: string | null;
     email?: string | null;
@@ -378,6 +583,7 @@ export async function syncStripeSubscriptionRecord(
   const syncContext = await resolveSubscriptionSyncContext(stripe, sub, {
     sessionUserId: context.sessionUserId ?? context.userId,
     subscriptionUserId: context.subscriptionUserId,
+    ownerUserId: context.ownerUserId,
     email: context.email,
     workspaceId: context.workspaceId
   });
@@ -423,6 +629,7 @@ export async function syncStripeSubscriptionRecord(
   return syncBillingToSupabase(admin, {
     sessionUserId: syncContext.sessionUserId,
     subscriptionUserId: syncContext.subscriptionUserId,
+    ownerUserId: syncContext.ownerUserId,
     email: syncContext.email,
     workspaceId: syncContext.workspaceId,
     plan,
@@ -435,4 +642,112 @@ export async function syncStripeSubscriptionRecord(
     cancelAtPeriodEnd: sub.cancel_at_period_end,
     discount
   });
+}
+
+/** Pull the active Stripe subscription for a user and sync Supabase (manual recovery). */
+export async function syncActiveStripeSubscriptionForUser(
+  admin: AdminClient,
+  stripe: Stripe,
+  input: {
+    userId: string;
+    email: string;
+    workspaceId?: string | null;
+    sessionId?: string | null;
+  }
+): Promise<{
+  synced: boolean;
+  plan: EverittosPlan;
+  status: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  currentPeriodEnd: string | null;
+  reason?: string;
+}> {
+  const email = input.email.trim().toLowerCase();
+
+  if (input.sessionId) {
+    const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
+      expand: ['subscription', 'line_items.data.price.product']
+    });
+    const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
+    if (subId) {
+      const sub = await stripe.subscriptions.retrieve(subId, {
+        expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
+      });
+      const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+        sessionUserId: input.userId,
+        email: session.metadata?.email?.trim().toLowerCase() || email,
+        workspaceId: session.metadata?.workspace_id || session.metadata?.organization_id || input.workspaceId || null,
+        stripeSessionId: session.id
+      });
+      const detectedPlan = planFromSubscription(sub) || 'free';
+      const status = everittosStatusForSubscription(detectedPlan, sub.status, sub.cancel_at_period_end);
+      return {
+        synced,
+        plan: synced ? detectedPlan : 'free',
+        status,
+        stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id || null,
+        stripeSubscriptionId: subId,
+        currentPeriodEnd: sub.current_period_end
+          ? new Date(sub.current_period_end * 1000).toISOString()
+          : null,
+        reason: synced ? undefined : 'session_subscription_sync_failed'
+      };
+    }
+  }
+
+  const customers = await stripe.customers.list({ email, limit: 10 });
+  let best: { customerId: string; subscription: Stripe.Subscription } | null = null;
+
+  for (const customer of customers.data) {
+    if (customer.deleted) continue;
+    const subs = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: 'all',
+      limit: 20,
+      expand: ['data.items.data.price.product', 'data.discount.coupon', 'data.discount.promotion_code']
+    });
+    const picked = pickBestStripeSubscription(subs.data);
+    if (!picked) continue;
+    if (!best || picked.created > best.subscription.created) {
+      best = { customerId: customer.id, subscription: picked };
+    }
+  }
+
+  if (!best) {
+    return {
+      synced: false,
+      plan: 'free',
+      status: 'free',
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      currentPeriodEnd: null,
+      reason: 'no_stripe_subscription'
+    };
+  }
+
+  const synced = await syncStripeSubscriptionRecord(admin, stripe, best.subscription, {
+    sessionUserId: input.userId,
+    email,
+    workspaceId: input.workspaceId || null
+  });
+
+  const detectedPlan = planFromSubscription(best.subscription) || 'free';
+  const retainsPaid = subscriptionGrantsPaidAccess(best.subscription);
+  const plan = retainsPaid ? detectedPlan : 'free';
+  const status = retainsPaid
+    ? everittosStatusForSubscription(plan, best.subscription.status, best.subscription.cancel_at_period_end)
+    : best.subscription.status;
+
+  return {
+    synced,
+    plan,
+    status,
+    stripeCustomerId: best.customerId,
+    stripeSubscriptionId: best.subscription.id,
+    currentPeriodEnd: best.subscription.current_period_end
+      ? new Date(best.subscription.current_period_end * 1000).toISOString()
+      : null,
+    reason: synced ? undefined : 'subscription_sync_failed'
+  };
 }

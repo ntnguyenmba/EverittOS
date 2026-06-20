@@ -4,6 +4,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
@@ -37,16 +38,25 @@ export async function GET() {
 
   const email = (profile?.email || user.email).trim().toLowerCase();
   const plan = normalizePlan(profile?.plan);
+  const orgPlan = await resolveOrganizationPlan(supabase, user.id);
+  const billingUserId = orgPlan.ownerUserId || user.id;
 
   const { data: subscription } = await admin
     .from('everittos_subscriptions')
     .select(
-      'plan, status, stripe_customer_id, stripe_subscription_id, stripe_price_id, current_period_end, updated_at, last_payment_status'
+      'plan, status, stripe_customer_id, stripe_subscription_id, stripe_price_id, current_period_end, updated_at, last_payment_status, email, user_id, organization_id'
     )
-    .eq('user_id', user.id)
+    .eq('user_id', billingUserId)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  const { data: webhookReceived } = await admin
+    .from('subscription_events')
+    .select('event_type, stripe_event_id, created_at, payload')
+    .ilike('event_type', 'webhook.claimed:%')
+    .order('created_at', { ascending: false })
+    .limit(1);
 
   const { data: webhookEvents } = await admin
     .from('subscription_events')
@@ -56,7 +66,16 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(1);
 
+  const { data: activationFailures } = await admin
+    .from('subscription_events')
+    .select('event_type, plan, stripe_event_id, payload, created_at')
+    .ilike('email', email)
+    .ilike('event_type', 'webhook.sync.failed:%')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
   const latestWebhook = webhookEvents?.[0] || null;
+  const latestWebhookReceived = webhookReceived?.[0] || null;
   const payload = (latestWebhook?.payload || {}) as {
     success?: boolean;
     reason?: string | null;
@@ -83,13 +102,22 @@ export async function GET() {
   if (!checkoutConfigured) issues.push('missing_stripe_price_id');
   if (!profileCustomerId) issues.push('missing_stripe_customer_id');
   if (plan !== 'free' && !subscriptionId) issues.push('missing_stripe_subscription_id');
+  if (orgPlan.plan !== plan && orgPlan.plan !== 'free') {
+    issues.push('org_plan_mismatch');
+  }
   if (latestWebhook && payload.success === false) issues.push(`webhook_sync_failed:${payload.reason || 'unknown'}`);
 
   return NextResponse.json({
     profile: {
       plan,
       subscriptionStatus: profile?.subscription_status || 'free',
-      stripeCustomerId: profileCustomerId
+      stripeCustomerId: profileCustomerId,
+      billingEmail: email
+    },
+    organization: {
+      organizationId: orgPlan.organizationId,
+      ownerUserId: orgPlan.ownerUserId,
+      effectivePlan: orgPlan.plan
     },
     subscription: subscription
       ? {
@@ -100,7 +128,15 @@ export async function GET() {
           stripePriceId: subscription.stripe_price_id,
           currentPeriodEnd: subscription.current_period_end,
           lastPaymentStatus: subscription.last_payment_status,
-          updatedAt: subscription.updated_at
+          updatedAt: subscription.updated_at,
+          billingEmail: subscription.email
+        }
+      : null,
+    latestWebhookReceived: latestWebhookReceived
+      ? {
+          eventType: latestWebhookReceived.event_type,
+          stripeEventId: latestWebhookReceived.stripe_event_id,
+          receivedAt: latestWebhookReceived.created_at
         }
       : null,
     latestWebhookSync: latestWebhook
@@ -114,6 +150,13 @@ export async function GET() {
           syncedAt: latestWebhook.created_at
         }
       : null,
+    activationErrors: (activationFailures || []).map((row) => ({
+      eventType: row.event_type,
+      stripeEventId: row.stripe_event_id,
+      plan: row.plan,
+      reason: (row.payload as { reason?: string })?.reason || null,
+      at: row.created_at
+    })),
     stripe: {
       configured: stripeConfigured,
       webhookConfigured,

@@ -16,11 +16,39 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
     setMessage('Checking Stripe for your active subscription...');
 
     try {
-      const res = await fetch('/api/stripe/sync-current-user', { method: 'POST' });
-      const json = await res.json().catch(() => ({}));
+      const res = await fetch('/api/billing/refresh-subscription', { method: 'POST' });
+      const json = (await res.json().catch(() => ({}))) as {
+        plan?: string;
+        status?: string;
+        synced?: boolean;
+        error?: string;
+        message?: string;
+      };
 
-      if (!res.ok || !json.updated) {
-        setMessage(json.message || json.error || 'No active Stripe subscription was found for your EverittOS login email.');
+      if (!res.ok || !json.synced) {
+        const fallback = await fetch('/api/stripe/sync-current-user', { method: 'POST' });
+        const fallbackJson = (await fallback.json().catch(() => ({}))) as {
+          updated?: boolean;
+          plan?: string;
+          status?: string;
+          message?: string;
+          error?: string;
+        };
+        if (!fallback.ok || !fallbackJson.updated) {
+          setMessage(
+            fallbackJson.message ||
+              fallbackJson.error ||
+              json.error ||
+              json.message ||
+              'No active Stripe subscription was found for your EverittOS login email.'
+          );
+          return;
+        }
+        const nextPlan = normalizePlan(fallbackJson.plan);
+        const nextStatus = fallbackJson.status || `everittos_${nextPlan}`;
+        onSynced?.(nextPlan, nextStatus);
+        setMessage(`Subscription synced. Your plan is now ${planDisplayName(nextPlan)}.`);
+        window.setTimeout(() => window.location.reload(), 900);
         return;
       }
 
