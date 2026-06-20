@@ -469,7 +469,7 @@ function BillingSettingsContent() {
         ) : null}
       </div>
 
-      <div className="settings-card">
+      <div className="settings-card settings-card-billing-plans">
         <h3>{t('billing.allPlans')}</h3>
         <p className="muted">{t('billing.pricingSubtitle')}</p>
         <BillingPlansGrid

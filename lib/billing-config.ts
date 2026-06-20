@@ -172,7 +172,7 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     name: 'Starter',
     priceLabel: '$149/month',
     priceCents: 14900,
-    headline: 'Higher limits for growing teams that need AI and more capacity.',
+    headline: 'Scale tier with higher limits for growing teams that need more capacity.',
     features: [
       'Everything in Business',
       'Higher job and customer limits',

@@ -49,30 +49,41 @@ export function PricingCheckoutPanel({
               className={[
                 'card',
                 'pricing-plan-card',
+                'billing-plan-card',
                 isSelected ? 'selected' : '',
                 tier.featured ? 'featured-plan' : ''
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              <button type="button" className="pricing-plan-select" onClick={() => setPlan(tier.id)}>
-                <h3>{tier.name}</h3>
-                <p className="pricing-plan-price">{tier.priceLabel}</p>
-                <p className="muted">{tier.headline}</p>
-              </button>
-              {authenticated ? (
-                <PlanCheckoutButton
-                  plan={tier.id}
-                  label={checkout.buttonLabel}
-                  checkoutUrl={checkout.checkoutUrl}
-                  priceId={checkout.priceId}
-                  method={checkout.method}
-                />
-              ) : (
-                <Link className="btn btn-primary" href={signupHref(tier.id)}>
-                  {checkout.buttonLabel}
-                </Link>
-              )}
+              <div className="billing-plan-card-body">
+                <button type="button" className="pricing-plan-select" onClick={() => setPlan(tier.id)}>
+                  <h3>{tier.name}</h3>
+                  <p className="pricing-plan-price">{tier.priceLabel}</p>
+                  <p className="muted">{tier.headline}</p>
+                </button>
+              </div>
+              <div className="billing-plan-card-footer">
+                <div className="billing-plan-card-cta">
+                  {authenticated ? (
+                    <PlanCheckoutButton
+                      plan={tier.id}
+                      label={checkout.buttonLabel}
+                      checkoutUrl={checkout.checkoutUrl}
+                      priceId={checkout.priceId}
+                      method={checkout.method}
+                      className="btn btn-primary btn-block"
+                    />
+                  ) : (
+                    <>
+                      <div className="billing-plan-ack-spacer" aria-hidden="true" />
+                      <Link className="btn btn-primary btn-block" href={signupHref(tier.id)}>
+                        {checkout.buttonLabel}
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           );
         })}

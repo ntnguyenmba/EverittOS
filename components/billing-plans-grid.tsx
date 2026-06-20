@@ -76,47 +76,64 @@ export function BillingPlansGrid({
               data-plan-id={tier.id}
               data-plan-action={ui.kind}
             >
-              {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
-              {tier.featured && !isCurrent ? (
-                <span className="billing-plan-badge billing-plan-badge-featured">Popular</span>
-              ) : null}
-              <h3>{tier.name}</h3>
-              <p className="pricing-plan-price">{tier.priceLabel}</p>
-              <p className="muted billing-plan-headline">{tier.headline}</p>
-              <ul className="billing-plan-features">
-                {tier.features.slice(0, 5).map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
+              <div className="billing-plan-card-body">
+                {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
+                {tier.featured && !isCurrent ? (
+                  <span className="billing-plan-badge billing-plan-badge-featured">Popular</span>
+                ) : null}
+                <h3>{tier.name}</h3>
+                <p className="pricing-plan-price">{tier.priceLabel}</p>
+                <p className="muted billing-plan-headline">{tier.headline}</p>
+                <ul className="billing-plan-features">
+                  {tier.features.slice(0, 5).map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+              </div>
 
-              {ui.kind === 'current' ? (
-                <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
-              ) : null}
+              <div className="billing-plan-card-footer">
+                {ui.kind === 'current' ? (
+                  <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
+                ) : (
+                  <div className="billing-plan-card-cta">
+                    {ui.kind === 'checkout' ? (
+                      <PlanCheckoutButton
+                        plan={ui.plan}
+                        label={ui.label}
+                        checkoutUrl={ui.checkoutUrl}
+                        priceId={ui.priceId}
+                        method={ui.method}
+                        className="btn btn-primary btn-block"
+                      />
+                    ) : null}
 
-              {ui.kind === 'checkout' ? (
-                <PlanCheckoutButton
-                  plan={ui.plan}
-                  label={ui.label}
-                  checkoutUrl={ui.checkoutUrl}
-                  priceId={ui.priceId}
-                  method={ui.method}
-                  className="btn btn-primary btn-block"
-                />
-              ) : null}
+                    {ui.kind === 'portal' && onOpenPortal ? (
+                      <>
+                        <div className="billing-plan-ack-spacer" aria-hidden="true" />
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-block"
+                          disabled={portalLoading}
+                          onClick={onOpenPortal}
+                        >
+                          {portalLoading ? t('billing.openingPortal') : ui.label}
+                        </button>
+                      </>
+                    ) : null}
 
-              {ui.kind === 'portal' && onOpenPortal ? (
-                <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>
-                  {portalLoading ? t('billing.openingPortal') : ui.label}
-                </button>
-              ) : null}
+                    {ui.kind === 'downgrade_contact' ? (
+                      <>
+                        <div className="billing-plan-ack-spacer" aria-hidden="true" />
+                        <a className="btn btn-block" href={ui.href}>
+                          {ui.label}
+                        </a>
+                      </>
+                    ) : null}
+                  </div>
+                )}
 
-              {ui.kind === 'downgrade_contact' ? (
-                <a className="btn btn-block" href={ui.href}>
-                  {ui.label}
-                </a>
-              ) : null}
-
-              {hint ? <p className="muted billing-plan-note">{hint}</p> : null}
+                {hint ? <p className="muted billing-plan-note">{hint}</p> : null}
+              </div>
             </div>
           );
         })}
