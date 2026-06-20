@@ -6,10 +6,12 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 type AuthShellProps = {
   title: string;
   children: ReactNode;
+  /** Signup uses an explicit consent checkbox; skip the duplicate continuing note. */
+  hideContinuingLegalNote?: boolean;
 };
 
 /** Centered auth layout aligned with the Everitt Ventures tech site. */
-export function AuthShell({ title, children }: AuthShellProps) {
+export function AuthShell({ title, children, hideContinuingLegalNote = false }: AuthShellProps) {
   return (
     <main id="main-content" className="auth-page auth-tech-page">
       <div className="auth-tech-background" aria-hidden="true" />
@@ -29,7 +31,7 @@ export function AuthShell({ title, children }: AuthShellProps) {
           </h1>
           <p className="auth-card-subtitle">Run your business from one place.</p>
           {children}
-          <AuthContinuingLegalNote />
+          {hideContinuingLegalNote ? null : <AuthContinuingLegalNote />}
         </section>
 
         <footer className="auth-tech-footer">
@@ -131,6 +133,14 @@ export function AuthShell({ title, children }: AuthShellProps) {
           font-size: 14px;
         }
 
+        .auth-tech-card .auth-consent-block {
+          margin: 16px 0 20px;
+        }
+
+        .auth-tech-card .auth-form .btn-primary {
+          margin-top: 4px;
+        }
+
         .auth-tech-card .auth-form.card {
           padding: 0;
           border: 0;
@@ -186,29 +196,34 @@ export function AuthShell({ title, children }: AuthShellProps) {
         }
 
         .auth-legal-note {
-          margin: 18px auto 0;
-          max-width: 340px;
-          color: rgba(31, 47, 67, 0.5);
+          margin: 20px auto 0;
+          max-width: 360px;
+          color: rgba(31, 47, 67, 0.52);
           font-size: 11px;
-          line-height: 1.45;
+          line-height: 1.5;
           text-align: center;
         }
 
-        .auth-legal-note a,
-        .auth-tech-footer a {
-          border-bottom: 1px solid rgba(45, 96, 142, 0.22);
+        .auth-legal-note .legal-inline-link {
+          color: rgba(36, 79, 118, 0.88);
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .auth-legal-note .legal-inline-link:hover,
+        .auth-legal-note .legal-inline-link:focus-visible {
+          color: #2d608e;
+          text-decoration: underline;
         }
 
         .auth-tech-footer {
           align-self: end;
           text-align: center;
+          padding-top: 8px;
         }
 
-        .auth-tech-footer p {
-          margin: 0;
+        .auth-tech-footer .auth-legal-footer {
           color: rgba(31, 47, 67, 0.46);
-          font-size: 11px;
-          line-height: 1.4;
         }
 
         @media (max-width: 640px) {

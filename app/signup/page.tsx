@@ -159,7 +159,7 @@ function SignupForm() {
   }
 
   return (
-    <AuthShell title="Create account">
+    <AuthShell title="Create account" hideContinuingLegalNote>
       {selectedPlan !== 'free' ? (
         <>
           <p className="auth-plan-note">
@@ -236,19 +236,19 @@ function SignupForm() {
           />
         </div>
 
-        <label className="auth-consent" htmlFor="signup_accept_legal">
-          <input
-            id="signup_accept_legal"
-            type="checkbox"
-            checked={acceptLegal}
-            onChange={(e) => setAcceptLegal(e.target.checked)}
-            required
-            aria-describedby="signup-legal-consent-text"
-          />
-          <span id="signup-legal-consent-text">
-            <LegalConsentLabel idPrefix="signup-legal-consent" className="auth-consent-text" />
-          </span>
-        </label>
+        <div className="auth-consent-block">
+          <label className="auth-consent" htmlFor="signup_accept_legal">
+            <input
+              id="signup_accept_legal"
+              type="checkbox"
+              checked={acceptLegal}
+              onChange={(e) => setAcceptLegal(e.target.checked)}
+              required
+              aria-describedby="signup-legal-consent-text"
+            />
+            <LegalConsentLabel idPrefix="signup-legal-consent" className="auth-consent-text" id="signup-legal-consent-text" />
+          </label>
+        </div>
 
         <AuthMessages error={error} success={success} />
 

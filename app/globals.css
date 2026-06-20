@@ -2995,36 +2995,109 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 /* Auth consent checkboxes */
+.auth-consent-block {
+  margin: 18px 0 22px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(45, 55, 72, 0.07);
+}
+
 .auth-consent {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  line-height: 1.5;
+  gap: 12px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5a7084;
+  cursor: pointer;
 }
 
 .auth-consent input {
-  margin-top: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
   min-width: 18px;
   min-height: 18px;
+}
+
+.legal-consent-copy {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.legal-consent-line {
+  display: inline;
+}
+
+.legal-consent-line-second {
+  display: block;
+  margin-top: 2px;
+}
+
+@media (min-width: 520px) {
+  .legal-consent-line-second {
+    display: inline;
+    margin-top: 0;
+  }
+
+  .legal-consent-line-second::before {
+    content: ' ';
+  }
 }
 
 .legal-inline-link {
   color: var(--accent, #2d608e);
   font-weight: 600;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 2px;
 }
 
 .legal-inline-link:hover,
 .legal-inline-link:focus-visible {
   color: var(--accent-strong, #1e4975);
+  text-decoration: underline;
   text-decoration-thickness: 2px;
   outline: none;
 }
 
 .auth-consent .legal-inline-link {
+  color: #244f76;
   font-weight: 600;
+}
+
+.auth-consent .legal-inline-link:hover,
+.auth-consent .legal-inline-link:focus-visible {
+  color: #1e4975;
+}
+
+.auth-legal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.auth-legal-footer a {
+  color: rgba(31, 47, 67, 0.52);
+  text-decoration: none;
+}
+
+.auth-legal-footer a:hover,
+.auth-legal-footer a:focus-visible {
+  color: #2d608e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-legal-footer-sep {
+  color: rgba(31, 47, 67, 0.28);
+  user-select: none;
 }
 
 /* Privacy settings */
