@@ -36,7 +36,7 @@ export function BillingPlansGrid({
       <p className="muted billing-plan-change-intro">{t('billing.planChangeIntro')}</p>
 
       <p className="muted billing-promo-stripe-note">
-        Promo codes are entered on the Stripe checkout page — not in EverittOS.
+        Promo codes can be entered securely inside Stripe Checkout.
       </p>
 
       <div className="billing-plans-grid pricing-grid">
@@ -80,7 +80,14 @@ export function BillingPlansGrid({
               ) : null}
 
               {isCheckout ? (
-                <PlanCheckoutButton plan={action.plan} label={action.label} className="btn btn-primary btn-block" />
+                <PlanCheckoutButton
+                  plan={action.plan}
+                  label={action.label}
+                  checkoutUrl={action.checkoutUrl}
+                  priceId={action.priceId}
+                  method={action.method}
+                  className="btn btn-primary btn-block"
+                />
               ) : null}
 
               {action.type === 'portal' && onOpenPortal ? (

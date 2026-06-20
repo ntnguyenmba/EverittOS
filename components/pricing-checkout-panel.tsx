@@ -35,7 +35,7 @@ export function PricingCheckoutPanel({
       <NoRefundDisclosure variant="compact" className="pricing-checkout-policy" />
 
       <p className="muted billing-promo-stripe-note">
-        Promo codes are entered on the Stripe checkout page after you choose a plan.
+        Promo codes can be entered securely inside Stripe Checkout.
       </p>
 
       <div className={compact ? 'pricing-grid compact' : 'pricing-grid'}>

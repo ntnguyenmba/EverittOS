@@ -2,20 +2,29 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
+import { clientBillingCheckoutTarget } from '@/lib/billing-config';
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 
 type PlanCheckoutButtonProps = {
   plan: EverittosPlan;
   label: string;
   requireRefundAck?: boolean;
   className?: string;
+  /** When provided, skips re-resolving checkout target from config. */
+  checkoutUrl?: string | null;
+  priceId?: string | null;
+  method?: 'session' | 'payment_link';
 };
 
 export function PlanCheckoutButton({
   plan,
   label,
   requireRefundAck = true,
-  className = 'btn btn-primary'
+  className = 'btn btn-primary',
+  checkoutUrl: checkoutUrlProp,
+  priceId: priceIdProp,
+  method: methodProp
 }: PlanCheckoutButtonProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -24,9 +33,25 @@ export function PlanCheckoutButton({
 
   const checkoutBlocked = requireRefundAck && !acceptedRefundPolicy;
 
+  const resolved =
+    isPaidCheckoutPlan(plan) && (checkoutUrlProp !== undefined || priceIdProp !== undefined || methodProp)
+      ? {
+          priceId: priceIdProp ?? null,
+          checkoutUrl: checkoutUrlProp ?? null,
+          method: methodProp ?? (priceIdProp ? ('session' as const) : checkoutUrlProp ? ('payment_link' as const) : null)
+        }
+      : isPaidCheckoutPlan(plan)
+        ? clientBillingCheckoutTarget(plan)
+        : null;
+
   async function startCheckout() {
     if (checkoutBlocked) {
       setError(t('billing.noRefund.ackRequired'));
+      return;
+    }
+
+    if (!resolved?.method) {
+      setError('Billing setup missing for this plan.');
       return;
     }
 
@@ -34,6 +59,11 @@ export function PlanCheckoutButton({
     setError('');
 
     try {
+      if (resolved.method === 'payment_link' && resolved.checkoutUrl) {
+        window.location.href = resolved.checkoutUrl;
+        return;
+      }
+
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

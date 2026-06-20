@@ -252,6 +252,65 @@ export function billingCheckoutMethod(plan: PaidPlanKey): BillingCheckoutMethod 
   return null;
 }
 
+export function billingPlanCheckoutTarget(plan: PaidPlanKey): {
+  plan: PaidPlanKey;
+  priceId: string | null;
+  checkoutUrl: string | null;
+  method: BillingCheckoutMethod | null;
+  buttonLabel: string;
+  available: boolean;
+} {
+  const definition = billingPlanDefinition(plan);
+  const priceId = resolveStripePriceId(plan);
+  const checkoutUrl = paymentLinkForPlan(plan);
+  const method = billingCheckoutMethod(plan);
+
+  return {
+    plan,
+    priceId,
+    checkoutUrl,
+    method,
+    buttonLabel: definition?.buttonLabel || `Choose ${planDisplayName(plan)}`,
+    available: method !== null
+  };
+}
+
+function planDisplayName(plan: EverittosPlan): string {
+  return billingPlanDefinition(plan)?.name || plan;
+}
+
+/**
+ * Client-safe checkout resolution using baked-in defaults only.
+ * Use this in browser components so availability does not depend on server env vars.
+ */
+export function clientBillingCheckoutTarget(plan: PaidPlanKey): {
+  plan: PaidPlanKey;
+  priceId: string | null;
+  checkoutUrl: string | null;
+  method: BillingCheckoutMethod | null;
+  buttonLabel: string;
+  available: boolean;
+} {
+  const definition = billingPlanDefinition(plan);
+  const defaults = STRIPE_DEFAULTS[plan];
+  const priceId = defaults.defaultPriceId;
+  const checkoutUrl = defaults.paymentLink;
+  const method: BillingCheckoutMethod | null = priceId ? 'session' : checkoutUrl ? 'payment_link' : null;
+
+  return {
+    plan,
+    priceId,
+    checkoutUrl,
+    method,
+    buttonLabel: definition?.buttonLabel || `Choose ${definition?.name || plan}`,
+    available: method !== null
+  };
+}
+
+export function clientBillingCheckoutAvailable(plan: PaidPlanKey): boolean {
+  return clientBillingCheckoutTarget(plan).available;
+}
+
 export function billingCheckoutAvailable(plan: PaidPlanKey): boolean {
   return billingCheckoutMethod(plan) !== null;
 }
