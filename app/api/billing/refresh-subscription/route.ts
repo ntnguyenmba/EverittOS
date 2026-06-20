@@ -4,6 +4,8 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { logBillingSync, syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
+import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
 export const runtime = 'nodejs';
@@ -42,18 +44,29 @@ async function refreshSubscription(request: Request) {
   }
 
   const email = (profile?.email || user.email).trim().toLowerCase();
+  const orgContext = await fetchOrganizationContextForUser(supabase, user.id);
+  const workspaceId = profile?.organization_id || orgContext?.organizationId || null;
   const stripe = new Stripe(stripeKey);
+
+  logStripeBilling('sync:completed', {
+    phase: 'refresh_subscription_requested',
+    userId: user.id,
+    sessionId: sessionId || null,
+    workspaceId,
+    email
+  });
 
   logBillingSync('refresh_subscription_requested', {
     userId: user.id,
     sessionId: sessionId || null,
-    email
+    email,
+    workspaceId
   });
 
   const result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
     userId: user.id,
     email,
-    workspaceId: profile?.organization_id || null,
+    workspaceId,
     sessionId: sessionId || null
   });
 

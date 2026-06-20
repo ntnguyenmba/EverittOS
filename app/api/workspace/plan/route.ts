@@ -38,11 +38,12 @@ export async function GET() {
     resolveOrganizationPlan(supabase, user.id)
   ]);
 
-  const billingPlan: EverittosPlan = profilePlan;
+  const billingPlan: EverittosPlan = normalizePlan(orgPlan.plan);
   const organizationPlan: EverittosPlan = normalizePlan(orgPlan.plan);
+  const profilePlanResolved: EverittosPlan = profilePlan;
 
   return json({
-    profilePlan,
+    profilePlan: profilePlanResolved,
     subscriptionStatus,
     billingPlan,
     organizationPlan,

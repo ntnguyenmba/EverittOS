@@ -56,11 +56,6 @@ export function PlanCheckoutButton({
     setError('');
 
     try {
-      if (method === 'payment_link' && checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-      }
-
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +73,7 @@ export function PlanCheckoutButton({
           return;
         }
 
-        if (checkoutUrl) {
+        if (checkoutUrl && method !== 'session') {
           window.location.href = checkoutUrl;
           return;
         }
@@ -92,17 +87,8 @@ export function PlanCheckoutButton({
         return;
       }
 
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-      }
-
       setError(t('billing.promo.checkoutFailed'));
     } catch {
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-      }
       setError(t('billing.promo.checkoutFailed'));
     } finally {
       setLoading(false);

@@ -90,7 +90,7 @@ function BillingSettingsContent() {
   useEffect(() => {
     if (planLoading) return;
 
-    const resolvedBillingPlan = billingPlan ?? profilePlan ?? workspacePlan;
+    const resolvedBillingPlan = workspacePlan ?? organizationPlan ?? profilePlan ?? billingPlan;
     if (resolvedBillingPlan) setPlan(resolvedBillingPlan);
     if (workspaceRole) setRole(workspaceRole);
     if (workspaceSubscriptionStatus) setSubscriptionStatus(workspaceSubscriptionStatus);
@@ -121,13 +121,17 @@ function BillingSettingsContent() {
       setCheckoutSyncing(true);
       setCheckoutBanner(null);
 
-      try {
-        const res = await fetch('/api/billing/refresh-subscription', {
+      async function runRefresh() {
+        return fetch('/api/billing/refresh-subscription', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId || undefined })
         });
-        const json = (await res.json().catch(() => ({}))) as {
+      }
+
+      try {
+        let res = await runRefresh();
+        let json = (await res.json().catch(() => ({}))) as {
           plan?: string;
           status?: string;
           active?: boolean;
@@ -136,17 +140,43 @@ function BillingSettingsContent() {
 
         if (cancelled) return;
 
+        if (!res.ok || !json.synced) {
+          const fallback = await fetch('/api/stripe/sync-current-user', { method: 'POST' });
+          const fallbackJson = (await fallback.json().catch(() => ({}))) as {
+            updated?: boolean;
+            plan?: string;
+            status?: string;
+          };
+          if (fallback.ok && fallbackJson.updated) {
+            json = {
+              plan: fallbackJson.plan,
+              status: fallbackJson.status,
+              synced: true,
+              active: true
+            };
+          } else if (!res.ok) {
+            res = await runRefresh();
+            json = (await res.json().catch(() => ({}))) as typeof json;
+          }
+        }
+
         await refreshWorkspacePlan();
 
-        const refreshedPlan = json.plan ? normalizePlan(json.plan) : null;
-        const refreshedStatus = json.status || workspaceSubscriptionStatus || 'free';
+        const latest = await fetch('/api/workspace/plan', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+        const effectivePlan = latest.organizationPlan
+          ? normalizePlan(latest.organizationPlan)
+          : json.plan
+            ? normalizePlan(json.plan)
+            : null;
+        const refreshedStatus =
+          latest.subscriptionStatus || json.status || workspaceSubscriptionStatus || 'free';
         const activated =
-          refreshedPlan &&
-          refreshedPlan !== 'free' &&
-          (json.active ?? isPaidPlanActive(refreshedPlan, refreshedStatus));
+          effectivePlan &&
+          effectivePlan !== 'free' &&
+          (json.active ?? isPaidPlanActive(effectivePlan, refreshedStatus));
 
-        if (activated) {
-          setPlan(refreshedPlan);
+        if (activated && effectivePlan) {
+          setPlan(effectivePlan);
           setSubscriptionStatus(refreshedStatus);
           setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
           return;
@@ -154,16 +184,23 @@ function BillingSettingsContent() {
 
         for (let attempt = 0; attempt < 3; attempt += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 1500));
-          const retry = await fetch('/api/billing/refresh-subscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: sessionId || undefined })
-          });
-          const retryJson = (await retry.json().catch(() => ({}))) as { plan?: string; status?: string; active?: boolean };
+          const retry = await runRefresh();
+          const retryJson = (await retry.json().catch(() => ({}))) as {
+            plan?: string;
+            status?: string;
+            active?: boolean;
+            synced?: boolean;
+          };
           await refreshWorkspacePlan();
-
-          const retryPlan = retryJson.plan ? normalizePlan(retryJson.plan) : null;
-          const retryStatus = retryJson.status || 'free';
+          const retryLatest = await fetch('/api/workspace/plan', { cache: 'no-store' })
+            .then((r) => r.json())
+            .catch(() => ({}));
+          const retryPlan = retryLatest.organizationPlan
+            ? normalizePlan(retryLatest.organizationPlan)
+            : retryJson.plan
+              ? normalizePlan(retryJson.plan)
+              : null;
+          const retryStatus = retryLatest.subscriptionStatus || retryJson.status || 'free';
           if (
             retryPlan &&
             retryPlan !== 'free' &&

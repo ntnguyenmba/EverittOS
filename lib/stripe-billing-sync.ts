@@ -545,13 +545,23 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
     stripeSessionId: input.stripeSessionId || null
   });
 
-  logStripeBilling('webhook:plan_updated', {
+  logStripeBilling('sync:plan_updated', {
     userId: profile.id,
     workspaceId: target.workspaceId,
     plan: input.plan,
     status: input.subscriptionStatus,
     stripeCustomerId,
     stripeSubscriptionId
+  });
+
+  logStripeBilling('sync:subscription_synced', {
+    userId: profile.id,
+    workspaceId: target.workspaceId,
+    plan: input.plan,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    stripeSessionId: input.stripeSessionId || null,
+    currentPeriodEnd: input.currentPeriodEnd || null
   });
 
   logStripeBilling('webhook:activation_completed', {
@@ -666,9 +676,27 @@ export async function syncActiveStripeSubscriptionForUser(
   const email = input.email.trim().toLowerCase();
 
   if (input.sessionId) {
+    logStripeBilling('sync:completed', {
+      phase: 'checkout_recovery_session',
+      sessionId: input.sessionId,
+      userId: input.userId,
+      workspaceId: input.workspaceId || null
+    });
+
     const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
       expand: ['subscription', 'line_items.data.price.product']
     });
+
+    logStripeBilling('checkout:session_metadata', {
+      sessionId: session.id,
+      clientReferenceId: session.client_reference_id,
+      workspaceId: session.metadata?.workspace_id || session.metadata?.organization_id || input.workspaceId || null,
+      userId: session.metadata?.user_id || session.metadata?.userId || input.userId,
+      ownerUserId: session.metadata?.owner_user_id || session.metadata?.ownerUserId || null,
+      email: session.metadata?.email || email,
+      paymentStatus: session.payment_status
+    });
+
     const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
     if (subId) {
       const sub = await stripe.subscriptions.retrieve(subId, {
@@ -676,6 +704,7 @@ export async function syncActiveStripeSubscriptionForUser(
       });
       const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
         sessionUserId: input.userId,
+        ownerUserId: session.metadata?.owner_user_id || session.metadata?.ownerUserId || null,
         email: session.metadata?.email?.trim().toLowerCase() || email,
         workspaceId: session.metadata?.workspace_id || session.metadata?.organization_id || input.workspaceId || null,
         stripeSessionId: session.id
@@ -698,6 +727,14 @@ export async function syncActiveStripeSubscriptionForUser(
 
   const customers = await stripe.customers.list({ email, limit: 10 });
   let best: { customerId: string; subscription: Stripe.Subscription } | null = null;
+
+  logStripeBilling('sync:completed', {
+    phase: 'checkout_recovery_customer_scan',
+    userId: input.userId,
+    workspaceId: input.workspaceId || null,
+    email,
+    customerCount: customers.data.length
+  });
 
   for (const customer of customers.data) {
     if (customer.deleted) continue;

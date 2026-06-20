@@ -11,6 +11,7 @@ export type StripeBillingLogTag =
   | 'checkout:payment_link_fallback'
   | 'checkout:promo_invalid'
   | 'checkout:session_created'
+  | 'checkout:session_metadata'
   | 'checkout:session_create_failed'
   | 'webhook:missing_signature'
   | 'webhook:signature_invalid'
@@ -22,6 +23,7 @@ export type StripeBillingLogTag =
   | 'webhook:plan_updated'
   | 'webhook:activation_completed'
   | 'webhook:activation_failed'
+  | 'webhook:processed'
   | 'webhook:unhandled_type'
   | 'webhook:handler_error'
   | 'webhook:checkout_completed'
@@ -29,6 +31,8 @@ export type StripeBillingLogTag =
   | 'webhook:subscription_deleted'
   | 'webhook:invoice_event'
   | 'sync:completed'
+  | 'sync:subscription_synced'
+  | 'sync:plan_updated'
   | 'sync:issue';
 
 export type StripeBillingLogLevel = 'log' | 'warn' | 'error';

@@ -18,6 +18,7 @@ import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { planFromSubscription } from '@/lib/stripe-plan-mapping';
 
 export const runtime = 'nodejs';
@@ -108,9 +109,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
   }
 
-  const workspaceId = profile?.organization_id || '';
-  let ownerUserId = user.id;
-  if (workspaceId) {
+  const workspaceIdFromProfile = profile?.organization_id || '';
+  const orgContext = await fetchOrganizationContextForUser(supabase, user.id);
+  const workspaceId = workspaceIdFromProfile || orgContext?.organizationId || '';
+  let ownerUserId = orgContext?.ownerUserId || user.id;
+  if (workspaceId && !orgContext?.ownerUserId) {
     const { data: org } = await supabase
       .from('organizations')
       .select('owner_user_id')
@@ -160,7 +163,7 @@ export async function POST(request: Request) {
         userId: user.id,
         ownerUserId,
         email,
-        organizationId: profile?.organization_id || null,
+        organizationId: workspaceId || null,
         subscription: existingSubscription
       });
 
@@ -243,7 +246,7 @@ export async function POST(request: Request) {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: appUrl('/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}'),
     cancel_url: appUrl('/settings/billing?checkout=cancelled'),
-    client_reference_id: plan,
+    client_reference_id: `${ownerUserId}:${workspaceId || 'solo'}:${plan}`,
     metadata,
     customer_creation: 'always',
     subscription_data: { metadata },
@@ -262,6 +265,18 @@ export async function POST(request: Request) {
 
   try {
     const session = await stripe.checkout.sessions.create(sessionParams);
+
+    logStripeBilling('checkout:session_metadata', {
+      sessionId: session.id,
+      userId: user.id,
+      ownerUserId,
+      workspaceId: workspaceId || null,
+      organizationId: workspaceId || null,
+      email,
+      plan,
+      priceId,
+      clientReferenceId: session.client_reference_id
+    });
 
     logStripeBilling('checkout:session_created', {
       userId: user.id,
