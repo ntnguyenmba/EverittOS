@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import { AiUsagePanel } from '@/components/ai-usage-panel';
-import { StaffAiUsagePanel } from '@/components/staff-ai-usage-panel';
+import { AiAccessCard } from '@/components/billing/ai-access-card';
 import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
@@ -487,13 +486,7 @@ function BillingSettingsContent() {
         <UsageDashboard plan={plan} counts={usage} />
       </div>
 
-      <div className="settings-card">
-        <AiUsagePanel plan={plan} />
-      </div>
-
-      <div className="settings-card">
-        <StaffAiUsagePanel />
-      </div>
+      <AiAccessCard plan={plan} canViewAdminUsage={canManageWorkspaceBilling} />
     </SettingsShell>
   );
 }

@@ -419,6 +419,7 @@ export const messages: Messages = {
     supportTraining: 'Soporte y capacitación',
     api: 'API',
     aiMemory: 'Memoria IA',
+    aiUsage: 'Uso de IA',
     departments: 'Departamentos'
   },
   supportTraining: {
@@ -554,7 +555,7 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Planes y facturación',
-    description: 'Estado de suscripción, uso y cambios de plan.',
+    description: 'Administre su suscripción, compare planes y actualice cuando esté listo.',
     pricingTitle: 'Planes y precios',
     pricingSubtitle: 'Compare planes lado a lado. Elija cualquier plan de pago que se ajuste a su espacio.',
     pricingPublicLead:
@@ -742,7 +743,20 @@ export const messages: Messages = {
       checkoutAck: 'Entiendo que todos los pagos son finales y no reembolsables.',
       ackRequired: 'Confirme la política de no reembolso antes del pago.',
       cancelNote: 'Cancelar solo detiene renovaciones futuras. Los cargos previos no son reembolsables.'
+    },
+    aiAccess: {
+      title: 'Acceso a IA',
+      askEverittIncluded: 'La búsqueda Ask Everitt está incluida en todos los planes.',
+      everittAiPlans: 'Everitt AI está disponible en los planes Business y Enterprise.',
+      includedOnPlan: 'Everitt AI está incluido en su plan {plan}.',
+      upgradeCta: 'Actualizar para desbloquear Everitt AI',
+      viewUsageLink: 'Ver uso detallado de IA y métricas del equipo'
     }
+  },
+  aiUsage: {
+    title: 'Uso de IA',
+    description: 'Recuentos de prompts, costos estimados, seguimiento de cuotas y métricas de uso del equipo para administradores.',
+    adminOnly: 'Solo los propietarios y administradores del workspace pueden ver las métricas de uso de IA.'
   },
   language: {
     title: 'Idioma',

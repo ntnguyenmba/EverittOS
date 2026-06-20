@@ -25,6 +25,7 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/billing', label: 'Plans & billing' },
+  { href: '/settings/ai-usage', label: 'AI Usage' },
   { href: '/settings/security', label: 'Security' },
   { href: '/settings/privacy', label: 'Privacy' },
   { href: '/settings/notifications', label: 'Notifications' },
@@ -107,6 +108,7 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
     );
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
+  if (path.startsWith('/settings/ai-usage')) return canManageBilling(role);
   if (path.startsWith('/settings/team')) return canViewTeam(role);
   if (path.startsWith('/settings/branding') || path.startsWith('/settings/integrations')) {
     return canManageOrganizationSettings(role);
@@ -236,6 +238,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 
   return SETTINGS_NAV_LINKS.filter((link) => {
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
+    if (link.href === '/settings/ai-usage' && !canManageBilling(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/team' && !canViewTeam(role)) return false;
     if (link.href === '/settings/branding' && !canManageOrganizationSettings(role)) return false;
@@ -261,6 +264,7 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
   }
 
   if (path.startsWith('/settings/billing') && !canManageBilling(role)) return false;
+  if (path.startsWith('/settings/ai-usage') && !canManageBilling(role)) return false;
   if (path.startsWith('/settings/team') && !canViewTeam(role)) return false;
   if (path.startsWith('/settings/branding') && !canManageOrganizationSettings(role)) return false;
   if ((path === '/settings' || path.startsWith('/settings?')) && !canManageOrganizationSettings(role)) {

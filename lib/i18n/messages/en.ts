@@ -417,6 +417,7 @@ export const messages: Messages = {
     supportTraining: 'Support & Training',
     api: 'API',
     aiMemory: 'AI Memory',
+    aiUsage: 'AI Usage',
     departments: 'Departments'
   },
   supportTraining: {
@@ -552,7 +553,7 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Plans & billing',
-    description: 'Subscription status, usage, and plan changes.',
+    description: 'Manage your subscription, compare plans, and upgrade when you are ready.',
     pricingTitle: 'Plans and pricing',
     pricingSubtitle: 'Compare plans side by side. Choose any paid plan that fits your workspace.',
     pricingPublicLead:
@@ -738,7 +739,20 @@ export const messages: Messages = {
       checkoutAck: 'I understand all payments are final and non-refundable.',
       ackRequired: 'Confirm the no-refund policy before checkout.',
       cancelNote: 'Canceling stops future renewals only. Prior charges are non-refundable.'
+    },
+    aiAccess: {
+      title: 'AI access',
+      askEverittIncluded: 'Ask Everitt search is included on every plan.',
+      everittAiPlans: 'Everitt AI is available on Business and Enterprise plans.',
+      includedOnPlan: 'Everitt AI is included on your {plan} plan.',
+      upgradeCta: 'Upgrade to unlock Everitt AI',
+      viewUsageLink: 'View detailed AI usage and staff metrics'
     }
+  },
+  aiUsage: {
+    title: 'AI Usage',
+    description: 'Prompt counts, estimated costs, quota tracking, and staff usage metrics for workspace admins.',
+    adminOnly: 'Only workspace owners and admins can view AI usage metrics.'
   },
   language: {
     title: 'Language',

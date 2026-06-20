@@ -276,6 +276,7 @@ export type MessageTree = {
     notifications: string;
     api: string;
     aiMemory: string;
+    aiUsage: string;
     departments: string;
     supportTraining: string;
   };
@@ -544,6 +545,19 @@ export type MessageTree = {
       ackRequired: string;
       cancelNote: string;
     };
+    aiAccess: {
+      title: string;
+      askEverittIncluded: string;
+      everittAiPlans: string;
+      includedOnPlan: string;
+      upgradeCta: string;
+      viewUsageLink: string;
+    };
+  };
+  aiUsage: {
+    title: string;
+    description: string;
+    adminOnly: string;
   };
   language: {
     title: string;

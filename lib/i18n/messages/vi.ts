@@ -417,6 +417,7 @@ export const messages: Messages = {
     supportTraining: 'Hỗ trợ & đào tạo',
     api: 'API',
     aiMemory: 'Bộ nhớ AI',
+    aiUsage: 'Sử dụng AI',
     departments: 'Phòng ban'
   },
   supportTraining: {
@@ -552,7 +553,7 @@ export const messages: Messages = {
   },
   billing: {
     title: 'Gói & thanh toán',
-    description: 'Trạng thái đăng ký, mức sử dụng và thay đổi gói.',
+    description: 'Quản lý đăng ký, so sánh gói và nâng cấp khi bạn sẵn sàng.',
     pricingTitle: 'Gói và giá',
     pricingSubtitle: 'So sánh các gói cạnh nhau. Chọn gói trả phí phù hợp với không gian làm việc.',
     pricingPublicLead:
@@ -740,7 +741,20 @@ export const messages: Messages = {
       checkoutAck: 'Tôi hiểu mọi khoản thanh toán là cuối cùng và không hoàn tiền.',
       ackRequired: 'Xác nhận chính sách không hoàn tiền trước khi thanh toán.',
       cancelNote: 'Hủy chỉ dừng gia hạn trong tương lai. Các khoản đã thu trước đó không được hoàn lại.'
+    },
+    aiAccess: {
+      title: 'Quyền truy cập AI',
+      askEverittIncluded: 'Tìm kiếm Ask Everitt được bao gồm trong mọi gói.',
+      everittAiPlans: 'Everitt AI có sẵn trên gói Business và Enterprise.',
+      includedOnPlan: 'Everitt AI được bao gồm trong gói {plan} của bạn.',
+      upgradeCta: 'Nâng cấp để mở khóa Everitt AI',
+      viewUsageLink: 'Xem chi tiết sử dụng AI và số liệu nhân viên'
     }
+  },
+  aiUsage: {
+    title: 'Sử dụng AI',
+    description: 'Số lượng prompt, chi phí ước tính, theo dõi hạn mức và số liệu sử dụng nhân viên dành cho quản trị viên.',
+    adminOnly: 'Chỉ chủ sở hữu và quản trị viên workspace mới có thể xem số liệu sử dụng AI.'
   },
   language: {
     title: 'Ngôn ngữ',
