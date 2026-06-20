@@ -548,6 +548,22 @@ export const messages: Messages = {
     description: 'Subscription status, usage, and plan changes.',
     pricingTitle: 'Plans and pricing',
     pricingSubtitle: 'Compare plans side by side. Choose any paid plan that fits your workspace.',
+    pricingPublicLead:
+      'Compare plans side by side. Start free or upgrade when you are ready — subscriptions renew monthly until canceled.',
+    pricingLoading: 'Loading plans…',
+    planChangeIntro:
+      'New subscriptions start in Stripe Checkout. Upgrades, downgrades, and cancellations use Manage billing when you already have a subscription.',
+    cancelViaPortal: 'Canceling keeps access until the end of the current billing period. Cancellations are final and non-refundable.',
+    upgradeDowngradeViaPortal:
+      'To upgrade or downgrade an existing subscription, open Manage billing and change your plan in Stripe.',
+    openingPortal: 'Opening billing portal…',
+    pricingNav: {
+      signIn: 'Sign in',
+      createAccount: 'Create account',
+      dashboard: 'Dashboard',
+      billing: 'Billing',
+      account: 'Account'
+    },
     allPlans: 'All plans',
     currentPlan: 'Plan',
     currentPlanBadge: 'Current plan',
@@ -562,6 +578,7 @@ export const messages: Messages = {
     resumePlan: 'Resume plan',
     contactBillingSupport: 'Contact billing support',
     planChangesSupport: 'Plan changes are handled through billing support for now.',
+    alreadySubscribedPortal: 'You already have an active subscription. Use Manage billing to upgrade, downgrade, or cancel.',
     downgradeSupportNote: 'Moving to the free plan requires billing support.',
     plansFootnote:
       'Subscriptions renew automatically until canceled. All payments are final and non-refundable once processed.',
@@ -681,6 +698,8 @@ export const messages: Messages = {
     },
     promo: {
       label: 'Promo code',
+      applyBeforeCheckout: 'Apply a promo code before choosing a paid plan.',
+      previewFor: 'Preview for',
       placeholder: 'Enter promo code',
       apply: 'Apply',
       validating: 'Validating…',

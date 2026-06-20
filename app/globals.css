@@ -5481,6 +5481,51 @@ html[data-deployment='production'] #vercel-toolbar {
   padding-bottom: 48px;
 }
 
+.pricing-public-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.pricing-public-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pricing-public-nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pricing-public-nav-button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pricing-public-nav-cta {
+  padding: 8px 14px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.billing-plan-change-intro {
+  margin: 0 0 16px;
+  max-width: 720px;
+}
+
 .pricing-public-header {
   margin-bottom: 24px;
 }

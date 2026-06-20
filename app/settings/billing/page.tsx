@@ -322,6 +322,7 @@ function BillingSettingsContent() {
 
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
+  const hasActiveSubscription = plan !== 'free' && Boolean(stripeCustomerId) && subscriptionStatus !== 'canceled';
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free');
 
   return (
@@ -424,6 +425,12 @@ function BillingSettingsContent() {
         {showPortalCancel ? (
           <NoRefundDisclosure variant="compact" text={NO_REFUND_CANCEL_NOTE} showLink={false} />
         ) : null}
+        {showPortalCancel ? (
+          <p className="muted">{t('billing.cancelViaPortal')}</p>
+        ) : null}
+        {canOpenPortal && plan !== 'free' ? (
+          <p className="muted">{t('billing.upgradeDowngradeViaPortal')}</p>
+        ) : null}
         {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
           <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
         ) : null}
@@ -466,7 +473,14 @@ function BillingSettingsContent() {
       <div className="settings-card">
         <h3>{t('billing.allPlans')}</h3>
         <p className="muted">{t('billing.pricingSubtitle')}</p>
-        <BillingPlansGrid currentPlan={plan} highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined} />
+        <BillingPlansGrid
+          currentPlan={plan}
+          highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
+          hasActiveSubscription={hasActiveSubscription}
+          portalAvailable={canOpenPortal}
+          onOpenPortal={canOpenPortal ? openBillingPortal : undefined}
+          portalLoading={portalLoading}
+        />
       </div>
 
       <div className="settings-card">

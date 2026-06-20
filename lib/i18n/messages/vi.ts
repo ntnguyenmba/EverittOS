@@ -548,6 +548,23 @@ export const messages: Messages = {
     description: 'Trạng thái đăng ký, mức sử dụng và thay đổi gói.',
     pricingTitle: 'Gói và giá',
     pricingSubtitle: 'So sánh các gói cạnh nhau. Chọn gói trả phí phù hợp với không gian làm việc.',
+    pricingPublicLead:
+      'So sánh các gói cạnh nhau. Bắt đầu miễn phí hoặc nâng cấp khi bạn sẵn sàng — đăng ký gia hạn hàng tháng cho đến khi hủy.',
+    pricingLoading: 'Đang tải gói…',
+    planChangeIntro:
+      'Đăng ký mới bắt đầu qua Stripe Checkout. Nâng cấp, hạ cấp và hủy dùng Quản lý thanh toán nếu bạn đã có đăng ký.',
+    cancelViaPortal:
+      'Hủy vẫn giữ quyền truy cập đến hết kỳ thanh toán hiện tại. Việc hủy là cuối cùng và không hoàn tiền.',
+    upgradeDowngradeViaPortal:
+      'Để nâng cấp hoặc hạ cấp đăng ký hiện có, mở Quản lý thanh toán và đổi gói trên Stripe.',
+    openingPortal: 'Đang mở cổng thanh toán…',
+    pricingNav: {
+      signIn: 'Đăng nhập',
+      createAccount: 'Tạo tài khoản',
+      dashboard: 'Bảng điều khiển',
+      billing: 'Thanh toán',
+      account: 'Tài khoản'
+    },
     allPlans: 'Tất cả gói',
     currentPlan: 'Gói',
     currentPlanBadge: 'Gói hiện tại',
@@ -562,6 +579,8 @@ export const messages: Messages = {
     resumePlan: 'Tiếp tục gói',
     contactBillingSupport: 'Liên hệ hỗ trợ thanh toán',
     planChangesSupport: 'Thay đổi gói hiện được xử lý qua hỗ trợ thanh toán.',
+    alreadySubscribedPortal:
+      'Bạn đã có đăng ký đang hoạt động. Dùng Quản lý thanh toán để nâng cấp, hạ cấp hoặc hủy.',
     downgradeSupportNote: 'Chuyển sang gói miễn phí cần hỗ trợ thanh toán.',
     plansFootnote:
       'Đăng ký tự gia hạn cho đến khi bạn hủy. Mọi khoản thanh toán là cuối cùng và không hoàn tiền sau khi xử lý.',
@@ -681,6 +700,8 @@ export const messages: Messages = {
     },
     promo: {
       label: 'Mã khuyến mãi',
+      applyBeforeCheckout: 'Áp dụng mã khuyến mãi trước khi chọn gói trả phí.',
+      previewFor: 'Xem trước cho',
       placeholder: 'Nhập mã khuyến mãi',
       apply: 'Áp dụng',
       validating: 'Đang xác minh…',

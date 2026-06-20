@@ -12,6 +12,7 @@ import {
   syncBillingToSupabase,
   syncStripeSubscriptionRecord
 } from '@/lib/stripe-billing-sync';
+import { logStripeBilling } from '@/lib/stripe-billing-logs';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import {
   planFromSession,
@@ -376,15 +377,21 @@ export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
-  if (!signature) return NextResponse.json({ error: 'Missing stripe-signature' }, { status: 400 });
+  if (!signature) {
+    logStripeBilling('webhook:missing_signature', {}, 'warn');
+    return NextResponse.json({ error: 'Missing stripe-signature' }, { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, secret);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid signature';
+    logStripeBilling('webhook:signature_invalid', { error: message }, 'warn');
     return NextResponse.json({ error: message }, { status: 400 });
   }
+
+  logStripeBilling('webhook:received', { eventId: event.id, eventType: event.type });
 
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });
@@ -393,10 +400,12 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded':
+        logStripeBilling('webhook:checkout_completed', { eventId: event.id, eventType: event.type });
         await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session, event.id, event.type);
         break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
+        logStripeBilling('webhook:subscription_event', { eventId: event.id, eventType: event.type });
         await handleSubscriptionEvent(
           stripe,
           admin,
@@ -406,20 +415,36 @@ export async function POST(request: Request) {
         );
         break;
       case 'customer.subscription.deleted':
+        logStripeBilling('webhook:subscription_deleted', { eventId: event.id });
         await handleSubscriptionDeleted(stripe, admin, event.data.object as Stripe.Subscription, event.id);
         break;
       case 'invoice.paid':
       case 'invoice.payment_succeeded':
-        await handleInvoiceEvent(admin, stripe, event.data.object as Stripe.Invoice, event.id, event.type, true);
-        break;
       case 'invoice.payment_failed':
-        await handleInvoiceEvent(admin, stripe, event.data.object as Stripe.Invoice, event.id, event.type, false);
+        logStripeBilling('webhook:invoice_event', { eventId: event.id, eventType: event.type });
+        await handleInvoiceEvent(
+          admin,
+          stripe,
+          event.data.object as Stripe.Invoice,
+          event.id,
+          event.type,
+          event.type !== 'invoice.payment_failed'
+        );
         break;
       default:
+        logStripeBilling('webhook:unhandled_type', { eventId: event.id, eventType: event.type });
         break;
     }
   } catch (error) {
-    console.error('[stripe-webhook] Handler error', event.type, error);
+    logStripeBilling(
+      'webhook:handler_error',
+      {
+        eventId: event.id,
+        eventType: event.type,
+        error: error instanceof Error ? error.message : 'unknown'
+      },
+      'error'
+    );
     return NextResponse.json({ error: 'Webhook handler failed.' }, { status: 500 });
   }
 

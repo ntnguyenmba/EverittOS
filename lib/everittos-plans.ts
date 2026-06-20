@@ -4,13 +4,6 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 
 export type EverittosPlan = PlanTierId;
 
-export const EVERITTOS_STRIPE_LINKS = {
-  pro: 'https://buy.stripe.com/eVq7sEcXCbX08Kn8P993y0c',
-  business: 'https://buy.stripe.com/fZuaEQ6zegdg2lZe9t93y0b',
-  growth: 'https://buy.stripe.com/9B6aEQcXCbX06Cf7L593y09',
-  enterprise: 'https://buy.stripe.com/3cI6oA5va6CG5yb5CX93y0a'
-} as const;
-
 export type PlanDefinition = {
   id: EverittosPlan;
   name: string;
@@ -20,7 +13,6 @@ export type PlanDefinition = {
   limits: string[];
   buttonLabel: string;
   featured?: boolean;
-  stripeLink?: string;
 };
 
 export const EVERITTOS_PLANS: PlanDefinition[] = [
@@ -56,8 +48,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
     ],
     limits: ['25 active jobs', '100 customers', '100 photos', '3 users'],
     buttonLabel: 'Start Pro',
-    featured: true,
-    stripeLink: EVERITTOS_STRIPE_LINKS.pro
+    featured: true
   },
   {
     id: 'business',
@@ -75,8 +66,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'See who is on each job'
     ],
     limits: ['150 active jobs', '1,000 customers', '15 users'],
-    buttonLabel: 'Start Business',
-    stripeLink: EVERITTOS_STRIPE_LINKS.business
+    buttonLabel: 'Start Business'
   },
   {
     id: 'growth',
@@ -94,8 +84,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'Priority support'
     ],
     limits: ['2,500 active jobs', '25,000 customers', '250 users'],
-    buttonLabel: 'Start Growth',
-    stripeLink: EVERITTOS_STRIPE_LINKS.growth
+    buttonLabel: 'Start Growth'
   },
   {
     id: 'enterprise',
@@ -112,8 +101,7 @@ export const EVERITTOS_PLANS: PlanDefinition[] = [
       'Unlimited jobs, customers, and users'
     ],
     limits: ['Unlimited jobs', 'Unlimited customers', 'Unlimited users'],
-    buttonLabel: 'Start Enterprise',
-    stripeLink: EVERITTOS_STRIPE_LINKS.enterprise
+    buttonLabel: 'Start Enterprise'
   }
 ];
 

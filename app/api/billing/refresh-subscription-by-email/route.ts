@@ -2,74 +2,13 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
+import { planFromCheckoutSession, planFromSubscription } from '@/lib/stripe-plan-mapping';
 
 export const runtime = 'nodejs';
-
-const PAID_PLANS = ['pro', 'business', 'growth', 'enterprise'] as const;
-type PaidPlan = (typeof PAID_PLANS)[number];
-
-function normalizePaidPlan(value: string | null | undefined): PaidPlan | null {
-  const raw = (value || '').trim().toLowerCase();
-  if (!raw) return null;
-  const normalized = normalizePlan(raw);
-  if (PAID_PLANS.includes(normalized as PaidPlan)) return normalized as PaidPlan;
-  return null;
-}
-
-function planFromAmount(amount: number | null | undefined): PaidPlan | null {
-  const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
-  if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'growth';
-  if (cents === 39900 || cents === 399) return 'growth';
-  if (cents === 79900 || cents === 799) return 'enterprise';
-  return null;
-}
-
-function planFromPrice(price: Stripe.Price | null | undefined): PaidPlan | null {
-  if (!price) return null;
-  const product =
-    typeof price.product === 'string'
-      ? null
-      : 'deleted' in price.product && price.product.deleted
-        ? null
-        : price.product;
-
-  return normalizePaidPlan(price.metadata?.plan) || normalizePaidPlan(product?.metadata?.plan) || planFromAmount(price.unit_amount);
-}
-
-function planFromSubscription(sub: Stripe.Subscription): PaidPlan | null {
-  const direct = normalizePaidPlan(sub.metadata?.plan);
-  if (direct) return direct;
-
-  for (const item of sub.items.data) {
-    const plan = planFromPrice(item.price);
-    if (plan) return plan;
-  }
-
-  return null;
-}
-
-function planFromSession(session: Stripe.Checkout.Session, lineItems: Stripe.ApiList<Stripe.LineItem> | null): PaidPlan | null {
-  const direct =
-    normalizePaidPlan(session.metadata?.plan) ||
-    normalizePaidPlan(session.metadata?.planKey) ||
-    normalizePaidPlan(session.client_reference_id) ||
-    planFromAmount(session.amount_subtotal) ||
-    planFromAmount(session.amount_total);
-  if (direct) return direct;
-
-  for (const item of lineItems?.data || []) {
-    const plan = planFromPrice(item.price);
-    if (plan) return plan;
-  }
-
-  return null;
-}
 
 async function getBestSubscription(stripe: Stripe, customerId: string) {
   const subscriptions = await stripe.subscriptions.list({
@@ -95,7 +34,7 @@ async function getLatestCompletedCheckoutPlan(stripe: Stripe, customerId: string
       limit: 5,
       expand: ['data.price.product']
     });
-    const plan = planFromSession(session, lineItems);
+    const plan = planFromCheckoutSession(session, lineItems.data);
     if (plan) {
       return { session, plan };
     }
@@ -116,7 +55,7 @@ async function getLatestCompletedCheckoutPlanByEmail(stripe: Stripe, email: stri
       limit: 5,
       expand: ['data.price.product']
     });
-    const plan = planFromSession(session, lineItems);
+    const plan = planFromCheckoutSession(session, lineItems.data);
     if (plan) return { session, plan };
   }
 
@@ -177,8 +116,8 @@ async function refreshByEmail(request: Request) {
 
   let selectedCustomerId: string | null = null;
   let selectedSubscription: Stripe.Subscription | null = null;
-  let selectedPlan: PaidPlan | null = null;
-  let completedCheckout: { session: Stripe.Checkout.Session; plan: PaidPlan } | null = null;
+  let selectedPlan: EverittosPlan | null = null;
+  let completedCheckout: { session: Stripe.Checkout.Session; plan: EverittosPlan } | null = null;
 
   for (const customerId of customerIds) {
     const subscription = await getBestSubscription(stripe, customerId);
@@ -204,7 +143,8 @@ async function refreshByEmail(request: Request) {
   if (!selectedPlan) {
     const checkout = await getLatestCompletedCheckoutPlanByEmail(stripe, checkoutEmail);
     if (checkout) {
-      const customerId = typeof checkout.session.customer === 'string' ? checkout.session.customer : checkout.session.customer?.id || null;
+      const customerId =
+        typeof checkout.session.customer === 'string' ? checkout.session.customer : checkout.session.customer?.id || null;
       selectedCustomerId = customerId;
       completedCheckout = checkout;
       selectedPlan = checkout.plan;
@@ -221,7 +161,10 @@ async function refreshByEmail(request: Request) {
     );
   }
 
-  const active = selectedSubscription?.status === 'active' || selectedSubscription?.status === 'trialing' || Boolean(completedCheckout);
+  const active =
+    selectedSubscription?.status === 'active' ||
+    selectedSubscription?.status === 'trialing' ||
+    Boolean(completedCheckout);
   const plan: EverittosPlan = active ? selectedPlan : 'free';
   const status = active ? `everittos_${selectedPlan}` : selectedSubscription?.status || 'free';
   const currentPeriodEnd = selectedSubscription?.current_period_end

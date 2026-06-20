@@ -6,7 +6,8 @@ export type StripeSubscriptionStatus =
   | 'unpaid'
   | 'incomplete'
   | 'incomplete_expired'
-  | 'paused';
+  | 'paused'
+  | 'inactive';
 
 export function normalizeStripeStatus(value: string | null | undefined): StripeSubscriptionStatus | 'free' {
   const status = (value || 'free').toLowerCase();
@@ -22,14 +23,15 @@ export function normalizeStripeStatus(value: string | null | undefined): StripeS
     'unpaid',
     'incomplete',
     'incomplete_expired',
-    'paused'
+    'paused',
+    'inactive'
   ];
 
   if (known.includes(status as StripeSubscriptionStatus)) {
     return status as StripeSubscriptionStatus;
   }
 
-  return status === 'free' ? 'free' : 'active';
+  return status === 'free' ? 'free' : 'inactive';
 }
 
 export function subscriptionStatusMessage(status: string | null | undefined): string {
@@ -54,8 +56,10 @@ export function subscriptionStatusMessage(status: string | null | undefined): st
       return 'Checkout expired. Start a new subscription to continue.';
     case 'paused':
       return 'Your subscription is paused. Resume when you are ready.';
+    case 'inactive':
+      return 'Subscription status is unrecognized. Update billing or contact support to restore access.';
     default:
-      return 'Subscription status updated.';
+      return 'Subscription status is unrecognized. Update billing or contact support.';
   }
 }
 

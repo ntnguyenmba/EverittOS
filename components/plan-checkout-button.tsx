@@ -59,6 +59,7 @@ export function PlanCheckoutButton({
 
       if (!res.ok) {
         if (json.code === 'already_subscribed') {
+          setError(json.error || t('billing.alreadySubscribedPortal'));
           window.location.href = json.redirect || '/settings/billing';
           return;
         }

@@ -186,20 +186,30 @@ describe('calculateDiscountedPrice', () => {
 });
 
 describe('planCardAction', () => {
-  it('offers Pro upgrade from Free', () => {
+  it('offers Pro checkout from Free when Stripe prices are configured', () => {
+    const original = process.env.STRIPE_PRICE_PRO;
+    process.env.STRIPE_PRICE_PRO = 'price_pro_test';
+
     const action = planCardAction('free', 'pro');
-    assert.equal(action.type, 'choose');
-    if (action.type === 'choose') {
+    assert.equal(action.type, 'checkout');
+    if (action.type === 'checkout') {
       assert.equal(action.plan, 'pro');
-      assert.equal(action.label, 'Choose Pro');
+      assert.match(action.label, /Pro/i);
     }
+
+    process.env.STRIPE_PRICE_PRO = original;
   });
 
-  it('offers Business upgrade from Free', () => {
+  it('offers Business checkout from Free when Stripe prices are configured', () => {
+    const original = process.env.STRIPE_PRICE_BUSINESS;
+    process.env.STRIPE_PRICE_BUSINESS = 'price_business_test';
+
     const action = planCardAction('free', 'business');
-    assert.equal(action.type, 'choose');
-    if (action.type === 'choose') {
+    assert.equal(action.type, 'checkout');
+    if (action.type === 'checkout') {
       assert.equal(action.plan, 'business');
     }
+
+    process.env.STRIPE_PRICE_BUSINESS = original;
   });
 });

@@ -550,6 +550,23 @@ export const messages: Messages = {
     description: 'Estado de suscripción, uso y cambios de plan.',
     pricingTitle: 'Planes y precios',
     pricingSubtitle: 'Compare planes lado a lado. Elija cualquier plan de pago que se ajuste a su espacio.',
+    pricingPublicLead:
+      'Compare planes lado a lado. Comience gratis o actualice cuando esté listo — las suscripciones se renuevan mensualmente hasta cancelarlas.',
+    pricingLoading: 'Cargando planes…',
+    planChangeIntro:
+      'Las nuevas suscripciones comienzan en Stripe Checkout. Las actualizaciones, degradaciones y cancelaciones usan Gestionar facturación si ya tiene una suscripción.',
+    cancelViaPortal:
+      'Cancelar mantiene el acceso hasta el final del periodo de facturación actual. Las cancelaciones son finales y no reembolsables.',
+    upgradeDowngradeViaPortal:
+      'Para actualizar o degradar una suscripción existente, abra Gestionar facturación y cambie su plan en Stripe.',
+    openingPortal: 'Abriendo portal de facturación…',
+    pricingNav: {
+      signIn: 'Iniciar sesión',
+      createAccount: 'Crear cuenta',
+      dashboard: 'Panel',
+      billing: 'Facturación',
+      account: 'Cuenta'
+    },
     allPlans: 'Todos los planes',
     currentPlan: 'Plan',
     currentPlanBadge: 'Plan actual',
@@ -564,6 +581,8 @@ export const messages: Messages = {
     resumePlan: 'Reanudar plan',
     contactBillingSupport: 'Contactar soporte de facturación',
     planChangesSupport: 'Los cambios de plan se gestionan por soporte de facturación por ahora.',
+    alreadySubscribedPortal:
+      'Ya tiene una suscripción activa. Use Gestionar facturación para actualizar, degradar o cancelar.',
     downgradeSupportNote: 'Pasar al plan gratuito requiere soporte de facturación.',
     plansFootnote:
       'Las suscripciones se renuevan automáticamente hasta cancelarlas. Todos los pagos son finales y no reembolsables una vez procesados.',
@@ -683,6 +702,8 @@ export const messages: Messages = {
     },
     promo: {
       label: 'Código promocional',
+      applyBeforeCheckout: 'Aplique un código promocional antes de elegir un plan de pago.',
+      previewFor: 'Vista previa para',
       placeholder: 'Ingrese código promocional',
       apply: 'Aplicar',
       validating: 'Validando…',

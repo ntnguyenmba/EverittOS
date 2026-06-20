@@ -45,6 +45,14 @@ export function stripeCheckoutConfigured(): boolean {
   );
 }
 
+export function stripeCheckoutAvailableForPlan(plan: Exclude<EverittosPlan, 'free'>): boolean {
+  return Boolean(stripePriceIdForPlan(plan));
+}
+
+export function paidCheckoutPlans(): Exclude<EverittosPlan, 'free'>[] {
+  return Object.keys(PLAN_AMOUNT_CENTS) as Exclude<EverittosPlan, 'free'>[];
+}
+
 export function formatMoneyFromCents(cents: number, currency = 'usd'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

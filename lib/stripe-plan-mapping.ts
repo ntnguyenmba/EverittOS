@@ -95,3 +95,24 @@ export async function planFromSession(
 export function stripePriceIdFromSession(session: Stripe.Checkout.Session): string | null {
   return session.metadata?.price_id?.trim() || null;
 }
+
+export function planFromCheckoutSession(
+  session: Stripe.Checkout.Session,
+  lineItems?: Stripe.LineItem[] | null
+): EverittosPlan | null {
+  const direct =
+    normalizeStripePlan(session.metadata?.plan) ||
+    normalizeStripePlan(session.metadata?.planKey) ||
+    normalizeStripePlan(session.metadata?.selected_plan) ||
+    normalizeStripePlan(session.client_reference_id) ||
+    planFromAmount(session.amount_subtotal) ||
+    planFromAmount(session.amount_total);
+  if (direct) return direct;
+
+  for (const item of lineItems || []) {
+    const plan = planFromPrice(item.price);
+    if (plan) return plan;
+  }
+
+  return null;
+}

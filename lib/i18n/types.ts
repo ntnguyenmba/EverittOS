@@ -404,6 +404,19 @@ export type MessageTree = {
     description: string;
     pricingTitle: string;
     pricingSubtitle: string;
+    pricingPublicLead: string;
+    pricingLoading: string;
+    planChangeIntro: string;
+    cancelViaPortal: string;
+    upgradeDowngradeViaPortal: string;
+    openingPortal: string;
+    pricingNav: {
+      signIn: string;
+      createAccount: string;
+      dashboard: string;
+      billing: string;
+      account: string;
+    };
     allPlans: string;
     currentPlan: string;
     currentPlanBadge: string;
@@ -418,6 +431,7 @@ export type MessageTree = {
     resumePlan: string;
     contactBillingSupport: string;
     planChangesSupport: string;
+    alreadySubscribedPortal: string;
     downgradeSupportNote: string;
     plansFootnote: string;
     portalUnavailable: string;
@@ -491,6 +505,8 @@ export type MessageTree = {
     };
     promo: {
       label: string;
+      applyBeforeCheckout: string;
+      previewFor: string;
       placeholder: string;
       apply: string;
       validating: string;

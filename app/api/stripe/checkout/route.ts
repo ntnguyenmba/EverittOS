@@ -13,48 +13,10 @@ import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
+import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { planFromSubscription } from '@/lib/stripe-plan-mapping';
 
 export const runtime = 'nodejs';
-
-function planFromAmount(amount: number | null | undefined): EverittosPlan | null {
-  const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
-  if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'growth';
-  if (cents === 39900 || cents === 399) return 'growth';
-  if (cents === 79900 || cents === 799) return 'enterprise';
-  return null;
-}
-
-function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
-  if (!price) return null;
-  const product =
-    typeof price.product === 'string'
-      ? null
-      : 'deleted' in price.product && price.product.deleted
-        ? null
-        : price.product;
-
-  const fromPrice = normalizePlan(price.metadata?.plan);
-  if (fromPrice !== 'free') return fromPrice;
-
-  const fromProduct = normalizePlan(product?.metadata?.plan);
-  if (fromProduct !== 'free') return fromProduct;
-
-  return planFromAmount(price.unit_amount);
-}
-
-function planFromSubscription(sub: Stripe.Subscription): EverittosPlan | null {
-  const direct = normalizePlan(sub.metadata?.plan || sub.metadata?.planKey);
-  if (direct !== 'free') return direct;
-
-  for (const item of sub.items.data) {
-    const plan = planFromPrice(item.price);
-    if (plan && plan !== 'free') return plan;
-  }
-
-  return null;
-}
 
 async function activeSubscriptionForCustomer(stripe: NonNullable<ReturnType<typeof getStripeClient>>, customerId: string) {
   const subscriptions = await stripe.subscriptions.list({
@@ -96,6 +58,7 @@ async function syncExistingSubscription(input: {
 export async function POST(request: Request) {
   const stripe = getStripeClient();
   if (!stripe) {
+    logStripeBilling('checkout:not_configured', { reason: 'stripe_client_missing' }, 'warn');
     return NextResponse.json({ error: 'Stripe is not configured.' }, { status: 503 });
   }
 
@@ -105,6 +68,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    logStripeBilling('checkout:unauthenticated', {});
     return NextResponse.json({ error: 'Sign in to start checkout.' }, { status: 401 });
   }
 
@@ -116,6 +80,7 @@ export async function POST(request: Request) {
 
   const role = normalizeRole(profile?.role || 'owner');
   if (!canManageBilling(role)) {
+    logStripeBilling('checkout:forbidden', { userId: user.id, role });
     return NextResponse.json({ error: 'Only workspace owners and admins can start checkout.', role }, { status: 403 });
   }
 
@@ -130,10 +95,12 @@ export async function POST(request: Request) {
   const email = (profile?.email || user.email || '').trim().toLowerCase();
 
   if (!isPaidCheckoutPlan(plan)) {
+    logStripeBilling('checkout:invalid_plan', { userId: user.id, plan });
     return NextResponse.json({ error: 'Select a paid plan to checkout.' }, { status: 400 });
   }
 
   if (!email) {
+    logStripeBilling('checkout:missing_email', { userId: user.id, plan });
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
   }
 
@@ -169,9 +136,17 @@ export async function POST(request: Request) {
         subscription: existingSubscription
       });
 
+      logStripeBilling('checkout:already_subscribed', {
+        userId: user.id,
+        customerId,
+        subscriptionId: existingSubscription.id,
+        plan: existingPlan,
+        status: existingSubscription.status
+      });
+
       return NextResponse.json(
         {
-          error: 'You already have an active subscription. We refreshed your billing status instead of creating another checkout.',
+          error: 'You already have an active subscription. Use Manage billing to upgrade, downgrade, or cancel.',
           code: 'already_subscribed',
           plan: existingPlan,
           status: existingSubscription.status,
@@ -184,6 +159,7 @@ export async function POST(request: Request) {
 
   const priceId = stripePriceIdForPlan(plan);
   if (!priceId) {
+    logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_price_id' }, 'warn');
     return NextResponse.json(
       {
         error: 'Stripe checkout is not fully configured. Set STRIPE_PRICE_* environment variables.',
@@ -199,6 +175,11 @@ export async function POST(request: Request) {
   if (promoCode) {
     const validation = await validatePromotionCodeForPlan(stripe, promoCode, plan);
     if (!validation.valid) {
+      logStripeBilling('checkout:promo_invalid', {
+        userId: user.id,
+        plan,
+        errorCode: validation.errorCode
+      });
       await logPromoCodeFailure({
         userId: user.id,
         organizationId: profile?.organization_id || null,
@@ -267,11 +248,32 @@ export async function POST(request: Request) {
 
   Object.assign(sessionParams, checkoutPromotionParams(promotionCodeId));
 
-  const session = await stripe.checkout.sessions.create(sessionParams);
+  try {
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
-  return NextResponse.json({
-    url: session.url,
-    sessionId: session.id,
-    preview
-  });
+    logStripeBilling('checkout:session_created', {
+      userId: user.id,
+      plan,
+      sessionId: session.id,
+      customerId: customerId,
+      priceId
+    });
+
+    return NextResponse.json({
+      url: session.url,
+      sessionId: session.id,
+      preview
+    });
+  } catch (error) {
+    logStripeBilling(
+      'checkout:session_create_failed',
+      {
+        userId: user.id,
+        plan,
+        error: error instanceof Error ? error.message : 'unknown'
+      },
+      'error'
+    );
+    return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 500 });
+  }
 }

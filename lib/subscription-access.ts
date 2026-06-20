@@ -71,8 +71,20 @@ export function subscriptionAccess(
         message: 'Subscription is paused. Resume from billing settings.',
         billingRequired: true
       };
+    case 'inactive':
+      return {
+        ok: false,
+        status,
+        message: 'Subscription status is unrecognized. Update billing to restore paid access.',
+        billingRequired: true
+      };
     default:
-      return { ok: true, status: 'active', message: 'Subscription status updated.', billingRequired: false };
+      return {
+        ok: false,
+        status: 'inactive',
+        message: 'Subscription status is unrecognized. Update billing to restore paid access.',
+        billingRequired: true
+      };
   }
 }
 

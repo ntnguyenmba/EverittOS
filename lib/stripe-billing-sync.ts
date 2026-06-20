@@ -4,6 +4,7 @@ import type { EverittosPlan } from '@/lib/everittos-plans';
 import type { StoredCouponDiscount } from '@/lib/stripe-promo';
 import { coalesceStripeCustomerId, isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { planFromSubscription, primaryStripePriceId } from '@/lib/stripe-plan-mapping';
+import { logBillingSyncEvent, logBillingSyncIssueEvent } from '@/lib/stripe-billing-logs';
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
 
@@ -35,11 +36,11 @@ export type BillingProfileRow = {
 };
 
 export function logBillingSync(message: string, data: Record<string, unknown>) {
-  console.log(`[stripe-billing] ${message}`, JSON.stringify(data));
+  logBillingSyncEvent(message, data);
 }
 
 export function logBillingSyncIssue(issue: string, data: Record<string, unknown>) {
-  console.warn(`[stripe-billing] sync_issue:${issue}`, JSON.stringify(data));
+  logBillingSyncIssueEvent(issue, data);
 }
 
 export function everittosStatusForSubscription(

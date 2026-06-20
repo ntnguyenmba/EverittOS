@@ -2,58 +2,13 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { getStripeClient } from '@/lib/stripe-server';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
+import { planFromSubscription } from '@/lib/stripe-plan-mapping';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const ALLOWED_PLANS = ['pro', 'business', 'growth', 'enterprise'] as const;
-
-function normalizeStripePlan(value: string | null | undefined): EverittosPlan | null {
-  const normalized = normalizePlan(value);
-  if (normalized === 'free') return null;
-  return ALLOWED_PLANS.includes(normalized as (typeof ALLOWED_PLANS)[number]) ? normalized : null;
-}
-
-function planFromAmount(amount: number | null | undefined): EverittosPlan | null {
-  const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
-  if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'growth';
-  if (cents === 39900 || cents === 399) return 'growth';
-  if (cents === 79900 || cents === 799) return 'enterprise';
-  return null;
-}
-
-function productPlanMetadata(product: string | Stripe.Product | Stripe.DeletedProduct | null | undefined): string | null {
-  if (!product || typeof product === 'string') return null;
-  if ('deleted' in product && product.deleted) return null;
-  return product.metadata?.plan || null;
-}
-
-function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
-  if (!price) return null;
-  return (
-    normalizeStripePlan(price.metadata?.plan) ||
-    normalizeStripePlan(productPlanMetadata(price.product)) ||
-    planFromAmount(price.unit_amount)
-  );
-}
-
-function planFromSubscription(subscription: Stripe.Subscription): EverittosPlan | null {
-  const direct = normalizeStripePlan(subscription.metadata?.plan);
-  if (direct) return direct;
-
-  for (const item of subscription.items.data) {
-    const plan = planFromPrice(item.price);
-    if (plan) return plan;
-  }
-
-  return null;
-}
 
 async function findCustomer(stripe: Stripe, email: string, profileCustomerId?: string | null) {
   if (isValidStripeCustomerId(profileCustomerId)) {
