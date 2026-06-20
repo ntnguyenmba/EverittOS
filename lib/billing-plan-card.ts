@@ -23,7 +23,7 @@ export type BillingPlanCardUi =
   | { kind: 'unavailable'; label: string; reason: string };
 
 /** Bump when billing purchase-button logic changes (visible on /settings/billing). */
-export const BILLING_UI_BUILD_ID = 'billing-v4-env-checkout';
+export const BILLING_UI_BUILD_ID = 'billing-v5-stripe-validation';
 
 export function billingCheckoutTargetAvailable(plan: string): plan is PaidPlanKey {
   return plan !== 'free' && Boolean(billingPlanDefinition(plan as EverittosPlan));
