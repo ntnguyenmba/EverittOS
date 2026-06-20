@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { appUrl } from '@/lib/app-url';
-import {
-  billingCheckoutMethod,
-  paymentLinkForPlan,
-  resolveStripePriceId
-} from '@/lib/billing-config';
-import { billingCheckoutTargetForPlan, billingCheckoutTargetAvailable } from '@/lib/billing-plan-card';
+import { billingCheckoutMethod, resolveStripePriceId, stripePriceEnvKey } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -20,6 +15,7 @@ import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { planFromSubscription } from '@/lib/stripe-plan-mapping';
+import { formatStripeError, validateStripeSubscriptionPrice } from '@/lib/stripe-checkout-validation';
 
 export const runtime = 'nodejs';
 
@@ -62,11 +58,41 @@ async function syncExistingSubscription(input: {
   });
 }
 
+async function recordCheckoutFailure(input: {
+  email: string;
+  userId: string;
+  plan: EverittosPlan;
+  workspaceId: string | null;
+  priceId: string | null;
+  error: string;
+  code?: string | null;
+}) {
+  const admin = createAdminSupabase();
+  if (!admin) return;
+
+  await admin.from('subscription_events').insert({
+    email: input.email,
+    event_type: 'checkout.failed',
+    plan: input.plan,
+    stripe_event_id: `checkout_failed_${input.userId}_${Date.now()}`,
+    payload: {
+      userId: input.userId,
+      workspaceId: input.workspaceId,
+      priceId: input.priceId,
+      error: input.error,
+      code: input.code || null
+    }
+  });
+}
+
 export async function POST(request: Request) {
   const stripe = getStripeClient();
   if (!stripe) {
     logStripeBilling('checkout:not_configured', { reason: 'stripe_client_missing' }, 'warn');
-    return NextResponse.json({ error: 'Stripe is not configured.' }, { status: 503 });
+    return NextResponse.json(
+      { error: 'Stripe is not configured. Set STRIPE_SECRET_KEY.', code: 'stripe_not_configured' },
+      { status: 503 }
+    );
   }
 
   const supabase = await createServerSupabase();
@@ -76,7 +102,7 @@ export async function POST(request: Request) {
 
   if (!user) {
     logStripeBilling('checkout:unauthenticated', {});
-    return NextResponse.json({ error: 'Sign in to start checkout.' }, { status: 401 });
+    return NextResponse.json({ error: 'Sign in to start checkout.', code: 'unauthorized' }, { status: 401 });
   }
 
   const { data: profile } = await supabase
@@ -99,14 +125,20 @@ export async function POST(request: Request) {
   const refundPolicyAcknowledged = body.refundPolicyAcknowledged === true;
   const email = (profile?.email || user.email || '').trim().toLowerCase();
 
+  logStripeBilling('checkout:request_received', {
+    userId: user.id,
+    planRequested: plan,
+    refundPolicyAcknowledged
+  });
+
   if (!isPaidCheckoutPlan(plan)) {
     logStripeBilling('checkout:invalid_plan', { userId: user.id, plan });
-    return NextResponse.json({ error: 'Select a paid plan to checkout.' }, { status: 400 });
+    return NextResponse.json({ error: 'Select a paid plan to checkout.', code: 'invalid_plan' }, { status: 400 });
   }
 
   if (!email) {
     logStripeBilling('checkout:missing_email', { userId: user.id, plan });
-    return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
+    return NextResponse.json({ error: 'Account email is required for checkout.', code: 'missing_email' }, { status: 400 });
   }
 
   const workspaceIdFromProfile = profile?.organization_id || '';
@@ -123,14 +155,59 @@ export async function POST(request: Request) {
   }
 
   const checkoutMethod = billingCheckoutMethod(plan);
-  if (!checkoutMethod) {
-    logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_checkout_target' }, 'warn');
+  const priceId = resolveStripePriceId(plan);
+  const priceEnvKey = stripePriceEnvKey(plan);
+
+  logStripeBilling('checkout:price_resolution', {
+    userId: user.id,
+    plan,
+    workspaceId: workspaceId || null,
+    organizationId: workspaceId || null,
+    ownerUserId,
+    priceEnvKey,
+    priceIdFound: Boolean(priceId),
+    priceId: priceId || null,
+    checkoutMethod: checkoutMethod || null
+  });
+
+  if (!checkoutMethod || !priceId) {
+    const message = `Checkout is not configured for ${plan}. Set ${priceEnvKey} in server environment variables.`;
+    logStripeBilling(
+      'checkout:not_configured',
+      { userId: user.id, plan, reason: 'missing_price_env', priceEnvKey },
+      'warn'
+    );
+    await recordCheckoutFailure({
+      email,
+      userId: user.id,
+      plan,
+      workspaceId: workspaceId || null,
+      priceId: null,
+      error: message,
+      code: 'checkout_not_configured'
+    });
+    return NextResponse.json({ error: message, code: 'checkout_not_configured', priceEnvKey }, { status: 503 });
+  }
+
+  const priceValidation = await validateStripeSubscriptionPrice(stripe, priceId);
+  if (!priceValidation.ok) {
+    logStripeBilling(
+      'checkout:price_invalid',
+      { userId: user.id, plan, priceId, workspaceId: workspaceId || null, error: priceValidation.error },
+      'error'
+    );
+    await recordCheckoutFailure({
+      email,
+      userId: user.id,
+      plan,
+      workspaceId: workspaceId || null,
+      priceId,
+      error: priceValidation.error,
+      code: 'invalid_stripe_price'
+    });
     return NextResponse.json(
-      {
-        error: 'Billing setup missing for this plan.',
-        code: 'checkout_not_configured'
-      },
-      { status: 503 }
+      { error: priceValidation.error, code: 'invalid_stripe_price', priceId },
+      { status: 422 }
     );
   }
 
@@ -188,41 +265,6 @@ export async function POST(request: Request) {
     }
   }
 
-  if (checkoutMethod === 'payment_link') {
-    const paymentLink = paymentLinkForPlan(plan);
-    if (!paymentLink) {
-      return NextResponse.json(
-        { error: 'Billing setup missing for this plan.', code: 'checkout_not_configured' },
-        { status: 503 }
-      );
-    }
-
-    logStripeBilling('checkout:payment_link_redirect', { userId: user.id, plan });
-    return NextResponse.json({
-      url: paymentLink,
-      method: 'payment_link',
-      plan
-    });
-  }
-
-  const priceId = resolveStripePriceId(plan);
-  if (!priceId) {
-    const fallback =
-      billingCheckoutTargetAvailable(plan) ? billingCheckoutTargetForPlan(plan).checkoutUrl : paymentLinkForPlan(plan);
-    if (fallback) {
-      logStripeBilling('checkout:payment_link_fallback', { userId: user.id, plan, reason: 'missing_price_id' });
-      return NextResponse.json({ url: fallback, method: 'payment_link', plan });
-    }
-    logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_price_id' }, 'warn');
-    return NextResponse.json(
-      {
-        error: 'Billing setup missing for this plan.',
-        code: 'checkout_not_configured'
-      },
-      { status: 503 }
-    );
-  }
-
   const metadata = {
     plan,
     planKey: plan,
@@ -248,7 +290,6 @@ export async function POST(request: Request) {
     cancel_url: appUrl('/settings/billing?checkout=cancelled'),
     client_reference_id: `${ownerUserId}:${workspaceId || 'solo'}:${plan}`,
     metadata,
-    customer_creation: 'always',
     subscription_data: { metadata },
     custom_text: {
       submit: { message: NO_REFUND_STRIPE_SUBMIT_MESSAGE }
@@ -258,12 +299,19 @@ export async function POST(request: Request) {
 
   if (customerId) {
     sessionParams.customer = customerId;
-    delete sessionParams.customer_creation;
   } else {
     sessionParams.customer_email = email;
   }
 
   try {
+    logStripeBilling('checkout:session_create_attempt', {
+      userId: user.id,
+      plan,
+      priceId,
+      workspaceId: workspaceId || null,
+      customerId: customerId || null
+    });
+
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStripeBilling('checkout:session_metadata', {
@@ -275,7 +323,8 @@ export async function POST(request: Request) {
       email,
       plan,
       priceId,
-      clientReferenceId: session.client_reference_id
+      clientReferenceId: session.client_reference_id,
+      stripeResponseUrl: session.url || null
     });
 
     logStripeBilling('checkout:session_created', {
@@ -283,30 +332,65 @@ export async function POST(request: Request) {
       plan,
       sessionId: session.id,
       customerId: customerId,
-      priceId
+      priceId,
+      workspaceId: workspaceId || null
     });
+
+    if (!session.url) {
+      const message = 'Stripe checkout session was created without a redirect URL.';
+      await recordCheckoutFailure({
+        email,
+        userId: user.id,
+        plan,
+        workspaceId: workspaceId || null,
+        priceId,
+        error: message,
+        code: 'missing_checkout_url'
+      });
+      return NextResponse.json({ error: message, code: 'missing_checkout_url', sessionId: session.id }, { status: 502 });
+    }
 
     return NextResponse.json({
       url: session.url,
       method: 'session',
       sessionId: session.id,
-      plan
+      plan,
+      priceId
     });
   } catch (error) {
+    const formatted = formatStripeError(error);
     logStripeBilling(
       'checkout:session_create_failed',
       {
         userId: user.id,
         plan,
-        error: error instanceof Error ? error.message : 'unknown'
+        priceId,
+        workspaceId: workspaceId || null,
+        error: formatted.message,
+        stripeCode: formatted.code,
+        stripeType: formatted.type,
+        stripeStatus: formatted.statusCode
       },
       'error'
     );
-    const fallback =
-      billingCheckoutTargetAvailable(plan) ? billingCheckoutTargetForPlan(plan).checkoutUrl : paymentLinkForPlan(plan);
-    if (fallback) {
-      return NextResponse.json({ url: fallback, method: 'payment_link', plan, fallback: true });
-    }
-    return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 500 });
+    await recordCheckoutFailure({
+      email,
+      userId: user.id,
+      plan,
+      workspaceId: workspaceId || null,
+      priceId,
+      error: formatted.message,
+      code: formatted.code
+    });
+    return NextResponse.json(
+      {
+        error: formatted.message,
+        code: formatted.code || 'stripe_checkout_failed',
+        stripeType: formatted.type,
+        priceId,
+        plan
+      },
+      { status: formatted.statusCode && formatted.statusCode >= 400 && formatted.statusCode < 600 ? formatted.statusCode : 502 }
+    );
   }
 }

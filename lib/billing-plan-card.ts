@@ -1,76 +1,14 @@
 /**
- * Frozen, client-safe Stripe checkout targets for billing UI.
- * Never reads process.env — safe for SSR, hydration, and browser bundles.
+ * Client-safe billing card actions for the billing UI.
+ * Checkout availability is resolved server-side via /api/stripe/capabilities.
  */
-import { supportMailtoHref } from '@/lib/support';
+import { billingPlanDefinition } from '@/lib/billing-config';
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { supportMailtoHref } from '@/lib/support';
 
 export type PaidPlanKey = Exclude<EverittosPlan, 'free'>;
 
-export type BillingCheckoutMethod = 'session' | 'payment_link';
-
-export type BillingCheckoutTarget = {
-  plan: PaidPlanKey;
-  priceId: string | null;
-  checkoutUrl: string | null;
-  method: BillingCheckoutMethod;
-  buttonLabel: string;
-  available: true;
-};
-
-/** Bump when billing purchase-button logic changes (visible on /settings/billing). */
-export const BILLING_UI_BUILD_ID = 'billing-v3-client-checkout';
-
-export const BILLING_CHECKOUT_TARGETS: Record<PaidPlanKey, BillingCheckoutTarget> = {
-  pro: {
-    plan: 'pro',
-    priceId: null,
-    checkoutUrl: 'https://buy.stripe.com/eVq7sEcXCbX08Kn8P993y0c',
-    method: 'payment_link',
-    buttonLabel: 'Choose Pro',
-    available: true
-  },
-  business: {
-    plan: 'business',
-    priceId: 'price_1TcwxB2KsjgU9g9y57f9veQh',
-    checkoutUrl: null,
-    method: 'session',
-    buttonLabel: 'Choose Business',
-    available: true
-  },
-  starter: {
-    plan: 'starter',
-    priceId: null,
-    checkoutUrl: 'https://buy.stripe.com/cNi4gs8Hm3qu8Kn7L593y08',
-    method: 'payment_link',
-    buttonLabel: 'Choose Starter',
-    available: true
-  },
-  growth: {
-    plan: 'growth',
-    priceId: 'price_1TbVfe2KsjgU9g9yMtCnJrBw',
-    checkoutUrl: 'https://buy.stripe.com/9B6aEQcXCbX06Cf7L593y09',
-    method: 'session',
-    buttonLabel: 'Choose Growth',
-    available: true
-  },
-  enterprise: {
-    plan: 'enterprise',
-    priceId: 'price_1TbViN2KsjgU9g9yUlok4S2W',
-    checkoutUrl: 'https://buy.stripe.com/3cI6oA5va6CG5yb5CX93y0a',
-    method: 'session',
-    buttonLabel: 'Choose Enterprise',
-    available: true
-  }
-};
-
-export function billingCheckoutTargetForPlan(plan: PaidPlanKey): BillingCheckoutTarget {
-  return BILLING_CHECKOUT_TARGETS[plan];
-}
-
-export function billingCheckoutTargetAvailable(plan: string): plan is PaidPlanKey {
-  return plan in BILLING_CHECKOUT_TARGETS;
-}
+export type BillingCheckoutMethod = 'session';
 
 export type BillingPlanCardUi =
   | { kind: 'current'; label: 'Current plan' }
@@ -78,18 +16,25 @@ export type BillingPlanCardUi =
       kind: 'checkout';
       label: string;
       plan: PaidPlanKey;
-      priceId: string | null;
-      checkoutUrl: string | null;
-      method: BillingCheckoutMethod;
+      checkoutAvailable: boolean;
     }
   | { kind: 'portal'; label: string }
-  | { kind: 'downgrade_contact'; label: string; href: string };
+  | { kind: 'downgrade_contact'; label: string; href: string }
+  | { kind: 'unavailable'; label: string; reason: string };
+
+/** Bump when billing purchase-button logic changes (visible on /settings/billing). */
+export const BILLING_UI_BUILD_ID = 'billing-v4-env-checkout';
+
+export function billingCheckoutTargetAvailable(plan: string): plan is PaidPlanKey {
+  return plan !== 'free' && Boolean(billingPlanDefinition(plan as EverittosPlan));
+}
 
 export function resolveBillingPlanCardUi(input: {
   currentPlan: EverittosPlan;
   targetPlan: EverittosPlan;
   hasActiveSubscription?: boolean;
   portalAvailable?: boolean;
+  checkoutAvailableByPlan?: Partial<Record<PaidPlanKey, boolean>>;
 }): BillingPlanCardUi {
   const current = input.currentPlan;
   const target = input.targetPlan;
@@ -114,23 +59,34 @@ export function resolveBillingPlanCardUi(input: {
   }
 
   if (!billingCheckoutTargetAvailable(target)) {
-    throw new Error(`Missing billing checkout target for plan: ${target}`);
+    return {
+      kind: 'unavailable',
+      label: 'Billing setup missing for this plan',
+      reason: 'invalid_plan'
+    };
   }
 
-  const checkout = billingCheckoutTargetForPlan(target);
-  const label = isFreeUser ? checkout.buttonLabel : hasActiveSubscription ? 'Upgrade' : checkout.buttonLabel;
+  const checkoutAvailable = input.checkoutAvailableByPlan?.[target] ?? false;
+  const checkoutLabel = billingPlanDefinition(target)?.buttonLabel || `Choose ${target}`;
+  const label = isFreeUser ? checkoutLabel : hasActiveSubscription ? 'Upgrade' : checkoutLabel;
 
   if (hasActiveSubscription && portalAvailable) {
-    return { kind: 'portal', label: `Change plan in billing portal` };
+    return { kind: 'portal', label: 'Change plan in billing portal' };
+  }
+
+  if (!checkoutAvailable) {
+    return {
+      kind: 'unavailable',
+      label: 'Checkout unavailable',
+      reason: 'missing_stripe_price_id'
+    };
   }
 
   return {
     kind: 'checkout',
     label,
-    plan: checkout.plan,
-    priceId: checkout.priceId,
-    checkoutUrl: checkout.checkoutUrl,
-    method: checkout.method
+    plan: target,
+    checkoutAvailable
   };
 }
 
@@ -144,5 +100,23 @@ export function billingPlanCardHint(ui: BillingPlanCardUi): string | null {
   if (ui.kind === 'downgrade_contact') {
     return 'To move back to Free, contact support or cancel in the billing portal.';
   }
+  if (ui.kind === 'unavailable') {
+    return 'This plan is missing a Stripe price ID in server configuration.';
+  }
   return null;
 }
+
+/** @deprecated Use resolveBillingPlanCardUi with checkoutAvailableByPlan from /api/stripe/capabilities. */
+export function billingCheckoutTargetForPlan(plan: PaidPlanKey) {
+  const definition = billingPlanDefinition(plan);
+  return {
+    plan,
+    priceId: null,
+    checkoutUrl: null,
+    method: 'session' as const,
+    buttonLabel: definition?.buttonLabel || `Choose ${plan}`,
+    available: true
+  };
+}
+
+export const BILLING_CHECKOUT_TARGETS = {} as Record<PaidPlanKey, never>;

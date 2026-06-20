@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { billingPlanDiagnostics, stripeEnvironmentDiagnostics } from '@/lib/billing-diagnostics';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
-import type { EverittosPlan } from '@/lib/everittos-plans';
+import { anyBillingCheckoutAvailable } from '@/lib/billing-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,6 +40,8 @@ export async function GET() {
   const plan = normalizePlan(profile?.plan);
   const orgPlan = await resolveOrganizationPlan(supabase, user.id);
   const billingUserId = orgPlan.ownerUserId || user.id;
+  const envDiagnostics = stripeEnvironmentDiagnostics();
+  const planDiagnostics = billingPlanDiagnostics();
 
   const { data: subscription } = await admin
     .from('everittos_subscriptions')
@@ -66,13 +68,12 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(1);
 
-  const { data: activationFailures } = await admin
+  const { data: checkoutFailures } = await admin
     .from('subscription_events')
-    .select('event_type, plan, stripe_event_id, payload, created_at')
-    .ilike('email', email)
-    .ilike('event_type', 'webhook.sync.failed:%')
+    .select('event_type, plan, stripe_event_id, payload, created_at, email')
+    .eq('event_type', 'checkout.failed')
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(10);
 
   const latestWebhook = webhookEvents?.[0] || null;
   const latestWebhookReceived = webhookReceived?.[0] || null;
@@ -82,11 +83,15 @@ export async function GET() {
     eventType?: string;
   };
 
-  const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
-  const webhookConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim());
-  const checkoutConfigured = (['pro', 'business', 'growth', 'enterprise'] as EverittosPlan[]).some(
-    (tier) => isPaidCheckoutPlan(tier) && Boolean(stripePriceIdForPlan(tier))
-  );
+  const latestCheckoutFailure =
+    (checkoutFailures || []).find((row) => row.email === email || (row.payload as { userId?: string })?.userId === user.id) ||
+    null;
+  const checkoutFailurePayload = (latestCheckoutFailure?.payload || {}) as {
+    error?: string;
+    code?: string;
+    priceId?: string;
+    plan?: string;
+  };
 
   const profileCustomerId = isValidStripeCustomerId(profile?.stripe_customer_id) ? profile?.stripe_customer_id : null;
   const subscriptionCustomerId = isValidStripeCustomerId(subscription?.stripe_customer_id)
@@ -97,21 +102,22 @@ export async function GET() {
     : null;
 
   const issues: string[] = [];
-  if (!stripeConfigured) issues.push('missing_stripe_secret_key');
-  if (!webhookConfigured) issues.push('missing_stripe_webhook_secret');
-  if (!checkoutConfigured) issues.push('missing_stripe_price_id');
-  if (!profileCustomerId) issues.push('missing_stripe_customer_id');
+  if (!envDiagnostics.stripeSecretKeyConfigured) issues.push('missing_stripe_secret_key');
+  if (!envDiagnostics.stripeWebhookSecretConfigured) issues.push('missing_stripe_webhook_secret');
+  if (!anyBillingCheckoutAvailable()) issues.push('missing_stripe_price_ids');
+  if (!profileCustomerId && !subscriptionCustomerId) issues.push('missing_stripe_customer_id');
   if (plan !== 'free' && !subscriptionId) issues.push('missing_stripe_subscription_id');
   if (orgPlan.plan !== plan && orgPlan.plan !== 'free') {
     issues.push('org_plan_mismatch');
   }
   if (latestWebhook && payload.success === false) issues.push(`webhook_sync_failed:${payload.reason || 'unknown'}`);
+  if (latestCheckoutFailure) issues.push(`checkout_failed:${checkoutFailurePayload.code || 'unknown'}`);
 
   return NextResponse.json({
     profile: {
       plan,
       subscriptionStatus: profile?.subscription_status || 'free',
-      stripeCustomerId: profileCustomerId,
+      stripeCustomerId: profileCustomerId || subscriptionCustomerId,
       billingEmail: email
     },
     organization: {
@@ -150,17 +156,33 @@ export async function GET() {
           syncedAt: latestWebhook.created_at
         }
       : null,
-    activationErrors: (activationFailures || []).map((row) => ({
-      eventType: row.event_type,
-      stripeEventId: row.stripe_event_id,
-      plan: row.plan,
-      reason: (row.payload as { reason?: string })?.reason || null,
-      at: row.created_at
-    })),
+    latestCheckoutError: latestCheckoutFailure
+      ? {
+          plan: latestCheckoutFailure.plan,
+          error: checkoutFailurePayload.error || null,
+          code: checkoutFailurePayload.code || null,
+          priceId: checkoutFailurePayload.priceId || null,
+          at: latestCheckoutFailure.created_at
+        }
+      : null,
+    activationErrors: (checkoutFailures || [])
+      .filter((row) => row.event_type !== 'checkout.failed')
+      .map((row) => ({
+        eventType: row.event_type,
+        stripeEventId: row.stripe_event_id,
+        plan: row.plan,
+        reason: (row.payload as { reason?: string })?.reason || null,
+        at: row.created_at
+      })),
+    diagnostics: {
+      environment: envDiagnostics,
+      plans: planDiagnostics
+    },
     stripe: {
-      configured: stripeConfigured,
-      webhookConfigured,
-      checkoutConfigured
+      configured: envDiagnostics.stripeSecretKeyConfigured,
+      publishableKeyConfigured: envDiagnostics.stripePublishableKeyConfigured,
+      webhookConfigured: envDiagnostics.stripeWebhookSecretConfigured,
+      checkoutConfigured: anyBillingCheckoutAvailable()
     },
     issues,
     healthy: issues.length === 0

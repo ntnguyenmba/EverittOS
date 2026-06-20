@@ -69,9 +69,6 @@ export function PricingCheckoutPanel({
                     <PlanCheckoutButton
                       plan={tier.id}
                       label={checkout.buttonLabel}
-                      checkoutUrl={checkout.checkoutUrl}
-                      priceId={checkout.priceId}
-                      method={checkout.method}
                       className="btn btn-primary btn-block"
                     />
                   ) : (

@@ -190,7 +190,7 @@ describe('planCardAction', () => {
     const original = process.env.STRIPE_PRICE_PRO;
     process.env.STRIPE_PRICE_PRO = 'price_pro_test';
 
-    const action = planCardAction('free', 'pro');
+    const action = planCardAction('free', 'pro', { checkoutAvailable: true });
     assert.equal(action.type, 'checkout');
     if (action.type === 'checkout') {
       assert.equal(action.plan, 'pro');
@@ -204,7 +204,7 @@ describe('planCardAction', () => {
     const original = process.env.STRIPE_PRICE_BUSINESS;
     process.env.STRIPE_PRICE_BUSINESS = 'price_business_test';
 
-    const action = planCardAction('free', 'business');
+    const action = planCardAction('free', 'business', { checkoutAvailable: true });
     assert.equal(action.type, 'checkout');
     if (action.type === 'checkout') {
       assert.equal(action.plan, 'business');

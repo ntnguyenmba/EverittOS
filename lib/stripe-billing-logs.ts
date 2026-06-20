@@ -1,14 +1,16 @@
 const LOG_SCOPE = 'stripe-billing';
 
 export type StripeBillingLogTag =
+  | 'checkout:request_received'
+  | 'checkout:price_resolution'
+  | 'checkout:price_invalid'
+  | 'checkout:session_create_attempt'
   | 'checkout:unauthenticated'
   | 'checkout:forbidden'
   | 'checkout:invalid_plan'
   | 'checkout:missing_email'
   | 'checkout:already_subscribed'
   | 'checkout:not_configured'
-  | 'checkout:payment_link_redirect'
-  | 'checkout:payment_link_fallback'
   | 'checkout:promo_invalid'
   | 'checkout:session_created'
   | 'checkout:session_metadata'

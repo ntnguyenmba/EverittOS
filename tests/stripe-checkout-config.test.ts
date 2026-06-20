@@ -4,12 +4,10 @@ import {
   billingCheckoutAvailable,
   billingCheckoutMethod,
   BILLING_PLAN_ORDER,
-  clientBillingCheckoutAvailable,
-  clientBillingCheckoutTarget,
-  paymentLinkForPlan,
   planFromBillingAmount,
   planFromKnownStripePriceId,
-  resolveStripePriceId
+  resolveStripePriceId,
+  STRIPE_PRICE_ENV_KEYS
 } from '@/lib/billing-config';
 import { resolveBillingPlanCardUi } from '@/lib/billing-plan-card';
 import { isPlanUpgrade, isPlanDowngrade } from '@/lib/billing-plan-actions';
@@ -20,6 +18,23 @@ import {
   stripeCheckoutAvailableForPlan,
   stripeAnyCheckoutAvailable
 } from '@/lib/stripe-prices';
+
+const ORIGINAL_ENV = { ...process.env };
+
+function restoreEnv() {
+  for (const key of Object.keys(process.env)) {
+    if (!(key in ORIGINAL_ENV)) delete process.env[key];
+  }
+  Object.assign(process.env, ORIGINAL_ENV);
+}
+
+function setAllStripePriceEnv() {
+  process.env.STRIPE_PRICE_PRO = 'price_test_pro';
+  process.env.STRIPE_PRICE_BUSINESS = 'price_test_business';
+  process.env.STRIPE_PRICE_STARTER = 'price_test_starter';
+  process.env.STRIPE_PRICE_GROWTH = 'price_test_growth';
+  process.env.STRIPE_PRICE_ENTERPRISE = 'price_test_enterprise';
+}
 
 test('plan ladder includes all six tiers', () => {
   assert.deepEqual(BILLING_PLAN_ORDER, ['free', 'pro', 'business', 'starter', 'growth', 'enterprise']);
@@ -39,72 +54,63 @@ test('paid checkout plans include all five paid tiers', () => {
   assert.equal(isPaidCheckoutPlan('free'), false);
 });
 
-test('billing checkout is available via price ID or payment link defaults', () => {
-  assert.equal(billingCheckoutAvailable('pro'), true);
-  assert.equal(billingCheckoutAvailable('business'), true);
-  assert.equal(billingCheckoutAvailable('starter'), true);
-  assert.equal(billingCheckoutAvailable('growth'), true);
-  assert.equal(billingCheckoutAvailable('enterprise'), true);
+test('checkout requires env price IDs for every paid plan', () => {
+  restoreEnv();
+  for (const plan of paidCheckoutPlans()) {
+    assert.equal(billingCheckoutAvailable(plan), false, plan);
+    assert.equal(resolveStripePriceId(plan), null, plan);
+  }
+
+  setAllStripePriceEnv();
+  for (const plan of paidCheckoutPlans()) {
+    assert.equal(billingCheckoutAvailable(plan), true, plan);
+    assert.equal(billingCheckoutMethod(plan), 'session', plan);
+  }
   assert.equal(stripeAnyCheckoutAvailable(), true);
+  restoreEnv();
 });
 
-test('client billing checkout is available without server env vars', () => {
-  for (const plan of ['pro', 'business', 'starter', 'growth', 'enterprise'] as const) {
-    assert.equal(clientBillingCheckoutAvailable(plan), true, plan);
+test('enterprise checkout resolves from STRIPE_PRICE_ENTERPRISE env', () => {
+  restoreEnv();
+  process.env.STRIPE_PRICE_ENTERPRISE = 'price_1TbViN2KsjgU9g9yUlok4S2W';
+  assert.equal(resolveStripePriceId('enterprise'), 'price_1TbViN2KsjgU9g9yUlok4S2W');
+  assert.equal(billingCheckoutMethod('enterprise'), 'session');
+  assert.equal(planFromKnownStripePriceId('price_1TbViN2KsjgU9g9yUlok4S2W'), 'enterprise');
+  restoreEnv();
+});
+
+test('free user paid plan buttons use checkout when server reports availability', () => {
+  const ui = resolveBillingPlanCardUi({
+    currentPlan: 'free',
+    targetPlan: 'enterprise',
+    checkoutAvailableByPlan: { enterprise: true }
+  });
+  assert.equal(ui.kind, 'checkout');
+  if (ui.kind === 'checkout') {
+    assert.equal(ui.label, 'Choose Enterprise');
+    assert.equal(ui.checkoutAvailable, true);
   }
 });
 
-test('free user paid plan buttons never use contact billing support', () => {
-  for (const plan of ['pro', 'business', 'starter', 'growth', 'enterprise'] as const) {
-    const ui = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: plan });
-    assert.notEqual(ui.kind, 'downgrade_contact', plan);
-    assert.equal(ui.kind, 'checkout', plan);
-  }
-});
-
-test('free user plan buttons use Choose labels from frozen checkout targets', () => {
-  const pro = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: 'pro' });
-  assert.equal(pro.kind, 'checkout');
-  if (pro.kind === 'checkout') assert.equal(pro.label, 'Choose Pro');
-});
-
-test('client checkout targets include payment links for link-only plans', () => {
-  const pro = clientBillingCheckoutTarget('pro');
-  assert.equal(pro.method, 'payment_link');
-  assert.match(pro.checkoutUrl || '', /^https:\/\/buy\.stripe\.com\//);
-
-  const starter = clientBillingCheckoutTarget('starter');
-  assert.equal(starter.method, 'payment_link');
-  assert.match(starter.checkoutUrl || '', /^https:\/\/buy\.stripe\.com\//);
-});
-
-test('client checkout targets prefer session when default price ID exists', () => {
-  const business = clientBillingCheckoutTarget('business');
-  assert.equal(business.method, 'session');
-  assert.equal(business.priceId, 'price_1TcwxB2KsjgU9g9y57f9veQh');
-
-  const growth = clientBillingCheckoutTarget('growth');
-  assert.equal(growth.method, 'session');
-  assert.equal(growth.priceId, 'price_1TbVfe2KsjgU9g9yMtCnJrBw');
+test('free user sees unavailable when enterprise price env is missing', () => {
+  const ui = resolveBillingPlanCardUi({
+    currentPlan: 'free',
+    targetPlan: 'enterprise',
+    checkoutAvailableByPlan: { enterprise: false }
+  });
+  assert.equal(ui.kind, 'unavailable');
 });
 
 test('stripe price and amount mapping resolves known plans', () => {
+  restoreEnv();
+  process.env.STRIPE_PRICE_BUSINESS = 'price_1TcwxB2KsjgU9g9y57f9veQh';
+  process.env.STRIPE_PRICE_GROWTH = 'price_1TbVfe2KsjgU9g9yMtCnJrBw';
   assert.equal(planFromKnownStripePriceId('price_1TcwxB2KsjgU9g9y57f9veQh'), 'business');
   assert.equal(planFromKnownStripePriceId('price_1TbVfe2KsjgU9g9yMtCnJrBw'), 'growth');
   assert.equal(planFromBillingAmount(14900), 'starter');
   assert.equal(planFromBillingAmount(900), 'pro');
-});
-
-test('checkout method prefers session when price ID exists', () => {
-  assert.equal(billingCheckoutMethod('business'), 'session');
-  assert.equal(billingCheckoutMethod('pro'), 'payment_link');
-});
-
-test('payment links are configured for public paid tiers', () => {
-  assert.match(paymentLinkForPlan('pro') || '', /eVq7sEcXCbX08Kn8P993y0c/);
-  assert.match(paymentLinkForPlan('starter') || '', /cNi4gs8Hm3qu8Kn7L593y08/);
-  assert.match(paymentLinkForPlan('growth') || '', /9B6aEQcXCbX06Cf7L593y09/);
-  assert.match(paymentLinkForPlan('enterprise') || '', /3cI6oA5va6CG5yb5CX93y0a/);
+  assert.equal(planFromBillingAmount(79900), 'enterprise');
+  restoreEnv();
 });
 
 test('resolveBillingPlanCardUi routes active subscribers to billing portal', () => {
@@ -112,27 +118,39 @@ test('resolveBillingPlanCardUi routes active subscribers to billing portal', () 
     currentPlan: 'pro',
     targetPlan: 'business',
     hasActiveSubscription: true,
-    portalAvailable: true
+    portalAvailable: true,
+    checkoutAvailableByPlan: { business: true }
   });
   assert.equal(upgrade.kind, 'portal');
 
-  const checkout = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: 'pro' });
+  const checkout = resolveBillingPlanCardUi({
+    currentPlan: 'free',
+    targetPlan: 'pro',
+    checkoutAvailableByPlan: { pro: true }
+  });
   assert.equal(checkout.kind, 'checkout');
-  if (checkout.kind === 'checkout') {
-    assert.equal(checkout.label, 'Choose Pro');
-    assert.equal(checkout.method, 'payment_link');
-  }
 });
 
 test('plan upgrade and downgrade helpers compare plan rank with starter tier', () => {
   assert.equal(isPlanUpgrade('pro', 'business'), true);
   assert.equal(isPlanUpgrade('business', 'starter'), true);
   assert.equal(isPlanUpgrade('starter', 'growth'), true);
+  assert.equal(isPlanUpgrade('growth', 'enterprise'), true);
   assert.equal(isPlanDowngrade('starter', 'business'), true);
   assert.equal(isPlanDowngrade('pro', 'free'), false);
 });
 
-test('stripeCheckoutAvailableForPlan reflects centralized billing config', () => {
+test('stripeCheckoutAvailableForPlan reflects env configuration', () => {
+  restoreEnv();
+  process.env.STRIPE_PRICE_ENTERPRISE = 'price_test_enterprise';
   assert.equal(stripeCheckoutAvailableForPlan('enterprise'), true);
-  assert.equal(stripeCheckoutAvailableForPlan('starter'), true);
+  delete process.env.STRIPE_PRICE_ENTERPRISE;
+  assert.equal(stripeCheckoutAvailableForPlan('enterprise'), false);
+  restoreEnv();
+});
+
+test('every paid plan has a documented env key', () => {
+  for (const plan of paidCheckoutPlans()) {
+    assert.match(STRIPE_PRICE_ENV_KEYS[plan], /^STRIPE_PRICE_/);
+  }
 });

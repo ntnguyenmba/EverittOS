@@ -53,8 +53,30 @@ type BillingHealthResponse = {
     ownerUserId: string | null;
     effectivePlan: string;
   };
+  diagnostics?: {
+    environment: {
+      stripeSecretKeyConfigured: boolean;
+      stripePublishableKeyConfigured: boolean;
+      stripeWebhookSecretConfigured: boolean;
+    };
+    plans: Array<{
+      plan: string;
+      priceEnvKey: string;
+      priceIdConfigured: boolean;
+      priceIdPreview: string | null;
+      checkoutAvailable: boolean;
+    }>;
+  };
+  latestCheckoutError?: {
+    plan: string | null;
+    error: string | null;
+    code: string | null;
+    priceId: string | null;
+    at: string;
+  } | null;
   stripe: {
     configured: boolean;
+    publishableKeyConfigured?: boolean;
     webhookConfigured: boolean;
     checkoutConfigured: boolean;
   };
@@ -212,6 +234,30 @@ export function BillingHealthCheck() {
               <span className="settings-row-value">{planDisplayName(normalizePlan(health.organization.effectivePlan))}</span>
             </div>
           ) : null}
+          {health.latestCheckoutError ? (
+            <div className="settings-row">
+              <span className="settings-row-label">Latest checkout error</span>
+              <span className="settings-row-value">
+                {health.latestCheckoutError.plan || 'unknown'} · {health.latestCheckoutError.error || health.latestCheckoutError.code || 'unknown'}
+              </span>
+            </div>
+          ) : null}
+          {health.diagnostics?.plans?.map((row) => (
+            <div className="settings-row" key={row.plan}>
+              <span className="settings-row-label">{row.plan} price ({row.priceEnvKey})</span>
+              <span className="settings-row-value">
+                {row.checkoutAvailable
+                  ? row.priceIdPreview || 'configured'
+                  : 'missing'}
+              </span>
+            </div>
+          ))}
+          <div className="settings-row">
+            <span className="settings-row-label">Publishable key configured</span>
+            <span className="settings-row-value">
+              {health.stripe.publishableKeyConfigured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
+            </span>
+          </div>
           <div className="settings-row">
             <span className="settings-row-label">{t('billing.health.technical.stripeConfigured')}</span>
             <span className="settings-row-value">

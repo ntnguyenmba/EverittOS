@@ -2,11 +2,13 @@
 
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import {
   BILLING_UI_BUILD_ID,
   billingPlanCardHint,
-  resolveBillingPlanCardUi
+  resolveBillingPlanCardUi,
+  type PaidPlanKey
 } from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -167,6 +169,30 @@ export function BillingPlansGrid({
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
   const isFreeUser = normalizedCurrent === 'free';
+  const [checkoutAvailableByPlan, setCheckoutAvailableByPlan] = useState<Partial<Record<PaidPlanKey, boolean>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCapabilities() {
+      const res = await fetch('/api/stripe/capabilities', { cache: 'no-store' });
+      const json = (await res.json().catch(() => ({}))) as {
+        plans?: Partial<Record<PaidPlanKey, { checkoutAvailable?: boolean }>>;
+      };
+      if (cancelled || !json.plans) return;
+
+      const next: Partial<Record<PaidPlanKey, boolean>> = {};
+      for (const [plan, config] of Object.entries(json.plans)) {
+        next[plan as PaidPlanKey] = Boolean(config?.checkoutAvailable);
+      }
+      setCheckoutAvailableByPlan(next);
+    }
+
+    void loadCapabilities();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="billing-plans-grid-wrap" data-billing-build={BILLING_UI_BUILD_ID} style={shellStyle}>
@@ -185,7 +211,8 @@ export function BillingPlansGrid({
             currentPlan: normalizedCurrent,
             targetPlan: tier.id,
             hasActiveSubscription: isFreeUser ? false : hasActiveSubscription,
-            portalAvailable
+            portalAvailable,
+            checkoutAvailableByPlan
           });
           const isCurrent = ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
@@ -239,11 +266,15 @@ export function BillingPlansGrid({
                   <PlanCheckoutButton
                     plan={ui.plan}
                     label={ui.label}
-                    checkoutUrl={ui.checkoutUrl}
-                    priceId={ui.priceId}
-                    method={ui.method}
+                    disabled={!ui.checkoutAvailable}
                     className="btn btn-primary btn-block"
                   />
+                ) : null}
+
+                {ui.kind === 'unavailable' ? (
+                  <p className="billing-plan-current-label" style={currentStyle}>
+                    {ui.label}
+                  </p>
                 ) : null}
 
                 {ui.kind === 'portal' && onOpenPortal ? (

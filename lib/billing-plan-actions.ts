@@ -1,7 +1,6 @@
 import {
   billingPlanCheckoutTarget,
   billingPlanDefinition,
-  clientBillingCheckoutAvailable,
   type PaidPlanKey
 } from '@/lib/billing-config';
 import { planRank } from '@/lib/plan-access';
@@ -18,9 +17,6 @@ export type PlanCardAction =
       label: string;
       plan: PaidPlanKey;
       change: PlanChangeKind;
-      priceId: string | null;
-      checkoutUrl: string | null;
-      method: 'session' | 'payment_link';
     }
   | { type: 'portal'; label: string; change: 'upgrade' | 'downgrade' | 'switch' }
   | { type: 'unavailable'; label: string; reason: string }
@@ -46,6 +42,7 @@ function planChangeLabel(current: EverittosPlan, target: EverittosPlan): { label
 export type PlanCardActionOptions = {
   hasActiveSubscription?: boolean;
   portalAvailable?: boolean;
+  checkoutAvailable?: boolean;
 };
 
 export function planCardAction(
@@ -57,6 +54,7 @@ export function planCardAction(
   const target = normalizePlan(targetPlan);
   const hasActiveSubscription = options.hasActiveSubscription === true;
   const portalAvailable = options.portalAvailable === true;
+  const checkoutAvailable = options.checkoutAvailable === true;
 
   if (target === 'free') {
     if (current === 'free') return { type: 'current', label: 'Current plan' };
@@ -83,11 +81,11 @@ export function planCardAction(
     };
   }
 
-  if (!clientBillingCheckoutAvailable(target)) {
+  if (!checkoutAvailable) {
     return {
       type: 'unavailable',
-      label: 'Billing setup missing for this plan',
-      reason: 'checkout_unavailable'
+      label: 'Checkout unavailable',
+      reason: 'missing_stripe_price_id'
     };
   }
 
@@ -119,8 +117,8 @@ export function planCardAction(
   if (!checkout.method) {
     return {
       type: 'unavailable',
-      label: 'Billing setup missing for this plan',
-      reason: 'checkout_unavailable'
+      label: 'Checkout unavailable',
+      reason: 'missing_stripe_price_id'
     };
   }
 
@@ -128,10 +126,7 @@ export function planCardAction(
     type: 'checkout',
     label,
     plan: target,
-    change,
-    priceId: checkout.priceId,
-    checkoutUrl: checkout.checkoutUrl,
-    method: checkout.method
+    change
   };
 }
 
@@ -160,7 +155,7 @@ export function planChangeHint(action: PlanCardAction): string | null {
     return 'Complete checkout in Stripe to activate your new plan.';
   }
   if (action.type === 'unavailable') {
-    return 'This plan is not configured for checkout yet.';
+    return 'This plan is missing a Stripe price ID in server configuration.';
   }
   return null;
 }
