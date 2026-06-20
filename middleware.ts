@@ -62,6 +62,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/auth/sign-out',
   '/api/auth/signup-rate-limit',
   '/api/stripe/webhook',
+  '/api/stripe/capabilities',
   '/api/team/accept',
   '/api/forms/public',
   '/api/book'
