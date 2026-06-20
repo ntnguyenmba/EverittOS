@@ -493,6 +493,10 @@ export async function ensureUserWorkspace(
       );
     }
 
+    if (profileNeedsSetup(existing)) {
+      logAuthEvent('profile_created', { userId, emailDomain });
+    }
+
     if (!orgId) {
       const { data: org, error: orgError } = await admin
         .from('organizations')
@@ -523,6 +527,7 @@ export async function ensureUserWorkspace(
       }
       orgId = org.id;
       created = true;
+      logAuthEvent('workspace_created', { userId, emailDomain, orgId });
     }
 
     const memberRole = roleToDb(normalizeRole(membership?.role || role));

@@ -1,4 +1,5 @@
 import { trackProductEvent } from '@/lib/product-analytics';
+import { logAuthEvent } from '@/lib/auth-logger';
 
 export async function trackOnboardingStarted(organizationId: string) {
   await trackProductEvent('onboarding_started', organizationId);
@@ -24,6 +25,10 @@ export async function trackOnboardingCompleted(
   organizationId: string,
   metadata?: Record<string, unknown>
 ) {
+  logAuthEvent('onboarding_completed', {
+    organizationId,
+    skipped: metadata?.skipped ? 1 : 0
+  });
   await trackProductEvent('onboarding_completed', organizationId, metadata);
 }
 

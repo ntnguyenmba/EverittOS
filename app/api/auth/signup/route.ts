@@ -1,8 +1,12 @@
-import { mapAuthError } from '@/lib/auth-errors';
+import { mapAuthError, mapAuthErrorByCode, mapSignupExistingUserError } from '@/lib/auth-errors';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { logAuthStep } from '@/lib/auth-diagnostics';
 import { logAuthDebug } from '@/lib/auth-debug';
 import { confirmEmailRedirectUrl } from '@/lib/auth-redirect-urls';
+import {
+  diagnoseSignupExistingUser,
+  isExistingUserSignupMessage
+} from '@/lib/auth-user-diagnostics';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
@@ -98,6 +102,11 @@ export async function POST(request: Request) {
     const emailRedirectTo = confirmEmailRedirectUrl(next);
     logAuthDebug('signup_email_redirect', { emailRedirectTo });
 
+    logAuthEvent('signup_attempt', {
+      host: diagnostics.urlHost || 'unknown',
+      emailDomain: email.split('@')[1] || 'unknown'
+    });
+
     logAuthStep(ROUTE, 'sign_in', {
       host: diagnostics.urlHost || 'unknown',
       emailDomain: email.split('@')[1] || 'unknown'
@@ -117,20 +126,62 @@ export async function POST(request: Request) {
 
     if (error) {
       const isFetchFailure = error.message.toLowerCase().includes('fetch failed');
+      const isExistingUser = isExistingUserSignupMessage(error.message);
+
+      if (isExistingUser) {
+        const diagnosis = await diagnoseSignupExistingUser(email);
+        const mapped = mapSignupExistingUserError(diagnosis.reason);
+
+        if (mapped.resendConfirmation) {
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo }
+          });
+          logAuthEvent('signup_confirmation_resent', {
+            emailDomain: email.split('@')[1] || 'unknown',
+            ok: resendError ? 0 : 1,
+            reason: resendError?.message || 'none'
+          });
+        }
+
+        logAuthEvent('signup_failed', {
+          reason: diagnosis.reason,
+          existingUser: 1,
+          host: diagnostics.urlHost || 'unknown',
+          emailDomain: email.split('@')[1] || 'unknown'
+        });
+
+        return json(
+          secureSignupPayload({
+            error: mapped.message,
+            title: mapped.title,
+            code: mapped.code,
+            signInRecommended: mapped.signInRecommended,
+            recoveryReason: diagnosis.reason,
+            confirmationResent: mapped.resendConfirmation,
+            diagnostics,
+            connectivity
+          }),
+          { status: 409 }
+        );
+      }
+
       logAuthEvent('signup_failed', {
         reason: error.message,
         host: diagnostics.urlHost || 'unknown',
         emailDomain: email.split('@')[1] || 'unknown'
       });
+
       const mapped = mapAuthError(error.message);
+      const friendlyFromCode = mapAuthErrorByCode(mapped.code);
       return json(
         secureSignupPayload({
           error: isFetchFailure
             ? 'We could not complete signup right now. Try again in a moment or contact support.'
-            : mapped.message,
+            : friendlyFromCode?.message || mapped.message,
           title: isFetchFailure ? 'Supabase connection failed' : mapped.title,
-          code: mapped.code || error.message,
-          supabaseMessage: error.message,
+          code: mapped.code || 'signup_failed',
           diagnostics,
           connectivity
         }),

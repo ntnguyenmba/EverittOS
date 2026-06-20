@@ -86,6 +86,38 @@ const FRIENDLY: Record<string, AuthErrorResult> = {
       'This email confirmation link expired or was opened in a different browser. Sign in with your email and password instead.',
     details: 'PKCE flow state was missing or expired during code exchange.',
     code: 'pkce_flow_expired'
+  },
+  existing_unconfirmed: {
+    title: 'Account already exists',
+    message:
+      'Account already exists. Check your email for the confirmation link or sign in.',
+    details: 'Supabase Auth user exists but email is not confirmed.',
+    code: 'existing_unconfirmed'
+  },
+  existing_confirmed: {
+    title: 'Account already exists',
+    message: 'An account already exists with this email. Sign in instead.',
+    details: 'Supabase Auth user exists and email is confirmed.',
+    code: 'existing_confirmed'
+  },
+  existing_incomplete: {
+    title: 'Account already exists',
+    message:
+      'An account already exists with this email. Sign in to finish setup — we will repair your workspace automatically.',
+    details: 'Auth user exists but profile or workspace setup is incomplete.',
+    code: 'existing_incomplete'
+  },
+  signup_failed: {
+    title: 'Signup failed',
+    message: 'We could not create your account. Try again or contact support if this continues.',
+    details: 'Unhandled signup error from Supabase Auth.',
+    code: 'signup_failed'
+  },
+  auth_error: {
+    title: 'Authentication failed',
+    message: 'Something went wrong. Try again or contact support if this continues.',
+    details: 'Unhandled authentication error.',
+    code: 'auth_error'
   }
 };
 
@@ -114,7 +146,64 @@ function normalizeKey(raw: string): string {
   if (lower.includes('expired') && (lower.includes('link') || lower.includes('otp') || lower.includes('token'))) {
     return 'reset_link_expired';
   }
+  if (
+    lower.includes('user already registered') ||
+    lower.includes('already been registered') ||
+    lower.includes('email address is already registered')
+  ) {
+    return 'existing_confirmed';
+  }
   return '';
+}
+
+export function mapAuthErrorByCode(code: string | null | undefined): AuthErrorResult | null {
+  if (!code) return null;
+  const entry = FRIENDLY[code];
+  return entry ? { ...entry, code: entry.code || code } : null;
+}
+
+type SignupExistingReason =
+  | 'email_not_confirmed'
+  | 'email_confirmed'
+  | 'account_deleted'
+  | 'account_disabled'
+  | 'user_banned'
+  | 'missing_profile'
+  | 'missing_workspace'
+  | 'admin_unavailable'
+  | 'lookup_error'
+  | 'user_not_found';
+
+/** Map signup existing-user diagnosis to user-facing copy (never raw Supabase text). */
+export function mapSignupExistingUserError(reason: SignupExistingReason): AuthErrorResult & {
+  signInRecommended: boolean;
+  resendConfirmation: boolean;
+} {
+  switch (reason) {
+    case 'email_not_confirmed':
+      return { ...FRIENDLY.existing_unconfirmed, signInRecommended: true, resendConfirmation: true };
+    case 'missing_profile':
+    case 'missing_workspace':
+      return { ...FRIENDLY.existing_incomplete, signInRecommended: true, resendConfirmation: false };
+    case 'account_deleted':
+      return { ...FRIENDLY.account_deleted, signInRecommended: true, resendConfirmation: false };
+    case 'account_disabled':
+      return { ...FRIENDLY.account_disabled, signInRecommended: false, resendConfirmation: false };
+    case 'user_banned':
+      return { ...FRIENDLY.user_banned, signInRecommended: false, resendConfirmation: false };
+    case 'admin_unavailable':
+    case 'lookup_error':
+    case 'user_not_found':
+      return {
+        ...FRIENDLY.existing_confirmed,
+        signInRecommended: true,
+        resendConfirmation: false,
+        details: `Diagnosis: ${reason}`
+      };
+    case 'email_confirmed':
+    default:
+      return { ...FRIENDLY.existing_confirmed, signInRecommended: true, resendConfirmation: false };
+  }
 }
 
 /** Prefer the raw Supabase message for display when no friendly mapping exists. */
@@ -130,10 +219,10 @@ export function mapAuthError(raw: string | null | undefined, fallbackKey?: keyof
   }
 
   return {
-    title: 'Sign in failed',
-    message: trimmed,
+    title: FRIENDLY.auth_error.title,
+    message: FRIENDLY.auth_error.message,
     details: trimmed,
-    code: trimmed
+    code: 'auth_error'
   };
 }
 

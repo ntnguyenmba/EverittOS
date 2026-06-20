@@ -1,4 +1,4 @@
-import { mapAuthError } from '@/lib/auth-errors';
+import { mapAuthError, mapAuthErrorByCode } from '@/lib/auth-errors';
 import { isProductionRuntime } from '@/lib/safe-api-error';
 
 export type AuthRequestDebug = {
@@ -186,9 +186,14 @@ export async function parseLoginApiResponse(
   const orgDiag = diagnostics.organization as Record<string, unknown> | undefined;
   const sessionDiag = diagnostics.session as Record<string, unknown> | undefined;
   const apiCode = (json.code as string) || undefined;
-  const rawSupabase = (json.supabaseMessage as string) || (json.error as string) || undefined;
+  const rawSupabase = (json.supabaseMessage as string) || undefined;
+  const friendlyFromCode = mapAuthErrorByCode(apiCode);
   const mapped = mapAuthError(rawSupabase, apiCode as 'invalid_credentials' | undefined);
-  const userMessage = mapped.message || (json.error as string) || 'Sign-in was rejected by the server.';
+  const userMessage =
+    (json.error as string) ||
+    friendlyFromCode?.message ||
+    mapped.message ||
+    'Sign-in was rejected by the server.';
   const detailMessage = isProductionRuntime()
     ? undefined
     : (json.details as string) || rawSupabase || apiCode || undefined;

@@ -1,3 +1,4 @@
+import { isAccountDeleted } from '@/lib/account-status';
 import { logAuthEvent } from '@/lib/auth-logger';
 import { normalizeEmail } from '@/lib/input-validation';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -131,5 +132,143 @@ export async function diagnoseLoginFailure(email: string): Promise<LoginFailureD
     authEmail: user.email || null,
     reason,
     provider
+  };
+}
+
+export type SignupExistingUserReason =
+  | 'user_not_found'
+  | 'email_not_confirmed'
+  | 'email_confirmed'
+  | 'account_deleted'
+  | 'account_disabled'
+  | 'user_banned'
+  | 'missing_profile'
+  | 'missing_workspace'
+  | 'admin_unavailable'
+  | 'lookup_error';
+
+export type SignupExistingUserDiagnosis = {
+  userExists: boolean;
+  emailConfirmed: boolean | null;
+  profileExists: boolean | null;
+  profileDeleted: boolean | null;
+  workspaceComplete: boolean | null;
+  banned: boolean | null;
+  reason: SignupExistingUserReason;
+  userId: string | null;
+};
+
+function isExistingUserSignupMessage(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  const lower = raw.toLowerCase();
+  return (
+    lower.includes('user already registered') ||
+    lower.includes('already been registered') ||
+    lower.includes('email address is already registered') ||
+    lower.includes('duplicate') && lower.includes('email')
+  );
+}
+
+export { isExistingUserSignupMessage };
+
+/** Explain why signup rejected an email that already exists in Supabase Auth. */
+export async function diagnoseSignupExistingUser(email: string): Promise<SignupExistingUserDiagnosis> {
+  const normalized = normalizeEmail(email);
+  const empty: SignupExistingUserDiagnosis = {
+    userExists: false,
+    emailConfirmed: null,
+    profileExists: null,
+    profileDeleted: null,
+    workspaceComplete: null,
+    banned: null,
+    reason: 'admin_unavailable',
+    userId: null
+  };
+
+  if (!normalized) {
+    return { ...empty, reason: 'user_not_found' };
+  }
+
+  const { admin, user, lookupError } = await findAuthUserByEmail(normalized);
+
+  if (lookupError === 'admin_unavailable') {
+    return { ...empty, reason: 'admin_unavailable' };
+  }
+
+  if (lookupError === 'lookup_error') {
+    return { ...empty, reason: 'lookup_error' };
+  }
+
+  if (!user) {
+    return { ...empty, reason: 'user_not_found' };
+  }
+
+  const emailConfirmed = Boolean(user.email_confirmed_at);
+  const banned = Boolean(user.banned_until && new Date(user.banned_until) > new Date());
+
+  const { data: profileRow } = admin
+    ? await admin
+        .from('profiles')
+        .select('id, organization_id, account_status, deleted_at')
+        .eq('id', user.id)
+        .maybeSingle()
+    : { data: null };
+
+  const profileExists = Boolean(profileRow);
+  const profileDeleted = profileExists ? isAccountDeleted(profileRow?.deleted_at) : false;
+
+  let workspaceComplete: boolean | null = null;
+  if (profileExists && admin && !profileDeleted) {
+    const orgId = profileRow?.organization_id;
+    if (orgId) {
+      const { data: membership } = await admin
+        .from('organization_members')
+        .select('active')
+        .eq('user_id', user.id)
+        .eq('organization_id', orgId)
+        .eq('active', true)
+        .maybeSingle();
+      workspaceComplete = Boolean(membership);
+    } else {
+      const { data: membership } = await admin
+        .from('organization_members')
+        .select('organization_id, active')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .limit(1)
+        .maybeSingle();
+      workspaceComplete = Boolean(membership?.organization_id);
+    }
+  } else if (profileExists) {
+    workspaceComplete = false;
+  }
+
+  let reason: SignupExistingUserReason = 'email_confirmed';
+  if (banned) reason = 'user_banned';
+  else if (profileDeleted) reason = 'account_deleted';
+  else if (profileExists && profileRow?.account_status === 'disabled') reason = 'account_disabled';
+  else if (!emailConfirmed) reason = 'email_not_confirmed';
+  else if (!profileExists) reason = 'missing_profile';
+  else if (workspaceComplete === false) reason = 'missing_workspace';
+
+  logAuthEvent('signup_existing_user', {
+    reason,
+    userId: user.id,
+    emailConfirmed: emailConfirmed ? 1 : 0,
+    profileExists: profileExists ? 1 : 0,
+    profileDeleted: profileDeleted ? 1 : 0,
+    workspaceComplete: workspaceComplete === null ? -1 : workspaceComplete ? 1 : 0,
+    emailDomain: normalized.split('@')[1] || 'unknown'
+  });
+
+  return {
+    userExists: true,
+    emailConfirmed,
+    profileExists,
+    profileDeleted,
+    workspaceComplete,
+    banned,
+    reason,
+    userId: user.id
   };
 }

@@ -50,6 +50,8 @@ function SignupForm() {
   }, [searchParams]);
 
   const [error, setError] = useState(urlError);
+  const [errorCode, setErrorCode] = useState('');
+  const [signInRecommended, setSignInRecommended] = useState(false);
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptLegal, setAcceptLegal] = useState(false);
@@ -64,6 +66,8 @@ function SignupForm() {
     event.preventDefault();
     setLoading(true);
     setError('');
+    setErrorCode('');
+    setSignInRecommended(false);
     setSuccess('');
 
     const normalizedEmail = normalizeEmail(email);
@@ -123,6 +127,8 @@ function SignupForm() {
       if (!parsed.ok) {
         setLoading(false);
         setError(parsed.error.message || 'Signup failed.');
+        setErrorCode((parsed.json.code as string) || '');
+        setSignInRecommended(Boolean(parsed.json.signInRecommended));
         return;
       }
 
@@ -249,6 +255,18 @@ function SignupForm() {
         </label>
 
         <AuthMessages error={error} success={success} />
+
+        {signInRecommended ? (
+          <p className="auth-recovery-note">
+            <Link href={loginHref}>Sign in with this email</Link>
+          </p>
+        ) : null}
+
+        {errorCode === 'existing_unconfirmed' ? (
+          <p className="auth-recovery-note muted">
+            Did not get the email? Try signing in — we send another confirmation link when needed.
+          </p>
+        ) : null}
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
