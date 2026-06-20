@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
+import { resolveEffectiveOrganizationPlan } from '@/lib/effective-plan-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { validatePlanAction } from '@/lib/plan-validate';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { logWorkerPlan } from '@/lib/worker-plan-logs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,17 +23,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Worker name is required.' }, { status: 400 });
   }
 
-  const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
-  if (!limitsForPlan(plan).crewAssignment) {
-    return NextResponse.json(
-      { error: 'Workers and crew assignment require the Business plan.' },
-      { status: 403 }
-    );
-  }
+  const workspaceId = ctx.workspace.organizationId;
+  const { plan: effectivePlan, ownerUserId, syncedFromStripe } = await resolveEffectiveOrganizationPlan(
+    ctx.supabase,
+    ctx.userId
+  );
+  const limits = limitsForPlan(effectivePlan);
+  const usage = await fetchUsageCounts(ctx.userId, workspaceId);
+  const validation = validatePlanAction({
+    plan: effectivePlan,
+    resource: 'workers',
+    currentCount: usage.workers
+  });
 
-  const usage = await fetchUsageCounts(ctx.userId, ctx.workspace.organizationId);
-  if (usage.workers >= limitsForPlan(plan).crewMembers) {
-    return NextResponse.json({ error: 'Crew member limit reached for this plan.' }, { status: 403 });
+  logWorkerPlan('worker_save:check', {
+    workspaceId,
+    userId: ctx.userId,
+    ownerUserId,
+    effectivePlan,
+    syncedFromStripe,
+    currentWorkerCount: usage.workers,
+    workerLimit: limits.crewMembers,
+    allowed: validation.allowed
+  });
+
+  if (!validation.allowed) {
+    logWorkerPlan('worker_save:blocked', {
+      workspaceId,
+      userId: ctx.userId,
+      ownerUserId,
+      effectivePlan,
+      currentWorkerCount: usage.workers,
+      workerLimit: limits.crewMembers,
+      blockReason: validation.message || 'worker_limit'
+    });
+    return NextResponse.json({ error: validation.message || 'Worker limit reached for this plan.' }, { status: 403 });
   }
 
   const { data, error } = await ctx.supabase
@@ -49,8 +75,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
+  logWorkerPlan('worker_save:allowed', {
+    workspaceId,
+    userId: ctx.userId,
+    ownerUserId,
+    effectivePlan,
+    currentWorkerCount: usage.workers + 1,
+    workerLimit: limits.crewMembers,
+    workerId: data.id
+  });
+
   await logWorkspaceActivity(
-    ctx.workspace.organizationId,
+    workspaceId,
     ctx.userId,
     'worker',
     data.id,
@@ -59,7 +95,7 @@ export async function POST(request: Request) {
   );
 
   await trackProductEventServer(ctx.supabase, 'worker_created', {
-    organizationId: ctx.workspace.organizationId,
+    organizationId: workspaceId,
     userId: ctx.userId,
     metadata: { workerId: data.id }
   });

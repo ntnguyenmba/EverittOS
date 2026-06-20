@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { limitsForPlan, type PlanLimits } from '@/lib/everittos-limits';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { formatUsageLabel, limitReached } from '@/lib/plan-limit-utils';
-import { validatePlanAction } from '@/lib/plan-validate';
+import { validatePlanAction, workerPlanFeatureMessage, workerPlanLimitMessage } from '@/lib/plan-validate';
 
 export type UsageCounts = {
   jobs: number;
@@ -113,7 +113,11 @@ export function limitMessage(resource: keyof PlanLimits, plan: EverittosPlan): s
   }
   if (resource === 'customers') return `Your plan allows up to ${limits.customers} customers. Upgrade to continue.`;
   if (resource === 'reports') return `Your plan allows up to ${limits.reports} reports. Upgrade to continue.`;
-  if (resource === 'crewMembers') return 'Crew workers require Business, Growth, or Enterprise.';
+  if (resource === 'crewMembers') {
+    const limits = limitsForPlan(plan);
+    if (!limits.crewAssignment) return workerPlanFeatureMessage(plan);
+    return workerPlanLimitMessage(plan, limits.crewMembers);
+  }
   if (resource === 'teamMembers') return 'Additional team members require a plan with team management.';
   return 'Plan limit reached. Upgrade to continue.';
 }

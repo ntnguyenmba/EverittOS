@@ -9,14 +9,14 @@ import { useTranslation } from '@/components/locale-provider';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { crewLimitReached, limitMessage } from '@/lib/everittos-usage';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { validatePlanAction } from '@/lib/plan-validate';
 import { filterDemoSeedWorkers } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { RecordActions } from '@/components/record-actions';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
+import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
 type Worker = {
@@ -30,8 +30,8 @@ export default function WorkersPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const appFeedback = useAppFeedback();
+  const { plan: workspacePlan, role: workspaceRole, loading: planLoading } = useWorkspacePlan();
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canManage, setCanManage] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -50,9 +50,8 @@ export default function WorkersPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    setPlan(normalizePlan(profile?.plan));
-    setCanManage(isManagerRole(normalizeRole(profile?.role)));
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    setCanManage(isManagerRole(normalizeRole(workspaceRole || profile?.role)));
 
     const org = await fetchOrganizationContext(user.id);
     let query = supabase.from('workers').select('id, name, role, phone').order('created_at', { ascending: false });
@@ -81,15 +80,17 @@ export default function WorkersPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
-    const userPlan = normalizePlan(profile?.plan);
-    if (!limitsForPlan(userPlan).crewAssignment) {
-      appFeedback.error('Workers and crew assignment require the Business plan.');
-      return;
-    }
-    if (!editingId && crewLimitReached(userPlan, workers.length)) {
-      appFeedback.error(limitMessage('crewMembers', userPlan));
-      return;
+    const effectivePlan = workspacePlan ?? 'free';
+    if (!editingId) {
+      const preflight = validatePlanAction({
+        plan: effectivePlan,
+        resource: 'workers',
+        currentCount: workers.length
+      });
+      if (!preflight.allowed) {
+        appFeedback.error(preflight.message || 'Unable to save worker.');
+        return;
+      }
     }
 
     setSaving(true);
@@ -155,10 +156,11 @@ export default function WorkersPage() {
     loadWorkers();
   }, []);
 
+  const plan = workspacePlan ?? 'free';
   const crewEnabled = limitsForPlan(plan).crewAssignment;
 
   return (
-    <AppShell plan={plan}>
+    <AppShell>
       <h1>{t('nav.workers')}</h1>
 
       {canManage && crewEnabled && (

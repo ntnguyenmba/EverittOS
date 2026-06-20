@@ -1,6 +1,6 @@
 import { limitsForPlan } from '@/lib/everittos-limits';
-import type { EverittosPlan } from '@/lib/everittos-plans';
-import { limitReached } from '@/lib/plan-limit-utils';
+import { planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { isUnlimited, limitReached } from '@/lib/plan-limit-utils';
 
 export type PlanResource =
   | 'jobs'
@@ -22,11 +22,23 @@ export type PlanValidateResult = {
   message?: string;
 };
 
+export function workerPlanFeatureMessage(plan: EverittosPlan): string {
+  return `Workers require Business plan or higher. Your workspace is on ${planDisplayName(plan)} plan.`;
+}
+
+export function workerPlanLimitMessage(plan: EverittosPlan, workerLimit: number): string {
+  if (isUnlimited(workerLimit)) {
+    return `Worker limit reached for ${planDisplayName(plan)} plan.`;
+  }
+  const suffix = workerLimit === 1 ? '' : 's';
+  return `Worker limit reached for ${planDisplayName(plan)} plan. Your current limit is ${workerLimit} worker${suffix}.`;
+}
+
 export function validatePlanAction({ plan, resource, currentCount }: PlanValidateInput): PlanValidateResult {
   const limits = limitsForPlan(plan);
 
   if (resource === 'workers' && !limits.crewAssignment) {
-    return { allowed: false, message: 'Crew workers require Business, Growth, or Enterprise.' };
+    return { allowed: false, message: workerPlanFeatureMessage(plan) };
   }
 
   if (resource === 'photos' && !limits.photoUpload) {
@@ -53,6 +65,9 @@ export function validatePlanAction({ plan, resource, currentCount }: PlanValidat
 
   const cap = capMap[resource];
   if (limitReached(cap, currentCount)) {
+    if (resource === 'workers') {
+      return { allowed: false, message: workerPlanLimitMessage(plan, cap) };
+    }
     return { allowed: false, message: `Plan limit reached for ${resource}. Upgrade to continue.` };
   }
 

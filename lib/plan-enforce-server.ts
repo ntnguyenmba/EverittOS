@@ -1,14 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveEffectiveOrganizationPlan } from '@/lib/effective-plan-server';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { validatePlanAction, type PlanResource, type PlanValidateResult } from '@/lib/plan-validate';
-import { resolveOrganizationPlan } from '@/lib/organization-plan';
 
 export async function enforcePlanForUser(
   supabase: SupabaseClient,
   userId: string,
   resource: PlanResource
 ): Promise<PlanValidateResult & { plan: string; organizationId: string | null }> {
-  const { plan, organizationId } = await resolveOrganizationPlan(supabase, userId);
+  const { plan, organizationId } = await resolveEffectiveOrganizationPlan(supabase, userId);
   const counts = await fetchUsageCounts(userId, organizationId);
   const countMap = {
     jobs: counts.jobs,
