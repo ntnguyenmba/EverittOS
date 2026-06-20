@@ -3,6 +3,7 @@ const LOG_SCOPE = 'stripe-billing';
 export type StripeBillingLogTag =
   | 'checkout:request_received'
   | 'checkout:price_resolution'
+  | 'checkout:price_validation'
   | 'checkout:price_invalid'
   | 'checkout:session_create_attempt'
   | 'checkout:unauthenticated'

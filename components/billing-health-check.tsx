@@ -59,17 +59,28 @@ type BillingHealthResponse = {
       stripePublishableKeyConfigured: boolean;
       stripeWebhookSecretConfigured: boolean;
     };
+    runtime?: {
+      runtimeAt: string;
+      commitSha: string | null;
+      commitShaPreview: string | null;
+      vercelEnv: string | null;
+      nodeEnv: string | null;
+    };
     plans: Array<{
       plan: string;
       priceEnvKey: string;
       priceIdConfigured: boolean;
       priceIdPreview: string | null;
       checkoutAvailable: boolean;
+      validationCode?: string | null;
+      validationMessage?: string | null;
+      stripeValidated?: boolean;
     }>;
   };
   latestCheckoutError?: {
     plan: string | null;
     error: string | null;
+    ownerDiagnostic?: string | null;
     code: string | null;
     priceId: string | null;
     at: string;
@@ -79,6 +90,7 @@ type BillingHealthResponse = {
     publishableKeyConfigured?: boolean;
     webhookConfigured: boolean;
     checkoutConfigured: boolean;
+    keyMode?: string;
   };
   issues: string[];
   healthy: boolean;
@@ -238,17 +250,37 @@ export function BillingHealthCheck() {
             <div className="settings-row">
               <span className="settings-row-label">Latest checkout error</span>
               <span className="settings-row-value">
-                {health.latestCheckoutError.plan || 'unknown'} · {health.latestCheckoutError.error || health.latestCheckoutError.code || 'unknown'}
+                {health.latestCheckoutError.plan || 'unknown'} ·{' '}
+                {health.latestCheckoutError.ownerDiagnostic ||
+                  health.latestCheckoutError.error ||
+                  health.latestCheckoutError.code ||
+                  'unknown'}
               </span>
             </div>
           ) : null}
+          {health.diagnostics?.runtime ? (
+            <>
+              <div className="settings-row">
+                <span className="settings-row-label">Runtime diagnostics</span>
+                <span className="settings-row-value">
+                  {health.diagnostics.runtime.runtimeAt}
+                  {health.diagnostics.runtime.commitShaPreview
+                    ? ` · ${health.diagnostics.runtime.commitShaPreview}`
+                    : ''}
+                  {health.diagnostics.runtime.vercelEnv ? ` · ${health.diagnostics.runtime.vercelEnv}` : ''}
+                </span>
+              </div>
+            </>
+          ) : null}
           {health.diagnostics?.plans?.map((row) => (
             <div className="settings-row" key={row.plan}>
-              <span className="settings-row-label">{row.plan} price ({row.priceEnvKey})</span>
+              <span className="settings-row-label">
+                {row.plan} price ({row.priceEnvKey})
+              </span>
               <span className="settings-row-value">
                 {row.checkoutAvailable
                   ? row.priceIdPreview || 'configured'
-                  : 'missing'}
+                  : row.validationMessage || row.validationCode || 'missing'}
               </span>
             </div>
           ))}
@@ -257,6 +289,10 @@ export function BillingHealthCheck() {
             <span className="settings-row-value">
               {health.stripe.publishableKeyConfigured ? t('billing.health.technical.yes') : t('billing.health.technical.no')}
             </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">Stripe key mode</span>
+            <span className="settings-row-value">{health.stripe.keyMode || 'unknown'}</span>
           </div>
           <div className="settings-row">
             <span className="settings-row-label">{t('billing.health.technical.stripeConfigured')}</span>

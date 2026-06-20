@@ -58,7 +58,12 @@ export function PlanCheckoutButton({
           return;
         }
 
-        setError(json.error || json.code || t('billing.promo.checkoutFailed'));
+        if (json.error) {
+          setError(json.error);
+          return;
+        }
+
+        setError(t('billing.promo.checkoutFailed'));
         return;
       }
 
@@ -68,8 +73,8 @@ export function PlanCheckoutButton({
       }
 
       setError('Stripe checkout did not return a redirect URL.');
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t('billing.promo.checkoutFailed'));
+    } catch {
+      setError(t('billing.promo.checkoutFailed'));
     } finally {
       setLoading(false);
     }

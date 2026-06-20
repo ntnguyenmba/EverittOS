@@ -5,6 +5,7 @@
 import type { PlanTierId } from '@/lib/plan-config';
 import { getPlanConfig } from '@/lib/plan-config';
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { sanitizeBillingEnvValue } from '@/lib/billing-env';
 
 export type PaidPlanKey = Exclude<EverittosPlan, 'free'>;
 
@@ -182,13 +183,13 @@ export function billingPlanDefinition(plan: EverittosPlan): BillingPlanDefinitio
 
 export function resolveStripePriceId(plan: PaidPlanKey): string | null {
   const envKey = STRIPE_PRICE_ENV_KEYS[plan];
-  const envValue = (process.env[envKey] || '').trim();
+  const envValue = sanitizeBillingEnvValue(process.env[envKey]);
   return envValue || null;
 }
 
 export function stripeProductIdForPlan(plan: PaidPlanKey): string | null {
   const envKey = STRIPE_PRODUCT_ENV_KEYS[plan];
-  const envValue = (process.env[envKey] || '').trim();
+  const envValue = sanitizeBillingEnvValue(process.env[envKey]);
   return envValue || null;
 }
 

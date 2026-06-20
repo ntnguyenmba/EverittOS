@@ -1,9 +1,10 @@
 import Stripe from 'stripe';
+import { sanitizeBillingEnvValue } from '@/lib/billing-env';
 
 let stripeClient: Stripe | null = null;
 
 export function getStripeSecretKey(): string | null {
-  const key = (process.env.STRIPE_SECRET_KEY || '').trim();
+  const key = sanitizeBillingEnvValue(process.env.STRIPE_SECRET_KEY);
   return key || null;
 }
 

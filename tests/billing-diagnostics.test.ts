@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { billingPlanDiagnostics } from '@/lib/billing-diagnostics';
 import { resolveStripePriceId } from '@/lib/billing-config';
+import { sanitizeBillingEnvValue } from '@/lib/billing-env';
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -21,6 +22,13 @@ test('billing diagnostics reports enterprise checkout availability from env', ()
   assert.equal(enterprise?.checkoutAvailable, true);
   assert.equal(enterprise?.priceIdPreview, 'price_1TbV…4S2W');
   assert.equal(resolveStripePriceId('enterprise'), 'price_1TbViN2KsjgU9g9yUlok4S2W');
+  restoreEnv();
+});
+
+test('billing diagnostics strips quoted enterprise env values', () => {
+  restoreEnv();
+  process.env.STRIPE_PRICE_ENTERPRISE = '"price_1TbViN2KsjgU9g9yUlok4S2W"';
+  assert.equal(sanitizeBillingEnvValue(process.env.STRIPE_PRICE_ENTERPRISE), 'price_1TbViN2KsjgU9g9yUlok4S2W');
   restoreEnv();
 });
 

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { billingPlanDiagnostics, stripeEnvironmentDiagnostics } from '@/lib/billing-diagnostics';
+import { billingPlanStripeDiagnostics, stripeEnvironmentDiagnostics } from '@/lib/billing-diagnostics';
+import { billingRuntimeDiagnostics } from '@/lib/billing-runtime';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { anyBillingCheckoutAvailable } from '@/lib/billing-config';
+import { getStripeClient } from '@/lib/stripe-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,10 @@ export async function GET() {
   const orgPlan = await resolveOrganizationPlan(supabase, user.id);
   const billingUserId = orgPlan.ownerUserId || user.id;
   const envDiagnostics = stripeEnvironmentDiagnostics();
-  const planDiagnostics = billingPlanDiagnostics();
+  const runtimeDiagnostics = billingRuntimeDiagnostics();
+  const stripe = getStripeClient();
+  const planDiagnostics = await billingPlanStripeDiagnostics(stripe);
+  const checkoutConfigured = planDiagnostics.some((row) => row.checkoutAvailable);
 
   const { data: subscription } = await admin
     .from('everittos_subscriptions')
@@ -88,6 +92,7 @@ export async function GET() {
     null;
   const checkoutFailurePayload = (latestCheckoutFailure?.payload || {}) as {
     error?: string;
+    ownerDiagnostic?: string;
     code?: string;
     priceId?: string;
     plan?: string;
@@ -104,7 +109,12 @@ export async function GET() {
   const issues: string[] = [];
   if (!envDiagnostics.stripeSecretKeyConfigured) issues.push('missing_stripe_secret_key');
   if (!envDiagnostics.stripeWebhookSecretConfigured) issues.push('missing_stripe_webhook_secret');
-  if (!anyBillingCheckoutAvailable()) issues.push('missing_stripe_price_ids');
+  if (!checkoutConfigured) issues.push('missing_stripe_price_ids');
+  for (const row of planDiagnostics) {
+    if (row.stripeValidated && row.validationCode && row.validationCode !== 'ok' && row.validationCode !== 'missing_env') {
+      issues.push(`plan_price_invalid:${row.plan}:${row.validationCode}`);
+    }
+  }
   if (!profileCustomerId && !subscriptionCustomerId) issues.push('missing_stripe_customer_id');
   if (plan !== 'free' && !subscriptionId) issues.push('missing_stripe_subscription_id');
   if (orgPlan.plan !== plan && orgPlan.plan !== 'free') {
@@ -160,6 +170,7 @@ export async function GET() {
       ? {
           plan: latestCheckoutFailure.plan,
           error: checkoutFailurePayload.error || null,
+          ownerDiagnostic: checkoutFailurePayload.ownerDiagnostic || checkoutFailurePayload.error || null,
           code: checkoutFailurePayload.code || null,
           priceId: checkoutFailurePayload.priceId || null,
           at: latestCheckoutFailure.created_at
@@ -176,13 +187,15 @@ export async function GET() {
       })),
     diagnostics: {
       environment: envDiagnostics,
+      runtime: runtimeDiagnostics,
       plans: planDiagnostics
     },
     stripe: {
       configured: envDiagnostics.stripeSecretKeyConfigured,
       publishableKeyConfigured: envDiagnostics.stripePublishableKeyConfigured,
       webhookConfigured: envDiagnostics.stripeWebhookSecretConfigured,
-      checkoutConfigured: anyBillingCheckoutAvailable()
+      checkoutConfigured,
+      keyMode: envDiagnostics.stripeKeyModeLabel
     },
     issues,
     healthy: issues.length === 0
