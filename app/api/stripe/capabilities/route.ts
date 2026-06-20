@@ -1,24 +1,46 @@
 import { NextResponse } from 'next/server';
-import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
+import {
+  billingCheckoutAvailable,
+  billingCheckoutMethod,
+  PAID_BILLING_PLAN_ORDER
+} from '@/lib/billing-config';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PAID_PLANS: EverittosPlan[] = ['pro', 'business', 'growth', 'enterprise'];
-
 export async function GET() {
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
-  const apiCheckoutPlans = PAID_PLANS.filter((plan) => isPaidCheckoutPlan(plan) && Boolean(stripePriceIdForPlan(plan)));
+  const checkoutPlans = PAID_BILLING_PLAN_ORDER.filter((plan) => billingCheckoutAvailable(plan));
+  const sessionCheckoutPlans = PAID_BILLING_PLAN_ORDER.filter(
+    (plan) => billingCheckoutMethod(plan) === 'session'
+  );
+  const paymentLinkPlans = PAID_BILLING_PLAN_ORDER.filter(
+    (plan) => billingCheckoutMethod(plan) === 'payment_link'
+  );
 
   return NextResponse.json({
     stripeConfigured,
-    checkout: stripeConfigured && apiCheckoutPlans.length > 0,
-    paymentLinks: false,
+    checkout: stripeConfigured && checkoutPlans.length > 0,
+    paymentLinks: paymentLinkPlans.length > 0,
     portal: stripeConfigured,
     cancel: stripeConfigured,
     resume: stripeConfigured,
-    checkoutPlans: apiCheckoutPlans,
-    apiCheckoutPlans
+    checkoutPlans,
+    apiCheckoutPlans: sessionCheckoutPlans,
+    paymentLinkPlans,
+    plans: PAID_BILLING_PLAN_ORDER.reduce(
+      (acc, plan) => {
+        acc[plan] = {
+          checkoutAvailable: billingCheckoutAvailable(plan),
+          checkoutMethod: billingCheckoutMethod(plan)
+        };
+        return acc;
+      },
+      {} as Record<
+        EverittosPlan,
+        { checkoutAvailable: boolean; checkoutMethod: ReturnType<typeof billingCheckoutMethod> }
+      >
+    )
   });
 }

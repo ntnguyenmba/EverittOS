@@ -1,49 +1,58 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  billingCheckoutAvailable,
+  billingCheckoutMethod,
+  BILLING_PLAN_ORDER,
+  planFromBillingAmount,
+  planFromKnownStripePriceId
+} from '@/lib/billing-config';
 import { planCardAction, isPlanUpgrade, isPlanDowngrade } from '@/lib/billing-plan-actions';
 import { normalizePlanId } from '@/lib/plan-config';
 import {
   isPaidCheckoutPlan,
   paidCheckoutPlans,
   stripeCheckoutAvailableForPlan,
-  stripeCheckoutConfigured
+  stripeAnyCheckoutAvailable
 } from '@/lib/stripe-prices';
 
-test('legacy plan aliases normalize to supported tiers', () => {
-  assert.equal(normalizePlanId('operations'), 'growth');
-  assert.equal(normalizePlanId('starter'), 'pro');
+test('plan ladder includes all six tiers', () => {
+  assert.deepEqual(BILLING_PLAN_ORDER, ['free', 'pro', 'business', 'starter', 'growth', 'enterprise']);
 });
 
-test('paid checkout plans include all paid tiers', () => {
-  assert.deepEqual(paidCheckoutPlans(), ['pro', 'business', 'growth', 'enterprise']);
-  assert.equal(isPaidCheckoutPlan('pro'), true);
+test('legacy operations alias still maps to growth', () => {
+  assert.equal(normalizePlanId('operations'), 'growth');
+});
+
+test('starter is a first-class plan tier', () => {
+  assert.equal(normalizePlanId('starter'), 'starter');
+});
+
+test('paid checkout plans include all five paid tiers', () => {
+  assert.deepEqual(paidCheckoutPlans(), ['pro', 'business', 'starter', 'growth', 'enterprise']);
+  assert.equal(isPaidCheckoutPlan('starter'), true);
   assert.equal(isPaidCheckoutPlan('free'), false);
 });
 
-test('stripeCheckoutConfigured reflects STRIPE_PRICE_* env vars', () => {
-  const original = {
-    pro: process.env.STRIPE_PRICE_PRO,
-    business: process.env.STRIPE_PRICE_BUSINESS,
-    growth: process.env.STRIPE_PRICE_GROWTH,
-    enterprise: process.env.STRIPE_PRICE_ENTERPRISE
-  };
+test('billing checkout is available via price ID or payment link defaults', () => {
+  assert.equal(billingCheckoutAvailable('pro'), true);
+  assert.equal(billingCheckoutAvailable('business'), true);
+  assert.equal(billingCheckoutAvailable('starter'), true);
+  assert.equal(billingCheckoutAvailable('growth'), true);
+  assert.equal(billingCheckoutAvailable('enterprise'), true);
+  assert.equal(stripeAnyCheckoutAvailable(), true);
+});
 
-  process.env.STRIPE_PRICE_PRO = 'price_pro_test';
-  process.env.STRIPE_PRICE_BUSINESS = 'price_business_test';
-  process.env.STRIPE_PRICE_GROWTH = 'price_growth_test';
-  process.env.STRIPE_PRICE_ENTERPRISE = 'price_enterprise_test';
+test('stripe price and amount mapping resolves known plans', () => {
+  assert.equal(planFromKnownStripePriceId('price_1TcwxB2KsjgU9g9y57f9veQh'), 'business');
+  assert.equal(planFromKnownStripePriceId('price_1TbVfe2KsjgU9g9yMtCnJrBw'), 'growth');
+  assert.equal(planFromBillingAmount(14900), 'starter');
+  assert.equal(planFromBillingAmount(900), 'pro');
+});
 
-  assert.equal(stripeCheckoutConfigured(), true);
-  assert.equal(stripeCheckoutAvailableForPlan('enterprise'), true);
-
-  delete process.env.STRIPE_PRICE_ENTERPRISE;
-  assert.equal(stripeCheckoutAvailableForPlan('enterprise'), false);
-  assert.equal(stripeCheckoutConfigured(), false);
-
-  process.env.STRIPE_PRICE_PRO = original.pro;
-  process.env.STRIPE_PRICE_BUSINESS = original.business;
-  process.env.STRIPE_PRICE_GROWTH = original.growth;
-  process.env.STRIPE_PRICE_ENTERPRISE = original.enterprise;
+test('checkout method prefers session when price ID exists', () => {
+  assert.equal(billingCheckoutMethod('business'), 'session');
+  assert.equal(billingCheckoutMethod('pro'), 'payment_link');
 });
 
 test('planCardAction routes active subscribers to billing portal for plan changes', () => {
@@ -53,16 +62,32 @@ test('planCardAction routes active subscribers to billing portal for plan change
   });
   assert.equal(upgrade.type, 'portal');
   if (upgrade.type === 'portal') {
-    assert.match(upgrade.label, /Upgrade/i);
+    assert.match(upgrade.label, /portal/i);
     assert.equal(upgrade.change, 'upgrade');
   }
 
   const checkout = planCardAction('free', 'pro', { hasActiveSubscription: false, portalAvailable: false });
   assert.equal(checkout.type, 'checkout');
+  if (checkout.type === 'checkout') {
+    assert.equal(checkout.label, 'Choose plan');
+  }
 });
 
-test('plan upgrade and downgrade helpers compare plan rank', () => {
+test('planCardAction uses checkout when payment link fallback exists without env price', () => {
+  const action = planCardAction('free', 'pro', { hasActiveSubscription: false, portalAvailable: false });
+  assert.equal(action.type, 'checkout');
+  assert.notEqual(action.type, 'contact');
+});
+
+test('plan upgrade and downgrade helpers compare plan rank with starter tier', () => {
   assert.equal(isPlanUpgrade('pro', 'business'), true);
-  assert.equal(isPlanDowngrade('business', 'pro'), true);
+  assert.equal(isPlanUpgrade('business', 'starter'), true);
+  assert.equal(isPlanUpgrade('starter', 'growth'), true);
+  assert.equal(isPlanDowngrade('starter', 'business'), true);
   assert.equal(isPlanDowngrade('pro', 'free'), false);
+});
+
+test('stripeCheckoutAvailableForPlan reflects centralized billing config', () => {
+  assert.equal(stripeCheckoutAvailableForPlan('enterprise'), true);
+  assert.equal(stripeCheckoutAvailableForPlan('starter'), true);
 });

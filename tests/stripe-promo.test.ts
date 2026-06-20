@@ -194,7 +194,7 @@ describe('planCardAction', () => {
     assert.equal(action.type, 'checkout');
     if (action.type === 'checkout') {
       assert.equal(action.plan, 'pro');
-      assert.match(action.label, /Pro/i);
+      assert.equal(action.label, 'Choose plan');
     }
 
     process.env.STRIPE_PRICE_PRO = original;

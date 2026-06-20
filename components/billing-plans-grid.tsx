@@ -1,15 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
-import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { planCardAction, planChangeHint } from '@/lib/billing-plan-actions';
-import { EVERITTOS_PLANS, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { BILLING_PLANS } from '@/lib/billing-config';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { useTranslation } from '@/components/locale-provider';
-import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 
 type BillingPlansGridProps = {
   currentPlan: EverittosPlan;
@@ -30,12 +28,6 @@ export function BillingPlansGrid({
 }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
-  const paidPlans = useMemo(() => EVERITTOS_PLANS.filter((tier) => tier.id !== 'free'), []);
-  const [selectedPromoPlan, setSelectedPromoPlan] = useState<EverittosPlan>(
-    highlightPlan && highlightPlan !== 'free' ? highlightPlan : normalizedCurrent !== 'free' ? normalizedCurrent : 'pro'
-  );
-  const [promoCode, setPromoCode] = useState('');
-  const [promoPreview, setPromoPreview] = useState<PromoDiscountPreview | null>(null);
 
   return (
     <div className="billing-plans-grid-wrap">
@@ -43,40 +35,12 @@ export function BillingPlansGrid({
 
       <p className="muted billing-plan-change-intro">{t('billing.planChangeIntro')}</p>
 
-      <div className="settings-card billing-promo-card">
-        <div className="billing-promo-card-head">
-          <div>
-            <h3>{t('billing.promo.label')}</h3>
-            <p className="muted">{t('billing.promo.applyBeforeCheckout')}</p>
-          </div>
-          <label className="billing-promo-plan-select">
-            <span className="muted">{t('billing.promo.previewFor')}</span>
-            <select
-              value={selectedPromoPlan}
-              onChange={(event) => {
-                setSelectedPromoPlan(normalizePlan(event.target.value));
-                setPromoPreview(null);
-              }}
-            >
-              {paidPlans.map((tier) => (
-                <option key={tier.id} value={tier.id}>
-                  {tier.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <StripePromoCodeField
-          plan={selectedPromoPlan}
-          onValidated={(preview) => {
-            setPromoPreview(preview);
-            setPromoCode(preview?.code ?? '');
-          }}
-        />
-      </div>
+      <p className="muted billing-promo-stripe-note">
+        Promo codes are entered on the Stripe checkout page — not in EverittOS.
+      </p>
 
       <div className="billing-plans-grid pricing-grid">
-        {EVERITTOS_PLANS.map((tier) => {
+        {BILLING_PLANS.map((tier) => {
           const action = planCardAction(normalizedCurrent, tier.id, {
             hasActiveSubscription,
             portalAvailable
@@ -84,7 +48,6 @@ export function BillingPlansGrid({
           const isCurrent = action.type === 'current';
           const isHighlighted = highlightPlan === tier.id;
           const isCheckout = action.type === 'checkout';
-          const promoAppliesToThisPlan = isCheckout && selectedPromoPlan === tier.id && promoPreview;
           const hint = planChangeHint(action);
 
           return (
@@ -95,43 +58,40 @@ export function BillingPlansGrid({
                 'pricing-plan-card',
                 'billing-plan-card',
                 isCurrent ? 'current-plan' : '',
-                isHighlighted ? 'highlighted' : ''
+                isHighlighted ? 'highlighted' : '',
+                tier.featured ? 'featured-plan' : ''
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
               {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
+              {tier.featured && !isCurrent ? <span className="billing-plan-badge billing-plan-badge-featured">Popular</span> : null}
               <h3>{tier.name}</h3>
               <p className="pricing-plan-price">{tier.priceLabel}</p>
-              {promoAppliesToThisPlan ? (
-                <p className="promo-code-inline-price">
-                  <span className="promo-code-price-original">{promoPreview.originalPriceLabel}</span>
-                  <strong>{promoPreview.discountedPriceLabel}</strong>
-                  <span className="muted"> / month</span>
-                </p>
-              ) : null}
-              <p className="muted">{tier.headline}</p>
+              <p className="muted billing-plan-headline">{tier.headline}</p>
               <ul className="billing-plan-features">
-                {tier.features.slice(0, 4).map((feature) => (
+                {tier.features.slice(0, 5).map((feature) => (
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>
 
-              {action.type === 'current' ? <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p> : null}
+              {action.type === 'current' ? (
+                <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
+              ) : null}
 
               {isCheckout ? (
-                <PlanCheckoutButton
-                  plan={action.plan}
-                  label={action.label}
-                  promoCode={promoAppliesToThisPlan ? promoCode : ''}
-                  promoPreview={promoAppliesToThisPlan ? promoPreview : null}
-                  className="btn btn-primary btn-block"
-                />
+                <PlanCheckoutButton plan={action.plan} label={action.label} className="btn btn-primary btn-block" />
               ) : null}
 
               {action.type === 'portal' && onOpenPortal ? (
                 <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>
                   {portalLoading ? t('billing.openingPortal') : action.label}
+                </button>
+              ) : null}
+
+              {action.type === 'unavailable' ? (
+                <button type="button" className="btn btn-block" disabled>
+                  {action.label}
                 </button>
               ) : null}
 

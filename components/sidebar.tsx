@@ -64,6 +64,8 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
     normalized != null && canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
   const showUpgrade =
     normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const showViewPlans =
+    normalized != null && !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
 
   return (
     <aside className="sidebar" aria-label="App navigation">
@@ -80,6 +82,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
           plan={normalized}
           showBillingLink={showBillingLink}
           showUpgrade={showUpgrade}
+          showViewPlans={showViewPlans}
           billingActive={pathname.startsWith('/settings/billing')}
         />
         <div className="sidebar-footer-actions">

@@ -1,6 +1,7 @@
+import { billingCheckoutAvailable } from '@/lib/billing-config';
 import { planRank } from '@/lib/plan-access';
 import { planDisplayName, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { isPaidCheckoutPlan, stripeCheckoutAvailableForPlan } from '@/lib/stripe-prices';
+import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 import { supportMailtoHref } from '@/lib/support';
 
 export type PlanChangeKind = 'subscribe' | 'upgrade' | 'downgrade' | 'switch';
@@ -9,14 +10,15 @@ export type PlanCardAction =
   | { type: 'current'; label: 'Current plan' }
   | { type: 'checkout'; label: string; plan: EverittosPlan; change: PlanChangeKind }
   | { type: 'portal'; label: string; change: 'upgrade' | 'downgrade' | 'switch' }
+  | { type: 'unavailable'; label: string; reason: string }
   | { type: 'contact'; label: 'Contact billing support'; href: string; reason?: string };
 
 function planChangeLabel(current: EverittosPlan, target: EverittosPlan): { label: string; change: PlanChangeKind } {
   if (current === 'free') {
-    return { label: `Subscribe to ${planShortName(target)}`, change: 'subscribe' };
+    return { label: 'Choose plan', change: 'subscribe' };
   }
   if (isPlanUpgrade(current, target)) {
-    return { label: `Upgrade to ${planShortName(target)}`, change: 'upgrade' };
+    return { label: 'Upgrade', change: 'upgrade' };
   }
   if (isPlanDowngrade(current, target)) {
     return { label: `Downgrade to ${planShortName(target)}`, change: 'downgrade' };
@@ -25,8 +27,7 @@ function planChangeLabel(current: EverittosPlan, target: EverittosPlan): { label
 }
 
 function planShortName(plan: EverittosPlan): string {
-  const name = planDisplayName(plan);
-  return name.replace(/^EverittOS\s+/i, '');
+  return planDisplayName(plan);
 }
 
 export type PlanCardActionOptions = {
@@ -51,7 +52,7 @@ export function planCardAction(
     if (hasActiveSubscription && portalAvailable) {
       return {
         type: 'portal',
-        label: 'Cancel or change plan in billing portal',
+        label: 'Manage billing',
         change: 'downgrade'
       };
     }
@@ -67,11 +68,18 @@ export function planCardAction(
     return { type: 'current', label: 'Current plan' };
   }
 
-  if (!isPaidCheckoutPlan(target) || !stripeCheckoutAvailableForPlan(target)) {
+  if (!isPaidCheckoutPlan(target)) {
     return {
-      type: 'contact',
-      label: 'Contact billing support',
-      href: supportMailtoHref(`EverittOS ${planDisplayName(target)} plan`),
+      type: 'unavailable',
+      label: 'Billing setup missing for this plan',
+      reason: 'invalid_plan'
+    };
+  }
+
+  if (!billingCheckoutAvailable(target)) {
+    return {
+      type: 'unavailable',
+      label: 'Billing setup missing for this plan',
       reason: 'checkout_unavailable'
     };
   }
@@ -82,10 +90,10 @@ export function planCardAction(
     if (portalAvailable) {
       const portalLabel =
         change === 'upgrade'
-          ? `Upgrade to ${planShortName(target)} in billing portal`
+          ? 'Upgrade in billing portal'
           : change === 'downgrade'
-            ? `Downgrade to ${planShortName(target)} in billing portal`
-            : `Switch to ${planShortName(target)} in billing portal`;
+            ? 'Downgrade in billing portal'
+            : 'Change plan in billing portal';
       return {
         type: 'portal',
         label: portalLabel,
@@ -122,10 +130,13 @@ export function planChangeHint(action: PlanCardAction): string | null {
     return 'Plan changes are managed in the Stripe billing portal.';
   }
   if (action.type === 'checkout' && action.change === 'subscribe') {
-    return 'You will complete checkout in Stripe. Subscriptions renew monthly until canceled.';
+    return 'You will complete checkout in Stripe. Promo codes can be entered on the Stripe checkout page. Subscriptions renew monthly until canceled.';
   }
   if (action.type === 'checkout' && action.change === 'upgrade') {
-    return 'Complete checkout to activate your new plan.';
+    return 'Complete checkout in Stripe to activate your new plan.';
+  }
+  if (action.type === 'unavailable') {
+    return 'This plan is not configured for checkout yet. Contact support if you need help.';
   }
   return null;
 }

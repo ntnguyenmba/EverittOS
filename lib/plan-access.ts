@@ -30,8 +30,9 @@ export const PLAN_ORDER: Record<EverittosPlan, number> = {
   free: 0,
   pro: 1,
   business: 2,
-  growth: 3,
-  enterprise: 4
+  starter: 3,
+  growth: 4,
+  enterprise: 5
 };
 
 export const planLimits = PLAN_LIMITS;

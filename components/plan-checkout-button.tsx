@@ -3,14 +3,10 @@
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import type { EverittosPlan } from '@/lib/everittos-plans';
-import type { PromoDiscountPreview } from '@/lib/stripe-promo';
 
 type PlanCheckoutButtonProps = {
   plan: EverittosPlan;
   label: string;
-  promoCode?: string;
-  promoPreview?: PromoDiscountPreview | null;
-  requireValidPromo?: boolean;
   requireRefundAck?: boolean;
   className?: string;
 };
@@ -18,9 +14,6 @@ type PlanCheckoutButtonProps = {
 export function PlanCheckoutButton({
   plan,
   label,
-  promoCode = '',
-  promoPreview = null,
-  requireValidPromo = false,
   requireRefundAck = true,
   className = 'btn btn-primary'
 }: PlanCheckoutButtonProps) {
@@ -32,11 +25,6 @@ export function PlanCheckoutButton({
   const checkoutBlocked = requireRefundAck && !acceptedRefundPolicy;
 
   async function startCheckout() {
-    if (requireValidPromo && promoCode.trim() && !promoPreview) {
-      setError(t('billing.promo.applyFirst'));
-      return;
-    }
-
     if (checkoutBlocked) {
       setError(t('billing.noRefund.ackRequired'));
       return;
@@ -51,7 +39,6 @@ export function PlanCheckoutButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan,
-          promoCode: promoCode.trim() || undefined,
           refundPolicyAcknowledged: requireRefundAck ? true : undefined
         })
       });

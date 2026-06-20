@@ -9,8 +9,8 @@ import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { safeNextPath } from '@/lib/app-url';
-import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
-import { EVERITTOS_PLANS, normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
+import { BILLING_PLANS } from '@/lib/billing-config';
+import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { normalizeEmail } from '@/lib/input-validation';
 import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
@@ -21,11 +21,9 @@ import { useTranslation } from '@/components/locale-provider';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
 
-function signupRedirect(plan: EverittosPlan, next: string, promoCode = ''): string {
+function signupRedirect(plan: EverittosPlan, next: string): string {
   if (plan !== 'free') {
-    const params = new URLSearchParams({ upgrade: plan });
-    if (promoCode.trim()) params.set('promo', promoCode.trim().toUpperCase());
-    return `/settings/billing?${params.toString()}`;
+    return `/settings/billing?upgrade=${plan}`;
   }
   return safeNextPath(next, '/onboarding');
 }
@@ -35,9 +33,6 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'), '/onboarding');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
-  const initialPromo = (searchParams.get('promo') || '').trim();
-  const [promoCode, setPromoCode] = useState(initialPromo);
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -107,7 +102,7 @@ function SignupForm() {
       /* continue; Supabase still enforces auth limits */
     }
 
-    const redirectTarget = signupRedirect(selectedPlan, next, promoCode);
+    const redirectTarget = signupRedirect(selectedPlan, next);
 
     try {
       const { response, url, method } = await authApiFetch(SIGNUP_API_PATH, {
@@ -217,16 +212,6 @@ function SignupForm() {
             required
           />
         </div>
-
-        {selectedPlan !== 'free' ? (
-          <StripePromoCodeField
-            plan={selectedPlan}
-            initialCode={initialPromo}
-            onValidated={(preview) => {
-              if (preview) setPromoCode(preview.code);
-            }}
-          />
-        ) : null}
 
         <div className="auth-field">
           <label htmlFor="confirm_password">Confirm password</label>

@@ -1,8 +1,13 @@
 import type Stripe from 'stripe';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import {
+  planFromBillingAmount,
+  planFromKnownStripePriceId,
+  planFromKnownStripeProductId
+} from '@/lib/billing-config';
 import { planFromStripePriceId } from '@/lib/stripe-prices';
 
-const PAID_PLANS = ['pro', 'business', 'growth', 'enterprise'] as const;
+const PAID_PLANS = ['pro', 'business', 'starter', 'growth', 'enterprise'] as const;
 
 export function normalizeStripePlan(value: string | null | undefined): EverittosPlan | null {
   const raw = (value || '').trim().toLowerCase();
@@ -14,13 +19,7 @@ export function normalizeStripePlan(value: string | null | undefined): Everittos
 }
 
 export function planFromAmount(amount: number | null | undefined): EverittosPlan | null {
-  const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
-  if (cents === 3900 || cents === 39) return 'business';
-  if (cents === 14900 || cents === 149) return 'growth';
-  if (cents === 39900 || cents === 399) return 'growth';
-  if (cents === 79900 || cents === 799) return 'enterprise';
-  return null;
+  return planFromBillingAmount(amount);
 }
 
 function productPlanMetadata(
@@ -28,15 +27,28 @@ function productPlanMetadata(
 ): string | null {
   if (!product || typeof product === 'string') return null;
   if ('deleted' in product && product.deleted) return null;
-  return product.metadata?.plan || null;
+  return (
+    product.metadata?.plan ||
+    product.metadata?.plan_key ||
+    product.metadata?.planKey ||
+    product.metadata?.tier ||
+    null
+  );
 }
 
 export function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
   if (!price) return null;
 
+  const productId = typeof price.product === 'string' ? price.product : price.product?.id;
+
   return (
     planFromStripePriceId(price.id) ||
+    planFromKnownStripePriceId(price.id) ||
+    planFromKnownStripeProductId(productId) ||
     normalizeStripePlan(price.metadata?.plan) ||
+    normalizeStripePlan(price.metadata?.plan_key) ||
+    normalizeStripePlan(price.metadata?.planKey) ||
+    normalizeStripePlan(price.metadata?.tier) ||
     normalizeStripePlan(productPlanMetadata(price.product)) ||
     planFromAmount(price.unit_amount)
   );
@@ -46,7 +58,10 @@ export function planFromSubscription(sub: Stripe.Subscription): EverittosPlan | 
   const direct =
     normalizeStripePlan(sub.metadata?.plan) ||
     normalizeStripePlan(sub.metadata?.planKey) ||
-    normalizeStripePlan(sub.metadata?.selected_plan);
+    normalizeStripePlan(sub.metadata?.plan_key) ||
+    normalizeStripePlan(sub.metadata?.tier) ||
+    normalizeStripePlan(sub.metadata?.selected_plan) ||
+    normalizeStripePlan(sub.metadata?.product);
   if (direct) return direct;
 
   for (const item of sub.items.data) {
@@ -69,6 +84,9 @@ export async function planFromSession(
 ): Promise<EverittosPlan | null> {
   const direct =
     normalizeStripePlan(session.metadata?.plan) ||
+    normalizeStripePlan(session.metadata?.planKey) ||
+    normalizeStripePlan(session.metadata?.plan_key) ||
+    normalizeStripePlan(session.metadata?.tier) ||
     normalizeStripePlan(session.metadata?.selected_plan) ||
     normalizeStripePlan(session.client_reference_id) ||
     planFromAmount(session.amount_subtotal) ||
@@ -103,6 +121,8 @@ export function planFromCheckoutSession(
   const direct =
     normalizeStripePlan(session.metadata?.plan) ||
     normalizeStripePlan(session.metadata?.planKey) ||
+    normalizeStripePlan(session.metadata?.plan_key) ||
+    normalizeStripePlan(session.metadata?.tier) ||
     normalizeStripePlan(session.metadata?.selected_plan) ||
     normalizeStripePlan(session.client_reference_id) ||
     planFromAmount(session.amount_subtotal) ||

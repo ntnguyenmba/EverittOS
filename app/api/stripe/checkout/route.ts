@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { appUrl } from '@/lib/app-url';
+import {
+  billingCheckoutMethod,
+  paymentLinkForPlan,
+  resolveStripePriceId
+} from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { NO_REFUND_STRIPE_SUBMIT_MESSAGE } from '@/lib/no-refund-policy';
-import { isPaidCheckoutPlan, stripePriceIdForPlan } from '@/lib/stripe-prices';
+import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 import { getStripeClient } from '@/lib/stripe-server';
-import { logPromoCodeFailure } from '@/lib/promo-code-logging';
 import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
-import { validatePromotionCodeForPlan } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
@@ -86,11 +89,9 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as {
     plan?: string;
-    promoCode?: string;
     refundPolicyAcknowledged?: boolean;
   };
   const plan = normalizePlan(body.plan);
-  const promoCode = (body.promoCode || '').trim();
   const refundPolicyAcknowledged = body.refundPolicyAcknowledged === true;
   const email = (profile?.email || user.email || '').trim().toLowerCase();
 
@@ -102,6 +103,18 @@ export async function POST(request: Request) {
   if (!email) {
     logStripeBilling('checkout:missing_email', { userId: user.id, plan });
     return NextResponse.json({ error: 'Account email is required for checkout.' }, { status: 400 });
+  }
+
+  const checkoutMethod = billingCheckoutMethod(plan);
+  if (!checkoutMethod) {
+    logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_checkout_target' }, 'warn');
+    return NextResponse.json(
+      {
+        error: 'Billing setup missing for this plan.',
+        code: 'checkout_not_configured'
+      },
+      { status: 503 }
+    );
   }
 
   const storedCustomerId = profile?.stripe_customer_id;
@@ -157,56 +170,41 @@ export async function POST(request: Request) {
     }
   }
 
-  const priceId = stripePriceIdForPlan(plan);
+  if (checkoutMethod === 'payment_link') {
+    const paymentLink = paymentLinkForPlan(plan);
+    if (!paymentLink) {
+      return NextResponse.json(
+        { error: 'Billing setup missing for this plan.', code: 'checkout_not_configured' },
+        { status: 503 }
+      );
+    }
+
+    logStripeBilling('checkout:payment_link_redirect', { userId: user.id, plan });
+    return NextResponse.json({
+      url: paymentLink,
+      method: 'payment_link',
+      plan
+    });
+  }
+
+  const priceId = resolveStripePriceId(plan);
   if (!priceId) {
     logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_price_id' }, 'warn');
     return NextResponse.json(
       {
-        error: 'Stripe checkout is not fully configured. Set STRIPE_PRICE_* environment variables.',
+        error: 'Billing setup missing for this plan.',
         code: 'checkout_not_configured'
       },
       { status: 503 }
     );
   }
 
-  let promotionCodeId: string | undefined;
-  let preview = null;
-
-  if (promoCode) {
-    const validation = await validatePromotionCodeForPlan(stripe, promoCode, plan);
-    if (!validation.valid) {
-      logStripeBilling('checkout:promo_invalid', {
-        userId: user.id,
-        plan,
-        errorCode: validation.errorCode
-      });
-      await logPromoCodeFailure({
-        userId: user.id,
-        organizationId: profile?.organization_id || null,
-        stage: 'checkout',
-        code: promoCode,
-        plan,
-        errorCode: validation.errorCode,
-        error: validation.error
-      });
-      return NextResponse.json(validation, { status: 400 });
-    }
-    promotionCodeId = validation.promotionCodeId;
-    preview = {
-      code: validation.code,
-      couponName: validation.couponName,
-      durationLabel: validation.durationLabel,
-      originalPriceLabel: validation.originalPriceLabel,
-      discountedPriceLabel: validation.discountedPriceLabel,
-      discountAmountLabel: validation.discountAmountLabel
-    };
-  }
-
   const workspaceId = profile?.organization_id || '';
-  const normalizedPromo = promoCode ? promoCode.toUpperCase() : '';
   const metadata = {
     plan,
     planKey: plan,
+    plan_key: plan,
+    tier: plan,
     selected_plan: plan,
     user_id: user.id,
     userId: user.id,
@@ -215,14 +213,7 @@ export async function POST(request: Request) {
     organization_id: workspaceId,
     price_id: priceId,
     no_refund_policy: 'true',
-    ...(refundPolicyAcknowledged ? { refund_policy_acknowledged: 'true' } : {}),
-    ...(normalizedPromo
-      ? {
-          promotion_code: normalizedPromo,
-          promoCode: normalizedPromo,
-          promo_code: normalizedPromo
-        }
-      : {})
+    ...(refundPolicyAcknowledged ? { refund_policy_acknowledged: 'true' } : {})
   };
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -236,7 +227,8 @@ export async function POST(request: Request) {
     subscription_data: { metadata },
     custom_text: {
       submit: { message: NO_REFUND_STRIPE_SUBMIT_MESSAGE }
-    }
+    },
+    ...checkoutPromotionParams()
   };
 
   if (customerId) {
@@ -245,8 +237,6 @@ export async function POST(request: Request) {
   } else {
     sessionParams.customer_email = email;
   }
-
-  Object.assign(sessionParams, checkoutPromotionParams(promotionCodeId));
 
   try {
     const session = await stripe.checkout.sessions.create(sessionParams);
@@ -261,8 +251,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       url: session.url,
+      method: 'session',
       sessionId: session.id,
-      preview
+      plan
     });
   } catch (error) {
     logStripeBilling(

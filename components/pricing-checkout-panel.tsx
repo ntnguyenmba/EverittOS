@@ -4,81 +4,64 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
-import { StripePromoCodeField } from '@/components/stripe-promo-code-field';
 import { useTranslation } from '@/components/locale-provider';
-import {
-  EVERITTOS_PLANS,
-  normalizePlan,
-  type EverittosPlan,
-  type PlanDefinition
-} from '@/lib/everittos-plans';
-import type { PromoDiscountPreview } from '@/lib/stripe-promo';
+import { BILLING_PLANS } from '@/lib/billing-config';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 
 type PricingCheckoutPanelProps = {
   selectedPlan?: EverittosPlan;
-  initialPromoCode?: string;
   authenticated?: boolean;
   compact?: boolean;
 };
 
 export function PricingCheckoutPanel({
   selectedPlan = 'pro',
-  initialPromoCode = '',
   authenticated = false,
   compact = false
 }: PricingCheckoutPanelProps) {
   const { t } = useTranslation();
-  const [plan, setPlan] = useState<EverittosPlan>(normalizePlan(selectedPlan) === 'free' ? 'pro' : normalizePlan(selectedPlan));
-  const [promoCode, setPromoCode] = useState(initialPromoCode);
-  const [promoPreview, setPromoPreview] = useState<PromoDiscountPreview | null>(null);
+  const [plan, setPlan] = useState<EverittosPlan>(
+    normalizePlan(selectedPlan) === 'free' ? 'pro' : normalizePlan(selectedPlan)
+  );
 
-  const tiers = useMemo(() => EVERITTOS_PLANS.filter((tier) => tier.id !== 'free'), []);
+  const tiers = useMemo(() => BILLING_PLANS.filter((tier) => tier.id !== 'free'), []);
 
-  function signupHref(tier: PlanDefinition): string {
-    const params = new URLSearchParams({ plan: tier.id });
-    if (promoCode.trim()) params.set('promo', promoCode.trim().toUpperCase());
-    return `/signup?${params.toString()}`;
+  function signupHref(tierId: EverittosPlan): string {
+    return `/signup?plan=${tierId}`;
   }
 
   return (
     <div className={compact ? 'pricing-checkout-panel compact' : 'pricing-checkout-panel'}>
       <NoRefundDisclosure variant="compact" className="pricing-checkout-policy" />
 
-      <StripePromoCodeField
-        plan={plan}
-        initialCode={initialPromoCode}
-        onValidated={(preview) => {
-          setPromoPreview(preview);
-          setPromoCode(preview?.code ?? '');
-        }}
-      />
+      <p className="muted billing-promo-stripe-note">
+        Promo codes are entered on the Stripe checkout page after you choose a plan.
+      </p>
 
       <div className={compact ? 'pricing-grid compact' : 'pricing-grid'}>
         {tiers.map((tier) => {
           const isSelected = tier.id === plan;
           return (
-            <div key={tier.id} className={isSelected ? 'card pricing-plan-card selected' : 'card pricing-plan-card'}>
+            <div
+              key={tier.id}
+              className={[
+                'card',
+                'pricing-plan-card',
+                isSelected ? 'selected' : '',
+                tier.featured ? 'featured-plan' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
               <button type="button" className="pricing-plan-select" onClick={() => setPlan(tier.id)}>
                 <h3>{tier.name}</h3>
                 <p className="pricing-plan-price">{tier.priceLabel}</p>
                 <p className="muted">{tier.headline}</p>
               </button>
-              {isSelected && promoPreview ? (
-                <p className="promo-code-inline-price">
-                  <span className="promo-code-price-original">{promoPreview.originalPriceLabel}</span>
-                  <strong>{promoPreview.discountedPriceLabel}</strong>
-                  <span className="muted"> / month</span>
-                </p>
-              ) : null}
               {authenticated ? (
-                <PlanCheckoutButton
-                  plan={tier.id}
-                  label={tier.buttonLabel}
-                  promoCode={isSelected ? promoCode : ''}
-                  promoPreview={isSelected ? promoPreview : null}
-                />
+                <PlanCheckoutButton plan={tier.id} label={tier.buttonLabel} />
               ) : (
-                <Link className="btn btn-primary" href={signupHref(tier)}>
+                <Link className="btn btn-primary" href={signupHref(tier.id)}>
                   {tier.buttonLabel}
                 </Link>
               )}

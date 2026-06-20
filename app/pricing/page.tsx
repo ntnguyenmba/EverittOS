@@ -17,7 +17,6 @@ function PricingContent() {
   const searchParams = useSearchParams();
   const { t } = useTranslation();
   const selectedPlan = normalizePlan(searchParams.get('plan'));
-  const initialPromo = (searchParams.get('promo') || '').trim();
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -77,7 +76,6 @@ function PricingContent() {
         {authChecked ? (
           <PricingCheckoutPanel
             selectedPlan={selectedPlan === 'free' ? 'pro' : selectedPlan}
-            initialPromoCode={initialPromo}
             authenticated={authenticated}
           />
         ) : (

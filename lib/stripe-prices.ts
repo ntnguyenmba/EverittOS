@@ -1,56 +1,46 @@
+import {
+  BILLING_PLAN_AMOUNT_CENTS,
+  billingCheckoutAvailable,
+  anyBillingCheckoutAvailable,
+  allSessionCheckoutConfigured,
+  planFromKnownStripePriceId,
+  resolveStripePriceId,
+  type PaidPlanKey
+} from '@/lib/billing-config';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
 /** Monthly list prices in cents (display + preview; Stripe price objects are authoritative at checkout). */
-export const PLAN_AMOUNT_CENTS: Record<Exclude<EverittosPlan, 'free'>, number> = {
-  pro: 900,
-  business: 3900,
-  growth: 39900,
-  enterprise: 79900
-};
+export const PLAN_AMOUNT_CENTS: Record<PaidPlanKey, number> = BILLING_PLAN_AMOUNT_CENTS;
 
-const PRICE_ENV_KEYS: Record<Exclude<EverittosPlan, 'free'>, string> = {
-  pro: 'STRIPE_PRICE_PRO',
-  business: 'STRIPE_PRICE_BUSINESS',
-  growth: 'STRIPE_PRICE_GROWTH',
-  enterprise: 'STRIPE_PRICE_ENTERPRISE'
-};
+export { type PaidPlanKey };
 
-export function isPaidCheckoutPlan(plan: string): plan is Exclude<EverittosPlan, 'free'> {
+export function isPaidCheckoutPlan(plan: string): plan is PaidPlanKey {
   return plan in PLAN_AMOUNT_CENTS;
 }
 
-export function stripePriceIdForPlan(plan: Exclude<EverittosPlan, 'free'>): string | null {
-  const key = PRICE_ENV_KEYS[plan];
-  const value = (process.env[key] || '').trim();
-  return value || null;
+export function stripePriceIdForPlan(plan: PaidPlanKey): string | null {
+  return resolveStripePriceId(plan);
 }
 
-/** Map a Stripe price ID back to an EverittOS plan (server-side env lookup). */
+/** Map a Stripe price ID back to an EverittOS plan (server-side env + known defaults). */
 export function planFromStripePriceId(priceId: string | null | undefined): EverittosPlan | null {
-  const id = (priceId || '').trim();
-  if (!id) return null;
-
-  for (const plan of Object.keys(PLAN_AMOUNT_CENTS) as Exclude<EverittosPlan, 'free'>[]) {
-    if (stripePriceIdForPlan(plan) === id) {
-      return plan;
-    }
-  }
-
-  return null;
+  return planFromKnownStripePriceId(priceId) || null;
 }
 
 export function stripeCheckoutConfigured(): boolean {
-  return Object.keys(PLAN_AMOUNT_CENTS).every((tier) =>
-    Boolean(stripePriceIdForPlan(tier as Exclude<EverittosPlan, 'free'>))
-  );
+  return allSessionCheckoutConfigured();
 }
 
-export function stripeCheckoutAvailableForPlan(plan: Exclude<EverittosPlan, 'free'>): boolean {
-  return Boolean(stripePriceIdForPlan(plan));
+export function stripeCheckoutAvailableForPlan(plan: PaidPlanKey): boolean {
+  return billingCheckoutAvailable(plan);
 }
 
-export function paidCheckoutPlans(): Exclude<EverittosPlan, 'free'>[] {
-  return Object.keys(PLAN_AMOUNT_CENTS) as Exclude<EverittosPlan, 'free'>[];
+export function stripeAnyCheckoutAvailable(): boolean {
+  return anyBillingCheckoutAvailable();
+}
+
+export function paidCheckoutPlans(): PaidPlanKey[] {
+  return Object.keys(PLAN_AMOUNT_CENTS) as PaidPlanKey[];
 }
 
 export function formatMoneyFromCents(cents: number, currency = 'usd'): string {

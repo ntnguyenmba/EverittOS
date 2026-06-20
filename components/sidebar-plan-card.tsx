@@ -13,6 +13,7 @@ type SidebarPlanCardProps = {
   plan: EverittosPlan | string | null;
   showBillingLink?: boolean;
   showUpgrade?: boolean;
+  showViewPlans?: boolean;
   billingActive?: boolean;
   onNavigate?: () => void;
 };
@@ -21,6 +22,7 @@ export function SidebarPlanCard({
   plan,
   showBillingLink = false,
   showUpgrade = false,
+  showViewPlans = false,
   billingActive = false,
   onNavigate
 }: SidebarPlanCardProps) {
@@ -77,6 +79,12 @@ export function SidebarPlanCard({
       {showUpgrade ? (
         <Link href="/settings/billing" className="sidebar-plan-card-upgrade" onClick={onNavigate}>
           {t('billing.upgrade')}
+        </Link>
+      ) : null}
+
+      {showViewPlans ? (
+        <Link href="/settings/billing" className="sidebar-plan-card-view-plans" onClick={onNavigate}>
+          View plans
         </Link>
       ) : null}
     </div>
