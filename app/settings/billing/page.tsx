@@ -5,20 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
-import { AiAccessCard } from '@/components/billing/ai-access-card';
-import { UsageDashboard } from '@/components/usage-dashboard';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
-import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
-import { NO_REFUND_CANCEL_NOTE } from '@/lib/no-refund-policy';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizeRole } from '@/lib/roles';
-import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
-import { SyncSubscriptionButton } from '@/components/sync-subscription-button';
 import { canManageBilling } from '@/lib/roles';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
@@ -42,9 +35,7 @@ function BillingSettingsContent() {
     }
     if (reason === 'subscription') {
       const mapped = mapAccessError('subscription');
-      const billingMessage = status
-        ? subscriptionAccess(upgradePlan, status).message
-        : mapped.message;
+      const billingMessage = status ? subscriptionAccess(upgradePlan, status).message : mapped.message;
       return {
         ...mapped,
         message: billingMessage,
@@ -61,23 +52,12 @@ function BillingSettingsContent() {
     organizationPlan,
     plan: workspacePlan,
     role: workspaceRole,
-    rawProfilePlan,
-    rawSubscriptionStatus,
     loading: planLoading,
     refresh: refreshWorkspacePlan
   } = useWorkspacePlan();
 
   const [plan, setPlan] = useState<EverittosPlan | null>(null);
   const [role, setRole] = useState(normalizeRole('owner'));
-  const [usage, setUsage] = useState({
-    jobs: 0,
-    photos: 0,
-    customers: 0,
-    reports: 0,
-    workers: 0,
-    teamMembers: 1,
-    locations: 0
-  });
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
@@ -109,15 +89,9 @@ function BillingSettingsContent() {
     if (planLoading) return;
 
     const resolvedBillingPlan = billingPlan ?? profilePlan ?? workspacePlan;
-    if (resolvedBillingPlan) {
-      setPlan(resolvedBillingPlan);
-    }
-    if (workspaceRole) {
-      setRole(workspaceRole);
-    }
-    if (workspaceSubscriptionStatus) {
-      setSubscriptionStatus(workspaceSubscriptionStatus);
-    }
+    if (resolvedBillingPlan) setPlan(resolvedBillingPlan);
+    if (workspaceRole) setRole(workspaceRole);
+    if (workspaceSubscriptionStatus) setSubscriptionStatus(workspaceSubscriptionStatus);
   }, [
     planLoading,
     profilePlan,
@@ -202,9 +176,7 @@ function BillingSettingsContent() {
 
         setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
       } catch {
-        if (!cancelled) {
-          setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
-        }
+        if (!cancelled) setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
       } finally {
         if (!cancelled) setCheckoutSyncing(false);
       }
@@ -256,10 +228,6 @@ function BillingSettingsContent() {
         .maybeSingle();
 
       if (subscription?.current_period_end) setRenewalDate(subscription.current_period_end);
-
-      const org = await fetchOrganizationContext(user.id).catch(() => null);
-      const counts = await fetchUsageCounts(user.id, org?.organizationId).catch(() => usage);
-      setUsage(counts);
 
       const capsRes = await fetch('/api/stripe/capabilities', { cache: 'no-store' }).catch(() => null);
       if (capsRes?.ok) {
@@ -318,175 +286,191 @@ function BillingSettingsContent() {
   }
 
   const canManageWorkspaceBilling = canManageBilling(role);
-
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
   const hasActiveSubscription = plan !== 'free' && Boolean(stripeCustomerId) && subscriptionStatus !== 'canceled';
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free');
+  const planStatus = subscriptionStatus || 'free';
+  const renewalLabel = renewalDate
+    ? new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : 'Not scheduled';
 
   return (
-    <SettingsShell plan={plan} role={role} title={t('billing.title')} description={t('billing.description')}>
-      {accessNotice && !canManageWorkspaceBilling ? (
-        <AccessBlockedBanner title={accessNotice.title} message={accessNotice.message} details={accessNotice.details} />
-      ) : accessNotice && canManageWorkspaceBilling ? (
-        <AccessBlockedBanner
-          title={accessNotice.title}
-          message={subscriptionInfo.message}
-          details={accessNotice.details}
-        />
-      ) : null}
-      {checkoutBanner ? (
-        <p
-          className={[
-            'auth-message',
-            checkoutBanner.tone === 'success'
-              ? 'auth-message-success'
-              : checkoutBanner.tone === 'warning'
-                ? 'auth-message-warning'
-                : 'auth-message-error'
-          ].join(' ')}
-        >
-          {checkoutBanner.message}
-        </p>
-      ) : null}
-      {checkoutSyncing ? <p className="muted">Syncing your subscription with Stripe…</p> : null}
-      {searchParams.get('upgrade') ? (
-        <div className="settings-warning" style={{ marginBottom: 18 }}>
-          {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.
-        </div>
-      ) : null}
+    <SettingsShell plan={plan} role={role} title="Plans & billing" description="Manage your EverittOS plan, payment, and renewal settings.">
+      <div style={{ display: 'grid', gap: 18 }}>
+        {accessNotice && !canManageWorkspaceBilling ? (
+          <AccessBlockedBanner title={accessNotice.title} message={accessNotice.message} details={accessNotice.details} />
+        ) : accessNotice && canManageWorkspaceBilling ? (
+          <AccessBlockedBanner title={accessNotice.title} message={subscriptionInfo.message} details={accessNotice.details} />
+        ) : null}
 
-      {couponName ? (
-        <div className="settings-card promo-active-discount">
-          <h3>{t('billing.promo.activeTitle')}</h3>
-          <div className="settings-row">
-            <span className="settings-row-label">{t('billing.promo.couponName')}</span>
-            <span className="settings-row-value">{couponName}</span>
+        {checkoutBanner ? (
+          <p
+            className={[
+              'auth-message',
+              checkoutBanner.tone === 'success'
+                ? 'auth-message-success'
+                : checkoutBanner.tone === 'warning'
+                  ? 'auth-message-warning'
+                  : 'auth-message-error'
+            ].join(' ')}
+          >
+            {checkoutBanner.message}
+          </p>
+        ) : null}
+
+        {checkoutSyncing ? <p className="muted">Activating your plan...</p> : null}
+
+        {searchParams.get('upgrade') ? (
+          <div className="settings-warning">
+            {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.
           </div>
-          {couponCode ? (
-            <div className="settings-row">
-              <span className="settings-row-label">{t('billing.promo.code')}</span>
-              <span className="settings-row-value">{couponCode}</span>
+        ) : null}
+
+        <section
+          className="settings-card"
+          style={{
+            display: 'grid',
+            gap: 20,
+            padding: 24,
+            borderRadius: 20,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f7f8f6 100%)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current plan</p>
+              <h3 style={{ margin: 0, fontSize: 28, lineHeight: 1.15 }}>{planDisplayName(plan)}</h3>
             </div>
-          ) : null}
-          <div className="settings-row">
-            <span className="settings-row-label">{t('billing.promo.discount')}</span>
-            <span className="settings-row-value">
-              {formatCouponDuration(
-                (couponDuration as 'forever' | 'once' | 'repeating') || 'once',
-                couponDurationInMonths,
-                couponPercentOff,
-                couponAmountOff
-              )}
-            </span>
+            <div
+              style={{
+                alignSelf: 'flex-start',
+                border: '1px solid rgba(47, 95, 143, 0.18)',
+                borderRadius: 999,
+                padding: '6px 12px',
+                color: 'var(--accent)',
+                background: 'rgba(47, 95, 143, 0.07)',
+                fontSize: 13,
+                fontWeight: 600,
+                textTransform: 'capitalize'
+              }}
+            >
+              {planStatus.replaceAll('_', ' ')}
+            </div>
           </div>
-          {couponExpiresAt ? (
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Subscription</p>
+              <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{planStatus.replaceAll('_', ' ')}</strong>
+            </div>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Renewal</p>
+              <strong style={{ color: 'var(--text)' }}>{renewalLabel}</strong>
+            </div>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Plan access</p>
+              <strong style={{ color: 'var(--text)' }}>{subscriptionInfo.ok ? 'Active' : 'Action needed'}</strong>
+            </div>
+          </div>
+
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14, lineHeight: 1.55 }}>
+            {subscriptionStatusMessage(subscriptionStatus || undefined)} {subscriptionInfo.message}
+          </p>
+
+          <div className="settings-actions" style={{ marginTop: 0 }}>
+            {canOpenPortal ? (
+              <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
+                {portalLoading ? 'Opening...' : 'Manage subscription'}
+              </button>
+            ) : null}
+            {showPortalCancel ? (
+              <button type="button" className="btn" disabled={portalLoading} onClick={openBillingPortal}>
+                {portalLoading ? 'Opening...' : 'Cancel plan'}
+              </button>
+            ) : null}
+            {stripeCustomerId && stripeCapabilities?.resume && canResumeSubscription(subscriptionStatus) ? (
+              <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
+                {resumeLoading ? 'Working...' : 'Resume plan'}
+              </button>
+            ) : null}
+            {!canOpenPortal && plan !== 'free' ? (
+              <p className="billing-support-fallback">
+                Need help with billing? <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
+              </p>
+            ) : null}
+          </div>
+          {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
+        </section>
+
+        {couponName ? (
+          <section className="settings-card" style={{ display: 'grid', gap: 12 }}>
+            <h3>Active discount</h3>
             <div className="settings-row">
-              <span className="settings-row-label">{t('billing.promo.expiresLabel')}</span>
+              <span className="settings-row-label">Discount</span>
+              <span className="settings-row-value">{couponName}</span>
+            </div>
+            {couponCode ? (
+              <div className="settings-row">
+                <span className="settings-row-label">Code</span>
+                <span className="settings-row-value">{couponCode}</span>
+              </div>
+            ) : null}
+            <div className="settings-row">
+              <span className="settings-row-label">Savings</span>
               <span className="settings-row-value">
-                {new Date(couponExpiresAt).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                {formatCouponDuration(
+                  (couponDuration as 'forever' | 'once' | 'repeating') || 'once',
+                  couponDurationInMonths,
+                  couponPercentOff,
+                  couponAmountOff
+                )}
               </span>
             </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="settings-card">
-        <h3>Current plan</h3>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('billing.currentPlan')}</span>
-          <span className="settings-row-value">{planDisplayName(plan)}</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('billing.status')}</span>
-          <span className="settings-row-value">{subscriptionStatus || rawSubscriptionStatus || '—'}</span>
-        </div>
-        {rawProfilePlan && rawProfilePlan !== plan ? (
-          <div className="settings-row">
-            <span className="settings-row-label">Database plan</span>
-            <span className="settings-row-value">{rawProfilePlan}</span>
-          </div>
-        ) : null}
-        {renewalDate ? (
-          <div className="settings-row">
-            <span className="settings-row-label">{t('billing.renewalDate')}</span>
-            <span className="settings-row-value">
-              {new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-        ) : null}
-        <p className="muted">{subscriptionStatusMessage(subscriptionStatus || undefined)}</p>
-        <p className="muted">{subscriptionInfo.message}</p>
-        {showPortalCancel ? (
-          <NoRefundDisclosure variant="compact" text={NO_REFUND_CANCEL_NOTE} showLink={false} />
-        ) : null}
-        {showPortalCancel ? (
-          <p className="muted">{t('billing.cancelViaPortal')}</p>
-        ) : null}
-        {canOpenPortal && plan !== 'free' ? (
-          <p className="muted">{t('billing.upgradeDowngradeViaPortal')}</p>
-        ) : null}
-        {!subscriptionInfo.ok && subscriptionInfo.billingRequired ? (
-          <p className="muted">Update payment in Stripe to restore full access to paid features.</p>
+            {couponExpiresAt ? (
+              <div className="settings-row">
+                <span className="settings-row-label">Expires</span>
+                <span className="settings-row-value">
+                  {new Date(couponExpiresAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
-        <div className="settings-actions">
-          {canOpenPortal ? (
-            <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-              {portalLoading ? 'Opening...' : t('billing.manageBilling')}
-            </button>
-          ) : null}
-          {showPortalCancel ? (
-            <button type="button" className="btn" disabled={portalLoading} onClick={openBillingPortal}>
-              {portalLoading ? 'Opening...' : t('billing.cancelPlan')}
-            </button>
-          ) : null}
-          {stripeCustomerId && stripeCapabilities?.resume && canResumeSubscription(subscriptionStatus) ? (
-            <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
-              {resumeLoading ? 'Working...' : t('billing.resumePlan')}
-            </button>
-          ) : null}
-          {!stripeCustomerId ? <p className="muted">{t('billing.noCustomer')}</p> : null}
-          {stripeCustomerId && !stripeCapabilities?.portal && plan !== 'free' ? (
-            <p className="billing-support-fallback">
-              {t('billing.planChangesSupport')} <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
-            </p>
-          ) : null}
-        </div>
-        {message ? <p>{message}</p> : null}
-        {canManageWorkspaceBilling ? (
-          <SyncSubscriptionButton
-            onSynced={(nextPlan, nextStatus) => {
-              setPlan(normalizePlan(nextPlan));
-              setSubscriptionStatus(nextStatus);
-              void refreshWorkspacePlan();
-            }}
+        <section className="settings-card settings-card-billing-plans" style={{ padding: 24, borderRadius: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div>
+              <h3 style={{ marginBottom: 6 }}>Choose your plan</h3>
+              <p className="muted" style={{ margin: 0 }}>
+                Upgrade, switch, or review available plans.
+              </p>
+            </div>
+          </div>
+          <BillingPlansGrid
+            currentPlan={plan}
+            highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
+            hasActiveSubscription={hasActiveSubscription}
+            portalAvailable={canOpenPortal}
+            onOpenPortal={canOpenPortal ? openBillingPortal : undefined}
+            portalLoading={portalLoading}
           />
-        ) : null}
-      </div>
+        </section>
 
-      <div className="settings-card settings-card-billing-plans">
-        <h3>{t('billing.allPlans')}</h3>
-        <p className="muted">{t('billing.pricingSubtitle')}</p>
-        <BillingPlansGrid
-          currentPlan={plan}
-          highlightPlan={checkoutPlan !== 'free' ? checkoutPlan : undefined}
-          hasActiveSubscription={hasActiveSubscription}
-          portalAvailable={canOpenPortal}
-          onOpenPortal={canOpenPortal ? openBillingPortal : undefined}
-          portalLoading={portalLoading}
-        />
+        <section className="settings-card" style={{ display: 'grid', gap: 8 }}>
+          <h3>Billing terms</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Payments are final and non-refundable. Canceling stops future renewals only. Prior charges are not refunded.
+          </p>
+          <p className="muted" style={{ margin: 0 }}>
+            Promo codes are applied during checkout when available.
+          </p>
+        </section>
       </div>
-
-      <div className="settings-card">
-        <UsageDashboard plan={plan} counts={usage} />
-      </div>
-
-      <AiAccessCard plan={plan} canViewAdminUsage={canManageWorkspaceBilling} />
     </SettingsShell>
   );
 }
