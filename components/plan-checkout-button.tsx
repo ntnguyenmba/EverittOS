@@ -2,19 +2,21 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
-import { clientBillingCheckoutTarget } from '@/lib/billing-config';
+import {
+  billingCheckoutTargetForPlan,
+  billingCheckoutTargetAvailable,
+  type BillingCheckoutMethod
+} from '@/lib/billing-plan-card';
 import type { EverittosPlan } from '@/lib/everittos-plans';
-import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 
 type PlanCheckoutButtonProps = {
   plan: EverittosPlan;
   label: string;
   requireRefundAck?: boolean;
   className?: string;
-  /** When provided, skips re-resolving checkout target from config. */
   checkoutUrl?: string | null;
   priceId?: string | null;
-  method?: 'session' | 'payment_link';
+  method?: BillingCheckoutMethod;
 };
 
 export function PlanCheckoutButton({
@@ -33,16 +35,11 @@ export function PlanCheckoutButton({
 
   const checkoutBlocked = requireRefundAck && !acceptedRefundPolicy;
 
-  const resolved =
-    isPaidCheckoutPlan(plan) && (checkoutUrlProp !== undefined || priceIdProp !== undefined || methodProp)
-      ? {
-          priceId: priceIdProp ?? null,
-          checkoutUrl: checkoutUrlProp ?? null,
-          method: methodProp ?? (priceIdProp ? ('session' as const) : checkoutUrlProp ? ('payment_link' as const) : null)
-        }
-      : isPaidCheckoutPlan(plan)
-        ? clientBillingCheckoutTarget(plan)
-        : null;
+  const baked = billingCheckoutTargetAvailable(plan) ? billingCheckoutTargetForPlan(plan) : null;
+  const checkoutUrl = checkoutUrlProp ?? baked?.checkoutUrl ?? null;
+  const priceId = priceIdProp ?? baked?.priceId ?? null;
+  const method: BillingCheckoutMethod | null =
+    methodProp ?? baked?.method ?? (priceId ? 'session' : checkoutUrl ? 'payment_link' : null);
 
   async function startCheckout() {
     if (checkoutBlocked) {
@@ -50,7 +47,7 @@ export function PlanCheckoutButton({
       return;
     }
 
-    if (!resolved?.method) {
+    if (!method) {
       setError('Billing setup missing for this plan.');
       return;
     }
@@ -59,8 +56,8 @@ export function PlanCheckoutButton({
     setError('');
 
     try {
-      if (resolved.method === 'payment_link' && resolved.checkoutUrl) {
-        window.location.href = resolved.checkoutUrl;
+      if (method === 'payment_link' && checkoutUrl) {
+        window.location.href = checkoutUrl;
         return;
       }
 
@@ -80,6 +77,12 @@ export function PlanCheckoutButton({
           window.location.href = json.redirect || '/settings/billing';
           return;
         }
+
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
+        }
+
         setError(json.error || json.message || t('billing.promo.checkoutFailed'));
         return;
       }
@@ -89,8 +92,17 @@ export function PlanCheckoutButton({
         return;
       }
 
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+
       setError(t('billing.promo.checkoutFailed'));
     } catch {
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
       setError(t('billing.promo.checkoutFailed'));
     } finally {
       setLoading(false);

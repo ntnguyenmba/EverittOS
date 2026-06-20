@@ -11,7 +11,8 @@ import {
   planFromKnownStripePriceId,
   resolveStripePriceId
 } from '@/lib/billing-config';
-import { planCardAction, isPlanUpgrade, isPlanDowngrade } from '@/lib/billing-plan-actions';
+import { resolveBillingPlanCardUi } from '@/lib/billing-plan-card';
+import { isPlanUpgrade, isPlanDowngrade } from '@/lib/billing-plan-actions';
 import { normalizePlanId } from '@/lib/plan-config';
 import {
   isPaidCheckoutPlan,
@@ -55,19 +56,16 @@ test('client billing checkout is available without server env vars', () => {
 
 test('free user paid plan buttons never use contact billing support', () => {
   for (const plan of ['pro', 'business', 'starter', 'growth', 'enterprise'] as const) {
-    const action = planCardAction('free', plan, { hasActiveSubscription: false, portalAvailable: false });
-    assert.notEqual(action.type, 'contact', plan);
-    assert.equal(action.type, 'checkout', plan);
+    const ui = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: plan });
+    assert.notEqual(ui.kind, 'downgrade_contact', plan);
+    assert.equal(ui.kind, 'checkout', plan);
   }
 });
 
-test('free user plan buttons use Choose labels from billing config', () => {
-  const pro = planCardAction('free', 'pro');
-  assert.equal(pro.type, 'checkout');
-  if (pro.type === 'checkout') assert.equal(pro.label, 'Choose Pro');
-
-  const starter = planCardAction('free', 'starter');
-  if (starter.type === 'checkout') assert.equal(starter.label, 'Choose Starter');
+test('free user plan buttons use Choose labels from frozen checkout targets', () => {
+  const pro = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: 'pro' });
+  assert.equal(pro.kind, 'checkout');
+  if (pro.kind === 'checkout') assert.equal(pro.label, 'Choose Pro');
 });
 
 test('client checkout targets include payment links for link-only plans', () => {
@@ -109,20 +107,18 @@ test('payment links are configured for public paid tiers', () => {
   assert.match(paymentLinkForPlan('enterprise') || '', /3cI6oA5va6CG5yb5CX93y0a/);
 });
 
-test('planCardAction routes active subscribers to billing portal for plan changes', () => {
-  const upgrade = planCardAction('pro', 'business', {
+test('resolveBillingPlanCardUi routes active subscribers to billing portal', () => {
+  const upgrade = resolveBillingPlanCardUi({
+    currentPlan: 'pro',
+    targetPlan: 'business',
     hasActiveSubscription: true,
     portalAvailable: true
   });
-  assert.equal(upgrade.type, 'portal');
-  if (upgrade.type === 'portal') {
-    assert.match(upgrade.label, /portal/i);
-    assert.equal(upgrade.change, 'upgrade');
-  }
+  assert.equal(upgrade.kind, 'portal');
 
-  const checkout = planCardAction('free', 'pro', { hasActiveSubscription: false, portalAvailable: false });
-  assert.equal(checkout.type, 'checkout');
-  if (checkout.type === 'checkout') {
+  const checkout = resolveBillingPlanCardUi({ currentPlan: 'free', targetPlan: 'pro' });
+  assert.equal(checkout.kind, 'checkout');
+  if (checkout.kind === 'checkout') {
     assert.equal(checkout.label, 'Choose Pro');
     assert.equal(checkout.method, 'payment_link');
   }

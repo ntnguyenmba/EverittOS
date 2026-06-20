@@ -40,6 +40,7 @@ const MONTHLY_AI_CAP: Record<EverittosPlan, number> = {
   free: 0,
   pro: 0,
   business: 200,
+  starter: 200,
   growth: 0,
   enterprise: -1
 };

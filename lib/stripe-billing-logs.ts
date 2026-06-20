@@ -7,6 +7,8 @@ export type StripeBillingLogTag =
   | 'checkout:missing_email'
   | 'checkout:already_subscribed'
   | 'checkout:not_configured'
+  | 'checkout:payment_link_redirect'
+  | 'checkout:payment_link_fallback'
   | 'checkout:promo_invalid'
   | 'checkout:session_created'
   | 'checkout:session_create_failed'

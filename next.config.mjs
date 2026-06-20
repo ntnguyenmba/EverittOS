@@ -68,6 +68,7 @@ const securityHeaders = Object.entries(buildSecurityHeaders()).map(([key, value]
 const nextConfig = {
   env: {
     NEXT_PUBLIC_VERCEL_ENV: vercelEnv,
+    NEXT_PUBLIC_BILLING_UI_BUILD: 'billing-v3-client-checkout',
     NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES: process.env.SESSION_IDLE_TIMEOUT_MINUTES || '30',
     NEXT_PUBLIC_SESSION_IDLE_WARNING_MINUTES: process.env.SESSION_IDLE_WARNING_MINUTES || '5'
   },

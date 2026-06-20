@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { useTranslation } from '@/components/locale-provider';
+import { billingCheckoutTargetForPlan } from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 
@@ -40,6 +41,7 @@ export function PricingCheckoutPanel({
 
       <div className={compact ? 'pricing-grid compact' : 'pricing-grid'}>
         {tiers.map((tier) => {
+          const checkout = billingCheckoutTargetForPlan(tier.id as Exclude<EverittosPlan, 'free'>);
           const isSelected = tier.id === plan;
           return (
             <div
@@ -59,10 +61,16 @@ export function PricingCheckoutPanel({
                 <p className="muted">{tier.headline}</p>
               </button>
               {authenticated ? (
-                <PlanCheckoutButton plan={tier.id} label={tier.buttonLabel} />
+                <PlanCheckoutButton
+                  plan={tier.id}
+                  label={checkout.buttonLabel}
+                  checkoutUrl={checkout.checkoutUrl}
+                  priceId={checkout.priceId}
+                  method={checkout.method}
+                />
               ) : (
                 <Link className="btn btn-primary" href={signupHref(tier.id)}>
-                  {tier.buttonLabel}
+                  {checkout.buttonLabel}
                 </Link>
               )}
             </div>

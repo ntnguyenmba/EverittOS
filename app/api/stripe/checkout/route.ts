@@ -6,6 +6,7 @@ import {
   paymentLinkForPlan,
   resolveStripePriceId
 } from '@/lib/billing-config';
+import { billingCheckoutTargetForPlan, billingCheckoutTargetAvailable } from '@/lib/billing-plan-card';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -189,6 +190,12 @@ export async function POST(request: Request) {
 
   const priceId = resolveStripePriceId(plan);
   if (!priceId) {
+    const fallback =
+      billingCheckoutTargetAvailable(plan) ? billingCheckoutTargetForPlan(plan).checkoutUrl : paymentLinkForPlan(plan);
+    if (fallback) {
+      logStripeBilling('checkout:payment_link_fallback', { userId: user.id, plan, reason: 'missing_price_id' });
+      return NextResponse.json({ url: fallback, method: 'payment_link', plan });
+    }
     logStripeBilling('checkout:not_configured', { userId: user.id, plan, reason: 'missing_price_id' }, 'warn');
     return NextResponse.json(
       {
@@ -265,6 +272,11 @@ export async function POST(request: Request) {
       },
       'error'
     );
+    const fallback =
+      billingCheckoutTargetAvailable(plan) ? billingCheckoutTargetForPlan(plan).checkoutUrl : paymentLinkForPlan(plan);
+    if (fallback) {
+      return NextResponse.json({ url: fallback, method: 'payment_link', plan, fallback: true });
+    }
     return NextResponse.json({ error: 'Unable to start checkout. Please try again.' }, { status: 500 });
   }
 }

@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
-import { planCardAction, planChangeHint } from '@/lib/billing-plan-actions';
+import {
+  BILLING_UI_BUILD_ID,
+  billingPlanCardHint,
+  resolveBillingPlanCardUi
+} from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
@@ -28,9 +32,10 @@ export function BillingPlansGrid({
 }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
+  const isFreeUser = normalizedCurrent === 'free';
 
   return (
-    <div className="billing-plans-grid-wrap">
+    <div className="billing-plans-grid-wrap" data-billing-build={BILLING_UI_BUILD_ID}>
       <NoRefundDisclosure variant="card" className="billing-plans-policy" />
 
       <p className="muted billing-plan-change-intro">{t('billing.planChangeIntro')}</p>
@@ -39,16 +44,21 @@ export function BillingPlansGrid({
         Promo codes can be entered securely inside Stripe Checkout.
       </p>
 
+      <p className="muted billing-build-marker" data-testid="billing-build-marker">
+        Billing UI {BILLING_UI_BUILD_ID}
+      </p>
+
       <div className="billing-plans-grid pricing-grid">
         {BILLING_PLANS.map((tier) => {
-          const action = planCardAction(normalizedCurrent, tier.id, {
-            hasActiveSubscription,
+          const ui = resolveBillingPlanCardUi({
+            currentPlan: normalizedCurrent,
+            targetPlan: tier.id,
+            hasActiveSubscription: isFreeUser ? false : hasActiveSubscription,
             portalAvailable
           });
-          const isCurrent = action.type === 'current';
+          const isCurrent = ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const isCheckout = action.type === 'checkout';
-          const hint = planChangeHint(action);
+          const hint = billingPlanCardHint(ui);
 
           return (
             <div
@@ -63,9 +73,13 @@ export function BillingPlansGrid({
               ]
                 .filter(Boolean)
                 .join(' ')}
+              data-plan-id={tier.id}
+              data-plan-action={ui.kind}
             >
               {isCurrent ? <span className="billing-plan-badge">{t('billing.currentPlanBadge')}</span> : null}
-              {tier.featured && !isCurrent ? <span className="billing-plan-badge billing-plan-badge-featured">Popular</span> : null}
+              {tier.featured && !isCurrent ? (
+                <span className="billing-plan-badge billing-plan-badge-featured">Popular</span>
+              ) : null}
               <h3>{tier.name}</h3>
               <p className="pricing-plan-price">{tier.priceLabel}</p>
               <p className="muted billing-plan-headline">{tier.headline}</p>
@@ -75,50 +89,40 @@ export function BillingPlansGrid({
                 ))}
               </ul>
 
-              {action.type === 'current' ? (
+              {ui.kind === 'current' ? (
                 <p className="billing-plan-current-label">{t('billing.currentPlanBadge')}</p>
               ) : null}
 
-              {isCheckout ? (
+              {ui.kind === 'checkout' ? (
                 <PlanCheckoutButton
-                  plan={action.plan}
-                  label={action.label}
-                  checkoutUrl={action.checkoutUrl}
-                  priceId={action.priceId}
-                  method={action.method}
+                  plan={ui.plan}
+                  label={ui.label}
+                  checkoutUrl={ui.checkoutUrl}
+                  priceId={ui.priceId}
+                  method={ui.method}
                   className="btn btn-primary btn-block"
                 />
               ) : null}
 
-              {action.type === 'portal' && onOpenPortal ? (
+              {ui.kind === 'portal' && onOpenPortal ? (
                 <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>
-                  {portalLoading ? t('billing.openingPortal') : action.label}
+                  {portalLoading ? t('billing.openingPortal') : ui.label}
                 </button>
               ) : null}
 
-              {action.type === 'unavailable' ? (
-                <button type="button" className="btn btn-block" disabled>
-                  {action.label}
-                </button>
-              ) : null}
-
-              {action.type === 'contact' ? (
-                <a className="btn btn-block" href={action.href}>
-                  {t('billing.contactBillingSupport')}
+              {ui.kind === 'downgrade_contact' ? (
+                <a className="btn btn-block" href={ui.href}>
+                  {ui.label}
                 </a>
               ) : null}
 
               {hint ? <p className="muted billing-plan-note">{hint}</p> : null}
-
-              {tier.id === 'free' && normalizedCurrent !== 'free' && action.type === 'contact' ? (
-                <p className="muted billing-plan-note">{t('billing.downgradeSupportNote')}</p>
-              ) : null}
             </div>
           );
         })}
       </div>
 
-      {!portalAvailable && hasActiveSubscription ? (
+      {!portalAvailable && hasActiveSubscription && !isFreeUser ? (
         <p className="billing-support-fallback">
           {t('billing.planChangesSupport')}{' '}
           <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
