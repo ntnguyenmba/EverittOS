@@ -4,30 +4,21 @@ import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
 
 type LegalConsentLabelProps = {
-  /** Optional id prefix for link elements (accessibility). */
   idPrefix?: string;
-  className?: string;
   id?: string;
 };
 
-/**
- * Checkbox label:
- *   I agree to the Terms of Service
- *   and Privacy Policy
- * Two lines on narrow viewports; one line when space allows.
- */
-export function LegalConsentLabel({ idPrefix = 'legal-consent', className, id }: LegalConsentLabelProps) {
+/** Inline consent copy with Terms and Privacy links; wraps naturally on narrow screens. */
+export function LegalConsentLabel({ idPrefix = 'legal-consent', id }: LegalConsentLabelProps) {
   const { t } = useTranslation();
 
   return (
-    <span id={id} className={['legal-consent-copy', className].filter(Boolean).join(' ')}>
-      <span className="legal-consent-line">
-        {t('auth.agreeToTermsPrefix')}{' '}
-        <Link id={`${idPrefix}-terms`} href="/terms" className="legal-inline-link">
-          {t('legal.termsOfService')}
-        </Link>
-      </span>
-      <span className="legal-consent-line legal-consent-line-second">
+    <span id={id} className="legal-consent-text">
+      {t('auth.agreeToTermsPrefix')}{' '}
+      <Link id={`${idPrefix}-terms`} href="/terms" className="legal-inline-link">
+        {t('legal.termsOfService')}
+      </Link>{' '}
+      <span className="legal-consent-tail">
         {t('auth.agreeToTermsAnd')}{' '}
         <Link id={`${idPrefix}-privacy`} href="/privacy" className="legal-inline-link">
           {t('legal.privacyPolicy')}

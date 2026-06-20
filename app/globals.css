@@ -673,6 +673,8 @@ p { color: var(--muted); line-height: 1.7; }
 .auth-form {
   display: grid;
   gap: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 .auth-field label {
@@ -2994,56 +2996,56 @@ html[data-deployment='production'] #vercel-toolbar {
   margin-top: 12px;
 }
 
-/* Auth consent checkboxes */
-.auth-consent-block {
-  margin: 18px 0 22px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(248, 250, 252, 0.92);
-  border: 1px solid rgba(45, 55, 72, 0.07);
-}
-
-.auth-consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #5a7084;
+/* Auth consent checkbox row */
+.auth-form label.auth-consent {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 14px 0 16px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  color: #54677d !important;
   cursor: pointer;
 }
 
-.auth-consent input {
-  flex-shrink: 0;
-  margin-top: 2px;
-  min-width: 18px;
-  min-height: 18px;
+.auth-form label.auth-consent input[type='checkbox'] {
+  flex: 0 0 auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
 }
 
-.legal-consent-copy {
-  display: block;
-  flex: 1;
-  min-width: 0;
+.auth-form label.auth-consent .legal-consent-text {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
 }
 
-.legal-consent-line {
-  display: inline;
+.auth-form label.auth-consent .legal-consent-tail {
+  display: inline !important;
+  white-space: normal !important;
 }
 
-.legal-consent-line-second {
-  display: block;
-  margin-top: 2px;
-}
-
-@media (min-width: 520px) {
-  .legal-consent-line-second {
-    display: inline;
-    margin-top: 0;
-  }
-
-  .legal-consent-line-second::before {
-    content: ' ';
+@media (max-width: 480px) {
+  .auth-form label.auth-consent .legal-consent-tail {
+    display: block !important;
+    margin-top: 2px;
   }
 }
 
@@ -3052,6 +3054,7 @@ html[data-deployment='production'] #vercel-toolbar {
   font-weight: 600;
   text-decoration: none;
   text-underline-offset: 2px;
+  white-space: normal;
 }
 
 .legal-inline-link:hover,
@@ -3062,13 +3065,13 @@ html[data-deployment='production'] #vercel-toolbar {
   outline: none;
 }
 
-.auth-consent .legal-inline-link {
+.auth-form label.auth-consent .legal-inline-link {
   color: #244f76;
   font-weight: 600;
 }
 
-.auth-consent .legal-inline-link:hover,
-.auth-consent .legal-inline-link:focus-visible {
+.auth-form label.auth-consent .legal-inline-link:hover,
+.auth-form label.auth-consent .legal-inline-link:focus-visible {
   color: #1e4975;
 }
 

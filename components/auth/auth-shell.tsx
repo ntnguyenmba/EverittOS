@@ -133,10 +133,6 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           font-size: 14px;
         }
 
-        .auth-tech-card .auth-consent-block {
-          margin: 16px 0 20px;
-        }
-
         .auth-tech-card .auth-form .btn-primary {
           margin-top: 4px;
         }

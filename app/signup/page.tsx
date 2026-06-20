@@ -236,19 +236,17 @@ function SignupForm() {
           />
         </div>
 
-        <div className="auth-consent-block">
-          <label className="auth-consent" htmlFor="signup_accept_legal">
-            <input
-              id="signup_accept_legal"
-              type="checkbox"
-              checked={acceptLegal}
-              onChange={(e) => setAcceptLegal(e.target.checked)}
-              required
-              aria-describedby="signup-legal-consent-text"
-            />
-            <LegalConsentLabel idPrefix="signup-legal-consent" className="auth-consent-text" id="signup-legal-consent-text" />
-          </label>
-        </div>
+        <label className="auth-consent" htmlFor="signup_accept_legal">
+          <input
+            id="signup_accept_legal"
+            type="checkbox"
+            checked={acceptLegal}
+            onChange={(e) => setAcceptLegal(e.target.checked)}
+            required
+            aria-describedby="signup-legal-consent-text"
+          />
+          <LegalConsentLabel idPrefix="signup-legal-consent" id="signup-legal-consent-text" />
+        </label>
 
         <AuthMessages error={error} success={success} />
 
