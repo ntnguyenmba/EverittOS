@@ -235,6 +235,8 @@ export const messages: Messages = {
   legal: {
     terms: 'Điều khoản',
     privacy: 'Quyền riêng tư',
+    termsOfService: 'Điều khoản dịch vụ',
+    privacyPolicy: 'Chính sách quyền riêng tư',
     refundPolicy: 'Chính sách không hoàn tiền',
     cookies: 'Cookie',
     security: 'Bảo mật',
@@ -355,6 +357,11 @@ export const messages: Messages = {
     acceptTerms: 'Tôi đồng ý với Điều khoản dịch vụ',
     acceptPrivacy: 'Tôi đồng ý với Chính sách quyền riêng tư',
     acceptTermsAndPrivacy: 'Tôi đồng ý với Điều khoản dịch vụ và Chính sách quyền riêng tư',
+    agreeToTermsPrefix: 'Tôi đồng ý với',
+    agreeToTermsAnd: 'và',
+    continuingLegalPrefix: 'Khi tiếp tục, bạn đồng ý với',
+    continuingLegalAcknowledge: ', xác nhận',
+    continuingLegalUnderstand: ' và hiểu',
     consentRequired: 'Bạn phải chấp nhận Điều khoản và Chính sách quyền riêng tư để tạo tài khoản.',
     signInMethods: 'Đăng nhập bằng email và mật khẩu, hoặc dùng passkey nếu đã thêm.',
     signUpMethods: 'Tạo tài khoản bằng email và mật khẩu. Bạn có thể thêm passkey sau khi đăng ký.'

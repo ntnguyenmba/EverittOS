@@ -98,6 +98,8 @@ export type MessageTree = {
   legal: {
     terms: string;
     privacy: string;
+    termsOfService: string;
+    privacyPolicy: string;
     refundPolicy: string;
     cookies: string;
     security: string;
@@ -215,6 +217,11 @@ export type MessageTree = {
     acceptTerms: string;
     acceptPrivacy: string;
     acceptTermsAndPrivacy: string;
+    agreeToTermsPrefix: string;
+    agreeToTermsAnd: string;
+    continuingLegalPrefix: string;
+    continuingLegalAcknowledge: string;
+    continuingLegalUnderstand: string;
     consentRequired: string;
     signInMethods: string;
     signUpMethods: string;

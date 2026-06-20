@@ -237,6 +237,8 @@ export const messages: Messages = {
   legal: {
     terms: 'Términos',
     privacy: 'Privacidad',
+    termsOfService: 'Términos de servicio',
+    privacyPolicy: 'Política de privacidad',
     refundPolicy: 'Política sin reembolsos',
     cookies: 'Cookies',
     security: 'Seguridad',
@@ -357,6 +359,11 @@ export const messages: Messages = {
     acceptTerms: 'Acepto los Términos de servicio',
     acceptPrivacy: 'Acepto la Política de privacidad',
     acceptTermsAndPrivacy: 'Acepto los Términos de servicio y la Política de privacidad',
+    agreeToTermsPrefix: 'Acepto los',
+    agreeToTermsAnd: 'y la',
+    continuingLegalPrefix: 'Al continuar, acepta los',
+    continuingLegalAcknowledge: ', reconoce la',
+    continuingLegalUnderstand: ' y comprende nuestra',
     consentRequired: 'Debe aceptar los Términos y la Política de privacidad para crear una cuenta.',
     signInMethods: 'Inicie sesión con correo y contraseña, o use una passkey si la agregó.',
     signUpMethods: 'Cree una cuenta con correo y contraseña. Puede agregar una passkey después del registro.'

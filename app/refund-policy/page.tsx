@@ -9,7 +9,9 @@ export default function RefundPolicyPage() {
     <main className="section">
       <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>No Refund Policy</h2>
-        <p className="muted">Part of Terms of Service · Version {TERMS_VERSION} · Last updated June 2026</p>
+        <p className="muted">
+          Part of <Link href="/terms">Terms of Service</Link> · Version {TERMS_VERSION} · Last updated June 2026
+        </p>
 
         <p>{NO_REFUND_POLICY_TEXT}</p>
 

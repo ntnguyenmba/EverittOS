@@ -32,8 +32,8 @@ export default function TermsPage() {
         <p>
           You must provide accurate information and keep credentials secure. EverittOS supports email and password
           sign-in. You may optionally register passkeys (WebAuthn) for passwordless sign-in on supported devices. You may
-          deactivate your account at any time from Settings. Deletion requests follow the process described in our
-          Privacy Policy.
+          deactivate your account at any time from Settings.           Deletion requests follow the process described in our{' '}
+          <Link href="/privacy">Privacy Policy</Link>.
         </p>
         <p>
           You are responsible for keeping your devices, passwords, passkeys, and authentication methods secure. If you

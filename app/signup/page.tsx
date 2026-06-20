@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
+import { LegalConsentLabel } from '@/components/legal/legal-consent-label';
 import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
@@ -235,11 +236,17 @@ function SignupForm() {
           />
         </div>
 
-        <label className="auth-consent">
-          <input type="checkbox" checked={acceptLegal} onChange={(e) => setAcceptLegal(e.target.checked)} required />
-          <span>
-            {t('auth.acceptTermsAndPrivacy')}{' '}
-            <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
+        <label className="auth-consent" htmlFor="signup_accept_legal">
+          <input
+            id="signup_accept_legal"
+            type="checkbox"
+            checked={acceptLegal}
+            onChange={(e) => setAcceptLegal(e.target.checked)}
+            required
+            aria-describedby="signup-legal-consent-text"
+          />
+          <span id="signup-legal-consent-text">
+            <LegalConsentLabel idPrefix="signup-legal-consent" className="auth-consent-text" />
           </span>
         </label>
 

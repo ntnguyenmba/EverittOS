@@ -52,7 +52,13 @@ export function CookieConsentBanner() {
           </h2>
           <p className="muted">{t('cookies.banner.description')}</p>
           <p className="muted cookie-banner-links">
-            <Link href="/cookies">{t('cookies.banner.policy')}</Link> · <Link href="/privacy">{t('cookies.banner.privacy')}</Link>
+            <Link href="/cookies" className="legal-inline-link">
+              {t('cookies.banner.policy')}
+            </Link>{' '}
+            ·{' '}
+            <Link href="/privacy" className="legal-inline-link">
+              {t('legal.privacyPolicy')}
+            </Link>
           </p>
         </div>
 

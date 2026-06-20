@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { AuthContinuingLegalNote, AuthLegalFooterLinks } from '@/components/legal/legal-consent-label';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 
@@ -29,19 +29,11 @@ export function AuthShell({ title, children }: AuthShellProps) {
           </h1>
           <p className="auth-card-subtitle">Run your business from one place.</p>
           {children}
-          <p className="auth-legal-note">
-            By continuing, you agree to the <Link href="/terms">Terms</Link>, acknowledge the{' '}
-            <Link href="/privacy">Privacy Policy</Link>, and understand our{' '}
-            <Link href="/refund-policy">No Refund Policy</Link>.
-          </p>
+          <AuthContinuingLegalNote />
         </section>
 
         <footer className="auth-tech-footer">
-          <p>
-            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> ·{' '}
-            <Link href="/refund-policy">No Refund Policy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
-            <Link href="/security">Security</Link>
-          </p>
+          <AuthLegalFooterLinks />
         </footer>
       </div>
 

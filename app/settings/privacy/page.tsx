@@ -194,8 +194,14 @@ export default function PrivacySettingsPage() {
             : t('settings.privacy.privacyNotRecorded')}
         </p>
         <p className="muted">
-          <Link href="/privacy">{t('legal.privacy')}</Link> · <Link href="/terms">{t('legal.terms')}</Link> ·{' '}
-          <Link href="/cookies">{t('legal.cookies')}</Link>
+          <Link href="/privacy" className="legal-inline-link">
+            {t('legal.privacyPolicy')}
+          </Link>{' '}
+          ·{' '}
+          <Link href="/terms" className="legal-inline-link">
+            {t('legal.termsOfService')}
+          </Link>{' '}
+          · <Link href="/cookies">{t('legal.cookies')}</Link>
         </p>
       </div>
     </SettingsShell>
