@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
+import { diagnoseWorkspaceLinkage } from '@/lib/workspace-repair';
 import { getCurrentWorkspaceForUser } from '@/lib/workspace-server';
 
 export const runtime = 'nodejs';
@@ -22,12 +24,34 @@ export async function POST() {
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error, code: result.code }, { status: result.status });
+    const admin = createAdminSupabase();
+    const diagnosis = admin ? await diagnoseWorkspaceLinkage(admin, user.id) : null;
+
+    return NextResponse.json(
+      {
+        error: result.error,
+        code: result.code,
+        missingRecords: diagnosis?.missingRecords || [],
+        diagnosis: diagnosis
+          ? {
+              userId: diagnosis.userId,
+              profileId: diagnosis.profileId,
+              workspaceId: diagnosis.workspaceId,
+              organizationId: diagnosis.organizationId,
+              ownerUserId: diagnosis.ownerUserId,
+              membershipId: diagnosis.membershipId,
+              missingRecords: diagnosis.missingRecords
+            }
+          : null
+      },
+      { status: result.status }
+    );
   }
 
   return NextResponse.json({
     ok: true,
     organizationId: result.workspace.organizationId,
-    companyId: result.workspace.companyId
+    companyId: result.workspace.companyId,
+    ownerUserId: result.workspace.ownerUserId
   });
 }

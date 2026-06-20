@@ -15,7 +15,6 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { RecordActions } from '@/components/record-actions';
-import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
@@ -94,13 +93,6 @@ export default function WorkersPage() {
     }
 
     setSaving(true);
-
-    const org = await ensureWorkspaceForSave(user.id);
-    if (!org?.organizationId) {
-      setSaving(false);
-      appFeedback.error('Workspace setup is still finishing. Refresh and try again.');
-      return;
-    }
 
     const url = editingId ? `/api/workers/${editingId}` : '/api/workers';
     const method = editingId ? 'PATCH' : 'POST';

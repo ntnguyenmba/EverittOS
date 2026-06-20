@@ -40,10 +40,10 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
       return;
     }
 
-    const org = await ensureWorkspaceForSave(user.id);
-    if (!org?.organizationId) {
+    const workspace = await ensureWorkspaceForSave(user.id);
+    if (!workspace.ok) {
       setSaving(false);
-      appFeedback.error('Workspace setup is still finishing. Wait a moment and try again.');
+      appFeedback.error(workspace.error);
       return;
     }
 

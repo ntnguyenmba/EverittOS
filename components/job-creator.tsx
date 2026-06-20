@@ -57,12 +57,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const org = await ensureWorkspaceForSave(user.id);
-    if (!org?.organizationId) {
+    const workspace = await ensureWorkspaceForSave(user.id);
+    if (!workspace.ok) {
       setLoading(false);
-      appFeedback.error('Workspace setup is still finishing. Wait a moment and try again, or refresh the page.');
+      appFeedback.error(workspace.error);
       return;
     }
+    const org = workspace.workspace;
 
     const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
     const usage = await fetchUsageCounts(user.id, org.organizationId);

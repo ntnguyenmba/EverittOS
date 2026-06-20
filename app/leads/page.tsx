@@ -50,7 +50,8 @@ export default function LeadsPage() {
     setRole(userRole);
     setCanManage(isManagerRole(userRole));
 
-    const org = await ensureWorkspaceForSave(user.id);
+    const workspace = await ensureWorkspaceForSave(user.id);
+    const org = workspace.ok ? workspace.workspace : null;
     let leadsQuery = supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)

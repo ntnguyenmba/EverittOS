@@ -5,6 +5,8 @@ import type { OrganizationContext } from '@/lib/organization-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { logSaveFlowEvent } from '@/lib/save-flow-log';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { diagnoseWorkspaceLinkage, repairWorkspaceLinkage } from '@/lib/workspace-repair';
+import { logWorkspaceRepair } from '@/lib/workspace-repair-log';
 
 export type CurrentWorkspace = OrganizationContext & {
   companyId: string | null;
@@ -177,28 +179,71 @@ export async function getCurrentWorkspaceForUser(
   let org = await fetchOrganizationContextForRequest(supabase, userId);
 
   if (!org && options?.repair !== false) {
-    const bootstrap = await ensureUserWorkspace(
-      userId,
-      options?.email || '',
-      options?.userMetadata,
-      supabase
-    );
-    if (!bootstrap.ok) {
-      return {
-        ok: false,
-        status: bootstrap.code === 'bootstrap_unavailable' ? 503 : 409,
-        error: bootstrap.message,
-        code: bootstrap.code
-      };
+    const admin = createAdminSupabase();
+    if (admin) {
+      const repair = await repairWorkspaceLinkage(admin, userId, {
+        email: options?.email,
+        userMetadata: options?.userMetadata
+      });
+
+      logSaveFlowEvent('workspace_repair_attempted', {
+        userId,
+        repaired: repair.repaired ? 1 : 0,
+        missingRecords: repair.diagnosis.missingRecords.join(',') || 'none',
+        organizationId: repair.diagnosis.organizationId || null,
+        membershipId: repair.diagnosis.membershipId || null
+      });
+
+      if (repair.repaired) {
+        org = await fetchOrganizationContextForRequest(supabase, userId);
+      }
     }
-    org = await fetchOrganizationContextForRequest(supabase, userId);
+
+    if (!org) {
+      const bootstrap = await ensureUserWorkspace(
+        userId,
+        options?.email || '',
+        options?.userMetadata,
+        supabase
+      );
+      if (!bootstrap.ok) {
+        return {
+          ok: false,
+          status: bootstrap.code === 'bootstrap_unavailable' ? 503 : 409,
+          error: bootstrap.message,
+          code: bootstrap.code
+        };
+      }
+      org = await fetchOrganizationContextForRequest(supabase, userId);
+    }
   }
 
   if (!org?.organizationId) {
+    const admin = createAdminSupabase();
+    const diagnosis = admin ? await diagnoseWorkspaceLinkage(admin, userId) : null;
+    const missing = diagnosis?.missingRecords?.length
+      ? diagnosis.missingRecords.join(', ')
+      : 'organization context';
+
+    logWorkspaceRepair(
+      'workspace:repair_failed',
+      {
+        userId,
+        workspaceId: diagnosis?.workspaceId || null,
+        organizationId: diagnosis?.organizationId || null,
+        ownerUserId: diagnosis?.ownerUserId || null,
+        membershipId: diagnosis?.membershipId || null,
+        profileId: diagnosis?.profileId || null,
+        missingRecords: diagnosis?.missingRecords || ['organization context'],
+        blockReason: 'workspace_missing'
+      },
+      'error'
+    );
+
     return {
       ok: false,
       status: 409,
-      error: 'Workspace not found. Refresh the page or sign out and sign back in.',
+      error: `Workspace linkage incomplete (missing: ${missing}). Refresh the page or sign out and sign back in.`,
       code: 'workspace_missing'
     };
   }

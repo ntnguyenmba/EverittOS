@@ -48,7 +48,8 @@ export default function LeadDetailPage({ params }: PageProps) {
     setRole(userRole);
     setCanManage(isManagerRole(userRole));
 
-    const org = await ensureWorkspaceForSave(user.id);
+    const workspace = await ensureWorkspaceForSave(user.id);
+    const org = workspace.ok ? workspace.workspace : null;
     let query = supabase.from('customers').select(CUSTOMER_LIST_SELECT).eq('id', leadId);
     if (org?.organizationId) {
       query = query.eq('organization_id', org.organizationId);
