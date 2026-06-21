@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import {
   BILLING_UI_BUILD_ID,
-  billingPlanCardHint,
   resolveBillingPlanCardUi,
   type PaidPlanKey
 } from '@/lib/billing-plan-card';
@@ -198,7 +197,6 @@ export function BillingPlansGrid({
     <section className="billing-plans-grid-wrap" data-billing-build={BILLING_UI_BUILD_ID} style={shellStyle}>
       <div style={introStyle}>
         <p style={noteStyle}>{t('billing.planChangeIntro')}</p>
-        <p style={noteStyle}>Choose a plan, accept the no-refund acknowledgment, then continue to Stripe Checkout.</p>
       </div>
 
       <p className="billing-build-marker" data-testid="billing-build-marker" style={hiddenBuildStyle}>
@@ -216,7 +214,6 @@ export function BillingPlansGrid({
           });
           const isCurrent = ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
-          const hint = billingPlanCardHint(ui);
           const emphasizedCardStyle =
             isCurrent || isHighlighted
               ? {
@@ -266,6 +263,7 @@ export function BillingPlansGrid({
                   <PlanCheckoutButton
                     plan={ui.plan}
                     label={ui.label}
+                    requireRefundAck={false}
                     disabled={!ui.checkoutAvailable}
                     className="btn btn-primary btn-block"
                   />
@@ -293,8 +291,6 @@ export function BillingPlansGrid({
                     {ui.label}
                   </a>
                 ) : null}
-
-                {hint ? <p className="billing-plan-note" style={noteStyle}>{hint}</p> : null}
               </div>
             </article>
           );
@@ -309,8 +305,9 @@ export function BillingPlansGrid({
       ) : null}
 
       <footer className="billing-plans-footnote-group" style={footnotesStyle}>
-        <p className="billing-plans-footnote" style={noteStyle}>{t('billing.plansFootnote')}</p>
-        <p className="billing-plans-footnote" style={noteStyle}>{t('billing.noRefund.cancelNote')}</p>
+        <p className="billing-plans-footnote" style={noteStyle}>
+          Subscriptions renew monthly until canceled. Promo codes, when available, are entered in Stripe Checkout.
+        </p>
         <p className="billing-plans-footnote billing-legal-links" style={noteStyle}>
           <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link> ·{' '}
           <Link href="/refund-policy">{t('legal.refundPolicy')}</Link>
