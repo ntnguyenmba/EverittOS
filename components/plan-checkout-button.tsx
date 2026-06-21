@@ -15,19 +15,20 @@ type PlanCheckoutButtonProps = {
 type CheckoutResponseJson = {
   url?: string;
   error?: string;
+  ownerDiagnostic?: string;
   code?: string;
   redirect?: string;
 };
 
 function parseCheckoutJson(rawText: string): CheckoutResponseJson {
   if (!rawText.trim()) {
-    return { error: 'Unable to start checkout. Please try again or contact support.' };
+    return { error: 'Checkout failed with an empty server response. Check Vercel logs for /api/stripe/checkout.' };
   }
 
   try {
     return JSON.parse(rawText) as CheckoutResponseJson;
   } catch {
-    return { error: 'Unable to start checkout. Please try again or contact support.' };
+    return { error: 'Checkout failed because /api/stripe/checkout did not return JSON. Check Vercel logs for the server error.' };
   }
 }
 
@@ -44,11 +45,13 @@ function validStripeCheckoutRedirect(url: string | undefined): string | null {
 }
 
 function publicCheckoutError(json: CheckoutResponseJson, fallback: string): string {
+  if (json.ownerDiagnostic) return json.ownerDiagnostic;
+
   if (json.code === 'already_subscribed') {
     return json.error || 'You already have an active subscription. Use Manage subscription to make changes.';
   }
 
-  return json.error || fallback || 'Unable to start checkout. Please try again or contact support.';
+  return json.error || fallback || 'Checkout failed. Check Stripe billing configuration.';
 }
 
 export function PlanCheckoutButton({
@@ -104,10 +107,11 @@ export function PlanCheckoutButton({
       }
 
       console.error('Stripe checkout did not return a valid redirect URL', { plan, response: json });
-      setError('Unable to start checkout. Please try again or contact support.');
+      setError(publicCheckoutError(json, 'Checkout did not return a valid Stripe redirect URL.'));
     } catch (caught) {
       console.error('Stripe checkout request failed', { plan, error: caught });
-      setError('Unable to start checkout. Please try again or contact support.');
+      const message = caught instanceof Error ? caught.message : 'Unknown browser or network error';
+      setError(`Checkout request failed before Stripe opened: ${message}`);
     } finally {
       setLoading(false);
     }
