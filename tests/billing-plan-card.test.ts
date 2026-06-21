@@ -3,7 +3,7 @@ import test from 'node:test';
 import { BILLING_UI_BUILD_ID, billingCheckoutTargetAvailable, resolveBillingPlanCardUi } from '@/lib/billing-plan-card';
 
 test('billing UI build id is set for deployment verification', () => {
-  assert.equal(BILLING_UI_BUILD_ID, 'billing-v4-env-checkout');
+  assert.equal(BILLING_UI_BUILD_ID, 'billing-v6-checkout-diagnostics');
 });
 
 test('paid tiers are recognized for billing cards', () => {

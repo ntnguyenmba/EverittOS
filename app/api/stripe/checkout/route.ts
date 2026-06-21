@@ -109,6 +109,8 @@ function checkoutFailureResponse(input: {
   detail?: string | null;
   stripeCode?: string | null;
   extra?: Record<string, unknown>;
+  /** When true, return actionable ownerDiagnostic text in `error` (checkout callers are owner/admin). */
+  useOwnerDiagnosticAsError?: boolean;
 }) {
   const priceIdPreview = maskStripeId(input.priceId);
   const ownerDiagnostic = checkoutOwnerDiagnostic({
@@ -122,7 +124,9 @@ function checkoutFailureResponse(input: {
 
   return NextResponse.json(
     {
-      error: checkoutPublicErrorMessage(input.plan),
+      error: input.useOwnerDiagnosticAsError
+        ? ownerDiagnostic
+        : checkoutPublicErrorMessage(input.plan),
       code: input.code,
       plan: input.plan,
       ownerDiagnostic,
@@ -262,7 +266,8 @@ export async function POST(request: Request) {
       plan,
       code: 'checkout_not_configured',
       status: 503,
-      priceEnvKey
+      priceEnvKey,
+      useOwnerDiagnosticAsError: true
     });
   }
 
@@ -323,7 +328,8 @@ export async function POST(request: Request) {
       priceEnvKey,
       priceId,
       detail: priceValidation.message,
-      stripeCode: priceValidation.stripeCode
+      stripeCode: priceValidation.stripeCode,
+      useOwnerDiagnosticAsError: true
     });
   }
 
@@ -490,7 +496,8 @@ export async function POST(request: Request) {
         priceEnvKey,
         priceId,
         detail: message,
-        extra: { sessionId: session.id }
+        extra: { sessionId: session.id },
+        useOwnerDiagnosticAsError: true
       });
     }
 
@@ -546,7 +553,8 @@ export async function POST(request: Request) {
       priceEnvKey,
       priceId,
       detail: formatted.message,
-      stripeCode: formatted.code
+      stripeCode: formatted.code,
+      useOwnerDiagnosticAsError: true
     });
   }
 }

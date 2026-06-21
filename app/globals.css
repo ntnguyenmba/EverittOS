@@ -5680,6 +5680,15 @@ html[data-deployment='production'] #vercel-toolbar {
   overflow-wrap: anywhere;
 }
 
+.plan-checkout-debug {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .billing-plans-policy {
   margin-bottom: 18px;
 }
