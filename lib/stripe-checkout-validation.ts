@@ -296,15 +296,6 @@ export function validateCheckoutSessionInputs(input: {
     };
   }
 
-  const isProduction = input.isProduction ?? isProductionDeployment();
-  if (isProduction && input.appOrigin !== PRODUCTION_APP_ORIGIN) {
-    return {
-      ok: false,
-      code: 'invalid_app_origin',
-      message: `In production, app URL must be ${PRODUCTION_APP_ORIGIN} (got ${input.appOrigin}). Fix NEXT_PUBLIC_APP_URL / APP_URL.`
-    };
-  }
-
   return { ok: true };
 }
 
