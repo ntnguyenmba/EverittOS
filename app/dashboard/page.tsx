@@ -159,7 +159,7 @@ export default function DashboardPage() {
       done: totalJobs > 0
     },
     {
-      label: 'Invite worker',
+      label: 'Add team member',
       detail: 'Assign work to your team or contractors.',
       href: '/workers',
       done: totalWorkers > 0
@@ -204,7 +204,7 @@ export default function DashboardPage() {
       <div className="today-page dashboard-home">
         <PageHeader
           title={t('dashboard.welcome')}
-          subtitle="Manage customers, jobs, schedule, workers, invoices and business performance."
+          subtitle="Manage customers, jobs, schedule, team, invoices and business performance."
         />
 
         <section className="card dashboard-actions-card" aria-label={t('dashboard.primaryActions')}>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
             <Link href="/jobs/new">New job</Link>
             <Link href="/schedule/new">Schedule</Link>
             <Link href="/invoices">Invoice</Link>
-            <Link href="/workers">Worker</Link>
+            <Link href="/workers">Team</Link>
           </div>
         </section>
 
@@ -268,13 +268,13 @@ export default function DashboardPage() {
 
         <DashboardBusinessActivity items={activity} loading={loading} showViewAll={showActivityLink} />
 
-        <section className="dashboard-help-strip" aria-label="Need help setting up EverittOS">
+        <section className="dashboard-help-strip" aria-label="EverittOS support">
           <div>
-            <h2>Need help setting up?</h2>
-            <p>Book a free onboarding call and we will help set up customers, jobs, workers, scheduling and invoicing.</p>
+            <h2>Need assistance?</h2>
+            <p>Book an onboarding call for help with customers, jobs, team, scheduling and invoicing.</p>
           </div>
           <Link href="/support" className="dashboard-help-link">
-            Book free call
+            Book call
           </Link>
         </section>
       </div>
