@@ -7,14 +7,9 @@ import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { mapAccessError } from '@/lib/auth-errors';
 import { BillingPlansGrid } from '@/components/billing-plans-grid';
-import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { formatCouponDuration } from '@/lib/stripe-promo';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
-import { normalizeRole } from '@/lib/roles';
-import { canResumeSubscription, subscriptionStatusMessage } from '@/lib/stripe-subscription';
-import { BillingHealthCheck } from '@/components/billing-health-check';
-import { SyncSubscriptionButton } from '@/components/sync-subscription-button';
-import { canManageBilling } from '@/lib/roles';
+import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 import { useTranslation } from '@/components/locale-provider';
@@ -64,14 +59,9 @@ function BillingSettingsContent() {
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
-  const [resumeLoading, setResumeLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [stripeCapabilities, setStripeCapabilities] = useState<{
-    checkout: boolean;
-    portal: boolean;
-    resume: boolean;
-  } | null>(null);
+  const [stripeCapabilities, setStripeCapabilities] = useState<{ portal: boolean } | null>(null);
   const [couponName, setCouponName] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [couponPercentOff, setCouponPercentOff] = useState<number | null>(null);
@@ -84,7 +74,6 @@ function BillingSettingsContent() {
     message: string;
   } | null>(null);
   const [checkoutSyncing, setCheckoutSyncing] = useState(false);
-  const [checkoutSyncPending, setCheckoutSyncPending] = useState(false);
   const checkoutSyncStartedRef = useRef<string | null>(null);
 
   const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
@@ -112,18 +101,10 @@ function BillingSettingsContent() {
 
     if (checkout === 'cancelled') {
       setCheckoutBanner({ tone: 'error', message: t('billing.promo.checkoutCancelled') });
-      setCheckoutSyncPending(false);
       return;
     }
 
     if (checkout !== 'success') {
-      if (checkout === 'pending') {
-        setCheckoutSyncPending(true);
-        setCheckoutBanner({
-          tone: 'warning',
-          message: 'Payment received. Subscription is still syncing.'
-        });
-      }
       return;
     }
 
@@ -135,11 +116,9 @@ function BillingSettingsContent() {
 
     async function syncAfterCheckout() {
       setCheckoutSyncing(true);
-      setCheckoutSyncPending(false);
       setCheckoutBanner(null);
 
       const maxAttempts = 3;
-      let lastError = '';
       let checkoutUrlCleared = false;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -157,7 +136,6 @@ function BillingSettingsContent() {
             status?: string;
             active?: boolean;
             synced?: boolean;
-            error?: string;
           };
 
           if (!checkoutUrlCleared) {
@@ -174,15 +152,12 @@ function BillingSettingsContent() {
               updated?: boolean;
               plan?: string;
               status?: string;
-              error?: string;
             };
             if (fallback.ok && fallbackJson.updated) {
               json.synced = true;
               json.plan = fallbackJson.plan;
               json.status = fallbackJson.status;
               json.active = true;
-            } else {
-              lastError = json.error || fallbackJson.error || 'Subscription sync failed.';
             }
           }
 
@@ -198,8 +173,7 @@ function BillingSettingsContent() {
               : json.plan
                 ? normalizePlan(json.plan)
                 : null;
-          const refreshedStatus =
-            latest.subscriptionStatus || json.status || workspaceSubscriptionStatus || 'free';
+          const refreshedStatus = latest.subscriptionStatus || json.status || workspaceSubscriptionStatus || 'free';
           const activated =
             effectivePlan &&
             effectivePlan !== 'free' &&
@@ -209,7 +183,6 @@ function BillingSettingsContent() {
             setPlan(effectivePlan);
             setSubscriptionStatus(refreshedStatus);
             setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
-            setCheckoutSyncPending(false);
             router.replace('/settings/billing', { scroll: false });
             return;
           }
@@ -217,19 +190,15 @@ function BillingSettingsContent() {
           if (attempt < maxAttempts) {
             await new Promise((resolve) => window.setTimeout(resolve, 1500));
           }
-        } catch (error) {
-          lastError = error instanceof Error ? error.message : 'Subscription sync failed.';
+        } catch {
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          }
         }
       }
 
-      console.error('CHECKOUT_RETURN_SYNC_FAILED', { sessionId: sessionId || null, lastError });
-      setCheckoutBanner({
-        tone: 'warning',
-        message: 'Payment received. Subscription is still syncing.'
-      });
-      setCheckoutSyncPending(true);
       if (!checkoutUrlCleared) {
-        router.replace('/settings/billing?checkout=pending', { scroll: false });
+        router.replace('/settings/billing', { scroll: false });
       }
     }
 
@@ -240,7 +209,7 @@ function BillingSettingsContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, refreshWorkspacePlan, router, t]);
+  }, [searchParams, refreshWorkspacePlan, router, t, workspaceSubscriptionStatus]);
 
   useEffect(() => {
     async function load() {
@@ -285,11 +254,7 @@ function BillingSettingsContent() {
       const capsRes = await fetch('/api/stripe/capabilities', { cache: 'no-store' }).catch(() => null);
       if (capsRes?.ok) {
         const caps = await capsRes.json();
-        setStripeCapabilities({
-          checkout: Boolean(caps.checkout),
-          portal: Boolean(caps.portal),
-          resume: Boolean(caps.resume)
-        });
+        setStripeCapabilities({ portal: Boolean(caps.portal) });
       }
 
       setLoading(false);
@@ -313,27 +278,10 @@ function BillingSettingsContent() {
     window.location.href = json.url;
   }
 
-  async function resumeSubscription() {
-    setResumeLoading(true);
-    setMessage('');
-    const res = await fetch('/api/stripe/resume-subscription', { method: 'POST' });
-    const json = await res.json();
-    setResumeLoading(false);
-
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to resume subscription.');
-      return;
-    }
-
-    setSubscriptionStatus(json.status || 'active');
-    setMessage(json.message || 'Subscription resumed.');
-    await refreshWorkspacePlan();
-  }
-
   if (loading || planLoading || !plan) {
     return (
       <AppShell role={role}>
-        <p>{checkoutSyncing ? 'Activating your plan…' : 'Loading billing...'}</p>
+        <p>{checkoutSyncing ? 'Activating your plan...' : 'Loading billing...'}</p>
       </AppShell>
     );
   }
@@ -349,7 +297,7 @@ function BillingSettingsContent() {
     : 'Not scheduled';
 
   return (
-    <SettingsShell plan={plan} role={role} title="Plans & billing" description="Manage your EverittOS plan, payment, and renewal settings.">
+    <SettingsShell plan={plan} role={role} title="Plans & billing" description="Manage your EverittOS plan and payment settings.">
       <div style={{ display: 'grid', gap: 18 }}>
         {accessNotice && !canManageWorkspaceBilling ? (
           <AccessBlockedBanner title={accessNotice.title} message={accessNotice.message} details={accessNotice.details} />
@@ -357,22 +305,16 @@ function BillingSettingsContent() {
           <AccessBlockedBanner title={accessNotice.title} message={subscriptionInfo.message} details={accessNotice.details} />
         ) : null}
 
-        {checkoutBanner ? (
+        {checkoutBanner && checkoutBanner.tone !== 'warning' ? (
           <p
             className={[
               'auth-message',
-              checkoutBanner.tone === 'success'
-                ? 'auth-message-success'
-                : checkoutBanner.tone === 'warning'
-                  ? 'auth-message-warning'
-                  : 'auth-message-error'
+              checkoutBanner.tone === 'success' ? 'auth-message-success' : 'auth-message-error'
             ].join(' ')}
           >
             {checkoutBanner.message}
           </p>
         ) : null}
-
-        {checkoutSyncing ? <p className="muted">Activating your plan...</p> : null}
 
         {searchParams.get('upgrade') ? (
           <div className="settings-warning">
@@ -427,47 +369,16 @@ function BillingSettingsContent() {
             </div>
           </div>
 
-          <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14, lineHeight: 1.55 }}>
-            {subscriptionStatusMessage(subscriptionStatus || undefined)} {subscriptionInfo.message}
-          </p>
-
           <div className="settings-actions" style={{ marginTop: 0 }}>
             {canOpenPortal ? (
               <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-                {portalLoading ? 'Opening...' : 'Manage subscription'}
+                {portalLoading ? 'Opening...' : 'Manage billing'}
               </button>
             ) : null}
             {showPortalCancel ? (
               <button type="button" className="btn" disabled={portalLoading} onClick={openBillingPortal}>
                 {portalLoading ? 'Opening...' : 'Cancel plan'}
               </button>
-            ) : null}
-            {stripeCustomerId && stripeCapabilities?.resume && canResumeSubscription(subscriptionStatus) ? (
-              <button type="button" className="btn" disabled={resumeLoading} onClick={resumeSubscription}>
-                {resumeLoading ? 'Working...' : 'Resume plan'}
-              </button>
-            ) : null}
-            {!canOpenPortal && plan !== 'free' ? (
-              <p className="billing-support-fallback">
-                Need help with billing? <a href={supportMailtoHref('EverittOS billing')}>{SUPPORT_EMAIL}</a>
-              </p>
-            ) : null}
-            {canManageWorkspaceBilling ? (
-              <SyncSubscriptionButton
-                onSynced={(nextPlan, nextStatus) => {
-                  setPlan(normalizePlan(nextPlan));
-                  setSubscriptionStatus(nextStatus);
-                  setCheckoutSyncPending(false);
-                  setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
-                  void refreshWorkspacePlan({ silent: true });
-                }}
-              />
-            ) : null}
-            {checkoutSyncPending && canManageWorkspaceBilling ? (
-              <p className="muted" style={{ margin: 0 }}>
-                Payment received. Subscription is still syncing. Use Sync Subscription above if your plan does not update
-                within a minute.
-              </p>
             ) : null}
           </div>
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
@@ -529,22 +440,6 @@ function BillingSettingsContent() {
             onOpenPortal={canOpenPortal ? openBillingPortal : undefined}
             portalLoading={portalLoading}
           />
-        </section>
-
-        {canManageWorkspaceBilling ? (
-          <section className="settings-card">
-            <BillingHealthCheck />
-          </section>
-        ) : null}
-
-        <section className="settings-card" style={{ display: 'grid', gap: 8 }}>
-          <h3>Billing terms</h3>
-          <p className="muted" style={{ margin: 0 }}>
-            Payments are final and non-refundable. Canceling stops future renewals only. Prior charges are not refunded.
-          </p>
-          <p className="muted" style={{ margin: 0 }}>
-            Promo codes are applied during checkout when available.
-          </p>
         </section>
       </div>
     </SettingsShell>
