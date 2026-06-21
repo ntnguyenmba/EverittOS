@@ -1,163 +1,97 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { appOrigin, appUrl, rawAppUrlEnvValues } from '@/lib/app-url';
-import { billingCheckoutMethod, resolveStripePriceId, stripePriceEnvKey, type PaidPlanKey } from '@/lib/billing-config';
+import { resolveStripePriceId, stripePriceEnvKey, type PaidPlanKey } from '@/lib/billing-config';
 import { maskStripeId } from '@/lib/billing-env';
-import { checkoutOwnerDiagnostic, checkoutPublicErrorMessage } from '@/lib/checkout-errors';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { checkoutOwnerDiagnostic } from '@/lib/checkout-errors';
+import { normalizePlan } from '@/lib/everittos-plans';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
-import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { NO_REFUND_STRIPE_SUBMIT_MESSAGE } from '@/lib/no-refund-policy';
 import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 import { getStripeClient, getStripeSecretKey } from '@/lib/stripe-server';
 import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
-import { syncStripeSubscriptionRecord } from '@/lib/stripe-billing-sync';
-import { logStripeBilling } from '@/lib/stripe-billing-logs';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { planFromSubscription } from '@/lib/stripe-plan-mapping';
 import { stripeKeyMode, stripeKeyModeLabel } from '@/lib/stripe-mode';
 import {
   formatStripeError,
   isStripeCheckoutSessionUrl,
   safeCheckoutUrlHostname,
   validateCheckoutSessionInputs,
-  validateStripeSubscriptionPriceForPlan,
-  type CheckoutSessionStringValidationCode,
-  type StripePriceValidationCode
+  validateStripeSubscriptionPriceForPlan
 } from '@/lib/stripe-checkout-validation';
+import { logStripeBilling } from '@/lib/stripe-billing-logs';
 
 export const runtime = 'nodejs';
 
-async function activeSubscriptionForCustomer(stripe: NonNullable<ReturnType<typeof getStripeClient>>, customerId: string) {
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    status: 'all',
-    limit: 20,
-    expand: ['data.items.data.price.product']
-  });
+type CheckoutErrorCode =
+  | 'stripe_not_configured'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'invalid_plan'
+  | 'missing_email'
+  | 'checkout_not_configured'
+  | 'stripe_checkout_failed'
+  | 'missing_checkout_url'
+  | 'checkout_route_crashed'
+  | string;
 
-  return (
-    subscriptions.data.find((subscription) => subscription.status === 'active' || subscription.status === 'trialing') ||
-    subscriptions.data.find((subscription) => subscription.status === 'past_due' || subscription.status === 'unpaid') ||
-    null
-  );
-}
-
-async function findExistingCustomer(stripe: NonNullable<ReturnType<typeof getStripeClient>>, email: string) {
-  const customers = await stripe.customers.list({ email, limit: 10 });
-  return customers.data.find((customer) => !customer.deleted) || null;
-}
-
-async function syncExistingSubscription(input: {
-  stripe: NonNullable<ReturnType<typeof getStripeClient>>;
-  userId: string;
-  ownerUserId: string;
-  email: string;
-  organizationId: string | null;
-  subscription: Stripe.Subscription;
-}) {
-  const admin = createAdminSupabase();
-  if (!admin) return;
-
-  await syncStripeSubscriptionRecord(admin, input.stripe, input.subscription, {
-    sessionUserId: input.userId,
-    ownerUserId: input.ownerUserId,
-    email: input.email,
-    workspaceId: input.organizationId
-  });
-}
-
-async function recordCheckoutFailure(input: {
-  email: string;
-  userId: string;
-  plan: EverittosPlan;
-  workspaceId: string | null;
-  priceId: string | null;
-  error: string;
-  ownerDiagnostic?: string;
-  code?: string | null;
-}) {
-  const admin = createAdminSupabase();
-  if (!admin) return;
-
-  await admin.from('subscription_events').insert({
-    email: input.email,
-    event_type: 'checkout.failed',
-    plan: input.plan,
-    stripe_event_id: `checkout_failed_${input.userId}_${Date.now()}`,
-    payload: {
-      userId: input.userId,
-      workspaceId: input.workspaceId,
-      priceId: input.priceId,
-      error: input.error,
-      ownerDiagnostic: input.ownerDiagnostic || input.error,
-      code: input.code || null
-    }
-  });
-}
-
-function checkoutFailureResponse(input: {
-  plan: PaidPlanKey;
-  code:
-    | StripePriceValidationCode
-    | CheckoutSessionStringValidationCode
-    | 'checkout_not_configured'
-    | 'stripe_not_configured'
-    | 'stripe_checkout_failed'
-    | 'missing_checkout_url';
+function jsonError(input: {
   status: number;
-  priceEnvKey?: string;
+  code: CheckoutErrorCode;
+  plan?: PaidPlanKey | null;
+  message: string;
+  priceEnvKey?: string | null;
   priceId?: string | null;
-  detail?: string | null;
   stripeCode?: string | null;
   extra?: Record<string, unknown>;
-  /** When true, return actionable ownerDiagnostic text in `error` (checkout callers are owner/admin). */
-  useOwnerDiagnosticAsError?: boolean;
 }) {
-  const priceIdPreview = maskStripeId(input.priceId);
-  const ownerDiagnostic = checkoutOwnerDiagnostic({
-    plan: input.plan,
-    code: input.code,
-    priceEnvKey: input.priceEnvKey,
-    priceIdPreview,
-    detail: input.detail,
-    stripeCode: input.stripeCode
-  });
-
   return NextResponse.json(
     {
-      error: input.useOwnerDiagnosticAsError
-        ? ownerDiagnostic
-        : checkoutPublicErrorMessage(input.plan),
+      error: input.message,
+      ownerDiagnostic: input.message,
       code: input.code,
-      plan: input.plan,
-      ownerDiagnostic,
+      plan: input.plan || null,
       priceEnvKey: input.priceEnvKey || null,
-      priceIdPreview,
+      priceIdPreview: maskStripeId(input.priceId),
       stripeCode: input.stripeCode || null,
-      ...input.extra
+      ...(input.extra || {})
     },
     { status: input.status }
   );
 }
 
+function routeCrashResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown checkout route error';
+  console.error('CHECKOUT_ROUTE_CRASHED', {
+    message,
+    stack: error instanceof Error ? error.stack : null
+  });
+
+  return jsonError({
+    status: 500,
+    code: 'checkout_route_crashed',
+    message: `Checkout route crashed before creating Stripe Checkout: ${message}`
+  });
+}
+
 export async function POST(request: Request) {
+  try {
+    return await handleCheckout(request);
+  } catch (error) {
+    return routeCrashResponse(error);
+  }
+}
+
+async function handleCheckout(request: Request) {
   const stripe = getStripeClient();
   const secretKey = getStripeSecretKey();
   const stripeMode = stripeKeyModeLabel(stripeKeyMode(secretKey));
 
   if (!stripe) {
-    logStripeBilling('checkout:not_configured', { reason: 'stripe_client_missing', stripeMode }, 'warn');
-    return NextResponse.json(
-      {
-        error: 'Billing checkout is not configured correctly. Billing support has been notified.',
-        code: 'stripe_not_configured',
-        ownerDiagnostic: checkoutOwnerDiagnostic({ plan: 'enterprise', code: 'stripe_not_configured' })
-      },
-      { status: 503 }
-    );
+    const message = checkoutOwnerDiagnostic({ plan: 'enterprise', code: 'stripe_not_configured' });
+    return jsonError({ status: 503, code: 'stripe_not_configured', message });
   }
 
   const supabase = await createServerSupabase();
@@ -166,134 +100,77 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    logStripeBilling('checkout:unauthenticated', {});
-    return NextResponse.json({ error: 'Sign in to start checkout.', code: 'unauthorized' }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, email, stripe_customer_id, organization_id')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const role = normalizeRole(profile?.role || 'owner');
-  if (!canManageBilling(role)) {
-    logStripeBilling('checkout:forbidden', { userId: user.id, role });
-    return NextResponse.json({ error: 'Only workspace owners and admins can start checkout.', role }, { status: 403 });
+    return jsonError({ status: 401, code: 'unauthorized', message: 'Sign in to start checkout.' });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
     plan?: string;
     refundPolicyAcknowledged?: boolean;
   };
+
   const plan = normalizePlan(body.plan);
   const refundPolicyAcknowledged = body.refundPolicyAcknowledged === true;
-  const email = (profile?.email || user.email || '').trim().toLowerCase();
+
+  if (!isPaidCheckoutPlan(plan)) {
+    return jsonError({ status: 400, code: 'invalid_plan', message: 'Select a paid plan to checkout.' });
+  }
+
+  const priceEnvKey = stripePriceEnvKey(plan);
+  const priceId = resolveStripePriceId(plan);
+  const priceIdPreview = maskStripeId(priceId);
 
   logStripeBilling('checkout:request_received', {
     userId: user.id,
     planRequested: plan,
     refundPolicyAcknowledged,
-    stripeMode
-  });
-
-  if (!isPaidCheckoutPlan(plan)) {
-    logStripeBilling('checkout:invalid_plan', { userId: user.id, plan });
-    return NextResponse.json({ error: 'Select a paid plan to checkout.', code: 'invalid_plan' }, { status: 400 });
-  }
-
-  if (!email) {
-    logStripeBilling('checkout:missing_email', { userId: user.id, plan });
-    return NextResponse.json({ error: 'Account email is required for checkout.', code: 'missing_email' }, { status: 400 });
-  }
-
-  const workspaceIdFromProfile = profile?.organization_id || '';
-  const orgContext = await fetchOrganizationContextForUser(supabase, user.id);
-  const workspaceId = workspaceIdFromProfile || orgContext?.organizationId || '';
-  let ownerUserId = orgContext?.ownerUserId || user.id;
-  if (workspaceId && !orgContext?.ownerUserId) {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('owner_user_id')
-      .eq('id', workspaceId)
-      .maybeSingle();
-    if (org?.owner_user_id) ownerUserId = org.owner_user_id;
-  }
-
-  const checkoutMethod = billingCheckoutMethod(plan);
-  const priceId = resolveStripePriceId(plan);
-  const priceEnvKey = stripePriceEnvKey(plan);
-  const priceIdPreview = maskStripeId(priceId);
-
-  logStripeBilling('checkout:price_resolution', {
-    userId: user.id,
-    plan,
-    workspaceId: workspaceId || null,
-    organizationId: workspaceId || null,
-    ownerUserId,
+    stripeMode,
     priceEnvKey,
     priceIdFound: Boolean(priceId),
-    priceIdPreview,
-    checkoutMethod: checkoutMethod || null,
-    stripeMode
+    priceIdPreview
   });
 
-  if (!checkoutMethod || !priceId) {
-    const ownerDiagnostic = checkoutOwnerDiagnostic({
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, email, stripe_customer_id, organization_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return jsonError({
+      status: 500,
+      code: 'checkout_route_crashed',
       plan,
-      code: 'checkout_not_configured',
-      priceEnvKey
-    });
-    logStripeBilling(
-      'checkout:not_configured',
-      {
-        userId: user.id,
-        plan,
-        workspaceId: workspaceId || null,
-        reason: 'missing_price_env',
-        priceEnvKey,
-        stripeMode
-      },
-      'warn'
-    );
-    await recordCheckoutFailure({
-      email,
-      userId: user.id,
-      plan,
-      workspaceId: workspaceId || null,
-      priceId: null,
-      error: checkoutPublicErrorMessage(plan),
-      ownerDiagnostic,
-      code: 'checkout_not_configured'
-    });
-    return checkoutFailureResponse({
-      plan,
-      code: 'checkout_not_configured',
-      status: 503,
       priceEnvKey,
-      useOwnerDiagnosticAsError: true
+      priceId,
+      message: `Could not load billing profile: ${profileError.message}`
     });
   }
 
-  const priceValidation = await validateStripeSubscriptionPriceForPlan(stripe, priceId, plan, {
-    secretKey
-  });
+  const role = normalizeRole(profile?.role || 'owner');
+  if (!canManageBilling(role)) {
+    return jsonError({
+      status: 403,
+      code: 'forbidden',
+      plan,
+      priceEnvKey,
+      priceId,
+      message: 'Only workspace owners and admins can start checkout.'
+    });
+  }
 
-  logStripeBilling('checkout:price_validation', {
-    userId: user.id,
-    plan,
-    workspaceId: workspaceId || null,
-    priceEnvKey,
-    priceIdPreview,
-    stripeMode,
-    validationOk: priceValidation.ok,
-    validationCode: priceValidation.ok ? 'ok' : priceValidation.code,
-    validationMessage: priceValidation.ok ? null : priceValidation.message,
-    stripeCode: priceValidation.ok ? null : priceValidation.stripeCode || null
-  });
+  const email = (profile?.email || user.email || '').trim().toLowerCase();
+  if (!email) {
+    return jsonError({ status: 400, code: 'missing_email', plan, priceEnvKey, priceId, message: 'Account email is required for checkout.' });
+  }
 
+  if (!priceId) {
+    const message = checkoutOwnerDiagnostic({ plan, code: 'checkout_not_configured', priceEnvKey });
+    return jsonError({ status: 503, code: 'checkout_not_configured', plan, priceEnvKey, priceId, message });
+  }
+
+  const priceValidation = await validateStripeSubscriptionPriceForPlan(stripe, priceId, plan, { secretKey });
   if (!priceValidation.ok) {
-    const ownerDiagnostic = checkoutOwnerDiagnostic({
+    const message = checkoutOwnerDiagnostic({
       plan,
       code: priceValidation.code,
       priceEnvKey,
@@ -301,108 +178,41 @@ export async function POST(request: Request) {
       detail: priceValidation.message,
       stripeCode: priceValidation.stripeCode
     });
-    logStripeBilling(
-      'checkout:price_invalid',
-      {
-        userId: user.id,
-        plan,
-        priceIdPreview: priceValidation.pricePreview,
-        workspaceId: workspaceId || null,
-        error: priceValidation.message,
-        code: priceValidation.code,
-        stripeCode: priceValidation.stripeCode || null,
-        stripeMode
-      },
-      'error'
-    );
-    await recordCheckoutFailure({
-      email,
-      userId: user.id,
-      plan,
-      workspaceId: workspaceId || null,
-      priceId,
-      error: checkoutPublicErrorMessage(plan),
-      ownerDiagnostic,
-      code: priceValidation.code
-    });
-    return checkoutFailureResponse({
-      plan,
-      code: priceValidation.code,
+    return jsonError({
       status: 422,
+      code: priceValidation.code,
+      plan,
       priceEnvKey,
       priceId,
-      detail: priceValidation.message,
       stripeCode: priceValidation.stripeCode,
-      useOwnerDiagnosticAsError: true
+      message
     });
   }
 
-  const storedCustomerId = profile?.stripe_customer_id;
-  let customerId = isValidStripeCustomerId(storedCustomerId) ? storedCustomerId : null;
-  let customer: Stripe.Customer | null = null;
+  let workspaceId = profile?.organization_id || '';
+  let ownerUserId = user.id;
 
-  if (customerId) {
-    try {
-      const retrievedCustomer = await stripe.customers.retrieve(customerId);
-      if (!('deleted' in retrievedCustomer && retrievedCustomer.deleted)) {
-        customer = retrievedCustomer;
-      }
-    } catch {
-      customerId = null;
-    }
-  }
-
-  if (!customerId) {
-    customer = await findExistingCustomer(stripe, email);
-    customerId = customer?.id || null;
-  }
-
-  if (customerId) {
-    const existingSubscription = await activeSubscriptionForCustomer(stripe, customerId);
-    if (existingSubscription) {
-      const existingPlan = planFromSubscription(existingSubscription) || plan;
-      await syncExistingSubscription({
-        stripe,
-        userId: user.id,
-        ownerUserId,
-        email,
-        organizationId: workspaceId || null,
-        subscription: existingSubscription
-      });
-
-      logStripeBilling('checkout:already_subscribed', {
-        userId: user.id,
-        customerId,
-        subscriptionId: existingSubscription.id,
-        plan: existingPlan,
-        status: existingSubscription.status
-      });
-
-      return NextResponse.json(
-        {
-          error: 'You already have an active subscription. Use Manage billing to upgrade, downgrade, or cancel.',
-          code: 'already_subscribed',
-          plan: existingPlan,
-          status: existingSubscription.status,
-          redirect: '/settings/billing'
-        },
-        { status: 409 }
-      );
-    }
+  try {
+    const orgContext = await fetchOrganizationContextForUser(supabase, user.id);
+    workspaceId = workspaceId || orgContext?.organizationId || '';
+    ownerUserId = orgContext?.ownerUserId || user.id;
+  } catch (error) {
+    console.warn('CHECKOUT_ORG_CONTEXT_SKIPPED', {
+      userId: user.id,
+      message: error instanceof Error ? error.message : 'Unknown organization context error'
+    });
   }
 
   const returnPath = '/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}';
   const successUrl = appUrl(returnPath);
   const cancelUrl = appUrl('/settings/billing?checkout=cancelled');
-  const clientReferenceId = `${ownerUserId}:${workspaceId || 'solo'}:${plan}`;
-  const rawPriceEnv = process.env[priceEnvKey];
   const appOriginValue = appOrigin();
 
   const checkoutStringValidation = validateCheckoutSessionInputs({
     plan,
     priceEnvKey,
     priceId,
-    rawPriceEnv,
+    rawPriceEnv: process.env[priceEnvKey],
     successUrl,
     cancelUrl,
     appOrigin: appOriginValue,
@@ -410,49 +220,14 @@ export async function POST(request: Request) {
   });
 
   if (!checkoutStringValidation.ok) {
-    const ownerDiagnostic = checkoutOwnerDiagnostic({
+    const message = checkoutOwnerDiagnostic({
       plan,
       code: checkoutStringValidation.code,
       priceEnvKey,
       priceIdPreview,
       detail: checkoutStringValidation.message
     });
-    logStripeBilling(
-      'checkout:invalid_session_strings',
-      {
-        userId: user.id,
-        plan,
-        workspaceId: workspaceId || null,
-        code: checkoutStringValidation.code,
-        message: checkoutStringValidation.message,
-        priceEnvKey,
-        priceIdPreview,
-        successUrl,
-        cancelUrl,
-        appOrigin: appOriginValue,
-        stripeMode
-      },
-      'error'
-    );
-    await recordCheckoutFailure({
-      email,
-      userId: user.id,
-      plan,
-      workspaceId: workspaceId || null,
-      priceId,
-      error: checkoutPublicErrorMessage(plan),
-      ownerDiagnostic,
-      code: checkoutStringValidation.code
-    });
-    return checkoutFailureResponse({
-      plan,
-      code: checkoutStringValidation.code,
-      status: 422,
-      priceEnvKey,
-      priceId,
-      detail: checkoutStringValidation.message,
-      useOwnerDiagnosticAsError: true
-    });
+    return jsonError({ status: 422, code: checkoutStringValidation.code, plan, priceEnvKey, priceId, message });
   }
 
   const metadata = {
@@ -483,7 +258,7 @@ export async function POST(request: Request) {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: successUrl,
     cancel_url: cancelUrl,
-    client_reference_id: clientReferenceId,
+    client_reference_id: `${ownerUserId}:${workspaceId || 'solo'}:${plan}`,
     metadata,
     subscription_data: { metadata },
     custom_text: {
@@ -492,92 +267,46 @@ export async function POST(request: Request) {
     ...checkoutPromotionParams()
   };
 
-  if (customerId) {
-    sessionParams.customer = customerId;
+  if (isValidStripeCustomerId(profile?.stripe_customer_id)) {
+    sessionParams.customer = profile?.stripe_customer_id;
   } else {
     sessionParams.customer_email = email;
   }
 
   try {
-    console.log({
-      plan,
-      priceEnvKey,
-      priceId,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: clientReferenceId,
-      app_url: appOriginValue,
-      priceIdLooksValid: /^price_/.test(priceId || '')
-    });
-
     logStripeBilling('checkout:session_create_attempt', {
       userId: user.id,
       plan,
+      priceEnvKey,
       priceIdPreview,
       workspaceId: workspaceId || null,
-      organizationId: workspaceId || null,
-      customerId: customerId || null,
       stripeMode,
-      billingSource: metadata.billing_source
+      checkoutHost: safeCheckoutUrlHostname(successUrl)
     });
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    logStripeBilling('checkout:session_metadata', {
-      sessionId: session.id,
-      userId: user.id,
-      ownerUserId,
-      workspaceId: workspaceId || null,
-      organizationId: workspaceId || null,
-      email,
-      plan,
-      priceIdPreview,
-      clientReferenceId: session.client_reference_id,
-      stripeResponseUrl: session.url || null,
-      checkoutHost: safeCheckoutUrlHostname(session.url)
-    });
+    if (!session.url || !isStripeCheckoutSessionUrl(session.url)) {
+      return jsonError({
+        status: 502,
+        code: 'missing_checkout_url',
+        plan,
+        priceEnvKey,
+        priceId,
+        message: 'Stripe checkout session was created but did not return a checkout.stripe.com URL.',
+        extra: { sessionId: session.id }
+      });
+    }
 
     logStripeBilling('checkout:session_created', {
       userId: user.id,
       plan,
       sessionId: session.id,
-      customerId: customerId,
       priceIdPreview,
       workspaceId: workspaceId || null,
       stripeMode,
       checkoutHost: safeCheckoutUrlHostname(session.url)
     });
-
-    if (!session.url || !isStripeCheckoutSessionUrl(session.url)) {
-      const message = 'Stripe checkout session was created without a checkout.stripe.com redirect URL.';
-      const ownerDiagnostic = checkoutOwnerDiagnostic({
-        plan,
-        code: 'stripe_checkout_failed',
-        priceEnvKey,
-        priceIdPreview,
-        detail: message
-      });
-      await recordCheckoutFailure({
-        email,
-        userId: user.id,
-        plan,
-        workspaceId: workspaceId || null,
-        priceId,
-        error: checkoutPublicErrorMessage(plan),
-        ownerDiagnostic,
-        code: 'missing_checkout_url'
-      });
-      return checkoutFailureResponse({
-        plan,
-        code: 'missing_checkout_url',
-        status: 502,
-        priceEnvKey,
-        priceId,
-        detail: message,
-        extra: { sessionId: session.id },
-        useOwnerDiagnosticAsError: true
-      });
-    }
 
     return NextResponse.json({
       url: session.url,
@@ -588,7 +317,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const formatted = formatStripeError(error);
-    const ownerDiagnostic = checkoutOwnerDiagnostic({
+    const message = checkoutOwnerDiagnostic({
       plan,
       code: 'stripe_checkout_failed',
       priceEnvKey,
@@ -596,43 +325,24 @@ export async function POST(request: Request) {
       detail: formatted.message,
       stripeCode: formatted.code
     });
-    logStripeBilling(
-      'checkout:session_create_failed',
-      {
-        userId: user.id,
-        plan,
-        priceIdPreview,
-        workspaceId: workspaceId || null,
-        error: formatted.message,
-        stripeCode: formatted.code,
-        stripeType: formatted.type,
-        stripeStatus: formatted.statusCode,
-        stripeMode
-      },
-      'error'
-    );
-    await recordCheckoutFailure({
-      email,
-      userId: user.id,
+
+    console.error('CHECKOUT_ERROR', {
       plan,
-      workspaceId: workspaceId || null,
-      priceId,
-      error: checkoutPublicErrorMessage(plan),
-      ownerDiagnostic,
-      code: formatted.code || 'stripe_checkout_failed'
+      stripePriceId: priceIdPreview,
+      error: formatted.message,
+      code: formatted.code,
+      type: formatted.type,
+      statusCode: formatted.statusCode
     });
-    return checkoutFailureResponse({
-      plan,
+
+    return jsonError({
+      status: formatted.statusCode && formatted.statusCode >= 400 && formatted.statusCode < 600 ? formatted.statusCode : 502,
       code: 'stripe_checkout_failed',
-      status:
-        formatted.statusCode && formatted.statusCode >= 400 && formatted.statusCode < 600
-          ? formatted.statusCode
-          : 502,
+      plan,
       priceEnvKey,
       priceId,
-      detail: formatted.message,
       stripeCode: formatted.code,
-      useOwnerDiagnosticAsError: true
+      message
     });
   }
 }
