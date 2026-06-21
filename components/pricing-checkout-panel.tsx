@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
-import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { useTranslation } from '@/components/locale-provider';
 import { billingCheckoutTargetForPlan } from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
@@ -33,12 +32,6 @@ export function PricingCheckoutPanel({
 
   return (
     <div className={compact ? 'pricing-checkout-panel compact' : 'pricing-checkout-panel'}>
-      <NoRefundDisclosure variant="compact" className="pricing-checkout-policy" />
-
-      <p className="muted billing-promo-stripe-note">
-        Promo codes can be entered securely inside Stripe Checkout.
-      </p>
-
       <div className={compact ? 'pricing-grid compact' : 'pricing-grid'}>
         {tiers.map((tier) => {
           const checkout = billingCheckoutTargetForPlan(tier.id as Exclude<EverittosPlan, 'free'>);
@@ -87,7 +80,6 @@ export function PricingCheckoutPanel({
       </div>
 
       <p className="muted pricing-checkout-note">{t('billing.promo.checkoutNote')}</p>
-      <p className="muted pricing-checkout-note">{t('billing.noRefund.cancelNote')}</p>
     </div>
   );
 }
