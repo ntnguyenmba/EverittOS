@@ -147,14 +147,14 @@ export default function DashboardPage() {
 
   const setupItems = [
     {
-      label: 'Add first customer',
+      label: 'Add customer',
       detail: 'Store customer details and job history.',
       href: '/customers/new',
       done: totalCustomers > 0
     },
     {
-      label: 'Create first job',
-      detail: 'Schedule and track your first service.',
+      label: 'Create job',
+      detail: 'Schedule and track your service.',
       href: '/jobs/new',
       done: totalJobs > 0
     },
@@ -179,8 +179,8 @@ export default function DashboardPage() {
     ? [{ title: 'Loading your workspace', detail: 'Checking customers, jobs and activity.', href: '/dashboard' }]
     : totalCustomers === 0 || totalJobs === 0
       ? [
-          { title: 'Add your first customer', detail: 'Start with the person or company you serve.', href: '/customers/new' },
-          { title: 'Create your first job', detail: 'Track the work, date and status in one place.', href: '/jobs/new' },
+          { title: 'Add customer', detail: 'Start with the person or company you serve.', href: '/customers/new' },
+          { title: 'Create job', detail: 'Track the work, date and status in one place.', href: '/jobs/new' },
           { title: 'Use Ask Everitt', detail: 'Ask what needs attention once your data is in.', href: '/dashboard' }
         ]
       : [
@@ -237,9 +237,8 @@ export default function DashboardPage() {
         {showSetup ? (
           <section className="card dashboard-start-card" aria-label="Get your business set up">
             <div className="dashboard-start-copy">
-              <p className="dashboard-eyebrow">Start here</p>
               <h2>Get your business set up</h2>
-              <p>Complete these first steps so EverittOS can start tracking your work clearly.</p>
+              <p>Complete these steps to set up your workspace.</p>
             </div>
             <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
               <span>
