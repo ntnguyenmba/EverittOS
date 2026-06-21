@@ -5,6 +5,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
 import { logBillingSync, syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { logBillingActivation } from '@/lib/billing-activation-logs';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
@@ -71,6 +72,12 @@ async function refreshSubscription(request: Request) {
   });
 
   if (!result.synced && result.reason === 'no_stripe_subscription') {
+    logBillingActivation('CHECKOUT_RETURN_SYNC_FAILED', {
+      userId: user.id,
+      sessionId: sessionId || null,
+      reason: result.reason,
+      email
+    });
     return NextResponse.json(
       {
         error: 'No Stripe subscription was found for this account email.',
@@ -83,6 +90,14 @@ async function refreshSubscription(request: Request) {
   }
 
   if (!result.synced) {
+    logBillingActivation('CHECKOUT_RETURN_SYNC_FAILED', {
+      userId: user.id,
+      sessionId: sessionId || null,
+      reason: result.reason || 'sync_failed',
+      plan: result.plan,
+      status: result.status,
+      email
+    });
     return NextResponse.json(
       {
         error: 'Stripe subscription found but activation sync failed.',
@@ -106,6 +121,16 @@ async function refreshSubscription(request: Request) {
       stripeSubscriptionId: result.stripeSubscriptionId,
       status: result.status
     }
+  });
+
+  logBillingActivation('CHECKOUT_RETURN_SYNC', {
+    userId: user.id,
+    sessionId: sessionId || null,
+    plan: result.plan,
+    status: result.status,
+    stripeCustomerId: result.stripeCustomerId,
+    stripeSubscriptionId: result.stripeSubscriptionId,
+    email
   });
 
   return NextResponse.json({

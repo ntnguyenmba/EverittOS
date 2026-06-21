@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
@@ -84,6 +84,8 @@ function BillingSettingsContent() {
     message: string;
   } | null>(null);
   const [checkoutSyncing, setCheckoutSyncing] = useState(false);
+  const [checkoutSyncPending, setCheckoutSyncPending] = useState(false);
+  const checkoutSyncStartedRef = useRef<string | null>(null);
 
   const checkoutPlan = normalizePlan(searchParams.get('upgrade') || searchParams.get('plan'));
 
@@ -106,127 +108,139 @@ function BillingSettingsContent() {
 
   useEffect(() => {
     const checkout = searchParams.get('checkout');
-    const sessionId = searchParams.get('session_id');
+    const sessionId = (searchParams.get('session_id') || '').trim();
 
     if (checkout === 'cancelled') {
       setCheckoutBanner({ tone: 'error', message: t('billing.promo.checkoutCancelled') });
+      setCheckoutSyncPending(false);
       return;
     }
 
-    if (checkout !== 'success') return;
+    if (checkout !== 'success') {
+      if (checkout === 'pending') {
+        setCheckoutSyncPending(true);
+        setCheckoutBanner({
+          tone: 'warning',
+          message: 'Payment received. Subscription is still syncing.'
+        });
+      }
+      return;
+    }
+
+    const syncKey = sessionId || 'checkout-success';
+    if (checkoutSyncStartedRef.current === syncKey) return;
+    checkoutSyncStartedRef.current = syncKey;
 
     let cancelled = false;
 
     async function syncAfterCheckout() {
       setCheckoutSyncing(true);
+      setCheckoutSyncPending(false);
       setCheckoutBanner(null);
 
-      async function runRefresh() {
-        return fetch('/api/billing/refresh-subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sessionId || undefined })
-        });
-      }
+      const maxAttempts = 3;
+      let lastError = '';
+      let checkoutUrlCleared = false;
 
-      try {
-        let res = await runRefresh();
-        let json = (await res.json().catch(() => ({}))) as {
-          plan?: string;
-          status?: string;
-          active?: boolean;
-          synced?: boolean;
-        };
-
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         if (cancelled) return;
 
-        if (!res.ok || !json.synced) {
-          const fallback = await fetch('/api/stripe/sync-current-user', { method: 'POST' });
-          const fallbackJson = (await fallback.json().catch(() => ({}))) as {
-            updated?: boolean;
-            plan?: string;
-            status?: string;
-          };
-          if (fallback.ok && fallbackJson.updated) {
-            json = {
-              plan: fallbackJson.plan,
-              status: fallbackJson.status,
-              synced: true,
-              active: true
-            };
-          } else if (!res.ok) {
-            res = await runRefresh();
-            json = (await res.json().catch(() => ({}))) as typeof json;
-          }
-        }
-
-        await refreshWorkspacePlan();
-
-        const latest = await fetch('/api/workspace/plan', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
-        const effectivePlan = latest.organizationPlan
-          ? normalizePlan(latest.organizationPlan)
-          : json.plan
-            ? normalizePlan(json.plan)
-            : null;
-        const refreshedStatus =
-          latest.subscriptionStatus || json.status || workspaceSubscriptionStatus || 'free';
-        const activated =
-          effectivePlan &&
-          effectivePlan !== 'free' &&
-          (json.active ?? isPaidPlanActive(effectivePlan, refreshedStatus));
-
-        if (activated && effectivePlan) {
-          setPlan(effectivePlan);
-          setSubscriptionStatus(refreshedStatus);
-          setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
-          return;
-        }
-
-        for (let attempt = 0; attempt < 3; attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 1500));
-          const retry = await runRefresh();
-          const retryJson = (await retry.json().catch(() => ({}))) as {
+        try {
+          const res = await fetch('/api/billing/refresh-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ sessionId: sessionId || undefined })
+          });
+          const json = (await res.json().catch(() => ({}))) as {
             plan?: string;
             status?: string;
             active?: boolean;
             synced?: boolean;
+            error?: string;
           };
-          await refreshWorkspacePlan();
-          const retryLatest = await fetch('/api/workspace/plan', { cache: 'no-store' })
+
+          if (!checkoutUrlCleared) {
+            checkoutUrlCleared = true;
+            router.replace('/settings/billing?checkout=pending', { scroll: false });
+          }
+
+          if (!res.ok || !json.synced) {
+            const fallback = await fetch('/api/stripe/sync-current-user', {
+              method: 'POST',
+              credentials: 'same-origin'
+            });
+            const fallbackJson = (await fallback.json().catch(() => ({}))) as {
+              updated?: boolean;
+              plan?: string;
+              status?: string;
+              error?: string;
+            };
+            if (fallback.ok && fallbackJson.updated) {
+              json.synced = true;
+              json.plan = fallbackJson.plan;
+              json.status = fallbackJson.status;
+              json.active = true;
+            } else {
+              lastError = json.error || fallbackJson.error || 'Subscription sync failed.';
+            }
+          }
+
+          await refreshWorkspacePlan({ silent: true });
+
+          const latest = await fetch('/api/workspace/plan', { cache: 'no-store' })
             .then((r) => r.json())
             .catch(() => ({}));
-          const retryPlan = retryLatest.organizationPlan
-            ? normalizePlan(retryLatest.organizationPlan)
-            : retryJson.plan
-              ? normalizePlan(retryJson.plan)
-              : null;
-          const retryStatus = retryLatest.subscriptionStatus || retryJson.status || 'free';
-          if (
-            retryPlan &&
-            retryPlan !== 'free' &&
-            (retryJson.active ?? isPaidPlanActive(retryPlan, retryStatus))
-          ) {
-            setPlan(retryPlan);
-            setSubscriptionStatus(retryStatus);
+          const effectivePlan = latest.organizationPlan
+            ? normalizePlan(latest.organizationPlan)
+            : latest.profilePlan
+              ? normalizePlan(latest.profilePlan)
+              : json.plan
+                ? normalizePlan(json.plan)
+                : null;
+          const refreshedStatus =
+            latest.subscriptionStatus || json.status || workspaceSubscriptionStatus || 'free';
+          const activated =
+            effectivePlan &&
+            effectivePlan !== 'free' &&
+            (json.active ?? isPaidPlanActive(effectivePlan, refreshedStatus));
+
+          if (activated && effectivePlan) {
+            setPlan(effectivePlan);
+            setSubscriptionStatus(refreshedStatus);
             setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
+            setCheckoutSyncPending(false);
+            router.replace('/settings/billing', { scroll: false });
             return;
           }
-        }
 
-        setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
-      } catch {
-        if (!cancelled) setCheckoutBanner({ tone: 'warning', message: t('billing.promo.checkoutSyncing') });
-      } finally {
-        if (!cancelled) setCheckoutSyncing(false);
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : 'Subscription sync failed.';
+        }
+      }
+
+      console.error('CHECKOUT_RETURN_SYNC_FAILED', { sessionId: sessionId || null, lastError });
+      setCheckoutBanner({
+        tone: 'warning',
+        message: 'Payment received. Subscription is still syncing.'
+      });
+      setCheckoutSyncPending(true);
+      if (!checkoutUrlCleared) {
+        router.replace('/settings/billing?checkout=pending', { scroll: false });
       }
     }
 
-    void syncAfterCheckout();
+    void syncAfterCheckout().finally(() => {
+      if (!cancelled) setCheckoutSyncing(false);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [searchParams, refreshWorkspacePlan, t, workspaceSubscriptionStatus]);
+  }, [searchParams, refreshWorkspacePlan, router, t]);
 
   useEffect(() => {
     async function load() {
@@ -443,9 +457,17 @@ function BillingSettingsContent() {
                 onSynced={(nextPlan, nextStatus) => {
                   setPlan(normalizePlan(nextPlan));
                   setSubscriptionStatus(nextStatus);
-                  void refreshWorkspacePlan();
+                  setCheckoutSyncPending(false);
+                  setCheckoutBanner({ tone: 'success', message: t('billing.promo.checkoutActivated') });
+                  void refreshWorkspacePlan({ silent: true });
                 }}
               />
+            ) : null}
+            {checkoutSyncPending && canManageWorkspaceBilling ? (
+              <p className="muted" style={{ margin: 0 }}>
+                Payment received. Subscription is still syncing. Use Sync Subscription above if your plan does not update
+                within a minute.
+              </p>
             ) : null}
           </div>
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}

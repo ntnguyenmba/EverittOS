@@ -9,6 +9,7 @@ import {
   logBillingSyncIssueEvent,
   logStripeBilling
 } from '@/lib/stripe-billing-logs';
+import { logBillingActivation } from '@/lib/billing-activation-logs';
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
 
@@ -409,6 +410,25 @@ export async function recordBillingWebhookResult(
   if (error) {
     logBillingSyncIssue('webhook_result_log_failed', { error: error.message, eventType: input.eventType });
   }
+
+  if (input.success) {
+    logBillingActivation('WEBHOOK_SYNC_SUCCESS', {
+      email: input.email,
+      eventType: input.eventType,
+      plan: input.plan,
+      stripeEventId: input.stripeEventId,
+      ...(input.details || {})
+    });
+  } else {
+    logBillingActivation('WEBHOOK_SYNC_FAILED', {
+      email: input.email,
+      eventType: input.eventType,
+      plan: input.plan,
+      reason: input.reason || null,
+      stripeEventId: input.stripeEventId,
+      ...(input.details || {})
+    });
+  }
 }
 
 export async function syncBillingToSupabase(admin: AdminClient, input: BillingSyncInput): Promise<boolean> {
@@ -488,6 +508,21 @@ export async function syncBillingToSupabase(admin: AdminClient, input: BillingSy
       code: profileError.code
     });
     return false;
+  }
+
+  if (target.workspaceId && input.plan !== 'free') {
+    const { error: organizationError } = await admin
+      .from('organizations')
+      .update({ plan: input.plan })
+      .eq('id', target.workspaceId);
+    if (organizationError) {
+      logBillingSyncIssue('organization_plan_update_failed', {
+        workspaceId: target.workspaceId,
+        plan: input.plan,
+        error: organizationError.message,
+        code: organizationError.code
+      });
+    }
   }
 
   if (stripeSubscriptionId || input.stripeSessionId) {
@@ -675,6 +710,15 @@ export async function syncActiveStripeSubscriptionForUser(
 }> {
   const email = input.email.trim().toLowerCase();
 
+  const { data: profileRow } = await admin
+    .from('profiles')
+    .select('stripe_customer_id')
+    .eq('id', input.userId)
+    .maybeSingle();
+  const profileCustomerId = isValidStripeCustomerId(profileRow?.stripe_customer_id)
+    ? profileRow?.stripe_customer_id
+    : null;
+
   if (input.sessionId) {
     logStripeBilling('sync:completed', {
       phase: 'checkout_recovery_session',
@@ -726,32 +770,50 @@ export async function syncActiveStripeSubscriptionForUser(
   }
 
   const customers = await stripe.customers.list({ email, limit: 10 });
-  let best: { customerId: string; subscription: Stripe.Subscription } | null = null;
+  const bestMatch: { customerId: string | null; subscription: Stripe.Subscription | null } = {
+    customerId: null,
+    subscription: null
+  };
+
+  async function considerCustomer(customerId: string) {
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 20,
+      expand: ['data.items.data.price.product', 'data.discount.coupon', 'data.discount.promotion_code']
+    });
+    const picked = pickBestStripeSubscription(subs.data);
+    if (!picked) return;
+    if (!bestMatch.subscription || picked.created > bestMatch.subscription.created) {
+      bestMatch.customerId = customerId;
+      bestMatch.subscription = picked;
+    }
+  }
+
+  if (profileCustomerId) {
+    try {
+      await considerCustomer(profileCustomerId);
+    } catch {
+      /* fall back to email lookup */
+    }
+  }
 
   logStripeBilling('sync:completed', {
     phase: 'checkout_recovery_customer_scan',
     userId: input.userId,
     workspaceId: input.workspaceId || null,
     email,
-    customerCount: customers.data.length
+    customerCount: customers.data.length,
+    profileCustomerId: profileCustomerId || null
   });
 
   for (const customer of customers.data) {
     if (customer.deleted) continue;
-    const subs = await stripe.subscriptions.list({
-      customer: customer.id,
-      status: 'all',
-      limit: 20,
-      expand: ['data.items.data.price.product', 'data.discount.coupon', 'data.discount.promotion_code']
-    });
-    const picked = pickBestStripeSubscription(subs.data);
-    if (!picked) continue;
-    if (!best || picked.created > best.subscription.created) {
-      best = { customerId: customer.id, subscription: picked };
-    }
+    if (profileCustomerId && customer.id === profileCustomerId) continue;
+    await considerCustomer(customer.id);
   }
 
-  if (!best) {
+  if (!bestMatch.subscription || !bestMatch.customerId) {
     return {
       synced: false,
       plan: 'free',
@@ -763,27 +825,30 @@ export async function syncActiveStripeSubscriptionForUser(
     };
   }
 
-  const synced = await syncStripeSubscriptionRecord(admin, stripe, best.subscription, {
+  const bestSubscription = bestMatch.subscription;
+  const bestCustomerId = bestMatch.customerId;
+
+  const synced = await syncStripeSubscriptionRecord(admin, stripe, bestSubscription, {
     sessionUserId: input.userId,
     email,
     workspaceId: input.workspaceId || null
   });
 
-  const detectedPlan = planFromSubscription(best.subscription) || 'free';
-  const retainsPaid = subscriptionGrantsPaidAccess(best.subscription);
+  const detectedPlan = planFromSubscription(bestSubscription) || 'free';
+  const retainsPaid = subscriptionGrantsPaidAccess(bestSubscription);
   const plan = retainsPaid ? detectedPlan : 'free';
   const status = retainsPaid
-    ? everittosStatusForSubscription(plan, best.subscription.status, best.subscription.cancel_at_period_end)
-    : best.subscription.status;
+    ? everittosStatusForSubscription(plan, bestSubscription.status, bestSubscription.cancel_at_period_end)
+    : bestSubscription.status;
 
   return {
     synced,
     plan,
     status,
-    stripeCustomerId: best.customerId,
-    stripeSubscriptionId: best.subscription.id,
-    currentPeriodEnd: best.subscription.current_period_end
-      ? new Date(best.subscription.current_period_end * 1000).toISOString()
+    stripeCustomerId: bestCustomerId,
+    stripeSubscriptionId: bestSubscription.id,
+    currentPeriodEnd: bestSubscription.current_period_end
+      ? new Date(bestSubscription.current_period_end * 1000).toISOString()
       : null,
     reason: synced ? undefined : 'subscription_sync_failed'
   };

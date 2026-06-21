@@ -30,7 +30,7 @@ export type WorkspacePlanState = {
   rawSubscriptionStatus: string | null;
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (options?: { silent?: boolean }) => Promise<void>;
 };
 
 const WorkspacePlanContext = createContext<WorkspacePlanState | null>(null);
@@ -114,8 +114,12 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
     error: null
   });
 
-  const refresh = useCallback(async () => {
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    setState((prev) => ({
+      ...prev,
+      loading: options?.silent ? prev.loading : true,
+      error: null
+    }));
     const next = await fetchWorkspacePlan();
     setState(next);
   }, []);

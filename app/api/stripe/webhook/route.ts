@@ -14,6 +14,7 @@ import {
   syncStripeSubscriptionRecord
 } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { logBillingActivation } from '@/lib/billing-activation-logs';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import {
   planFromSession,
@@ -406,6 +407,7 @@ export async function POST(request: Request) {
   }
 
   logStripeBilling('webhook:received', { eventId: event.id, eventType: event.type });
+  logBillingActivation('WEBHOOK_RECEIVED', { eventId: event.id, eventType: event.type });
 
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });

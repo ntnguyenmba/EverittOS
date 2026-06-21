@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { logBillingActivation } from '@/lib/billing-activation-logs';
 import { syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
@@ -46,6 +47,11 @@ export async function POST() {
   });
 
   if (!result.synced) {
+    logBillingActivation('CHECKOUT_RETURN_SYNC_FAILED', {
+      userId: user.id,
+      reason: result.reason || 'sync_failed',
+      email
+    });
     return NextResponse.json({
       updated: false,
       message:
@@ -66,6 +72,15 @@ export async function POST() {
       stripeSubscriptionId: result.stripeSubscriptionId,
       status: result.status
     }
+  });
+
+  logBillingActivation('CHECKOUT_RETURN_SYNC', {
+    userId: user.id,
+    plan: result.plan,
+    status: result.status,
+    stripeCustomerId: result.stripeCustomerId,
+    stripeSubscriptionId: result.stripeSubscriptionId,
+    email
   });
 
   return NextResponse.json({
