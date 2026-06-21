@@ -52,6 +52,32 @@ function formatCheckoutDebugLine(debug: CheckoutFailureDebug): string {
   ].join(' · ');
 }
 
+function parseCheckoutJson(rawText: string): CheckoutResponseJson {
+  if (!rawText.trim()) return {};
+
+  try {
+    return JSON.parse(rawText) as CheckoutResponseJson;
+  } catch {
+    return {
+      error: 'Checkout returned a response the browser could not read.',
+      code: 'invalid_checkout_response',
+      ownerDiagnostic: 'Checkout returned a response that was not valid JSON. Check the Vercel function logs for /api/stripe/checkout.'
+    };
+  }
+}
+
+function validStripeCheckoutRedirect(url: string | undefined): string | null {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'checkout.stripe.com') return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function PlanCheckoutButton({
   plan,
   label,
@@ -75,11 +101,7 @@ export function PlanCheckoutButton({
     const debug = checkoutFailureDebug(json);
     if (canShowOwnerDiagnostics) {
       setDebugLine(formatCheckoutDebugLine(debug));
-      setError(
-        json.ownerDiagnostic ||
-          json.error ||
-          t('billing.promo.checkoutFailed')
-      );
+      setError(json.ownerDiagnostic || json.error || t('billing.promo.checkoutFailed'));
       return;
     }
 
@@ -107,13 +129,14 @@ export function PlanCheckoutButton({
           refundPolicyAcknowledged: requireRefundAck ? true : undefined
         })
       });
-      const json = (await res.json()) as CheckoutResponseJson;
+      const rawText = await res.text();
+      const json = parseCheckoutJson(rawText);
 
       if (!res.ok) {
         if (json.code === 'already_subscribed') {
           setError(json.error || t('billing.alreadySubscribedPortal'));
           setDebugLine('');
-          window.location.href = '/settings/billing';
+          window.location.assign('/settings/billing');
           return;
         }
 
@@ -121,20 +144,27 @@ export function PlanCheckoutButton({
         return;
       }
 
-      if (json.url) {
-        window.location.href = json.url;
+      const redirectUrl = validStripeCheckoutRedirect(json.url);
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
         return;
       }
 
-      const missingUrlJson: CheckoutResponseJson = {
-        error: 'Stripe checkout did not return a redirect URL.',
-        code: 'missing_checkout_url'
-      };
-      handleCheckoutFailure(res.status, missingUrlJson);
+      handleCheckoutFailure(res.status, {
+        error: 'Stripe checkout did not return a valid Stripe redirect URL.',
+        code: 'invalid_checkout_redirect',
+        ownerDiagnostic: `Stripe checkout response did not include a valid checkout.stripe.com URL. Received: ${json.url || 'empty'}`
+      });
     } catch (caught) {
       console.error('Stripe checkout request failed', { plan, error: caught });
-      setDebugLine('');
-      setError(caught instanceof Error ? caught.message : t('billing.promo.checkoutFailed'));
+      handleCheckoutFailure(0, {
+        error: caught instanceof Error ? caught.message : t('billing.promo.checkoutFailed'),
+        code: 'checkout_request_failed',
+        ownerDiagnostic:
+          caught instanceof Error
+            ? `Browser failed before completing checkout request or redirect: ${caught.message}`
+            : 'Browser failed before completing checkout request or redirect.'
+      });
     } finally {
       setLoading(false);
     }
@@ -143,13 +173,17 @@ export function PlanCheckoutButton({
   return (
     <div className="plan-checkout-button">
       {requireRefundAck ? (
-        <label className="no-refund-checkout-ack">
+        <label
+          className="no-refund-checkout-ack no-refund-checkout-ack-inline"
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '0 0 12px', cursor: 'pointer' }}
+        >
           <input
             type="checkbox"
             checked={acceptedRefundPolicy}
             onChange={(e) => setAcceptedRefundPolicy(e.target.checked)}
+            style={{ flex: '0 0 auto', width: 18, height: 18, margin: '4px 0 0' }}
           />
-          <span>{t('billing.noRefund.checkoutAck')}</span>
+          <span style={{ display: 'block', lineHeight: 1.45 }}>{t('billing.noRefund.checkoutAck')}</span>
         </label>
       ) : null}
       <button
