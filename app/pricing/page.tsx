@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandLogo } from '@/components/brand-logo';
 import { PricingCheckoutPanel } from '@/components/pricing-checkout-panel';
-import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
-import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { useTranslation } from '@/components/locale-provider';
 import { performClientLogout } from '@/lib/client-logout';
 import { normalizePlan } from '@/lib/everittos-plans';
@@ -71,8 +69,6 @@ function PricingContent() {
           <p className="muted pricing-public-lead">{t('billing.pricingPublicLead')}</p>
         </header>
 
-        <NoRefundDisclosure variant="card" className="pricing-public-policy" />
-
         {authChecked ? (
           <PricingCheckoutPanel
             selectedPlan={selectedPlan === 'free' ? 'pro' : selectedPlan}
@@ -81,8 +77,6 @@ function PricingContent() {
         ) : (
           <p className="muted">{t('billing.pricingLoading')}</p>
         )}
-
-        <OnboardingSupportPromo variant="pricing" />
 
         <footer className="pricing-public-footer muted">
           <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link> ·{' '}
