@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-import { appUrl } from '@/lib/app-url';
+import { appOrigin, appUrl, rawAppUrlEnvValues } from '@/lib/app-url';
 import { billingCheckoutMethod, resolveStripePriceId, stripePriceEnvKey, type PaidPlanKey } from '@/lib/billing-config';
 import { maskStripeId } from '@/lib/billing-env';
 import { checkoutOwnerDiagnostic, checkoutPublicErrorMessage } from '@/lib/checkout-errors';
@@ -21,7 +21,10 @@ import { stripeKeyMode, stripeKeyModeLabel } from '@/lib/stripe-mode';
 import {
   formatStripeError,
   isStripeCheckoutSessionUrl,
+  safeCheckoutUrlHostname,
+  validateCheckoutSessionInputs,
   validateStripeSubscriptionPriceForPlan,
+  type CheckoutSessionStringValidationCode,
   type StripePriceValidationCode
 } from '@/lib/stripe-checkout-validation';
 
@@ -99,6 +102,7 @@ function checkoutFailureResponse(input: {
   plan: PaidPlanKey;
   code:
     | StripePriceValidationCode
+    | CheckoutSessionStringValidationCode
     | 'checkout_not_configured'
     | 'stripe_not_configured'
     | 'stripe_checkout_failed'
@@ -388,6 +392,69 @@ export async function POST(request: Request) {
   }
 
   const returnPath = '/settings/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}';
+  const successUrl = appUrl(returnPath);
+  const cancelUrl = appUrl('/settings/billing?checkout=cancelled');
+  const clientReferenceId = `${ownerUserId}:${workspaceId || 'solo'}:${plan}`;
+  const rawPriceEnv = process.env[priceEnvKey];
+  const appOriginValue = appOrigin();
+
+  const checkoutStringValidation = validateCheckoutSessionInputs({
+    plan,
+    priceEnvKey,
+    priceId,
+    rawPriceEnv,
+    successUrl,
+    cancelUrl,
+    appOrigin: appOriginValue,
+    rawAppUrlEnvs: rawAppUrlEnvValues()
+  });
+
+  if (!checkoutStringValidation.ok) {
+    const ownerDiagnostic = checkoutOwnerDiagnostic({
+      plan,
+      code: checkoutStringValidation.code,
+      priceEnvKey,
+      priceIdPreview,
+      detail: checkoutStringValidation.message
+    });
+    logStripeBilling(
+      'checkout:invalid_session_strings',
+      {
+        userId: user.id,
+        plan,
+        workspaceId: workspaceId || null,
+        code: checkoutStringValidation.code,
+        message: checkoutStringValidation.message,
+        priceEnvKey,
+        priceIdPreview,
+        successUrl,
+        cancelUrl,
+        appOrigin: appOriginValue,
+        stripeMode
+      },
+      'error'
+    );
+    await recordCheckoutFailure({
+      email,
+      userId: user.id,
+      plan,
+      workspaceId: workspaceId || null,
+      priceId,
+      error: checkoutPublicErrorMessage(plan),
+      ownerDiagnostic,
+      code: checkoutStringValidation.code
+    });
+    return checkoutFailureResponse({
+      plan,
+      code: checkoutStringValidation.code,
+      status: 422,
+      priceEnvKey,
+      priceId,
+      detail: checkoutStringValidation.message,
+      useOwnerDiagnosticAsError: true
+    });
+  }
+
   const metadata = {
     plan,
     planKey: plan,
@@ -406,7 +473,7 @@ export async function POST(request: Request) {
     price_id: priceId,
     billing_source: 'everittos_checkout',
     return_path: returnPath,
-    app_url: appUrl(''),
+    app_url: appOriginValue,
     no_refund_policy: 'true',
     ...(refundPolicyAcknowledged ? { refund_policy_acknowledged: 'true' } : {})
   };
@@ -414,9 +481,9 @@ export async function POST(request: Request) {
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: appUrl(returnPath),
-    cancel_url: appUrl('/settings/billing?checkout=cancelled'),
-    client_reference_id: `${ownerUserId}:${workspaceId || 'solo'}:${plan}`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    client_reference_id: clientReferenceId,
     metadata,
     subscription_data: { metadata },
     custom_text: {
@@ -432,6 +499,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    console.log({
+      plan,
+      priceEnvKey,
+      priceId,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      client_reference_id: clientReferenceId,
+      app_url: appOriginValue,
+      priceIdLooksValid: /^price_/.test(priceId || '')
+    });
+
     logStripeBilling('checkout:session_create_attempt', {
       userId: user.id,
       plan,
@@ -456,7 +534,7 @@ export async function POST(request: Request) {
       priceIdPreview,
       clientReferenceId: session.client_reference_id,
       stripeResponseUrl: session.url || null,
-      checkoutHost: session.url ? new URL(session.url).hostname : null
+      checkoutHost: safeCheckoutUrlHostname(session.url)
     });
 
     logStripeBilling('checkout:session_created', {
@@ -467,7 +545,7 @@ export async function POST(request: Request) {
       priceIdPreview,
       workspaceId: workspaceId || null,
       stripeMode,
-      checkoutHost: session.url ? new URL(session.url).hostname : null
+      checkoutHost: safeCheckoutUrlHostname(session.url)
     });
 
     if (!session.url || !isStripeCheckoutSessionUrl(session.url)) {

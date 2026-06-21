@@ -1,5 +1,8 @@
 import { billingPlanDefinition, type PaidPlanKey } from '@/lib/billing-config';
-import type { StripePriceValidationCode } from '@/lib/stripe-checkout-validation';
+import type {
+  CheckoutSessionStringValidationCode,
+  StripePriceValidationCode
+} from '@/lib/stripe-checkout-validation';
 
 export function checkoutPublicErrorMessage(plan: PaidPlanKey): string {
   const planName = billingPlanDefinition(plan)?.name || plan;
@@ -10,6 +13,7 @@ export function checkoutOwnerDiagnostic(input: {
   plan: PaidPlanKey;
   code:
     | StripePriceValidationCode
+    | CheckoutSessionStringValidationCode
     | 'checkout_not_configured'
     | 'stripe_not_configured'
     | 'stripe_checkout_failed'
@@ -24,6 +28,12 @@ export function checkoutOwnerDiagnostic(input: {
   const preview = priceIdPreview ? ` (${priceIdPreview})` : '';
 
   switch (code) {
+    case 'invalid_env_format':
+    case 'invalid_price_id':
+    case 'invalid_success_url':
+    case 'invalid_cancel_url':
+    case 'invalid_app_origin':
+      return detail || `Checkout configuration error for ${plan}.`;
     case 'checkout_not_configured':
       return `Missing env var ${envKey} for ${plan} checkout.`;
     case 'stripe_not_configured':

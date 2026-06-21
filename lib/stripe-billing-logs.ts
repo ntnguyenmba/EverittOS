@@ -5,6 +5,7 @@ export type StripeBillingLogTag =
   | 'checkout:price_resolution'
   | 'checkout:price_validation'
   | 'checkout:price_invalid'
+  | 'checkout:invalid_session_strings'
   | 'checkout:session_create_attempt'
   | 'checkout:unauthenticated'
   | 'checkout:forbidden'
