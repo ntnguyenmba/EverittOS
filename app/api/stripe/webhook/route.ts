@@ -15,6 +15,7 @@ import {
 } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
 import { logBillingActivation } from '@/lib/billing-activation-logs';
+import { logBillingPipeline } from '@/lib/billing-pipeline-log';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import {
   planFromSession,
@@ -35,7 +36,12 @@ async function customerEmail(
 }
 
 function metadataUserId(metadata: Stripe.Metadata | null | undefined): string | null {
-  return metadata?.user_id?.trim() || metadata?.userId?.trim() || null;
+  return (
+    metadata?.user_id?.trim() ||
+    metadata?.userId?.trim() ||
+    metadata?.profile_id?.trim() ||
+    null
+  );
 }
 
 function metadataOwnerUserId(metadata: Stripe.Metadata | null | undefined): string | null {
@@ -84,10 +90,12 @@ async function handleCheckoutCompleted(
   eventType: string
 ) {
   const sessionUserId = metadataUserId(session.metadata);
+  const profileId = session.metadata?.profile_id?.trim() || sessionUserId;
   const workspaceId = metadataWorkspaceId(session.metadata);
   const ownerUserId = metadataOwnerUserId(session.metadata);
   const { customerId, subId } = await resolveCheckoutSessionIds(stripe, session);
   const email =
+    session.metadata?.customer_email?.trim().toLowerCase() ||
     session.metadata?.email?.trim().toLowerCase() ||
     session.customer_details?.email?.trim().toLowerCase() ||
     session.customer_email?.trim().toLowerCase() ||
@@ -95,6 +103,21 @@ async function handleCheckoutCompleted(
     (customerId ? await customerEmail(stripe, customerId) : null);
 
   const plan = await planFromSession(stripe, session);
+
+  logBillingPipeline('checkout_completed', {
+    eventType,
+    sessionId: session.id,
+    userId: sessionUserId,
+    profileId,
+    workspaceId,
+    organizationId: workspaceId,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subId,
+    plan,
+    priceId: stripePriceIdFromSession(session),
+    email: email || null,
+    metadata: session.metadata
+  });
 
   logBillingSync(eventType, {
     sessionId: session.id,
@@ -132,8 +155,9 @@ async function handleCheckoutCompleted(
     const sub = await stripe.subscriptions.retrieve(subId, {
       expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
     });
-    const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+    const syncResult = await syncStripeSubscriptionRecord(admin, stripe, sub, {
       sessionUserId,
+      profileId,
       ownerUserId,
       email,
       workspaceId,
@@ -145,12 +169,13 @@ async function handleCheckoutCompleted(
       stripeEventId: eventId,
       eventType,
       plan: resolvedPlan,
-      success: synced,
-      reason: synced ? undefined : 'subscription_sync_failed',
+      success: syncResult.ok,
+      reason: syncResult.ok ? undefined : syncResult.error || 'subscription_sync_failed',
       details: {
         session_id: session.id,
         subscription_id: subId,
-        customer_id: customerId
+        customer_id: customerId,
+        writes: syncResult.writes
       }
     });
     return;
@@ -158,8 +183,9 @@ async function handleCheckoutCompleted(
 
   const stripePriceId = stripePriceIdFromSession(session);
   const subscriptionStatus = everittosStatusForSubscription(plan, 'active', false);
-  const synced = await syncBillingToSupabase(admin, {
+  const syncResult = await syncBillingToSupabase(admin, {
     sessionUserId,
+    profileId,
     ownerUserId,
     email,
     workspaceId,
@@ -178,9 +204,9 @@ async function handleCheckoutCompleted(
     stripeEventId: eventId,
     eventType,
     plan,
-    success: synced,
-    reason: synced ? undefined : 'profile_sync_failed',
-    details: { session_id: session.id, customer_id: customerId }
+    success: syncResult.ok,
+    reason: syncResult.ok ? undefined : syncResult.error || 'profile_sync_failed',
+    details: { session_id: session.id, customer_id: customerId, writes: syncResult.writes }
   });
 }
 
@@ -192,9 +218,26 @@ async function handleSubscriptionEvent(
   eventType: string
 ) {
   const subscriptionUserId = metadataUserId(sub.metadata);
+  const profileId = sub.metadata?.profile_id?.trim() || subscriptionUserId;
   const workspaceId = metadataWorkspaceId(sub.metadata);
   const ownerUserId = metadataOwnerUserId(sub.metadata);
-  const email = sub.metadata?.email?.trim().toLowerCase() || (await customerEmail(stripe, sub.customer));
+  const stripeCustomerId =
+    typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
+  const email =
+    sub.metadata?.customer_email?.trim().toLowerCase() ||
+    sub.metadata?.email?.trim().toLowerCase() ||
+    (await customerEmail(stripe, sub.customer));
+
+  logBillingPipeline('subscription_found', {
+    eventType,
+    subscriptionId: sub.id,
+    stripeCustomerId,
+    workspaceId,
+    subscriptionUserId,
+    profileId,
+    plan: planFromSubscription(sub),
+    status: sub.status
+  });
 
   logBillingSync(eventType, {
     subscriptionId: sub.id,
@@ -214,8 +257,9 @@ async function handleSubscriptionEvent(
     return;
   }
 
-  const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+  const syncResult = await syncStripeSubscriptionRecord(admin, stripe, sub, {
     subscriptionUserId,
+    profileId,
     ownerUserId,
     email,
     workspaceId
@@ -226,9 +270,13 @@ async function handleSubscriptionEvent(
     stripeEventId: eventId,
     eventType,
     plan: planFromSubscription(sub),
-    success: synced,
-    reason: synced ? undefined : 'subscription_sync_failed',
-    details: { subscription_id: sub.id }
+    success: syncResult.ok,
+    reason: syncResult.ok ? undefined : syncResult.error || 'subscription_sync_failed',
+    details: {
+      subscription_id: sub.id,
+      customer_id: stripeCustomerId,
+      writes: syncResult.writes
+    }
   });
 }
 
@@ -258,9 +306,10 @@ async function handleSubscriptionDeleted(
   }
 
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
-  const synced = await syncBillingToSupabase(admin, {
+  const syncResult = await syncBillingToSupabase(admin, {
     sessionUserId,
     subscriptionUserId,
+    profileId: sub.metadata?.profile_id?.trim() || sessionUserId,
     ownerUserId,
     email,
     workspaceId,
@@ -284,8 +333,8 @@ async function handleSubscriptionDeleted(
     stripeEventId: eventId,
     eventType: 'customer.subscription.deleted',
     plan: 'free',
-    success: synced,
-    reason: synced ? undefined : 'delete_sync_failed',
+    success: syncResult.ok,
+    reason: syncResult.ok ? undefined : syncResult.error || 'delete_sync_failed',
     details: { subscription_id: sub.id }
   });
 }
@@ -332,10 +381,14 @@ async function handleInvoiceEvent(
       });
     }
 
-    const synced = await syncStripeSubscriptionRecord(admin, stripe, sub, {
+    const syncResult = await syncStripeSubscriptionRecord(admin, stripe, sub, {
       subscriptionUserId: metadataUserId(sub.metadata),
+      profileId: sub.metadata?.profile_id?.trim() || metadataUserId(sub.metadata),
       ownerUserId: metadataOwnerUserId(sub.metadata),
-      email: sub.metadata?.email?.trim().toLowerCase() || email,
+      email:
+        sub.metadata?.customer_email?.trim().toLowerCase() ||
+        sub.metadata?.email?.trim().toLowerCase() ||
+        email,
       workspaceId: metadataWorkspaceId(sub.metadata)
     });
 
@@ -344,8 +397,8 @@ async function handleInvoiceEvent(
       stripeEventId: eventId,
       eventType,
       plan: planFromSubscription(sub),
-      success: synced,
-      reason: synced ? undefined : 'invoice_subscription_sync_failed',
+      success: syncResult.ok,
+      reason: syncResult.ok ? undefined : syncResult.error || 'invoice_subscription_sync_failed',
       details: {
         invoice_id: invoice.id,
         subscription_id: subId,
@@ -406,13 +459,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  logStripeBilling('webhook:received', { eventId: event.id, eventType: event.type });
+  logStripeBilling('webhook:received', {
+    eventId: event.id,
+    eventType: event.type,
+    webhookEndpoint: 'https://app.everittventures.com/api/stripe/webhook'
+  });
   logBillingActivation('WEBHOOK_RECEIVED', { eventId: event.id, eventType: event.type });
+  logBillingPipeline('webhook_received', { eventId: event.id, eventType: event.type });
 
   const admin = createAdminSupabase();
   if (!admin) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY is not configured.' }, { status: 503 });
 
   logStripeBilling('webhook:validated', { eventId: event.id, eventType: event.type });
+  logBillingPipeline('webhook_verified', { eventId: event.id, eventType: event.type });
 
   const claim = await claimStripeWebhookEvent(admin, event.id, event.type);
   if (claim === 'duplicate') {

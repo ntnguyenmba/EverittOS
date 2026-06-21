@@ -22,6 +22,7 @@ import {
   validateStripeSubscriptionPriceForPlan
 } from '@/lib/stripe-checkout-validation';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
+import { logBillingPipeline } from '@/lib/billing-pipeline-log';
 
 export const runtime = 'nodejs';
 
@@ -238,9 +239,11 @@ async function handleCheckout(request: Request) {
     selected_plan: plan,
     user_id: user.id,
     userId: user.id,
+    profile_id: user.id,
     owner_user_id: ownerUserId,
     ownerUserId,
     email,
+    customer_email: email,
     workspace_id: workspaceId,
     workspaceId: workspaceId || '',
     organization_id: workspaceId,
@@ -252,6 +255,21 @@ async function handleCheckout(request: Request) {
     no_refund_policy: 'true',
     ...(refundPolicyAcknowledged ? { refund_policy_acknowledged: 'true' } : {})
   };
+
+  logBillingPipeline('checkout_started', {
+    userId: user.id,
+    profileId: user.id,
+    ownerUserId,
+    workspaceId: workspaceId || null,
+    organizationId: workspaceId || null,
+    plan,
+    priceId,
+    priceEnvKey,
+    email,
+    successUrl,
+    cancelUrl,
+    metadata
+  });
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',

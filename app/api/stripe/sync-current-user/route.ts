@@ -40,6 +40,8 @@ export async function POST() {
   const email = (profile?.email || user.email).trim().toLowerCase();
   const stripe = new Stripe(stripeKey);
 
+  console.log('SYNC_CURRENT_USER_REQUEST', { userId: user.id, email, workspaceId: profile?.organization_id || null });
+
   const result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
     userId: user.id,
     email,
@@ -50,15 +52,23 @@ export async function POST() {
     logBillingActivation('CHECKOUT_RETURN_SYNC_FAILED', {
       userId: user.id,
       reason: result.reason || 'sync_failed',
-      email
+      email,
+      writes: result.writes,
+      error: result.error
     });
     return NextResponse.json({
       updated: false,
+      synced: false,
       message:
         result.reason === 'no_stripe_subscription'
-          ? 'No active Stripe subscription found for this account email.'
-          : 'Stripe subscription found but could not sync to EverittOS. Check billing health for details.',
-      reason: result.reason
+          ? 'No active Stripe subscription found for this billing account.'
+          : result.error || 'Stripe subscription found but could not sync to EverittOS.',
+      reason: result.reason,
+      error: result.error,
+      writes: result.writes || [],
+      matchedStripeCustomerId: result.stripeCustomerId,
+      matchedSubscriptionId: result.stripeSubscriptionId,
+      matchedPriceId: result.stripePriceId
     });
   }
 
@@ -70,7 +80,9 @@ export async function POST() {
     payload: {
       stripeCustomerId: result.stripeCustomerId,
       stripeSubscriptionId: result.stripeSubscriptionId,
-      status: result.status
+      stripePriceId: result.stripePriceId,
+      status: result.status,
+      writes: result.writes
     }
   });
 
@@ -80,16 +92,21 @@ export async function POST() {
     status: result.status,
     stripeCustomerId: result.stripeCustomerId,
     stripeSubscriptionId: result.stripeSubscriptionId,
-    email
+    stripePriceId: result.stripePriceId,
+    email,
+    writes: result.writes
   });
 
   return NextResponse.json({
     updated: true,
+    synced: true,
     plan: result.plan,
     status: result.status,
     active: isPaidPlanActive(result.plan, result.status),
     stripeCustomerId: result.stripeCustomerId,
     stripeSubscriptionId: result.stripeSubscriptionId,
-    currentPeriodEnd: result.currentPeriodEnd
+    stripePriceId: result.stripePriceId,
+    currentPeriodEnd: result.currentPeriodEnd,
+    writes: result.writes || []
   });
 }

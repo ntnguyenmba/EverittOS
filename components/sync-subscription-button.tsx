@@ -14,6 +14,7 @@ type RefreshResponse = {
   status?: string;
   error?: string;
   message?: string;
+  reason?: string;
 };
 
 type SyncCurrentUserResponse = {
@@ -22,6 +23,7 @@ type SyncCurrentUserResponse = {
   status?: string;
   error?: string;
   message?: string;
+  reason?: string;
 };
 
 export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps) {
@@ -65,11 +67,13 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
       }
 
       setMessage(
-        refreshJson.message ||
-          fallbackJson.message ||
-          refreshJson.error ||
+        refreshJson.error ||
           fallbackJson.error ||
-          'Payment was received, but the subscription is still syncing. Try again in a moment.'
+          refreshJson.message ||
+          fallbackJson.message ||
+          (refreshJson.reason === 'no_stripe_subscription' || fallbackJson.reason === 'no_stripe_subscription'
+            ? 'No paid Stripe subscription could be mapped to your EverittOS account. Confirm the Stripe customer email matches your login email.'
+            : 'Payment was received, but EverittOS could not activate the subscription. See billing diagnostics for write details.')
       );
     } catch {
       setMessage('Unable to sync subscription right now. Please try again in a minute.');
