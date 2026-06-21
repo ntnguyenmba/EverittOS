@@ -2,9 +2,13 @@
 
 /**
  * Internal billing diagnostics were previously rendered on the customer billing page.
- * Keep this component as a no-op so existing imports stay safe, but customers do not see Stripe sync details,
- * webhook details, runtime diagnostics, price IDs, or internal billing errors.
+ * Hide the legacy wrapper card so customers do not see an empty box.
  */
 export function BillingHealthCheck() {
-  return null;
+  return (
+    <>
+      <style>{`.settings-card:has(.billing-health-check-empty){display:none!important;}`}</style>
+      <span className="billing-health-check-empty" aria-hidden="true" />
+    </>
+  );
 }
