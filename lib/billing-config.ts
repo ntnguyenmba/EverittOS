@@ -9,6 +9,8 @@ import { sanitizeBillingEnvValue } from '@/lib/billing-env';
 
 export type PaidPlanKey = Exclude<EverittosPlan, 'free'>;
 
+type ExternalReRootPlan = 'report' | 'monthly' | 'yearly';
+
 export type BillingCheckoutMethod = 'session';
 
 export type BillingPlanDefinition = {
@@ -51,6 +53,18 @@ export const STRIPE_PRODUCT_ENV_KEYS: Record<PaidPlanKey, string> = {
   starter: 'STRIPE_PRODUCT_STARTER',
   growth: 'STRIPE_PRODUCT_GROWTH',
   enterprise: 'STRIPE_PRODUCT_ENTERPRISE'
+};
+
+const REROOT_STRIPE_PRICE_ENV_KEYS: Record<ExternalReRootPlan, string> = {
+  report: 'REROOT_STRIPE_PRICE_REPORT',
+  monthly: 'REROOT_STRIPE_PRICE_MONTHLY',
+  yearly: 'REROOT_STRIPE_PRICE_YEARLY'
+};
+
+const REROOT_STRIPE_PRODUCT_ENV_KEYS: Record<ExternalReRootPlan, string> = {
+  report: 'REROOT_STRIPE_PRODUCT_REPORT',
+  monthly: 'REROOT_STRIPE_PRODUCT_MONTHLY',
+  yearly: 'REROOT_STRIPE_PRODUCT_YEARLY'
 };
 
 /** Monthly list prices in cents for display and amount-based webhook fallback. */
@@ -193,6 +207,20 @@ export function stripeProductIdForPlan(plan: PaidPlanKey): string | null {
   return envValue || null;
 }
 
+function resolveExternalReRootPriceId(plan: ExternalReRootPlan): string | null {
+  const envValue = sanitizeBillingEnvValue(process.env[REROOT_STRIPE_PRICE_ENV_KEYS[plan]]);
+  return envValue || null;
+}
+
+function resolveExternalReRootProductId(plan: ExternalReRootPlan): string | null {
+  const envValue = sanitizeBillingEnvValue(process.env[REROOT_STRIPE_PRODUCT_ENV_KEYS[plan]]);
+  return envValue || null;
+}
+
+function asExternalPlan(plan: ExternalReRootPlan): EverittosPlan {
+  return plan as unknown as EverittosPlan;
+}
+
 export function isPaidBillingPlan(plan: string): plan is PaidPlanKey {
   return plan in BILLING_PLAN_AMOUNT_CENTS;
 }
@@ -243,6 +271,10 @@ export function planFromKnownStripePriceId(priceId: string | null | undefined): 
     if (resolveStripePriceId(plan) === id) return plan;
   }
 
+  for (const plan of Object.keys(REROOT_STRIPE_PRICE_ENV_KEYS) as ExternalReRootPlan[]) {
+    if (resolveExternalReRootPriceId(plan) === id) return asExternalPlan(plan);
+  }
+
   return null;
 }
 
@@ -252,6 +284,10 @@ export function planFromKnownStripeProductId(productId: string | null | undefine
 
   for (const plan of PAID_BILLING_PLAN_ORDER) {
     if (stripeProductIdForPlan(plan) === id) return plan;
+  }
+
+  for (const plan of Object.keys(REROOT_STRIPE_PRODUCT_ENV_KEYS) as ExternalReRootPlan[]) {
+    if (resolveExternalReRootProductId(plan) === id) return asExternalPlan(plan);
   }
 
   return null;
