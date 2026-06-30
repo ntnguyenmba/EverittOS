@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AuthenticatedSection } from '@/components/authenticated-section';
@@ -10,23 +10,21 @@ function AcceptInviteForm() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token') || '';
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('Checking invitation...');
   const [loading, setLoading] = useState(false);
   const signInHref = token ? `/login?next=${encodeURIComponent(`/team/accept?token=${token}`)}` : '/login';
 
-  useEffect(() => {
-    if (!token) {
-      setMessage('No invite link found. If you are signed in with the invited email, tap Accept invitation and EverittOS will look for your pending invite.');
-    }
-  }, [token]);
-
-  async function accept() {
+  const accept = useCallback(async () => {
     setLoading(true);
+    setMessage('Checking invitation...');
+
     const {
       data: { user }
     } = await supabase.auth.getUser();
+
     if (!user) {
-      router.push(signInHref);
+      setLoading(false);
+      setMessage('Please sign in with the email that received the invitation.');
       return;
     }
 
@@ -37,24 +35,31 @@ function AcceptInviteForm() {
     });
     const json = await res.json();
     setLoading(false);
+
     if (!res.ok) {
-      setMessage(json.error || 'Could not accept invitation');
+      setMessage(json.error || 'Could not accept invitation.');
       return;
     }
+
+    setMessage('Invitation accepted. Redirecting...');
     router.push('/dashboard');
-  }
+  }, [router, token]);
+
+  useEffect(() => {
+    void accept();
+  }, [accept]);
 
   return (
     <AuthenticatedSection>
-        <div className="card form">
-          <h2>Accept team invitation</h2>
-          <p>Sign in with the email that received the invite, then accept to join the organization.</p>
-          <button type="button" className="btn btn-primary" disabled={loading} onClick={accept}>
-            {loading ? 'Accepting...' : 'Accept invitation'}
-          </button>
-          {message && <p>{message}</p>}
-          <Link href={signInHref}>Sign in</Link>
-        </div>
+      <div className="card form">
+        <h2>Accept team invitation</h2>
+        <p>Sign in with the email that received the invite, then accept to join the organization.</p>
+        <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void accept()}>
+          {loading ? 'Checking...' : 'Accept invitation'}
+        </button>
+        {message && <p>{message}</p>}
+        <Link href={signInHref}>Sign in</Link>
+      </div>
     </AuthenticatedSection>
   );
 }
