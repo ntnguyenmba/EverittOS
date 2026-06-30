@@ -1,6 +1,5 @@
 'use client';
 
-import { PermissionMatrix } from '@/components/team/permission-matrix';
 import { EmptyState } from '@/components/empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useAsyncAction } from '@/hooks/use-async-action';
@@ -9,7 +8,6 @@ import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { canManageTeam, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
-import { PERMISSION_LABELS, permissionsForRole } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -152,7 +150,7 @@ type TeamManagementPanelProps = {
   showAuditHistory?: boolean;
 };
 
-export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHistory = false }: TeamManagementPanelProps) {
+export function TeamManagementPanel({ showAuditHistory = false }: TeamManagementPanelProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
   const { busy, run, runResponse, buttonLabel } = useAsyncAction({ successMessage: 'invited' });
@@ -380,6 +378,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
       {teamEnabled && canManage && (
         <div className="settings-card">
           <h3>Invite by email</h3>
+          <p className="muted">Invited team members join this workspace. Customers and jobs they add are shared with the business.</p>
           <label htmlFor="invite-email">Email</label>
           <input
             id="invite-email"
@@ -392,8 +391,8 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
           <label htmlFor="invite-role">Role</label>
           <select id="invite-role" className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
             <option value="manager">Manager</option>
-            <option value="employee">Employee</option>
-            <option value="contractor">Contractor</option>
+            <option value="employee">Worker</option>
+            <option value="contractor">Technician</option>
             <option value="client">Client</option>
             <option value="admin">Admin</option>
             <option value="viewer">Viewer</option>
@@ -427,7 +426,7 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
           <h3>Transfer ownership</h3>
           <p className="muted">Assign a new owner. You will become an admin.</p>
           <select className="input" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)}>
-            <option value="">Select member…</option>
+            <option value="">Select member...</option>
             {members
               .filter((m) => m.role !== 'owner' && m.active)
               .map((m) => (
@@ -442,9 +441,40 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
         </div>
       )}
 
+      {teamEnabled && (
+        <div className="settings-card">
+          <h3>Team access</h3>
+          <p className="muted">Simple role guide for this workspace.</p>
+          <div className="list-row compact">
+            <div>
+              <strong>Owner</strong>
+              <p className="muted">Full access to the business, billing, team, jobs, customers, reports, and settings.</p>
+            </div>
+          </div>
+          <div className="list-row compact">
+            <div>
+              <strong>Admin</strong>
+              <p className="muted">Can manage operations, team members, jobs, customers, schedules, and reports.</p>
+            </div>
+          </div>
+          <div className="list-row compact">
+            <div>
+              <strong>Worker or technician</strong>
+              <p className="muted">Can work from assigned jobs and add updates without seeing owner-only controls.</p>
+            </div>
+          </div>
+          <div className="list-row compact">
+            <div>
+              <strong>Viewer</strong>
+              <p className="muted">Read-only access for reviewing shared workspace information.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="settings-card">
         <h3>Active users ({activeMembers.length})</h3>
-        {loading ? <p className="loading-state">Loading team…</p> : null}
+        {loading ? <p className="loading-state">Loading team...</p> : null}
         {!loading && members.length === 0 ? (
           <EmptyState title="No members yet" description="Invite teammates to share access to jobs and customers." />
         ) : null}
@@ -530,19 +560,6 @@ export function TeamManagementPanel({ showPermissionMatrix = true, showAuditHist
               </div>
             </div>
           ))}
-        </div>
-      ) : null}
-
-      {teamEnabled && showPermissionMatrix ? (
-        <div className="settings-card">
-          <h3>Permission matrix</h3>
-          <p className="muted">Your role ({normalizeRole(role)}) includes:</p>
-          <ul>
-            {permissionsForRole(role).map((perm) => (
-              <li key={perm}>{PERMISSION_LABELS[perm]}</li>
-            ))}
-          </ul>
-          <PermissionMatrix />
         </div>
       ) : null}
     </>
