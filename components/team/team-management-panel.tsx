@@ -392,7 +392,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
           <select id="invite-role" className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
             <option value="manager">Manager</option>
             <option value="employee">Worker</option>
-            <option value="contractor">Technician</option>
+            <option value="contractor">Contractor</option>
             <option value="client">Client</option>
             <option value="admin">Admin</option>
             <option value="viewer">Viewer</option>
@@ -459,8 +459,14 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
           </div>
           <div className="list-row compact">
             <div>
-              <strong>Worker or technician</strong>
+              <strong>Worker</strong>
               <p className="muted">Can work from assigned jobs and add updates without seeing owner-only controls.</p>
+            </div>
+          </div>
+          <div className="list-row compact">
+            <div>
+              <strong>Contractor</strong>
+              <p className="muted">Can be invited as an outside team member while staying separate from employees.</p>
             </div>
           </div>
           <div className="list-row compact">
@@ -500,7 +506,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                   <option value="admin">Admin</option>
                   <option value="manager">Manager</option>
                   <option value="employee">Worker</option>
-                  <option value="contractor">Technician</option>
+                  <option value="contractor">Contractor</option>
                   <option value="viewer">Viewer</option>
                   <option value="client">Client</option>
                 </select>
