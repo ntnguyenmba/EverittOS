@@ -12,9 +12,10 @@ function AcceptInviteForm() {
   const token = params.get('token') || '';
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const signInHref = token ? `/login?next=${encodeURIComponent(`/team/accept?token=${token}`)}` : '/login';
 
   useEffect(() => {
-    if (!token) setMessage('Missing invitation token.');
+    if (!token) setMessage('Missing invitation token. Go back to the pending invitation and copy the full accept link again.');
   }, [token]);
 
   async function accept() {
@@ -24,7 +25,7 @@ function AcceptInviteForm() {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) {
-      router.push(`/login?next=${encodeURIComponent(`/team/accept?token=${token}`)}`);
+      router.push(signInHref);
       return;
     }
 
@@ -51,7 +52,7 @@ function AcceptInviteForm() {
             {loading ? 'Accepting...' : 'Accept invitation'}
           </button>
           {message && <p>{message}</p>}
-          <Link href="/login">Sign in</Link>
+          <Link href={signInHref}>Sign in</Link>
         </div>
     </AuthenticatedSection>
   );
