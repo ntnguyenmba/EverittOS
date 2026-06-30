@@ -15,16 +15,23 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as { token?: string };
   const token = (body.token || '').trim();
-  if (!token) {
-    return NextResponse.json({ error: 'token is required' }, { status: 400 });
-  }
+  const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).maybeSingle();
+  const userEmail = (profile?.email || user.email || '').toLowerCase();
 
-  const { data: invite } = await admin
+  let inviteQuery = admin
     .from('organization_invitations')
     .select('*')
-    .eq('token', token)
-    .eq('status', 'pending')
-    .maybeSingle();
+    .eq('status', 'pending');
+
+  if (token) {
+    inviteQuery = inviteQuery.eq('token', token);
+  } else if (userEmail) {
+    inviteQuery = inviteQuery.eq('email', userEmail).order('created_at', { ascending: false });
+  } else {
+    return NextResponse.json({ error: 'Sign in with the invited email address.' }, { status: 400 });
+  }
+
+  const { data: invite } = await inviteQuery.limit(1).maybeSingle();
 
   if (!invite) {
     return NextResponse.json({ error: 'Invitation not found or already used' }, { status: 404 });
@@ -35,8 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invitation expired' }, { status: 410 });
   }
 
-  const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).maybeSingle();
-  if ((profile?.email || user.email || '').toLowerCase() !== invite.email.toLowerCase()) {
+  if (userEmail !== invite.email.toLowerCase()) {
     return NextResponse.json({ error: 'This invitation was sent to a different email address' }, { status: 403 });
   }
 
@@ -65,12 +71,12 @@ export async function POST(request: Request) {
     .eq('id', user.id);
 
   if (invite.role === 'client' && invite.job_id) {
+    const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle();
     await admin.from('job_client_access').upsert(
       {
         job_id: invite.job_id,
         client_user_id: user.id,
-        owner_user_id: (await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle()).data
-          ?.owner_user_id,
+        owner_user_id: org?.owner_user_id,
         organization_id: invite.organization_id,
         granted_at: new Date().toISOString()
       },
