@@ -9,6 +9,10 @@ import { fetchUsageCounts, canAddTeamMember } from '@/lib/everittos-usage';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { appUrl } from '@/lib/app-url';
 
+function normalizeInviteEmail(value?: string | null): string {
+  return (value || '').trim().toLowerCase();
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
   const admin = createAdminSupabase();
@@ -34,7 +38,7 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as { email?: string; role?: string; note?: string };
-  const email = (body.email || '').trim().toLowerCase();
+  const email = normalizeInviteEmail(body.email);
   const role = parseAssignableMemberRole(body.role || 'employee');
   const note = (body.note || '').trim();
   if (!email) {
@@ -51,6 +55,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Team member limit reached for this plan.' }, { status: 403 });
   }
 
+  await admin
+    .from('organization_invitations')
+    .update({ status: 'revoked' })
+    .eq('organization_id', org.organizationId)
+    .eq('email', email)
+    .eq('status', 'pending');
+
   const { data: invite, error } = await admin
     .from('organization_invitations')
     .insert({
@@ -58,16 +69,33 @@ export async function POST(request: Request) {
       email,
       role,
       invited_by: user.id,
-      status: 'pending'
+      status: 'pending',
+      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     })
-    .select('id, token')
+    .select('id, token, email, status, organization_id')
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  if (error || !invite?.id || !invite?.token) {
+    return NextResponse.json(
+      { error: `Invitation could not be saved: ${mapWorkspaceSaveError(error?.message || 'missing invitation record')}` },
+      { status: 400 }
+    );
   }
 
-  const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
+  const { data: savedInvite } = await admin
+    .from('organization_invitations')
+    .select('id, token, email, status, organization_id')
+    .eq('id', invite.id)
+    .maybeSingle();
+
+  if (!savedInvite || normalizeInviteEmail(savedInvite.email) !== email || savedInvite.status !== 'pending') {
+    return NextResponse.json(
+      { error: 'Invitation was created but could not be verified. Please try sending it again.' },
+      { status: 500 }
+    );
+  }
+
+  const acceptUrl = appUrl(`/team/accept?token=${savedInvite.token}`);
   const emailResult = await sendTeamInviteEmail({
     to: email,
     organizationName: org.organizationName,
@@ -82,16 +110,18 @@ export async function POST(request: Request) {
     user_id: user.id,
     actor_name: actorName,
     entity_type: 'invitation',
-    entity_id: invite.id,
+    entity_id: savedInvite.id,
     action: 'user_invited',
     message: `Invited ${email} as ${role}`,
-    metadata: { email, role, emailSent: emailResult.sent, emailMessage: emailResult.message, ...(note ? { note } : {}) }
+    metadata: { email, role, invitationStatus: savedInvite.status, emailSent: emailResult.sent, emailMessage: emailResult.message, ...(note ? { note } : {}) }
   });
 
   return NextResponse.json({
     ok: true,
     acceptUrl,
-    invitationId: invite.id,
+    invitationId: savedInvite.id,
+    invitationEmail: savedInvite.email,
+    invitationStatus: savedInvite.status,
     emailSent: emailResult.sent,
     message: emailResult.message
   });
