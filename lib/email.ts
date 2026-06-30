@@ -4,6 +4,10 @@ import { clientInviteEmailHtml, teamInviteEmailHtml } from '@/lib/email-template
 
 export type EmailResult = { sent: boolean; message: string };
 
+function emailFailureMessage(error?: string): string {
+  return error ? `Email could not be sent: ${error}` : 'Email not configured. Copy the invite link below.';
+}
+
 export async function sendTeamInviteEmail(input: {
   to: string;
   organizationName: string;
@@ -19,7 +23,7 @@ export async function sendTeamInviteEmail(input: {
 
   const result = await sendTransactionalEmail({ to: input.to, subject, html });
   if (!result.sent) {
-    return { sent: false, message: 'Email not configured. Copy the invite link below.' };
+    return { sent: false, message: emailFailureMessage(result.error) };
   }
   return { sent: true, message: 'Email sent.' };
 }
@@ -41,7 +45,7 @@ export async function sendClientInviteEmail(input: {
 
   const result = await sendTransactionalEmail({ to: input.to, subject, html });
   if (!result.sent) {
-    return { sent: false, message: 'Email not configured. Copy the client link below.' };
+    return { sent: false, message: emailFailureMessage(result.error) };
   }
   return { sent: true, message: 'Email sent.' };
 }
