@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     entity_id: invite.id,
     action: 'user_invited',
     message: `Invited ${email} as ${role}`,
-    metadata: { email, role, ...(note ? { note } : {}) }
+    metadata: { email, role, emailSent: emailResult.sent, emailMessage: emailResult.message, ...(note ? { note } : {}) }
   });
 
   return NextResponse.json({
@@ -93,6 +93,6 @@ export async function POST(request: Request) {
     acceptUrl,
     invitationId: invite.id,
     emailSent: emailResult.sent,
-    message: emailResult.sent ? 'Email sent.' : 'Email not configured. Copy this invite link.'
+    message: emailResult.message
   });
 }
