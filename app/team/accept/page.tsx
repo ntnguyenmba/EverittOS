@@ -15,11 +15,12 @@ function AcceptInviteForm() {
   const signInHref = token ? `/login?next=${encodeURIComponent(`/team/accept?token=${token}`)}` : '/login';
 
   useEffect(() => {
-    if (!token) setMessage('Missing invitation token. Go back to the pending invitation and copy the full accept link again.');
+    if (!token) {
+      setMessage('No invite link found. If you are signed in with the invited email, tap Accept invitation and EverittOS will look for your pending invite.');
+    }
   }, [token]);
 
   async function accept() {
-    if (!token) return;
     setLoading(true);
     const {
       data: { user }
@@ -48,7 +49,7 @@ function AcceptInviteForm() {
         <div className="card form">
           <h2>Accept team invitation</h2>
           <p>Sign in with the email that received the invite, then accept to join the organization.</p>
-          <button type="button" className="btn btn-primary" disabled={loading || !token} onClick={accept}>
+          <button type="button" className="btn btn-primary" disabled={loading} onClick={accept}>
             {loading ? 'Accepting...' : 'Accept invitation'}
           </button>
           {message && <p>{message}</p>}
