@@ -29,23 +29,41 @@ function isMissingRelationOrColumn(message: string): boolean {
 async function lookupCompanyId(
   admin: SupabaseClient,
   userId: string,
-  ownerUserId: string
+  ownerUserId: string,
+  organizationId?: string | null
 ): Promise<string | null> {
-  const { data: profile, error: profileError } = await admin
+  if (organizationId) {
+    const orgLookup = await admin
+      .from('companies')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!orgLookup.error && orgLookup.data?.id) {
+      return orgLookup.data.id;
+    }
+    if (orgLookup.error && isMissingRelationOrColumn(orgLookup.error.message)) {
+      return null;
+    }
+  }
+
+  const { data: ownerProfile, error: ownerProfileError } = await admin
     .from('profiles')
     .select('company_id, business_name')
-    .eq('id', userId)
+    .eq('id', ownerUserId)
     .maybeSingle();
 
-  if (!profileError && profile?.company_id) {
-    return profile.company_id;
+  if (!ownerProfileError && ownerProfile?.company_id) {
+    return ownerProfile.company_id;
   }
 
   const ownerLookup = await admin
     .from('companies')
     .select('id')
     .eq('owner_id', ownerUserId)
-    .order('id', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -56,11 +74,23 @@ async function lookupCompanyId(
     return null;
   }
 
+  if (userId === ownerUserId) {
+    const { data: profile, error: profileError } = await admin
+      .from('profiles')
+      .select('company_id, business_name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!profileError && profile?.company_id) {
+      return profile.company_id;
+    }
+  }
+
   const userLookup = await admin
     .from('companies')
     .select('id')
     .eq('user_id', userId)
-    .order('id', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -87,15 +117,16 @@ async function createCompanyRecord(
     ...(organizationId
       ? [
           { owner_id: ownerUserId, organization_id: organizationId, company_name: label },
-          { user_id: userId, organization_id: organizationId, name: label },
+          { user_id: ownerUserId, organization_id: organizationId, name: label },
           { organization_id: organizationId, company_name: label }
         ]
       : []),
     { owner_id: ownerUserId, company_name: label },
-    { user_id: userId, name: label },
+    { user_id: ownerUserId, name: label },
     { owner_id: ownerUserId, name: label },
-    { user_id: userId, company_name: label },
+    { user_id: ownerUserId, company_name: label },
     { owner_id: ownerUserId },
+    { user_id: ownerUserId },
     { user_id: userId }
   ];
 
@@ -132,12 +163,12 @@ export async function resolveCompanyIdForUser(
   businessName?: string | null,
   organizationId?: string | null
 ): Promise<string | null> {
-  let companyId = await lookupCompanyId(admin, userId, ownerUserId);
+  let companyId = await lookupCompanyId(admin, userId, ownerUserId, organizationId);
   if (companyId) return companyId;
 
   companyId = await createCompanyRecord(admin, userId, ownerUserId, businessName, organizationId);
   if (!companyId) {
-    const { data: rpcId, error: rpcError } = await admin.rpc('ensure_user_company', { p_user_id: userId });
+    const { data: rpcId, error: rpcError } = await admin.rpc('ensure_user_company', { p_user_id: ownerUserId });
     if (!rpcError && rpcId) {
       companyId = rpcId as string;
     } else if (rpcError) {
@@ -152,7 +183,10 @@ export async function resolveCompanyIdForUser(
     return null;
   }
 
-  await linkProfileCompanyId(admin, userId, companyId);
+  await linkProfileCompanyId(admin, ownerUserId, companyId);
+  if (userId === ownerUserId) {
+    await linkProfileCompanyId(admin, userId, companyId);
+  }
   return companyId;
 }
 
@@ -254,17 +288,17 @@ export async function getCurrentWorkspaceForUser(
   if (admin) {
     const needsCompany = await customersRequireCompanyId(admin);
     if (needsCompany) {
-      const { data: profile } = await admin
+      const { data: ownerProfile } = await admin
         .from('profiles')
         .select('business_name')
-        .eq('id', userId)
+        .eq('id', org.ownerUserId)
         .maybeSingle();
 
       companyId = await resolveCompanyIdForUser(
         admin,
         userId,
         org.ownerUserId,
-        profile?.business_name,
+        ownerProfile?.business_name,
         org.organizationId
       );
 
@@ -329,8 +363,5 @@ export function mapWorkspaceSaveError(message: string, fallback = 'Unable to sav
   if (lower.includes('company_id')) {
     return 'Workspace setup is still finishing. Refresh the page and try again.';
   }
-  if (lower.includes('organization_id') && lower.includes('not-null')) {
-    return 'Workspace setup is still finishing. Refresh and try again.';
-  }
-  return friendlyErrorMessage(message, fallback);
+  return friendlyErrorMessage(message || fallback);
 }
