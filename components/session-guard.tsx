@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { SessionIdleWarning } from '@/components/session-idle-warning';
 import { clearTabSessionId, readTabSessionId, storeTabSessionId } from '@/lib/session-client';
 import {
@@ -27,7 +27,7 @@ async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
   window.location.assign(`/login?${params.toString()}`);
 }
 
-export function SessionGuard() {
+export function SessionGuard({ children }: { children?: ReactNode }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const lastActivityRef = useRef(Date.now());
@@ -189,10 +189,13 @@ export function SessionGuard() {
   }, [pathname, recordActivity, router, scheduleIdleTimers, touchSession, clearTimers, closeWarning]);
 
   return (
-    <SessionIdleWarning
-      open={warningOpen}
-      secondsRemaining={secondsRemaining}
-      onStaySignedIn={handleStaySignedIn}
-    />
+    <>
+      {children}
+      <SessionIdleWarning
+        open={warningOpen}
+        secondsRemaining={secondsRemaining}
+        onStaySignedIn={handleStaySignedIn}
+      />
+    </>
   );
 }
