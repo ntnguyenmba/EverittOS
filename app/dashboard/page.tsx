@@ -10,24 +10,11 @@ import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { mapAccessError } from '@/lib/auth-errors';
-import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
-import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
-import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
-
-type Job = {
-  id: string;
-  title: string;
-  status: string | null;
-  start_date: string | null;
-  due_date: string | null;
-};
-
-const DASHBOARD_SETUP_STORAGE_KEY = 'everittos.dashboard.setup.open.v1';
 
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
@@ -51,10 +38,6 @@ export default function DashboardPage() {
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [totalJobs, setTotalJobs] = useState(0);
-  const [totalCustomers, setTotalCustomers] = useState(0);
-  const [totalWorkers, setTotalWorkers] = useState(0);
-  const [setupOpen, setSetupOpen] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
@@ -85,114 +68,14 @@ export default function DashboardPage() {
       return;
     }
 
-    const jobsQuery = scopeJobsForWorkspace(
-      supabase.from('jobs').select('id, title, status, start_date, due_date').order('created_at', { ascending: false }),
-      user.id,
-      org?.organizationId,
-      userRole
-    );
-
-    const jobCountQuery = scopeJobsForWorkspace(
-      supabase.from('jobs').select('id', { count: 'exact', head: true }),
-      user.id,
-      org?.organizationId,
-      userRole
-    );
-    const customerCountQuery = org?.organizationId
-      ? supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
-      : supabase.from('customers').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
-    const workerCountQuery = org?.organizationId
-      ? supabase.from('workers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
-      : supabase.from('workers').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
-
-    const metricsPromise = fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
-
-    const [jobsRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] = await Promise.all([
-      jobsQuery,
-      fetchOrganizationIsDemo(supabase, org?.organizationId),
-      jobCountQuery,
-      customerCountQuery,
-      workerCountQuery,
-      metricsPromise
-    ]);
-
-    setLoading(false);
-
-    if (jobsRes.error) {
-      setErrorMessage(jobsRes.error.message);
-      return;
-    }
-
-    const filteredJobs = filterDemoSeedJobs((jobsRes.data || []) as Job[], orgIsDemo) as Job[];
+    const metrics = await fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
     setRevenueMetrics(metrics);
-    setTotalJobs(orgIsDemo ? filteredJobs.length : jobCountRes.count || 0);
-    setTotalCustomers(customerCountRes.count || 0);
-    setTotalWorkers(workerCountRes.count || 0);
+    setLoading(false);
   }
 
   useEffect(() => {
-    try {
-      setSetupOpen(window.localStorage.getItem(DASHBOARD_SETUP_STORAGE_KEY) === 'open');
-    } catch {
-      setSetupOpen(false);
-    }
     void loadDashboard();
   }, []);
-
-  function toggleSetupOpen() {
-    setSetupOpen((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem(DASHBOARD_SETUP_STORAGE_KEY, next ? 'open' : 'closed');
-      } catch {
-        // Keep the dashboard usable when localStorage is unavailable.
-      }
-      return next;
-    });
-  }
-
-  const setupItems = [
-    {
-      label: 'Add customer',
-      detail: 'Store customer details and job history.',
-      href: '/customers/new',
-      done: totalCustomers > 0
-    },
-    {
-      label: 'Create job',
-      detail: 'Schedule and track your service.',
-      href: '/jobs/new',
-      done: totalJobs > 0
-    },
-    {
-      label: 'Add team member',
-      detail: 'Assign work to your team or contractors.',
-      href: '/workers',
-      done: totalWorkers > 0
-    },
-    {
-      label: 'Connect calendar',
-      detail: 'Review scheduling and calendar settings.',
-      href: '/settings',
-      done: false
-    }
-  ];
-  const setupComplete = setupItems.filter((item) => item.done).length;
-  const showSetup = !loading && setupComplete < setupItems.length;
-
-  const focusItems = loading
-    ? [{ title: 'Loading your workspace', detail: 'Checking customers and jobs.', href: '/dashboard' }]
-    : totalCustomers === 0 || totalJobs === 0
-      ? [
-          { title: 'Add customer', detail: 'Start with the person or company you serve.', href: '/customers/new' },
-          { title: 'Create job', detail: 'Track the work, date and status in one place.', href: '/jobs/new' },
-          { title: 'Upload job photos', detail: 'Add before and after photos from a job.', href: '/photos' }
-        ]
-      : [
-          { title: `${totalJobs} job${totalJobs === 1 ? '' : 's'} in your workspace`, detail: 'Open jobs to review work status.', href: '/jobs' },
-          { title: `${totalCustomers} customer${totalCustomers === 1 ? '' : 's'} tracked`, detail: 'Review customers and recent work.', href: '/customers' },
-          { title: 'Review schedule', detail: 'Check what is booked or needs follow-up.', href: '/schedule' }
-        ];
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -209,77 +92,8 @@ export default function DashboardPage() {
       <div className="today-page dashboard-home">
         <PageHeader
           title={t('dashboard.welcome')}
-          subtitle="Manage customers, jobs, schedule, team, invoices and business performance."
+          subtitle="Use the menu or Ask Everitt to open customers, jobs, photos, schedule, invoices, team, and settings."
         />
-
-        <section className="card dashboard-actions-card" aria-label={t('dashboard.primaryActions')}>
-          <div className="dashboard-section-head">
-            <h2>Quick actions</h2>
-          </div>
-          <div className="dashboard-action-row">
-            <Link href="/customers/new">New customer</Link>
-            <Link href="/jobs/new">New job</Link>
-            <Link href="/photos">Photos</Link>
-            <Link href="/schedule/new">Schedule</Link>
-            <Link href="/invoices">Invoice</Link>
-            <Link href="/workers">Team</Link>
-          </div>
-        </section>
-
-        <section className="card dashboard-focus-card" aria-label="Today&apos;s focus">
-          <div className="dashboard-section-head">
-            <h2>Today&apos;s focus</h2>
-          </div>
-          <div className="dashboard-focus-list">
-            {focusItems.map((item) => (
-              <Link key={item.title} href={item.href} className="dashboard-focus-item">
-                <span>{item.title}</span>
-                <small>{item.detail}</small>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {showSetup ? (
-          <section className="card dashboard-start-card" aria-label="Get your business set up">
-            <button
-              type="button"
-              className="dashboard-collapse-trigger"
-              aria-expanded={setupOpen}
-              aria-controls="dashboard-setup-panel"
-              onClick={toggleSetupOpen}
-            >
-              <span className="dashboard-start-copy">
-                <span className="dashboard-collapse-title">Get your business set up</span>
-                <span className="dashboard-collapse-subtitle">Complete these steps to set up your workspace.</span>
-              </span>
-              <span className="dashboard-collapse-meta">
-                <span>{setupComplete} of {setupItems.length} complete</span>
-                <span aria-hidden="true" className="dashboard-collapse-chevron">v</span>
-              </span>
-            </button>
-            <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
-              <div className="dashboard-progress-track">
-                <span style={{ width: `${(setupComplete / setupItems.length) * 100}%` }} />
-              </div>
-            </div>
-            <div id="dashboard-setup-panel" className={setupOpen ? 'dashboard-collapsible-panel is-open' : 'dashboard-collapsible-panel'}>
-              <div className="dashboard-start-list">
-                {setupItems.map((item) => (
-                  <Link key={item.label} href={item.href} className="dashboard-start-item">
-                    <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
-                      {item.done ? '✓' : ''}
-                    </span>
-                    <span className="dashboard-start-item-copy">
-                      <strong>{item.label}</strong>
-                      <small>{item.detail}</small>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
 
