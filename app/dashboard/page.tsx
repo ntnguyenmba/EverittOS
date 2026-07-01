@@ -5,16 +5,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
-import { DashboardBusinessActivity } from '@/components/dashboard-business-activity';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
-import { filterBusinessActivity, type ActivityLogRow } from '@/lib/business-activity';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { mapAccessError } from '@/lib/auth-errors';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
-import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { friendlyErrorMessage } from '@/lib/user-errors';
@@ -44,7 +41,6 @@ function DashboardAccessNotice() {
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
   const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>({
     revenueThisMonth: 0,
     outstandingInvoices: 0,
@@ -53,7 +49,6 @@ export default function DashboardPage() {
   });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
-  const [orgId, setOrgId] = useState('');
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [totalJobs, setTotalJobs] = useState(0);
@@ -83,7 +78,6 @@ export default function DashboardPage() {
     const userPlan = normalizePlan(profile?.plan);
     const userRole = normalizeRole(org?.role || profile?.role);
     setRole(userRole);
-    setOrgId(org?.organizationId || '');
     setPlan(userPlan);
 
     if (isClientRole(userRole)) {
@@ -97,15 +91,6 @@ export default function DashboardPage() {
       org?.organizationId,
       userRole
     );
-
-    const activityQuery = org?.organizationId
-      ? supabase
-          .from('activity_logs')
-          .select('id, message, action, entity_type, entity_id, created_at, actor_name, metadata')
-          .eq('organization_id', org.organizationId)
-          .order('created_at', { ascending: false })
-          .limit(40)
-      : Promise.resolve({ data: [], error: null });
 
     const jobCountQuery = scopeJobsForWorkspace(
       supabase.from('jobs').select('id', { count: 'exact', head: true }),
@@ -122,9 +107,8 @@ export default function DashboardPage() {
 
     const metricsPromise = fetchDashboardRevenueMetrics(supabase, org?.organizationId || null);
 
-    const [jobsRes, activityRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] = await Promise.all([
+    const [jobsRes, orgIsDemo, jobCountRes, customerCountRes, workerCountRes, metrics] = await Promise.all([
       jobsQuery,
-      activityQuery,
       fetchOrganizationIsDemo(supabase, org?.organizationId),
       jobCountQuery,
       customerCountQuery,
@@ -140,7 +124,6 @@ export default function DashboardPage() {
     }
 
     const filteredJobs = filterDemoSeedJobs((jobsRes.data || []) as Job[], orgIsDemo) as Job[];
-    setActivity(filterBusinessActivity((activityRes.data || []) as ActivityLogRow[]).slice(0, 6));
     setRevenueMetrics(metrics);
     setTotalJobs(orgIsDemo ? filteredJobs.length : jobCountRes.count || 0);
     setTotalCustomers(customerCountRes.count || 0);
@@ -196,15 +179,14 @@ export default function DashboardPage() {
   ];
   const setupComplete = setupItems.filter((item) => item.done).length;
   const showSetup = !loading && setupComplete < setupItems.length;
-  const showActivityLink = limitsForPlan(plan).activityLog && Boolean(orgId);
 
   const focusItems = loading
-    ? [{ title: 'Loading your workspace', detail: 'Checking customers, jobs and activity.', href: '/dashboard' }]
+    ? [{ title: 'Loading your workspace', detail: 'Checking customers and jobs.', href: '/dashboard' }]
     : totalCustomers === 0 || totalJobs === 0
       ? [
           { title: 'Add customer', detail: 'Start with the person or company you serve.', href: '/customers/new' },
           { title: 'Create job', detail: 'Track the work, date and status in one place.', href: '/jobs/new' },
-          { title: 'Use Ask Everitt', detail: 'Ask what needs attention once your data is in.', href: '/dashboard' }
+          { title: 'Upload job photos', detail: 'Add before and after photos from a job.', href: '/photos' }
         ]
       : [
           { title: `${totalJobs} job${totalJobs === 1 ? '' : 's'} in your workspace`, detail: 'Open jobs to review work status.', href: '/jobs' },
@@ -237,6 +219,7 @@ export default function DashboardPage() {
           <div className="dashboard-action-row">
             <Link href="/customers/new">New customer</Link>
             <Link href="/jobs/new">New job</Link>
+            <Link href="/photos">Photos</Link>
             <Link href="/schedule/new">Schedule</Link>
             <Link href="/invoices">Invoice</Link>
             <Link href="/workers">Team</Link>
@@ -299,8 +282,6 @@ export default function DashboardPage() {
         ) : null}
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
-
-        <DashboardBusinessActivity items={activity} loading={loading} showViewAll={showActivityLink} />
 
         <section className="dashboard-help-strip" aria-label="EverittOS support">
           <div>
