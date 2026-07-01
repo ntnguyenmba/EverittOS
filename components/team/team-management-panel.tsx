@@ -9,7 +9,7 @@ import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/ever
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { canManageTeam, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Profile {
@@ -49,6 +49,28 @@ interface AuditItem {
   actor_name: string | null;
   created_at: string | null;
 }
+
+type AccordionKey =
+  | 'invite-by-email'
+  | 'transfer-ownership'
+  | 'team-access'
+  | 'active-users'
+  | 'pending-invitations'
+  | 'revoked-invitations'
+  | 'team-audit-history';
+
+type AccordionState = Record<AccordionKey, boolean>;
+
+const TEAM_ACCORDION_STORAGE_KEY = 'everittos.settings.team.accordion.v1';
+const TEAM_ACCORDION_DEFAULTS: AccordionState = {
+  'invite-by-email': true,
+  'transfer-ownership': false,
+  'team-access': false,
+  'active-users': true,
+  'pending-invitations': false,
+  'revoked-invitations': false,
+  'team-audit-history': false
+};
 
 function nullableString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
@@ -145,6 +167,83 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function readAccordionState(): AccordionState {
+  if (typeof window === 'undefined') return TEAM_ACCORDION_DEFAULTS;
+  try {
+    const saved = window.localStorage.getItem(TEAM_ACCORDION_STORAGE_KEY);
+    if (!saved) return TEAM_ACCORDION_DEFAULTS;
+    return { ...TEAM_ACCORDION_DEFAULTS, ...JSON.parse(saved) };
+  } catch {
+    return TEAM_ACCORDION_DEFAULTS;
+  }
+}
+
+function SettingsAccordion({
+  id,
+  title,
+  open,
+  onToggle,
+  children
+}: {
+  id: AccordionKey;
+  title: string;
+  open: boolean;
+  onToggle: (id: AccordionKey) => void;
+  children: ReactNode;
+}) {
+  const panelId = `${id}-panel`;
+  const headerId = `${id}-header`;
+
+  return (
+    <section className="settings-card">
+      <button
+        id={headerId}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => onToggle(id)}
+        style={{
+          alignItems: 'center',
+          background: 'transparent',
+          border: 0,
+          color: 'inherit',
+          cursor: 'pointer',
+          display: 'flex',
+          gap: '1rem',
+          justifyContent: 'space-between',
+          padding: 0,
+          textAlign: 'left',
+          width: '100%'
+        }}
+      >
+        <h3 style={{ margin: 0 }}>{title}</h3>
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 220ms ease'
+          }}
+        >
+          v
+        </span>
+      </button>
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={headerId}
+        style={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: 'grid-template-rows 250ms ease'
+        }}
+      >
+        <div style={{ overflow: 'hidden' }}>{open ? <div style={{ paddingTop: '1rem' }}>{children}</div> : null}</div>
+      </div>
+    </section>
+  );
+}
+
 type TeamManagementPanelProps = {
   showPermissionMatrix?: boolean;
   showAuditHistory?: boolean;
@@ -166,10 +265,23 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
   const [inviteUrl, setInviteUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [transferTarget, setTransferTarget] = useState('');
+  const [accordionState, setAccordionState] = useState<AccordionState>(TEAM_ACCORDION_DEFAULTS);
 
   const canManage = canManageTeam(role);
   const canView = canViewTeam(role);
   const canViewAuditHistory = role === 'owner' || role === 'admin';
+
+  function toggleAccordion(id: AccordionKey) {
+    setAccordionState((current) => {
+      const next = { ...current, [id]: !current[id] };
+      try {
+        window.localStorage.setItem(TEAM_ACCORDION_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Keep the accordion usable even when localStorage is unavailable.
+      }
+      return next;
+    });
+  }
 
   async function load() {
     setLoading(true);
@@ -257,6 +369,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
   }
 
   useEffect(() => {
+    setAccordionState(readAccordionState());
     load();
   }, []);
 
@@ -363,6 +476,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
 
   const teamEnabled = hasTeamManagement(plan);
   const pendingInvites = invitations.filter((i) => i.status === 'pending');
+  const revokedInvites = invitations.filter((i) => i.status !== 'pending');
   const activeMembers = members.filter((m) => m.active);
 
   return (
@@ -377,8 +491,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
       )}
 
       {teamEnabled && canManage && (
-        <div className="settings-card">
-          <h3>Invite by email</h3>
+        <SettingsAccordion id="invite-by-email" title="Invite by email" open={accordionState['invite-by-email']} onToggle={toggleAccordion}>
           <p className="muted">Invited team members join this workspace. Customers and jobs they add are shared with the business.</p>
           <label htmlFor="invite-email">Email</label>
           <input
@@ -419,12 +532,16 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
               </button>
             </div>
           ) : null}
-        </div>
+        </SettingsAccordion>
       )}
 
       {teamEnabled && isOwner(role) && members.filter((m) => m.role !== 'owner' && m.active).length > 0 && (
-        <div className="settings-card">
-          <h3>Transfer ownership</h3>
+        <SettingsAccordion
+          id="transfer-ownership"
+          title="Transfer ownership"
+          open={accordionState['transfer-ownership']}
+          onToggle={toggleAccordion}
+        >
           <p className="muted">Assign a new owner. You will become an admin.</p>
           <select className="input" value={transferTarget} onChange={(e) => setTransferTarget(e.target.value)}>
             <option value="">Select member...</option>
@@ -439,12 +556,11 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
           <button type="button" className="btn" disabled={busy || !transferTarget} onClick={() => void transferOwnership()}>
             {buttonLabel('Transfer ownership', FEEDBACK.loading)}
           </button>
-        </div>
+        </SettingsAccordion>
       )}
 
       {teamEnabled && (
-        <div className="settings-card">
-          <h3>Team access</h3>
+        <SettingsAccordion id="team-access" title="Team access" open={accordionState['team-access']} onToggle={toggleAccordion}>
           <p className="muted">Simple role guide for this workspace.</p>
           <div className="list-row compact">
             <div>
@@ -476,11 +592,10 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
               <p className="muted">Read-only access for reviewing shared workspace information.</p>
             </div>
           </div>
-        </div>
+        </SettingsAccordion>
       )}
 
-      <div className="settings-card">
-        <h3>Active users ({activeMembers.length})</h3>
+      <SettingsAccordion id="active-users" title={`Active users (${activeMembers.length})`} open={accordionState['active-users']} onToggle={toggleAccordion}>
         {loading ? <p className="loading-state">Loading team...</p> : null}
         {!loading && members.length === 0 ? (
           <EmptyState title="No members yet" description="Invite teammates to share access to jobs and customers." />
@@ -521,13 +636,17 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
             ) : null}
           </div>
         ))}
-      </div>
+      </SettingsAccordion>
 
       {teamEnabled && canView ? (
-        <div className="settings-card">
-          <h3>Pending invitations ({pendingInvites.length})</h3>
-          {invitations.length === 0 ? <p className="muted">No invitations yet.</p> : null}
-          {invitations.map((inv) => (
+        <SettingsAccordion
+          id="pending-invitations"
+          title={`Pending invitations (${pendingInvites.length})`}
+          open={accordionState['pending-invitations']}
+          onToggle={toggleAccordion}
+        >
+          {pendingInvites.length === 0 ? <p className="muted">No pending invitations.</p> : null}
+          {pendingInvites.map((inv) => (
             <div key={inv.id} className="list-row">
               <div>
                 <strong>{inv.email}</strong>
@@ -539,7 +658,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                   {inv.expires_at ? ` · Expires ${formatDate(inv.expires_at)}` : ''}
                 </p>
               </div>
-              {canManage && inv.status === 'pending' ? (
+              {canManage ? (
                 <div className="inline-actions">
                   <button type="button" className="btn" disabled={busy} onClick={() => resendInvite(inv.id)}>
                     Resend
@@ -551,12 +670,42 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
               ) : null}
             </div>
           ))}
-        </div>
+        </SettingsAccordion>
       ) : null}
 
-      {showAuditHistory && canViewAuditHistory && auditItems.length > 0 ? (
-        <div className="settings-card">
-          <h3>Team audit history</h3>
+      {teamEnabled && canView ? (
+        <SettingsAccordion
+          id="revoked-invitations"
+          title={`Revoked invitations (${revokedInvites.length})`}
+          open={accordionState['revoked-invitations']}
+          onToggle={toggleAccordion}
+        >
+          {revokedInvites.length === 0 ? <p className="muted">No revoked or expired invitations.</p> : null}
+          {revokedInvites.map((inv) => (
+            <div key={inv.id} className="list-row">
+              <div>
+                <strong>{inv.email}</strong>
+                <p className="muted">
+                  {normalizeRole(inv.role)} · {inv.status}
+                </p>
+                <p className="muted">
+                  Sent {formatDate(inv.created_at)}
+                  {inv.expires_at ? ` · Expires ${formatDate(inv.expires_at)}` : ''}
+                </p>
+              </div>
+            </div>
+          ))}
+        </SettingsAccordion>
+      ) : null}
+
+      {showAuditHistory && canViewAuditHistory ? (
+        <SettingsAccordion
+          id="team-audit-history"
+          title={`Team audit history (${auditItems.length})`}
+          open={accordionState['team-audit-history']}
+          onToggle={toggleAccordion}
+        >
+          {auditItems.length === 0 ? <p className="muted">No audit history yet.</p> : null}
           {auditItems.map((item) => (
             <div key={item.id} className="list-row compact">
               <div>
@@ -567,7 +716,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
               </div>
             </div>
           ))}
-        </div>
+        </SettingsAccordion>
       ) : null}
     </>
   );
