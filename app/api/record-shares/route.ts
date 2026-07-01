@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { canManageTeam } from '@/lib/roles';
 
@@ -109,6 +110,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    recordType,
+    recordId,
+    'record_shared',
+    `${recordType} shared with ${rows.length} teammate${rows.length === 1 ? '' : 's'}`,
+    { recordType, recordId, userIds: rows.map((row) => row.shared_with_user_id), accessLevel }
+  );
+
   return NextResponse.json({ ok: true, shares: data || [] });
 }
 
@@ -128,6 +139,13 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Share ID is required.' }, { status: 400 });
   }
 
+  const { data: share } = await admin
+    .from('record_shares')
+    .select('record_type, record_id, shared_with_user_id, access_level')
+    .eq('organization_id', ctx.workspace.organizationId)
+    .eq('id', shareId)
+    .maybeSingle();
+
   const { error } = await admin
     .from('record_shares')
     .delete()
@@ -136,6 +154,18 @@ export async function DELETE(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (share) {
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      share.record_type,
+      share.record_id,
+      'record_unshared',
+      `${share.record_type} shared access removed`,
+      { shareId, sharedWithUserId: share.shared_with_user_id, accessLevel: share.access_level }
+    );
   }
 
   return NextResponse.json({ ok: true });
