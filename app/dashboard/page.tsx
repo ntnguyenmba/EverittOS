@@ -12,7 +12,6 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
-import { friendlyErrorMessage } from '@/lib/user-errors';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -37,11 +36,9 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
 
   async function loadDashboard() {
     setLoading(true);
-    setErrorMessage('');
 
     const {
       data: { user }
@@ -82,12 +79,6 @@ export default function DashboardPage() {
       <Suspense>
         <DashboardAccessNotice />
       </Suspense>
-
-      {errorMessage ? (
-        <p className="auth-message auth-message-error" role="alert">
-          {friendlyErrorMessage(errorMessage)}
-        </p>
-      ) : null}
 
       <div className="today-page dashboard-home">
         <PageHeader
