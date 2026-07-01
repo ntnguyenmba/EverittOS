@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { CustomerLogo } from '@/components/customer-logo';
+import { RecordSharingPanel } from '@/components/record-sharing-panel';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -21,6 +22,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
   const [customerId, setCustomerId] = useState('');
+  const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canEdit, setCanEdit] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -76,7 +78,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
     setLogoPath((customer as CustomerRecord).logo_path || null);
 
     const org = await fetchOrganizationContext(user.id);
-    const orgId = org?.organizationId || customer.organization_id;
+    const resolvedOrgId = org?.organizationId || customer.organization_id || '';
+    setOrgId(resolvedOrgId);
 
     const { data: jobRows } = await supabase
       .from('jobs')
@@ -86,7 +89,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
     const jobIds = (jobRows || []).map((j: { id: string }) => j.id);
     const [{ data: props }, { data: reportRows }] = await Promise.all([
-      orgId
+      resolvedOrgId
         ? supabase.from('customer_properties').select('id, name, address').eq('customer_id', customerId)
         : Promise.resolve({ data: [] }),
       jobIds.length
@@ -218,7 +221,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-
         <div className="grid-2">
           <div className="card form">
             <h3>Edit customer</h3>
@@ -239,7 +241,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     onChange={(e) => void uploadLogo(e.target.files?.[0] || null)}
                   />
                 </label>
-                {logoUploading ? <p className="loading-state" role="status">Uploading logo…</p> : null}
+                {logoUploading ? <p className="loading-state" role="status">Uploading logo...</p> : null}
                 <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
                   {savingCustomer ? FEEDBACK.loading : 'Save'}
                 </button>
@@ -284,6 +286,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
             )}
           </div>
         </div>
+
+        {orgId ? <RecordSharingPanel organizationId={orgId} recordType="customer" recordId={customerId} canManage={canEdit} /> : null}
 
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Linked jobs</h3>
