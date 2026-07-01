@@ -76,18 +76,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LocaleProvider>
           <ToastProvider>
             <LocaleSync />
-            <SessionGuard />
-            <WorkspacePlanProvider>
-              <WorkspaceBootstrap />
-              <SkipToMain />
-              <SiteChrome>{children}</SiteChrome>
-              <AnalyticsGate />
-              <CookieConsentBanner />
-            </WorkspacePlanProvider>
-          </SessionGuard>
-        </ToastProvider>
-      </LocaleProvider>
-    </body>
-  </html>
+            <SessionGuard>
+              <WorkspacePlanProvider>
+                <WorkspaceBootstrap />
+                <SkipToMain />
+                <SiteChrome>{children}</SiteChrome>
+                <AnalyticsGate />
+                <CookieConsentBanner />
+              </WorkspacePlanProvider>
+            </SessionGuard>
+          </ToastProvider>
+        </LocaleProvider>
+      </body>
+    </html>
   );
 }
