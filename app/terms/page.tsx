@@ -8,7 +8,7 @@ export default function TermsPage() {
     <main className="section">
       <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Terms of Service</h2>
-        <p className="muted">Version {TERMS_VERSION} · Last updated June 2026</p>
+        <p className="muted">Version {TERMS_VERSION} · Last updated September 2026</p>
 
         <h3>Agreement</h3>
         <p>
@@ -20,19 +20,48 @@ export default function TermsPage() {
         <h3>Service</h3>
         <p>
           EverittOS is provided for business operations and field documentation. You are responsible for all information
-          uploaded, stored, entered, or managed within your EverittOS workspace. You represent that you have the
-          necessary rights, permissions, and authority to collect, store, manage, process, and use such information in
-          connection with your business and use of the Services. You are responsible for accurate job records, customer
-          data, and compliance with laws that apply to your business and industry. You remain responsible for verifying
-          the accuracy and appropriateness of information, recommendations, summaries, drafts, and other content generated
-          through the Services.
+          uploaded, stored, entered, exported, shared, or managed within your EverittOS workspace. You represent that you
+          have the necessary rights, permissions, and authority to collect, store, manage, process, share, export, and use
+          such information in connection with your business and use of the Services.
+        </p>
+        <p>
+          You are responsible for accurate job records, customer data, assignments, team permissions, customer portal
+          access, and compliance with laws that apply to your business and industry. You remain responsible for verifying
+          the accuracy and appropriateness of information, recommendations, summaries, drafts, exports, reports, and other
+          content generated through the Services.
+        </p>
+
+        <h3>Workspace roles and permissions</h3>
+        <p>
+          EverittOS workspaces may include owners, administrators, managers, workers, contractors, viewers, and customers.
+          Organization owners and administrators are responsible for inviting appropriate users, assigning roles, managing
+          permissions, reviewing activity, and removing access when it is no longer needed.
+        </p>
+        <p>
+          Records created inside an organization may be visible to the organization owner, administrators, managers,
+          assigned teammates, selected shared users, and customers with portal access according to the workspace settings.
+          Workers and contractors may have access to assigned or shared work data. Customers may have access to their own
+          portal records, photos, reports, files, messages, exports, requests, approvals, and related job information.
+        </p>
+        <p>
+          By joining a workspace, invited team members understand that work created for that organization may be visible to
+          authorized owners, administrators, managers, assigned teammates, and other users according to role and sharing
+          settings.
+        </p>
+
+        <h3>Exports, reports, and customer portal files</h3>
+        <p>
+          EverittOS may allow authorized users and customers to generate, download, or share PDF reports, spreadsheet
+          exports, invoices, receipts, photos, documents, messages, approvals, and other operational files. Exported files
+          reflect the information available at the time they are generated. Organizations are responsible for reviewing
+          exports before distributing them and for configuring appropriate customer and team access.
         </p>
 
         <h3>Accounts</h3>
         <p>
           You must provide accurate information and keep credentials secure. EverittOS supports email and password
           sign-in. You may optionally register passkeys (WebAuthn) for passwordless sign-in on supported devices. You may
-          deactivate your account at any time from Settings.           Deletion requests follow the process described in our{' '}
+          deactivate your account at any time from Settings. Deletion requests follow the process described in our{' '}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
         <p>
@@ -52,8 +81,8 @@ export default function TermsPage() {
         <h3>No Refund Policy</h3>
         <p>
           All payments are final. EverittOS does not offer refunds for subscriptions, setup fees, digital services, AI
-          usage, workspace access, add-ons, or partially used billing periods. You may cancel anytime to stop future
-          renewals, but prior charges are non-refundable.
+          usage, workspace access, add-ons, exports, reports, or partially used billing periods. You may cancel anytime to
+          stop future renewals, but prior charges are non-refundable.
         </p>
         <p>
           See our dedicated <Link href="/refund-policy">No Refund Policy</Link> for full details.
@@ -62,9 +91,9 @@ export default function TermsPage() {
         <h3>Acceptable use</h3>
         <p>
           You may not misuse the platform, attempt unauthorized access, upload malicious content, or use EverittOS in
-          violation of applicable law. You agree not to upload or use content in violation of applicable laws, regulations,
-          privacy rights, contractual obligations, or third-party rights. We may suspend accounts that violate these terms
-          or pose a security risk.
+          violation of applicable law. You agree not to upload, export, share, or use content in violation of applicable
+          laws, regulations, privacy rights, contractual obligations, or third-party rights. We may suspend accounts that
+          violate these terms or pose a security risk.
         </p>
 
         <h3>Changes</h3>
