@@ -10,6 +10,7 @@ import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
@@ -41,6 +42,7 @@ function JobsList() {
   const assignmentFilter = searchParams.get('filter');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState('');
 
@@ -54,17 +56,20 @@ function JobsList() {
         return;
       }
 
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
 
       const org = await fetchOrganizationContext(user.id);
+      const workspaceRole = normalizeRole(org?.role || profile?.role);
+      setRole(workspaceRole);
       let query = scopeJobsForWorkspace(
         supabase
           .from('jobs')
           .select('id, title, customer_name, customer_id, address, status, completed_at, assigned_to')
           .order('created_at', { ascending: false }),
         user.id,
-        org?.organizationId
+        org?.organizationId,
+        workspaceRole
       );
 
       if (customerFilter) {
@@ -107,7 +112,7 @@ function JobsList() {
   }
 
   return (
-    <AppShell plan={plan}>
+    <AppShell plan={plan} role={role}>
         <PageHeader
           title={t('nav.jobs')}
           action={
