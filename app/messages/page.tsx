@@ -5,6 +5,7 @@ import { AppShell } from '@/components/app-shell';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
 export default function MessagesPage() {
@@ -19,10 +20,11 @@ export default function MessagesPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-      const userRole = normalizeRole(profile?.role);
+      const org = await fetchOrganizationContext(user.id);
+      const workspaceRole = normalizeRole(org?.role || profile?.role);
       setPlan(normalizePlan(profile?.plan));
-      setRole(userRole);
-      setCanManage(isManagerRole(userRole));
+      setRole(workspaceRole);
+      setCanManage(isManagerRole(workspaceRole));
     }
     void load();
   }, []);
