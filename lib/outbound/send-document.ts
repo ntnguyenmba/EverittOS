@@ -66,7 +66,10 @@ export async function sendOutboundDocument(input: {
   let externalId: string | undefined;
   let deliveryProvider: string | undefined;
 
-  if (transactionalEmailConfigured()) {
+  if (!transactionalEmailConfigured()) {
+    failureReason = 'Email is not configured. Add RESEND_API_KEY and EMAIL_FROM in Vercel, then verify the sending domain in Resend.';
+    deliveryProvider = 'none';
+  } else {
     const result = await sendTransactionalEmail({
       to: recipient,
       subject,
@@ -81,10 +84,10 @@ export async function sendOutboundDocument(input: {
     }
   }
 
-  const status = emailSent || !transactionalEmailConfigured() ? 'sent' : 'failed';
-  const deliveryNote = !transactionalEmailConfigured()
-    ? 'Saved to sent history. Connect Resend in settings to deliver by email automatically.'
-    : undefined;
+  const status = emailSent ? 'sent' : 'failed';
+  const deliveryNote = emailSent
+    ? undefined
+    : failureReason || 'Email delivery failed. Check the outbound send history for details.';
 
   const { data: updated, error } = await supabase
     .from('outbound_documents')
@@ -117,7 +120,7 @@ export async function sendOutboundDocument(input: {
     recipient_email: recipient,
     subject,
     body_snapshot: textBody,
-    delivery_provider: deliveryProvider || (transactionalEmailConfigured() ? 'resend' : 'manual'),
+    delivery_provider: deliveryProvider || 'resend',
     external_message_id: externalId || null,
     error_message: failureReason,
     created_by: userId
