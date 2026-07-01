@@ -71,8 +71,8 @@ export function OutboundHub({
     try {
       const result = await autosave.sendNow();
       if (!result) return;
-      if (result.emailSent === false || result.document?.status === 'failed') {
-        appFeedback.error(result.deliveryNote || 'Email failed. Check the Failed tab to retry.');
+      if (result.document?.status === 'failed' || result.deliveryNote) {
+        appFeedback.error(result.deliveryNote || result.message || 'Email failed. Check the Failed tab to retry.');
         setTab('failed');
         void loadDocuments();
         return;
