@@ -12,7 +12,6 @@ export function AppFooter() {
       <nav className="app-footer-links" aria-label={t('legal.footerNav')}>
         <Link href="/terms">{t('legal.terms')}</Link>
         <Link href="/privacy">{t('legal.privacy')}</Link>
-        <Link href="/refund-policy">{t('legal.refundPolicy')}</Link>
         <Link href="/cookies">{t('legal.cookies')}</Link>
         <Link href="/security">{t('legal.security')}</Link>
         <a href={supportMailtoHref()}>{t('legal.support')}</a>
