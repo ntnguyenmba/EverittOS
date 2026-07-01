@@ -19,6 +19,21 @@ function formatWhen(doc: OutboundDocument): string {
   return new Date(iso).toLocaleString();
 }
 
+function amountLabel(doc: OutboundDocument): string {
+  if (doc.amount == null) return '';
+  const amount = Number(doc.amount);
+  if (!Number.isFinite(amount)) return '';
+  return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+function statusLabel(doc: OutboundDocument): string {
+  if (doc.doc_type === 'invoice' && doc.status === 'sent') return 'Invoice sent, payment not recorded';
+  if (doc.status === 'failed') return 'Delivery failed';
+  if (doc.status === 'scheduled') return 'Scheduled';
+  if (doc.status === 'draft') return 'Draft';
+  return 'Sent';
+}
+
 function removeLabel(tab: OutboundTab): string {
   if (tab === 'sent') return 'Hide from history';
   if (tab === 'scheduled') return 'Cancel schedule';
@@ -53,41 +68,45 @@ export function OutboundDocumentList({
           Sent items cannot be unsent. Hiding an item only removes it from this history list.
         </p>
       ) : null}
-      {documents.map((doc) => (
-        <div key={doc.id} className="outbound-document-row">
-          <div className="outbound-document-main">
-            <strong>{doc.subject || doc.recipient_email || 'Untitled'}</strong>
-            <span className="muted">
-              {doc.recipient_email || 'No recipient'}
-              {doc.amount != null ? ` · $${Number(doc.amount).toFixed(2)}` : ''}
-            </span>
-            <span className="muted outbound-document-time">{formatWhen(doc)}</span>
-            {doc.failure_reason ? <span className="outbound-document-error">{doc.failure_reason}</span> : null}
-          </div>
-          {canManage ? (
-            <div className="outbound-document-actions">
-              {tab === 'drafts' || tab === 'scheduled' || tab === 'failed' ? (
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => onSend(doc.id)}>
-                  Send
-                </button>
-              ) : null}
-              {tab === 'failed' ? (
-                <button type="button" className="btn btn-sm" onClick={() => onRetry(doc.id)}>
-                  Retry
-                </button>
-              ) : null}
-              {tab !== 'sent' ? (
-                <button type="button" className="btn btn-sm" onClick={() => onEdit(doc)}>
-                  Edit
-                </button>
-              ) : null}
-              <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(doc.id)}>
-                {removeLabel(tab)}
-              </button>
+      {documents.map((doc) => {
+        const amount = amountLabel(doc);
+        return (
+          <div key={doc.id} className="outbound-document-row">
+            <div className="outbound-document-main">
+              <strong>{doc.subject || doc.recipient_email || 'Untitled'}</strong>
+              <span className="muted">
+                {doc.recipient_email || 'No recipient'}
+                {amount ? ` · ${amount}` : ''}
+              </span>
+              <span className="muted">{statusLabel(doc)}</span>
+              <span className="muted outbound-document-time">{formatWhen(doc)}</span>
+              {doc.failure_reason ? <span className="outbound-document-error">Reason: {doc.failure_reason}</span> : null}
             </div>
-          ) : null}
-        </div>
-      ))}
+            {canManage ? (
+              <div className="outbound-document-actions">
+                {tab === 'drafts' || tab === 'scheduled' || tab === 'failed' ? (
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onSend(doc.id)}>
+                    Send
+                  </button>
+                ) : null}
+                {tab === 'failed' ? (
+                  <button type="button" className="btn btn-sm" onClick={() => onRetry(doc.id)}>
+                    Retry
+                  </button>
+                ) : null}
+                {tab !== 'sent' ? (
+                  <button type="button" className="btn btn-sm" onClick={() => onEdit(doc)}>
+                    Edit
+                  </button>
+                ) : null}
+                <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(doc.id)}>
+                  {removeLabel(tab)}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
