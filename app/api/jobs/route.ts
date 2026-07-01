@@ -21,11 +21,27 @@ export async function POST(request: Request) {
     address?: string;
     notes?: string;
     customer_id?: string | null;
+    assigned_to?: string | null;
     status?: string;
   };
 
   if (!body.title?.trim()) {
     return NextResponse.json({ error: 'Job title is required.' }, { status: 400 });
+  }
+
+  const assignedTo = body.assigned_to?.trim() || null;
+  if (assignedTo) {
+    const { data: member } = await ctx.supabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('user_id', assignedTo)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (!member) {
+      return NextResponse.json({ error: 'Assigned teammate must be an active member of this workspace.' }, { status: 400 });
+    }
   }
 
   const planCheck = await enforcePlanForUser(ctx.supabase, ctx.userId, 'jobs');
@@ -43,6 +59,7 @@ export async function POST(request: Request) {
       address: body.address?.trim() || null,
       notes: body.notes?.trim() || null,
       customer_id: body.customer_id || null,
+      assigned_to: assignedTo,
       status: body.status?.trim() || 'new'
     })
     .select('id')
@@ -58,13 +75,35 @@ export async function POST(request: Request) {
     'job',
     data.id,
     'job_created',
-    `Job created: ${body.title.trim()}`
+    `Job created: ${body.title.trim()}`,
+    { assignedTo }
   );
+
+  if (assignedTo) {
+    await ctx.supabase.from('notifications').insert({
+      organization_id: ctx.workspace.organizationId,
+      user_id: assignedTo,
+      type: 'assignment',
+      title: 'New job assigned',
+      body: body.title.trim(),
+      related_job_id: data.id
+    });
+
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      'job',
+      data.id,
+      'job_assigned',
+      `Job assigned to a teammate`,
+      { assignedTo }
+    );
+  }
 
   await trackProductEventServer(ctx.supabase, 'job_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: data.id }
+    metadata: { jobId: data.id, assignedTo }
   });
 
   return NextResponse.json({ ok: true, job: data, message: 'Job saved successfully.' });
