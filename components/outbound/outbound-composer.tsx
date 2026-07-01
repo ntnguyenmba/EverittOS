@@ -21,6 +21,13 @@ function saveLabel(state: AutosaveState): string {
   return 'Auto-save on';
 }
 
+function amountHelp(docType: OutboundDocType): string {
+  if (docType === 'invoice') return 'Required before sending an invoice. Payment status is tracked after the invoice is sent.';
+  if (docType === 'estimate') return 'Optional estimate total shown in the email.';
+  if (docType === 'proposal') return 'Optional proposal amount shown in the email.';
+  return '';
+}
+
 export function OutboundComposer({
   docType,
   fields,
@@ -31,6 +38,8 @@ export function OutboundComposer({
   onSend,
   onReset
 }: OutboundComposerProps) {
+  const amountNote = amountHelp(docType);
+
   return (
     <div className="card form outbound-composer">
       <div className="outbound-composer-head">
@@ -79,17 +88,18 @@ export function OutboundComposer({
 
       {showAmount ? (
         <>
-          <label htmlFor={`${docType}-amount`}>Amount</label>
+          <label htmlFor={`${docType}-amount`}>{docType === 'invoice' ? 'Invoice amount' : 'Amount'}</label>
           <input
             id={`${docType}-amount`}
             className="input"
             type="number"
-            min="0"
+            min="0.01"
             step="0.01"
             placeholder="0.00"
             value={fields.amount}
             onChange={(e) => onFieldChange('amount', e.target.value)}
           />
+          {amountNote ? <p className="muted">{amountNote}</p> : null}
         </>
       ) : null}
 
