@@ -7,8 +7,7 @@ export function scopeJobsForWorkspace<T extends { or: (filters: string) => T; eq
   organizationId?: string | null,
   role?: UserRole | string | null
 ): T {
-  const normalizedRole = normalizeRole(role);
-  const managerView = isManagerRole(normalizedRole);
+  const managerView = role === undefined || role === null || isManagerRole(normalizeRole(role));
 
   if (organizationId) {
     if (managerView) {
