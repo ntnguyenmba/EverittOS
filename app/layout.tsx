@@ -80,7 +80,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <WorkspacePlanProvider>
                 <WorkspaceBootstrap />
                 <SkipToMain />
-                <SiteChrome>{children}</SiteChrome>
+                <SiteChrome />
+                {children}
                 <AnalyticsGate />
                 <CookieConsentBanner />
               </WorkspacePlanProvider>
