@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { appUrl } from '@/lib/app-url';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import type { EverittosPlan } from '@/lib/everittos-plans';
+import { RecordSharingPanel } from '@/components/record-sharing-panel';
 
 type AccessRow = {
   client_user_id: string;
@@ -20,11 +22,22 @@ type ClientAccessPanelProps = {
 
 export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelProps) {
   const [email, setEmail] = useState('');
+  const [orgId, setOrgId] = useState('');
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
   const portalAllowed = limitsForPlan(plan).clientPortal;
+
+  async function loadWorkspace() {
+    const { supabase } = await import('@/lib/supabase');
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const org = await fetchOrganizationContext(user.id);
+    setOrgId(org?.organizationId || '');
+  }
 
   async function loadAccess() {
     const { supabase } = await import('@/lib/supabase');
@@ -51,6 +64,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
   }
 
   useEffect(() => {
+    void loadWorkspace();
     if (portalAllowed) loadAccess();
   }, [jobId, portalAllowed]);
 
@@ -94,50 +108,54 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     setMessage('Client portal link copied.');
   }
 
-  if (!portalAllowed) {
-    return (
-      <div className="card" style={{ marginTop: 18 }}>
-        <h3>Client access</h3>
-        <p className="muted">Client portal access requires Growth plan or higher.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="card" style={{ marginTop: 18 }}>
-      <h3>Client access</h3>
-      {canManage ? (
-        <div className="inline-actions">
-          <input className="input" placeholder="Client email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <button type="button" className="btn btn-primary" disabled={busy} onClick={grantAccess}>
-            Grant client access
-          </button>
+    <>
+      {orgId ? (
+        <RecordSharingPanel organizationId={orgId} recordType="job" recordId={jobId} canManage={canManage} />
+      ) : null}
+
+      {!portalAllowed ? (
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Client access</h3>
+          <p className="muted">Client portal access requires Growth plan or higher.</p>
         </div>
       ) : (
-        <p className="muted">Only managers can grant client access.</p>
-      )}
-
-      {accessRows.length === 0 ? <p className="muted">No clients have access to this job yet.</p> : null}
-      {accessRows.map((row) => (
-        <div key={row.client_user_id} className="list-row">
-          <div>
-            <strong>{row.profiles?.email || row.client_user_id}</strong>
-            <p className="muted">Granted {row.granted_at ? new Date(row.granted_at).toLocaleString() : 'recently'}</p>
-          </div>
-          <div className="inline-actions">
-            <button type="button" className="btn" onClick={() => copyLink(row.portal_token)}>
-              Copy client link
-            </button>
-            {canManage ? (
-              <button type="button" className="btn" disabled={busy} onClick={() => revokeAccess(row.client_user_id)}>
-                Revoke
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Client access</h3>
+          {canManage ? (
+            <div className="inline-actions">
+              <input className="input" placeholder="Client email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={grantAccess}>
+                Grant client access
               </button>
-            ) : null}
-          </div>
-        </div>
-      ))}
+            </div>
+          ) : (
+            <p className="muted">Only managers can grant client access.</p>
+          )}
 
-      {message ? <p>{message}</p> : null}
-    </div>
+          {accessRows.length === 0 ? <p className="muted">No clients have access to this job yet.</p> : null}
+          {accessRows.map((row) => (
+            <div key={row.client_user_id} className="list-row">
+              <div>
+                <strong>{row.profiles?.email || row.client_user_id}</strong>
+                <p className="muted">Granted {row.granted_at ? new Date(row.granted_at).toLocaleString() : 'recently'}</p>
+              </div>
+              <div className="inline-actions">
+                <button type="button" className="btn" onClick={() => copyLink(row.portal_token)}>
+                  Copy client link
+                </button>
+                {canManage ? (
+                  <button type="button" className="btn" disabled={busy} onClick={() => revokeAccess(row.client_user_id)}>
+                    Revoke
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+
+          {message ? <p>{message}</p> : null}
+        </div>
+      )}
+    </>
   );
 }
