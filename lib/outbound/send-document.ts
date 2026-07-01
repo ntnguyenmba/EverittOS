@@ -26,22 +26,40 @@ function defaultSubject(docType: OutboundDocType, subject: string | null): strin
   return fallbacks[docType];
 }
 
+function moneyLabel(amount: number | null): string {
+  if (amount == null || !Number.isFinite(Number(amount))) return '';
+  return Number(amount).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+function invoiceText(doc: OutboundDocument, body: string): string {
+  const amount = moneyLabel(doc.amount);
+  const lines = [body || 'Thank you for your business. Please find your invoice details below.'];
+  if (amount) lines.push(`Amount due: ${amount}`);
+  lines.push('Please reply to this email if you have any questions.');
+  return lines.filter(Boolean).join('\n\n');
+}
+
 function emailHtml(doc: OutboundDocument): string {
   const reviewPlainLink = `\n\nShare Feedback: ${FEEDBACK_FORM_URL}`;
   const plainBody = doc.doc_type === 'review' ? (doc.body || '').replace(reviewPlainLink, '') : doc.body || '';
   const body = plainBody.replace(/\n/g, '<br />');
-  const amount =
-    doc.amount != null && doc.doc_type !== 'review'
-      ? `<p><strong>Amount:</strong> $${Number(doc.amount).toFixed(2)}</p>`
+  const amount = doc.amount != null && doc.doc_type !== 'review' ? moneyLabel(doc.amount) : '';
+  const invoiceBlock =
+    doc.doc_type === 'invoice' && amount
+      ? `<div style="margin:18px 0;padding:18px;border:1px solid #D9DED7;border-radius:14px;background:#F7F7F4"><p style="margin:0 0 6px;color:#66705F;font-size:13px;text-transform:uppercase;letter-spacing:.08em">Amount due</p><p style="margin:0;color:#24302B;font-size:28px;font-weight:800">${amount}</p></div>`
       : '';
+  const amountLine = amount && doc.doc_type !== 'invoice' ? `<p><strong>Amount:</strong> ${amount}</p>` : '';
   const feedbackButton =
     doc.doc_type === 'review'
       ? `<p><a href="${FEEDBACK_FORM_URL}" style="display:inline-block;background:#234A84;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 20px;font-weight:700">Share Feedback</a></p>`
       : '';
-  return `<div style="font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#25364A">
+  const replyNote = doc.doc_type === 'invoice' ? '<p>Please reply to this email if you have any questions.</p>' : '';
+  return `<div style="font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#25364A;max-width:640px">
     <p>${body}</p>
+    ${invoiceBlock}
     ${feedbackButton}
-    ${amount}
+    ${amountLine}
+    ${replyNote}
   </div>`;
 }
 
@@ -58,7 +76,8 @@ export async function sendOutboundDocument(input: {
   }
 
   const subject = defaultSubject(document.doc_type, document.subject);
-  const textBody = document.body?.trim() || '';
+  const body = document.body?.trim() || '';
+  const textBody = document.doc_type === 'invoice' ? invoiceText(document, body) : body;
   const now = new Date().toISOString();
 
   let emailSent = false;
