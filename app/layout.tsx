@@ -27,6 +27,7 @@ import './dashboard-visual-balance.css';
 import './dashboard-final-polish.css';
 import './app-readability-pass.css';
 import './customer-ready-polish.css';
+import './dashboard-mobile-balance.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -79,14 +80,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <WorkspacePlanProvider>
               <WorkspaceBootstrap />
               <SkipToMain />
-              <SiteChrome />
+              <SiteChrome>{children}</SiteChrome>
               <AnalyticsGate />
               <CookieConsentBanner />
-              {children}
             </WorkspacePlanProvider>
-          </ToastProvider>
-        </LocaleProvider>
-      </body>
-    </html>
+          </SessionGuard>
+        </ToastProvider>
+      </LocaleProvider>
+    </body>
+  </html>
   );
 }
