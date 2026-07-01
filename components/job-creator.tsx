@@ -194,14 +194,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <select className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-          <option value="">Unassigned</option>
+        <label htmlFor="job-assignment">Assignment</label>
+        <select id="job-assignment" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+          <option value="">Unassigned, visible to owner/admin/manager</option>
           {teamMembers.map((member) => (
             <option key={member.user_id} value={member.user_id}>
               {member.profiles?.full_name || member.profiles?.email || member.user_id} · {normalizeRole(member.role)}
             </option>
           ))}
         </select>
+        <p className="muted">Leave unassigned for office work, walk-ins, or jobs that are not ready for a worker yet.</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
