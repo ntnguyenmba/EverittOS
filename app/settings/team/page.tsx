@@ -46,10 +46,10 @@ export default function SettingsTeamPage() {
       plan={plan}
       role={role}
       title="Team"
-      description="Invite members, manage roles, and review team audit history."
+      description="Invite members and manage roles."
     >
       <EverittteamAiUsagePanel />
-      <TeamManagementPanel showPermissionMatrix showAuditHistory />
+      <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />
     </SettingsShell>
   );
 }
