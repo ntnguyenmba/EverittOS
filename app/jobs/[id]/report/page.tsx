@@ -8,6 +8,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { canViewInternalNotes, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -21,6 +22,8 @@ type Job = {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  customer_notes: string | null;
+  internal_notes: string | null;
   status: string | null;
   start_date: string | null;
   due_date: string | null;
@@ -31,6 +34,7 @@ type Job = {
   assigned_to: string | null;
   department_id: string | null;
   workflow_template_id: string | null;
+  completion_verified: boolean | null;
 };
 
 type OrgBranding = {
@@ -46,6 +50,7 @@ export default function JobReportPage({ params }: PageProps) {
   const [jobId, setJobId] = useState('');
   const [job, setJob] = useState<Job | null>(null);
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
   const [branding, setBranding] = useState<OrgBranding>({ company_name: 'EverittOS', phone: null, email: null, website: null, address: null, logo_path: null });
   const [workerName, setWorkerName] = useState('');
   const [departmentName, setDepartmentName] = useState('');
@@ -67,9 +72,12 @@ export default function JobReportPage({ params }: PageProps) {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase.from('profiles').select('plan, business_name').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('plan, role, business_name').eq('id', user.id).maybeSingle();
+      const org = await fetchOrganizationContext(user.id);
       const userPlan = normalizePlan(profile?.plan);
+      const workspaceRole = normalizeRole(org?.role || profile?.role);
       setPlan(userPlan);
+      setRole(workspaceRole);
 
       const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
       if (error) {
@@ -79,7 +87,6 @@ export default function JobReportPage({ params }: PageProps) {
       }
       setJob(data as Job);
 
-      const org = await fetchOrganizationContext(user.id);
       if (org) {
         const [{ data: settings }, { data: orgRow }] = await Promise.all([
           supabase.from('organization_settings').select('*').eq('organization_id', org.organizationId).maybeSingle(),
@@ -123,6 +130,7 @@ export default function JobReportPage({ params }: PageProps) {
 
   const showPhotos = limitsForPlan(plan).photoUpload;
   const showBranding = limitsForPlan(plan).customBranding || plan !== 'free';
+  const showInternalNotes = canViewInternalNotes(role);
 
   function downloadPdf() {
     window.print();
@@ -130,7 +138,7 @@ export default function JobReportPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <AppShell plan={plan}>
+      <AppShell plan={plan} role={role}>
         <p>Loading report...</p>
       </AppShell>
     );
@@ -138,14 +146,14 @@ export default function JobReportPage({ params }: PageProps) {
 
   if (!job) {
     return (
-      <AppShell plan={plan}>
+      <AppShell plan={plan} role={role}>
         <p>{message || 'Job not found.'}</p>
       </AppShell>
     );
   }
 
   return (
-    <AppShell plan={plan} className="report-shell">
+    <AppShell plan={plan} role={role} className="report-shell">
         <div className="page-head no-print">
           <div>
             <h2>Job proof report</h2>
@@ -180,10 +188,12 @@ export default function JobReportPage({ params }: PageProps) {
             <p>Address: {job.address || 'Not set'}</p>
             <p>Assigned worker: {workerName || 'Not assigned'}</p>
             {departmentName ? <p>Department: {departmentName}</p> : null}
-            <p>Notes: {job.notes || 'None'}</p>
+            <p>Notes: {job.customer_notes || job.notes || 'None'}</p>
+            {showInternalNotes && job.internal_notes ? <p>Internal notes: {job.internal_notes}</p> : null}
             <p>Start: {job.scheduled_start || job.start_date || 'Not set'}</p>
             <p>End: {job.scheduled_end || job.due_date || 'Not set'}</p>
             <p>Completed: {job.completed_at ? new Date(job.completed_at).toLocaleString() : 'Not completed'}</p>
+            <p>Completion verified: {job.completion_verified ? 'Yes' : 'No'}</p>
             {workflowSummary ? <p>Workflow: {workflowSummary}</p> : null}
           </section>
 
@@ -205,7 +215,7 @@ export default function JobReportPage({ params }: PageProps) {
 
           <section>
             <h3>Completion summary</h3>
-            <p>{job.notes || 'No completion notes recorded.'}</p>
+            <p>{job.customer_notes || job.notes || 'No completion notes recorded.'}</p>
           </section>
 
           <section className="report-signature">
