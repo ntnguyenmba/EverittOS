@@ -169,6 +169,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
 
   const canManage = canManageTeam(role);
   const canView = canViewTeam(role);
+  const canViewAuditHistory = role === 'owner' || role === 'admin';
 
   async function load() {
     setLoading(true);
@@ -235,7 +236,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
       setInvitations(invitations);
     }
 
-    if (showAuditHistory) {
+    if (showAuditHistory && (org.role === 'owner' || org.role === 'admin')) {
       const { data: auditRows } = await supabase
         .from('activity_logs')
         .select('id, action, message, actor_name, created_at')
@@ -553,7 +554,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
         </div>
       ) : null}
 
-      {showAuditHistory && auditItems.length > 0 ? (
+      {showAuditHistory && canViewAuditHistory && auditItems.length > 0 ? (
         <div className="settings-card">
           <h3>Team audit history</h3>
           {auditItems.map((item) => (
