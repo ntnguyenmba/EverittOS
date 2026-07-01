@@ -32,6 +32,46 @@ import { supabase } from '@/lib/supabase';
 import { RecordActions } from '@/components/record-actions';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 
+function cleanExportValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/\s+/g, ' ').trim();
+}
+
+function escapeHtml(value: unknown): string {
+  return cleanExportValue(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function downloadFile(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportRows(customers: CustomerRecord[]) {
+  return customers.map((customer) => ({
+    Name: customerDisplayName(customer),
+    Phone: customer.phone || '',
+    Email: customer.email || '',
+    Address: customerDisplayAddress(customer),
+    Stage: customer.pipeline_stage || 'lead',
+    Source: customer.lead_source || '',
+    Notes: customer.notes || '',
+    Created: customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '',
+    Updated: customer.updated_at ? new Date(customer.updated_at).toLocaleDateString() : ''
+  }));
+}
+
 function CustomersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,6 +139,56 @@ function CustomersPageContent() {
       return;
     }
     setCustomers(filterDemoSeedCustomers(data || [], orgIsDemo));
+  }
+
+  function exportExcel() {
+    if (!customers.length) {
+      appFeedback.error('No customer data to export.');
+      return;
+    }
+
+    const rows = exportRows(customers);
+    const headers = Object.keys(rows[0]);
+    const tableRows = rows
+      .map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header as keyof typeof row])}</td>`).join('')}</tr>`)
+      .join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table><thead><tr>${headers
+      .map((header) => `<th>${escapeHtml(header)}</th>`)
+      .join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+
+    downloadFile('everittos-customers.xls', html, 'application/vnd.ms-excel;charset=utf-8');
+  }
+
+  function exportPdf() {
+    if (!customers.length) {
+      appFeedback.error('No customer data to export.');
+      return;
+    }
+
+    const rows = exportRows(customers);
+    const headers = Object.keys(rows[0]);
+    const tableRows = rows
+      .map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header as keyof typeof row])}</td>`).join('')}</tr>`)
+      .join('');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      appFeedback.error('Allow popups to create a PDF.');
+      return;
+    }
+
+    printWindow.document.write(`<!doctype html><html><head><title>EverittOS Customer Export</title><style>
+      body { font-family: Arial, sans-serif; padding: 32px; color: #1f2528; }
+      h1 { font-size: 24px; margin-bottom: 8px; }
+      p { color: #5f686f; margin-bottom: 24px; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { border: 1px solid #d9dedc; padding: 8px; text-align: left; vertical-align: top; }
+      th { background: #f4f2ee; }
+    </style></head><body><h1>EverittOS Customer Export</h1><p>Shared workspace customer data exported from EverittOS.</p><table><thead><tr>${headers
+      .map((header) => `<th>${escapeHtml(header)}</th>`)
+      .join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   function onLogoSelected(file: File | null) {
@@ -219,13 +309,27 @@ function CustomersPageContent() {
           title={t('nav.crm')}
           subtitle={t('ux.pageTitles.customers')}
           action={
-            canManage ? (
-              <Link className="btn btn-primary" href="/customers/new">
-                Add customer
-              </Link>
-            ) : undefined
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn" type="button" onClick={exportPdf} disabled={loading || customers.length === 0}>
+                Export PDF
+              </button>
+              <button className="btn" type="button" onClick={exportExcel} disabled={loading || customers.length === 0}>
+                Export Excel
+              </button>
+              {canManage ? (
+                <Link className="btn btn-primary" href="/customers/new">
+                  Add customer
+                </Link>
+              ) : null}
+            </div>
           }
         />
+
+        <div className="card" style={{ marginBottom: 18 }}>
+          <p className="muted">
+            Shared workspace data: customers created by invited team members belong to this organization. Workspace owners and admins can view shared customer records, notes, jobs, files, reports, and activity for this workspace.
+          </p>
+        </div>
 
         {!canManage && (
           <div className="card">
@@ -260,7 +364,7 @@ function CustomersPageContent() {
         )}
 
         <div className="card">
-          {loading && <p className="loading-state" role="status">Loading customers…</p>}
+          {loading && <p className="loading-state" role="status">Loading customers...</p>}
           {!loading && customers.length === 0 && (
             <LocalizedEmptyState emptyKey="customers" />
           )}
