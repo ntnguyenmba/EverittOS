@@ -71,10 +71,13 @@ export function OutboundHub({
     try {
       const result = await autosave.sendNow();
       if (!result) return;
-      appFeedback.sent();
-      if (result.deliveryNote) {
-        appFeedback.info(result.deliveryNote);
+      if (result.emailSent === false || result.document?.status === 'failed') {
+        appFeedback.error(result.deliveryNote || 'Email failed. Check the Failed tab to retry.');
+        setTab('failed');
+        void loadDocuments();
+        return;
       }
+      appFeedback.sent();
       setTab('sent');
       void loadDocuments();
     } catch (err) {
@@ -94,10 +97,13 @@ export function OutboundHub({
       void loadDocuments();
       return;
     }
-    appFeedback.sent();
-    if (json.deliveryNote) {
-      appFeedback.info(json.deliveryNote);
+    if (json.emailSent === false || json.document?.status === 'failed') {
+      appFeedback.error(json.deliveryNote || 'Email failed. Check the Failed tab to retry.');
+      setTab('failed');
+      void loadDocuments();
+      return;
     }
+    appFeedback.sent();
     setTab('sent');
     void loadDocuments();
   }
