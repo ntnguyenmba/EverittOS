@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
@@ -16,15 +16,49 @@ type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
 };
 
+type TeamOption = {
+  user_id: string;
+  role: string;
+  profiles?: {
+    email?: string | null;
+    full_name?: string | null;
+  } | null;
+};
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [teamMembers, setTeamMembers] = useState<TeamOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
+
+  useEffect(() => {
+    async function loadTeam() {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const workspace = await ensureWorkspaceForSave(user.id);
+      if (!workspace.ok) return;
+
+      const { data } = await supabase
+        .from('organization_members')
+        .select('user_id, role, profiles(email, full_name)')
+        .eq('organization_id', workspace.workspace.organizationId)
+        .eq('active', true)
+        .in('role', ['manager', 'employee', 'contractor', 'staff', 'crew_lead']);
+
+      setTeamMembers((data || []) as TeamOption[]);
+    }
+
+    void loadTeam();
+  }, []);
 
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
@@ -95,6 +129,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
+        assigned_to: assignedTo || null,
         status: 'new'
       })
     });
@@ -125,6 +160,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
+    setAssignedTo('');
     appFeedback.created();
     onJobCreated?.(createdJob.id);
   }
@@ -141,6 +177,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>Create a job</h3>
+      <p className="muted">Assigning a job lets that teammate see the work record, while owners, admins, and managers keep workspace visibility.</p>
       <form className="form" onSubmit={createJob}>
         <input
           className="input"
@@ -157,6 +194,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <select className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+          <option value="">Unassigned</option>
+          {teamMembers.map((member) => (
+            <option key={member.user_id} value={member.user_id}>
+              {member.profiles?.full_name || member.profiles?.email || member.user_id} · {normalizeRole(member.role)}
+            </option>
+          ))}
+        </select>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
