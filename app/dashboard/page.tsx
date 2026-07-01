@@ -30,6 +30,8 @@ type Job = {
   due_date: string | null;
 };
 
+const DASHBOARD_SETUP_STORAGE_KEY = 'everittos.dashboard.setup.open.v1';
+
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
@@ -57,6 +59,7 @@ export default function DashboardPage() {
   const [totalJobs, setTotalJobs] = useState(0);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [totalWorkers, setTotalWorkers] = useState(0);
+  const [setupOpen, setSetupOpen] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
@@ -78,11 +81,12 @@ export default function DashboardPage() {
       .maybeSingle();
     const org = await ensureOrganizationForUser(user.id);
     const userPlan = normalizePlan(profile?.plan);
-    setRole(normalizeRole(profile?.role));
+    const userRole = normalizeRole(org?.role || profile?.role);
+    setRole(userRole);
     setOrgId(org?.organizationId || '');
     setPlan(userPlan);
 
-    if (isClientRole(normalizeRole(profile?.role))) {
+    if (isClientRole(userRole)) {
       router.push('/portal/client');
       return;
     }
@@ -90,7 +94,8 @@ export default function DashboardPage() {
     const jobsQuery = scopeJobsForWorkspace(
       supabase.from('jobs').select('id, title, status, start_date, due_date').order('created_at', { ascending: false }),
       user.id,
-      org?.organizationId
+      org?.organizationId,
+      userRole
     );
 
     const activityQuery = org?.organizationId
@@ -105,7 +110,8 @@ export default function DashboardPage() {
     const jobCountQuery = scopeJobsForWorkspace(
       supabase.from('jobs').select('id', { count: 'exact', head: true }),
       user.id,
-      org?.organizationId
+      org?.organizationId,
+      userRole
     );
     const customerCountQuery = org?.organizationId
       ? supabase.from('customers').select('id', { count: 'exact', head: true }).eq('organization_id', org.organizationId)
@@ -142,8 +148,25 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    try {
+      setSetupOpen(window.localStorage.getItem(DASHBOARD_SETUP_STORAGE_KEY) === 'open');
+    } catch {
+      setSetupOpen(false);
+    }
     void loadDashboard();
   }, []);
+
+  function toggleSetupOpen() {
+    setSetupOpen((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(DASHBOARD_SETUP_STORAGE_KEY, next ? 'open' : 'closed');
+      } catch {
+        // Keep the dashboard usable when localStorage is unavailable.
+      }
+      return next;
+    });
+  }
 
   const setupItems = [
     {
@@ -236,30 +259,41 @@ export default function DashboardPage() {
 
         {showSetup ? (
           <section className="card dashboard-start-card" aria-label="Get your business set up">
-            <div className="dashboard-start-copy">
-              <h2>Get your business set up</h2>
-              <p>Complete these steps to set up your workspace.</p>
-            </div>
-            <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
-              <span>
-                {setupComplete} of {setupItems.length} complete
+            <button
+              type="button"
+              className="dashboard-collapse-trigger"
+              aria-expanded={setupOpen}
+              aria-controls="dashboard-setup-panel"
+              onClick={toggleSetupOpen}
+            >
+              <span className="dashboard-start-copy">
+                <span className="dashboard-collapse-title">Get your business set up</span>
+                <span className="dashboard-collapse-subtitle">Complete these steps to set up your workspace.</span>
               </span>
+              <span className="dashboard-collapse-meta">
+                <span>{setupComplete} of {setupItems.length} complete</span>
+                <span aria-hidden="true" className="dashboard-collapse-chevron">v</span>
+              </span>
+            </button>
+            <div className="dashboard-start-progress" aria-label={`${setupComplete} of ${setupItems.length} setup steps complete`}>
               <div className="dashboard-progress-track">
                 <span style={{ width: `${(setupComplete / setupItems.length) * 100}%` }} />
               </div>
             </div>
-            <div className="dashboard-start-list">
-              {setupItems.map((item) => (
-                <Link key={item.label} href={item.href} className="dashboard-start-item">
-                  <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
-                    {item.done ? '✓' : ''}
-                  </span>
-                  <span className="dashboard-start-item-copy">
-                    <strong>{item.label}</strong>
-                    <small>{item.detail}</small>
-                  </span>
-                </Link>
-              ))}
+            <div id="dashboard-setup-panel" className={setupOpen ? 'dashboard-collapsible-panel is-open' : 'dashboard-collapsible-panel'}>
+              <div className="dashboard-start-list">
+                {setupItems.map((item) => (
+                  <Link key={item.label} href={item.href} className="dashboard-start-item">
+                    <span className={item.done ? 'dashboard-check dashboard-check-done' : 'dashboard-check'}>
+                      {item.done ? '✓' : ''}
+                    </span>
+                    <span className="dashboard-start-item-copy">
+                      <strong>{item.label}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </section>
         ) : null}
