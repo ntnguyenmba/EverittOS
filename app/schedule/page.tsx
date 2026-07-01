@@ -11,7 +11,7 @@ import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { combineDateAndTime } from '@/lib/schedule-times';
-import { canAssignJobs, normalizeRole } from '@/lib/roles';
+import { canAssignJobs, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { daysAheadIso, todayIso } from '@/lib/date-filters';
@@ -25,6 +25,7 @@ function SchedulePageContent() {
   const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
   const [canAssign, setCanAssign] = useState(false);
@@ -47,8 +48,10 @@ function SchedulePageContent() {
     setPlan(p);
 
     const org = await ensureOrganizationForUser(user.id);
+    const workspaceRole = normalizeRole(org?.role || profile?.role);
+    setRole(workspaceRole);
     setOrgId(org?.organizationId || '');
-    setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(normalizeRole(profile?.role)));
+    setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(workspaceRole));
 
     let jobsQuery = supabase
       .from('jobs')
@@ -151,7 +154,7 @@ function SchedulePageContent() {
   }
 
   return (
-    <AppShell plan={plan}>
+    <AppShell plan={plan} role={role}>
       <PageHeader
         title={t('ux.pageTitles.schedule')}
         subtitle={t('ux.helperSchedule')}
