@@ -177,7 +177,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>Create a job</h3>
-      <p className="muted">Assigning a job lets that teammate see the work record, while owners, admins, and managers keep workspace visibility.</p>
+      <p className="muted">Create the work record first. You can assign it to a team member now or later.</p>
       <form className="form" onSubmit={createJob}>
         <input
           className="input"
@@ -194,16 +194,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <label htmlFor="job-assignment">Assignment</label>
+        <label htmlFor="job-assignment">Assign to</label>
         <select id="job-assignment" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-          <option value="">Unassigned, visible to owner/admin/manager</option>
+          <option value="">Unassigned</option>
           {teamMembers.map((member) => (
             <option key={member.user_id} value={member.user_id}>
               {member.profiles?.full_name || member.profiles?.email || member.user_id} · {normalizeRole(member.role)}
             </option>
           ))}
         </select>
-        <p className="muted">Leave unassigned for office work, walk-ins, or jobs that are not ready for a worker yet.</p>
+        <p className="muted">Unassigned jobs stay visible to owners, admins, and managers.</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
