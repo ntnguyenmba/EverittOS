@@ -1,0 +1,253 @@
+/* Dashboard mobile balance pass. Loaded last so it can correct older dashboard spacing rules. */
+
+.dashboard-start-card {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px) !important;
+  gap: 16px 24px !important;
+  align-items: center !important;
+}
+
+.dashboard-collapse-trigger {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+.dashboard-collapse-title {
+  display: block !important;
+  color: var(--everitt-text) !important;
+  font-size: clamp(22px, 2vw, 30px) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.035em !important;
+  font-weight: 760 !important;
+}
+
+.dashboard-collapse-subtitle {
+  display: block !important;
+  max-width: 48ch !important;
+  margin-top: 8px !important;
+  color: var(--everitt-muted) !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+}
+
+.dashboard-collapse-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  color: var(--everitt-muted) !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-collapse-chevron {
+  width: 28px !important;
+  height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--everitt-border) !important;
+  background: #fff !important;
+  color: var(--everitt-text) !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+.dashboard-start-progress {
+  align-self: center !important;
+  gap: 8px !important;
+}
+
+.dashboard-collapsible-panel {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-rows: 0fr !important;
+  opacity: 0 !important;
+  transition: grid-template-rows 240ms ease, opacity 200ms ease !important;
+}
+
+.dashboard-collapsible-panel.is-open {
+  grid-template-rows: 1fr !important;
+  opacity: 1 !important;
+}
+
+.dashboard-collapsible-panel > .dashboard-start-list {
+  overflow: hidden !important;
+}
+
+.dashboard-start-list {
+  padding-top: 8px !important;
+  gap: 12px !important;
+}
+
+.dashboard-start-item {
+  min-height: 74px !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+}
+
+.dashboard-start-item-copy {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.dashboard-start-item-copy strong {
+  color: var(--everitt-text) !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.015em !important;
+  font-weight: 760 !important;
+}
+
+.dashboard-start-item-copy small {
+  color: var(--everitt-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-check {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.dashboard-today-card .dashboard-section-head {
+  align-items: center !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-today-card .dashboard-section-head button h2 {
+  font-size: var(--dashboard-card-title-size) !important;
+}
+
+.dashboard-today-card .dashboard-section-head button span[aria-hidden='true'] {
+  width: 28px !important;
+  height: 28px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--everitt-border) !important;
+  background: #fff !important;
+  color: var(--everitt-text) !important;
+}
+
+.dashboard-activity-row {
+  min-height: 64px !important;
+  align-items: center !important;
+  padding: 13px 0 !important;
+}
+
+.dashboard-activity-copy {
+  text-align: left !important;
+}
+
+.dashboard-activity-title {
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+
+.dashboard-activity-subtitle {
+  max-width: 56ch !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+.dashboard-activity-detail {
+  flex: 0 0 auto !important;
+  min-width: 84px !important;
+  text-align: right !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-width: 980px) {
+  .dashboard-start-card {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .dashboard-collapse-trigger {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-collapse-meta {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}
+
+@media (max-width: 540px) {
+  :root {
+    --dashboard-card-pad: 20px;
+    --dashboard-card-title-size: clamp(22px, 6vw, 28px);
+  }
+
+  .main:has(.dashboard-home) {
+    padding: 22px 14px 48px !important;
+  }
+
+  .today-page.dashboard-home {
+    gap: 18px !important;
+  }
+
+  .dashboard-home > .card,
+  .dashboard-home > .dashboard-start-card,
+  .dashboard-home > .dashboard-actions-card,
+  .dashboard-home > .dashboard-today-card {
+    border-radius: 22px !important;
+    padding: 20px !important;
+  }
+
+  .dashboard-collapse-title {
+    font-size: 25px !important;
+  }
+
+  .dashboard-collapse-subtitle {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+
+  .dashboard-start-list {
+    gap: 12px !important;
+  }
+
+  .dashboard-start-item {
+    min-height: 86px !important;
+    padding: 16px !important;
+  }
+
+  .dashboard-start-item-copy strong {
+    font-size: 17px !important;
+  }
+
+  .dashboard-start-item-copy small {
+    font-size: 15px !important;
+  }
+
+  .dashboard-activity-row {
+    min-height: auto !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 14px 0 !important;
+  }
+
+  .dashboard-activity-detail {
+    min-width: 70px !important;
+    padding-top: 2px !important;
+    text-align: right !important;
+  }
+}
