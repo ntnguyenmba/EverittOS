@@ -48,7 +48,6 @@ export function Nav() {
           </a>
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>
-          <Link href="/refund-policy">No Refund Policy</Link>
           <Link href="/pricing">Pricing</Link>
         </nav>
 
