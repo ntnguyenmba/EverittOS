@@ -120,17 +120,17 @@ export default function JobDetailPage({ params }: PageProps) {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const role = normalizeRole(profile?.role);
+    const org = await fetchOrganizationContext(user.id);
+    const role = normalizeRole(org?.role || profile?.role);
     setUserRole(role);
     const userPlan = normalizePlan(profile?.plan);
     setPlan(userPlan);
     setCanManage(isManagerRole(role));
     setCanEditStatus(hasPermission(role, 'update_status'));
     setCanUploadPhotos(
-      hasPermission(role, 'upload_before_photos') || hasPermission(role, 'upload_after_photos')
+      isManagerRole(role) || hasPermission(role, 'upload_before_photos') || hasPermission(role, 'upload_after_photos')
     );
 
-    const org = await fetchOrganizationContext(user.id);
     if (org) setOrgId(org.organizationId);
 
     const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
@@ -296,7 +296,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
     setCreatingReport(true);
 
-    const usage = await fetchUsageCounts(user.id);
+    const usage = await fetchUsageCounts(user.id, orgId || job.organization_id || null);
     if (reportLimitReached(plan, usage)) {
       setCreatingReport(false);
       appFeedback.error(limitMessage('reports', plan));
@@ -305,6 +305,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
     const { error } = await supabase.from('job_reports').insert({
       user_id: user.id,
+      organization_id: orgId || job.organization_id,
       job_id: job.id,
       title: `${job.title} report`
     });
@@ -654,22 +655,24 @@ export default function JobDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Activity timeline</h3>
-          {activity.length > 0 ? (
-            <ActivityFeed items={activity} />
-          ) : (
-            <>
-              {timeline.length === 0 && <p>No timeline entries yet.</p>}
-              {timeline.map((entry) => (
-                <div key={entry.id} style={{ marginTop: 10 }}>
-                  <strong>{entry.event_type}</strong>
-                  <p>{entry.message || 'Update recorded'}</p>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
+        {isManagerRole(userRole) && (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>Activity timeline</h3>
+            {activity.length > 0 ? (
+              <ActivityFeed items={activity} />
+            ) : (
+              <>
+                {timeline.length === 0 && <p>No timeline entries yet.</p>}
+                {timeline.map((entry) => (
+                  <div key={entry.id} style={{ marginTop: 10 }}>
+                    <strong>{entry.event_type}</strong>
+                    <p>{entry.message || 'Update recorded'}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
     </AppShell>
   );
 }
