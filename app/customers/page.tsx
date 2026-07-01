@@ -106,12 +106,12 @@ function CustomersPageContent() {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const userRole = normalizeRole(profile?.role);
-    setPlan(normalizePlan(profile?.plan));
-    setRole(userRole);
-    setCanManage(isManagerRole(userRole));
-
     const org = await fetchOrganizationContext(user.id);
+    const workspaceRole = normalizeRole(org?.role || profile?.role);
+    setPlan(normalizePlan(profile?.plan));
+    setRole(workspaceRole);
+    setCanManage(isManagerRole(workspaceRole));
+
     let query = supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)
@@ -333,7 +333,7 @@ function CustomersPageContent() {
 
         {!canManage && (
           <div className="card">
-            <p>Only owners and admins can manage customer records.</p>
+            <p>Only owners, admins, and managers can manage customer records.</p>
           </div>
         )}
 
