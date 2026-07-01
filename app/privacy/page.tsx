@@ -8,22 +8,22 @@ export default function PrivacyPage() {
     <main className="section">
       <div className="container legal-document" style={{ maxWidth: 720 }}>
         <h2>Privacy Policy</h2>
-        <p className="muted">Version {PRIVACY_VERSION} · Last updated June 2026</p>
+        <p className="muted">Version {PRIVACY_VERSION} · Last updated September 2026</p>
 
         <h3>Overview</h3>
         <p>
-          EverittOS (&quot;we&quot;, &quot;us&quot;) stores account, organization, job, customer, worker, photo, and activity data in
-          Supabase to operate your workspace. We use this data to provide the service, support your team, maintain
-          security, and improve reliability.
+          EverittOS (&quot;we&quot;, &quot;us&quot;) stores account, organization, job, customer, worker, photo, document, report,
+          message, export, and activity data in Supabase to operate your workspace. We use this data to provide the
+          service, support your team, maintain security, and improve reliability.
         </p>
 
         <h3>Data we collect</h3>
         <ul>
-          <li>
-            Account data: email, role, authentication events (email/password and passkey sign-in), and workspace settings.
-          </li>
-          <li>Operational data: jobs, schedules, customers, workers, photos, reports, and activity logs.</li>
-          <li>Billing data: plan, subscription status, and Stripe customer references (payment details stay with Stripe).</li>
+          <li>Account data: email, role, authentication events, passkey sign-in metadata, and workspace settings.</li>
+          <li>Operational data: jobs, schedules, customers, workers, photos, reports, notes, documents, messages, exports, and activity logs.</li>
+          <li>Team data: organization membership, assigned jobs, shared records, permissions, invite history, and role changes.</li>
+          <li>Customer portal data: customer requests, approvals, job updates, uploaded files, reports, messages, and downloadable exports.</li>
+          <li>Billing data: plan, subscription status, and Stripe customer references. Payment details stay with Stripe.</li>
           <li>Technical data: session cookies, device/browser metadata, and security logs.</li>
         </ul>
         <p>
@@ -37,10 +37,36 @@ export default function PrivacyPage() {
           intelligence features such as Ask Everitt.
         </p>
 
+        <h3>Workspace, team, and client visibility</h3>
+        <p>
+          EverittOS is a shared business workspace. Organization owners and authorized administrators may view records
+          created or uploaded by invited team members within the workspace, including jobs, customers, notes, photos,
+          reports, documents, messages, exports, and activity logs. Managers may view operational work according to the
+          organization&apos;s configuration. Workers, contractors, viewers, and clients receive limited access based on role,
+          assignment, portal access, or records explicitly shared with them.
+        </p>
+        <p>
+          When a user creates or updates work for an organization, that work may be visible to the organization&apos;s owner,
+          administrators, managers, assigned teammates, and other authorized users. Customers using a customer portal may
+          see information related to their own account, requests, jobs, approvals, uploaded files, photos, reports,
+          messages, and exports.
+        </p>
+        <p>
+          Activity logs may record actions such as invitations, assignments, sharing changes, approvals, exports,
+          downloads, uploads, and updates for security, accountability, and audit purposes.
+        </p>
+
+        <h3>Exports and downloads</h3>
+        <p>
+          EverittOS may allow authorized users and customers to create or download PDF reports, spreadsheet exports,
+          invoices, receipts, photos, documents, and other files from their permitted records. Organizations are responsible
+          for deciding which records are appropriate to share with team members, contractors, customers, and other users.
+        </p>
+
         <h3>Why we process data</h3>
         <ul>
-          <li>To deliver and secure the EverittOS platform (contract performance).</li>
-          <li>To send operational notifications you request (legitimate interest / consent where required).</li>
+          <li>To deliver and secure the EverittOS platform.</li>
+          <li>To support workspace collaboration, assignments, customer portals, exports, and operational notifications.</li>
           <li>To comply with legal obligations and respond to lawful requests.</li>
         </ul>
         <p>
@@ -67,7 +93,7 @@ export default function PrivacyPage() {
         <p>
           Depending on your location, you may have rights to access, export, correct, delete, or restrict processing of
           your personal data. In Settings → Privacy you can export your data, manage communication preferences, and opt
-          out of sale or sharing of personal information (we do not sell personal information).
+          out of sale or sharing of personal information. We do not sell personal information.
         </p>
         <p>
           To deactivate or delete your account, use Settings → Account. Contact{' '}
@@ -84,9 +110,9 @@ export default function PrivacyPage() {
 
         <h3>Security</h3>
         <p>
-          Access is limited by role and row-level security policies. Photos and documents are stored in secure storage tied
-          to your organization. See our <Link href="/security">Security</Link> page and{' '}
-          <Link href="/cookies">Cookie Policy</Link> for more detail.
+          Access is limited by role, assignment, explicit sharing, customer portal permissions, and row-level security
+          policies. Photos and documents are stored in secure storage tied to your organization. See our{' '}
+          <Link href="/security">Security</Link> page and <Link href="/cookies">Cookie Policy</Link> for more detail.
         </p>
 
         <h3>International transfers</h3>
