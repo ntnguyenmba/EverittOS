@@ -58,13 +58,22 @@ export function filterBusinessActivity<T extends ActivityLogRow>(rows: T[]): T[]
   return rows.filter(isBusinessActivity);
 }
 
-function activityTitle(action: string, message: string | null): string {
-  const lower = (message || '').toLowerCase();
-  if (action === 'status_changed' && lower.includes('completed')) return 'Job completed';
-  if (action === 'lead_created' || (action === 'customer_created' && lower.includes('lead'))) {
+function activityTitle(row: ActivityLogRow): string {
+  const lower = (row.message || '').toLowerCase();
+
+  if (row.entity_type === 'member' || row.entity_type === 'invitation' || row.entity_type === 'organization') {
+    if (lower.includes('invited')) return 'Team invitation sent';
+    if (lower.includes('revoked')) return 'Team invitation revoked';
+    if (lower.includes('role')) return 'Team role updated';
+    if (lower.includes('owner')) return 'Ownership updated';
+    return 'Team activity';
+  }
+
+  if (row.action === 'status_changed' && lower.includes('completed')) return 'Job completed';
+  if (row.action === 'lead_created' || (row.action === 'customer_created' && lower.includes('lead'))) {
     return 'New lead added';
   }
-  return DASHBOARD_ACTIVITY_TITLES[action] || ACTIVITY_EVENT_LABELS[action] || action.replace(/_/g, ' ');
+  return DASHBOARD_ACTIVITY_TITLES[row.action] || ACTIVITY_EVENT_LABELS[row.action] || row.action.replace(/_/g, ' ');
 }
 
 function parseActivitySubtitle(message: string | null): string {
@@ -108,6 +117,8 @@ function activityHref(row: ActivityLogRow): string | null {
     case 'lead':
       return `/customers/${id}`;
     case 'worker':
+    case 'member':
+    case 'invitation':
       return `/team`;
     case 'expense':
       return `/expenses`;
@@ -124,7 +135,7 @@ function activityHref(row: ActivityLogRow): string | null {
 }
 
 export function formatDashboardActivity(row: ActivityLogRow): DashboardActivityItem {
-  const title = activityTitle(row.action, row.message);
+  const title = activityTitle(row);
   const subtitle = parseActivitySubtitle(row.message);
   const amount = row.metadata?.amount;
   const amountLabel =
