@@ -10,6 +10,16 @@ export const dynamic = 'force-dynamic';
 const ALLOWED_RECORD_TYPES = new Set(['job', 'customer', 'photo', 'report', 'note', 'document']);
 const ALLOWED_ACCESS_LEVELS = new Set(['view', 'edit']);
 
+function recordTitle(recordType: string): string {
+  if (recordType === 'job') return 'Job shared with you';
+  if (recordType === 'customer') return 'Customer record shared with you';
+  if (recordType === 'photo') return 'Photo shared with you';
+  if (recordType === 'report') return 'Report shared with you';
+  if (recordType === 'note') return 'Note shared with you';
+  if (recordType === 'document') return 'Document shared with you';
+  return 'Record shared with you';
+}
+
 export async function GET(request: Request) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
@@ -118,6 +128,17 @@ export async function POST(request: Request) {
     'record_shared',
     `${recordType} shared with ${rows.length} teammate${rows.length === 1 ? '' : 's'}`,
     { recordType, recordId, userIds: rows.map((row) => row.shared_with_user_id), accessLevel }
+  );
+
+  await admin.from('notifications').insert(
+    rows.map((row) => ({
+      organization_id: ctx.workspace.organizationId,
+      user_id: row.shared_with_user_id,
+      type: 'assignment',
+      title: recordTitle(recordType),
+      body: `You now have ${accessLevel} access to a ${recordType} record.`,
+      related_job_id: recordType === 'job' ? recordId : null
+    }))
   );
 
   return NextResponse.json({ ok: true, shares: data || [] });
