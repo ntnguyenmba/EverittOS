@@ -6,7 +6,6 @@ import { Nav } from '@/components/nav';
 const LEGAL_PATHS = new Set([
   '/terms',
   '/privacy',
-  '/refund-policy',
   '/pricing',
   '/cookies',
   '/disclaimer',
