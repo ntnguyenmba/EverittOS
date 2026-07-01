@@ -19,6 +19,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
+  { label: 'Photos', href: '/photos' },
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Schedule', href: '/schedule' },
   { label: 'Team', href: '/team' }
@@ -65,6 +66,7 @@ export const SECONDARY_APP_ROUTES = [
   '/workers',
   '/team',
   '/activity',
+  '/photos',
   '/workflows',
   '/notifications',
   '/proposals',
