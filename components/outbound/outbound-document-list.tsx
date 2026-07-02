@@ -68,6 +68,11 @@ export function OutboundDocumentList({
           Sent items cannot be unsent. Hiding an item only removes it from this history list.
         </p>
       ) : null}
+      {tab === 'failed' ? (
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Failed deliveries were not sent. Fix the recipient or email settings, then retry.
+        </p>
+      ) : null}
       {documents.map((doc) => {
         const amount = amountLabel(doc);
         return (
@@ -84,13 +89,13 @@ export function OutboundDocumentList({
             </div>
             {canManage ? (
               <div className="outbound-document-actions">
-                {tab === 'drafts' || tab === 'scheduled' || tab === 'failed' ? (
+                {tab === 'drafts' || tab === 'scheduled' ? (
                   <button type="button" className="btn btn-sm btn-primary" onClick={() => onSend(doc.id)}>
                     Send
                   </button>
                 ) : null}
                 {tab === 'failed' ? (
-                  <button type="button" className="btn btn-sm" onClick={() => onRetry(doc.id)}>
+                  <button type="button" className="btn btn-sm btn-primary" onClick={() => onRetry(doc.id)}>
                     Retry
                   </button>
                 ) : null}
