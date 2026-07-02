@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
+import { enrichOutboundDocumentPayment } from '@/lib/outbound/invoice-payment';
 import { OUTBOUND_DOC_TYPES, type OutboundDocType, type OutboundStatus } from '@/lib/outbound/types';
 import {
   isMissingSchemaError,
@@ -48,7 +49,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ documents: data || [], schemaReady: true });
+  const rows = (data || []).map((doc) =>
+    doc.doc_type === 'invoice' ? enrichOutboundDocumentPayment(doc) : doc
+  );
+
+  return NextResponse.json({ documents: rows, schemaReady: true });
 }
 
 export async function POST(request: Request) {

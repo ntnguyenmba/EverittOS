@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { canAssignJobs } from '@/lib/roles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (ALLOWED_FIELDS.has(key)) {
       payload[key] = value;
     }
+  }
+
+  if ('assigned_to' in payload && !canAssignJobs(ctx.workspace.role)) {
+    return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
   }
 
   if (!Object.keys(payload).length) {

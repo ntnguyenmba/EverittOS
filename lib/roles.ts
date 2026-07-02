@@ -97,6 +97,10 @@ export function canViewInternalNotes(role: UserRole): boolean {
   return isManagerRole(role);
 }
 
+export function canRecordInvoicePayments(role: UserRole): boolean {
+  return isManagerRole(role);
+}
+
 export function dashboardVariant(role: UserRole): 'owner' | 'manager' | 'employee' | 'contractor' | 'client' {
   if (role === 'admin') return 'manager';
   if (role === 'viewer') return 'employee';

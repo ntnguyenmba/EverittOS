@@ -1,5 +1,5 @@
 import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
-import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
+import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export type OutboundApiContext =
@@ -9,6 +9,7 @@ export type OutboundApiContext =
       userId: string;
       organizationId: string;
       canManage: boolean;
+      role: import('@/lib/roles').UserRole;
     }
   | { ok: false; error: string; status: number };
 
@@ -31,13 +32,15 @@ export async function requireOutboundApiAccess(): Promise<OutboundApiContext> {
     return { ok: false, error: 'Organization not found', status: 404 };
   }
 
-  const canManage = canManageOrganizationSettings(normalizeRole(org.role));
+  const role = normalizeRole(org.role);
+  const canManage = isManagerRole(role);
 
   return {
     ok: true,
     supabase,
     userId: user.id,
     organizationId: org.organizationId,
-    canManage
+    canManage,
+    role
   };
 }

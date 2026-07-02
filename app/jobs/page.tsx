@@ -10,7 +10,7 @@ import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { normalizeRole, type UserRole } from '@/lib/roles';
+import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
@@ -121,6 +121,20 @@ function JobsList() {
             </Link>
           }
         />
+        {isManagerRole(role) ? (
+          <p className="muted" style={{ marginBottom: 12 }}>
+            {assignmentFilter === 'unassigned' ? (
+              <>
+                Showing jobs that need assignment.{' '}
+                <Link href="/jobs">Show all jobs</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/jobs?filter=unassigned">Needs assignment</Link>
+              </>
+            )}
+          </p>
+        ) : null}
 
         <div className="card table-responsive-wrap">
           {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}

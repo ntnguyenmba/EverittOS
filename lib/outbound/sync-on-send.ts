@@ -104,6 +104,13 @@ export async function syncOutboundEntityOnSend(input: {
 
   if (document.doc_type === 'invoice') {
     const amount = Number(document.amount || 0);
+    const invoiceDate = now.slice(0, 10);
+    const paymentFields = {
+      amount_paid: 0,
+      balance_due: amount > 0 ? amount : null,
+      payment_status: 'unpaid',
+      invoice_date: invoiceDate
+    };
     if (document.source_entity_id) {
       const invoicePatch: Record<string, unknown> = {
         description: document.body,
@@ -111,7 +118,8 @@ export async function syncOutboundEntityOnSend(input: {
         sent_at: now,
         recipient_email: document.recipient_email,
         delivery_status: 'sent',
-        updated_at: now
+        updated_at: now,
+        ...paymentFields
       };
       if (amount > 0) invoicePatch.amount = amount;
       await supabase
@@ -119,6 +127,10 @@ export async function syncOutboundEntityOnSend(input: {
         .update(invoicePatch)
         .eq('id', document.source_entity_id)
         .eq('organization_id', organizationId);
+      await supabase
+        .from('outbound_documents')
+        .update(paymentFields)
+        .eq('id', document.id);
       return;
     }
 
@@ -133,12 +145,14 @@ export async function syncOutboundEntityOnSend(input: {
         user_id: userId,
         amount,
         amount_paid: 0,
+        balance_due: amount,
+        payment_status: 'unpaid',
         status: 'sent',
         description: document.body,
         recipient_email: document.recipient_email,
         sent_at: now,
         delivery_status: 'sent',
-        invoice_date: now.slice(0, 10)
+        invoice_date: invoiceDate
       })
       .select('id')
       .single();
@@ -148,7 +162,8 @@ export async function syncOutboundEntityOnSend(input: {
         .from('outbound_documents')
         .update({
           source_entity_type: 'invoice',
-          source_entity_id: data.id
+          source_entity_id: data.id,
+          ...paymentFields
         })
         .eq('id', document.id);
     }

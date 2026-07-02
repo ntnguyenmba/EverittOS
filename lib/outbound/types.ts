@@ -28,6 +28,16 @@ export type OutboundDocument = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  amount_paid?: number | null;
+  balance_due?: number | null;
+  payment_status?: string | null;
+  due_date?: string | null;
+  invoice_date?: string | null;
+  paid_at?: string | null;
+  last_payment_at?: string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  payment_notes?: string | null;
 };
 
 export type OutboundComposerFields = {

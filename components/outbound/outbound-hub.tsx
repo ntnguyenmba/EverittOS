@@ -166,6 +166,7 @@ export function OutboundHub({
           onSend={(id) => void handleSendExisting(id)}
           onRetry={(id) => void handleSendExisting(id)}
           onDelete={(id) => void handleDelete(id)}
+          onPaymentRecorded={() => void loadDocuments()}
         />
       </div>
 

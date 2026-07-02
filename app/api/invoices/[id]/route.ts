@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
 import { isValidUuid } from '@/lib/input-validation';
+import {
+  calculateBalanceDue,
+  calculateInvoicePaymentStatus
+} from '@/lib/outbound/invoice-payment';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -47,8 +51,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     const amount = Number(patch.amount ?? existing.amount);
     const paid = Number(patch.amount_paid ?? existing.amount_paid);
+    const paymentStatus = calculateInvoicePaymentStatus({
+      amount,
+      amount_paid: paid,
+      due_date: typeof body.due_date === 'string' ? body.due_date : undefined
+    });
+    patch.payment_status = paymentStatus;
+    patch.balance_due = calculateBalanceDue(amount, paid);
     if (!body.status) {
-      patch.status = paid >= amount ? 'paid' : paid > 0 ? 'partial' : 'sent';
+      patch.status =
+        paymentStatus === 'paid' ? 'paid' : paymentStatus === 'partially_paid' ? 'partial' : paymentStatus === 'cancelled' ? 'cancelled' : 'sent';
     }
     patch.amount_paid = Math.min(paid, amount);
   }
