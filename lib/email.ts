@@ -5,7 +5,18 @@ import { clientInviteEmailHtml, teamInviteEmailHtml } from '@/lib/email-template
 export type EmailResult = { sent: boolean; message: string };
 
 function emailFailureMessage(error?: string): string {
-  return error ? `Email could not be sent: ${error}` : 'Email not configured. Copy the invite link below.';
+  if (!error) return 'Email is not configured yet. Copy the invite link below.';
+
+  const normalized = error.toLowerCase();
+  if (normalized.includes('domain is not verified') || normalized.includes('resend.com/domains') || normalized.includes('validation_error')) {
+    return 'Email could not be sent because the sending domain is not verified in Resend. Verify everittventures.com in Resend Domains, then try again.';
+  }
+
+  if (normalized.includes('api key') || normalized.includes('unauthorized') || normalized.includes('forbidden')) {
+    return 'Email could not be sent because the email provider is not configured correctly. Check RESEND_API_KEY and EMAIL_FROM in Vercel.';
+  }
+
+  return 'Email could not be sent. Check the email provider settings, then try again.';
 }
 
 export async function sendTeamInviteEmail(input: {
