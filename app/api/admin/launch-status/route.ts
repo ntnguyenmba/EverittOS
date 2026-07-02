@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { transactionalEmailConfigured } from '@/lib/email-provider';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -61,10 +62,8 @@ export async function GET() {
   }
 
   const stripeStatus: CheckStatus = envChecks.find((e) => e.name === 'STRIPE_SECRET_KEY')?.ok ? 'ok' : 'fail';
-  const emailStatus: CheckStatus =
-    envChecks.find((e) => e.name === 'RESEND_API_KEY')?.ok && envChecks.find((e) => e.name === 'EMAIL_FROM')?.ok
-      ? 'ok'
-      : 'warn';
+  const emailConfigured = transactionalEmailConfigured();
+  const emailStatus: CheckStatus = emailConfigured ? 'ok' : 'warn';
   const webhookStatus: CheckStatus = envChecks.find((e) => e.name === 'STRIPE_WEBHOOK_SECRET')?.ok ? 'ok' : 'fail';
 
   const envStatus: CheckStatus = envChecks.every((e) => e.ok) ? 'ok' : 'warn';
@@ -91,6 +90,15 @@ export async function GET() {
       email: emailStatus,
       webhooks: webhookStatus
     },
-    environmentVariables: envChecks.map((e) => ({ name: e.name, configured: e.ok }))
+    environmentVariables: envChecks.map((e) => ({ name: e.name, configured: e.ok })),
+    emailReadiness: {
+      configured: emailConfigured,
+      resendApiKey: !!process.env.RESEND_API_KEY,
+      emailFrom: !!process.env.EMAIL_FROM,
+      message: emailConfigured
+        ? 'Transactional email is configured. Verify your sending domain in Resend before launch.'
+        : 'Transactional email is not configured. Invites and outbound messages will use copy-link fallback until RESEND_API_KEY and EMAIL_FROM are set.'
+    },
+    launchReady: emailConfigured && stripeStatus === 'ok' && dbStatus === 'ok'
   });
 }
