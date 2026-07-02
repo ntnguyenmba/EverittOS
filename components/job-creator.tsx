@@ -196,14 +196,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
         <label htmlFor="job-assignment">Assign to</label>
         <select id="job-assignment" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-          <option value="">Unassigned</option>
+          <option value="">Needs assignment</option>
           {teamMembers.map((member) => (
             <option key={member.user_id} value={member.user_id}>
               {member.profiles?.full_name || member.profiles?.email || member.user_id} · {normalizeRole(member.role)}
             </option>
           ))}
         </select>
-        <p className="muted">Unassigned jobs stay visible to owners, admins, and managers.</p>
+        <p className="muted">Jobs without an assignee stay visible to owners, admins, and managers.</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}

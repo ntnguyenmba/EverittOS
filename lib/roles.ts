@@ -54,6 +54,25 @@ export function isStaffRole(role: UserRole): boolean {
   return role === 'employee' || role === 'contractor' || role === 'viewer';
 }
 
+export function canViewTeamAuditHistory(role: UserRole): boolean {
+  return isAdminRole(role);
+}
+
+export function canModifyTeamMember(actor: UserRole, target: UserRole): boolean {
+  if (!canManageTeam(actor)) return false;
+  if (target === 'owner') return false;
+  if (actor === 'admin' && target === 'admin') return false;
+  return true;
+}
+
+export function canTransferOwnership(actor: UserRole): boolean {
+  return actor === 'owner';
+}
+
+export function canAssignAdminRole(actor: UserRole): boolean {
+  return actor === 'owner';
+}
+
 export function canManageTeam(role: UserRole): boolean {
   return role === 'owner' || role === 'admin';
 }

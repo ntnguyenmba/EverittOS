@@ -66,14 +66,14 @@ export default function SecuritySettingsPage() {
       }
 
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-      const normalizedRole = normalizeRole(profile?.role);
+      const org = await fetchOrganizationContext(user.id);
+      const normalizedRole = normalizeRole(org?.role || profile?.role);
       setPlan(normalizePlan(profile?.plan));
       setRole(normalizedRole);
 
       const userEvents = await fetchUserSecurityEvents(supabase, user.id, 25);
       setPersonalEvents(userEvents as SecurityEventRow[]);
 
-      const org = await fetchOrganizationContext(user.id);
       if (org && canManageOrganizationSettings(normalizedRole)) {
         const events = await fetchRecentSecurityEvents(supabase, org.organizationId, 30);
         setOrgEvents(events as SecurityEventRow[]);

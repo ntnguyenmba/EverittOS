@@ -42,10 +42,7 @@ export function AuthContinuingLegalNote() {
       <Link href="/privacy" className="legal-inline-link">
         {t('legal.privacyPolicy')}
       </Link>
-      {t('auth.continuingLegalUnderstand')}{' '}
-      <Link href="/refund-policy" className="legal-inline-link">
-        {t('legal.refundPolicy')}
-      </Link>
+      {t('auth.continuingLegalUnderstand')}
       .
     </p>
   );
@@ -57,10 +54,6 @@ export function AuthLegalFooterLinks() {
 
   return (
     <nav className="auth-legal-footer" aria-label={t('legal.footerNav')}>
-      <Link href="/refund-policy">{t('legal.refundPolicy')}</Link>
-      <span className="auth-legal-footer-sep" aria-hidden="true">
-        ·
-      </span>
       <Link href="/cookies">{t('legal.cookies')}</Link>
       <span className="auth-legal-footer-sep" aria-hidden="true">
         ·

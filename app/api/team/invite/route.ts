@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { getCurrentWorkspaceForUser, mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { sendTeamInviteEmail } from '@/lib/email';
-import { canManageTeam } from '@/lib/roles';
+import { canAssignAdminRole, canManageTeam } from '@/lib/roles';
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
 import { fetchUsageCounts, canAddTeamMember } from '@/lib/everittos-usage';
 import { normalizePlan } from '@/lib/everittos-plans';
@@ -46,6 +46,9 @@ export async function POST(request: Request) {
   }
   if (!role) {
     return NextResponse.json({ error: 'Invalid role for invitation' }, { status: 400 });
+  }
+  if (role === 'admin' && !canAssignAdminRole(org.role)) {
+    return NextResponse.json({ error: 'Only the owner can invite admins.' }, { status: 403 });
   }
 
   const { data: ownerProfile } = await admin.from('profiles').select('plan').eq('id', org.ownerUserId).maybeSingle();

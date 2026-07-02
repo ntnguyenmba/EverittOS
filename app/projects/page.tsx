@@ -35,10 +35,9 @@ export default function ProjectsPage() {
       return;
     }
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    setPlan(normalizePlan(profile?.plan));
-    setRole(normalizeRole(profile?.role));
-
     const org = await fetchOrganizationContext(user.id);
+    setPlan(normalizePlan(profile?.plan));
+    setRole(normalizeRole(org?.role || profile?.role));
     if (!org) {
       setLoading(false);
       return;

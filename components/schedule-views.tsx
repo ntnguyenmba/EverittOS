@@ -234,7 +234,7 @@ function ScheduleRow({
             value={job.assigned_to || ''}
             onChange={(e) => onAssign(job.id, e.target.value || null)}
           >
-            <option value="">Unassigned</option>
+            <option value="">Needs assignment</option>
             {Object.entries(workerNames).map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -242,7 +242,7 @@ function ScheduleRow({
             ))}
           </select>
         ) : (
-          <span>{job.assigned_to ? workerNames[job.assigned_to] || 'Assigned' : 'Unassigned'}</span>
+          <span>{job.assigned_to ? workerNames[job.assigned_to] || 'Assigned' : 'Needs assignment'}</span>
         )}
       </div>
     </div>

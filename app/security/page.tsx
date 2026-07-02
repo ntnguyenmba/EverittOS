@@ -74,7 +74,7 @@ export default function SecurityPage() {
 
         <p style={{ marginTop: 24 }}>
           See also our <Link href="/privacy">Privacy Policy</Link>, <Link href="/terms">Terms of Service</Link>, and{' '}
-          <Link href="/refund-policy">No Refund Policy</Link>.
+          <Link href="/terms#billing">Billing terms</Link>.
         </p>
 
         <LegalNotice />

@@ -8,7 +8,7 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canViewInternalNotes, normalizeRole, type UserRole } from '@/lib/roles';
+import { canViewInternalNotes, isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -131,6 +131,7 @@ export default function JobReportPage({ params }: PageProps) {
   const showPhotos = limitsForPlan(plan).photoUpload;
   const showBranding = limitsForPlan(plan).customBranding || plan !== 'free';
   const showInternalNotes = canViewInternalNotes(role);
+  const customerView = isClientRole(role);
 
   function downloadPdf() {
     window.print();
@@ -186,15 +187,15 @@ export default function JobReportPage({ params }: PageProps) {
             <p>Customer: {job.customer_name || 'Not set'}</p>
             <p>Phone: {job.phone || 'Not set'}</p>
             <p>Address: {job.address || 'Not set'}</p>
-            <p>Assigned worker: {workerName || 'Not assigned'}</p>
-            {departmentName ? <p>Department: {departmentName}</p> : null}
+            {!customerView ? <p>Assigned worker: {workerName || 'Needs assignment'}</p> : null}
+            {!customerView && departmentName ? <p>Department: {departmentName}</p> : null}
             <p>Notes: {job.customer_notes || job.notes || 'None'}</p>
             {showInternalNotes && job.internal_notes ? <p>Internal notes: {job.internal_notes}</p> : null}
             <p>Start: {job.scheduled_start || job.start_date || 'Not set'}</p>
             <p>End: {job.scheduled_end || job.due_date || 'Not set'}</p>
             <p>Completed: {job.completed_at ? new Date(job.completed_at).toLocaleString() : 'Not completed'}</p>
             <p>Completion verified: {job.completion_verified ? 'Yes' : 'No'}</p>
-            {workflowSummary ? <p>Workflow: {workflowSummary}</p> : null}
+            {!customerView && workflowSummary ? <p>Workflow: {workflowSummary}</p> : null}
           </section>
 
           {showPhotos ? (
@@ -203,7 +204,7 @@ export default function JobReportPage({ params }: PageProps) {
               <PhotoGallery
                 jobId={job.id}
                 showComparison={canAccessFeature(plan, 'beforeAfterPhotos')}
-                showMetadata
+                showMetadata={!customerView}
               />
             </section>
           ) : (

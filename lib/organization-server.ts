@@ -48,3 +48,13 @@ export async function fetchOrganizationContextForUser(
     ownerUserId: org.owner_user_id
   };
 }
+
+/** Workspace membership role first, then profile role fallback. */
+export async function resolveWorkspaceRoleForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  profileRole?: string | null
+): Promise<UserRole> {
+  const org = await fetchOrganizationContextForUser(supabase, userId);
+  return normalizeRole(org?.role || profileRole || 'owner');
+}

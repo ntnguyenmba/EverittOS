@@ -80,7 +80,7 @@ function PricingContent() {
 
         <footer className="pricing-public-footer muted">
           <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link> ·{' '}
-          <Link href="/refund-policy">{t('legal.refundPolicy')}</Link> · <Link href="/cookies">{t('legal.cookies')}</Link>
+          <Link href="/cookies">{t('legal.cookies')}</Link>
         </footer>
       </div>
     </main>

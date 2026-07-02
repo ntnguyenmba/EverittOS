@@ -4,7 +4,7 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { isManagerRole } from '@/lib/roles';
+import { canManageOrganizationSettings } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !isManagerRole(org.role)) {
+  if (!org || !canManageOrganizationSettings(org.role)) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org || !isManagerRole(org.role)) {
+  if (!org || !canManageOrganizationSettings(org.role)) {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 

@@ -97,8 +97,8 @@ export function OutboundHub({
       void loadDocuments();
       return;
     }
-    if (json.emailSent === false || json.document?.status === 'failed') {
-      appFeedback.error(json.deliveryNote || 'Email failed. Check the Failed tab to retry.');
+    if (json.document?.status === 'failed' || json.deliveryNote) {
+      appFeedback.error(json.deliveryNote || json.message || 'Email failed. Check the Failed tab to retry.');
       setTab('failed');
       void loadDocuments();
       return;

@@ -3,7 +3,8 @@ import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
+import { resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { extractSubscriptionDiscount } from '@/lib/stripe-promo';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
 import { planFromCheckoutSession, planFromSubscription } from '@/lib/stripe-plan-mapping';
@@ -101,7 +102,7 @@ async function refreshByEmail(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  const role = normalizeRole(profile?.role || 'owner');
+  const role = await resolveWorkspaceRoleForUser(supabase, user.id, profile?.role);
   if (!canManageBilling(role)) {
     return NextResponse.json({ error: 'Only workspace owners and admins can refresh billing.', role }, { status: 403 });
   }

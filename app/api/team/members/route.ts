@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { canManageTeam } from '@/lib/roles';
+import { canAssignAdminRole, canManageTeam, canModifyTeamMember, normalizeRole } from '@/lib/roles';
 import { parseAssignableMemberRole } from '@/lib/role-assignment';
 
 export async function PATCH(request: Request) {
@@ -33,11 +33,30 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'userId is required' }, { status: 400 });
   }
 
+  const { data: targetMember } = await admin
+    .from('organization_members')
+    .select('role')
+    .eq('organization_id', org.organizationId)
+    .eq('user_id', targetUserId)
+    .maybeSingle();
+
+  if (!targetMember) {
+    return NextResponse.json({ error: 'Member not found.' }, { status: 404 });
+  }
+
+  const targetRole = normalizeRole(targetMember.role as string);
+  if (!canModifyTeamMember(org.role, targetRole)) {
+    return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
+  }
+
   const updates: Record<string, unknown> = {};
   if (body.role) {
     const role = parseAssignableMemberRole(body.role);
     if (!role) {
       return NextResponse.json({ error: 'Invalid role. Owner must use transfer ownership.' }, { status: 400 });
+    }
+    if (role === 'admin' && !canAssignAdminRole(org.role)) {
+      return NextResponse.json({ error: 'Only the owner can assign admin role.' }, { status: 403 });
     }
     updates.role = role;
   }
@@ -101,6 +120,21 @@ export async function DELETE(request: Request) {
   const targetUserId = searchParams.get('userId');
   if (!targetUserId) {
     return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+  }
+
+  const { data: targetMember } = await admin
+    .from('organization_members')
+    .select('role')
+    .eq('organization_id', org.organizationId)
+    .eq('user_id', targetUserId)
+    .maybeSingle();
+
+  if (!targetMember) {
+    return NextResponse.json({ error: 'Member not found.' }, { status: 404 });
+  }
+
+  if (!canModifyTeamMember(org.role, normalizeRole(targetMember.role as string))) {
+    return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
   }
 
   const { error } = await admin

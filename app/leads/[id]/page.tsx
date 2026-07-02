@@ -12,6 +12,7 @@ import { leadSourceLabel } from '@/lib/lead-sources';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -43,16 +44,17 @@ export default function LeadDetailPage({ params }: PageProps) {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const userRole = normalizeRole(profile?.role);
+    const org = await fetchOrganizationContext(user.id);
+    const userRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan));
     setRole(userRole);
     setCanManage(isManagerRole(userRole));
 
     const workspace = await ensureWorkspaceForSave(user.id);
-    const org = workspace.ok ? workspace.workspace : null;
+    const workspaceOrg = workspace.ok ? workspace.workspace : null;
     let query = supabase.from('customers').select(CUSTOMER_LIST_SELECT).eq('id', leadId);
-    if (org?.organizationId) {
-      query = query.eq('organization_id', org.organizationId);
+    if (workspaceOrg?.organizationId) {
+      query = query.eq('organization_id', workspaceOrg.organizationId);
     } else {
       query = query.eq('user_id', user.id);
     }

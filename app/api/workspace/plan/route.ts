@@ -7,6 +7,7 @@ import {
 } from '@/lib/profile-query';
 import { normalizeRole } from '@/lib/roles';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,11 +33,14 @@ export async function GET() {
   const rawProfilePlan = profile?.plan?.trim() || null;
   const rawSubscriptionStatus = profile?.subscription_status?.trim() || null;
 
-  const [profilePlan, subscriptionStatus, orgPlan] = await Promise.all([
+  const [profilePlan, subscriptionStatus, orgPlan, orgContext] = await Promise.all([
     resolveProfilePlan(supabase, user.id, profile),
     resolveProfileSubscriptionStatus(supabase, user.id, profile),
-    resolveOrganizationPlan(supabase, user.id)
+    resolveOrganizationPlan(supabase, user.id),
+    fetchOrganizationContextForUser(supabase, user.id)
   ]);
+
+  const workspaceRole = normalizeRole(orgContext?.role || profile?.role || 'owner');
 
   const billingPlan: EverittosPlan = normalizePlan(orgPlan.plan);
   const organizationPlan: EverittosPlan = normalizePlan(orgPlan.plan);
@@ -47,7 +51,7 @@ export async function GET() {
     subscriptionStatus,
     billingPlan,
     organizationPlan,
-    role: normalizeRole(profile?.role || 'owner'),
+    role: workspaceRole,
     rawProfilePlan,
     rawSubscriptionStatus,
     organizationId: orgPlan.organizationId,

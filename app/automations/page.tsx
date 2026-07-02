@@ -27,8 +27,8 @@ export default function AutomationsPage() {
       return;
     }
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    setRole(normalizeRole(profile?.role));
     const org = await fetchOrganizationContext(user.id);
+    setRole(normalizeRole(org?.role || profile?.role));
     if (!org) {
       setLoading(false);
       return;

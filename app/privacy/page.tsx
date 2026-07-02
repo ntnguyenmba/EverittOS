@@ -133,7 +133,7 @@ export default function PrivacyPage() {
         <h3>Legal and billing policies</h3>
         <p>
           Billing, refunds, and subscription terms are covered in our <Link href="/terms">Terms of Service</Link> and{' '}
-          <Link href="/refund-policy">No Refund Policy</Link>.
+          <Link href="/terms#billing">Billing terms</Link>.
         </p>
 
         <LegalNotice />

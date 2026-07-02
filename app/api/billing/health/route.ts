@@ -5,7 +5,8 @@ import { billingPlanStripeDiagnostics, stripeEnvironmentDiagnostics } from '@/li
 import { billingRuntimeDiagnostics } from '@/lib/billing-runtime';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { isValidStripeCustomerId, isValidStripeSubscriptionId } from '@/lib/stripe-ids';
-import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
+import { resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { getStripeClient } from '@/lib/stripe-server';
 
@@ -28,7 +29,8 @@ export async function GET() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!canManageBilling(normalizeRole(profile?.role))) {
+  const role = await resolveWorkspaceRoleForUser(supabase, user.id, profile?.role);
+  if (!canManageBilling(role)) {
     return NextResponse.json({ error: 'Only workspace owners and admins can view billing health.' }, { status: 403 });
   }
 

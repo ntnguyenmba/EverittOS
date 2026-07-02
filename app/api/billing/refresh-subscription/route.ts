@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
 import { logBillingSync, syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
 import { logStripeBilling } from '@/lib/stripe-billing-logs';
 import { logBillingActivation } from '@/lib/billing-activation-logs';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForUser, resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
 export const runtime = 'nodejs';
@@ -35,7 +35,8 @@ async function refreshSubscription(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!canManageBilling(normalizeRole(profile?.role))) {
+  const role = await resolveWorkspaceRoleForUser(supabase, user.id, profile?.role);
+  if (!canManageBilling(role)) {
     return NextResponse.json({ error: 'Only workspace owners and admins can refresh billing.' }, { status: 403 });
   }
 

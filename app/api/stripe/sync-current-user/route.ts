@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
-import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
+import { resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { logBillingActivation } from '@/lib/billing-activation-logs';
 import { syncActiveStripeSubscriptionForUser } from '@/lib/stripe-billing-sync';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
@@ -33,7 +34,8 @@ export async function POST() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!canManageBilling(normalizeRole(profile?.role))) {
+  const role = await resolveWorkspaceRoleForUser(supabase, user.id, profile?.role);
+  if (!canManageBilling(role)) {
     return NextResponse.json({ error: 'Only workspace owners and admins can sync billing.' }, { status: 403 });
   }
 

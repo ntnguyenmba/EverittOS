@@ -7,6 +7,7 @@ import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -40,7 +41,8 @@ export default function TemplatesPage() {
       return;
     }
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const userRole = normalizeRole(profile?.role);
+    const org = await fetchOrganizationContext(user.id);
+    const userRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan));
     setRole(userRole);
     setCanManage(isManagerRole(userRole));

@@ -49,10 +49,9 @@ export default function WorkersPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    setCanManage(isManagerRole(normalizeRole(workspaceRole || profile?.role)));
-
     const org = await fetchOrganizationContext(user.id);
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    setCanManage(isManagerRole(normalizeRole(org?.role || workspaceRole || profile?.role)));
     let query = supabase.from('workers').select('id, name, role, phone').order('created_at', { ascending: false });
     if (org?.organizationId) {
       query = query.eq('organization_id', org.organizationId);

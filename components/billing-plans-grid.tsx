@@ -309,8 +309,7 @@ export function BillingPlansGrid({
           Subscriptions renew monthly until canceled. Promo codes, when available, are entered in Stripe Checkout.
         </p>
         <p className="billing-plans-footnote billing-legal-links" style={noteStyle}>
-          <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link> ·{' '}
-          <Link href="/refund-policy">{t('legal.refundPolicy')}</Link>
+          <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>
         </p>
       </footer>
     </section>

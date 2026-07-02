@@ -7,6 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { EmptyState } from '@/components/empty-state';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { friendlyErrorMessage } from '@/lib/user-errors';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -47,8 +48,9 @@ export default function NotificationsPage() {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+    const org = await fetchOrganizationContext(user.id);
     setPlan(normalizePlan(profile?.plan));
-    setRole(normalizeRole(profile?.role));
+    setRole(normalizeRole(org?.role || profile?.role));
 
     const res = await fetch('/api/notifications');
     const json = await res.json();

@@ -2,6 +2,7 @@
 
 import { AppShell } from '@/components/app-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -24,8 +25,9 @@ export default function TeamPage() {
         return;
       }
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+      const org = await fetchOrganizationContext(user.id);
       setPlan(normalizePlan(profile?.plan));
-      setRole(normalizeRole(profile?.role));
+      setRole(normalizeRole(org?.role || profile?.role));
       setLoading(false);
     }
     load();

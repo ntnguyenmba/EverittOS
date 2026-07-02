@@ -325,7 +325,7 @@ export default function SettingsPage() {
           </p>
           <p style={{ marginTop: 16 }}>
             <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> ·{' '}
-            <Link href="/refund-policy">No Refund Policy</Link> · <Link href="/cookies">Cookies</Link> ·{' '}
+            <Link href="/cookies">Cookies</Link> ·{' '}
             <Link href="/disclaimer">Disclaimer</Link>
           </p>
         </div>

@@ -5,14 +5,14 @@ import { resolveStripePriceId, stripePriceEnvKey, type PaidPlanKey } from '@/lib
 import { maskStripeId } from '@/lib/billing-env';
 import { checkoutOwnerDiagnostic } from '@/lib/checkout-errors';
 import { normalizePlan } from '@/lib/everittos-plans';
-import { canManageBilling, normalizeRole } from '@/lib/roles';
+import { canManageBilling } from '@/lib/roles';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { NO_REFUND_STRIPE_SUBMIT_MESSAGE } from '@/lib/no-refund-policy';
 import { isPaidCheckoutPlan } from '@/lib/stripe-prices';
 import { getStripeClient, getStripeSecretKey } from '@/lib/stripe-server';
 import { checkoutPromotionParams } from '@/lib/stripe-checkout-params';
 import { isValidStripeCustomerId } from '@/lib/stripe-ids';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForUser, resolveWorkspaceRoleForUser } from '@/lib/organization-server';
 import { stripeKeyMode, stripeKeyModeLabel } from '@/lib/stripe-mode';
 import {
   formatStripeError,
@@ -147,7 +147,7 @@ async function handleCheckout(request: Request) {
     });
   }
 
-  const role = normalizeRole(profile?.role || 'owner');
+  const role = await resolveWorkspaceRoleForUser(supabase, user.id, profile?.role);
   if (!canManageBilling(role)) {
     return jsonError({
       status: 403,

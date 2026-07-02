@@ -7,7 +7,7 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
-import { canManageTeam, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
+import { canManageTeam, canModifyTeamMember, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -508,7 +508,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
             <option value="employee">Worker</option>
             <option value="contractor">Contractor</option>
             <option value="client">Client</option>
-            <option value="admin">Admin</option>
+            {isOwner(role) ? <option value="admin">Admin</option> : null}
             <option value="viewer">Viewer</option>
           </select>
           <label htmlFor="invite-note">Note (optional)</label>
@@ -611,7 +611,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                 Joined {formatDate(m.created_at)} · Last active {formatDate(m.profiles?.updated_at)}
               </p>
             </div>
-            {canManage && m.role !== 'owner' ? (
+            {canModifyTeamMember(role, normalizeRole(m.role)) ? (
               <div className="inline-actions">
                 <select
                   className="input"
@@ -619,7 +619,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                   onChange={(e) => updateMember(m.user_id, { role: e.target.value })}
                   disabled={busy}
                 >
-                  <option value="admin">Admin</option>
+                  {isOwner(role) ? <option value="admin">Admin</option> : null}
                   <option value="manager">Manager</option>
                   <option value="employee">Worker</option>
                   <option value="contractor">Contractor</option>

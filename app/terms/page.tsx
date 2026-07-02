@@ -85,7 +85,7 @@ export default function TermsPage() {
           stop future renewals, but prior charges are non-refundable.
         </p>
         <p>
-          See our dedicated <Link href="/refund-policy">No Refund Policy</Link> for full details.
+          Billing and refund terms are covered in the <Link href="/terms#billing">Terms of Service</Link>.
         </p>
 
         <h3>Acceptable use</h3>

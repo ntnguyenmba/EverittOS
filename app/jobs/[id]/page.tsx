@@ -558,7 +558,7 @@ export default function JobDetailPage({ params }: PageProps) {
                   value={job.assigned_to || ''}
                   onChange={(e) => setJob({ ...job, assigned_to: e.target.value || null })}
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">Needs assignment</option>
                   {workers.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.name}

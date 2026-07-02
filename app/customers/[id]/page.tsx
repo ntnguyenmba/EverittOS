@@ -60,8 +60,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
     }
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+    const org = await fetchOrganizationContext(user.id);
     setPlan(normalizePlan(profile?.plan));
-    setCanEdit(isManagerRole(normalizeRole(profile?.role)));
+    setCanEdit(isManagerRole(normalizeRole(org?.role || profile?.role)));
 
     const { data: customer, error } = await supabase.from('customers').select('*').eq('id', customerId).single();
     if (error || !customer) {
@@ -77,7 +78,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
     setNotes(customer.notes || '');
     setLogoPath((customer as CustomerRecord).logo_path || null);
 
-    const org = await fetchOrganizationContext(user.id);
     const resolvedOrgId = org?.organizationId || customer.organization_id || '';
     setOrgId(resolvedOrgId);
 
