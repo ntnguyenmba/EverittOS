@@ -332,7 +332,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
     const profileMap = buildProfileMap(profileRows ?? []);
     setMembers(buildMembers(rows, profileMap));
 
-    if (canViewTeam(org.role)) {
+    if (canManageTeam(org.role)) {
       const { data: inviteRows } = await supabase
         .from('organization_invitations')
         .select('id, email, role, status, created_at, expires_at')
@@ -346,6 +346,8 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
         if (parsed) invitations.push(parsed);
       }
       setInvitations(invitations);
+    } else {
+      setInvitations([]);
     }
 
     if (showAuditHistory && (org.role === 'owner' || org.role === 'admin')) {
@@ -638,7 +640,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
         ))}
       </SettingsAccordion>
 
-      {teamEnabled && canView ? (
+      {teamEnabled && canManage ? (
         <SettingsAccordion
           id="pending-invitations"
           title={`Pending invitations (${pendingInvites.length})`}
@@ -658,22 +660,20 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                   {inv.expires_at ? ` · Expires ${formatDate(inv.expires_at)}` : ''}
                 </p>
               </div>
-              {canManage ? (
-                <div className="inline-actions">
-                  <button type="button" className="btn" disabled={busy} onClick={() => resendInvite(inv.id)}>
-                    Resend
-                  </button>
-                  <button type="button" className="btn" disabled={busy} onClick={() => revokeInvite(inv.id)}>
-                    Revoke
-                  </button>
-                </div>
-              ) : null}
+              <div className="inline-actions">
+                <button type="button" className="btn" disabled={busy} onClick={() => resendInvite(inv.id)}>
+                  Resend
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => revokeInvite(inv.id)}>
+                  Revoke
+                </button>
+              </div>
             </div>
           ))}
         </SettingsAccordion>
       ) : null}
 
-      {teamEnabled && canView ? (
+      {teamEnabled && canManage ? (
         <SettingsAccordion
           id="revoked-invitations"
           title={`Revoked invitations (${revokedInvites.length})`}
