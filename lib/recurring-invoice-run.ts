@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { advanceNextRunOn, type RecurringInvoiceTemplate } from '@/lib/recurring-invoices';
 import {
   calculateBalanceDue,
@@ -97,6 +98,48 @@ export async function runRecurringInvoiceTemplate(input: {
     .from('recurring_invoice_runs')
     .update({ invoice_id: invoice.id, status: 'completed' })
     .eq('id', runRow.id);
+
+  const outboundStatus = input.sendEmail ? 'sent' : 'draft';
+  const outboundBase = {
+    organization_id: organizationId,
+    doc_type: 'invoice' as const,
+    status: outboundStatus,
+    recipient_email: recipientEmail,
+    subject: template.title,
+    body: template.title,
+    amount,
+    customer_id: template.customer_id,
+    job_id: template.job_id,
+    source_entity_type: 'invoice',
+    source_entity_id: invoice.id,
+    created_by: userId,
+    metadata: {
+      recurring_template_id: template.id,
+      recurring_run_id: runRow.id
+    }
+  };
+
+  const { error: outboundError } = await supabase.from('outbound_documents').insert({
+    ...outboundBase,
+    amount_paid: 0,
+    balance_due: calculateBalanceDue(amount, 0),
+    payment_status: paymentStatus,
+    invoice_date: runForDate
+  });
+
+  if (outboundError) {
+    await supabase.from('outbound_documents').insert(outboundBase);
+  }
+
+  await logWorkspaceActivity(
+    organizationId,
+    userId,
+    'invoice',
+    invoice.id,
+    'invoice_created',
+    `Recurring invoice generated: ${template.title}`,
+    { recurring_template_id: template.id, recurring_run_id: runRow.id }
+  );
 
   return {
     ok: true,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { quickbooksConfigured, quickbooksMissingCredentialsMessage } from '@/lib/quickbooks';
-import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
+import { canManageOrganizationSettings } from '@/lib/roles';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';

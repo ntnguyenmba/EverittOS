@@ -67,7 +67,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { error } = await ctx.supabase
     .from('inventory_items')
-    .delete()
+    .update({ active: false, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId);
 
@@ -75,5 +75,5 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, deactivated: true });
 }

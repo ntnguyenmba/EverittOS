@@ -1,27 +1,32 @@
-# Route optimization (later)
+# Route optimization
 
-Route optimization is a **later** tool — not a core v1 feature. It depends on reliable schedule dates and job addresses.
+**Status: Complete (basic heuristic only)**
 
-## Current behavior
+Not true drive-time optimization. Depends on scheduled jobs having addresses.
 
-- User selects a service date.
-- System loads scheduled jobs for that date.
-- **Heuristic fallback** sorts by zip/city/address and schedule time.
-- Labeled as basic ordering, not true drive-time optimization.
-- **Apply** confirms the route order without automatically changing schedule times.
+## API
+
+- `GET /api/routes`
+- `POST /api/routes/optimize`
+- `GET /api/routes/[id]`
+- `POST /api/routes/[id]/apply` — confirms route; does **not** auto-change job schedule times
+
+## Behavior
+
+- Sorts by zip/city/address and schedule time.
+- Flags jobs missing addresses.
+- Apply sets run status to `applied` only.
 
 ## Permissions
 
-Owner, admin, and manager can create and apply routes. Clients cannot access.
+Owner/admin/manager via `can_manage_organization` RLS and API role checks.
 
-## UI
+## Migrations
 
-`/routes` (nav when `routesNav` flag is enabled).
+- `202609030001_post_v1_rls_integrations.sql`
+- `202609040001_post_v1_backend_repair.sql`
 
-## Future
+## Limitations
 
-A mapping provider can be wired later for drive-time optimization. Provider name is stored on each run.
-
-## Migration
-
-`supabase/migrations/202609030001_post_v1_rls_integrations.sql`
+- No mapping provider or drive-time estimates yet.
+- `total_distance_miles` / `total_drive_minutes` are not populated in v1.

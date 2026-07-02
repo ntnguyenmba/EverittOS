@@ -1,25 +1,32 @@
 # Inventory
 
-Operational tracking for supplies and equipment — not accounting valuation.
+**Status: Complete** (requires migrations applied in Supabase)
 
-## Features
+## API
 
-- Items with quantity, unit, category, reorder level, location, vendor, notes
-- Adjustments: purchase, used, count, loss, repair, retired
-- Low-stock when quantity is at or below reorder level
+- `GET /api/inventory` — active items by default (`?includeInactive=1` for all)
+- `POST /api/inventory`
+- `PATCH /api/inventory/[id]`
+- `DELETE /api/inventory/[id]` — soft deactivates (`active: false`)
+- `POST /api/inventory/[id]/adjust`
+
+## Behavior
+
+- Adjustments update quantity and append `inventory_adjustments` row.
+- Low stock when `quantity <= reorder_level` (when reorder level is set).
+- Optional `job_id` on adjustments for supply use tracking.
 
 ## Permissions
 
-- View: org members with operations visibility (owner/admin/manager/worker per nav policy)
-- Manage: owner, admin, manager
-
-Clients cannot access inventory.
-
-## UI
-
-`/inventory` (Tools nav when `inventoryNav` flag is enabled).
+- View: org members with operations visibility
+- Manage: owner/admin/manager (`can_manage_organization` RLS + API checks)
 
 ## Migrations
 
-- `supabase/migrations/202608120004_inventory_foundation.sql`
-- `supabase/migrations/202609030001_post_v1_rls_integrations.sql` (RLS)
+- `202608120004_inventory_foundation.sql`
+- `202609030001_post_v1_rls_integrations.sql`
+- `202609040001_post_v1_backend_repair.sql`
+
+## Limitations
+
+- No accounting valuation or COGS integration.

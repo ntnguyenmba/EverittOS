@@ -25,17 +25,24 @@ async function inventoryContext() {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const ctx = await inventoryContext();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error }, { status: ctx.status });
   }
 
-  const { data, error } = await ctx.supabase
+  let query = ctx.supabase
     .from('inventory_items')
     .select('*')
     .eq('organization_id', ctx.organizationId)
     .order('name', { ascending: true });
+
+  const includeInactive = new URL(request.url).searchParams.get('includeInactive') === '1';
+  if (!includeInactive) {
+    query = query.eq('active', true);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingSchemaError(error)) {

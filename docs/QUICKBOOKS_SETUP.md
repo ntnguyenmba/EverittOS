@@ -1,44 +1,43 @@
 # QuickBooks integration
 
-QuickBooks is **optional**. EverittOS is an operations platform and sync tool — not accounting, tax, payroll, bookkeeping, reconciliation, or financial advisory software. **QuickBooks remains the accounting system of record.**
+**Status: Partial** — safe OAuth scaffold and sync logging; live QuickBooks entity sync not implemented yet.
 
-## User-controlled actions
+EverittOS is **not** accounting, tax, payroll, bookkeeping, or reconciliation software. QuickBooks is optional and remains the accounting system of record.
 
-- Connect QuickBooks
-- Disconnect QuickBooks
-- Sync customer
-- Export invoice to QuickBooks
-- View sync log
+## What works
 
-No background auto-sync in the first version.
+- `GET /api/integrations/quickbooks/status`
+- `GET /api/integrations/quickbooks/connect` (owner/admin only)
+- `GET /api/integrations/quickbooks/callback`
+- `POST /api/integrations/quickbooks/disconnect`
+- `POST /api/integrations/quickbooks/sync-customer` — logs attempt
+- `POST /api/integrations/quickbooks/export-invoice` — logs attempt (manager+ with invoice access)
+- `GET /api/integrations/quickbooks/sync-log`
 
-## Environment variables (server only)
+## What is not done yet
+
+- Live customer/invoice mapping to QuickBooks Online API
+- Token refresh automation
+- Background auto-sync
+
+## Env (server only)
 
 ```
 QUICKBOOKS_CLIENT_ID=
 QUICKBOOKS_CLIENT_SECRET=
-QUICKBOOKS_REDIRECT_URI=https://app.everittventures.com/api/integrations/quickbooks/callback
+QUICKBOOKS_REDIRECT_URI=
 QUICKBOOKS_ENVIRONMENT=sandbox
 ```
 
-Never use `NEXT_PUBLIC_` for secrets.
+## Manual setup
 
-## Developer setup
+1. Create app at [Intuit Developer](https://developer.intuit.com/)
+2. Set redirect URI to `QUICKBOOKS_REDIRECT_URI`
+3. Add env vars to Vercel
+4. Run migrations `202609030001_post_v1_rls_integrations.sql` and `202609040001_post_v1_backend_repair.sql`
+5. Settings → Integrations → Connect QuickBooks
 
-1. Create an app in [Intuit Developer](https://developer.intuit.com/).
-2. Add OAuth redirect URI matching `QUICKBOOKS_REDIRECT_URI`.
-3. Copy Client ID and Client Secret into deployment env.
-4. Use sandbox for testing; switch `QUICKBOOKS_ENVIRONMENT` to `production` when ready.
-5. In EverittOS: Settings → Integrations → Connect QuickBooks.
+## Migrations
 
-If credentials are missing, connect returns a clear error and sync log records the failure.
-
-## Permissions
-
-- Connect / disconnect: owner and admin only
-- Export invoice: owner, admin, manager (when invoice permissions allow)
-- Sync log: org members with financial visibility
-
-## Manual Supabase step
-
-Run `supabase/migrations/202609030001_post_v1_rls_integrations.sql` for `quickbooks_connections` and `quickbooks_sync_logs` tables plus RLS.
+- `202609030001_post_v1_rls_integrations.sql`
+- `202609040001_post_v1_backend_repair.sql`

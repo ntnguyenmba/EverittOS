@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendCustomerMessageEmail } from '@/lib/customer-messaging';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
@@ -75,6 +76,15 @@ export async function POST(request: Request) {
   }
   if (!messageBody) {
     return NextResponse.json({ error: 'Message body is required.' }, { status: 400 });
+  }
+
+  const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+  if (customerError) {
+    return NextResponse.json({ error: customerError }, { status: 400 });
+  }
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  if (jobError) {
+    return NextResponse.json({ error: jobError }, { status: 400 });
   }
 
   const now = new Date().toISOString();

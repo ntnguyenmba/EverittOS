@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { isRecurringCadence } from '@/lib/recurring-invoices';
 import { isMissingSchemaError, SCHEMA_SETUP_HINT } from '@/lib/supabase-schema-errors';
 
@@ -80,6 +81,15 @@ export async function POST(request: Request) {
   }
 
   const nextRun = body.next_run_on || new Date().toISOString().slice(0, 10);
+
+  const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+  if (customerError) {
+    return NextResponse.json({ error: customerError }, { status: 400 });
+  }
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  if (jobError) {
+    return NextResponse.json({ error: jobError }, { status: 400 });
+  }
 
   const { data, error } = await ctx.supabase
     .from('recurring_invoice_templates')

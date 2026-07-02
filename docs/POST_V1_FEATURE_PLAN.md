@@ -12,21 +12,30 @@ Build order:
 
 ## Product positioning
 
-- EverittOS is an operations platform, not accounting/tax/bookkeeping software.
+- EverittOS is an operations platform, not accounting/tax/bookkeeping/payroll/reconciliation software.
 - QuickBooks is optional; user controls sync/export; QuickBooks remains accounting system of record.
 - No SMS/Twilio in messaging — email only for now.
 - Visual design unchanged — functional additions only.
 
-## Status (repo)
+## Honest status (repo)
 
-| Feature | Status |
-|---------|--------|
-| Resend / launch readiness | Admin launch status + docs |
-| Recurring invoices | APIs + UI on `/invoices` |
-| Customer messaging | APIs + thread UI on `/messages` |
-| Dashboard metrics | Live aggregates from jobs, invoices, expenses, bookings, messages, reports |
-| Inventory | APIs + `/inventory` |
-| QuickBooks | OAuth scaffold + sync log + Settings UI |
-| Route optimization | Heuristic API + `/routes` |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Resend / launch readiness | **Complete** | Admin launch status checks `RESEND_API_KEY` + `EMAIL_FROM`; copy-link fallback unchanged |
+| Recurring invoices | **Complete** | APIs, RLS, run history, draft invoice + outbound draft row on run-now |
+| Customer messaging | **Complete** | Thread APIs, Resend send/fail logging, org-scoped customer/job links |
+| Dashboard metrics | **Complete** | Live queries; zeros when empty |
+| Inventory | **Complete** | CRUD, adjustments, soft deactivate, low-stock detection |
+| QuickBooks | **Partial** | OAuth connect/callback, disconnect, sync log, export/sync queue — no live QuickBooks API mapping yet |
+| Route optimization | **Complete (basic)** | Heuristic ordering only; apply confirms order without auto-changing schedule times |
 
-Apply migrations in `supabase/migrations/` via Supabase SQL editor or CLI.
+## Required migrations (run in order)
+
+1. `202608120001_post_v1_recurring_invoices.sql`
+2. `202608120002_customer_messaging_foundation.sql`
+3. `202608120004_inventory_foundation.sql`
+4. `202609020001_invoice_payment_fields.sql` (payment fields on invoices/outbound)
+5. `202609030001_post_v1_rls_integrations.sql` (RLS + QuickBooks + routes tables)
+6. `202609040001_post_v1_backend_repair.sql` (idempotent RLS refresh + constraints)
+
+Apply via Supabase SQL editor or CLI.

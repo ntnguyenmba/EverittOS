@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { isRecurringCadence } from '@/lib/recurring-invoices';
 import { isValidUuid } from '@/lib/input-validation';
 
@@ -40,8 +41,20 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     patch.cadence = cadence;
   }
-  if (body.customer_id !== undefined) patch.customer_id = body.customer_id || null;
-  if (body.job_id !== undefined) patch.job_id = body.job_id || null;
+  if (body.customer_id !== undefined) {
+    const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id as string | null);
+    if (customerError) {
+      return NextResponse.json({ error: customerError }, { status: 400 });
+    }
+    patch.customer_id = body.customer_id || null;
+  }
+  if (body.job_id !== undefined) {
+    const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id as string | null);
+    if (jobError) {
+      return NextResponse.json({ error: jobError }, { status: 400 });
+    }
+    patch.job_id = body.job_id || null;
+  }
   if (body.next_run_on !== undefined) patch.next_run_on = body.next_run_on || null;
   if (body.active !== undefined) patch.active = Boolean(body.active);
 
@@ -75,6 +88,24 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   if (!isValidUuid(id)) {
     return NextResponse.json({ error: 'Invalid template id.' }, { status: 400 });
+  }
+
+  const { count } = await ctx.supabase
+    .from('recurring_invoice_runs')
+    .select('id', { count: 'exact', head: true })
+    .eq('template_id', id)
+    .eq('organization_id', ctx.organizationId);
+
+  if ((count || 0) > 0) {
+    const { error: deactivateError } = await ctx.supabase
+      .from('recurring_invoice_templates')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('organization_id', ctx.organizationId);
+    if (deactivateError) {
+      return NextResponse.json({ error: deactivateError.message }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true, deactivated: true, message: 'Template has run history and was paused instead of deleted.' });
   }
 
   const { error } = await ctx.supabase

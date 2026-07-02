@@ -109,7 +109,7 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
       appFeedback.error(json.error || 'Unable to run template.');
       return;
     }
-    appFeedback.success(json.message || 'Invoice generated.');
+    appFeedback.success(json.message || 'Draft invoice created. Check the Drafts tab above.');
     void load();
   }
 
