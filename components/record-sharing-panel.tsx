@@ -30,7 +30,7 @@ type ShareRecord = {
 };
 
 function memberLabel(member: MemberOption): string {
-  return member.profiles?.full_name || member.profiles?.email || member.user_id;
+  return member.profiles?.full_name || member.profiles?.email || 'Pending profile';
 }
 
 export function RecordSharingPanel({ organizationId, recordType, recordId, canManage }: RecordSharingPanelProps) {
@@ -138,7 +138,7 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
         return (
           <div key={share.id} className="list-row compact">
             <div>
-              <strong>{member ? memberLabel(member) : share.shared_with_user_id}</strong>
+              <strong>{member ? memberLabel(member) : 'Pending profile'}</strong>
               <p className="muted">{share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
             </div>
             {canManage ? (
