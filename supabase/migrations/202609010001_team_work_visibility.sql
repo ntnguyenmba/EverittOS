@@ -26,12 +26,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select om.role
-  from public.organization_members om
-  where om.organization_id = p_org_id
-    and om.user_id = auth.uid()
-    and om.active = true
-  limit 1
+  select public.member_role_in_org(p_org_id);
 $$;
 
 create or replace function public.can_manage_org_work(p_org_id uuid)
@@ -41,7 +36,18 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_org_role(p_org_id) in ('owner', 'admin', 'manager'), false)
+  select (
+    p_org_id is not null
+    and (
+      coalesce(public.can_manage_organization(p_org_id), false)
+      or exists (
+        select 1
+        from public.organizations o
+        where o.id = p_org_id
+          and o.owner_user_id = auth.uid()
+      )
+    )
+  );
 $$;
 
 create or replace function public.record_shared_with_current_user(p_org_id uuid, p_record_type text, p_record_id uuid)

@@ -10,6 +10,19 @@ Run **once** in the Supabase SQL Editor:
 
 This idempotent script preserves legacy tables, adds all current production schema objects, backfills organizations from existing users, and applies RLS/storage policies. Does not assume any prior migrations were applied.
 
+## Team work RLS migrations (20260901+)
+
+These migrations introduce role-aware job visibility (`can_manage_org_work`, `record_shares`).
+
+**Production note:** If `202609060001` failed with `function public.current_org_role(uuid) does not exist`, production likely skipped `202609010001`. Run `202609070001_team_work_rls_prerequisite_repair.sql` (or re-apply the fixed `202609060001` after pull). All team-work migrations now inline prerequisites and define `can_manage_org_work()` using the existing `can_manage_organization()` helper plus `organizations.owner_user_id`.
+
+Order:
+
+1. `202609010001_team_work_visibility.sql`
+2. `202609050001_team_work_photos_reports_rls.sql`
+3. `202609060001_jobs_org_scope_rls_repair.sql`
+4. `202609070001_team_work_rls_prerequisite_repair.sql` (idempotent repair if earlier files were skipped or failed)
+
 ## Incremental migrations (new projects or partial upgrades)
 
 Run in order in the Supabase SQL editor or via CLI:

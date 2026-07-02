@@ -1,6 +1,12 @@
--- Repair job organization scoping and consolidate jobs RLS for consistent org-wide visibility.
--- Prerequisites are inlined because production may have skipped 202609010001.
--- See 202609070001_team_work_rls_prerequisite_repair.sql for the canonical idempotent repair.
+-- Team work RLS prerequisite repair.
+-- Production may have skipped 202609010001 while later migrations reference
+-- can_manage_org_work() and record_shared_with_current_user().
+-- This migration is idempotent and uses helpers that already exist in production:
+--   member_role_in_org, can_manage_organization, is_assigned_to_job.
+
+-- ---------------------------------------------------------------------------
+-- Shared objects (from 202609010001)
+-- ---------------------------------------------------------------------------
 
 create table if not exists public.record_shares (
   id uuid primary key default gen_random_uuid(),
@@ -22,6 +28,7 @@ alter table public.record_shares enable row level security;
 alter table public.jobs add column if not exists assigned_to uuid references auth.users(id) on delete set null;
 create index if not exists jobs_assigned_to_idx on public.jobs (organization_id, assigned_to);
 
+-- Alias for migrations/policies that reference current_org_role; backed by member_role_in_org.
 create or replace function public.current_org_role(p_org_id uuid)
 returns text
 language sql
@@ -53,6 +60,8 @@ as $$
   );
 $$;
 
+-- Owner/admin/manager work management. Uses can_manage_organization (production-safe)
+-- plus organizations.owner_user_id for owners missing an organization_members row.
 create or replace function public.can_manage_org_work(p_org_id uuid)
 returns boolean
 language sql
@@ -74,7 +83,23 @@ as $$
   );
 $$;
 
--- Backfill organization_id on legacy jobs from creator profile or active membership.
+drop policy if exists record_shares_read on public.record_shares;
+create policy record_shares_read on public.record_shares
+  for select using (
+    public.can_manage_org_work(organization_id)
+    or shared_with_user_id = auth.uid()
+    or shared_by_user_id = auth.uid()
+  );
+
+drop policy if exists record_shares_manage on public.record_shares;
+create policy record_shares_manage on public.record_shares
+  for all using (public.can_manage_org_work(organization_id))
+  with check (public.can_manage_org_work(organization_id));
+
+-- ---------------------------------------------------------------------------
+-- Backfill organization_id on legacy jobs
+-- ---------------------------------------------------------------------------
+
 update public.jobs j
 set organization_id = p.organization_id
 from public.profiles p
@@ -89,7 +114,10 @@ where j.organization_id is null
   and j.user_id = om.user_id
   and om.active = true;
 
--- Remove legacy overlapping policies that predate team work visibility.
+-- ---------------------------------------------------------------------------
+-- Jobs RLS (consolidated team work policies)
+-- ---------------------------------------------------------------------------
+
 drop policy if exists jobs_own on public.jobs;
 drop policy if exists jobs_select_role on public.jobs;
 drop policy if exists jobs_update_role on public.jobs;
@@ -144,3 +172,64 @@ drop policy if exists jobs_team_work_delete on public.jobs;
 create policy jobs_team_work_delete on public.jobs
   for delete
   using (public.can_manage_org_work(organization_id));
+
+-- ---------------------------------------------------------------------------
+-- job_photos / job_reports RLS
+-- ---------------------------------------------------------------------------
+
+drop policy if exists job_photos_select_role on public.job_photos;
+drop policy if exists job_photos_own on public.job_photos;
+drop policy if exists job_photos_team_work_read on public.job_photos;
+drop policy if exists job_photos_team_work_write on public.job_photos;
+drop policy if exists job_reports_org on public.job_reports;
+drop policy if exists job_reports_owner_all on public.job_reports;
+drop policy if exists job_reports_team_work_read on public.job_reports;
+drop policy if exists job_reports_team_work_write on public.job_reports;
+
+create policy job_photos_team_work_read on public.job_photos
+  for select using (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+    or (
+      organization_id is not null
+      and public.record_shared_with_current_user(organization_id, 'job', job_id)
+    )
+  );
+
+create policy job_photos_team_work_write on public.job_photos
+  for all using (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+  )
+  with check (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+  );
+
+create policy job_reports_team_work_read on public.job_reports
+  for select using (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+    or (
+      organization_id is not null
+      and public.record_shared_with_current_user(organization_id, 'job', job_id)
+    )
+  );
+
+create policy job_reports_team_work_write on public.job_reports
+  for all using (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+  )
+  with check (
+    public.can_manage_org_work(organization_id)
+    or user_id = auth.uid()
+    or public.is_assigned_to_job(job_id)
+  );
+
+notify pgrst, 'reload schema';
