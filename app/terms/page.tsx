@@ -57,6 +57,20 @@ export default function TermsPage() {
           exports before distributing them and for configuring appropriate customer and team access.
         </p>
 
+        <h3>Accounting and third-party sync</h3>
+        <p>
+          EverittOS is not accounting, bookkeeping, tax, payroll, reconciliation, or financial advisory software. EverittOS
+          may provide tools to sync or export operational records, including customers, invoices, payments, and expenses,
+          to third-party accounting platforms such as QuickBooks. These tools are provided as user-controlled sync and
+          export features only.
+        </p>
+        <p>
+          You are responsible for reviewing, approving, correcting, and maintaining the accuracy of all data sent to or
+          received from any third-party accounting platform. QuickBooks or your chosen accounting platform remains your
+          system of record for accounting, taxes, reconciliations, payroll, and financial reporting. EverittOS does not
+          provide accounting or tax advice and does not replace review by a qualified accounting or tax professional.
+        </p>
+
         <h3>Accounts</h3>
         <p>
           You must provide accurate information and keep credentials secure. EverittOS supports email and password
