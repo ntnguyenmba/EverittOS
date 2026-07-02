@@ -36,26 +36,42 @@ export function RoleDashboard({
   const upcoming = active
     .filter((j) => j.due_date)
     .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
-    .slice(0, 5);
+    .slice(0, 8);
 
   const monthStart = new Date();
   monthStart.setDate(1);
   const createdThisMonth = jobs.filter((j) => j.start_date && j.start_date >= monthStart.toISOString().slice(0, 10)).length;
+  const isOwnerOrManager = role === 'owner' || role === 'manager';
+  const workspaceTitle = role === 'owner' ? 'Team manager dashboard' : 'Your workspace';
+  const workspaceIntro = role === 'owner'
+    ? 'This shows the same operational work your managers see across the team.'
+    : 'Track your active work, schedule, photos, reports, and team activity.';
 
   return (
     <div className="role-dashboard">
-      <h3>Your workspace</h3>
+      <div className="dashboard-section-head">
+        <div>
+          <h3>{workspaceTitle}</h3>
+          <p className="muted">{workspaceIntro}</p>
+        </div>
+        {role === 'owner' ? (
+          <Link href="/team" className="dashboard-section-link">
+            View team
+          </Link>
+        ) : null}
+      </div>
+
       <div className="stats-grid">
         <div className="stat-card">
-          <span>Active jobs</span>
+          <span>{role === 'owner' ? 'Team active jobs' : 'Active jobs'}</span>
           <strong>{active.length}</strong>
         </div>
         <div className="stat-card">
-          <span>Completed</span>
+          <span>{role === 'owner' ? 'Team completed jobs' : 'Completed'}</span>
           <strong>{completed.length}</strong>
         </div>
         <div className="stat-card">
-          <span>Overdue</span>
+          <span>{role === 'owner' ? 'Team overdue jobs' : 'Overdue'}</span>
           <strong>{overdue.length}</strong>
         </div>
         {!isClientRole(role) && !isContractorRole(role) && (
@@ -65,35 +81,35 @@ export function RoleDashboard({
               <strong>{customerCount}</strong>
             </div>
             <div className="stat-card">
-              <span>Team</span>
+              <span>Team members</span>
               <strong>{teamCount}</strong>
             </div>
           </>
         )}
         <div className="stat-card">
-          <span>Photos</span>
+          <span>Team photos</span>
           <strong>{photoCount}</strong>
         </div>
         <div className="stat-card">
-          <span>Reports</span>
+          <span>Team reports</span>
           <strong>{reportCount}</strong>
         </div>
-        {(role === 'owner' || role === 'manager') && (
+        {isOwnerOrManager && (
           <div className="stat-card">
             <span>Team activity</span>
             <strong>{activityCount}</strong>
           </div>
         )}
-        {(role === 'owner' || role === 'manager') && (
+        {isOwnerOrManager && (
           <div className="stat-card">
-            <span>Jobs this month</span>
+            <span>{role === 'owner' ? 'Team jobs this month' : 'Jobs this month'}</span>
             <strong>{createdThisMonth}</strong>
           </div>
         )}
       </div>
 
       <div className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
-        <h4>Upcoming jobs</h4>
+        <h4>{role === 'owner' ? 'Upcoming team jobs' : 'Upcoming jobs'}</h4>
         {upcoming.length === 0 && <p className="muted">No upcoming due dates.</p>}
         {upcoming.map((job) => (
           <div key={job.id} className="list-row">
