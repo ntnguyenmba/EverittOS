@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
@@ -42,7 +42,9 @@ export default function NewJobPage() {
           </Link>
         }
       />
-      <JobCreator onJobCreated={() => router.push('/jobs')} />
+      <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
+        <JobCreator onJobCreated={() => router.push('/jobs')} />
+      </Suspense>
     </AppShell>
   );
 }

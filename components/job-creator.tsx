@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
@@ -26,6 +27,7 @@ type TeamOption = {
 };
 
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
+  const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -36,6 +38,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
+
+  useEffect(() => {
+    const preassigned = searchParams.get('assigned_to');
+    if (preassigned) setAssignedTo(preassigned);
+  }, [searchParams]);
 
   useEffect(() => {
     async function loadTeam() {

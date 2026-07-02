@@ -23,6 +23,7 @@ function SchedulePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rangeFilter = searchParams.get('range');
+  const memberFilter = searchParams.get('member');
   const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -73,7 +74,11 @@ function SchedulePageContent() {
       return;
     }
 
-    setJobs((data || []) as ScheduleJob[]);
+    let rows = (data || []) as ScheduleJob[];
+    if (memberFilter) {
+      rows = rows.filter((job) => job.assigned_to === memberFilter);
+    }
+    setJobs(rows);
 
     let workersQuery = supabase.from('workers').select('id, name').order('name');
     if (org?.organizationId) {
@@ -90,8 +95,8 @@ function SchedulePageContent() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+  }, [memberFilter]);
 
   const visibleJobs = useMemo(() => {
     if (rangeFilter !== 'upcoming') return jobs;

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
+import { TeamCommandCenter } from '@/components/dashboard/team-command-center';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { RoleDashboard } from '@/components/role-dashboard';
@@ -13,7 +14,7 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -179,7 +180,9 @@ export default function DashboardPage() {
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
 
-        {!loading ? (
+        <TeamCommandCenter enabled={isAdminRole(role)} />
+
+        {!loading && !isAdminRole(role) ? (
           <RoleDashboard
             role={role}
             jobs={managerWorkspaceMetrics.jobs}

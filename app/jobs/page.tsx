@@ -40,6 +40,8 @@ function JobsList() {
   const statusFilter = searchParams.get('status');
   const periodFilter = searchParams.get('period');
   const assignmentFilter = searchParams.get('filter');
+  const assignedToFilter = searchParams.get('assigned_to');
+  const createdFromFilter = searchParams.get('from');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -71,6 +73,8 @@ function JobsList() {
       if (statusFilter) params.set('status', statusFilter);
       if (periodFilter) params.set('period', periodFilter);
       if (assignmentFilter) params.set('filter', assignmentFilter);
+      if (assignedToFilter) params.set('assigned_to', assignedToFilter);
+      if (createdFromFilter) params.set('from', createdFromFilter);
 
       const res = await fetch(`/api/jobs?${params.toString()}`);
       const json = (await res.json()) as { jobs?: Job[]; error?: string };
@@ -91,7 +95,7 @@ function JobsList() {
     }
 
     void load();
-  }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter, appFeedback]);
+  }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter, appFeedback]);
 
   async function removeJob(job: Job) {
     if (!window.confirm(`Remove job "${job.title}"?`)) return;
@@ -116,6 +120,11 @@ function JobsList() {
             </Link>
           }
         />
+        {assignedToFilter || statusFilter || createdFromFilter ? (
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Filtered view. <Link href="/jobs">Show all jobs</Link>
+          </p>
+        ) : null}
         {isManagerRole(role) ? (
           <p className="muted" style={{ marginBottom: 12 }}>
             {assignmentFilter === 'unassigned' ? (

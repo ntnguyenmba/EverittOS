@@ -21,6 +21,8 @@ export async function GET(request: Request) {
   const status = url.searchParams.get('status') || undefined;
   const period = url.searchParams.get('period');
   const assignmentFilter = url.searchParams.get('filter');
+  const assignedTo = url.searchParams.get('assigned_to') || undefined;
+  const createdFrom = url.searchParams.get('from') || undefined;
   const completedSince =
     period === 'week' && status === 'completed'
       ? new Date(Date.now() - 7 * 86400000).toISOString()
@@ -35,7 +37,9 @@ export async function GET(request: Request) {
       customerId,
       status,
       completedSince,
-      unassignedOnly: assignmentFilter === 'unassigned'
+      unassignedOnly: assignmentFilter === 'unassigned',
+      assignedTo,
+      createdFrom
     }
   );
 
