@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { PageHeader } from '@/components/page-header';
+import { useTranslation } from '@/components/locale-provider';
 import type { RouteStop } from '@/lib/route-optimization';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -21,6 +22,7 @@ type RouteRun = {
 
 export default function RoutesPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -40,7 +42,7 @@ export default function RoutesPage() {
       return;
     }
     setRuns(json.runs || []);
-  }, [appFeedback]);
+  }, [appFeedback, t]);
 
   useEffect(() => {
     async function init() {
@@ -76,7 +78,7 @@ export default function RoutesPage() {
     const json = await res.json();
     setOptimizing(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to build route.');
+      appFeedback.error(json.error || t('pages.routes.optimizeError'));
       return;
     }
     setSelectedRun(json.run);
@@ -87,11 +89,11 @@ export default function RoutesPage() {
   }
 
   async function applyRoute(runId: string) {
-    if (!window.confirm('Apply this route order to scheduled jobs?')) return;
+    if (!window.confirm(t('pages.routes.applyConfirm'))) return;
     const res = await fetch(`/api/routes/${runId}/apply`, { method: 'POST' });
     const json = await res.json();
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to apply route.');
+      appFeedback.error(json.error || t('pages.routes.applyError'));
       return;
     }
     appFeedback.saved();
@@ -100,31 +102,28 @@ export default function RoutesPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader
-        title="Route planning"
-        subtitle="Basic job ordering by address and schedule. Not true drive-time optimization."
-      />
+      <PageHeader title={t('pages.routes.title')} subtitle={t('pages.routes.subtitle')} />
 
       {canManage ? (
         <div className="card" style={{ marginBottom: 16 }}>
           <input className="input" type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
           <button type="button" className="btn btn-primary" style={{ marginTop: 8 }} disabled={optimizing} onClick={() => void optimize()}>
-            {optimizing ? 'Building…' : 'Build route'}
+            {optimizing ? t('pages.routes.building') : t('pages.routes.buildRoute')}
           </button>
         </div>
       ) : null}
 
-      {loading ? <p className="muted">Loading route runs…</p> : null}
-      {!loading && runs.length === 0 ? <p className="muted">No route runs yet.</p> : null}
+      {loading ? <p className="muted">{t('pages.routes.loading')}</p> : null}
+      {!loading && runs.length === 0 ? <p className="muted">{t('pages.routes.empty')}</p> : null}
 
       {!loading && runs.length > 0 ? (
         <div className="card">
           <table className="table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Stops</th>
+                <th>{t('pages.routes.colDate')}</th>
+                <th>{t('pages.routes.colStatus')}</th>
+                <th>{t('pages.routes.colStops')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -136,11 +135,11 @@ export default function RoutesPage() {
                   <td>{(run.optimized_stops || []).length}</td>
                   <td className="table-actions">
                     <button type="button" className="btn btn-sm" onClick={() => setSelectedRun(run)}>
-                      View
+                      {t('pages.routes.view')}
                     </button>
                     {canManage && run.status !== 'applied' ? (
                       <button type="button" className="btn btn-sm btn-primary" onClick={() => void applyRoute(run.id)}>
-                        Apply
+                        {t('pages.routes.apply')}
                       </button>
                     ) : null}
                   </td>
@@ -153,12 +152,12 @@ export default function RoutesPage() {
 
       {selectedRun ? (
         <div className="card" style={{ marginTop: 16 }}>
-          <h2>Stops for {selectedRun.service_date}</h2>
+          <h2>{t('pages.routes.stopsFor', { date: selectedRun.service_date })}</h2>
           <ol>
             {(selectedRun.optimized_stops || []).map((stop) => (
               <li key={stop.job_id} style={{ marginBottom: 8 }}>
-                {stop.sort_order}. {stop.title} — {stop.address || 'Missing address'}
-                {stop.missing_address ? <span className="muted"> (address needed)</span> : null}
+                {stop.sort_order}. {stop.title} — {stop.address || t('pages.routes.missingAddress')}
+                {stop.missing_address ? <span className="muted"> ({t('pages.routes.addressNeeded')})</span> : null}
               </li>
             ))}
           </ol>

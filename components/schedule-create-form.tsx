@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { fetchOrganizationContext } from '@/lib/organization';
+import { normalizeRole } from '@/lib/roles';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { combineDateAndTime } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
@@ -33,11 +34,14 @@ export function ScheduleCreateForm() {
         router.push('/login?next=/schedule/new');
         return;
       }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       const org = await fetchOrganizationContext(user.id);
+      const workspaceRole = normalizeRole(org?.role || profile?.role);
       const { data } = await scopeJobsForWorkspace(
         supabase.from('jobs').select('id, title').order('created_at', { ascending: false }),
         user.id,
-        org?.organizationId
+        org?.organizationId,
+        workspaceRole
       );
       setJobs((data || []) as JobOption[]);
       if (data?.[0]?.id) setJobId(data[0].id);

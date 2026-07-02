@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
-import { cadenceLabel, RECURRING_CADENCES } from '@/lib/recurring-invoices';
+import { useTranslation } from '@/components/locale-provider';
+import { RECURRING_CADENCES } from '@/lib/recurring-invoices';
 
 type RecurringRun = {
   id: string;
@@ -31,6 +32,7 @@ const EMPTY_FORM = {
 };
 
 export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
+  const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [templates, setTemplates] = useState<RecurringTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,13 +42,22 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
   const [saving, setSaving] = useState(false);
   const [runningId, setRunningId] = useState('');
 
+  const cadenceLabel = useCallback(
+    (cadence: string) => {
+      const key = `pages.recurring.cadence.${cadence}` as const;
+      const translated = t(key);
+      return translated === key ? t('pages.recurring.cadence.monthly') : translated;
+    },
+    [t]
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/recurring-invoices');
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load recurring invoices.');
+      appFeedback.error(json.error || t('pages.recurring.loadError'));
       return;
     }
     if (json.schemaReady === false) {
@@ -56,7 +67,7 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
     }
     setSchemaReady(true);
     setTemplates(json.templates || []);
-  }, [appFeedback]);
+  }, [appFeedback, t]);
 
   useEffect(() => {
     void load();
@@ -73,7 +84,7 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
     const json = await res.json();
     setSaving(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to create template.');
+      appFeedback.error(json.error || t('pages.recurring.createError'));
       return;
     }
     appFeedback.saved();
@@ -90,7 +101,7 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
     });
     const json = await res.json();
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to update template.');
+      appFeedback.error(json.error || t('pages.recurring.updateError'));
       return;
     }
     void load();
@@ -106,17 +117,17 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
     const json = await res.json();
     setRunningId('');
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to run template.');
+      appFeedback.error(json.error || t('pages.recurring.runError'));
       return;
     }
-    appFeedback.success(json.message || 'Draft invoice created. Check the Drafts tab above.');
+    appFeedback.success(json.message || t('pages.recurring.draftCreated'));
     void load();
   }
 
   if (!schemaReady) {
     return (
       <div className="card" role="status">
-        <p className="muted">Recurring invoice tables are not set up yet. Run the latest Supabase migrations, then refresh.</p>
+        <p className="muted">{t('pages.recurring.schemaNotReady')}</p>
       </div>
     );
   }
@@ -125,20 +136,20 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
     <section className="card" style={{ marginTop: 16 }}>
       <div className="page-header" style={{ marginBottom: 12 }}>
         <div>
-          <h2>Recurring invoices</h2>
-          <p className="page-subtitle">Generate draft invoices on a schedule. Nothing is auto-charged or auto-sent.</p>
+          <h2>{t('pages.recurring.title')}</h2>
+          <p className="page-subtitle">{t('pages.recurring.subtitle')}</p>
         </div>
         {canManage ? (
           <button type="button" className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? 'Close' : 'Add template'}
+            {showForm ? t('pages.recurring.close') : t('pages.recurring.addTemplate')}
           </button>
         ) : null}
       </div>
 
       {showForm && canManage ? (
         <div style={{ marginBottom: 16 }}>
-          <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input className="input" type="number" min="0" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={{ marginTop: 8 }} />
+          <input className="input" placeholder={t('pages.recurring.titleField')} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <input className="input" type="number" min="0" step="0.01" placeholder={t('pages.recurring.amount')} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={{ marginTop: 8 }} />
           <select className="input" value={form.cadence} onChange={(e) => setForm({ ...form, cadence: e.target.value })} style={{ marginTop: 8 }}>
             {RECURRING_CADENCES.map((c) => (
               <option key={c} value={c}>
@@ -148,22 +159,22 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
           </select>
           <input className="input" type="date" value={form.next_run_on} onChange={(e) => setForm({ ...form, next_run_on: e.target.value })} style={{ marginTop: 8 }} />
           <button type="button" className="btn btn-primary" style={{ marginTop: 8 }} disabled={saving} onClick={() => void createTemplate()}>
-            {saving ? 'Saving…' : 'Save template'}
+            {saving ? t('pages.recurring.saving') : t('pages.recurring.saveTemplate')}
           </button>
         </div>
       ) : null}
 
-      {loading ? <p className="muted">Loading recurring templates…</p> : null}
-      {!loading && templates.length === 0 ? <p className="muted">No recurring invoice templates yet.</p> : null}
+      {loading ? <p className="muted">{t('pages.recurring.loading')}</p> : null}
+      {!loading && templates.length === 0 ? <p className="muted">{t('pages.recurring.empty')}</p> : null}
       {!loading && templates.length > 0 ? (
         <table className="table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Amount</th>
-              <th>Cadence</th>
-              <th>Next run</th>
-              <th>Status</th>
+              <th>{t('pages.recurring.colTitle')}</th>
+              <th>{t('pages.recurring.colAmount')}</th>
+              <th>{t('pages.recurring.colCadence')}</th>
+              <th>{t('pages.recurring.colNextRun')}</th>
+              <th>{t('pages.recurring.colStatus')}</th>
               <th></th>
             </tr>
           </thead>
@@ -173,16 +184,16 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
                 <td>{template.title}</td>
                 <td>{Number(template.amount).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
                 <td>{cadenceLabel(template.cadence)}</td>
-                <td>{template.next_run_on || 'Not set'}</td>
-                <td>{template.active ? 'Active' : 'Paused'}</td>
+                <td>{template.next_run_on || t('pages.recurring.notSet')}</td>
+                <td>{template.active ? t('pages.recurring.active') : t('pages.recurring.paused')}</td>
                 <td className="table-actions">
                   {canManage ? (
                     <>
                       <button type="button" className="btn btn-sm" disabled={runningId === template.id} onClick={() => void runNow(template)}>
-                        {runningId === template.id ? 'Running…' : 'Run now'}
+                        {runningId === template.id ? t('pages.recurring.running') : t('pages.recurring.runNow')}
                       </button>
                       <button type="button" className="btn btn-sm" onClick={() => void toggleActive(template)}>
-                        {template.active ? 'Pause' : 'Resume'}
+                        {template.active ? t('pages.recurring.pause') : t('pages.recurring.resume')}
                       </button>
                     </>
                   ) : null}
@@ -193,18 +204,18 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
         </table>
       ) : null}
 
-      {!loading && templates.some((t) => (t.recurring_invoice_runs || []).length) ? (
+      {!loading && templates.some((row) => (row.recurring_invoice_runs || []).length) ? (
         <div style={{ marginTop: 16 }}>
-          <h3>Recent runs</h3>
+          <h3>{t('pages.recurring.recentRuns')}</h3>
           <ul>
-            {templates.flatMap((t) =>
-              (t.recurring_invoice_runs || []).slice(0, 3).map((run) => (
+            {templates.flatMap((row) =>
+              (row.recurring_invoice_runs || []).slice(0, 3).map((run) => (
                 <li key={run.id} className="muted">
-                  {t.title} · {run.run_for_date} · {run.status}
+                  {row.title} · {run.run_for_date} · {run.status}
                   {run.invoice_id ? (
                     <>
                       {' '}
-                      · <Link href="/invoices">Invoice created</Link>
+                      · <Link href="/invoices">{t('pages.recurring.invoiceCreated')}</Link>
                     </>
                   ) : null}
                 </li>

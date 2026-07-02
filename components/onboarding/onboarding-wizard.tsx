@@ -329,27 +329,36 @@ export function OnboardingWizard() {
   }
 
   async function createJobRecord(title: string, customer: string | null, date: string | null) {
-    const { data, error } = await supabase
-      .from('jobs')
-      .insert({
-        user_id: userId,
-        organization_id: orgId,
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         title,
         customer_name: customer,
-        status: 'new',
-        start_date: date,
-        due_date: date
+        status: 'new'
       })
-      .select('id')
-      .single();
+    });
+    const json = (await res.json()) as { job?: { id: string }; error?: string };
+    if (!res.ok || !json.job?.id) {
+      throw new Error(json.error || 'Unable to create job.');
+    }
 
-    if (error) throw error;
+    if (date) {
+      const { error: scheduleError } = await supabase
+        .from('jobs')
+        .update({ start_date: date, due_date: date })
+        .eq('id', json.job.id);
+      if (scheduleError) {
+        console.error('[everittos-job] onboarding schedule update failed', scheduleError.message);
+      }
+    }
+
     if (orgId) {
-      await logClientActivity(orgId, 'job', data.id, 'job_created', `Job ${title} created`);
+      await logClientActivity(orgId, 'job', json.job.id, 'job_created', `Job ${title} created`);
       void fetch('/api/integrations/google-calendar/sync-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId: data.id })
+        body: JSON.stringify({ jobId: json.job.id })
       });
     }
   }

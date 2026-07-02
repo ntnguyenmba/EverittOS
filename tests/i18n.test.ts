@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { DEFAULT_LOCALE, LOCALE_LABELS, LOCALES, normalizeLocale } from '@/lib/i18n/config';
+import { collectMessageKeys, missingMessageKeys } from '@/lib/i18n/collect-keys';
 import { getMessages } from '@/lib/i18n/get-messages';
 
 describe('i18n locale config', () => {
@@ -34,5 +35,18 @@ describe('i18n message catalogs', () => {
   it('falls back to English catalog for unknown locale', () => {
     const messages = getMessages('en');
     assert.equal(getMessages('en').nav.jobs, messages.nav.jobs);
+  });
+
+  it('keeps en, es, and vi catalogs in parity', () => {
+    const en = getMessages('en');
+    const es = getMessages('es');
+    const vi = getMessages('vi');
+    const enKeys = collectMessageKeys(en);
+
+    assert.ok(enKeys.length > 500, 'expected a large English catalog');
+    assert.deepEqual(missingMessageKeys(en, es), [], `es missing: ${missingMessageKeys(en, es).slice(0, 10).join(', ')}`);
+    assert.deepEqual(missingMessageKeys(en, vi), [], `vi missing: ${missingMessageKeys(en, vi).slice(0, 10).join(', ')}`);
+    assert.deepEqual(missingMessageKeys(es, en), [], `en missing from es: ${missingMessageKeys(es, en).slice(0, 10).join(', ')}`);
+    assert.deepEqual(missingMessageKeys(vi, en), [], `en missing from vi: ${missingMessageKeys(vi, en).slice(0, 10).join(', ')}`);
   });
 });

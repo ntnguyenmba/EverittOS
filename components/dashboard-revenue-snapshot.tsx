@@ -24,7 +24,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: '/invoices'
     },
     {
-      label: 'Overdue invoices',
+      label: t('dashboard.revenue.overdueInvoices'),
       value: String(metrics.overdueInvoiceCount),
       href: '/invoices'
     },
@@ -34,12 +34,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: '/jobs?status=completed'
     },
     {
-      label: 'Completed this month',
+      label: t('dashboard.revenue.completedThisMonth'),
       value: String(metrics.jobsCompletedThisMonth),
       href: '/jobs?status=completed'
     },
     {
-      label: 'Upcoming jobs',
+      label: t('dashboard.revenue.upcomingJobs'),
       value: String(metrics.upcomingJobs),
       href: '/schedule'
     },
@@ -49,27 +49,27 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: '/customers'
     },
     {
-      label: 'Expenses this month',
+      label: t('dashboard.revenue.expensesMonth'),
       value: formatCurrency(metrics.expenseTotalThisMonth),
       href: '/expenses'
     },
     {
-      label: 'Net estimate',
+      label: t('dashboard.revenue.netEstimate'),
       value: formatCurrency(metrics.netEstimateThisMonth),
       href: '/analytics'
     },
     {
-      label: 'Bookings this month',
+      label: t('dashboard.revenue.bookingsMonth'),
       value: String(metrics.bookingCountThisMonth),
       href: '/bookings'
     },
     {
-      label: 'Messages',
+      label: t('dashboard.revenue.messagesCount'),
       value: String(metrics.messageCount),
       href: '/messages'
     },
     {
-      label: 'Reports',
+      label: t('dashboard.revenue.reportsCount'),
       value: String(metrics.reportCount),
       href: '/jobs'
     }

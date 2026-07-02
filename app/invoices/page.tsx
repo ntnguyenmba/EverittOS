@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { RecurringInvoicesPanel } from '@/components/recurring-invoices-panel';
+import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -12,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 
 function InvoicesPageContent() {
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -37,10 +39,8 @@ function InvoicesPageContent() {
   return (
     <AppShell plan={plan} role={role}>
       <header className="page-header">
-        <h1>Invoices</h1>
-        <p className="page-subtitle">
-          Send invoices to customers in one step. Amount and message auto-save while you compose.
-        </p>
+        <h1>{t('pages.invoices.title')}</h1>
+        <p className="page-subtitle">{t('pages.invoices.subtitle')}</p>
       </header>
 
       <OutboundHub
@@ -57,8 +57,9 @@ function InvoicesPageContent() {
 }
 
 export default function InvoicesPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<p className="muted">Loading invoices…</p>}>
+    <Suspense fallback={<p className="muted">{t('pages.invoices.loading')}</p>}>
       <InvoicesPageContent />
     </Suspense>
   );

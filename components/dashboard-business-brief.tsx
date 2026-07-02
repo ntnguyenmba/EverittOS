@@ -71,7 +71,8 @@ export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBus
           .select('id', { count: 'exact', head: true })
           .or(`start_date.eq.${today},due_date.eq.${today}`),
         user.id,
-        organizationId
+        organizationId,
+        undefined
       );
       const overdueJobsQuery = scopeJobsForWorkspace(
         supabase
@@ -80,7 +81,8 @@ export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBus
           .lt('due_date', today)
           .not('status', 'in', '("done","complete","completed","cancelled","canceled","closed")'),
         user.id,
-        organizationId
+        organizationId,
+        undefined
       );
       const leadsQuery = supabase
         .from('customers')

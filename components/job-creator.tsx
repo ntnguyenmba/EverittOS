@@ -82,15 +82,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role, plan').eq('id', user.id).maybeSingle();
-    const role = normalizeRole(profile?.role);
-    if (!isManagerRole(role)) {
-      setPermissionBlocked(true);
-      setLoading(false);
-      appFeedback.error('Only owners, admins, and managers can create jobs.');
-      return;
-    }
-
     const workspace = await ensureWorkspaceForSave(user.id);
     if (!workspace.ok) {
       setLoading(false);
@@ -98,6 +89,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
     const org = workspace.workspace;
+
+    const { data: profile } = await supabase.from('profiles').select('role, plan').eq('id', user.id).maybeSingle();
+    const role = normalizeRole(org.role || profile?.role);
+    if (!isManagerRole(role)) {
+      setPermissionBlocked(true);
+      setLoading(false);
+      appFeedback.error('Only owners, admins, and managers can create jobs.');
+      return;
+    }
 
     const { plan: orgPlan } = await resolveOrganizationPlan(supabase, user.id);
     const usage = await fetchUsageCounts(user.id, org.organizationId);
@@ -138,6 +138,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setLoading(false);
 
     if (!createRes.ok) {
+      console.error('[everittos-job] create failed', {
+        status: createRes.status,
+        error: createJson.error
+      });
       appFeedback.error(createJson.error || 'Unable to save job.');
       return;
     }

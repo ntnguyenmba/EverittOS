@@ -52,7 +52,10 @@ const ALWAYS_LOG = new Set([
   'google_calendar_callback',
   'google_calendar_status',
   'google_calendar_disconnect',
-  'google_calendar_token_refresh'
+  'google_calendar_token_refresh',
+  'job_create_failed',
+  'job_create_succeeded',
+  'job_list_failed'
 ]);
 
 /** Console-safe auth logging. Critical failures always log; verbose logs are development-only. */

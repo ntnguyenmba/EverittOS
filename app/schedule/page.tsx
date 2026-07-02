@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { combineDateAndTime } from '@/lib/schedule-times';
 import { canAssignJobs, normalizeRole, type UserRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -53,16 +54,16 @@ function SchedulePageContent() {
     setOrgId(org?.organizationId || '');
     setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(workspaceRole));
 
-    let jobsQuery = supabase
-      .from('jobs')
-      .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
-      .not('status', 'eq', 'cancelled')
-      .order('due_date', { ascending: true, nullsFirst: false });
-    if (org?.organizationId) {
-      jobsQuery = jobsQuery.eq('organization_id', org.organizationId);
-    } else {
-      jobsQuery = jobsQuery.eq('user_id', user.id);
-    }
+    let jobsQuery = scopeJobsForWorkspace(
+      supabase
+        .from('jobs')
+        .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
+        .not('status', 'eq', 'cancelled')
+        .order('due_date', { ascending: true, nullsFirst: false }),
+      user.id,
+      org?.organizationId,
+      workspaceRole
+    );
 
     const { data, error: fetchError } = await jobsQuery;
 

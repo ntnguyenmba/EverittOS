@@ -2,11 +2,18 @@
 
 import { useCallback, useMemo } from 'react';
 import { errorFeedback, readApiError, type ActionFeedback } from '@/lib/action-messages';
-import { FEEDBACK, type FeedbackLabelKey } from '@/lib/feedback-labels';
+import { type FeedbackLabelKey } from '@/lib/feedback-labels';
 import { useToastContext, type ToastKind } from '@/components/feedback/toast-provider';
+import { useTranslation } from '@/components/locale-provider';
 
 export function useAppFeedback() {
   const { push } = useToastContext();
+  const { t } = useTranslation();
+
+  const feedbackMessage = useCallback(
+    (key: FeedbackLabelKey) => t(`feedback.${key}`),
+    [t]
+  );
 
   const show = useCallback(
     (kind: ToastKind, message: string) => {
@@ -16,17 +23,17 @@ export function useAppFeedback() {
   );
 
   const success = useCallback(
-    (message: string = FEEDBACK.saved) => {
-      push({ kind: 'success', message });
+    (message?: string) => {
+      push({ kind: 'success', message: message ?? feedbackMessage('saved') });
     },
-    [push]
+    [push, feedbackMessage]
   );
 
   const error = useCallback(
-    (raw: string | null | undefined, fallback = 'Something went wrong. Try again.') => {
-      push({ kind: 'error', message: errorFeedback(raw, fallback).message });
+    (raw: string | null | undefined, fallback?: string) => {
+      push({ kind: 'error', message: errorFeedback(raw, fallback ?? t('feedback.genericError')).message });
     },
-    [push]
+    [push, t]
   );
 
   const info = useCallback(
@@ -38,9 +45,9 @@ export function useAppFeedback() {
 
   const label = useCallback(
     (key: FeedbackLabelKey) => {
-      push({ kind: 'success', message: FEEDBACK[key] });
+      push({ kind: 'success', message: feedbackMessage(key) });
     },
-    [push]
+    [push, feedbackMessage]
   );
 
   const fromActionFeedback = useCallback(
@@ -52,12 +59,12 @@ export function useAppFeedback() {
   );
 
   const apiError = useCallback(
-    async (res: Response, fallback = 'Request failed.') => {
-      const message = await readApiError(res, fallback);
+    async (res: Response, fallback?: string) => {
+      const message = await readApiError(res, fallback ?? t('feedback.requestFailed'));
       push({ kind: 'error', message });
       return message;
     },
-    [push]
+    [push, t]
   );
 
   return useMemo(
@@ -79,8 +86,8 @@ export function useAppFeedback() {
       syncComplete: () => label('syncComplete'),
       fromActionFeedback,
       apiError,
-      FEEDBACK
+      feedbackMessage
     }),
-    [show, success, error, info, label, fromActionFeedback, apiError]
+    [show, success, error, info, label, fromActionFeedback, apiError, feedbackMessage]
   );
 }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
+import { countOrganizationJobs } from '@/lib/jobs-org-query';
 
 export type DashboardRevenueMetrics = {
   revenueThisMonth: number;
@@ -17,6 +18,7 @@ export type DashboardRevenueMetrics = {
   messageCount: number;
   reportCount: number;
   jobsByStatus: Record<string, number>;
+  totalJobs: number;
 };
 
 function monthStartDateIso(): string {
@@ -55,7 +57,8 @@ export async function fetchDashboardRevenueMetrics(
     bookingCountThisMonth: 0,
     messageCount: 0,
     reportCount: 0,
-    jobsByStatus: {}
+    jobsByStatus: {},
+    totalJobs: 0
   };
 
   if (!organizationId) return empty;
@@ -70,7 +73,8 @@ export async function fetchDashboardRevenueMetrics(
     expensesRes,
     bookingsRes,
     messagesRes,
-    reportsRes
+    reportsRes,
+    totalJobsRes
   ] = await Promise.all([
     supabase
       .from('invoices')
@@ -117,7 +121,8 @@ export async function fetchDashboardRevenueMetrics(
     supabase
       .from('job_reports')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
+      .eq('organization_id', organizationId),
+    countOrganizationJobs(supabase, organizationId)
   ]);
 
   const safeCount = (res: { count: number | null; error: unknown }) => (res.error ? 0 : res.count || 0);
@@ -174,7 +179,8 @@ export async function fetchDashboardRevenueMetrics(
     bookingCountThisMonth: safeCount(bookingsRes),
     messageCount: safeCount(messagesRes),
     reportCount: safeCount(reportsRes),
-    jobsByStatus
+    jobsByStatus,
+    totalJobs: totalJobsRes.error ? Object.values(jobsByStatus).reduce((sum, n) => sum + n, 0) : totalJobsRes.count
   };
 }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 
 type QuickBooksStatus = {
   configured: boolean;
@@ -14,6 +15,7 @@ type QuickBooksStatus = {
 
 export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }) {
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [status, setStatus] = useState<QuickBooksStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,11 +26,11 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load QuickBooks status.');
+      appFeedback.error(json.error || t('pages.quickbooks.loadError'));
       return;
     }
     setStatus(json);
-  }, [appFeedback]);
+  }, [appFeedback, t]);
 
   useEffect(() => {
     void load();
@@ -39,9 +41,9 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     if (qb === 'connected') appFeedback.connected();
     if (qb === 'error') {
       const reason = searchParams.get('reason') || 'connect_failed';
-      appFeedback.error(`QuickBooks connection failed (${reason}).`);
+      appFeedback.error(t('pages.quickbooks.connectFailed', { reason }));
     }
-  }, [searchParams, appFeedback]);
+  }, [searchParams, appFeedback, t]);
 
   async function disconnect() {
     setBusy(true);
@@ -49,37 +51,44 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     const json = await res.json();
     setBusy(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to disconnect QuickBooks.');
+      appFeedback.error(json.error || t('pages.quickbooks.loadError'));
       return;
     }
     appFeedback.disconnected();
     void load();
   }
 
-  if (loading) return <p className="muted">Loading QuickBooks status…</p>;
+  if (loading) return <p className="muted">{t('pages.quickbooks.loading')}</p>;
   if (!status) return null;
 
   const connected = status.connection?.status === 'connected';
+  const statusText = connected
+    ? t('pages.quickbooks.connected')
+    : status.configured
+      ? t('pages.quickbooks.notConnected')
+      : t('pages.quickbooks.notConfigured');
 
   return (
     <div>
       <p>
-        Status: <strong>{connected ? 'Connected' : status.configured ? 'Not connected' : 'Server not configured'}</strong>
+        {t('pages.quickbooks.statusLabel')}: <strong>{statusText}</strong>
       </p>
       {!status.configured ? <p className="muted">{status.setupMessage}</p> : null}
       {status.connection?.last_sync_at ? (
-        <p className="muted">Last sync: {new Date(status.connection.last_sync_at).toLocaleString()}</p>
+        <p className="muted">
+          {t('pages.quickbooks.lastSync')}: {new Date(status.connection.last_sync_at).toLocaleString()}
+        </p>
       ) : null}
 
       {canManage && status.configured ? (
         <div className="settings-actions" style={{ marginTop: 12 }}>
           {!connected ? (
             <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">
-              Connect QuickBooks
+              {t('pages.quickbooks.connect')}
             </a>
           ) : (
             <button type="button" className="btn" disabled={busy} onClick={() => void disconnect()}>
-              Disconnect QuickBooks
+              {t('pages.quickbooks.disconnect')}
             </button>
           )}
         </div>
@@ -87,7 +96,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       {status.recentLogs.length ? (
         <div style={{ marginTop: 16 }}>
-          <h4>Recent sync log</h4>
+          <h4>{t('pages.quickbooks.recentSyncLog')}</h4>
           <ul>
             {status.recentLogs.map((log) => (
               <li key={log.id} className="muted">
@@ -99,7 +108,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         </div>
       ) : (
         <p className="muted" style={{ marginTop: 12 }}>
-          No sync attempts yet.
+          {t('pages.quickbooks.noSyncAttempts')}
         </p>
       )}
     </div>

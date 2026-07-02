@@ -14,13 +14,16 @@ import { customerDisplayAddress, customerDisplayName, type CustomerRecord } from
 import { uploadCustomerLogo } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
+import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [customerId, setCustomerId] = useState('');
   const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -61,13 +64,20 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const org = await fetchOrganizationContext(user.id);
+    const workspaceRole = normalizeRole(org?.role || profile?.role);
     setPlan(normalizePlan(profile?.plan));
-    setCanEdit(isManagerRole(normalizeRole(org?.role || profile?.role)));
+    setCanEdit(isManagerRole(workspaceRole));
 
     const { data: customer, error } = await supabase.from('customers').select('*').eq('id', customerId).single();
     if (error || !customer) {
       setLoading(false);
-      appFeedback.error(error?.message || 'Customer not found');
+      appFeedback.error(error?.message || t('pages.customers.notFound'));
+      return;
+    }
+
+    if (!canAccessWorkspaceRecord(customer, user.id, org?.organizationId, workspaceRole)) {
+      setLoading(false);
+      appFeedback.error(t('pages.customers.notFound'));
       return;
     }
 

@@ -14,10 +14,9 @@ import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
-import { weekAgoIso } from '@/lib/date-filters';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
-import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { RecordActions } from '@/components/record-actions';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { supabase } from '@/lib/supabase';
 
 type Job = {
@@ -35,6 +34,7 @@ type Job = {
 function JobsList() {
   const router = useRouter();
   const { t } = useTranslation();
+  const appFeedback = useAppFeedback();
   const searchParams = useSearchParams();
   const customerFilter = searchParams.get('customer');
   const statusFilter = searchParams.get('status');
@@ -44,10 +44,13 @@ function JobsList() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [removingId, setRemovingId] = useState('');
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      setLoadError('');
       const {
         data: { user }
       } = await supabase.auth.getUser();
@@ -62,41 +65,33 @@ function JobsList() {
       const org = await fetchOrganizationContext(user.id);
       const workspaceRole = normalizeRole(org?.role || profile?.role);
       setRole(workspaceRole);
-      let query = scopeJobsForWorkspace(
-        supabase
-          .from('jobs')
-          .select('id, title, customer_name, customer_id, address, status, completed_at, assigned_to')
-          .order('created_at', { ascending: false }),
-        user.id,
-        org?.organizationId,
-        workspaceRole
-      );
 
-      if (customerFilter) {
-        query = query.eq('customer_id', customerFilter);
-      }
-      if (statusFilter) {
-        query = query.eq('status', statusFilter);
-      }
-      if (periodFilter === 'week' && statusFilter === 'completed') {
-        query = query.gte('completed_at', weekAgoIso());
+      const params = new URLSearchParams();
+      if (customerFilter) params.set('customer', customerFilter);
+      if (statusFilter) params.set('status', statusFilter);
+      if (periodFilter) params.set('period', periodFilter);
+      if (assignmentFilter) params.set('filter', assignmentFilter);
+
+      const res = await fetch(`/api/jobs?${params.toString()}`);
+      const json = (await res.json()) as { jobs?: Job[]; error?: string };
+      if (!res.ok) {
+        const message = json.error || 'Unable to load jobs.';
+        setLoadError(message);
+        appFeedback.error(message);
+        setJobs([]);
+        setLoading(false);
+        return;
       }
 
-      const [{ data }, orgIsDemo] = await Promise.all([
-        query,
-        fetchOrganizationIsDemo(supabase, org?.organizationId)
-      ]);
-      let rows = filterDemoSeedJobs((data || []) as Job[], orgIsDemo);
-      if (assignmentFilter === 'unassigned') {
-        rows = rows.filter((j) => j.status !== 'completed' && j.status !== 'cancelled' && !j.assigned_to);
-      }
+      const orgIsDemo = await fetchOrganizationIsDemo(supabase, org?.organizationId);
+      const rows = filterDemoSeedJobs(json.jobs || [], orgIsDemo);
       const photoCounts = await fetchPhotoCountsByJobIds(rows.map((j) => j.id));
       setJobs(rows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
       setLoading(false);
     }
 
-    load();
-  }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter]);
+    void load();
+  }, [router, customerFilter, statusFilter, periodFilter, assignmentFilter, appFeedback]);
 
   async function removeJob(job: Job) {
     if (!window.confirm(`Remove job "${job.title}"?`)) return;
@@ -137,6 +132,7 @@ function JobsList() {
         ) : null}
 
         <div className="card table-responsive-wrap">
+          {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
           {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
           {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
           {!loading && jobs.length > 0 && (

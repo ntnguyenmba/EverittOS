@@ -42,7 +42,8 @@ export default function DashboardPage() {
     bookingCountThisMonth: 0,
     messageCount: 0,
     reportCount: 0,
-    jobsByStatus: {}
+    jobsByStatus: {},
+    totalJobs: 0
   });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -94,18 +95,18 @@ export default function DashboardPage() {
       <div className="today-page dashboard-home">
         <PageHeader
           title={t('dashboard.welcome')}
-          subtitle="Use the menu or Ask Everitt to open customers, jobs, photos, schedule, invoices, team, and settings."
+          subtitle={t('dashboard.navSubtitle')}
         />
 
         <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
 
-        <section className="dashboard-help-strip" aria-label="EverittOS support">
+        <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
           <div>
-            <h2>Need assistance?</h2>
-            <p>Book an onboarding call for help with customers, jobs, team, scheduling and invoicing.</p>
+            <h2>{t('supportTraining.dashboardTitle')}</h2>
+            <p>{t('supportTraining.dashboardBody')}</p>
           </div>
           <Link href="/support" className="dashboard-help-link">
-            Book call
+            {t('supportTraining.bookFreeCall')}
           </Link>
         </section>
       </div>

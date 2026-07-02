@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { logJobFlowEvent } from '@/lib/job-flow-log';
+import { listWorkspaceJobs } from '@/lib/jobs-org-query';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
@@ -7,6 +9,51 @@ import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+  const ctx = await requireWorkspaceSession();
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  }
+
+  const url = new URL(request.url);
+  const customerId = url.searchParams.get('customer') || undefined;
+  const status = url.searchParams.get('status') || undefined;
+  const period = url.searchParams.get('period');
+  const assignmentFilter = url.searchParams.get('filter');
+  const completedSince =
+    period === 'week' && status === 'completed'
+      ? new Date(Date.now() - 7 * 86400000).toISOString()
+      : undefined;
+
+  const { jobs, error } = await listWorkspaceJobs(
+    ctx.supabase,
+    ctx.userId,
+    ctx.workspace.organizationId,
+    ctx.workspace.role,
+    {
+      customerId,
+      status,
+      completedSince,
+      unassignedOnly: assignmentFilter === 'unassigned'
+    }
+  );
+
+  if (error) {
+    logJobFlowEvent('job_list_failed', {
+      userId: ctx.userId,
+      organizationId: ctx.workspace.organizationId,
+      reason: error
+    });
+    return NextResponse.json({ error: 'Unable to load jobs. Try refreshing the page.' }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    jobs,
+    organizationId: ctx.workspace.organizationId,
+    total: jobs.length
+  });
+}
 
 export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
@@ -66,8 +113,19 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
+    logJobFlowEvent('job_create_failed', {
+      userId: ctx.userId,
+      organizationId: ctx.workspace.organizationId,
+      reason: error.message
+    });
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
+
+  logJobFlowEvent('job_create_succeeded', {
+    userId: ctx.userId,
+    organizationId: ctx.workspace.organizationId,
+    jobId: data.id
+  });
 
   await logWorkspaceActivity(
     ctx.workspace.organizationId,

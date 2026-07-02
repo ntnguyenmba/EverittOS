@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 
 type ThreadMessage = {
   id: string;
@@ -29,6 +30,7 @@ const EMPTY_COMPOSE = {
 };
 
 export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
+  const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load messages.');
+      appFeedback.error(json.error || t('pages.customerMessages.loadError'));
       return;
     }
     if (json.schemaReady === false) {
@@ -55,17 +57,17 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
     }
     setSchemaReady(true);
     setThreads(json.threads || []);
-  }, [appFeedback]);
+  }, [appFeedback, t]);
 
   const loadThread = useCallback(async (threadId: string) => {
     const res = await fetch(`/api/customer-messages/${threadId}`);
     const json = await res.json();
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load thread.');
+      appFeedback.error(json.error || t('pages.customerMessages.threadLoadError'));
       return;
     }
     setThreadDetail({ thread: json.thread, messages: json.messages || [] });
-  }, [appFeedback]);
+  }, [appFeedback, t]);
 
   useEffect(() => {
     void loadThreads();
@@ -87,11 +89,11 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
     const json = await res.json();
     setSending(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to send message.');
+      appFeedback.error(json.error || t('pages.customerMessages.sendError'));
       return;
     }
     if (!json.emailSent) {
-      appFeedback.error(json.deliveryNote || 'Email failed. Message saved with failed status.');
+      appFeedback.error(json.deliveryNote || t('pages.customerMessages.emailFailed'));
     } else {
       appFeedback.sent();
     }
@@ -111,11 +113,11 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
     const json = await res.json();
     setSending(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to send reply.');
+      appFeedback.error(json.error || t('pages.customerMessages.replyError'));
       return;
     }
     if (!json.emailSent) {
-      appFeedback.error(json.deliveryNote || 'Email failed. Reply saved with failed status.');
+      appFeedback.error(json.deliveryNote || t('pages.customerMessages.emailFailed'));
     } else {
       appFeedback.sent();
     }
@@ -127,7 +129,7 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
   if (!schemaReady) {
     return (
       <div className="card" role="status">
-        <p className="muted">Customer messaging tables are not set up yet. Run the latest Supabase migrations, then refresh.</p>
+        <p className="muted">{t('pages.customerMessages.schemaNotReady')}</p>
       </div>
     );
   }
@@ -136,38 +138,38 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
     <div className="card">
       {canManage ? (
         <div style={{ marginBottom: 16 }}>
-          <h2>Compose message</h2>
-          <input className="input" placeholder="Recipient email" value={compose.recipient_email} onChange={(e) => setCompose({ ...compose, recipient_email: e.target.value })} />
-          <input className="input" placeholder="Subject" value={compose.subject} onChange={(e) => setCompose({ ...compose, subject: e.target.value })} style={{ marginTop: 8 }} />
-          <textarea className="input" placeholder="Message" value={compose.message} onChange={(e) => setCompose({ ...compose, message: e.target.value })} style={{ marginTop: 8, minHeight: 100 }} />
+          <h2>{t('pages.customerMessages.composeTitle')}</h2>
+          <input className="input" placeholder={t('pages.customerMessages.recipientEmail')} value={compose.recipient_email} onChange={(e) => setCompose({ ...compose, recipient_email: e.target.value })} />
+          <input className="input" placeholder={t('pages.customerMessages.subject')} value={compose.subject} onChange={(e) => setCompose({ ...compose, subject: e.target.value })} style={{ marginTop: 8 }} />
+          <textarea className="input" placeholder={t('pages.customerMessages.message')} value={compose.message} onChange={(e) => setCompose({ ...compose, message: e.target.value })} style={{ marginTop: 8, minHeight: 100 }} />
           <button type="button" className="btn btn-primary" style={{ marginTop: 8 }} disabled={sending} onClick={() => void sendNewMessage()}>
-            {sending ? 'Sending…' : 'Send email'}
+            {sending ? t('pages.customerMessages.sending') : t('pages.customerMessages.sendEmail')}
           </button>
         </div>
       ) : null}
 
-      <h2>Threads</h2>
-      {loading ? <p className="muted">Loading threads…</p> : null}
-      {!loading && threads.length === 0 ? <p className="muted">No customer message threads yet.</p> : null}
+      <h2>{t('pages.customerMessages.threads')}</h2>
+      {loading ? <p className="muted">{t('pages.customerMessages.loadingThreads')}</p> : null}
+      {!loading && threads.length === 0 ? <p className="muted">{t('pages.customerMessages.emptyThreads')}</p> : null}
       {!loading && threads.length > 0 ? (
         <table className="table">
           <thead>
             <tr>
-              <th>Subject</th>
-              <th>Status</th>
-              <th>Last message</th>
+              <th>{t('pages.customerMessages.colSubject')}</th>
+              <th>{t('pages.customerMessages.colStatus')}</th>
+              <th>{t('pages.customerMessages.colLastMessage')}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {threads.map((thread) => (
               <tr key={thread.id}>
-                <td>{thread.subject || 'No subject'}</td>
+                <td>{thread.subject || t('pages.customerMessages.noSubject')}</td>
                 <td>{thread.status}</td>
                 <td>{thread.last_message_at ? new Date(thread.last_message_at).toLocaleString() : '—'}</td>
                 <td>
                   <button type="button" className="btn btn-sm" onClick={() => setSelectedId(thread.id)}>
-                    Open
+                    {t('pages.customerMessages.open')}
                   </button>
                 </td>
               </tr>
@@ -178,7 +180,7 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
 
       {threadDetail ? (
         <div style={{ marginTop: 16 }}>
-          <h3>{threadDetail.thread.subject || 'Thread'}</h3>
+          <h3>{threadDetail.thread.subject || t('pages.customerMessages.thread')}</h3>
           {threadDetail.messages.map((message) => (
             <div key={message.id} style={{ marginBottom: 12 }}>
               <p className="muted">
@@ -191,9 +193,9 @@ export function CustomerMessagesPanel({ canManage }: { canManage: boolean }) {
           ))}
           {canManage ? (
             <>
-              <textarea className="input" placeholder="Reply" value={reply} onChange={(e) => setReply(e.target.value)} style={{ minHeight: 80 }} />
+              <textarea className="input" placeholder={t('pages.customerMessages.reply')} value={reply} onChange={(e) => setReply(e.target.value)} style={{ minHeight: 80 }} />
               <button type="button" className="btn btn-primary" style={{ marginTop: 8 }} disabled={sending} onClick={() => void sendReply()}>
-                {sending ? 'Sending…' : 'Send reply'}
+                {sending ? t('pages.customerMessages.sending') : t('pages.customerMessages.sendReply')}
               </button>
             </>
           ) : null}

@@ -28,6 +28,8 @@ import {
 import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
+import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import {
@@ -102,6 +104,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const appFeedback = useAppFeedback();
+  const { t } = useTranslation();
 
   useEffect(() => {
     params.then((p) => setJobId(p.id));
@@ -173,8 +176,15 @@ export default function JobDetailPage({ params }: PageProps) {
 
     setLoading(false);
 
-    if (error) {
-      const msg = formatSupabaseError(error);
+    if (error || !data) {
+      const msg = error ? formatSupabaseError(error) : t('pages.jobs.notFound');
+      setLoadError(msg);
+      appFeedback.error(msg);
+      return;
+    }
+
+    if (!canAccessWorkspaceRecord(data, user.id, org?.organizationId, role, data.assigned_to)) {
+      const msg = t('pages.jobs.notFound');
       setLoadError(msg);
       appFeedback.error(msg);
       return;
