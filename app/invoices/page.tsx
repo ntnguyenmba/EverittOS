@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
+import { RecurringInvoicesPanel } from '@/components/recurring-invoices-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -49,6 +50,8 @@ function InvoicesPageContent() {
         initialJobId={jobId}
         initialCustomerId={customerId}
       />
+
+      <RecurringInvoicesPanel canManage={canManage} />
     </AppShell>
   );
 }

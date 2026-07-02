@@ -1,17 +1,25 @@
 # Dashboard metrics foundation
 
-Richer dashboards should be based on real EverittOS data, not placeholder charts.
+Richer dashboards use real EverittOS data only — no placeholder charts.
 
-Data sources:
+## Data sources
 
-- jobs
-- customers
-- invoices
-- expenses
-- bookings
-- messages
-- schedules
+- jobs (status counts, completed, upcoming)
+- customers (active count)
+- invoices (revenue this month, outstanding, overdue count)
+- expenses (month total, net estimate)
+- bookings (month count)
+- customer_messages (message count)
+- job_reports (report count)
 
-Build rule:
+## Implementation
 
-Only add richer dashboard cards after enough real workspace activity exists to make the numbers useful.
+`lib/dashboard-metrics.ts` → `fetchDashboardRevenueMetrics()` aggregates live queries scoped by `organization_id`.
+
+`components/dashboard-revenue-snapshot.tsx` displays metrics on `/dashboard`.
+
+Missing tables or empty workspaces return zeros — honest empty states, not fake numbers.
+
+## Build rule
+
+Only show metrics that can be computed from real data. Do not add demo analytics.

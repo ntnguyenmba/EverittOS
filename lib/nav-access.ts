@@ -77,6 +77,8 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/activity':
     case '/analytics':
     case '/expenses':
+    case '/inventory':
+    case '/routes':
     case '/workflows':
       return canSeeOrgWideData(role);
     case '/team':

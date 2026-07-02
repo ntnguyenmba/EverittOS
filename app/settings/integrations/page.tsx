@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import {
@@ -261,22 +262,12 @@ function IntegrationsContent() {
       </div>
 
       <div className="settings-card" style={{ marginTop: 20 }}>
-        <h3>Accounting integrations</h3>
+        <h3>QuickBooks</h3>
         <p className="muted">
-          QuickBooks, Xero, and Wave connections are planned for later. EverittOS keeps performance tracking simple
-          for now.
+          EverittOS syncs operational data only. QuickBooks remains your accounting system of record. You control
+          connect, disconnect, and export actions.
         </p>
-        <ul className="integration-coming-list">
-          <li>
-            <strong>QuickBooks</strong> <span className="muted">Coming later</span>
-          </li>
-          <li>
-            <strong>Xero</strong> <span className="muted">Coming later</span>
-          </li>
-          <li>
-            <strong>Wave</strong> <span className="muted">Coming later</span>
-          </li>
-        </ul>
+        <QuickBooksIntegrationPanel canManage={canManageOrganizationSettings(role)} />
       </div>
     </SettingsShell>
   );

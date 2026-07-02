@@ -17,6 +17,8 @@ export const FEATURE_FLAGS = {
   leadsNav: true,
   servicesNav: true,
   bookingsNav: true,
+  inventoryNav: true,
+  routesNav: true,
   globalSearch: true,
   multiOrgSwitcher: true,
   aiActions: true

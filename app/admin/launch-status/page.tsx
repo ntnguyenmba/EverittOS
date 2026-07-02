@@ -8,8 +8,15 @@ import { PermissionDenied } from '@/components/permission-denied';
 type LaunchStatus = {
   generatedAt: string;
   launchReadinessScore: number;
+  launchReady?: boolean;
   checks: Record<string, string>;
   environmentVariables: { name: string; configured: boolean }[];
+  emailReadiness?: {
+    configured: boolean;
+    resendApiKey: boolean;
+    emailFrom: boolean;
+    message: string;
+  };
 };
 
 function statusLabel(status: string) {
@@ -98,8 +105,25 @@ export default function LaunchStatusPage() {
           </ul>
         </div>
 
+        {data.emailReadiness ? (
+          <div className="card" style={{ marginTop: 24 }}>
+            <h3>Email readiness</h3>
+            <p>
+              <strong>{data.emailReadiness.configured ? 'Configured' : 'Not configured'}</strong>
+            </p>
+            <p className="muted">{data.emailReadiness.message}</p>
+            <p className="muted">
+              RESEND_API_KEY: {data.emailReadiness.resendApiKey ? 'set' : 'missing'} · EMAIL_FROM:{' '}
+              {data.emailReadiness.emailFrom ? 'set' : 'missing'}
+            </p>
+            {data.launchReady === false ? (
+              <p className="muted">Launch readiness is not complete until email and core billing/database checks pass.</p>
+            ) : null}
+          </div>
+        ) : null}
+
         <p className="muted" style={{ marginTop: 24 }}>
-          See <code>docs/SECURITY_RLS_AUDIT.md</code> for RLS policy details.
+          See <code>docs/RESEND_SETUP.md</code> and <code>docs/launch-checklist.md</code> for v1 launch steps.
         </p>
     </AuthenticatedSection>
   );

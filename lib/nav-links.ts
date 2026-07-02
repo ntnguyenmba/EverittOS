@@ -22,6 +22,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Photos', href: '/photos' },
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Schedule', href: '/schedule' },
+  { label: 'Routes', href: '/routes', flag: 'routesNav' },
   { label: 'Team', href: '/team' }
 ];
 
@@ -34,7 +35,8 @@ const TOOLS_NAV: NavLinkDef[] = [
   { label: 'Proposals', href: '/proposals', flag: 'proposalsNav' },
   { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
   { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'Messages', href: '/messages', flag: 'messagesNav' }
+  { label: 'Messages', href: '/messages', flag: 'messagesNav' },
+  { label: 'Inventory', href: '/inventory', flag: 'inventoryNav' }
 ];
 
 const INSIGHTS_NAV: NavLinkDef[] = [
@@ -79,6 +81,8 @@ export const SECONDARY_APP_ROUTES = [
   '/clients',
   '/services',
   '/bookings',
+  '/inventory',
+  '/routes',
   '/portal/client',
   '/portal/contractor'
 ] as const;

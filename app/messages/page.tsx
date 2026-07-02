@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
-import { OutboundHub } from '@/components/outbound/outbound-hub';
+import { CustomerMessagesPanel } from '@/components/customer-messages-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -34,11 +34,11 @@ export default function MessagesPage() {
       <header className="page-header">
         <h1>Messages</h1>
         <p className="page-subtitle">
-          Send customer messages from one place. Compose, review, and send — drafts save automatically in the background.
+          Email-first customer messaging. Threads keep sent and failed delivery history in one place.
         </p>
       </header>
 
-      <OutboundHub docType="message" canManage={canManage} />
+      <CustomerMessagesPanel canManage={canManage} />
     </AppShell>
   );
 }

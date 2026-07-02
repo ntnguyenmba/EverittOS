@@ -30,8 +30,19 @@ export default function DashboardPage() {
   const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>({
     revenueThisMonth: 0,
     outstandingInvoices: 0,
+    overdueInvoiceCount: 0,
+    unpaidInvoiceTotal: 0,
     jobsCompleted: 0,
-    activeCustomers: 0
+    jobsCompletedThisMonth: 0,
+    activeCustomers: 0,
+    customerCount: 0,
+    upcomingJobs: 0,
+    expenseTotalThisMonth: 0,
+    netEstimateThisMonth: 0,
+    bookingCountThisMonth: 0,
+    messageCount: 0,
+    reportCount: 0,
+    jobsByStatus: {}
   });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');

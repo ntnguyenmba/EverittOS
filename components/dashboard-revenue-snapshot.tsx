@@ -21,7 +21,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: t('dashboard.revenue.outstanding'),
       value: formatCurrency(metrics.outstandingInvoices),
-      href: '/analytics'
+      href: '/invoices'
+    },
+    {
+      label: 'Overdue invoices',
+      value: String(metrics.overdueInvoiceCount),
+      href: '/invoices'
     },
     {
       label: t('dashboard.revenue.jobsCompleted'),
@@ -29,9 +34,44 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: '/jobs?status=completed'
     },
     {
+      label: 'Completed this month',
+      value: String(metrics.jobsCompletedThisMonth),
+      href: '/jobs?status=completed'
+    },
+    {
+      label: 'Upcoming jobs',
+      value: String(metrics.upcomingJobs),
+      href: '/schedule'
+    },
+    {
       label: t('dashboard.revenue.activeCustomers'),
       value: String(metrics.activeCustomers),
       href: '/customers'
+    },
+    {
+      label: 'Expenses this month',
+      value: formatCurrency(metrics.expenseTotalThisMonth),
+      href: '/expenses'
+    },
+    {
+      label: 'Net estimate',
+      value: formatCurrency(metrics.netEstimateThisMonth),
+      href: '/analytics'
+    },
+    {
+      label: 'Bookings this month',
+      value: String(metrics.bookingCountThisMonth),
+      href: '/bookings'
+    },
+    {
+      label: 'Messages',
+      value: String(metrics.messageCount),
+      href: '/messages'
+    },
+    {
+      label: 'Reports',
+      value: String(metrics.reportCount),
+      href: '/jobs'
     }
   ];
 
