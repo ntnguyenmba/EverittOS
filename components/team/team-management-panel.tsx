@@ -167,6 +167,14 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function memberDisplayName(member: Member) {
+  return member.profiles?.full_name || member.profiles?.email || 'Pending profile';
+}
+
+function memberLastActive(member: Member) {
+  return member.profiles?.updated_at ? formatDate(member.profiles.updated_at) : 'Never';
+}
+
 function readAccordionState(): AccordionState {
   if (typeof window === 'undefined') return TEAM_ACCORDION_DEFAULTS;
   try {
@@ -551,7 +559,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
               .filter((m) => m.role !== 'owner' && m.active)
               .map((m) => (
                 <option key={m.user_id} value={m.user_id}>
-                  {m.profiles?.full_name || m.profiles?.email || m.user_id}
+                  {memberDisplayName(m)}
                 </option>
               ))}
           </select>
@@ -605,12 +613,12 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
         {members.map((m) => (
           <div key={m.user_id} className="list-row">
             <div>
-              <strong>{m.profiles?.full_name || m.profiles?.email || m.user_id}</strong>
+              <strong>{memberDisplayName(m)}</strong>
               <p className="muted">
                 {normalizeRole(m.role)} · {m.active ? 'Active' : 'Inactive'}
               </p>
               <p className="muted">
-                Joined {formatDate(m.created_at)} · Last active {formatDate(m.profiles?.updated_at)}
+                Joined {formatDate(m.created_at)} · Last active {memberLastActive(m)}
               </p>
             </div>
             {canModifyTeamMember(role, normalizeRole(m.role)) ? (
