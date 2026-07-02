@@ -47,7 +47,7 @@ export function isViewerRole(role: UserRole): boolean {
 }
 
 export function isOwnerOrAdmin(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'manager';
+  return isAdminRole(role);
 }
 
 export function isStaffRole(role: UserRole): boolean {
@@ -94,7 +94,7 @@ export function canManageOrganizationSettings(role: UserRole): boolean {
 }
 
 export function canViewInternalNotes(role: UserRole): boolean {
-  return isManagerRole(role) || role === 'employee';
+  return isManagerRole(role);
 }
 
 export function dashboardVariant(role: UserRole): 'owner' | 'manager' | 'employee' | 'contractor' | 'client' {
