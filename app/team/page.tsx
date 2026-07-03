@@ -36,15 +36,15 @@ export default function TeamPage() {
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p className="loading-state">Loading team…</p>
+        <p className="loading-state">Loading people...</p>
       </AppShell>
     );
   }
 
   return (
     <AppShell plan={plan} role={role}>
-      <h1>Team</h1>
-      <p className="muted">Invite members, manage roles, and control access. Also available under Settings → Team.</p>
+      <h1>People</h1>
+      <p className="muted">Invite people, manage roles, control access, and review who can work in this workspace.</p>
       <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />
     </AppShell>
   );
