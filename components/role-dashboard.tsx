@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { isAdminRole, isClientRole, isContractorRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, isContractorRole, isStaffRole, type UserRole } from '@/lib/roles';
 
 type JobRow = {
   id: string;
@@ -10,6 +10,9 @@ type JobRow = {
   due_date: string | null;
   start_date: string | null;
   assigned_to?: string | null;
+  customer_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
 };
 
 type TeamMemberSummary = {
@@ -49,11 +52,140 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+function displayDate(value: string | null | undefined) {
+  if (!value) return 'Not scheduled';
+  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function workloadLabel(member: TeamMemberSummary) {
   if (!member.active) return 'Inactive';
   if (member.overdue > 0 || member.activeJobs >= 8) return 'Overloaded';
   if (member.activeJobs >= 4 || member.dueToday > 0) return 'Busy';
   return 'Available';
+}
+
+function FieldWorkerDashboard({ jobs, photoCount }: { jobs: JobRow[]; photoCount: number }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
+  const todayJobs = active.filter((j) => (j.start_date || j.due_date || '').slice(0, 10) === today);
+  const nextJobs = active
+    .filter((j) => !todayJobs.some((todayJob) => todayJob.id === j.id))
+    .sort((a, b) => (a.start_date || a.due_date || '').localeCompare(b.start_date || b.due_date || ''))
+    .slice(0, 6);
+  const completed = jobs.filter((j) => j.status === 'completed');
+  const primaryJob = todayJobs[0] || active[0] || null;
+
+  return (
+    <div className="role-dashboard field-dashboard">
+      <div className="dashboard-section-head">
+        <div>
+          <h3>My field work</h3>
+          <p className="muted">A simple view for assigned jobs, photos, checklist work, and customer contact.</p>
+        </div>
+        <Link href="/schedule" className="dashboard-section-link">
+          Open schedule
+        </Link>
+      </div>
+
+      <div className="stats-grid">
+        <Link href="/jobs?mine=true" className="stat-card" style={{ textDecoration: 'none' }}>
+          <span>My active jobs</span>
+          <strong>{active.length}</strong>
+        </Link>
+        <Link href="/schedule" className="stat-card" style={{ textDecoration: 'none' }}>
+          <span>Due today</span>
+          <strong>{todayJobs.length}</strong>
+        </Link>
+        <Link href="/jobs?status=completed&mine=true" className="stat-card" style={{ textDecoration: 'none' }}>
+          <span>Completed</span>
+          <strong>{completed.length}</strong>
+        </Link>
+        <Link href="/photos" className="stat-card" style={{ textDecoration: 'none' }}>
+          <span>Photos uploaded</span>
+          <strong>{photoCount}</strong>
+        </Link>
+      </div>
+
+      {primaryJob ? (
+        <section className="card" style={{ marginTop: 16 }}>
+          <div className="dashboard-section-head">
+            <div>
+              <h4>Current job</h4>
+              <p className="muted">Open the job to start, complete checklist items, upload photos, or mark it complete.</p>
+            </div>
+            <Link href={`/jobs/${primaryJob.id}`} className="btn btn-primary">
+              Open job
+            </Link>
+          </div>
+          <div className="list-row">
+            <div>
+              <strong>{primaryJob.title}</strong>
+              <p className="muted">{primaryJob.address || primaryJob.customer_name || 'No customer details added'}</p>
+            </div>
+            <span>{displayDate(primaryJob.start_date || primaryJob.due_date)}</span>
+          </div>
+          <div className="button-row" style={{ marginTop: 12 }}>
+            <Link href={`/jobs/${primaryJob.id}`} className="btn btn-primary">
+              Start or finish job
+            </Link>
+            {primaryJob.phone ? (
+              <a href={`tel:${primaryJob.phone}`} className="btn">
+                Call customer
+              </a>
+            ) : null}
+            {primaryJob.address ? (
+              <a href={`https://maps.google.com/?q=${encodeURIComponent(primaryJob.address)}`} className="btn" target="_blank" rel="noreferrer">
+                Start navigation
+              </a>
+            ) : null}
+          </div>
+        </section>
+      ) : (
+        <section className="card" style={{ marginTop: 16 }}>
+          <h4>No assigned field work</h4>
+          <p className="muted">Jobs assigned to you will appear here with status, customer contact, photos, and checklist actions.</p>
+        </section>
+      )}
+
+      <section className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
+        <div className="dashboard-section-head">
+          <h4>My jobs today</h4>
+          <Link href="/jobs?mine=true" className="dashboard-section-link">
+            View all
+          </Link>
+        </div>
+        {todayJobs.length === 0 && <p className="muted">No jobs due today.</p>}
+        {todayJobs.map((job) => (
+          <div key={job.id} className="list-row">
+            <div>
+              <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+              <p className="muted">{job.address || job.customer_name || 'No location added'}</p>
+            </div>
+            <span>{job.status || 'new'}</span>
+          </div>
+        ))}
+      </section>
+
+      <section className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
+        <div className="dashboard-section-head">
+          <h4>Next assigned jobs</h4>
+          <Link href="/schedule" className="dashboard-section-link">
+            Open schedule
+          </Link>
+        </div>
+        {nextJobs.length === 0 && <p className="muted">No upcoming assigned jobs.</p>}
+        {nextJobs.map((job) => (
+          <div key={job.id} className="list-row">
+            <div>
+              <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+              <p className="muted">{job.address || job.customer_name || 'No location added'}</p>
+            </div>
+            <span>{displayDate(job.start_date || job.due_date)}</span>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
 }
 
 export function RoleDashboard({
@@ -67,6 +199,10 @@ export function RoleDashboard({
   teamMembers = [],
   recentActivity = []
 }: RoleDashboardProps) {
+  if (isStaffRole(role)) {
+    return <FieldWorkerDashboard jobs={jobs} photoCount={photoCount} />;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const completed = jobs.filter((j) => j.status === 'completed');
@@ -134,7 +270,7 @@ export function RoleDashboard({
           <div className="dashboard-section-head">
             <div>
               <h4>Team overview</h4>
-              <p className="muted">See each person’s workload without leaving the owner dashboard.</p>
+              <p className="muted">See each person's workload without leaving the owner dashboard.</p>
             </div>
             <Link href="/team" className="dashboard-section-link">
               Manage access
