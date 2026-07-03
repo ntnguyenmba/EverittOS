@@ -326,9 +326,9 @@ function ExpensesContent() {
               </option>
             ))}
           </select>
-          <label>Worker</label>
+          <label>Team member</label>
           <select className="input" value={filterWorkerId} onChange={(e) => setFilterWorkerId(e.target.value)}>
-            <option value="">All workers</option>
+            <option value="">All team members</option>
             {workers.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
@@ -397,7 +397,7 @@ function ExpensesContent() {
               </option>
             ))}
           </select>
-          <label>Worker (optional)</label>
+          <label>Team member (optional)</label>
           <select
             className="input"
             value={form.worker_id}
@@ -459,7 +459,7 @@ function ExpensesContent() {
                   <p className="muted finance-tags">
                     {expense.job_id ? <span>Job: {jobMap.get(expense.job_id) || 'Linked job'}</span> : null}
                     {expense.customer_id ? <span>Customer: {customerMap.get(expense.customer_id)}</span> : null}
-                    {expense.worker_id ? <span>Worker: {workerMap.get(expense.worker_id)}</span> : null}
+                    {expense.worker_id ? <span>Team member: {workerMap.get(expense.worker_id)}</span> : null}
                   </p>
                   {expense.receipt_signed_url ? (
                     <a className="btn" href={expense.receipt_signed_url} target="_blank" rel="noreferrer">

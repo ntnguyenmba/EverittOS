@@ -96,7 +96,7 @@ export default function DepartmentsSettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Departments" description="Group workers by department on Growth and Enterprise plans.">
+    <SettingsShell plan={plan} title="Departments" description="Group people by department on Growth and Enterprise plans.">
       {!limitsForPlan(plan).multiLocation ? <PlanLockedMessage feature="Departments" requiredPlan="Growth" /> : null}
 
       {limitsForPlan(plan).multiLocation && canManage ? (

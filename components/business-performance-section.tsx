@@ -71,7 +71,7 @@ export function BusinessPerformanceSection() {
           loading={loading}
         />
         <MetricCard
-          label="Top worker"
+          label="Top team member"
           value={data.topWorker ? data.topWorker.name : 'None yet'}
           hint={data.topWorker ? formatCurrency(data.topWorker.revenue) : undefined}
           loading={loading}
@@ -96,7 +96,7 @@ export function BusinessPerformanceSection() {
         <div className="charts-grid">
           <SimpleTrendChart title="Revenue by month" points={data.revenueByMonth} />
           <SimpleBarChart title="Revenue by customer" points={data.revenueByCustomer} valuePrefix="$" />
-          <SimpleBarChart title="Revenue by worker" points={data.revenueByWorker} valuePrefix="$" />
+          <SimpleBarChart title="Revenue by team member" points={data.revenueByWorker} valuePrefix="$" />
           <SimpleBarChart title="Expenses by category" points={data.expensesByCategory} valuePrefix="$" />
           <SimpleBarChart title="Profit by job" points={data.profitByJob} valuePrefix="$" />
         </div>

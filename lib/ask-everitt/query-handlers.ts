@@ -419,7 +419,7 @@ async function queryTopWorkerThisMonth(
   return response(
     worker
       ? `${worker.name || 'Worker'} completed the most jobs this month (${topCount}).`
-      : `Top worker completed ${topCount} jobs this month.`,
+      : `Top team member completed ${topCount} jobs this month.`,
     results,
     { sourcesUsed: ['workers', 'jobs'] }
   );

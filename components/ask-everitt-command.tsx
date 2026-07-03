@@ -22,7 +22,7 @@ const RECORD_TYPE_LABELS: Record<AskEverittSearchRecord['type'], string> = {
   customer: 'Customer',
   job: 'Job',
   lead: 'Lead',
-  worker: 'Worker',
+  worker: 'Team member',
   schedule: 'Schedule',
   booking: 'Booking',
   service: 'Service',
@@ -394,7 +394,7 @@ function CommandOverlay({
           <input
             ref={inputRef}
             className="everitt-cmd-input"
-            placeholder="Ask about customers, jobs, leads, workers, schedule, invoices, reviews, documents, or SOPs…"
+            placeholder="Ask about customers, jobs, leads, people, schedule, invoices, reviews, documents, or SOPs…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {

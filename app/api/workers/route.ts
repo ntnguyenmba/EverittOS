@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       workerLimit: limits.crewMembers,
       blockReason: validation.message || 'worker_limit'
     });
-    return NextResponse.json({ error: validation.message || 'Worker limit reached for this plan.' }, { status: 403 });
+    return NextResponse.json({ error: validation.message || 'Team member limit reached for this plan.' }, { status: 403 });
   }
 
   const { data, error } = await ctx.supabase

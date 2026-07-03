@@ -23,15 +23,15 @@ export type PlanValidateResult = {
 };
 
 export function workerPlanFeatureMessage(plan: EverittosPlan): string {
-  return `Workers require Business plan or higher. Your workspace is on ${planDisplayName(plan)} plan.`;
+  return `People management requires Business plan or higher. Your workspace is on ${planDisplayName(plan)} plan.`;
 }
 
 export function workerPlanLimitMessage(plan: EverittosPlan, workerLimit: number): string {
   if (isUnlimited(workerLimit)) {
-    return `Worker limit reached for ${planDisplayName(plan)} plan.`;
+    return `Team member limit reached for ${planDisplayName(plan)} plan.`;
   }
   const suffix = workerLimit === 1 ? '' : 's';
-  return `Worker limit reached for ${planDisplayName(plan)} plan. Your current limit is ${workerLimit} worker${suffix}.`;
+  return `Team member limit reached for ${planDisplayName(plan)} plan. Your current limit is ${workerLimit} team member${suffix}.`;
 }
 
 export function validatePlanAction({ plan, resource, currentCount }: PlanValidateInput): PlanValidateResult {

@@ -187,7 +187,7 @@ export default function JobReportPage({ params }: PageProps) {
             <p>Customer: {job.customer_name || 'Not set'}</p>
             <p>Phone: {job.phone || 'Not set'}</p>
             <p>Address: {job.address || 'Not set'}</p>
-            {!customerView ? <p>Assigned worker: {workerName || 'Needs assignment'}</p> : null}
+            {!customerView ? <p>Assigned team member: {workerName || 'Needs assignment'}</p> : null}
             {!customerView && departmentName ? <p>Department: {departmentName}</p> : null}
             <p>Notes: {job.customer_notes || job.notes || 'None'}</p>
             {showInternalNotes && job.internal_notes ? <p>Internal notes: {job.internal_notes}</p> : null}

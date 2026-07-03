@@ -282,7 +282,7 @@ export async function fetchBusinessPerformance(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([id, value]) => ({
-      label: workerMap.get(id) || 'Worker',
+      label: workerMap.get(id) || 'Team member',
       value: Number(value.toFixed(2))
     }));
 
@@ -306,7 +306,7 @@ export async function fetchBusinessPerformance(
       : null,
     topWorker: topWorkerEntry
       ? {
-          name: workerMap.get(topWorkerEntry[0]) || 'Worker',
+          name: workerMap.get(topWorkerEntry[0]) || 'Team member',
           revenue: Number(topWorkerEntry[1].toFixed(2))
         }
       : null,

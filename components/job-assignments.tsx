@@ -52,7 +52,7 @@ export function JobAssignments({
       return;
     }
     const worker = workers.find((w) => w.id === workerId);
-    await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'worker'}`, {
+    await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'team member'}`, {
       worker_id: workerId
     });
     appFeedback.success('Team member assigned.');
@@ -86,7 +86,7 @@ export function JobAssignments({
           <div key={a.id} className="list-row">
             <span>{w?.name || 'Team member'}</span>
             {canManage && (
-              <button type="button" className="btn" disabled={busy} onClick={() => removeAssignment(a.id, w?.name || 'worker')}>
+              <button type="button" className="btn" disabled={busy} onClick={() => removeAssignment(a.id, w?.name || 'team member')}>
                 Remove
               </button>
             )}
