@@ -270,7 +270,7 @@ export function RoleDashboard({
           <div className="dashboard-section-head">
             <div>
               <h4>Team overview</h4>
-              <p className="muted">See each person's workload without leaving the owner dashboard.</p>
+              <p className="muted">See each person&apos;s workload without leaving the owner dashboard.</p>
             </div>
             <Link href="/team" className="dashboard-section-link">
               Manage access
