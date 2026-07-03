@@ -189,7 +189,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
         ) : null}
         {hasMembers && !hasAssignedWork ? (
           <p className="muted" style={{ marginBottom: 12 }}>
-            No assigned work is being found for any team member. Use each row's Data check link to confirm whether the jobs are unassigned or assigned through a different record.
+            No assigned work is being found for any team member. Use each row Data check link to confirm whether the jobs are unassigned or assigned through a different record.
           </p>
         ) : null}
 
