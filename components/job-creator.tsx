@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
@@ -19,9 +19,13 @@ type JobCreatorProps = {
 type TeamOption = {
   user_id: string;
   role: string;
+  active_jobs?: number | null;
+  due_today_jobs?: number | null;
   profiles?: {
     email?: string | null;
     full_name?: string | null;
+    avatar_url?: string | null;
+    photo_url?: string | null;
   } | null;
 };
 
@@ -39,6 +43,36 @@ function teamSubLabel(member: TeamOption): string {
   return `${normalizeRole(member.role)}${member.profiles?.email ? ` · ${member.profiles.email}` : ''}`;
 }
 
+function initials(value: string): string {
+  return (
+    value
+      .replace(/@.*/, '')
+      .split(/[\s._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('') || 'TM'
+  ).toUpperCase();
+}
+
+function avatarUrl(member: TeamOption): string | null {
+  return member.profiles?.avatar_url || member.profiles?.photo_url || null;
+}
+
+function assignmentStatus(member: TeamOption): string {
+  const active = member.active_jobs || 0;
+  const dueToday = member.due_today_jobs || 0;
+  if (active > 0) return 'On job';
+  if (dueToday > 0) return 'Scheduled';
+  return 'Available';
+}
+
+function selectedCrewText(count: number): string {
+  if (count === 0) return 'No extra crew selected';
+  if (count === 1) return '1 crew member selected';
+  return `${count} crew members selected`;
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
@@ -50,6 +84,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [teamMembers, setTeamMembers] = useState<TeamOption[]>([]);
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [workerIds, setWorkerIds] = useState<string[]>([]);
+  const [teamSearch, setTeamSearch] = useState('');
+  const [crewSearch, setCrewSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
@@ -70,10 +106,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       if (!workspace.ok) return;
       const organizationId = workspace.workspace.organizationId;
 
-      const [{ data: members }, { data: workerRows }] = await Promise.all([
+      const [{ data: members }, { data: workerRows }, { data: jobs }] = await Promise.all([
         supabase
           .from('organization_members')
-          .select('user_id, role, profiles(email, full_name)')
+          .select('user_id, role, profiles(email, full_name, avatar_url, photo_url)')
           .eq('organization_id', organizationId)
           .eq('active', true)
           .in('role', ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead']),
@@ -81,15 +117,55 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           .from('workers')
           .select('id, name, auth_user_id')
           .eq('organization_id', organizationId)
-          .order('name')
+          .order('name'),
+        supabase
+          .from('jobs')
+          .select('assigned_to, status, due_date, scheduled_start')
+          .eq('organization_id', organizationId)
       ]);
 
-      setTeamMembers((members || []) as TeamOption[]);
+      const today = new Date().toISOString().slice(0, 10);
+      const activeByUser = new Map<string, number>();
+      const dueTodayByUser = new Map<string, number>();
+      for (const job of jobs || []) {
+        const assigned = (job as { assigned_to?: string | null }).assigned_to;
+        if (!assigned) continue;
+        const status = String((job as { status?: string | null }).status || '').toLowerCase();
+        if (['completed', 'done', 'complete', 'closed', 'cancelled', 'canceled'].includes(status)) continue;
+        activeByUser.set(assigned, (activeByUser.get(assigned) || 0) + 1);
+        const dueDate = (job as { due_date?: string | null; scheduled_start?: string | null }).due_date?.slice(0, 10) ||
+          (job as { scheduled_start?: string | null }).scheduled_start?.slice(0, 10) ||
+          null;
+        if (dueDate === today) dueTodayByUser.set(assigned, (dueTodayByUser.get(assigned) || 0) + 1);
+      }
+
+      setTeamMembers(
+        ((members || []) as TeamOption[]).map((member) => ({
+          ...member,
+          active_jobs: activeByUser.get(member.user_id) || 0,
+          due_today_jobs: dueTodayByUser.get(member.user_id) || 0
+        }))
+      );
       setWorkers((workerRows || []) as WorkerOption[]);
     }
 
     void loadAssignmentOptions();
   }, []);
+
+  const filteredTeamMembers = useMemo(() => {
+    const query = teamSearch.trim().toLowerCase();
+    if (!query) return teamMembers;
+    return teamMembers.filter((member) => {
+      const haystack = `${teamLabel(member)} ${teamSubLabel(member)}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [teamMembers, teamSearch]);
+
+  const filteredWorkers = useMemo(() => {
+    const query = crewSearch.trim().toLowerCase();
+    if (!query) return workers;
+    return workers.filter((worker) => worker.name.toLowerCase().includes(query));
+  }, [workers, crewSearch]);
 
   function toggleWorker(workerId: string) {
     setWorkerIds((ids) => (ids.includes(workerId) ? ids.filter((id) => id !== workerId) : [...ids, workerId]));
@@ -249,55 +325,177 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-        <div>
-          <label>Assign team member</label>
-          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-            <label className="list-row" style={{ cursor: 'pointer' }}>
-              <span>
-                <strong>Unassigned</strong>
-                <span className="muted" style={{ display: 'block' }}>Choose this if you want to assign it later.</span>
-              </span>
-              <input type="radio" name="assigned-to" value="" checked={!assignedTo} onChange={() => setAssignedTo('')} />
-            </label>
-            {teamMembers.map((member) => (
-              <label key={member.user_id} className="list-row" style={{ cursor: 'pointer' }}>
-                <span style={{ minWidth: 0 }}>
-                  <strong style={{ overflowWrap: 'anywhere' }}>{teamLabel(member)}</strong>
-                  <span className="muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>{teamSubLabel(member)}</span>
-                </span>
-                <input
-                  type="radio"
-                  name="assigned-to"
-                  value={member.user_id}
-                  checked={assignedTo === member.user_id}
-                  onChange={() => setAssignedTo(member.user_id)}
-                />
-              </label>
-            ))}
+        <section style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+            <div>
+              <label>Assign team member</label>
+              <p className="muted" style={{ margin: '4px 0 0' }}>Choose one person responsible for the job.</p>
+            </div>
+            <input
+              className="input"
+              placeholder="Search people..."
+              value={teamSearch}
+              onChange={(e) => setTeamSearch(e.target.value)}
+              style={{ maxWidth: 260 }}
+            />
           </div>
-        </div>
 
-        {workers.length > 0 ? (
-          <div>
-            <label>Add crew</label>
-            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-              {workers.map((worker) => (
-                <label key={worker.id} className="list-row" style={{ cursor: 'pointer' }}>
-                  <span style={{ minWidth: 0 }}>
-                    <strong style={{ overflowWrap: 'anywhere' }}>{worker.name}</strong>
-                    <span className="muted" style={{ display: 'block' }}>
-                      {worker.auth_user_id ? 'Team worker' : 'Worker'}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
+            <button
+              type="button"
+              className="list-row"
+              onClick={() => setAssignedTo('')}
+              aria-pressed={!assignedTo}
+              style={{
+                cursor: 'pointer',
+                textAlign: 'left',
+                borderColor: !assignedTo ? 'var(--accent)' : 'var(--line)',
+                background: !assignedTo ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+              }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
+                    border: '1px solid var(--line)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flex: '0 0 42px',
+                    fontWeight: 700
+                  }}
+                >
+                  —
+                </span>
+                <span>
+                  <strong>Unassigned</strong>
+                  <span className="muted" style={{ display: 'block' }}>Assign later</span>
+                </span>
+              </span>
+              <span>{!assignedTo ? 'Selected' : 'Select'}</span>
+            </button>
+
+            {filteredTeamMembers.map((member) => {
+              const selected = assignedTo === member.user_id;
+              const url = avatarUrl(member);
+              const label = teamLabel(member);
+              return (
+                <button
+                  key={member.user_id}
+                  type="button"
+                  className="list-row"
+                  onClick={() => setAssignedTo(member.user_id)}
+                  aria-pressed={selected}
+                  style={{
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    borderColor: selected ? 'var(--accent)' : 'var(--line)',
+                    background: selected ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+                  }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: '50%',
+                        border: '1px solid var(--line)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: '0 0 42px',
+                        fontWeight: 700,
+                        overflow: 'hidden',
+                        background: 'var(--bg)'
+                      }}
+                    >
+                      {url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        initials(label)
+                      )}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{label}</strong>
+                      <span className="muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>{teamSubLabel(member)}</span>
+                      <span className="muted" style={{ display: 'block', marginTop: 4 }}>
+                        {assignmentStatus(member)} · {member.active_jobs || 0} active · {member.due_today_jobs || 0} today
+                      </span>
                     </span>
                   </span>
-                  <input
-                    type="checkbox"
-                    checked={workerIds.includes(worker.id)}
-                    onChange={() => toggleWorker(worker.id)}
-                  />
-                </label>
-              ))}
-            </div>
+                  <span>{selected ? 'Selected' : 'Select'}</span>
+                </button>
+              );
+            })}
           </div>
+        </section>
+
+        {workers.length > 0 ? (
+          <section style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+              <div>
+                <label>Add crew</label>
+                <p className="muted" style={{ margin: '4px 0 0' }}>{selectedCrewText(workerIds.length)}</p>
+              </div>
+              <input
+                className="input"
+                placeholder="Search crew..."
+                value={crewSearch}
+                onChange={(e) => setCrewSearch(e.target.value)}
+                style={{ maxWidth: 260 }}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+              {filteredWorkers.map((worker) => {
+                const selected = workerIds.includes(worker.id);
+                return (
+                  <button
+                    key={worker.id}
+                    type="button"
+                    className="list-row"
+                    onClick={() => toggleWorker(worker.id)}
+                    aria-pressed={selected}
+                    style={{
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      borderColor: selected ? 'var(--accent)' : 'var(--line)',
+                      background: selected ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '50%',
+                          border: '1px solid var(--line)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flex: '0 0 38px',
+                          fontWeight: 700,
+                          background: 'var(--bg)'
+                        }}
+                      >
+                        {initials(worker.name)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{worker.name}</strong>
+                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team worker' : 'Worker'}</span>
+                      </span>
+                    </span>
+                    <span>{selected ? 'Added' : 'Add'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         ) : null}
 
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
