@@ -19,16 +19,25 @@ type JobChecklistProps = {
   userId: string;
   items: ChecklistItem[];
   canEdit: boolean;
+  canAddItems?: boolean;
   onChange: () => void;
 };
 
-export function JobChecklist({ jobId, organizationId, userId, items, canEdit, onChange }: JobChecklistProps) {
+export function JobChecklist({
+  jobId,
+  organizationId,
+  userId,
+  items,
+  canEdit,
+  canAddItems = canEdit,
+  onChange
+}: JobChecklistProps) {
   const appFeedback = useAppFeedback();
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function addItem() {
-    if (!label.trim() || !canEdit || busy) return;
+    if (!label.trim() || !canAddItems || busy) return;
     setBusy(true);
     const { error } = await supabase.from('job_checklist_items').insert({
       job_id: jobId,
@@ -71,7 +80,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, on
           <span>{item.label}</span>
         </label>
       ))}
-      {canEdit && (
+      {canAddItems && (
         <>
           <input className="input" placeholder="Add checklist item" value={label} onChange={(e) => setLabel(e.target.value)} />
           <button type="button" className="btn" disabled={busy} onClick={() => void addItem()}>
