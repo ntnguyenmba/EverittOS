@@ -35,7 +35,7 @@ export default function NewJobPage() {
     <AppShell plan={plan} role={role}>
       <PageHeader
         title="New job"
-        subtitle="Create a job and it will appear in Today, Jobs, and Schedule."
+        subtitle="Create a job, assign the right people, then add photos and proof as the work happens."
         action={
           <Link className="btn" href="/jobs">
             Back to jobs
@@ -43,7 +43,7 @@ export default function NewJobPage() {
         }
       />
       <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
-        <JobCreator onJobCreated={() => router.push('/jobs')} />
+        <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
       </Suspense>
     </AppShell>
   );
