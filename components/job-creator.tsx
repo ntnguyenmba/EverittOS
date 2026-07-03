@@ -19,6 +19,7 @@ type JobCreatorProps = {
 type TeamOption = {
   user_id: string;
   role: string;
+  source?: 'member' | 'linked_worker';
   active_jobs?: number | null;
   due_today_jobs?: number | null;
   profiles?: {
@@ -41,7 +42,9 @@ function teamLabel(member: TeamOption): string {
 }
 
 function teamSubLabel(member: TeamOption): string {
-  return `${normalizeRole(member.role)}${member.profiles?.email ? ` · ${member.profiles.email}` : ''}`;
+  const label = normalizeRole(member.role);
+  const detail = member.profiles?.email || (member.source === 'linked_worker' ? 'Linked worker account' : 'Team member');
+  return `${label} · ${detail}`;
 }
 
 function initials(value: string): string {
@@ -63,8 +66,8 @@ function avatarUrl(member: TeamOption): string | null {
 function assignmentStatus(member: TeamOption): string {
   const active = member.active_jobs || 0;
   const dueToday = member.due_today_jobs || 0;
-  if (active > 0) return 'On job';
-  if (dueToday > 0) return 'Scheduled';
+  if (active > 0) return `${active} active`;
+  if (dueToday > 0) return `${dueToday} today`;
   return 'Available';
 }
 
@@ -72,6 +75,30 @@ function selectedCrewText(count: number): string {
   if (count === 0) return 'No extra crew selected';
   if (count === 1) return '1 crew member selected';
   return `${count} crew members selected`;
+}
+
+function mergeMembersWithLinkedWorkers(members: TeamOption[], workers: WorkerOption[]): TeamOption[] {
+  const byUserId = new Map<string, TeamOption>();
+  for (const member of members) {
+    byUserId.set(member.user_id, { ...member, source: 'member' });
+  }
+
+  for (const worker of workers) {
+    if (!worker.auth_user_id || byUserId.has(worker.auth_user_id)) continue;
+    byUserId.set(worker.auth_user_id, {
+      user_id: worker.auth_user_id,
+      role: worker.role || 'employee',
+      source: 'linked_worker',
+      profiles: {
+        full_name: worker.name,
+        email: null,
+        avatar_url: null,
+        photo_url: null
+      }
+    });
+  }
+
+  return Array.from(byUserId.values()).sort((a, b) => teamLabel(a).localeCompare(teamLabel(b)));
 }
 
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
@@ -138,18 +165,23 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         if (dueDate === today) dueTodayByUser.set(assignedUserId, (dueTodayByUser.get(assignedUserId) || 0) + 1);
       }
 
-      setTeamMembers(
-        ((members || []) as TeamOption[]).map((member) => ({
-          ...member,
-          active_jobs: activeByUser.get(member.user_id) || 0,
-          due_today_jobs: dueTodayByUser.get(member.user_id) || 0
-        }))
-      );
+      const merged = mergeMembersWithLinkedWorkers((members || []) as TeamOption[], workerOptions).map((member) => ({
+        ...member,
+        active_jobs: activeByUser.get(member.user_id) || 0,
+        due_today_jobs: dueTodayByUser.get(member.user_id) || 0
+      }));
+
+      setTeamMembers(merged);
       setWorkers(workerOptions);
     }
 
     void loadAssignmentOptions();
   }, []);
+
+  const selectedAssignee = useMemo(
+    () => teamMembers.find((member) => member.user_id === assignedTo) || null,
+    [assignedTo, teamMembers]
+  );
 
   const filteredTeamMembers = useMemo(() => {
     const query = teamSearch.trim().toLowerCase();
@@ -351,58 +383,70 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-        <section style={{ display: 'grid', gap: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
-            <div>
-              <label>Primary team member</label>
-              <p className="muted" style={{ margin: '4px 0 0' }}>Choose the person responsible for the job.</p>
-            </div>
-            <input
-              className="input"
-              placeholder="Search people..."
-              value={teamSearch}
-              onChange={(e) => setTeamSearch(e.target.value)}
-              style={{ maxWidth: 260 }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
-            <button
-              type="button"
-              className="list-row"
-              onClick={() => setAssignedTo('')}
-              aria-pressed={!assignedTo}
+        <section style={{ display: 'grid', gap: 10 }}>
+          <label>Assigned to</label>
+          <div
+            className="input"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              minHeight: 54,
+              padding: '10px 12px',
+              background: 'var(--surface)',
+              color: 'inherit'
+            }}
+          >
+            <span
+              aria-hidden="true"
               style={{
-                cursor: 'pointer',
-                textAlign: 'left',
-                borderColor: !assignedTo ? 'var(--accent)' : 'var(--line)',
-                background: !assignedTo ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                border: '1px solid var(--line)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flex: '0 0 32px',
+                fontWeight: 700,
+                fontSize: 12,
+                overflow: 'hidden',
+                background: 'var(--bg)'
               }}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    border: '1px solid var(--line)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flex: '0 0 42px',
-                    fontWeight: 700
-                  }}
-                >
-                  -
-                </span>
-                <span>
-                  <strong>Unassigned</strong>
-                  <span className="muted" style={{ display: 'block' }}>Assign later</span>
-                </span>
+              {selectedAssignee ? initials(teamLabel(selectedAssignee)) : '-'}
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>
+                {selectedAssignee ? teamLabel(selectedAssignee) : 'Unassigned'}
+              </strong>
+              <span className="muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>
+                {selectedAssignee ? teamSubLabel(selectedAssignee) : 'Choose a team member below'}
               </span>
-              <span>{!assignedTo ? 'Selected' : 'Select'}</span>
-            </button>
+            </span>
+            {assignedTo ? (
+              <button type="button" className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setAssignedTo('')}>
+                Clear
+              </button>
+            ) : null}
+          </div>
+
+          <input
+            className="input"
+            placeholder="Search team members..."
+            value={teamSearch}
+            onChange={(e) => setTeamSearch(e.target.value)}
+          />
+
+          <div style={{ display: 'grid', gap: 6, maxHeight: 288, overflow: 'auto' }}>
+            {filteredTeamMembers.length === 0 ? (
+              <div className="list-row" style={{ minHeight: 58 }}>
+                <span>
+                  <strong>No team members found.</strong>
+                  <span className="muted" style={{ display: 'block' }}>Invite a team member first.</span>
+                </span>
+              </div>
+            ) : null}
 
             {filteredTeamMembers.map((member) => {
               const selected = assignedTo === member.user_id;
@@ -418,23 +462,25 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   style={{
                     cursor: 'pointer',
                     textAlign: 'left',
+                    minHeight: 58,
                     borderColor: selected ? 'var(--accent)' : 'var(--line)',
-                    background: selected ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+                    background: selected ? 'rgba(31, 59, 47, 0.05)' : 'var(--surface)'
                   }}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <span
                       aria-hidden="true"
                       style={{
-                        width: 42,
-                        height: 42,
+                        width: 34,
+                        height: 34,
                         borderRadius: '50%',
                         border: '1px solid var(--line)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        flex: '0 0 42px',
+                        flex: '0 0 34px',
                         fontWeight: 700,
+                        fontSize: 12,
                         overflow: 'hidden',
                         background: 'var(--bg)'
                       }}
@@ -449,12 +495,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     <span style={{ minWidth: 0 }}>
                       <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{label}</strong>
                       <span className="muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>{teamSubLabel(member)}</span>
-                      <span className="muted" style={{ display: 'block', marginTop: 4 }}>
-                        {assignmentStatus(member)} · {member.active_jobs || 0} active · {member.due_today_jobs || 0} today
-                      </span>
                     </span>
                   </span>
-                  <span>{selected ? 'Selected' : 'Select'}</span>
+                  <span className="muted" style={{ whiteSpace: 'nowrap' }}>{selected ? 'Assigned' : assignmentStatus(member)}</span>
                 </button>
               );
             })}
@@ -462,7 +505,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </section>
 
         {workers.length > 0 ? (
-          <section style={{ display: 'grid', gap: 12 }}>
+          <section style={{ display: 'grid', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
               <div>
                 <label>Add extra crew</label>
@@ -470,13 +513,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               </div>
               <input
                 className="input"
-                placeholder="Search crew..."
+                placeholder="Search extra crew..."
                 value={crewSearch}
                 onChange={(e) => setCrewSearch(e.target.value)}
                 style={{ maxWidth: 260 }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+            <div style={{ display: 'grid', gap: 6, maxHeight: 240, overflow: 'auto' }}>
               {filteredWorkers.map((worker) => {
                 const selected = workerIds.includes(worker.id);
                 return (
@@ -489,23 +532,25 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     style={{
                       cursor: 'pointer',
                       textAlign: 'left',
+                      minHeight: 56,
                       borderColor: selected ? 'var(--accent)' : 'var(--line)',
-                      background: selected ? 'rgba(31, 59, 47, 0.06)' : 'var(--surface)'
+                      background: selected ? 'rgba(31, 59, 47, 0.05)' : 'var(--surface)'
                     }}
                   >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                       <span
                         aria-hidden="true"
                         style={{
-                          width: 38,
-                          height: 38,
+                          width: 32,
+                          height: 32,
                           borderRadius: '50%',
                           border: '1px solid var(--line)',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          flex: '0 0 38px',
+                          flex: '0 0 32px',
                           fontWeight: 700,
+                          fontSize: 12,
                           background: 'var(--bg)'
                         }}
                       >
@@ -513,10 +558,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{worker.name}</strong>
-                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team member' : 'Worker'}</span>
+                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team member' : 'Legacy worker'}</span>
                       </span>
                     </span>
-                    <span>{selected ? 'Added' : 'Add'}</span>
+                    <span className="muted">{selected ? 'Added' : 'Add'}</span>
                   </button>
                 );
               })}
