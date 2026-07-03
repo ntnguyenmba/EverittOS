@@ -90,7 +90,7 @@ export const messages: Messages = {
       complete: {
         title: 'Your workspace is ready',
         message:
-          'You can now manage jobs, customers, schedules, workers, and operations from your dashboard.'
+          'You can now manage jobs, customers, schedules, people, and operations from your dashboard.'
       }
     },
     industries: {
@@ -123,7 +123,7 @@ export const messages: Messages = {
       properties: 'Properties',
       customers: 'Customers',
       contractors: 'Contractors',
-      workers: 'Workers',
+      workers: 'People',
       maintenance: 'Maintenance',
       cleaning: 'Cleaning',
       inspections: 'Inspections',
@@ -132,7 +132,7 @@ export const messages: Messages = {
     roles: {
       admin: 'Admin',
       manager: 'Manager',
-      worker: 'Worker'
+      worker: 'Employee'
     },
     checklist: {
       title: 'Getting started',
@@ -181,9 +181,9 @@ export const messages: Messages = {
       action: 'Schedule work'
     },
     workers: {
-      title: 'No workers yet',
-      description: 'Add team members so you can assign jobs and track who is doing what.',
-      action: 'Add worker'
+      title: 'No people yet',
+      description: 'Invite people so you can assign jobs and manage access.',
+      action: 'Invite person'
     },
     activity: {
       title: 'No activity yet',
@@ -272,7 +272,7 @@ export const messages: Messages = {
       disclosureTitle: 'What we collect',
       disclosureBody: 'EverittOS collects only what is needed to operate your workspace.',
       collectProfile: 'Account profile: email, role, business name, and workspace settings.',
-      collectOperations: 'Operational data: jobs, customers, workers, schedules, and photos you create.',
+      collectOperations: 'Operational data: jobs, customers, people, schedules, and photos you create.',
       collectActivity: 'Activity logs: actions taken in your workspace for audit and support.',
       collectPasskeys:
         'Passkey support is not enabled yet. If added later, credentials would stay on your device. EverittOS would not receive or store biometric data.',
@@ -288,7 +288,7 @@ export const messages: Messages = {
       saveError: 'Unable to save preferences.',
       languageTitle: 'Language',
       exportTitle: 'Download your data',
-      exportDescription: 'Export your profile, jobs, customers, workers, and activity as JSON.',
+      exportDescription: 'Export your profile, jobs, customers, people, and activity as JSON.',
       exportButton: 'Download data export',
       exportSuccess: 'Your data export has started.',
       exportError: 'Unable to export data right now.',
@@ -335,7 +335,7 @@ export const messages: Messages = {
       subscriptionOwnerOnly: 'Only workspace owners and admins can change billing.',
       openBilling: 'Open billing settings',
       languageTitle: 'Language',
-      languageNote: 'Applies to navigation, dashboard, jobs, customers, bookings, workers, schedule, billing, settings, and common buttons.',
+      languageNote: 'Applies to navigation, dashboard, jobs, customers, bookings, people, schedule, billing, settings, and common buttons.',
       disableTitle: 'Disable account',
       disableNote:
         'Disabling signs you out and blocks sign-in. Your organization data stays stored. Nothing is deleted.',
@@ -391,8 +391,8 @@ export const messages: Messages = {
     clients: 'Clients',
     schedule: 'Schedule',
     expenses: 'Expenses',
-    workers: 'Workers',
-    team: 'Team',
+    workers: 'People',
+    team: 'People',
     activity: 'Activity',
     analytics: 'Analytics',
     workflows: 'Workflows',
@@ -409,7 +409,7 @@ export const messages: Messages = {
   },
   settingsNav: {
     workspace: 'Workspace',
-    team: 'Team',
+    team: 'People',
     branding: 'Branding',
     integrations: 'Integrations',
     account: 'Account',
@@ -426,7 +426,7 @@ export const messages: Messages = {
   supportTraining: {
     pricingHeadline: 'Need help getting started?',
     pricingBody:
-      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, workers, schedule, invoices, and SOPs.',
+      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, people, schedule, invoices, and SOPs.',
     itemOnboardingCall: 'Free 30-minute onboarding call',
     itemSopSetup: 'SOP setup available',
     itemTeamTraining: 'Team training available',
@@ -437,7 +437,7 @@ export const messages: Messages = {
     bookFreeCall: 'Book Free Call',
     dashboardTitle: 'Need help setting up EverittOS?',
     dashboardBody:
-      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, workers, schedule, invoices, and SOPs.',
+      'Book a free 30-minute onboarding call and we’ll help you set up your first customers, jobs, people, schedule, invoices, and SOPs.',
     settingsTitle: 'Support & Training',
     settingsDescription: 'Onboarding, SOP setup, and team training from the Everitt team.',
     settingsEmailNote: 'You can also email us at',
@@ -457,11 +457,11 @@ export const messages: Messages = {
       addCustomer: 'Add customer',
       sendInvoice: 'Send invoice',
       scheduleWork: 'Schedule work',
-      addWorker: 'Add worker'
+      addWorker: 'Invite person'
     },
     attention: {
       overdueInvoices: 'Unpaid invoices',
-      unassignedJobs: 'Jobs without a worker',
+      unassignedJobs: 'Unassigned jobs',
       pendingEstimates: 'Open estimates',
       followUpCustomers: 'Leads to follow up',
       upcomingAppointments: 'Upcoming appointments'
@@ -533,7 +533,7 @@ export const messages: Messages = {
       newJob: 'New job',
       schedule: 'Schedule',
       customers: 'Customers',
-      workers: 'Workers',
+      workers: 'People',
       billing: 'Billing'
     },
     metrics: {

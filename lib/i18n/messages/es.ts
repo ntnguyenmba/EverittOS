@@ -57,7 +57,7 @@ export const messages: Messages = {
       welcome: {
         title: 'Bienvenido a EverittOS',
         subtitle:
-          'Gestione trabajos, clientes, horarios, trabajadores y operaciones desde un solo lugar.'
+          'Gestione trabajos, clientes, horarios, personas y operaciones desde un solo lugar.'
       },
       business: {
         title: 'Perfil del negocio',
@@ -91,7 +91,7 @@ export const messages: Messages = {
       complete: {
         title: 'Su espacio de trabajo está listo',
         message:
-          'Ahora puede gestionar trabajos, clientes, horarios, trabajadores y operaciones desde su panel.'
+          'Ahora puede gestionar trabajos, clientes, horarios, personas y operaciones desde su panel.'
       }
     },
     industries: {
@@ -124,7 +124,7 @@ export const messages: Messages = {
       properties: 'Propiedades',
       customers: 'Clientes',
       contractors: 'Contratistas',
-      workers: 'Trabajadores',
+      workers: 'Personas',
       maintenance: 'Mantenimiento',
       cleaning: 'Limpieza',
       inspections: 'Inspecciones',
@@ -133,7 +133,7 @@ export const messages: Messages = {
     roles: {
       admin: 'Administrador',
       manager: 'Gerente',
-      worker: 'Trabajador'
+      worker: 'Empleado'
     },
     checklist: {
       title: 'Primeros pasos',
@@ -183,9 +183,9 @@ export const messages: Messages = {
       action: 'Programar trabajo'
     },
     workers: {
-      title: 'Sin trabajadores aún',
-      description: 'Agregue miembros del equipo para asignar trabajos.',
-      action: 'Agregar trabajador'
+      title: 'Sin personas aún',
+      description: 'Invite personas para asignar trabajos y gestionar acceso.',
+      action: 'Invitar persona'
     },
     activity: {
       title: 'Sin actividad aún',
@@ -274,7 +274,7 @@ export const messages: Messages = {
       disclosureTitle: 'Qué recopilamos',
       disclosureBody: 'EverittOS recopila solo lo necesario para operar su espacio de trabajo.',
       collectProfile: 'Perfil: correo, rol, nombre comercial y configuración.',
-      collectOperations: 'Datos operativos: trabajos, clientes, trabajadores, horarios y fotos.',
+      collectOperations: 'Datos operativos: trabajos, clientes, personas, horarios y fotos.',
       collectActivity: 'Registros de actividad: acciones en su espacio de trabajo.',
       collectPasskeys:
         'Las llaves de acceso aún no están habilitadas. Si se agregan después, las credenciales permanecerían en su dispositivo.',
@@ -290,7 +290,7 @@ export const messages: Messages = {
       saveError: 'No se pudieron guardar las preferencias.',
       languageTitle: 'Idioma',
       exportTitle: 'Descargar sus datos',
-      exportDescription: 'Exporte perfil, trabajos, clientes, trabajadores y actividad en JSON.',
+      exportDescription: 'Exporte perfil, trabajos, clientes, personas y actividad en JSON.',
       exportButton: 'Descargar exportación',
       exportSuccess: 'La exportación de datos ha comenzado.',
       exportError: 'No se pudo exportar los datos.',
@@ -337,7 +337,7 @@ export const messages: Messages = {
       subscriptionOwnerOnly: 'Solo propietarios y administradores pueden cambiar la facturación.',
       openBilling: 'Abrir facturación',
       languageTitle: 'Idioma',
-      languageNote: 'Aplica a navegación, panel, trabajos, clientes, reservas, trabajadores, horario, facturación y ajustes.',
+      languageNote: 'Aplica a navegación, panel, trabajos, clientes, reservas, personas, horario, facturación y ajustes.',
       disableTitle: 'Desactivar cuenta',
       disableNote:
         'Desactivar cierra su sesión y bloquea el acceso. Los datos de su organización se conservan. Nada se elimina.',
@@ -393,8 +393,8 @@ export const messages: Messages = {
     clients: 'Clientes portal',
     schedule: 'Horario',
     expenses: 'Gastos',
-    workers: 'Trabajadores',
-    team: 'Equipo',
+    workers: 'Personas',
+    team: 'Personas',
     activity: 'Actividad',
     analytics: 'Analítica',
     workflows: 'Flujos',
@@ -411,7 +411,7 @@ export const messages: Messages = {
   },
   settingsNav: {
     workspace: 'Espacio de trabajo',
-    team: 'Equipo',
+    team: 'Personas',
     branding: 'Marca',
     integrations: 'Integraciones',
     account: 'Cuenta',
@@ -428,7 +428,7 @@ export const messages: Messages = {
   supportTraining: {
     pricingHeadline: '¿Necesita ayuda para empezar?',
     pricingBody:
-      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, trabajadores, horario, facturas y SOP.',
+      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, personas, horario, facturas y SOP.',
     itemOnboardingCall: 'Llamada gratuita de incorporación de 30 minutos',
     itemSopSetup: 'Configuración de SOP disponible',
     itemTeamTraining: 'Capacitación de equipo disponible',
@@ -439,7 +439,7 @@ export const messages: Messages = {
     bookFreeCall: 'Reservar llamada gratuita',
     dashboardTitle: '¿Necesita ayuda para configurar EverittOS?',
     dashboardBody:
-      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, trabajadores, horario, facturas y SOP.',
+      'Reserve una llamada gratuita de incorporación de 30 minutos y le ayudaremos a configurar sus primeros clientes, trabajos, personas, horario, facturas y SOP.',
     settingsTitle: 'Soporte y capacitación',
     settingsDescription: 'Incorporación, configuración de SOP y capacitación de equipo con el equipo Everitt.',
     settingsEmailNote: 'También puede escribirnos a',
@@ -459,11 +459,11 @@ export const messages: Messages = {
       addCustomer: 'Agregar cliente',
       sendInvoice: 'Enviar factura',
       scheduleWork: 'Programar trabajo',
-      addWorker: 'Agregar trabajador'
+      addWorker: 'Invitar persona'
     },
     attention: {
       overdueInvoices: 'Facturas sin pagar',
-      unassignedJobs: 'Trabajos sin trabajador',
+      unassignedJobs: 'Trabajos sin asignar',
       pendingEstimates: 'Presupuestos abiertos',
       followUpCustomers: 'Prospectos a seguir',
       upcomingAppointments: 'Citas próximas'
@@ -535,7 +535,7 @@ export const messages: Messages = {
       newJob: 'Nuevo trabajo',
       schedule: 'Horario',
       customers: 'Clientes',
-      workers: 'Trabajadores',
+      workers: 'Personas',
       billing: 'Facturación'
     },
     metrics: {

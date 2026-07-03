@@ -43,7 +43,7 @@ function teamLabel(member: TeamOption): string {
 
 function teamSubLabel(member: TeamOption): string {
   const label = normalizeRole(member.role);
-  const detail = member.profiles?.email || (member.source === 'linked_worker' ? 'Linked worker account' : 'Team member');
+  const detail = member.profiles?.email || (member.source === 'linked_worker' ? 'Linked crew record' : 'Team member');
   return `${label} · ${detail}`;
 }
 
@@ -382,9 +382,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-
         <section style={{ display: 'grid', gap: 10 }}>
-          <label>Assigned to</label>
+          <label>Assigned team member</label>
           <div
             className="input"
             style={{
@@ -558,7 +557,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{worker.name}</strong>
-                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team member' : 'Legacy worker'}</span>
+                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team member' : 'Legacy crew'}</span>
                       </span>
                     </span>
                     <span className="muted">{selected ? 'Added' : 'Add'}</span>

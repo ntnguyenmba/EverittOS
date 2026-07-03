@@ -515,7 +515,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
           <label htmlFor="invite-role">Role</label>
           <select id="invite-role" className="input" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
             <option value="manager">Manager</option>
-            <option value="employee">Worker</option>
+            <option value="employee">Employee</option>
             <option value="contractor">Contractor</option>
             <option value="client">Client</option>
             {isOwner(role) ? <option value="admin">Admin</option> : null}
@@ -586,7 +586,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
           </div>
           <div className="list-row compact">
             <div>
-              <strong>Worker</strong>
+              <strong>Employee</strong>
               <p className="muted">Can work from assigned jobs and add updates without seeing owner-only controls.</p>
             </div>
           </div>
@@ -631,7 +631,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
                 >
                   {isOwner(role) ? <option value="admin">Admin</option> : null}
                   <option value="manager">Manager</option>
-                  <option value="employee">Worker</option>
+                  <option value="employee">Employee</option>
                   <option value="contractor">Contractor</option>
                   <option value="viewer">Viewer</option>
                   <option value="client">Client</option>

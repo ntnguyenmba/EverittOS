@@ -114,7 +114,7 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
           {entries.map((entry) => (
             <div key={entry.id} className="finance-list-card">
               <div>
-                <strong>{entry.worker_name || 'Worker'}</strong>
+                <strong>{entry.worker_name || 'Team member'}</strong>
                 <p className="muted">
                   {entry.hours} hrs x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}
                 </p>
@@ -140,10 +140,10 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
 
       {canManage ? (
         <div className="finance-form-block">
-          <label>Worker</label>
+          <label>Team member</label>
           {workers.length > 0 ? (
             <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-              <option value="">Select worker</option>
+              <option value="">Select team member</option>
               {workers.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -153,7 +153,7 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
           ) : (
             <input
               className="input"
-              placeholder="Worker name"
+              placeholder="Team member name"
               value={workerName}
               onChange={(e) => setWorkerName(e.target.value)}
             />

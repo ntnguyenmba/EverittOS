@@ -28,6 +28,11 @@ import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { combineDateAndTime, formatScheduleDuration, hoursBetween, localTimeFromIso } from '@/lib/schedule-times';
+import {
+  getPeopleForAssignment,
+  resolveAssignedUserId,
+  type PersonAssignmentOption
+} from '@/lib/people-assignment';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -85,6 +90,8 @@ export default function JobDetailPage({ params }: PageProps) {
   const [jobId, setJobId] = useState('');
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [assignmentPeople, setAssignmentPeople] = useState<PersonAssignmentOption[]>([]);
+  const [assignedUserId, setAssignedUserId] = useState('');
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [activity, setActivity] = useState<
     { id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]
@@ -166,17 +173,21 @@ export default function JobDetailPage({ params }: PageProps) {
     setChecklist(checklistRows || []);
     setActivity(activityRows || []);
 
+    let assignmentPeopleLoaded: PersonAssignmentOption[] = [];
     if (limitsForPlan(userPlan).crewAssignment) {
       let workersQuery = supabase.from('workers').select('id, name').order('name');
       if (org?.organizationId) {
         workersQuery = workersQuery.eq('organization_id', org.organizationId);
+        assignmentPeopleLoaded = await getPeopleForAssignment(supabase, org.organizationId);
       } else {
         workersQuery = workersQuery.eq('user_id', user.id);
       }
+      setAssignmentPeople(assignmentPeopleLoaded);
       const { data: crew } = await workersQuery;
       setWorkers(crew || []);
     } else {
       setWorkers([]);
+      setAssignmentPeople([]);
     }
 
     setLoading(false);
@@ -196,6 +207,7 @@ export default function JobDetailPage({ params }: PageProps) {
     }
 
     setJob(data);
+    setAssignedUserId(resolveAssignedUserId(data.assigned_to, assignmentPeopleLoaded));
     setStartTime(localTimeFromIso(data.scheduled_start, '09:00'));
     setEndTime(localTimeFromIso(data.scheduled_end, '17:00'));
     setTimeline(notes || []);
@@ -279,8 +291,7 @@ export default function JobDetailPage({ params }: PageProps) {
         start_date: job.start_date || null,
         due_date: job.due_date || null,
         scheduled_start: scheduledStart,
-        scheduled_end: scheduledEnd,
-        assigned_to: job.assigned_to || null
+        scheduled_end: scheduledEnd
       })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
@@ -291,7 +302,11 @@ export default function JobDetailPage({ params }: PageProps) {
       return;
     }
 
-    appFeedback.success(json.message || 'Schedule saved.');
+    const assignmentOk = await patchJob(
+      { assigned_to: assignedUserId || null },
+      json.message || 'Schedule saved.'
+    );
+    if (!assignmentOk) return;
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', 'Schedule updated from job detail');
     }
@@ -366,7 +381,10 @@ export default function JobDetailPage({ params }: PageProps) {
 
   const crewEnabled = limitsForPlan(plan).crewAssignment;
   const canWorkJob = canManage || canEditStatus;
-  const assignedWorkerName = workers.find((w) => w.id === job.assigned_to)?.name || null;
+  const assignedPersonName =
+    assignmentPeople.find((person) => person.userId === assignedUserId)?.name ||
+    workers.find((w) => w.id === job.assigned_to)?.name ||
+    null;
   const accessTitle = canManage ? 'Management access' : 'Field access';
   const accessCopy = canManage
     ? 'You can edit job details, schedule, assignment, customer notes, and verification. Team changes are recorded in the activity timeline.'
@@ -389,9 +407,9 @@ export default function JobDetailPage({ params }: PageProps) {
       <div className="card" style={{ marginBottom: 18 }}>
         <h3>{accessTitle}</h3>
         <p className="muted">{accessCopy}</p>
-        {assignedWorkerName ? (
+        {assignedPersonName ? (
           <p>
-            <strong>Assigned to:</strong> {assignedWorkerName}
+            <strong>Assigned to:</strong> {assignedPersonName}
           </p>
         ) : null}
       </div>
@@ -531,16 +549,23 @@ export default function JobDetailPage({ params }: PageProps) {
           {crewEnabled ? (
             canManage ? (
               <>
-                <label>Assigned worker</label>
-                <select className="input" value={job.assigned_to || ''} onChange={(e) => setJob({ ...job, assigned_to: e.target.value || null })}>
+                <label>Assigned team member</label>
+                <select
+                  className="input"
+                  disabled={!canManage}
+                  value={assignedUserId}
+                  onChange={(e) => setAssignedUserId(e.target.value)}
+                >
                   <option value="">Needs assignment</option>
-                  {workers.map((w) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
+                  {assignmentPeople.map((person) => (
+                    <option key={person.userId} value={person.userId}>
+                      {person.name} · {person.role}
+                    </option>
                   ))}
                 </select>
               </>
             ) : (
-              <p><strong>Assigned worker:</strong> {assignedWorkerName || 'Needs assignment'}</p>
+              <p><strong>Assigned team member:</strong> {assignedPersonName || 'Needs assignment'}</p>
             )
           ) : (
             <p>Crew assignment is available on the Business plan.</p>

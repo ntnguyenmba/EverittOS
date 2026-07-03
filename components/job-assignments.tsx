@@ -55,7 +55,7 @@ export function JobAssignments({
     await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'worker'}`, {
       worker_id: workerId
     });
-    appFeedback.success('Worker assigned.');
+    appFeedback.success('Team member assigned.');
     setWorkerId('');
     onChange();
   }
@@ -79,12 +79,12 @@ export function JobAssignments({
   return (
     <div className="form">
       <h4>Crew assignments</h4>
-      {assignments.length === 0 && <p>No workers assigned yet.</p>}
+      {assignments.length === 0 && <p>No team members assigned yet.</p>}
       {assignments.map((a) => {
         const w = workers.find((x) => x.id === a.worker_id);
         return (
           <div key={a.id} className="list-row">
-            <span>{w?.name || 'Worker'}</span>
+            <span>{w?.name || 'Team member'}</span>
             {canManage && (
               <button type="button" className="btn" disabled={busy} onClick={() => removeAssignment(a.id, w?.name || 'worker')}>
                 Remove
@@ -96,7 +96,7 @@ export function JobAssignments({
       {canManage && (
         <>
           <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-            <option value="">Add worker</option>
+            <option value="">Add team member</option>
             {workers
               .filter((w) => !assignedIds.has(w.id))
               .map((w) => (
@@ -106,7 +106,7 @@ export function JobAssignments({
               ))}
           </select>
           <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={() => void addAssignment()}>
-            {busy ? FEEDBACK.loading : 'Assign worker'}
+            {busy ? FEEDBACK.loading : 'Assign team member'}
           </button>
         </>
       )}

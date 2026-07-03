@@ -56,7 +56,7 @@ export const messages: Messages = {
       welcome: {
         title: 'Chào mừng đến EverittOS',
         subtitle:
-          'Quản lý công việc, khách hàng, lịch trình, nhân viên và vận hành từ một nơi.'
+          'Quản lý công việc, khách hàng, lịch trình, mọi người và vận hành từ một nơi.'
       },
       business: {
         title: 'Hồ sơ doanh nghiệp',
@@ -90,7 +90,7 @@ export const messages: Messages = {
       complete: {
         title: 'Không gian làm việc đã sẵn sàng',
         message:
-          'Bạn có thể quản lý công việc, khách hàng, lịch trình, nhân viên và vận hành từ bảng điều khiển.'
+          'Bạn có thể quản lý công việc, khách hàng, lịch trình, mọi người và vận hành từ bảng điều khiển.'
       }
     },
     industries: {
@@ -123,7 +123,7 @@ export const messages: Messages = {
       properties: 'Bất động sản',
       customers: 'Khách hàng',
       contractors: 'Nhà thầu',
-      workers: 'Nhân viên',
+      workers: 'Mọi người',
       maintenance: 'Bảo trì',
       cleaning: 'Vệ sinh',
       inspections: 'Kiểm tra',
@@ -181,9 +181,9 @@ export const messages: Messages = {
       action: 'Lên lịch'
     },
     workers: {
-      title: 'Chưa có nhân viên',
-      description: 'Thêm thành viên nhóm để giao việc.',
-      action: 'Thêm nhân viên'
+      title: 'Chưa có ai',
+      description: 'Mời mọi người để giao việc và quản lý quyền truy cập.',
+      action: 'Mời người'
     },
     activity: {
       title: 'Chưa có hoạt động',
@@ -272,7 +272,7 @@ export const messages: Messages = {
       disclosureTitle: 'Dữ liệu chúng tôi thu thập',
       disclosureBody: 'EverittOS chỉ thu thập những gì cần để vận hành không gian làm việc.',
       collectProfile: 'Hồ sơ: email, vai trò, tên doanh nghiệp và cài đặt.',
-      collectOperations: 'Dữ liệu vận hành: công việc, khách hàng, nhân viên, lịch và ảnh.',
+      collectOperations: 'Dữ liệu vận hành: công việc, khách hàng, mọi người, lịch và ảnh.',
       collectActivity: 'Nhật ký hoạt động: hành động trong không gian làm việc.',
       collectPasskeys:
         'Passkey chưa được bật. Nếu thêm sau này, thông tin xác thực sẽ ở trên thiết bị của bạn.',
@@ -288,7 +288,7 @@ export const messages: Messages = {
       saveError: 'Không thể lưu tùy chọn.',
       languageTitle: 'Ngôn ngữ',
       exportTitle: 'Tải dữ liệu của bạn',
-      exportDescription: 'Xuất hồ sơ, công việc, khách hàng, nhân viên và hoạt động dạng JSON.',
+      exportDescription: 'Xuất hồ sơ, công việc, khách hàng, mọi người và hoạt động dạng JSON.',
       exportButton: 'Tải xuất dữ liệu',
       exportSuccess: 'Đã bắt đầu xuất dữ liệu.',
       exportError: 'Không thể xuất dữ liệu lúc này.',
@@ -391,8 +391,8 @@ export const messages: Messages = {
     clients: 'Khách hàng portal',
     schedule: 'Lịch',
     expenses: 'Chi phí',
-    workers: 'Nhân viên',
-    team: 'Nhóm',
+    workers: 'Mọi người',
+    team: 'Mọi người',
     activity: 'Hoạt động',
     analytics: 'Phân tích',
     workflows: 'Quy trình',
@@ -409,7 +409,7 @@ export const messages: Messages = {
   },
   settingsNav: {
     workspace: 'Không gian làm việc',
-    team: 'Nhóm',
+    team: 'Mọi người',
     branding: 'Thương hiệu',
     integrations: 'Tích hợp',
     account: 'Tài khoản',
@@ -457,7 +457,7 @@ export const messages: Messages = {
       addCustomer: 'Thêm khách',
       sendInvoice: 'Gửi hóa đơn',
       scheduleWork: 'Lên lịch',
-      addWorker: 'Thêm nhân viên'
+      addWorker: 'Mời người'
     },
     attention: {
       overdueInvoices: 'Hóa đơn chưa trả',
@@ -533,7 +533,7 @@ export const messages: Messages = {
       newJob: 'Công việc mới',
       schedule: 'Lịch',
       customers: 'Khách hàng',
-      workers: 'Nhân viên',
+      workers: 'Mọi người',
       billing: 'Thanh toán'
     },
     metrics: {
