@@ -19,12 +19,7 @@ import { StatusPill } from '@/components/status-pill';
 import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import {
-  fetchUsageCounts,
-  photoLimitReached,
-  reportLimitReached,
-  limitMessage
-} from '@/lib/everittos-usage';
+import { fetchUsageCounts, reportLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
@@ -32,12 +27,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import {
-  combineDateAndTime,
-  formatScheduleDuration,
-  hoursBetween,
-  localTimeFromIso
-} from '@/lib/schedule-times';
+import { combineDateAndTime, formatScheduleDuration, hoursBetween, localTimeFromIso } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -75,6 +65,20 @@ type TimelineEntry = {
   event_type: string;
   created_at: string | null;
 };
+
+function displayValue(value: string | null | undefined, fallback = 'Not set') {
+  return value && value.trim() ? value : fallback;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'Not scheduled';
+  return new Date(`${value}T00:00:00`).toLocaleDateString();
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return 'Not set';
+  return new Date(value).toLocaleString();
+}
 
 export default function JobDetailPage({ params }: PageProps) {
   const router = useRouter();
@@ -125,8 +129,9 @@ export default function JobDetailPage({ params }: PageProps) {
     const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const org = await fetchOrganizationContext(user.id);
     const role = normalizeRole(org?.role || profile?.role);
-    setUserRole(role);
     const userPlan = normalizePlan(profile?.plan);
+
+    setUserRole(role);
     setPlan(userPlan);
     setCanManage(isManagerRole(role));
     setCanEditStatus(hasPermission(role, 'update_status'));
@@ -354,14 +359,18 @@ export default function JobDetailPage({ params }: PageProps) {
   if (!job) {
     return (
       <AppShell plan={plan} role={userRole}>
-        <div className="card">
-          {loadError || 'Job not found or access denied.'}
-        </div>
+        <div className="card">{loadError || 'Job not found or access denied.'}</div>
       </AppShell>
     );
   }
 
   const crewEnabled = limitsForPlan(plan).crewAssignment;
+  const canWorkJob = canManage || canEditStatus;
+  const assignedWorkerName = workers.find((w) => w.id === job.assigned_to)?.name || null;
+  const accessTitle = canManage ? 'Management access' : 'Field access';
+  const accessCopy = canManage
+    ? 'You can edit job details, schedule, assignment, customer notes, and verification. Team changes are recorded in the activity timeline.'
+    : 'You can view the job, update status, complete checklist items, and upload job photos. Details, schedule, customer info, and assignments are read-only.';
   const scheduleHours = hoursBetween(
     job.scheduled_start || (job.start_date ? combineDateAndTime(job.start_date, startTime) : null),
     job.scheduled_end || (job.due_date ? combineDateAndTime(job.due_date, endTime) : null)
@@ -369,291 +378,249 @@ export default function JobDetailPage({ params }: PageProps) {
 
   return (
     <AppShell plan={plan} role={userRole}>
-        <div className="page-head">
-          <div>
-            <h2>{job.title}</h2>
-            <p>{job.address || 'No address added'}</p>
-          </div>
-          <StatusPill status={job.status} />
+      <div className="page-head">
+        <div>
+          <h2>{job.title}</h2>
+          <p>{job.address || 'No address added'}</p>
+        </div>
+        <StatusPill status={job.status} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <h3>{accessTitle}</h3>
+        <p className="muted">{accessCopy}</p>
+        {assignedWorkerName ? (
+          <p>
+            <strong>Assigned to:</strong> {assignedWorkerName}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <h3>{canManage ? 'Job details' : 'Job details, read-only'}</h3>
+          {canManage ? (
+            <div className="form">
+              <label>Title</label>
+              <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
+              <label>Customer</label>
+              <input
+                className="input"
+                value={job.customer_name || ''}
+                onChange={(e) => setJob({ ...job, customer_name: e.target.value })}
+              />
+              <label>Phone</label>
+              <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
+              <label>Address</label>
+              <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
+              <label>Job notes</label>
+              <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
+              <label>Priority</label>
+              <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              {canViewInternalNotes(userRole) && (
+                <>
+                  <label>Internal notes</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={job.internal_notes || ''}
+                    onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
+                  />
+                </>
+              )}
+              <label>Customer notes</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={job.customer_notes || ''}
+                onChange={(e) => setJob({ ...job, customer_notes: e.target.value })}
+              />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!!job.completion_verified}
+                  onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
+                />{' '}
+                Completion verified
+              </label>
+              <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
+                {savingDetails ? FEEDBACK.loading : 'Save details'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ marginLeft: 8 }}
+                disabled={removingJob}
+                onClick={async () => {
+                  if (!window.confirm('Remove this job?')) return;
+                  setRemovingJob(true);
+                  const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+                  const json = (await res.json().catch(() => ({}))) as { error?: string; cancelled?: boolean };
+                  setRemovingJob(false);
+                  if (!res.ok) {
+                    appFeedback.error(json.error || 'Unable to remove job.');
+                    return;
+                  }
+                  appFeedback.success(json.cancelled ? 'Job marked cancelled (linked records kept).' : FEEDBACK.deleted);
+                  router.push('/jobs');
+                }}
+              >
+                {removingJob ? FEEDBACK.loading : 'Remove job'}
+              </button>
+            </div>
+          ) : (
+            <>
+              <p><strong>Customer:</strong> {displayValue(job.customer_name)}</p>
+              <p><strong>Phone:</strong> {displayValue(job.phone)}</p>
+              <p><strong>Address:</strong> {displayValue(job.address)}</p>
+              <p><strong>Notes:</strong> {displayValue(job.notes, 'No notes')}</p>
+              <p><strong>Priority:</strong> {job.priority || 'normal'}</p>
+            </>
+          )}
+          <p><strong>Created:</strong> {formatDateTime(job.created_at)}</p>
+
+          {canEditStatus && (
+            <div className="form" style={{ marginTop: 16 }}>
+              <button className="btn" type="button" disabled={updatingStatus || job.status === 'in_progress'} onClick={() => updateStatus('in_progress')}>
+                {updatingStatus ? FEEDBACK.loading : 'Start job'}
+              </button>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={updatingStatus || job.status === 'completed'}
+                onClick={() => updateStatus('completed')}
+              >
+                {updatingStatus ? FEEDBACK.loading : 'Mark completed'}
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="grid-2">
-          <div className="card">
-            <h3>Job details</h3>
-            {canManage ? (
-              <div className="form">
-                <label>Title</label>
-                <input
-                  className="input"
-                  value={job.title}
-                  onChange={(e) => setJob({ ...job, title: e.target.value })}
-                />
-                <label>Customer</label>
-                <input
-                  className="input"
-                  value={job.customer_name || ''}
-                  onChange={(e) => setJob({ ...job, customer_name: e.target.value })}
-                />
-                <label>Phone</label>
-                <input
-                  className="input"
-                  value={job.phone || ''}
-                  onChange={(e) => setJob({ ...job, phone: e.target.value })}
-                />
-                <label>Address</label>
-                <input
-                  className="input"
-                  value={job.address || ''}
-                  onChange={(e) => setJob({ ...job, address: e.target.value })}
-                />
-                <label>Job notes</label>
-                <textarea
-                  className="input"
-                  rows={2}
-                  value={job.notes || ''}
-                  onChange={(e) => setJob({ ...job, notes: e.target.value })}
-                />
-                <label>Priority</label>
-                <select
-                  className="input"
-                  value={job.priority || 'normal'}
-                  onChange={(e) => setJob({ ...job, priority: e.target.value })}
-                >
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                {canViewInternalNotes(userRole) && (
-                  <>
-                    <label>Internal notes</label>
-                    <textarea
-                      className="input"
-                      rows={3}
-                      value={job.internal_notes || ''}
-                      onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
-                    />
-                  </>
-                )}
-                <label>Customer notes</label>
-                <textarea
-                  className="input"
-                  rows={3}
-                  value={job.customer_notes || ''}
-                  onChange={(e) => setJob({ ...job, customer_notes: e.target.value })}
-                />
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={!!job.completion_verified}
-                    onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
-                  />{' '}
-                  Completion verified
-                </label>
-                <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
-                  {savingDetails ? FEEDBACK.loading : 'Save details'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  style={{ marginLeft: 8 }}
-                  disabled={removingJob}
-                  onClick={async () => {
-                    if (!window.confirm('Remove this job?')) return;
-                    setRemovingJob(true);
-                    const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
-                    const json = (await res.json().catch(() => ({}))) as { error?: string; cancelled?: boolean };
-                    setRemovingJob(false);
-                    if (!res.ok) {
-                      appFeedback.error(json.error || 'Unable to remove job.');
-                      return;
-                    }
-                    appFeedback.success(json.cancelled ? 'Job marked cancelled (linked records kept).' : FEEDBACK.deleted);
-                    router.push('/jobs');
-                  }}
-                >
-                  {removingJob ? FEEDBACK.loading : 'Remove job'}
-                </button>
-              </div>
-            ) : (
-              <>
-                <p>
-                  <strong>Customer:</strong> {job.customer_name || 'Not set'}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {job.phone || 'Not set'}
-                </p>
-                <p>
-                  <strong>Notes:</strong> {job.notes || 'No notes'}
-                </p>
-                <p>
-                  <strong>Priority:</strong> {job.priority || 'normal'}
-                </p>
-              </>
-            )}
-            <p>
-              <strong>Created:</strong> {job.created_at ? new Date(job.created_at).toLocaleString() : 'Just created'}
+        <div className="card form">
+          <h3>{canManage ? 'Schedule' : 'Schedule, read-only'}</h3>
+          {canManage ? (
+            <>
+              <label>Start date</label>
+              <input className="input" type="date" value={job.start_date || ''} onChange={(e) => setJob({ ...job, start_date: e.target.value })} />
+              <label>Start time</label>
+              <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <label>Due date</label>
+              <input className="input" type="date" value={job.due_date || ''} onChange={(e) => setJob({ ...job, due_date: e.target.value })} />
+              <label>End time</label>
+              <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </>
+          ) : (
+            <>
+              <p><strong>Start:</strong> {job.scheduled_start ? formatDateTime(job.scheduled_start) : formatDate(job.start_date)}</p>
+              <p><strong>Due:</strong> {job.scheduled_end ? formatDateTime(job.scheduled_end) : formatDate(job.due_date)}</p>
+            </>
+          )}
+          {scheduleHours != null ? (
+            <p className="muted">
+              Scheduled duration: {formatScheduleDuration(
+                combineDateAndTime(job.start_date || '', startTime),
+                combineDateAndTime(job.due_date || job.start_date || '', endTime)
+              )}
             </p>
-
-            {canEditStatus && (
-              <div className="form" style={{ marginTop: 16 }}>
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={updatingStatus || job.status === 'in_progress'}
-                  onClick={() => updateStatus('in_progress')}
-                >
-                  {updatingStatus ? FEEDBACK.loading : 'Start job'}
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  disabled={updatingStatus || job.status === 'completed'}
-                  onClick={() => updateStatus('completed')}
-                >
-                  {updatingStatus ? FEEDBACK.loading : 'Mark completed'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="card form">
-            <h3>Schedule</h3>
-            <label>Start date</label>
-            <input
-              className="input"
-              type="date"
-              disabled={!canManage}
-              value={job.start_date || ''}
-              onChange={(e) => setJob({ ...job, start_date: e.target.value })}
-            />
-            <label>Start time</label>
-            <input
-              className="input"
-              type="time"
-              disabled={!canManage}
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-            />
-            <label>Due date</label>
-            <input
-              className="input"
-              type="date"
-              disabled={!canManage}
-              value={job.due_date || ''}
-              onChange={(e) => setJob({ ...job, due_date: e.target.value })}
-            />
-            <label>End time</label>
-            <input
-              className="input"
-              type="time"
-              disabled={!canManage}
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-            />
-            {scheduleHours != null ? (
-              <p className="muted">
-                Scheduled duration: {formatScheduleDuration(
-                  combineDateAndTime(job.start_date || '', startTime),
-                  combineDateAndTime(job.due_date || job.start_date || '', endTime)
-                )}
-              </p>
-            ) : null}
-            {crewEnabled ? (
+          ) : null}
+          {crewEnabled ? (
+            canManage ? (
               <>
                 <label>Assigned worker</label>
-                <select
-                  className="input"
-                  disabled={!canManage}
-                  value={job.assigned_to || ''}
-                  onChange={(e) => setJob({ ...job, assigned_to: e.target.value || null })}
-                >
+                <select className="input" value={job.assigned_to || ''} onChange={(e) => setJob({ ...job, assigned_to: e.target.value || null })}>
                   <option value="">Needs assignment</option>
                   {workers.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
+                    <option key={w.id} value={w.id}>{w.name}</option>
                   ))}
                 </select>
               </>
             ) : (
-              <p>Crew assignment is available on the Business plan.</p>
-            )}
-            {canManage && (
-              <button className="btn btn-primary" type="button" onClick={saveSchedule} disabled={savingSchedule}>
-                {savingSchedule ? 'Saving...' : 'Save schedule'}
-              </button>
-            )}
-          </div>
+              <p><strong>Assigned worker:</strong> {assignedWorkerName || 'Needs assignment'}</p>
+            )
+          ) : (
+            <p>Crew assignment is available on the Business plan.</p>
+          )}
+          {canManage && (
+            <button className="btn btn-primary" type="button" onClick={saveSchedule} disabled={savingSchedule}>
+              {savingSchedule ? 'Saving...' : 'Save schedule'}
+            </button>
+          )}
         </div>
+      </div>
 
-        {crewEnabled && orgId && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <JobAssignments
-              jobId={job.id}
-              organizationId={orgId}
-              userId={job.user_id}
-              workers={workers}
-              assignments={assignments}
-              canManage={canManage}
-              onChange={loadJob}
-            />
-          </div>
-        )}
-
-        {orgId && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <JobChecklist
-              jobId={job.id}
-              organizationId={orgId}
-              userId={job.user_id}
-              items={checklist}
-              canEdit={canManage}
-              onChange={loadJob}
-            />
-          </div>
-        )}
-
-        <JobWorkflow
-          jobId={job.id}
-          canManage={canManage}
-          canComplete={canManage || canEditStatus}
-          hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
-        />
-
-        {canAccessFinancialTracking(plan) ? (
-          <>
-            <div style={{ marginTop: 18 }}>
-              <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} />
-            </div>
-            <div style={{ marginTop: 18 }}>
-              <JobLaborSection jobId={job.id} workers={workers} canManage={canManage} />
-            </div>
-          </>
-        ) : null}
-
-        <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
-
-        <div className="card job-photos-card" style={{ marginTop: 18 }}>
-          <h3>Before &amp; after photos</h3>
-          <p className="muted">
-            Document the job with before and after photos. Upload from your phone camera or desktop. Files are stored
-            securely with this job.
-          </p>
-          <JobPhotosSection
+      {crewEnabled && orgId && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <JobAssignments
             jobId={job.id}
-            organizationId={orgId || job.organization_id}
-            plan={plan}
-            canUpload={canUploadPhotos}
-            showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')}
-            refreshKey={photoRefresh}
-            onChange={() => {
-              setPhotoRefresh((k) => k + 1);
-              loadJob();
-            }}
+            organizationId={orgId}
+            userId={job.user_id}
+            workers={workers}
+            assignments={assignments}
+            canManage={canManage}
+            onChange={loadJob}
           />
         </div>
+      )}
 
+      {orgId && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <JobChecklist
+            jobId={job.id}
+            organizationId={orgId}
+            userId={job.user_id}
+            items={checklist}
+            canEdit={canWorkJob}
+            canAddItems={canManage}
+            onChange={loadJob}
+          />
+        </div>
+      )}
+
+      <JobWorkflow
+        jobId={job.id}
+        canManage={canManage}
+        canComplete={canWorkJob}
+        hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
+      />
+
+      {canAccessFinancialTracking(plan) ? (
+        <>
+          <div style={{ marginTop: 18 }}>
+            <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} />
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <JobLaborSection jobId={job.id} workers={workers} canManage={canManage} />
+          </div>
+        </>
+      ) : null}
+
+      <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
+
+      <div className="card job-photos-card" style={{ marginTop: 18 }}>
+        <h3>Before &amp; after photos</h3>
+        <p className="muted">
+          Document the job with before and after photos. Upload from your phone camera or desktop. Files are stored securely with this job.
+        </p>
+        <JobPhotosSection
+          jobId={job.id}
+          organizationId={orgId || job.organization_id}
+          plan={plan}
+          canUpload={canUploadPhotos}
+          showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')}
+          refreshKey={photoRefresh}
+          onChange={() => {
+            setPhotoRefresh((k) => k + 1);
+            loadJob();
+          }}
+        />
+      </div>
+
+      {canManage && (
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Proof report</h3>
           <p>Generate a printable report with job details and photos.</p>
@@ -664,25 +631,26 @@ export default function JobDetailPage({ params }: PageProps) {
             View latest
           </Link>
         </div>
+      )}
 
-        {isManagerRole(userRole) && (
-          <div className="card" style={{ marginTop: 18 }}>
-            <h3>Activity timeline</h3>
-            {activity.length > 0 ? (
-              <ActivityFeed items={activity} />
-            ) : (
-              <>
-                {timeline.length === 0 && <p>No timeline entries yet.</p>}
-                {timeline.map((entry) => (
-                  <div key={entry.id} style={{ marginTop: 10 }}>
-                    <strong>{entry.event_type}</strong>
-                    <p>{entry.message || 'Update recorded'}</p>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        )}
+      {isManagerRole(userRole) && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <h3>Activity timeline</h3>
+          {activity.length > 0 ? (
+            <ActivityFeed items={activity} />
+          ) : (
+            <>
+              {timeline.length === 0 && <p>No timeline entries yet.</p>}
+              {timeline.map((entry) => (
+                <div key={entry.id} style={{ marginTop: 10 }}>
+                  <strong>{entry.event_type}</strong>
+                  <p>{entry.message || 'Update recorded'}</p>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
     </AppShell>
   );
 }
