@@ -31,12 +31,10 @@ function workloadLabel(status: WorkloadStatus, member: TeamCommandMember): strin
 }
 
 function memberSummary(member: TeamCommandMember): string {
-  if (member.nextUpcomingJob) {
-    return `${member.nextUpcomingJob.title} · ${member.nextUpcomingJob.date}`;
-  }
+  if (member.nextUpcomingJob) return `${member.nextUpcomingJob.title} · ${member.nextUpcomingJob.date}`;
   if (member.activeJobs > 0) return `${member.activeJobs} active job${member.activeJobs === 1 ? '' : 's'}`;
   if (member.dueTodayJobs > 0) return `${member.dueTodayJobs} due today`;
-  return 'Nothing assigned for today';
+  return 'Nothing assigned today';
 }
 
 function statusTone(member: TeamCommandMember): React.CSSProperties {
@@ -76,10 +74,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       setLoading(false);
       if (!res.ok) {
         const detail = json.detail || json._detail;
-        const message =
-          json.error ||
-          detail ||
-          'We could not load team command center data. Refresh and try again.';
+        const message = json.error || detail || 'We could not load team command center data. Refresh and try again.';
         setError(message);
         setData(null);
         return;
@@ -143,11 +138,11 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
 
   return (
     <section className="card dashboard-today-card team-command-center" aria-label="Team Command Center">
-      <div className="dashboard-section-head">
+      <div className="dashboard-section-head" style={{ marginBottom: 22 }}>
         <div>
           <h2>Team Command Center</h2>
-          <p className="page-subtitle">
-            Compact team status with expandable workload details.
+          <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
+            Team status, assignments, and workload checks.
           </p>
         </div>
       </div>
@@ -155,9 +150,9 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-          gap: 10,
-          marginBottom: 18
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 14,
+          marginBottom: 32
         }}
       >
         {compactMetrics.map((card) => (
@@ -167,7 +162,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
             style={{
               border: '1px solid var(--line)',
               borderRadius: 'var(--radius-md)',
-              padding: '12px 14px',
+              padding: '14px 16px',
               background: 'var(--surface)',
               boxShadow: 'var(--shadow-subtle)'
             }}
@@ -175,25 +170,25 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
             <span style={{ display: 'block', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
               {card.label}
             </span>
-            <strong style={{ display: 'block', marginTop: 4, fontSize: 24, lineHeight: 1.1, color: 'var(--charcoal)' }}>
+            <strong style={{ display: 'block', marginTop: 6, fontSize: 24, lineHeight: 1.1, color: 'var(--charcoal)' }}>
               {card.value}
             </strong>
           </Link>
         ))}
       </div>
 
-      <div style={{ marginTop: 8 }}>
-        <h3 style={{ marginBottom: 10 }}>Team overview</h3>
+      <div>
+        <h3 style={{ margin: '0 0 12px' }}>Team overview</h3>
         {!hasMembers ? (
           <p className="muted">No team members yet. Invite team members or assign jobs to see workload here.</p>
         ) : null}
         {hasMembers && !hasAssignedWork ? (
-          <p className="muted" style={{ marginBottom: 12 }}>
-            No assigned work is being found for any team member. Use each row Data check link to confirm whether the jobs are unassigned or assigned through a different record.
+          <p className="muted" style={{ margin: '0 0 22px', maxWidth: 760, lineHeight: 1.55 }}>
+            No assigned work was found for this team. Open a row to check whether jobs are unassigned or linked to another record.
           </p>
         ) : null}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {safeMembers.map((member) => {
             const expanded = expandedMemberId === member.userId;
             const totalTracked = member.activeJobs + member.dueTodayJobs + member.overdueJobs + member.completedJobs;
@@ -218,28 +213,33 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                     background: 'transparent',
                     cursor: 'pointer',
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(180px, 1.2fr) minmax(180px, 1.4fr) auto auto',
-                    gap: 12,
+                    gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 1.35fr) max-content 24px',
+                    columnGap: 24,
+                    rowGap: 10,
                     alignItems: 'center',
-                    padding: '14px 16px',
+                    padding: '18px 20px',
                     textAlign: 'left',
                     color: 'var(--text)'
                   }}
                 >
-                  <span>
-                    <strong style={{ display: 'block', color: 'var(--charcoal)' }}>{member.name}</strong>
-                    <span className="muted">{member.role} · {member.email || 'No email on file'}</span>
+                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                    <strong style={{ display: 'block', color: 'var(--charcoal)', lineHeight: 1.25 }}>{member.name}</strong>
+                    <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 4 }}>
+                      {member.role} · {member.email || 'No email on file'}
+                    </span>
                   </span>
-                  <span>
-                    <strong style={{ display: 'block', fontWeight: 500 }}>{memberSummary(member)}</strong>
-                    <span className="muted">Last update: {formatDate(member.lastActivityAt)}</span>
+                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                    <strong style={{ display: 'block', fontWeight: 500, lineHeight: 1.25 }}>{memberSummary(member)}</strong>
+                    <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 6 }}>
+                      Last update: {formatDate(member.lastActivityAt)}
+                    </span>
                   </span>
                   <span
                     style={{
                       justifySelf: 'end',
                       border: '1px solid',
                       borderRadius: 999,
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       fontSize: 13,
                       fontWeight: 600,
                       whiteSpace: 'nowrap',
@@ -248,13 +248,13 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                   >
                     {workloadLabel(member.workloadStatus, member)}
                   </span>
-                  <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18 }}>
+                  <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18, justifySelf: 'end' }}>
                     {expanded ? '−' : '+'}
                   </span>
                 </button>
 
                 {expanded ? (
-                  <div style={{ borderTop: '1px solid var(--line)', padding: '14px 16px 16px' }}>
+                  <div style={{ borderTop: '1px solid var(--line)', padding: '14px 20px 18px' }}>
                     <div
                       style={{
                         display: 'grid',
@@ -307,7 +307,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
         </div>
       </div>
 
-      <details style={{ marginTop: 18 }}>
+      <details style={{ marginTop: 20 }}>
         <summary style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 14 }}>More workspace metrics</summary>
         <div className="dashboard-revenue-grid" style={{ marginTop: 12 }}>
           {[
