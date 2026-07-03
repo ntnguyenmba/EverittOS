@@ -20,7 +20,7 @@ export type SettingsNavLink = {
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings', label: 'Workspace' },
-  { href: '/settings/team', label: 'Team' },
+  { href: '/settings/team', label: 'People' },
   { href: '/settings/branding', label: 'Branding' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
