@@ -28,6 +28,26 @@ const ALLOWED_FIELDS = new Set([
   'customer_id'
 ]);
 
+const MANAGER_ONLY_FIELDS = new Set([
+  'title',
+  'customer_name',
+  'phone',
+  'address',
+  'notes',
+  'start_date',
+  'due_date',
+  'scheduled_start',
+  'scheduled_end',
+  'assigned_to',
+  'priority',
+  'internal_notes',
+  'customer_notes',
+  'completion_verified',
+  'customer_id'
+]);
+
+const STAFF_ALLOWED_FIELDS = new Set(['status']);
+
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
@@ -58,12 +78,28 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  if ('assigned_to' in payload && !canAssignJobs(ctx.workspace.role)) {
-    return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
+  const payloadKeys = Object.keys(payload);
+
+  if (!payloadKeys.length) {
+    return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
   }
 
-  if (!Object.keys(payload).length) {
-    return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
+  if (!ctx.canManage) {
+    const staffOnlyUpdate = payloadKeys.every((key) => STAFF_ALLOWED_FIELDS.has(key));
+    if (!staffOnlyUpdate) {
+      return NextResponse.json(
+        { error: 'Only owners, admins, and managers can edit job details, schedule, customer info, and assignments.' },
+        { status: 403 }
+      );
+    }
+  }
+
+  if (payloadKeys.some((key) => MANAGER_ONLY_FIELDS.has(key)) && !ctx.canManage) {
+    return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
+  }
+
+  if ('assigned_to' in payload && !canAssignJobs(ctx.workspace.role)) {
+    return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
   }
 
   const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id);
@@ -77,8 +113,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     ctx.userId,
     'job',
     id,
-    'job_updated',
-    `Job updated: ${existing.title || 'Untitled'}`
+    ctx.canManage ? 'job_updated' : 'job_status_updated',
+    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`
   );
 
   return NextResponse.json({ ok: true, message: 'Job saved successfully.' });
