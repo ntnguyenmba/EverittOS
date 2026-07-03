@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { SecurityActivityLog } from '@/components/security-activity-log';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { SsoEnterpriseCard } from '@/components/sso-enterprise-card';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -137,7 +138,7 @@ export default function SecuritySettingsPage() {
   }
 
   return (
-    <SettingsShell plan={plan} title="Security" description="Password, sessions, sign-in history, and admin audit controls.">
+    <SettingsShell plan={plan} title="Security" description="Password, sessions, sign-in history, SSO, and admin audit controls.">
       <div className="settings-card">
         <h3>{t('settings.security.passkeysTitle')}</h3>
         <PasskeyManager />
@@ -146,6 +147,8 @@ export default function SecuritySettingsPage() {
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         </p>
       </div>
+
+      {canManageOrganizationSettings(role) ? <SsoEnterpriseCard plan={plan} /> : null}
 
       <div className="settings-card">
         <h3>Change password</h3>
