@@ -19,6 +19,63 @@ import { normalizeEmail } from '@/lib/input-validation';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 import { PasskeySignInButton } from '@/components/passkey-sign-in-button';
 
+const loginCopy = {
+  en: {
+    title: 'Sign in',
+    email: 'Email',
+    emailPlaceholder: 'you@company.com',
+    password: 'Password',
+    passwordPlaceholder: 'Your password',
+    signingIn: 'Signing in...',
+    signIn: 'Sign in',
+    forgotPassword: 'Forgot password',
+    createAccount: 'Create account',
+    selectedPlan: 'Selected plan:',
+    continueSetup: 'Sign in to continue setup.',
+    accountDeleted: 'Your account has been permanently deleted.',
+    passwordUpdated: 'Password updated. Sign in with your new password.',
+    emailVerified: 'Email verified. You can sign in now.',
+    configTitle: 'Configuration required',
+    configMessage: 'Authentication is not configured for this deployment. Set Supabase environment variables and redeploy.'
+  },
+  es: {
+    title: 'Iniciar sesión',
+    email: 'Correo electrónico',
+    emailPlaceholder: 'usted@empresa.com',
+    password: 'Contraseña',
+    passwordPlaceholder: 'Su contraseña',
+    signingIn: 'Iniciando sesión...',
+    signIn: 'Iniciar sesión',
+    forgotPassword: 'Olvidé mi contraseña',
+    createAccount: 'Crear cuenta',
+    selectedPlan: 'Plan seleccionado:',
+    continueSetup: 'Inicie sesión para continuar la configuración.',
+    accountDeleted: 'Su cuenta se eliminó permanentemente.',
+    passwordUpdated: 'Contraseña actualizada. Inicie sesión con su nueva contraseña.',
+    emailVerified: 'Correo verificado. Ya puede iniciar sesión.',
+    configTitle: 'Configuración requerida',
+    configMessage: 'La autenticación no está configurada para este despliegue. Configure las variables de Supabase y vuelva a desplegar.'
+  },
+  vi: {
+    title: 'Đăng nhập',
+    email: 'Email',
+    emailPlaceholder: 'ban@congty.com',
+    password: 'Mật khẩu',
+    passwordPlaceholder: 'Mật khẩu của bạn',
+    signingIn: 'Đang đăng nhập...',
+    signIn: 'Đăng nhập',
+    forgotPassword: 'Quên mật khẩu',
+    createAccount: 'Tạo tài khoản',
+    selectedPlan: 'Gói đã chọn:',
+    continueSetup: 'Đăng nhập để tiếp tục thiết lập.',
+    accountDeleted: 'Tài khoản của bạn đã bị xóa vĩnh viễn.',
+    passwordUpdated: 'Mật khẩu đã được cập nhật. Đăng nhập bằng mật khẩu mới.',
+    emailVerified: 'Email đã được xác minh. Bạn có thể đăng nhập ngay.',
+    configTitle: 'Cần cấu hình',
+    configMessage: 'Xác thực chưa được cấu hình cho bản triển khai này. Hãy thiết lập biến môi trường Supabase và triển khai lại.'
+  }
+};
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
@@ -52,7 +109,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const signupHref = `/signup?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = loginCopy[locale] || loginCopy.en;
 
   function showError(nextError: LoginClientError) {
     setError(nextError);
@@ -132,19 +190,19 @@ function LoginForm() {
   }
 
   const successMessage = accountDeleted
-    ? 'Your account has been permanently deleted.'
+    ? copy.accountDeleted
     : passwordReset
-      ? 'Password updated. Sign in with your new password.'
+      ? copy.passwordUpdated
       : verified
-        ? 'Email verified. You can sign in now.'
+        ? copy.emailVerified
         : undefined;
 
   return (
-    <AuthShell title="Sign in">
+    <AuthShell title={copy.title}>
       {configError ? (
         <AuthMessages
-          errorTitle="Configuration required"
-          error="Authentication is not configured for this deployment. Set Supabase environment variables and redeploy."
+          errorTitle={copy.configTitle}
+          error={copy.configMessage}
         />
       ) : null}
 
@@ -154,7 +212,7 @@ function LoginForm() {
 
       {selectedPlan !== 'free' ? (
         <p className="auth-plan-note">
-          Selected plan: <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. Sign in to continue setup.
+          {copy.selectedPlan} <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. {copy.continueSetup}
         </p>
       ) : null}
 
@@ -162,11 +220,11 @@ function LoginForm() {
 
       <form className="auth-form card" onSubmit={handleLogin}>
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{copy.email}</label>
           <input
             id="email"
             className="input"
-            placeholder="you@company.com"
+            placeholder={copy.emailPlaceholder}
             type="email"
             autoComplete="email"
             required
@@ -178,8 +236,8 @@ function LoginForm() {
 
         <PasswordField
           id="password"
-          label="Password"
-          placeholder="Your password"
+          label={copy.password}
+          placeholder={copy.passwordPlaceholder}
           autoComplete="current-password"
           value={password}
           onChange={setPassword}
@@ -194,15 +252,15 @@ function LoginForm() {
         />
 
         <button className="btn btn-primary" type="submit" disabled={loading || configError || !email || !password}>
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? copy.signingIn : copy.signIn}
         </button>
       </form>
 
       <PasskeySignInButton next={next} disabled={loading || Boolean(configError)} />
 
       <div className="auth-links">
-        <Link href="/forgot-password">Forgot password</Link>
-        <Link href={signupHref}>Create account</Link>
+        <Link href="/forgot-password">{copy.forgotPassword}</Link>
+        <Link href={signupHref}>{copy.createAccount}</Link>
       </div>
     </AuthShell>
   );
