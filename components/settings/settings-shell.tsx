@@ -59,7 +59,12 @@ export function SettingsShell({ plan, title, description, role: roleProp, childr
           const active =
             link.href === '/settings'
               ? pathname === '/settings'
-              : pathname === link.href || pathname.startsWith(`${link.href}/`);
+              : link.href === '/settings/people'
+                ? pathname === '/settings/people' ||
+                  pathname.startsWith('/settings/people/') ||
+                  pathname === '/settings/team' ||
+                  pathname.startsWith('/settings/team/')
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
           return (
             <Link key={link.href} href={link.href} className={active ? 'active' : undefined}>
               {settingsNavLabel(link.href, t, link.label)}

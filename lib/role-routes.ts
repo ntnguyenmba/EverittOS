@@ -28,7 +28,7 @@ export function roleDisplayName(role: UserRole): string {
     case 'manager':
       return 'Manager';
     case 'employee':
-      return 'Worker';
+      return 'Employee';
     case 'contractor':
       return 'Technician';
     case 'client':

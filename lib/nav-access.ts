@@ -223,7 +223,14 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
     return path === '/dashboard';
   }
   if (target === '/people' || target === '/team') {
-    return path === '/people' || path.startsWith('/people/') || path === '/team' || path.startsWith('/team/') || path === '/workers' || path.startsWith('/workers/');
+    return (
+      path === '/people' ||
+      path.startsWith('/people/') ||
+      path === '/team' ||
+      path.startsWith('/team/') ||
+      path === '/workers' ||
+      path.startsWith('/workers/')
+    );
   }
 
   return path === target || path.startsWith(`${target}/`);

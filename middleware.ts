@@ -27,6 +27,7 @@ const AUTH_PREFIXES = [
   '/dashboard',
   '/jobs',
   '/workers',
+  '/people',
   '/settings',
   '/customers',
   '/schedule',
@@ -77,7 +78,9 @@ function isSessionApiPath(pathname: string) {
 }
 
 const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
+  { prefix: '/people', permission: 'view_team' },
   { prefix: '/team', permission: 'view_team' },
+  { prefix: '/settings/people', permission: 'view_team' },
   { prefix: '/settings/team', permission: 'view_team' },
   { prefix: '/settings/billing', permission: 'manage_billing' }
 ];
@@ -367,12 +370,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers'))) {
+  if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers') || pathname.startsWith('/people'))) {
     return roleBlockedRedirect(
       request,
       supabaseResponse,
       pathname,
-      'Your role only includes assigned work, not full customer or worker lists.'
+      'Your role only includes assigned work, not full customer or people lists.'
     );
   }
 
@@ -411,6 +414,7 @@ export async function middleware(request: NextRequest) {
     '/bookings',
     '/leads',
     '/workers',
+    '/people',
     '/team',
     '/activity',
     '/analytics',
@@ -457,6 +461,7 @@ export const config = {
     '/dashboard/:path*',
     '/jobs/:path*',
     '/workers/:path*',
+    '/people/:path*',
     '/settings/:path*',
     '/customers/:path*',
     '/crm/:path*',

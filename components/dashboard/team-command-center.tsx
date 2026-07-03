@@ -160,7 +160,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
     { label: 'On job', value: safeTotals.activeJobs, href: '/jobs?status=active' },
     { label: 'Due today', value: dueTodayTotal, href: '/schedule' },
     { label: 'Needs attention', value: safeTotals.overdueJobs, href: '/jobs?status=overdue' },
-    { label: 'Available team', value: availableMembers, href: '/team' }
+    { label: 'Available team', value: availableMembers, href: '/people' }
   ];
 
   return (

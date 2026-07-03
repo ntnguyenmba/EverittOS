@@ -26,7 +26,7 @@ const EMPTY_ACTIONS: Partial<Record<EmptyKey, string>> = {
   customers: '/customers/new',
   leads: '/leads/new',
   schedule: '/schedule/new',
-  workers: '/workers',
+  workers: '/people',
   reviews: '/reviews',
   forms: '/forms',
   templates: '/templates',

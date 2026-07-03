@@ -229,14 +229,14 @@ export function RoleDashboard({
     ...(!isClientRole(role) && !isContractorRole(role)
       ? [
           { label: 'Customers', value: customerCount, href: '/customers' },
-          { label: 'Team members', value: teamCount, href: '/team' }
+          { label: 'Team members', value: teamCount, href: '/people' }
         ]
       : []),
     { label: 'Team photos', value: photoCount, href: '/photos' },
     { label: 'Team reports', value: reportCount, href: '/reports' },
     ...(role === 'owner' || role === 'admin' || role === 'manager'
       ? [
-          { label: 'Team activity', value: activityCount, href: '/team' },
+          { label: 'Team activity', value: activityCount, href: '/people' },
           { label: canViewTeamCommandCenter ? 'Team jobs this month' : 'Jobs this month', value: createdThisMonth, href: `/jobs?from=${monthStartIso}` }
         ]
       : [])
@@ -250,7 +250,7 @@ export function RoleDashboard({
           <p className="muted">{workspaceIntro}</p>
         </div>
         {canViewTeamCommandCenter ? (
-          <Link href="/team" className="dashboard-section-link">
+          <Link href="/people" className="dashboard-section-link">
             View team
           </Link>
         ) : null}
@@ -272,7 +272,7 @@ export function RoleDashboard({
               <h4>Team overview</h4>
               <p className="muted">See each person&apos;s workload without leaving the owner dashboard.</p>
             </div>
-            <Link href="/team" className="dashboard-section-link">
+            <Link href="/people" className="dashboard-section-link">
               Manage access
             </Link>
           </div>
@@ -333,7 +333,7 @@ export function RoleDashboard({
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
             <h4>Recent team activity</h4>
-            <Link href="/team" className="dashboard-section-link">
+            <Link href="/people" className="dashboard-section-link">
               View audit trail
             </Link>
           </div>

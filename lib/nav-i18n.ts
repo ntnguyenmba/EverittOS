@@ -1,15 +1,75 @@
-export function navLabel(href: string, _t: (key: string) => string, fallback: string): string {
-  if (href === '/people' || href === '/team' || href === '/workers') return 'People';
-  return fallback;
+import type { Messages } from '@/lib/i18n/types';
+
+const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
+  '/dashboard': 'commandCenter',
+  '/jobs': 'jobs',
+  '/customers': 'crm',
+  '/projects': 'projects',
+  '/schedule': 'schedule',
+  '/expenses': 'expenses',
+  '/knowledge': 'knowledge',
+  '/automations': 'automations',
+  '/clients': 'clients',
+  '/workers': 'workers',
+  '/people': 'team',
+  '/team': 'team',
+  '/activity': 'activity',
+  '/analytics': 'analytics',
+  '/forms': 'forms',
+  '/templates': 'templates',
+  '/reviews': 'reviews',
+  '/proposals': 'proposals',
+  '/estimates': 'estimates',
+  '/invoices': 'invoices',
+  '/messages': 'messages',
+  '/inventory': 'inventory',
+  '/routes': 'routes',
+  '/photos': 'photos',
+  '/leads': 'leads',
+  '/services': 'services',
+  '/bookings': 'bookings',
+  '/workflows': 'workflows',
+  '/notifications': 'notifications',
+  '/settings/billing': 'billing',
+  '/settings': 'settings',
+  '/portal/client': 'clientPortal',
+  '/portal/contractor': 'contractorPortal'
+};
+
+const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
+  '/settings': 'workspace',
+  '/settings/people': 'team',
+  '/settings/team': 'team',
+  '/settings/branding': 'branding',
+  '/settings/integrations': 'integrations',
+  '/settings/account': 'account',
+  '/settings/billing': 'billing',
+  '/settings/ai-usage': 'aiUsage',
+  '/settings/security': 'security',
+  '/settings/privacy': 'privacy',
+  '/settings/notifications': 'notifications',
+  '/settings/support': 'supportTraining',
+  '/settings/api': 'api',
+  '/settings/ai-memory': 'aiMemory',
+  '/settings/departments': 'departments'
+};
+
+const NAV_SECTION_KEYS: Record<string, keyof Messages['nav']> = {
+  tools: 'sectionTools',
+  insights: 'sectionInsights'
+};
+
+export function navLabel(href: string, t: (key: string) => string, fallback: string): string {
+  const key = NAV_HREF_KEYS[href];
+  return key ? t(`nav.${key}`) : fallback;
 }
 
 export function navSectionLabel(sectionId: string, t: (key: string) => string): string | null {
-  if (sectionId === 'tools') return t('nav.sectionTools');
-  if (sectionId === 'insights') return t('nav.sectionInsights');
-  return null;
+  const key = NAV_SECTION_KEYS[sectionId];
+  return key ? t(`nav.${key}`) : null;
 }
 
-export function settingsNavLabel(href: string, _t: (key: string) => string, fallback: string): string {
-  if (href === '/settings/team' || href === '/settings/people') return 'People';
-  return fallback;
+export function settingsNavLabel(href: string, t: (key: string) => string, fallback: string): string {
+  const key = SETTINGS_HREF_KEYS[href];
+  return key ? t(`settingsNav.${key}`) : fallback;
 }
