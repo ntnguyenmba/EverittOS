@@ -30,6 +30,9 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
             {title}
           </h1>
           <p className="auth-card-subtitle">Run your business from one place.</p>
+          <p className="auth-card-description">
+            Manage customers, jobs, scheduling, teams, photos, reports, and more from one secure workspace.
+          </p>
           {children}
           {hideContinuingLegalNote ? null : <AuthContinuingLegalNote />}
         </section>
@@ -121,10 +124,17 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         .auth-card-subtitle {
-          margin: 0 0 22px;
+          margin: 0 0 8px;
           color: #54677d;
           font-size: 16px;
           line-height: 1.55;
+        }
+
+        .auth-card-description {
+          margin: 0 0 22px;
+          color: rgba(31, 47, 67, 0.66);
+          font-size: 13px;
+          line-height: 1.6;
         }
 
         .auth-tech-card .auth-methods-note {
@@ -247,6 +257,10 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
           .auth-card-subtitle {
             font-size: 15px;
+          }
+
+          .auth-card-description {
+            font-size: 12.5px;
           }
 
           .auth-password-row {
