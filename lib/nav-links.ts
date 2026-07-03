@@ -10,7 +10,6 @@ export type NavSectionId = 'primary' | 'tools' | 'insights' | 'settings';
 
 export type NavSectionDef = {
   id: NavSectionId;
-  /** When true, renders an uppercase section label above the group. */
   showSectionLabel?: boolean;
   items: NavLinkDef[];
 };
@@ -23,7 +22,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Schedule', href: '/schedule' },
   { label: 'Routes', href: '/routes', flag: 'routesNav' },
-  { label: 'People', href: '/team' }
+  { label: 'People', href: '/people' }
 ];
 
 const TOOLS_NAV: NavLinkDef[] = [
@@ -50,7 +49,6 @@ function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
   return items.filter((item) => !item.flag || isFeatureEnabled(item.flag));
 }
 
-/** Grouped sidebar navigation in display order. */
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
   { id: 'primary', items: PRIMARY_NAV },
   { id: 'tools', showSectionLabel: true, items: filterFlagged(TOOLS_NAV) },
@@ -58,13 +56,12 @@ export const APP_NAV_SECTIONS: NavSectionDef[] = [
   { id: 'settings', items: SETTINGS_NAV }
 ];
 
-/** Flat list for access checks and legacy callers. */
 export const APP_NAV_LINKS = APP_NAV_SECTIONS.flatMap((section) => section.items);
 
 export type AppNavHref = (typeof APP_NAV_LINKS)[number]['href'];
 
-/** Routes kept out of primary nav but fully routable. */
 export const SECONDARY_APP_ROUTES = [
+  '/people',
   '/workers',
   '/team',
   '/activity',
