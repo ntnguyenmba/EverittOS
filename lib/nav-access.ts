@@ -20,7 +20,7 @@ export type SettingsNavLink = {
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings', label: 'Workspace' },
-  { href: '/settings/team', label: 'People' },
+  { href: '/settings/people', label: 'People' },
   { href: '/settings/branding', label: 'Branding' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
@@ -81,7 +81,9 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/routes':
     case '/workflows':
       return canSeeOrgWideData(role);
+    case '/people':
     case '/team':
+    case '/settings/people':
     case '/settings/team':
       return canViewTeam(role);
     case '/settings/billing':
@@ -111,7 +113,7 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
   if (path.startsWith('/settings/ai-usage')) return canManageBilling(role);
-  if (path.startsWith('/settings/team')) return canViewTeam(role);
+  if (path.startsWith('/settings/people') || path.startsWith('/settings/team')) return canViewTeam(role);
   if (path.startsWith('/settings/branding') || path.startsWith('/settings/integrations')) {
     return canManageOrganizationSettings(role);
   }
@@ -144,13 +146,13 @@ export function requiredPlanForNavHref(href: string): EverittosPlan | null {
   }
 }
 
-/** Plan feature gate beyond route minimums (e.g. Team needs teamManagement flag). */
+/** Plan feature gate beyond route minimums (e.g. People needs teamManagement flag). */
 function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan | null {
   const normalized = normalizePlan(plan);
   const path = navPath(href);
   const limits = limitsForPlan(normalized);
 
-  if ((path === '/team' || path === '/settings/team') && !hasTeamManagement(normalized)) {
+  if ((path === '/people' || path === '/team' || path === '/settings/people' || path === '/settings/team') && !hasTeamManagement(normalized)) {
     return 'business';
   }
   if (path === '/workflows' && !limits.workflowCustomization) {
@@ -220,8 +222,8 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
   if (target === '/dashboard') {
     return path === '/dashboard';
   }
-  if (target === '/team') {
-    return path === '/team' || path.startsWith('/team/') || path === '/workers' || path.startsWith('/workers/');
+  if (target === '/people' || target === '/team') {
+    return path === '/people' || path.startsWith('/people/') || path === '/team' || path.startsWith('/team/') || path === '/workers' || path.startsWith('/workers/');
   }
 
   return path === target || path.startsWith(`${target}/`);
@@ -242,7 +244,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
     if (link.href === '/settings/ai-usage' && !canManageBilling(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
-    if (link.href === '/settings/team' && !canViewTeam(role)) return false;
+    if ((link.href === '/settings/people' || link.href === '/settings/team') && !canViewTeam(role)) return false;
     if (link.href === '/settings/branding' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
@@ -267,7 +269,7 @@ export function canAccessSettingsPath(role: UserRole, path: string, plan: Everit
 
   if (path.startsWith('/settings/billing') && !canManageBilling(role)) return false;
   if (path.startsWith('/settings/ai-usage') && !canManageBilling(role)) return false;
-  if (path.startsWith('/settings/team') && !canViewTeam(role)) return false;
+  if ((path.startsWith('/settings/people') || path.startsWith('/settings/team')) && !canViewTeam(role)) return false;
   if (path.startsWith('/settings/branding') && !canManageOrganizationSettings(role)) return false;
   if ((path === '/settings' || path.startsWith('/settings?')) && !canManageOrganizationSettings(role)) {
     return false;
