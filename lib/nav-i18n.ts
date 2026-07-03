@@ -1,5 +1,5 @@
 export function navLabel(href: string, _t: (key: string) => string, fallback: string): string {
-  if (href === '/team' || href === '/workers') return 'People';
+  if (href === '/people' || href === '/team' || href === '/workers') return 'People';
   return fallback;
 }
 
@@ -10,6 +10,6 @@ export function navSectionLabel(sectionId: string, t: (key: string) => string): 
 }
 
 export function settingsNavLabel(href: string, _t: (key: string) => string, fallback: string): string {
-  if (href === '/settings/team') return 'People';
+  if (href === '/settings/team' || href === '/settings/people') return 'People';
   return fallback;
 }
