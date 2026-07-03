@@ -9,7 +9,7 @@ export const DASHBOARD_LINKS = {
   notifications: '/notifications',
   customers: '/customers',
   customersLeads: '/customers?stage=lead',
-  people: '/team',
-  workers: '/team',
+  people: '/people',
+  workers: '/people',
   proposals: '/proposals'
 } as const;
