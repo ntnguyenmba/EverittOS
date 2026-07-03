@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY, normalizeLocale, type Locale } from '@/lib/i18n/config';
 import { readLocaleCookie, writeLocaleCookie } from '@/lib/i18n/cookie';
 import { formatMessage, getMessages, type Messages } from '@/lib/i18n/get-messages';
+import { formatMissingTranslationKey } from '@/lib/i18n/fallback-key';
 
 type LocaleContextValue = {
   locale: Locale;
@@ -61,8 +62,13 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (path: string, values?: Record<string, string | number>) => {
       const enMessages = getMessages('en');
-      const translated = resolvePath(messages, path) ?? resolvePath(enMessages, path) ?? path;
-      return formatMessage(translated, values);
+      const localized = resolvePath(messages, path);
+      const english = resolvePath(enMessages, path);
+      const template = localized ?? english;
+      if (typeof template !== 'string') {
+        return formatMissingTranslationKey(path);
+      }
+      return formatMessage(template, values);
     },
     [messages]
   );

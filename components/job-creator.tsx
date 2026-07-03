@@ -7,6 +7,7 @@ import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { validatePlanAction } from '@/lib/plan-validate';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
@@ -26,6 +27,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
+  const { t } = useTranslation();
 
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
@@ -68,7 +70,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (!isManagerRole(role)) {
       setPermissionBlocked(true);
       setLoading(false);
-      appFeedback.error('You do not have access to create jobs on this account.');
+      appFeedback.error(t('pages.jobs.createPermissionBlocked'));
       return;
     }
 
@@ -142,21 +144,21 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   if (permissionBlocked) {
     return (
       <div className="card">
-        <h3>Create a job</h3>
-        <p>You do not have access to create jobs on this account.</p>
+        <h3>{t('pages.jobs.createTitle')}</h3>
+        <p>{t('pages.jobs.createPermissionBlocked')}</p>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <h3>Create a job</h3>
+      <h3>{t('pages.jobs.createTitle')}</h3>
       <form className="form" onSubmit={createJob}>
         <input className="input" placeholder="Job title *" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <label htmlFor="job-assigned-email">Assigned email</label>
+        <label htmlFor="job-assigned-email">{t('pages.jobs.assignedEmail')}</label>
         <input
           id="job-assigned-email"
           className="input"
@@ -166,7 +168,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           onChange={(e) => setAssignedEmail(e.target.value)}
           autoComplete="email"
         />
-        <p className="muted">Optional. Who should receive this job. No People record required.</p>
+        <p className="muted">{t('pages.jobs.assignedEmailHint')}</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}

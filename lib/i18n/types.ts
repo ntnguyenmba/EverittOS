@@ -419,6 +419,130 @@ export type MessageTree = {
     };
     metricsEmpty: string;
     analyticsEmpty: string;
+    teamCommand: {
+      ariaLabel: string;
+      title: string;
+      subtitle: string;
+      loading: string;
+      loadError: string;
+      metrics: {
+        onJob: string;
+        dueToday: string;
+        needsAttention: string;
+        availableTeam: string;
+      };
+      overview: {
+        title: string;
+        description: string;
+        empty: string;
+      };
+      status: {
+        needsAttention: string;
+        onJob: string;
+        scheduled: string;
+        overloaded: string;
+        available: string;
+      };
+      summary: {
+        readyForAssignment: string;
+        activeJobsOne: string;
+        activeJobsMany: string;
+        dueTodayCount: string;
+        nextPrefix: string;
+        updatedPrefix: string;
+        notUpdatedYet: string;
+      };
+      member: {
+        defaultName: string;
+        active: string;
+        dueToday: string;
+        overdue: string;
+        completed: string;
+        nextAssignment: string;
+        noScheduledAssignment: string;
+        contact: string;
+        noEmailOnFile: string;
+        viewSchedule: string;
+        viewJobs: string;
+        assignJob: string;
+      };
+    };
+    role: {
+      workspaceTitle: string;
+      workspaceTitleTeam: string;
+      workspaceIntro: string;
+      workspaceIntroTeam: string;
+      viewTeam: string;
+      manageAccess: string;
+      teamOverview: string;
+      teamOverviewHint: string;
+      noTeamMembers: string;
+      lastActivity: string;
+      viewWorkload: string;
+      upcomingTeamJobs: string;
+      upcomingJobs: string;
+      openSchedule: string;
+      noUpcomingDueDates: string;
+      recentTeamActivity: string;
+      viewAuditTrail: string;
+      noRecentActivity: string;
+      teamMember: string;
+      quickOwnerActions: string;
+      assignJob: string;
+      quickActions: {
+        messageTeam: string;
+        reviewReports: string;
+        viewSchedule: string;
+      };
+      metrics: {
+        teamActiveJobs: string;
+        activeJobs: string;
+        teamCompletedJobs: string;
+        completed: string;
+        teamOverdueJobs: string;
+        overdue: string;
+        customers: string;
+        teamMembers: string;
+        teamPhotos: string;
+        teamReports: string;
+        teamActivity: string;
+        teamJobsThisMonth: string;
+        jobsThisMonth: string;
+        active: string;
+        dueToday: string;
+      };
+      workload: {
+        inactive: string;
+        overloaded: string;
+        busy: string;
+        available: string;
+      };
+      field: {
+        title: string;
+        intro: string;
+        myActiveJobs: string;
+        dueToday: string;
+        completed: string;
+        photosUploaded: string;
+        currentJob: string;
+        currentJobHint: string;
+        openJob: string;
+        noCustomerDetails: string;
+        startOrFinish: string;
+        callCustomer: string;
+        startNavigation: string;
+        noAssignedWork: string;
+        noAssignedWorkHint: string;
+        myJobsToday: string;
+        viewAll: string;
+        noJobsToday: string;
+        noLocation: string;
+        nextAssignedJobs: string;
+        noUpcomingAssigned: string;
+        noActivityYet: string;
+        notScheduled: string;
+      };
+    };
   };
   billing: {
     title: string;
@@ -718,7 +842,7 @@ export type MessageTree = {
       connectFailed: string;
     };
     customers: { notFound: string };
-    jobs: { notFound: string; needsAssignment: string; showAll: string };
+    jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string };
   };
 };
 

@@ -562,7 +562,131 @@ export const messages: Messages = {
       connectCalendar: 'Connect calendar'
     },
     metricsEmpty: 'No metrics yet',
-    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.'
+    analyticsEmpty: 'Metrics will appear after jobs, reports, and team activity are created.',
+    teamCommand: {
+      ariaLabel: 'Team Command Center',
+      title: 'Team Command Center',
+      subtitle: 'See who is available, scheduled, or needs attention today.',
+      loading: 'Loading team command center...',
+      loadError: 'We could not load team command center data. Refresh and try again.',
+      metrics: {
+        onJob: 'On job',
+        dueToday: 'Due today',
+        needsAttention: 'Needs attention',
+        availableTeam: 'Available team'
+      },
+      overview: {
+        title: 'Team overview',
+        description: 'Open a team member to view schedule, assignment, and contact actions.',
+        empty: 'No team members yet. Invite team members or assign jobs to see workload here.'
+      },
+      status: {
+        needsAttention: 'Needs attention',
+        onJob: 'On job',
+        scheduled: 'Scheduled',
+        overloaded: 'Overloaded',
+        available: 'Available'
+      },
+      summary: {
+        readyForAssignment: 'Ready for assignment',
+        activeJobsOne: '{count} active job',
+        activeJobsMany: '{count} active jobs',
+        dueTodayCount: '{count} due today',
+        nextPrefix: 'Next:',
+        updatedPrefix: 'Updated:',
+        notUpdatedYet: 'Not updated yet'
+      },
+      member: {
+        defaultName: 'Team member',
+        active: 'Active',
+        dueToday: 'Due today',
+        overdue: 'Overdue',
+        completed: 'Completed',
+        nextAssignment: 'Next assignment',
+        noScheduledAssignment: 'No scheduled assignment yet.',
+        contact: 'Contact',
+        noEmailOnFile: 'No email on file',
+        viewSchedule: 'View schedule',
+        viewJobs: 'View jobs',
+        assignJob: 'Assign job'
+      }
+    },
+    role: {
+      workspaceTitle: 'Your workspace',
+      workspaceTitleTeam: 'Team command center',
+      workspaceIntro: 'Track your active work, schedule, photos, reports, and team activity.',
+      workspaceIntroTeam: 'Owner and admin view across this workspace only. Each card opens the records behind the number.',
+      viewTeam: 'View team',
+      manageAccess: 'Manage access',
+      teamOverview: 'Team overview',
+      teamOverviewHint: "See each person's workload without leaving the owner dashboard.",
+      noTeamMembers: 'No active team members found.',
+      lastActivity: 'Last activity:',
+      viewWorkload: 'View workload',
+      upcomingTeamJobs: 'Upcoming team jobs',
+      upcomingJobs: 'Upcoming jobs',
+      openSchedule: 'Open schedule',
+      noUpcomingDueDates: 'No upcoming due dates.',
+      recentTeamActivity: 'Recent team activity',
+      viewAuditTrail: 'View audit trail',
+      noRecentActivity: 'No recent activity yet.',
+      teamMember: 'Team member',
+      quickOwnerActions: 'Quick owner actions',
+      assignJob: 'Assign job',
+      quickActions: {
+        messageTeam: 'Message team',
+        reviewReports: 'Review reports',
+        viewSchedule: 'View schedule'
+      },
+      metrics: {
+        teamActiveJobs: 'Team active jobs',
+        activeJobs: 'Active jobs',
+        teamCompletedJobs: 'Team completed jobs',
+        completed: 'Completed',
+        teamOverdueJobs: 'Team overdue jobs',
+        overdue: 'Overdue',
+        customers: 'Customers',
+        teamMembers: 'Team members',
+        teamPhotos: 'Team photos',
+        teamReports: 'Team reports',
+        teamActivity: 'Team activity',
+        teamJobsThisMonth: 'Team jobs this month',
+        jobsThisMonth: 'Jobs this month',
+        active: 'Active',
+        dueToday: 'Due today'
+      },
+      workload: {
+        inactive: 'Inactive',
+        overloaded: 'Overloaded',
+        busy: 'Busy',
+        available: 'Available'
+      },
+      field: {
+        title: 'My field work',
+        intro: 'A simple view for assigned jobs, photos, checklist work, and customer contact.',
+        myActiveJobs: 'My active jobs',
+        dueToday: 'Due today',
+        completed: 'Completed',
+        photosUploaded: 'Photos uploaded',
+        currentJob: 'Current job',
+        currentJobHint: 'Open the job to start, complete checklist items, upload photos, or mark it complete.',
+        openJob: 'Open job',
+        noCustomerDetails: 'No customer details added',
+        startOrFinish: 'Start or finish job',
+        callCustomer: 'Call customer',
+        startNavigation: 'Start navigation',
+        noAssignedWork: 'No assigned field work',
+        noAssignedWorkHint: 'Jobs assigned to you will appear here with status, customer contact, photos, and checklist actions.',
+        myJobsToday: 'My jobs today',
+        viewAll: 'View all',
+        noJobsToday: 'No jobs due today.',
+        noLocation: 'No location added',
+        nextAssignedJobs: 'Next assigned jobs',
+        noUpcomingAssigned: 'No upcoming assigned jobs.',
+        noActivityYet: 'No activity yet',
+        notScheduled: 'Not scheduled'
+      }
+    }
   },
   billing: {
     title: 'Plans & billing',
@@ -920,6 +1044,14 @@ export const messages: Messages = {
       connectFailed: 'QuickBooks connection failed ({reason}).'
     },
     customers: { notFound: 'Customer not found' },
-    jobs: { notFound: 'Job not found', needsAssignment: 'Needs assignment', showAll: 'Show all jobs' }
+    jobs: {
+      notFound: 'Job not found',
+      needsAssignment: 'Needs assignment',
+      showAll: 'Show all jobs',
+      assignedEmail: 'Assigned email',
+      assignedEmailHint: 'Optional. Who should receive this job. No People record required.',
+      createTitle: 'Create a job',
+      createPermissionBlocked: 'You do not have access to create jobs on this account.'
+    }
   }
 };

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { formatMissingTranslationKey } from '@/lib/i18n/fallback-key';
 import { DEFAULT_LOCALE, LOCALE_LABELS, LOCALES, normalizeLocale } from '@/lib/i18n/config';
 import { collectMessageKeys, missingMessageKeys } from '@/lib/i18n/collect-keys';
 import { getMessages } from '@/lib/i18n/get-messages';
@@ -35,6 +36,10 @@ describe('i18n message catalogs', () => {
   it('falls back to English catalog for unknown locale', () => {
     const messages = getMessages('en');
     assert.equal(getMessages('en').nav.jobs, messages.nav.jobs);
+  });
+
+  it('uses bracketed keys for missing translations', () => {
+    assert.equal(formatMissingTranslationKey('dashboard.teamCommand.title'), '[[dashboard.teamCommand.title]]');
   });
 
   it('keeps en, es, and vi catalogs in parity', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
 import { isAdminRole, isClientRole, isContractorRole, isStaffRole, type UserRole } from '@/lib/roles';
 
 type JobRow = {
@@ -47,24 +48,15 @@ type RoleDashboardProps = {
   recentActivity?: ActivitySummary[];
 };
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return 'No activity yet';
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function displayDate(value: string | null | undefined) {
-  if (!value) return 'Not scheduled';
-  return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function workloadLabel(member: TeamMemberSummary) {
-  if (!member.active) return 'Inactive';
-  if (member.overdue > 0 || member.activeJobs >= 8) return 'Overloaded';
-  if (member.activeJobs >= 4 || member.dueToday > 0) return 'Busy';
-  return 'Available';
-}
-
-function FieldWorkerDashboard({ jobs, photoCount }: { jobs: JobRow[]; photoCount: number }) {
+function FieldWorkerDashboard({
+  jobs,
+  photoCount,
+  t
+}: {
+  jobs: JobRow[];
+  photoCount: number;
+  t: (path: string, values?: Record<string, string | number>) => string;
+}) {
   const today = new Date().toISOString().slice(0, 10);
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const todayJobs = active.filter((j) => (j.start_date || j.due_date || '').slice(0, 10) === today);
@@ -75,33 +67,38 @@ function FieldWorkerDashboard({ jobs, photoCount }: { jobs: JobRow[]; photoCount
   const completed = jobs.filter((j) => j.status === 'completed');
   const primaryJob = todayJobs[0] || active[0] || null;
 
+  const displayDate = (value: string | null | undefined) => {
+    if (!value) return t('dashboard.role.field.notScheduled');
+    return new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
   return (
     <div className="role-dashboard field-dashboard">
       <div className="dashboard-section-head">
         <div>
-          <h3>My field work</h3>
-          <p className="muted">A simple view for assigned jobs, photos, checklist work, and customer contact.</p>
+          <h3>{t('dashboard.role.field.title')}</h3>
+          <p className="muted">{t('dashboard.role.field.intro')}</p>
         </div>
         <Link href="/schedule" className="dashboard-section-link">
-          Open schedule
+          {t('dashboard.role.openSchedule')}
         </Link>
       </div>
 
       <div className="stats-grid">
         <Link href="/jobs?mine=true" className="stat-card" style={{ textDecoration: 'none' }}>
-          <span>My active jobs</span>
+          <span>{t('dashboard.role.field.myActiveJobs')}</span>
           <strong>{active.length}</strong>
         </Link>
         <Link href="/schedule" className="stat-card" style={{ textDecoration: 'none' }}>
-          <span>Due today</span>
+          <span>{t('dashboard.role.field.dueToday')}</span>
           <strong>{todayJobs.length}</strong>
         </Link>
         <Link href="/jobs?status=completed&mine=true" className="stat-card" style={{ textDecoration: 'none' }}>
-          <span>Completed</span>
+          <span>{t('dashboard.role.field.completed')}</span>
           <strong>{completed.length}</strong>
         </Link>
         <Link href="/photos" className="stat-card" style={{ textDecoration: 'none' }}>
-          <span>Photos uploaded</span>
+          <span>{t('dashboard.role.field.photosUploaded')}</span>
           <strong>{photoCount}</strong>
         </Link>
       </div>
@@ -110,56 +107,56 @@ function FieldWorkerDashboard({ jobs, photoCount }: { jobs: JobRow[]; photoCount
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
             <div>
-              <h4>Current job</h4>
-              <p className="muted">Open the job to start, complete checklist items, upload photos, or mark it complete.</p>
+              <h4>{t('dashboard.role.field.currentJob')}</h4>
+              <p className="muted">{t('dashboard.role.field.currentJobHint')}</p>
             </div>
             <Link href={`/jobs/${primaryJob.id}`} className="btn btn-primary">
-              Open job
+              {t('dashboard.role.field.openJob')}
             </Link>
           </div>
           <div className="list-row">
             <div>
               <strong>{primaryJob.title}</strong>
-              <p className="muted">{primaryJob.address || primaryJob.customer_name || 'No customer details added'}</p>
+              <p className="muted">{primaryJob.address || primaryJob.customer_name || t('dashboard.role.field.noCustomerDetails')}</p>
             </div>
             <span>{displayDate(primaryJob.start_date || primaryJob.due_date)}</span>
           </div>
           <div className="button-row" style={{ marginTop: 12 }}>
             <Link href={`/jobs/${primaryJob.id}`} className="btn btn-primary">
-              Start or finish job
+              {t('dashboard.role.field.startOrFinish')}
             </Link>
             {primaryJob.phone ? (
               <a href={`tel:${primaryJob.phone}`} className="btn">
-                Call customer
+                {t('dashboard.role.field.callCustomer')}
               </a>
             ) : null}
             {primaryJob.address ? (
               <a href={`https://maps.google.com/?q=${encodeURIComponent(primaryJob.address)}`} className="btn" target="_blank" rel="noreferrer">
-                Start navigation
+                {t('dashboard.role.field.startNavigation')}
               </a>
             ) : null}
           </div>
         </section>
       ) : (
         <section className="card" style={{ marginTop: 16 }}>
-          <h4>No assigned field work</h4>
-          <p className="muted">Jobs assigned to you will appear here with status, customer contact, photos, and checklist actions.</p>
+          <h4>{t('dashboard.role.field.noAssignedWork')}</h4>
+          <p className="muted">{t('dashboard.role.field.noAssignedWorkHint')}</p>
         </section>
       )}
 
       <section className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
         <div className="dashboard-section-head">
-          <h4>My jobs today</h4>
+          <h4>{t('dashboard.role.field.myJobsToday')}</h4>
           <Link href="/jobs?mine=true" className="dashboard-section-link">
-            View all
+            {t('dashboard.role.field.viewAll')}
           </Link>
         </div>
-        {todayJobs.length === 0 && <p className="muted">No jobs due today.</p>}
+        {todayJobs.length === 0 && <p className="muted">{t('dashboard.role.field.noJobsToday')}</p>}
         {todayJobs.map((job) => (
           <div key={job.id} className="list-row">
             <div>
               <Link href={`/jobs/${job.id}`}>{job.title}</Link>
-              <p className="muted">{job.address || job.customer_name || 'No location added'}</p>
+              <p className="muted">{job.address || job.customer_name || t('dashboard.role.field.noLocation')}</p>
             </div>
             <span>{job.status || 'new'}</span>
           </div>
@@ -168,17 +165,17 @@ function FieldWorkerDashboard({ jobs, photoCount }: { jobs: JobRow[]; photoCount
 
       <section className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
         <div className="dashboard-section-head">
-          <h4>Next assigned jobs</h4>
+          <h4>{t('dashboard.role.field.nextAssignedJobs')}</h4>
           <Link href="/schedule" className="dashboard-section-link">
-            Open schedule
+            {t('dashboard.role.openSchedule')}
           </Link>
         </div>
-        {nextJobs.length === 0 && <p className="muted">No upcoming assigned jobs.</p>}
+        {nextJobs.length === 0 && <p className="muted">{t('dashboard.role.field.noUpcomingAssigned')}</p>}
         {nextJobs.map((job) => (
           <div key={job.id} className="list-row">
             <div>
               <Link href={`/jobs/${job.id}`}>{job.title}</Link>
-              <p className="muted">{job.address || job.customer_name || 'No location added'}</p>
+              <p className="muted">{job.address || job.customer_name || t('dashboard.role.field.noLocation')}</p>
             </div>
             <span>{displayDate(job.start_date || job.due_date)}</span>
           </div>
@@ -199,8 +196,10 @@ export function RoleDashboard({
   teamMembers = [],
   recentActivity = []
 }: RoleDashboardProps) {
+  const { t } = useTranslation();
+
   if (isStaffRole(role)) {
-    return <FieldWorkerDashboard jobs={jobs} photoCount={photoCount} />;
+    return <FieldWorkerDashboard jobs={jobs} photoCount={photoCount} t={t} />;
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -217,27 +216,51 @@ export function RoleDashboard({
   const monthStartIso = monthStart.toISOString().slice(0, 10);
   const createdThisMonth = jobs.filter((j) => j.start_date && j.start_date >= monthStartIso).length;
   const canViewTeamCommandCenter = isAdminRole(role);
-  const workspaceTitle = canViewTeamCommandCenter ? 'Team command center' : 'Your workspace';
-  const workspaceIntro = canViewTeamCommandCenter
-    ? 'Owner and admin view across this workspace only. Each card opens the records behind the number.'
-    : 'Track your active work, schedule, photos, reports, and team activity.';
+
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return t('dashboard.role.field.noActivityYet');
+    return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const workloadLabel = (member: TeamMemberSummary) => {
+    if (!member.active) return t('dashboard.role.workload.inactive');
+    if (member.overdue > 0 || member.activeJobs >= 8) return t('dashboard.role.workload.overloaded');
+    if (member.activeJobs >= 4 || member.dueToday > 0) return t('dashboard.role.workload.busy');
+    return t('dashboard.role.workload.available');
+  };
 
   const cards = [
-    { label: canViewTeamCommandCenter ? 'Team active jobs' : 'Active jobs', value: active.length, href: '/jobs?status=active' },
-    { label: canViewTeamCommandCenter ? 'Team completed jobs' : 'Completed', value: completed.length, href: '/jobs?status=completed' },
-    { label: canViewTeamCommandCenter ? 'Team overdue jobs' : 'Overdue', value: overdue.length, href: '/jobs?status=overdue' },
+    {
+      label: canViewTeamCommandCenter ? t('dashboard.role.metrics.teamActiveJobs') : t('dashboard.role.metrics.activeJobs'),
+      value: active.length,
+      href: '/jobs?status=active'
+    },
+    {
+      label: canViewTeamCommandCenter ? t('dashboard.role.metrics.teamCompletedJobs') : t('dashboard.role.metrics.completed'),
+      value: completed.length,
+      href: '/jobs?status=completed'
+    },
+    {
+      label: canViewTeamCommandCenter ? t('dashboard.role.metrics.teamOverdueJobs') : t('dashboard.role.metrics.overdue'),
+      value: overdue.length,
+      href: '/jobs?status=overdue'
+    },
     ...(!isClientRole(role) && !isContractorRole(role)
       ? [
-          { label: 'Customers', value: customerCount, href: '/customers' },
-          { label: 'Team members', value: teamCount, href: '/people' }
+          { label: t('dashboard.role.metrics.customers'), value: customerCount, href: '/customers' },
+          { label: t('dashboard.role.metrics.teamMembers'), value: teamCount, href: '/people' }
         ]
       : []),
-    { label: 'Team photos', value: photoCount, href: '/photos' },
-    { label: 'Team reports', value: reportCount, href: '/reports' },
+    { label: t('dashboard.role.metrics.teamPhotos'), value: photoCount, href: '/photos' },
+    { label: t('dashboard.role.metrics.teamReports'), value: reportCount, href: '/reports' },
     ...(role === 'owner' || role === 'admin' || role === 'manager'
       ? [
-          { label: 'Team activity', value: activityCount, href: '/people' },
-          { label: canViewTeamCommandCenter ? 'Team jobs this month' : 'Jobs this month', value: createdThisMonth, href: `/jobs?from=${monthStartIso}` }
+          { label: t('dashboard.role.metrics.teamActivity'), value: activityCount, href: '/people' },
+          {
+            label: canViewTeamCommandCenter ? t('dashboard.role.metrics.teamJobsThisMonth') : t('dashboard.role.metrics.jobsThisMonth'),
+            value: createdThisMonth,
+            href: `/jobs?from=${monthStartIso}`
+          }
         ]
       : [])
   ];
@@ -246,12 +269,14 @@ export function RoleDashboard({
     <div className="role-dashboard">
       <div className="dashboard-section-head">
         <div>
-          <h3>{workspaceTitle}</h3>
-          <p className="muted">{workspaceIntro}</p>
+          <h3>{canViewTeamCommandCenter ? t('dashboard.role.workspaceTitleTeam') : t('dashboard.role.workspaceTitle')}</h3>
+          <p className="muted">
+            {canViewTeamCommandCenter ? t('dashboard.role.workspaceIntroTeam') : t('dashboard.role.workspaceIntro')}
+          </p>
         </div>
         {canViewTeamCommandCenter ? (
           <Link href="/people" className="dashboard-section-link">
-            View team
+            {t('dashboard.role.viewTeam')}
           </Link>
         ) : null}
       </div>
@@ -269,42 +294,46 @@ export function RoleDashboard({
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
             <div>
-              <h4>Team overview</h4>
-              <p className="muted">See each person&apos;s workload without leaving the owner dashboard.</p>
+              <h4>{t('dashboard.role.teamOverview')}</h4>
+              <p className="muted">{t('dashboard.role.teamOverviewHint')}</p>
             </div>
             <Link href="/people" className="dashboard-section-link">
-              Manage access
+              {t('dashboard.role.manageAccess')}
             </Link>
           </div>
-          {teamMembers.length === 0 ? <p className="muted">No active team members found.</p> : null}
+          {teamMembers.length === 0 ? <p className="muted">{t('dashboard.role.noTeamMembers')}</p> : null}
           <div className="team-command-grid">
             {teamMembers.map((member) => (
               <div key={member.id} className="team-command-card">
                 <div>
                   <strong>{member.name}</strong>
-                  <p className="muted">{member.role} · {workloadLabel(member)}</p>
+                  <p className="muted">
+                    {member.role} · {workloadLabel(member)}
+                  </p>
                 </div>
                 <div className="stats-grid compact">
                   <Link href={`/jobs?assigned_to=${member.id}&status=active`} className="stat-card" style={{ textDecoration: 'none' }}>
-                    <span>Active</span>
+                    <span>{t('dashboard.role.metrics.active')}</span>
                     <strong>{member.activeJobs}</strong>
                   </Link>
                   <Link href={`/schedule?member=${member.id}`} className="stat-card" style={{ textDecoration: 'none' }}>
-                    <span>Due today</span>
+                    <span>{t('dashboard.role.metrics.dueToday')}</span>
                     <strong>{member.dueToday}</strong>
                   </Link>
                   <Link href={`/jobs?assigned_to=${member.id}&status=overdue`} className="stat-card" style={{ textDecoration: 'none' }}>
-                    <span>Overdue</span>
+                    <span>{t('dashboard.role.metrics.overdue')}</span>
                     <strong>{member.overdue}</strong>
                   </Link>
                 </div>
-                <p className="muted">Last activity: {formatDate(member.lastActivity)}</p>
+                <p className="muted">
+                  {t('dashboard.role.lastActivity')} {formatDate(member.lastActivity)}
+                </p>
                 <div className="button-row">
                   <Link href={`/jobs?assigned_to=${member.id}`} className="btn btn-sm">
-                    View workload
+                    {t('dashboard.role.viewWorkload')}
                   </Link>
                   <Link href={`/schedule?member=${member.id}`} className="btn btn-sm">
-                    View schedule
+                    {t('dashboard.teamCommand.member.viewSchedule')}
                   </Link>
                 </div>
               </div>
@@ -315,12 +344,12 @@ export function RoleDashboard({
 
       <div className="card role-dashboard-upcoming" style={{ marginTop: 16 }}>
         <div className="dashboard-section-head">
-          <h4>{canViewTeamCommandCenter ? 'Upcoming team jobs' : 'Upcoming jobs'}</h4>
+          <h4>{canViewTeamCommandCenter ? t('dashboard.role.upcomingTeamJobs') : t('dashboard.role.upcomingJobs')}</h4>
           <Link href="/schedule" className="dashboard-section-link">
-            Open schedule
+            {t('dashboard.role.openSchedule')}
           </Link>
         </div>
-        {upcoming.length === 0 && <p className="muted">No upcoming due dates.</p>}
+        {upcoming.length === 0 && <p className="muted">{t('dashboard.role.noUpcomingDueDates')}</p>}
         {upcoming.map((job) => (
           <div key={job.id} className="list-row">
             <Link href={`/jobs/${job.id}`}>{job.title}</Link>
@@ -332,17 +361,17 @@ export function RoleDashboard({
       {canViewTeamCommandCenter ? (
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
-            <h4>Recent team activity</h4>
+            <h4>{t('dashboard.role.recentTeamActivity')}</h4>
             <Link href="/people" className="dashboard-section-link">
-              View audit trail
+              {t('dashboard.role.viewAuditTrail')}
             </Link>
           </div>
-          {recentActivity.length === 0 ? <p className="muted">No recent activity yet.</p> : null}
+          {recentActivity.length === 0 ? <p className="muted">{t('dashboard.role.noRecentActivity')}</p> : null}
           {recentActivity.map((item) => (
             <div key={item.id} className="list-row">
               <div>
                 <strong>{item.message}</strong>
-                <p className="muted">{item.actorName || 'Team member'}</p>
+                <p className="muted">{item.actorName || t('dashboard.role.teamMember')}</p>
               </div>
               <span>{formatDate(item.createdAt)}</span>
             </div>
@@ -352,19 +381,19 @@ export function RoleDashboard({
 
       {canViewTeamCommandCenter ? (
         <section className="card" style={{ marginTop: 16 }}>
-          <h4>Quick owner actions</h4>
+          <h4>{t('dashboard.role.quickOwnerActions')}</h4>
           <div className="button-row">
             <Link href="/jobs/new" className="btn btn-primary">
-              Assign job
+              {t('dashboard.role.assignJob')}
             </Link>
             <Link href="/messages" className="btn">
-              Message team
+              {t('dashboard.role.quickActions.messageTeam')}
             </Link>
             <Link href="/schedule" className="btn">
-              View schedule
+              {t('dashboard.role.quickActions.viewSchedule')}
             </Link>
             <Link href="/reports" className="btn">
-              Review reports
+              {t('dashboard.role.quickActions.reviewReports')}
             </Link>
           </div>
         </section>

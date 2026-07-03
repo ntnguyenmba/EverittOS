@@ -562,7 +562,131 @@ export const messages: Messages = {
       connectCalendar: 'Kết nối lịch'
     },
     metricsEmpty: 'Chưa có số liệu',
-    analyticsEmpty: 'Số liệu sẽ xuất hiện sau khi tạo công việc, báo cáo và hoạt động nhóm.'
+    analyticsEmpty: 'Số liệu sẽ xuất hiện sau khi tạo công việc, báo cáo và hoạt động nhóm.',
+    teamCommand: {
+      ariaLabel: 'Trung tâm điều phối nhóm',
+      title: 'Trung tâm điều phối nhóm',
+      subtitle: 'Xem ai đang sẵn sàng, đã lên lịch hoặc cần chú ý hôm nay.',
+      loading: 'Đang tải trung tâm điều phối nhóm...',
+      loadError: 'Không thể tải dữ liệu trung tâm điều phối nhóm. Hãy làm mới và thử lại.',
+      metrics: {
+        onJob: 'Đang làm việc',
+        dueToday: 'Hôm nay',
+        needsAttention: 'Cần chú ý',
+        availableTeam: 'Nhóm sẵn sàng'
+      },
+      overview: {
+        title: 'Tổng quan nhóm',
+        description: 'Mở một thành viên để xem lịch, phân công và liên hệ.',
+        empty: 'Chưa có thành viên nhóm. Mời người hoặc phân công công việc để xem khối lượng tại đây.'
+      },
+      status: {
+        needsAttention: 'Cần chú ý',
+        onJob: 'Đang làm việc',
+        scheduled: 'Đã lên lịch',
+        overloaded: 'Quá tải',
+        available: 'Sẵn sàng'
+      },
+      summary: {
+        readyForAssignment: 'Sẵn sàng phân công',
+        activeJobsOne: '{count} công việc đang hoạt động',
+        activeJobsMany: '{count} công việc đang hoạt động',
+        dueTodayCount: '{count} hôm nay',
+        nextPrefix: 'Tiếp theo:',
+        updatedPrefix: 'Cập nhật:',
+        notUpdatedYet: 'Chưa cập nhật'
+      },
+      member: {
+        defaultName: 'Thành viên nhóm',
+        active: 'Đang hoạt động',
+        dueToday: 'Hôm nay',
+        overdue: 'Quá hạn',
+        completed: 'Hoàn thành',
+        nextAssignment: 'Phân công tiếp theo',
+        noScheduledAssignment: 'Chưa có phân công theo lịch.',
+        contact: 'Liên hệ',
+        noEmailOnFile: 'Chưa có email',
+        viewSchedule: 'Xem lịch',
+        viewJobs: 'Xem công việc',
+        assignJob: 'Phân công công việc'
+      }
+    },
+    role: {
+      workspaceTitle: 'Không gian làm việc của bạn',
+      workspaceTitleTeam: 'Trung tâm điều phối nhóm',
+      workspaceIntro: 'Theo dõi công việc, lịch, ảnh, báo cáo và hoạt động nhóm.',
+      workspaceIntroTeam: 'Góc nhìn chủ sở hữu và quản trị trong không gian này. Mỗi thẻ mở bản ghi đằng sau con số.',
+      viewTeam: 'Xem nhóm',
+      manageAccess: 'Quản lý quyền truy cập',
+      teamOverview: 'Tổng quan nhóm',
+      teamOverviewHint: 'Xem khối lượng của từng người mà không rời bảng điều khiển.',
+      noTeamMembers: 'Không tìm thấy thành viên nhóm đang hoạt động.',
+      lastActivity: 'Hoạt động gần nhất:',
+      viewWorkload: 'Xem khối lượng',
+      upcomingTeamJobs: 'Công việc nhóm sắp tới',
+      upcomingJobs: 'Công việc sắp tới',
+      openSchedule: 'Mở lịch',
+      noUpcomingDueDates: 'Không có hạn sắp tới.',
+      recentTeamActivity: 'Hoạt động nhóm gần đây',
+      viewAuditTrail: 'Xem nhật ký',
+      noRecentActivity: 'Chưa có hoạt động gần đây.',
+      teamMember: 'Thành viên nhóm',
+      quickOwnerActions: 'Thao tác nhanh cho chủ sở hữu',
+      assignJob: 'Phân công công việc',
+      quickActions: {
+        messageTeam: 'Nhắn nhóm',
+        reviewReports: 'Xem báo cáo',
+        viewSchedule: 'Xem lịch'
+      },
+      metrics: {
+        teamActiveJobs: 'Công việc nhóm đang hoạt động',
+        activeJobs: 'Công việc đang hoạt động',
+        teamCompletedJobs: 'Công việc nhóm đã hoàn thành',
+        completed: 'Hoàn thành',
+        teamOverdueJobs: 'Công việc nhóm quá hạn',
+        overdue: 'Quá hạn',
+        customers: 'Khách hàng',
+        teamMembers: 'Thành viên nhóm',
+        teamPhotos: 'Ảnh nhóm',
+        teamReports: 'Báo cáo nhóm',
+        teamActivity: 'Hoạt động nhóm',
+        teamJobsThisMonth: 'Công việc nhóm tháng này',
+        jobsThisMonth: 'Công việc tháng này',
+        active: 'Đang hoạt động',
+        dueToday: 'Hôm nay'
+      },
+      workload: {
+        inactive: 'Không hoạt động',
+        overloaded: 'Quá tải',
+        busy: 'Bận',
+        available: 'Sẵn sàng'
+      },
+      field: {
+        title: 'Công việc hiện trường của tôi',
+        intro: 'Góc nhìn đơn giản cho công việc được giao, ảnh, checklist và liên hệ khách hàng.',
+        myActiveJobs: 'Công việc đang hoạt động',
+        dueToday: 'Hôm nay',
+        completed: 'Hoàn thành',
+        photosUploaded: 'Ảnh đã tải lên',
+        currentJob: 'Công việc hiện tại',
+        currentJobHint: 'Mở công việc để bắt đầu, hoàn thành checklist, tải ảnh hoặc đánh dấu hoàn tất.',
+        openJob: 'Mở công việc',
+        noCustomerDetails: 'Chưa có thông tin khách hàng',
+        startOrFinish: 'Bắt đầu hoặc hoàn thành',
+        callCustomer: 'Gọi khách hàng',
+        startNavigation: 'Bắt đầu dẫn đường',
+        noAssignedWork: 'Chưa có công việc hiện trường',
+        noAssignedWorkHint: 'Công việc được giao sẽ hiển thị tại đây với trạng thái, liên hệ, ảnh và checklist.',
+        myJobsToday: 'Công việc hôm nay',
+        viewAll: 'Xem tất cả',
+        noJobsToday: 'Không có công việc hôm nay.',
+        noLocation: 'Chưa có địa chỉ',
+        nextAssignedJobs: 'Công việc được giao tiếp theo',
+        noUpcomingAssigned: 'Không có công việc được giao sắp tới.',
+        noActivityYet: 'Chưa có hoạt động',
+        notScheduled: 'Chưa lên lịch'
+      }
+    }
   },
   billing: {
     title: 'Gói & thanh toán',
@@ -922,6 +1046,14 @@ export const messages: Messages = {
       connectFailed: 'Kết nối QuickBooks thất bại ({reason}).'
     },
     customers: { notFound: 'Không tìm thấy khách hàng' },
-    jobs: { notFound: 'Không tìm thấy công việc', needsAssignment: 'Cần phân công', showAll: 'Xem tất cả công việc' }
+    jobs: {
+      notFound: 'Không tìm thấy công việc',
+      needsAssignment: 'Cần phân công',
+      showAll: 'Xem tất cả công việc',
+      assignedEmail: 'Email được phân công',
+      assignedEmailHint: 'Tùy chọn. Ai sẽ nhận công việc này. Không cần hồ sơ trong Mọi người.',
+      createTitle: 'Tạo công việc',
+      createPermissionBlocked: 'Bạn không có quyền tạo công việc trên tài khoản này.'
+    }
   }
 };

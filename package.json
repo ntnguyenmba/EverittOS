@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "i18n:audit": "tsx scripts/i18n-audit.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

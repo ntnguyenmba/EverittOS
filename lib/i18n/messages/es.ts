@@ -564,7 +564,131 @@ export const messages: Messages = {
       connectCalendar: 'Conectar calendario'
     },
     metricsEmpty: 'Sin métricas aún',
-    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.'
+    analyticsEmpty: 'Las métricas aparecerán después de crear trabajos, informes y actividad del equipo.',
+    teamCommand: {
+      ariaLabel: 'Centro de mando del equipo',
+      title: 'Centro de mando del equipo',
+      subtitle: 'Vea quién está disponible, programado o necesita atención hoy.',
+      loading: 'Cargando centro de mando del equipo...',
+      loadError: 'No pudimos cargar el centro de mando del equipo. Actualice e intente de nuevo.',
+      metrics: {
+        onJob: 'En trabajo',
+        dueToday: 'Para hoy',
+        needsAttention: 'Requiere atención',
+        availableTeam: 'Equipo disponible'
+      },
+      overview: {
+        title: 'Resumen del equipo',
+        description: 'Abra un miembro del equipo para ver horario, asignación y contacto.',
+        empty: 'Aún no hay miembros del equipo. Invite personas o asigne trabajos para ver la carga aquí.'
+      },
+      status: {
+        needsAttention: 'Requiere atención',
+        onJob: 'En trabajo',
+        scheduled: 'Programado',
+        overloaded: 'Sobrecargado',
+        available: 'Disponible'
+      },
+      summary: {
+        readyForAssignment: 'Listo para asignación',
+        activeJobsOne: '{count} trabajo activo',
+        activeJobsMany: '{count} trabajos activos',
+        dueTodayCount: '{count} para hoy',
+        nextPrefix: 'Siguiente:',
+        updatedPrefix: 'Actualizado:',
+        notUpdatedYet: 'Aún sin actualizar'
+      },
+      member: {
+        defaultName: 'Miembro del equipo',
+        active: 'Activos',
+        dueToday: 'Para hoy',
+        overdue: 'Atrasados',
+        completed: 'Completados',
+        nextAssignment: 'Próxima asignación',
+        noScheduledAssignment: 'Aún no hay asignación programada.',
+        contact: 'Contacto',
+        noEmailOnFile: 'Sin correo registrado',
+        viewSchedule: 'Ver horario',
+        viewJobs: 'Ver trabajos',
+        assignJob: 'Asignar trabajo'
+      }
+    },
+    role: {
+      workspaceTitle: 'Su espacio de trabajo',
+      workspaceTitleTeam: 'Centro de mando del equipo',
+      workspaceIntro: 'Siga su trabajo activo, horario, fotos, informes y actividad del equipo.',
+      workspaceIntroTeam: 'Vista de propietario y administrador solo en este espacio. Cada tarjeta abre los registros detrás del número.',
+      viewTeam: 'Ver equipo',
+      manageAccess: 'Administrar acceso',
+      teamOverview: 'Resumen del equipo',
+      teamOverviewHint: 'Vea la carga de cada persona sin salir del panel del propietario.',
+      noTeamMembers: 'No se encontraron miembros activos del equipo.',
+      lastActivity: 'Última actividad:',
+      viewWorkload: 'Ver carga',
+      upcomingTeamJobs: 'Próximos trabajos del equipo',
+      upcomingJobs: 'Próximos trabajos',
+      openSchedule: 'Abrir horario',
+      noUpcomingDueDates: 'No hay fechas de vencimiento próximas.',
+      recentTeamActivity: 'Actividad reciente del equipo',
+      viewAuditTrail: 'Ver historial',
+      noRecentActivity: 'Aún no hay actividad reciente.',
+      teamMember: 'Miembro del equipo',
+      quickOwnerActions: 'Acciones rápidas del propietario',
+      assignJob: 'Asignar trabajo',
+      quickActions: {
+        messageTeam: 'Mensaje al equipo',
+        reviewReports: 'Revisar informes',
+        viewSchedule: 'Ver horario'
+      },
+      metrics: {
+        teamActiveJobs: 'Trabajos activos del equipo',
+        activeJobs: 'Trabajos activos',
+        teamCompletedJobs: 'Trabajos completados del equipo',
+        completed: 'Completados',
+        teamOverdueJobs: 'Trabajos atrasados del equipo',
+        overdue: 'Atrasados',
+        customers: 'Clientes',
+        teamMembers: 'Miembros del equipo',
+        teamPhotos: 'Fotos del equipo',
+        teamReports: 'Informes del equipo',
+        teamActivity: 'Actividad del equipo',
+        teamJobsThisMonth: 'Trabajos del equipo este mes',
+        jobsThisMonth: 'Trabajos este mes',
+        active: 'Activos',
+        dueToday: 'Para hoy'
+      },
+      workload: {
+        inactive: 'Inactivo',
+        overloaded: 'Sobrecargado',
+        busy: 'Ocupado',
+        available: 'Disponible'
+      },
+      field: {
+        title: 'Mi trabajo de campo',
+        intro: 'Vista simple para trabajos asignados, fotos, listas de verificación y contacto con clientes.',
+        myActiveJobs: 'Mis trabajos activos',
+        dueToday: 'Para hoy',
+        completed: 'Completados',
+        photosUploaded: 'Fotos subidas',
+        currentJob: 'Trabajo actual',
+        currentJobHint: 'Abra el trabajo para iniciar, completar listas, subir fotos o marcarlo como terminado.',
+        openJob: 'Abrir trabajo',
+        noCustomerDetails: 'Sin datos del cliente',
+        startOrFinish: 'Iniciar o terminar trabajo',
+        callCustomer: 'Llamar al cliente',
+        startNavigation: 'Iniciar navegación',
+        noAssignedWork: 'Sin trabajo de campo asignado',
+        noAssignedWorkHint: 'Los trabajos asignados aparecerán aquí con estado, contacto, fotos y acciones de lista.',
+        myJobsToday: 'Mis trabajos de hoy',
+        viewAll: 'Ver todo',
+        noJobsToday: 'No hay trabajos para hoy.',
+        noLocation: 'Sin ubicación',
+        nextAssignedJobs: 'Próximos trabajos asignados',
+        noUpcomingAssigned: 'No hay trabajos asignados próximos.',
+        noActivityYet: 'Sin actividad aún',
+        notScheduled: 'Sin programar'
+      }
+    }
   },
   billing: {
     title: 'Planes y facturación',
@@ -924,6 +1048,14 @@ export const messages: Messages = {
       connectFailed: 'La conexión con QuickBooks falló ({reason}).'
     },
     customers: { notFound: 'Cliente no encontrado' },
-    jobs: { notFound: 'Trabajo no encontrado', needsAssignment: 'Sin asignar', showAll: 'Ver todos los trabajos' }
+    jobs: {
+      notFound: 'Trabajo no encontrado',
+      needsAssignment: 'Sin asignar',
+      showAll: 'Ver todos los trabajos',
+      assignedEmail: 'Correo asignado',
+      assignedEmailHint: 'Opcional. Quién debe recibir este trabajo. No se requiere registro en Personas.',
+      createTitle: 'Crear trabajo',
+      createPermissionBlocked: 'No tiene acceso para crear trabajos en esta cuenta.'
+    }
   }
 };
