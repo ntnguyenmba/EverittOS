@@ -10,8 +10,8 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/knowledge': 'knowledge',
   '/automations': 'automations',
   '/clients': 'clients',
-  '/workers': 'workers',
-  '/team': 'team',
+  '/workers': 'people',
+  '/team': 'people',
   '/activity': 'activity',
   '/analytics': 'analytics',
   '/forms': 'forms',
@@ -37,7 +37,7 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
 
 const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
   '/settings': 'workspace',
-  '/settings/team': 'team',
+  '/settings/team': 'people',
   '/settings/branding': 'branding',
   '/settings/integrations': 'integrations',
   '/settings/account': 'account',
