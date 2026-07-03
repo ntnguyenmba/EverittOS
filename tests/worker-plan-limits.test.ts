@@ -33,7 +33,7 @@ describe('worker plan limits', () => {
     assert.equal(result.allowed, false);
     assert.equal(result.message, workerPlanLimitMessage('business', limit));
     assert.match(result.message || '', /Business plan/i);
-    assert.match(result.message || '', /100 workers/i);
+    assert.match(result.message || '', /100 team members/i);
   });
 
   it('allows Starter below the 200 worker cap', () => {
@@ -49,7 +49,7 @@ describe('worker plan limits', () => {
     const result = validatePlanAction({ plan: 'starter', resource: 'workers', currentCount: 200 });
     assert.equal(result.allowed, false);
     assert.match(result.message || '', /Starter plan/i);
-    assert.match(result.message || '', /200 workers/i);
+    assert.match(result.message || '', /200 team members/i);
   });
 
   it('never blocks Growth for worker count because the cap is unlimited', () => {

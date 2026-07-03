@@ -10,12 +10,13 @@ EverittOS now presents **People** as the primary product model for teammates and
 - Sidebar, dashboard links, and mobile nav prefer `/people`.
 - Job creation and job detail assignment pickers load **organization_members** first via `lib/people-assignment.ts`.
 - Legacy crew rows without linked accounts still appear as fallback options when needed.
+- **Assigned email** (`jobs.assigned_email`) is the primary assignee field on job create/edit. Any valid email can be saved without a People record or worker row.
 
 ## What is People-first
 
 - Navigation labels: People (not Workers / Team for the people hub).
 - User-facing copy: invite person, team member, employee, unassigned jobs.
-- Assignment pickers: EverittOS user accounts from `organization_members`.
+- Job assignment: **Assigned email** text field (no picker, no worker required).
 - Settings: People section for invites and roles.
 
 ## What still uses `workers` internally
@@ -26,7 +27,8 @@ These remain for compatibility and are not shown as the primary product model:
 | --- | --- |
 | `workers` table | Legacy crew roster, schedule API validation, job labor, bookings |
 | `app/api/workers` routes | Existing crew CRUD and plan limits |
-| `jobs.assigned_to` | May store auth user IDs (preferred) or legacy worker IDs |
+| `jobs.assigned_to` | Legacy user/worker id links; optional |
+| `jobs.assigned_email` | Primary assignee contact on job forms |
 | `job_assignments.worker_id` | Multi-assign crew links |
 | `workers.auth_user_id` | Bridge between people accounts and crew rows |
 

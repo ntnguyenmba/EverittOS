@@ -32,6 +32,7 @@ type Job = {
   completed_at: string | null;
   created_at: string | null;
   assigned_to: string | null;
+  assigned_email: string | null;
   department_id: string | null;
   workflow_template_id: string | null;
   completion_verified: boolean | null;
@@ -52,7 +53,6 @@ export default function JobReportPage({ params }: PageProps) {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [branding, setBranding] = useState<OrgBranding>({ company_name: 'EverittOS', phone: null, email: null, website: null, address: null, logo_path: null });
-  const [workerName, setWorkerName] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [workflowSummary, setWorkflowSummary] = useState('');
   const [loading, setLoading] = useState(true);
@@ -102,11 +102,6 @@ export default function JobReportPage({ params }: PageProps) {
         });
       } else {
         setBranding({ company_name: profile?.business_name || 'EverittOS', phone: null, email: null, website: null, address: null, logo_path: null });
-      }
-
-      if (data.assigned_to) {
-        const { data: worker } = await supabase.from('workers').select('name').eq('id', data.assigned_to).maybeSingle();
-        setWorkerName(worker?.name || '');
       }
 
       if (data.department_id && limitsForPlan(userPlan).multiLocation) {
@@ -187,7 +182,7 @@ export default function JobReportPage({ params }: PageProps) {
             <p>Customer: {job.customer_name || 'Not set'}</p>
             <p>Phone: {job.phone || 'Not set'}</p>
             <p>Address: {job.address || 'Not set'}</p>
-            {!customerView ? <p>Assigned team member: {workerName || 'Needs assignment'}</p> : null}
+            {!customerView ? <p>Assigned email: {job?.assigned_email?.trim() || 'Not set'}</p> : null}
             {!customerView && departmentName ? <p>Department: {departmentName}</p> : null}
             <p>Notes: {job.customer_notes || job.notes || 'None'}</p>
             {showInternalNotes && job.internal_notes ? <p>Internal notes: {job.internal_notes}</p> : null}
