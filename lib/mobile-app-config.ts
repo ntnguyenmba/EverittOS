@@ -8,7 +8,7 @@ export const MOBILE_APP_CONFIG = {
     '/jobs',
     '/customers',
     '/schedule',
-    '/team',
+    '/people',
     '/notifications',
     '/settings',
     '/onboarding',
