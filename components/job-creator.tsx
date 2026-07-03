@@ -32,6 +32,7 @@ type TeamOption = {
 type WorkerOption = {
   id: string;
   name: string;
+  role?: string | null;
   auth_user_id?: string | null;
 };
 
@@ -113,30 +114,28 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           .eq('organization_id', organizationId)
           .eq('active', true)
           .in('role', ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead']),
-        supabase
-          .from('workers')
-          .select('id, name, auth_user_id')
-          .eq('organization_id', organizationId)
-          .order('name'),
-        supabase
-          .from('jobs')
-          .select('assigned_to, status, due_date, scheduled_start')
-          .eq('organization_id', organizationId)
+        supabase.from('workers').select('id, name, role, auth_user_id').eq('organization_id', organizationId).order('name'),
+        supabase.from('jobs').select('assigned_to, status, due_date, scheduled_start').eq('organization_id', organizationId)
       ]);
 
+      const workerOptions = (workerRows || []) as WorkerOption[];
+      const workerUserById = new Map(workerOptions.map((worker) => [worker.id, worker.auth_user_id || worker.id]));
       const today = new Date().toISOString().slice(0, 10);
       const activeByUser = new Map<string, number>();
       const dueTodayByUser = new Map<string, number>();
+
       for (const job of jobs || []) {
-        const assigned = (job as { assigned_to?: string | null }).assigned_to;
-        if (!assigned) continue;
+        const assignedWorkerId = (job as { assigned_to?: string | null }).assigned_to;
+        if (!assignedWorkerId) continue;
+        const assignedUserId = workerUserById.get(assignedWorkerId) || assignedWorkerId;
         const status = String((job as { status?: string | null }).status || '').toLowerCase();
         if (['completed', 'done', 'complete', 'closed', 'cancelled', 'canceled'].includes(status)) continue;
-        activeByUser.set(assigned, (activeByUser.get(assigned) || 0) + 1);
-        const dueDate = (job as { due_date?: string | null; scheduled_start?: string | null }).due_date?.slice(0, 10) ||
+        activeByUser.set(assignedUserId, (activeByUser.get(assignedUserId) || 0) + 1);
+        const dueDate =
+          (job as { due_date?: string | null; scheduled_start?: string | null }).due_date?.slice(0, 10) ||
           (job as { scheduled_start?: string | null }).scheduled_start?.slice(0, 10) ||
           null;
-        if (dueDate === today) dueTodayByUser.set(assigned, (dueTodayByUser.get(assigned) || 0) + 1);
+        if (dueDate === today) dueTodayByUser.set(assignedUserId, (dueTodayByUser.get(assignedUserId) || 0) + 1);
       }
 
       setTeamMembers(
@@ -146,7 +145,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           due_today_jobs: dueTodayByUser.get(member.user_id) || 0
         }))
       );
-      setWorkers((workerRows || []) as WorkerOption[]);
+      setWorkers(workerOptions);
     }
 
     void loadAssignmentOptions();
@@ -169,6 +168,35 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
   function toggleWorker(workerId: string) {
     setWorkerIds((ids) => (ids.includes(workerId) ? ids.filter((id) => id !== workerId) : [...ids, workerId]));
+  }
+
+  async function ensureWorkerForTeamMember(memberUserId: string, organizationId: string, ownerUserId: string) {
+    const existing = workers.find((worker) => worker.auth_user_id === memberUserId);
+    if (existing) return existing.id;
+
+    const member = teamMembers.find((teamMember) => teamMember.user_id === memberUserId);
+    if (!member) return memberUserId;
+
+    const name = teamLabel(member);
+    const { data, error } = await supabase
+      .from('workers')
+      .insert({
+        user_id: ownerUserId,
+        organization_id: organizationId,
+        auth_user_id: memberUserId,
+        name,
+        role: normalizeRole(member.role)
+      })
+      .select('id, name, role, auth_user_id')
+      .single();
+
+    if (error || !data?.id) {
+      throw new Error(error?.message || 'Unable to prepare this team member for assignment.');
+    }
+
+    const worker = data as WorkerOption;
+    setWorkers((rows) => [...rows, worker]);
+    return worker.id;
   }
 
   async function createJob(event?: FormEvent) {
@@ -231,6 +259,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    let assignedWorkerId: string | null = null;
+    try {
+      assignedWorkerId = assignedTo ? await ensureWorkerForTeamMember(assignedTo, org.organizationId, user.id) : null;
+    } catch (error) {
+      setLoading(false);
+      appFeedback.error(error instanceof Error ? error.message : 'Unable to assign this team member.');
+      return;
+    }
+
     const createRes = await fetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -240,7 +277,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
-        assigned_to: assignedTo || null,
+        assigned_to: assignedWorkerId,
         status: 'new'
       })
     });
@@ -309,27 +346,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     <div className="card">
       <h3>Create a job</h3>
       <form className="form" onSubmit={createJob}>
-        <input
-          className="input"
-          placeholder="Job title *"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <input
-          className="input"
-          placeholder="Customer name"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-        />
+        <input className="input" placeholder="Job title *" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
 
         <section style={{ display: 'grid', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
             <div>
-              <label>Assign team member</label>
-              <p className="muted" style={{ margin: '4px 0 0' }}>Choose one person responsible for the job.</p>
+              <label>Primary team member</label>
+              <p className="muted" style={{ margin: '4px 0 0' }}>Choose the person responsible for the job.</p>
             </div>
             <input
               className="input"
@@ -368,7 +394,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     fontWeight: 700
                   }}
                 >
-                  —
+                  -
                 </span>
                 <span>
                   <strong>Unassigned</strong>
@@ -439,7 +465,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           <section style={{ display: 'grid', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
               <div>
-                <label>Add crew</label>
+                <label>Add extra crew</label>
                 <p className="muted" style={{ margin: '4px 0 0' }}>{selectedCrewText(workerIds.length)}</p>
               </div>
               <input
@@ -487,7 +513,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{worker.name}</strong>
-                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team worker' : 'Worker'}</span>
+                        <span className="muted" style={{ display: 'block' }}>{worker.auth_user_id ? 'Team member' : 'Worker'}</span>
                       </span>
                     </span>
                     <span>{selected ? 'Added' : 'Add'}</span>
