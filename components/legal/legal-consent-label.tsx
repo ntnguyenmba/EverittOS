@@ -34,31 +34,28 @@ export function AuthContinuingLegalNote() {
 
   return (
     <p className="auth-legal-note">
-      {t('auth.continuingLegalPrefix')}{' '}
+      By continuing, you agree to the{' '}
       <Link href="/terms" className="legal-inline-link">
         {t('legal.termsOfService')}
       </Link>
-      {t('auth.continuingLegalAcknowledge')}{' '}
+      , acknowledge our{' '}
       <Link href="/privacy" className="legal-inline-link">
         {t('legal.privacyPolicy')}
       </Link>
-      {t('auth.continuingLegalUnderstand')}
-      .
+      , and accept our{' '}
+      <Link href="/cookies" className="legal-inline-link">
+        Cookies
+      </Link>{' '}
+      and{' '}
+      <Link href="/security" className="legal-inline-link">
+        Security
+      </Link>{' '}
+      practices.
     </p>
   );
 }
 
-/** Secondary legal links — excludes Terms/Privacy when shown in consent or continuing note. */
+/** Secondary legal links for auth pages. */
 export function AuthLegalFooterLinks() {
-  const { t } = useTranslation();
-
-  return (
-    <nav className="auth-legal-footer" aria-label={t('legal.footerNav')}>
-      <Link href="/cookies">{t('legal.cookies')}</Link>
-      <span className="auth-legal-footer-sep" aria-hidden="true">
-        ·
-      </span>
-      <Link href="/security">{t('legal.security')}</Link>
-    </nav>
-  );
+  return null;
 }
