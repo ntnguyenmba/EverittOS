@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
-import { normalizePlan } from '@/lib/everittos-plans';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { fetchUsageCounts, limitMessage } from '@/lib/everittos-usage';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
@@ -26,6 +25,20 @@ type TeamOption = {
   } | null;
 };
 
+type WorkerOption = {
+  id: string;
+  name: string;
+  auth_user_id?: string | null;
+};
+
+function teamLabel(member: TeamOption): string {
+  return member.profiles?.full_name || member.profiles?.email || member.user_id;
+}
+
+function teamSubLabel(member: TeamOption): string {
+  return `${normalizeRole(member.role)}${member.profiles?.email ? ` · ${member.profiles.email}` : ''}`;
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
@@ -35,6 +48,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [notes, setNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamOption[]>([]);
+  const [workers, setWorkers] = useState<WorkerOption[]>([]);
+  const [workerIds, setWorkerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
@@ -45,7 +60,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   }, [searchParams]);
 
   useEffect(() => {
-    async function loadTeam() {
+    async function loadAssignmentOptions() {
       const {
         data: { user }
       } = await supabase.auth.getUser();
@@ -53,19 +68,32 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
       const workspace = await ensureWorkspaceForSave(user.id);
       if (!workspace.ok) return;
+      const organizationId = workspace.workspace.organizationId;
 
-      const { data } = await supabase
-        .from('organization_members')
-        .select('user_id, role, profiles(email, full_name)')
-        .eq('organization_id', workspace.workspace.organizationId)
-        .eq('active', true)
-        .in('role', ['manager', 'employee', 'contractor', 'staff', 'crew_lead']);
+      const [{ data: members }, { data: workerRows }] = await Promise.all([
+        supabase
+          .from('organization_members')
+          .select('user_id, role, profiles(email, full_name)')
+          .eq('organization_id', organizationId)
+          .eq('active', true)
+          .in('role', ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead']),
+        supabase
+          .from('workers')
+          .select('id, name, auth_user_id')
+          .eq('organization_id', organizationId)
+          .order('name')
+      ]);
 
-      setTeamMembers((data || []) as TeamOption[]);
+      setTeamMembers((members || []) as TeamOption[]);
+      setWorkers((workerRows || []) as WorkerOption[]);
     }
 
-    void loadTeam();
+    void loadAssignmentOptions();
   }, []);
+
+  function toggleWorker(workerId: string) {
+    setWorkerIds((ids) => (ids.includes(workerId) ? ids.filter((id) => id !== workerId) : [...ids, workerId]));
+  }
 
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
@@ -142,9 +170,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     });
     const createJson = (await createRes.json()) as { job?: { id: string }; error?: string; message?: string };
 
-    setLoading(false);
-
     if (!createRes.ok) {
+      setLoading(false);
       console.error('[everittos-job] create failed', {
         status: createRes.status,
         error: createJson.error
@@ -156,8 +183,23 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     const createdJob = createJson.job;
 
     if (!createdJob?.id) {
+      setLoading(false);
       appFeedback.error('Job could not be saved. Please try again.');
       return;
+    }
+
+    if (workerIds.length > 0) {
+      const { error: assignmentError } = await supabase.from('job_assignments').insert(
+        workerIds.map((workerId) => ({
+          job_id: createdJob.id,
+          worker_id: workerId,
+          user_id: user.id,
+          organization_id: org.organizationId
+        }))
+      );
+      if (assignmentError) {
+        appFeedback.error('Job was saved, but crew assignment failed. Open the job to assign crew.');
+      }
     }
 
     void fetch('/api/integrations/google-calendar/sync-job', {
@@ -166,12 +208,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       body: JSON.stringify({ jobId: createdJob.id })
     });
 
+    setLoading(false);
     setTitle('');
     setAddress('');
     setCustomerName('');
     setPhone('');
     setNotes('');
     setAssignedTo('');
+    setWorkerIds([]);
     appFeedback.created();
     onJobCreated?.(createdJob.id);
   }
@@ -188,7 +232,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>Create a job</h3>
-      <p className="muted">Create the work record first. You can assign it to a team member now or later.</p>
+      <p className="muted">Create the work record first. Add a primary teammate, outside crew, or both.</p>
       <form className="form" onSubmit={createJob}>
         <input
           className="input"
@@ -205,16 +249,63 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <label htmlFor="job-assignment">Assign to</label>
-        <select id="job-assignment" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-          <option value="">Needs assignment</option>
-          {teamMembers.map((member) => (
-            <option key={member.user_id} value={member.user_id}>
-              {member.profiles?.full_name || member.profiles?.email || member.user_id} · {normalizeRole(member.role)}
-            </option>
-          ))}
-        </select>
-        <p className="muted">You can assign this job now or leave it unassigned for the team schedule.</p>
+
+        <div>
+          <label>Primary teammate</label>
+          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+            <label className="list-row" style={{ cursor: 'pointer' }}>
+              <span>
+                <strong>Needs assignment</strong>
+                <span className="muted" style={{ display: 'block' }}>Keep this job open for scheduling later.</span>
+              </span>
+              <input type="radio" name="assigned-to" value="" checked={!assignedTo} onChange={() => setAssignedTo('')} />
+            </label>
+            {teamMembers.map((member) => (
+              <label key={member.user_id} className="list-row" style={{ cursor: 'pointer' }}>
+                <span style={{ minWidth: 0 }}>
+                  <strong style={{ overflowWrap: 'anywhere' }}>{teamLabel(member)}</strong>
+                  <span className="muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>{teamSubLabel(member)}</span>
+                </span>
+                <input
+                  type="radio"
+                  name="assigned-to"
+                  value={member.user_id}
+                  checked={assignedTo === member.user_id}
+                  onChange={() => setAssignedTo(member.user_id)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label>Additional crew or outside help</label>
+          {workers.length === 0 ? (
+            <p className="muted" style={{ marginTop: 8 }}>Add workers first if you want to assign outside or non-login crew.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+              {workers.map((worker) => (
+                <label key={worker.id} className="list-row" style={{ cursor: 'pointer' }}>
+                  <span style={{ minWidth: 0 }}>
+                    <strong style={{ overflowWrap: 'anywhere' }}>{worker.name}</strong>
+                    <span className="muted" style={{ display: 'block' }}>
+                      {worker.auth_user_id ? 'Linked team worker' : 'Outside or field worker'}
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={workerIds.includes(worker.id)}
+                    onChange={() => toggleWorker(worker.id)}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          <p className="muted" style={{ marginTop: 8 }}>
+            Use primary teammate for team dashboard ownership. Use crew for helpers, contractors, or outside field workers.
+          </p>
+        </div>
+
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
