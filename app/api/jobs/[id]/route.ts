@@ -3,6 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { canAssignJobs } from '@/lib/roles';
+import { validateAssignedEmail } from '@/lib/job-assigned-email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,7 @@ const ALLOWED_FIELDS = new Set([
   'scheduled_start',
   'scheduled_end',
   'assigned_to',
+  'assigned_email',
   'priority',
   'internal_notes',
   'customer_notes',
@@ -39,6 +41,7 @@ const MANAGER_ONLY_FIELDS = new Set([
   'scheduled_start',
   'scheduled_end',
   'assigned_to',
+  'assigned_email',
   'priority',
   'internal_notes',
   'customer_notes',
@@ -100,6 +103,18 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if ('assigned_to' in payload && !canAssignJobs(ctx.workspace.role)) {
     return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
+  }
+
+  if ('assigned_email' in payload && !canAssignJobs(ctx.workspace.role)) {
+    return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
+  }
+
+  if ('assigned_email' in payload) {
+    const emailCheck = validateAssignedEmail(payload.assigned_email);
+    if (!emailCheck.ok) {
+      return NextResponse.json({ error: emailCheck.error }, { status: 400 });
+    }
+    payload.assigned_email = emailCheck.email;
   }
 
   const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id);

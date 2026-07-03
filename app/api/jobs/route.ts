@@ -4,6 +4,7 @@ import { logJobFlowEvent } from '@/lib/job-flow-log';
 import { listWorkspaceJobs } from '@/lib/jobs-org-query';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
+import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -73,11 +74,17 @@ export async function POST(request: Request) {
     notes?: string;
     customer_id?: string | null;
     assigned_to?: string | null;
+    assigned_email?: string | null;
     status?: string;
   };
 
   if (!body.title?.trim()) {
     return NextResponse.json({ error: 'Job title is required.' }, { status: 400 });
+  }
+
+  const emailCheck = validateAssignedEmail(body.assigned_email);
+  if (!emailCheck.ok) {
+    return NextResponse.json({ error: emailCheck.error }, { status: 400 });
   }
 
   const assignedTo = body.assigned_to?.trim() || null;
@@ -111,6 +118,7 @@ export async function POST(request: Request) {
       notes: body.notes?.trim() || null,
       customer_id: body.customer_id || null,
       assigned_to: assignedTo,
+      assigned_email: emailCheck.email,
       status: body.status?.trim() || 'new'
     })
     .select('id')
@@ -138,7 +146,7 @@ export async function POST(request: Request) {
     data.id,
     'job_created',
     `Job created: ${body.title.trim()}`,
-    { assignedTo }
+    { assignedTo, assignedEmail: emailCheck.email }
   );
 
   if (assignedTo) {
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
       data.id,
       'job_assigned',
       `Job assigned to a teammate`,
-      { assignedTo }
+      { assignedTo, assignedEmail: emailCheck.email }
     );
   }
 

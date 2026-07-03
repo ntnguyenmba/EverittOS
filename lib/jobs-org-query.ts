@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 
 export const JOB_LIST_COLUMNS =
-  'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, organization_id, user_id, created_at, due_date, scheduled_start';
+  'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, due_date, scheduled_start';
 
 export type JobListRow = {
   id: string;
@@ -13,6 +13,7 @@ export type JobListRow = {
   status: string | null;
   completed_at?: string | null;
   assigned_to?: string | null;
+  assigned_email?: string | null;
   organization_id?: string | null;
   user_id?: string | null;
   created_at?: string | null;
@@ -174,7 +175,7 @@ export async function listWorkspaceJobs(
   let rows = filterJobsByStatus((data || []) as JobListRow[], filters?.status);
   if (filters?.unassignedOnly) {
     rows = rows.filter(
-      (job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.assigned_to
+      (job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.assigned_to && !job.assigned_email
     );
   }
 
