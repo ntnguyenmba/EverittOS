@@ -18,8 +18,9 @@ type JobCreatorProps = {
 
 type TeamOption = {
   user_id: string;
+  worker_id?: string | null;
   role: string;
-  source?: 'member' | 'linked_worker';
+  source?: 'member' | 'linked_worker' | 'legacy_worker';
   active_jobs?: number | null;
   due_today_jobs?: number | null;
   profiles?: {
@@ -43,7 +44,9 @@ function teamLabel(member: TeamOption): string {
 
 function teamSubLabel(member: TeamOption): string {
   const label = normalizeRole(member.role);
-  const detail = member.profiles?.email || (member.source === 'linked_worker' ? 'Linked crew record' : 'Team member');
+  const detail =
+    member.profiles?.email ||
+    (member.source === 'legacy_worker' ? 'Crew record' : member.source === 'linked_worker' ? 'Linked crew record' : 'Team member');
   return `${label} · ${detail}`;
 }
 
@@ -79,16 +82,42 @@ function selectedCrewText(count: number): string {
 
 function mergeMembersWithLinkedWorkers(members: TeamOption[], workers: WorkerOption[]): TeamOption[] {
   const byUserId = new Map<string, TeamOption>();
+  const representedWorkerIds = new Set<string>();
+
   for (const member of members) {
-    byUserId.set(member.user_id, { ...member, source: 'member' });
+    const linkedWorker = workers.find((worker) => worker.auth_user_id === member.user_id);
+    if (linkedWorker) representedWorkerIds.add(linkedWorker.id);
+    byUserId.set(member.user_id, {
+      ...member,
+      worker_id: linkedWorker?.id || member.worker_id || null,
+      source: 'member'
+    });
   }
 
   for (const worker of workers) {
-    if (!worker.auth_user_id || byUserId.has(worker.auth_user_id)) continue;
-    byUserId.set(worker.auth_user_id, {
-      user_id: worker.auth_user_id,
-      role: worker.role || 'employee',
-      source: 'linked_worker',
+    if (worker.auth_user_id) {
+      if (byUserId.has(worker.auth_user_id)) continue;
+      byUserId.set(worker.auth_user_id, {
+        user_id: worker.auth_user_id,
+        worker_id: worker.id,
+        role: worker.role || 'employee',
+        source: 'linked_worker',
+        profiles: {
+          full_name: worker.name,
+          email: null,
+          avatar_url: null,
+          photo_url: null
+        }
+      });
+      continue;
+    }
+
+    if (representedWorkerIds.has(worker.id) || byUserId.has(worker.id)) continue;
+    byUserId.set(worker.id, {
+      user_id: worker.id,
+      worker_id: worker.id,
+      role: worker.role || 'crew',
+      source: 'legacy_worker',
       profiles: {
         full_name: worker.name,
         email: null,
@@ -179,7 +208,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   }, []);
 
   const selectedAssignee = useMemo(
-    () => teamMembers.find((member) => member.user_id === assignedTo) || null,
+    () => teamMembers.find((member) => member.user_id === assignedTo || member.worker_id === assignedTo) || null,
     [assignedTo, teamMembers]
   );
 
@@ -203,11 +232,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   }
 
   async function ensureWorkerForTeamMember(memberUserId: string, organizationId: string, ownerUserId: string) {
+    const directWorker = workers.find((worker) => worker.id === memberUserId);
+    if (directWorker) return directWorker.id;
+
     const existing = workers.find((worker) => worker.auth_user_id === memberUserId);
     if (existing) return existing.id;
 
-    const member = teamMembers.find((teamMember) => teamMember.user_id === memberUserId);
+    const member = teamMembers.find((teamMember) => teamMember.user_id === memberUserId || teamMember.worker_id === memberUserId);
     if (!member) return memberUserId;
+    if (member.worker_id) return member.worker_id;
+    if (member.source === 'legacy_worker') return member.user_id;
 
     const name = teamLabel(member);
     const { data, error } = await supabase
@@ -442,18 +476,20 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               <div className="list-row" style={{ minHeight: 58 }}>
                 <span>
                   <strong>No team members found.</strong>
-                  <span className="muted" style={{ display: 'block' }}>Invite a team member first.</span>
+                  <span className="muted" style={{ display: 'block' }}>
+                    Add this person in People first, or check that the name matches an existing crew record.
+                  </span>
                 </span>
               </div>
             ) : null}
 
             {filteredTeamMembers.map((member) => {
-              const selected = assignedTo === member.user_id;
+              const selected = assignedTo === member.user_id || assignedTo === member.worker_id;
               const url = avatarUrl(member);
               const label = teamLabel(member);
               return (
                 <button
-                  key={member.user_id}
+                  key={`${member.source || 'member'}-${member.user_id}`}
                   type="button"
                   className="list-row"
                   onClick={() => setAssignedTo(member.user_id)}
