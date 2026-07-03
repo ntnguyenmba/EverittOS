@@ -4,6 +4,32 @@ import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 export type WorkloadStatus = 'available' | 'busy' | 'overloaded';
 
+export type TeamCommandMemberDebugJob = {
+  id: string;
+  title: string;
+  status: string | null;
+  effectiveDate: string | null;
+  assignedDirectly: boolean;
+  assignedThroughWorker: boolean;
+  active: boolean;
+  completed: boolean;
+  overdue: boolean;
+  dueToday: boolean;
+};
+
+export type TeamCommandMemberDebug = {
+  workspaceJobCount: number;
+  workerIds: string[];
+  assignmentRowsForWorker: number;
+  directAssignedJobIds: string[];
+  assignmentJobIds: string[];
+  matchingJobIds: string[];
+  unassignedWorkspaceJobIds: string[];
+  otherAssignedWorkspaceJobIds: string[];
+  matchingJobDetails: TeamCommandMemberDebugJob[];
+  note: string;
+};
+
 export type TeamCommandMember = {
   userId: string;
   name: string;
@@ -17,6 +43,7 @@ export type TeamCommandMember = {
   workloadStatus: WorkloadStatus;
   lastActivityAt: string | null;
   nextUpcomingJob: { id: string; title: string; date: string } | null;
+  debug?: TeamCommandMemberDebug;
 };
 
 export type TeamCommandActivity = {
@@ -203,7 +230,7 @@ function summarizeMemberJobs(
   assignees: Map<string, Set<string>>,
   lastActivityByUser: Map<string, string>,
   today: string
-): Omit<TeamCommandMember, 'userId' | 'name' | 'email' | 'role' | 'active'> {
+): Omit<TeamCommandMember, 'userId' | 'name' | 'email' | 'role' | 'active' | 'debug'> {
   let activeJobs = 0;
   let completedJobs = 0;
   let overdueJobs = 0;
@@ -239,6 +266,74 @@ function summarizeMemberJobs(
     workloadStatus: resolveWorkloadStatus(activeJobs, overdueJobs, dueTodayJobs),
     lastActivityAt: lastActivityByUser.get(userId) || null,
     nextUpcomingJob
+  };
+}
+
+function buildMemberDebug(
+  userId: string,
+  jobs: JobRow[],
+  workers: WorkerRow[],
+  assignments: AssignmentRow[],
+  assignees: Map<string, Set<string>>,
+  today: string
+): TeamCommandMemberDebug {
+  const workerIds = workers
+    .filter((worker) => worker.auth_user_id === userId)
+    .map((worker) => worker.id)
+    .filter(Boolean);
+  const workerIdSet = new Set(workerIds);
+  const assignmentRowsForWorker = assignments.filter((assignment) => workerIdSet.has(assignment.worker_id));
+  const assignmentJobIds = Array.from(new Set(assignmentRowsForWorker.map((assignment) => assignment.job_id)));
+  const directAssignedJobIds = jobs.filter((job) => job.assigned_to === userId).map((job) => job.id);
+  const matchingJobs = jobs.filter((job) => jobAssignedToUser(assignees, job.id, userId));
+  const matchingJobIds = matchingJobs.map((job) => job.id);
+  const unassignedWorkspaceJobIds = jobs
+    .filter((job) => !job.assigned_to && (assignees.get(job.id)?.size || 0) === 0)
+    .map((job) => job.id);
+  const otherAssignedWorkspaceJobIds = jobs
+    .filter((job) => !jobAssignedToUser(assignees, job.id, userId) && ((assignees.get(job.id)?.size || 0) > 0 || Boolean(job.assigned_to)))
+    .map((job) => job.id);
+
+  const matchingJobDetails = matchingJobs.map((job) => {
+    const effectiveDate = jobEffectiveDate(job);
+    const completed = isCompletedJobStatus(job.status);
+    const active = isActiveJobStatus(job.status);
+    return {
+      id: job.id,
+      title: job.title,
+      status: job.status,
+      effectiveDate,
+      assignedDirectly: job.assigned_to === userId,
+      assignedThroughWorker: assignmentJobIds.includes(job.id),
+      active,
+      completed,
+      overdue: active && Boolean(effectiveDate && effectiveDate < today),
+      dueToday: active && effectiveDate === today
+    };
+  });
+
+  let note = 'Assigned jobs found for this member.';
+  if (matchingJobIds.length === 0) {
+    if (directAssignedJobIds.length === 0 && assignmentJobIds.length === 0 && workerIds.length === 0) {
+      note = 'No direct assignment and no worker profile was found for this member.';
+    } else if (directAssignedJobIds.length === 0 && assignmentJobIds.length === 0) {
+      note = 'A worker profile exists, but no direct or worker-based job assignments were found.';
+    } else {
+      note = 'Assignment records exist, but none matched jobs in this workspace query.';
+    }
+  }
+
+  return {
+    workspaceJobCount: jobs.length,
+    workerIds,
+    assignmentRowsForWorker: assignmentRowsForWorker.length,
+    directAssignedJobIds,
+    assignmentJobIds,
+    matchingJobIds,
+    unassignedWorkspaceJobIds,
+    otherAssignedWorkspaceJobIds,
+    matchingJobDetails,
+    note
   };
 }
 
@@ -557,7 +652,8 @@ export async function fetchTeamCommandCenterData(
       email: member.profiles?.email || null,
       role: member.role,
       active: member.active,
-      ...stats
+      ...stats,
+      debug: buildMemberDebug(member.user_id, jobs, workers, assignments, assignees, today)
     };
   });
 
