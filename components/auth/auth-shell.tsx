@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AuthContinuingLegalNote, AuthLegalFooterLinks } from '@/components/legal/legal-consent-label';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTranslation } from '@/components/locale-provider';
 
 type AuthShellProps = {
   title: string;
@@ -10,8 +11,26 @@ type AuthShellProps = {
   hideContinuingLegalNote?: boolean;
 };
 
+const authIntroCopy = {
+  en: {
+    subtitle: 'Run your business from one place.',
+    description: 'Manage customers, jobs, scheduling, teams, photos, reports, and more from one secure workspace.'
+  },
+  es: {
+    subtitle: 'Gestione su negocio desde un solo lugar.',
+    description: 'Gestione clientes, trabajos, horarios, equipos, fotos, reportes y más desde un espacio seguro.'
+  },
+  vi: {
+    subtitle: 'Quản lý doanh nghiệp của bạn ở một nơi.',
+    description: 'Quản lý khách hàng, công việc, lịch, đội nhóm, ảnh, báo cáo và nhiều hơn nữa trong một không gian bảo mật.'
+  }
+};
+
 /** Centered auth layout aligned with the Everitt Ventures tech site. */
 export function AuthShell({ title, children, hideContinuingLegalNote = false }: AuthShellProps) {
+  const { locale } = useTranslation();
+  const intro = authIntroCopy[locale] || authIntroCopy.en;
+
   return (
     <main id="main-content" className="auth-page auth-tech-page">
       <div className="auth-tech-background" aria-hidden="true" />
@@ -29,10 +48,8 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           <h1 id="auth-page-title" className="auth-title">
             {title}
           </h1>
-          <p className="auth-card-subtitle">Run your business from one place.</p>
-          <p className="auth-card-description">
-            Manage customers, jobs, scheduling, teams, photos, reports, and more from one secure workspace.
-          </p>
+          <p className="auth-card-subtitle">{intro.subtitle}</p>
+          <p className="auth-card-description">{intro.description}</p>
           {children}
           {hideContinuingLegalNote ? null : <AuthContinuingLegalNote />}
         </section>
