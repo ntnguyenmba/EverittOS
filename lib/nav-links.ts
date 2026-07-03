@@ -23,7 +23,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Schedule', href: '/schedule' },
   { label: 'Routes', href: '/routes', flag: 'routesNav' },
-  { label: 'Team', href: '/team' }
+  { label: 'People', href: '/team' }
 ];
 
 const TOOLS_NAV: NavLinkDef[] = [
