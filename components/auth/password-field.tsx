@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 
 type PasswordFieldProps = {
   id?: string;
@@ -11,6 +12,12 @@ type PasswordFieldProps = {
   onChange: (value: string) => void;
   disabled?: boolean;
   required?: boolean;
+};
+
+const passwordToggleCopy = {
+  en: { show: 'Show', hide: 'Hide', showLabel: 'Show password', hideLabel: 'Hide password' },
+  es: { show: 'Mostrar', hide: 'Ocultar', showLabel: 'Mostrar contraseña', hideLabel: 'Ocultar contraseña' },
+  vi: { show: 'Hiện', hide: 'Ẩn', showLabel: 'Hiện mật khẩu', hideLabel: 'Ẩn mật khẩu' }
 };
 
 export function PasswordField({
@@ -26,6 +33,8 @@ export function PasswordField({
   const generatedId = useId();
   const fieldId = id || generatedId;
   const [visible, setVisible] = useState(false);
+  const { locale } = useTranslation();
+  const copy = passwordToggleCopy[locale] || passwordToggleCopy.en;
 
   return (
     <div className="auth-field">
@@ -48,9 +57,9 @@ export function PasswordField({
           onClick={() => setVisible((current) => !current)}
           disabled={disabled}
           aria-pressed={visible}
-          aria-label={visible ? 'Hide password' : 'Show password'}
+          aria-label={visible ? copy.hideLabel : copy.showLabel}
         >
-          {visible ? 'Hide' : 'Show'}
+          {visible ? copy.hide : copy.show}
         </button>
       </div>
     </div>
