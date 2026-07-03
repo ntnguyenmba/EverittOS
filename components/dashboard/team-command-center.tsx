@@ -239,17 +239,18 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                     border: 0,
                     background: 'transparent',
                     cursor: 'pointer',
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(240px, 1.2fr) minmax(220px, 1fr) max-content 24px',
-                    columnGap: 24,
-                    rowGap: 14,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '16px 24px',
                     alignItems: 'center',
-                    padding: '18px 20px',
+                    justifyContent: 'space-between',
+                    padding: '18px 24px 18px 20px',
                     textAlign: 'left',
-                    color: 'var(--text)'
+                    color: 'var(--text)',
+                    overflow: 'visible'
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: '1 1 280px' }}>
                     <span
                       aria-hidden="true"
                       style={{
@@ -285,29 +286,31 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                     </span>
                   </span>
 
-                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                  <span style={{ minWidth: 0, overflowWrap: 'anywhere', flex: '1 1 220px' }}>
                     <strong style={{ display: 'block', fontWeight: 500, lineHeight: 1.25 }}>{memberSummary(member)}</strong>
                     <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 6 }}>
                       {member.nextUpcomingJob ? `Next: ${member.nextUpcomingJob.date}` : `Updated: ${formatDate(member.lastActivityAt)}`}
                     </span>
                   </span>
 
-                  <span
-                    style={{
-                      justifySelf: 'end',
-                      border: '1px solid',
-                      borderRadius: 999,
-                      padding: '5px 12px',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap',
-                      ...statusTone(member)
-                    }}
-                  >
-                    {statusLabel(member.workloadStatus, member)}
-                  </span>
-                  <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18, justifySelf: 'end' }}>
-                    {expanded ? '−' : '+'}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 14, flex: '0 0 auto', marginLeft: 'auto' }}>
+                    <span
+                      style={{
+                        border: '1px solid',
+                        borderRadius: 999,
+                        padding: '5px 12px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        ...statusTone(member)
+                      }}
+                    >
+                      {statusLabel(member.workloadStatus, member)}
+                    </span>
+                    <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18, flexShrink: 0 }}>
+                      {expanded ? '−' : '+'}
+                    </span>
                   </span>
                 </button>
 
