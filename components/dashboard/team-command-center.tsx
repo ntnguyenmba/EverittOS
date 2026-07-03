@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { TeamCommandCenterData, TeamCommandMember, WorkloadStatus } from '@/lib/team-command-center';
 import { normalizeTeamCommandCenterData } from '@/lib/team-command-center';
 
@@ -9,10 +9,16 @@ type TeamCommandCenterProps = {
   enabled: boolean;
 };
 
+type MemberWithAvatar = TeamCommandMember & {
+  avatarUrl?: string | null;
+  profilePhotoUrl?: string | null;
+  photoUrl?: string | null;
+};
+
 function formatDate(value: string | null | undefined): string {
-  if (!value) return '—';
+  if (!value) return 'Not updated yet';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return 'Not updated yet';
   return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -21,30 +27,54 @@ function formatDate(value: string | null | undefined): string {
   });
 }
 
-function workloadLabel(status: WorkloadStatus, member: TeamCommandMember): string {
-  if (member.overdueJobs > 0) return 'Behind';
-  if (member.activeJobs > 0) return 'Working';
-  if (member.dueTodayJobs > 0) return 'Due today';
+function initialsFor(member: TeamCommandMember): string {
+  const source = member.name || member.email || 'Team Member';
+  const parts = source
+    .replace(/@.*/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  return (parts.map((part) => part[0]).join('') || 'TM').toUpperCase();
+}
+
+function avatarUrlFor(member: TeamCommandMember): string | null {
+  const withAvatar = member as MemberWithAvatar;
+  return withAvatar.avatarUrl || withAvatar.profilePhotoUrl || withAvatar.photoUrl || null;
+}
+
+function statusLabel(status: WorkloadStatus, member: TeamCommandMember): string {
+  if (member.overdueJobs > 0) return 'Needs attention';
+  if (member.activeJobs > 0) return 'On job';
+  if (member.dueTodayJobs > 0) return 'Scheduled';
   if (status === 'busy') return 'Scheduled';
   if (status === 'overloaded') return 'Overloaded';
-  return 'No active work';
+  return 'Available';
 }
 
 function memberSummary(member: TeamCommandMember): string {
-  if (member.nextUpcomingJob) return `${member.nextUpcomingJob.title} · ${member.nextUpcomingJob.date}`;
+  if (member.nextUpcomingJob) return member.nextUpcomingJob.title;
   if (member.activeJobs > 0) return `${member.activeJobs} active job${member.activeJobs === 1 ? '' : 's'}`;
   if (member.dueTodayJobs > 0) return `${member.dueTodayJobs} due today`;
-  return 'Nothing assigned today';
+  return 'Ready for assignment';
 }
 
-function statusTone(member: TeamCommandMember): React.CSSProperties {
+function statusTone(member: TeamCommandMember): CSSProperties {
   if (member.overdueJobs > 0) {
-    return { background: 'rgba(140, 58, 48, 0.08)', color: '#73342b', borderColor: 'rgba(140, 58, 48, 0.18)' };
+    return { background: 'rgba(140, 58, 48, 0.08)', color: '#73342b', borderColor: 'rgba(140, 58, 48, 0.2)' };
   }
   if (member.activeJobs > 0 || member.dueTodayJobs > 0) {
-    return { background: 'rgba(47, 95, 143, 0.08)', color: '#244f76', borderColor: 'rgba(47, 95, 143, 0.18)' };
+    return { background: 'rgba(47, 95, 143, 0.08)', color: '#244f76', borderColor: 'rgba(47, 95, 143, 0.2)' };
   }
-  return { background: 'rgba(74, 99, 84, 0.1)', color: '#2f5f45', borderColor: 'rgba(74, 99, 84, 0.18)' };
+  return { background: 'rgba(74, 99, 84, 0.1)', color: '#2f5f45', borderColor: 'rgba(74, 99, 84, 0.2)' };
+}
+
+function smallMetric(label: string, value: number) {
+  return (
+    <div className="stat-card" style={{ padding: 12, minWidth: 0 }}>
+      <span>{label}</span>
+      <strong style={{ fontSize: 22 }}>{value}</strong>
+    </div>
+  );
 }
 
 export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
@@ -74,8 +104,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       setLoading(false);
       if (!res.ok) {
         const detail = json.detail || json._detail;
-        const message = json.error || detail || 'We could not load team command center data. Refresh and try again.';
-        setError(message);
+        setError(json.error || detail || 'We could not load team command center data. Refresh and try again.');
         setData(null);
         return;
       }
@@ -110,7 +139,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
 
   if (!data) return null;
 
-  const { totals, members, recentActivity, jobsThisMonthFrom } = data;
+  const { totals, members } = data;
   const safeTotals = totals || {
     teamMembers: 0,
     activeJobs: 0,
@@ -123,17 +152,15 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
     jobsThisMonth: 0
   };
   const safeMembers = members || [];
-  const safeRecentActivity = recentActivity || [];
   const hasMembers = safeMembers.length > 0;
-  const hasAssignedWork = safeMembers.some(
-    (member) => member.activeJobs > 0 || member.completedJobs > 0 || member.overdueJobs > 0 || member.dueTodayJobs > 0
-  );
+  const availableMembers = safeMembers.filter((member) => member.activeJobs === 0 && member.overdueJobs === 0).length;
+  const dueTodayTotal = safeMembers.reduce((sum, member) => sum + member.dueTodayJobs, 0);
 
   const compactMetrics = [
-    { label: 'Active', value: safeTotals.activeJobs, href: '/jobs?status=active' },
-    { label: 'Due today', value: safeMembers.reduce((sum, member) => sum + member.dueTodayJobs, 0), href: '/schedule' },
-    { label: 'Overdue', value: safeTotals.overdueJobs, href: '/jobs?status=overdue' },
-    { label: 'Completed', value: safeTotals.completedJobs, href: '/jobs?status=completed' }
+    { label: 'On job', value: safeTotals.activeJobs, href: '/jobs?status=active' },
+    { label: 'Due today', value: dueTodayTotal, href: '/schedule' },
+    { label: 'Needs attention', value: safeTotals.overdueJobs, href: '/jobs?status=overdue' },
+    { label: 'Available team', value: availableMembers, href: '/team' }
   ];
 
   return (
@@ -142,7 +169,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
         <div>
           <h2>Team Command Center</h2>
           <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
-            Team status, assignments, and workload checks.
+            See who is available, scheduled, or needs attention today.
           </p>
         </div>
       </div>
@@ -150,7 +177,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
           gap: 14,
           marginBottom: 32
         }}
@@ -164,7 +191,8 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
               borderRadius: 'var(--radius-md)',
               padding: '14px 16px',
               background: 'var(--surface)',
-              boxShadow: 'var(--shadow-subtle)'
+              boxShadow: 'var(--shadow-subtle)',
+              minWidth: 0
             }}
           >
             <span style={{ display: 'block', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
@@ -178,20 +206,19 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       </div>
 
       <div>
-        <h3 style={{ margin: '0 0 12px' }}>Team overview</h3>
+        <h3 style={{ margin: '0 0 10px' }}>Team overview</h3>
+        <p className="muted" style={{ margin: '0 0 22px', maxWidth: 760, lineHeight: 1.55 }}>
+          Open a team member to view schedule, assignment, and contact actions.
+        </p>
+
         {!hasMembers ? (
           <p className="muted">No team members yet. Invite team members or assign jobs to see workload here.</p>
-        ) : null}
-        {hasMembers && !hasAssignedWork ? (
-          <p className="muted" style={{ margin: '0 0 22px', maxWidth: 760, lineHeight: 1.55 }}>
-            No assigned work was found for this team. Open a row to check whether jobs are unassigned or linked to another record.
-          </p>
         ) : null}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {safeMembers.map((member) => {
             const expanded = expandedMemberId === member.userId;
-            const totalTracked = member.activeJobs + member.dueTodayJobs + member.overdueJobs + member.completedJobs;
+            const avatarUrl = avatarUrlFor(member);
             return (
               <article
                 key={member.userId}
@@ -213,27 +240,58 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                     background: 'transparent',
                     cursor: 'pointer',
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 1.35fr) max-content 24px',
+                    gridTemplateColumns: 'minmax(240px, 1.2fr) minmax(220px, 1fr) max-content 24px',
                     columnGap: 24,
-                    rowGap: 10,
+                    rowGap: 14,
                     alignItems: 'center',
                     padding: '18px 20px',
                     textAlign: 'left',
                     color: 'var(--text)'
                   }}
                 >
-                  <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-                    <strong style={{ display: 'block', color: 'var(--charcoal)', lineHeight: 1.25 }}>{member.name}</strong>
-                    <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 4 }}>
-                      {member.role} · {member.email || 'No email on file'}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 44,
+                        height: 44,
+                        flex: '0 0 44px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--line)',
+                        background: 'var(--bg)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        color: 'var(--charcoal)',
+                        fontWeight: 700,
+                        fontSize: 14
+                      }}
+                    >
+                      {avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        initialsFor(member)
+                      )}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <strong style={{ display: 'block', color: 'var(--charcoal)', lineHeight: 1.25, overflowWrap: 'anywhere' }}>
+                        {member.name}
+                      </strong>
+                      <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 4, overflowWrap: 'anywhere' }}>
+                        {member.role} · {member.email || 'No email on file'}
+                      </span>
                     </span>
                   </span>
+
                   <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                     <strong style={{ display: 'block', fontWeight: 500, lineHeight: 1.25 }}>{memberSummary(member)}</strong>
                     <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 6 }}>
-                      Last update: {formatDate(member.lastActivityAt)}
+                      {member.nextUpcomingJob ? `Next: ${member.nextUpcomingJob.date}` : `Updated: ${formatDate(member.lastActivityAt)}`}
                     </span>
                   </span>
+
                   <span
                     style={{
                       justifySelf: 'end',
@@ -246,7 +304,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                       ...statusTone(member)
                     }}
                   >
-                    {workloadLabel(member.workloadStatus, member)}
+                    {statusLabel(member.workloadStatus, member)}
                   </span>
                   <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18, justifySelf: 'end' }}>
                     {expanded ? '−' : '+'}
@@ -254,46 +312,46 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                 </button>
 
                 {expanded ? (
-                  <div style={{ borderTop: '1px solid var(--line)', padding: '14px 20px 18px' }}>
+                  <div style={{ borderTop: '1px solid var(--line)', padding: '16px 20px 18px' }}>
                     <div
                       style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
                         gap: 10,
-                        marginBottom: 14
+                        marginBottom: 16
                       }}
                     >
-                      {[
-                        ['Active', member.activeJobs],
-                        ['Due today', member.dueTodayJobs],
-                        ['Overdue', member.overdueJobs],
-                        ['Completed', member.completedJobs]
-                      ].map(([label, value]) => (
-                        <div key={String(label)} className="stat-card" style={{ padding: 12 }}>
-                          <span>{label}</span>
-                          <strong style={{ fontSize: 22 }}>{value}</strong>
-                        </div>
-                      ))}
+                      {smallMetric('Active', member.activeJobs)}
+                      {smallMetric('Due today', member.dueTodayJobs)}
+                      {smallMetric('Overdue', member.overdueJobs)}
+                      {smallMetric('Completed', member.completedJobs)}
                     </div>
 
-                    {member.nextUpcomingJob ? (
-                      <p className="muted" style={{ marginTop: 0 }}>
-                        Next job: <Link href={`/jobs/${member.nextUpcomingJob.id}`}>{member.nextUpcomingJob.title}</Link> on {member.nextUpcomingJob.date}
-                      </p>
-                    ) : (
-                      <p className="muted" style={{ marginTop: 0 }}>No upcoming assigned job found.</p>
-                    )}
-
-                    <p className="muted">
-                      Data check: {totalTracked === 0 ? '0 matching assigned jobs were found for this team member.' : `${totalTracked} matching job record${totalTracked === 1 ? '' : 's'} found.`} Counts use this workspace, job assignment, date, and status filters.
-                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
+                      <div>
+                        <strong style={{ display: 'block', color: 'var(--charcoal)' }}>Next assignment</strong>
+                        {member.nextUpcomingJob ? (
+                          <p className="muted" style={{ margin: '4px 0 0' }}>
+                            <Link href={`/jobs/${member.nextUpcomingJob.id}`}>{member.nextUpcomingJob.title}</Link> · {member.nextUpcomingJob.date}
+                          </p>
+                        ) : (
+                          <p className="muted" style={{ margin: '4px 0 0' }}>No scheduled assignment yet.</p>
+                        )}
+                      </div>
+                      <div>
+                        <strong style={{ display: 'block', color: 'var(--charcoal)' }}>Contact</strong>
+                        <p className="muted" style={{ margin: '4px 0 0', overflowWrap: 'anywhere' }}>
+                          {member.email || 'No email on file'}
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="team-command-member-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      <Link className="btn btn-sm" href={`/jobs?assigned_to=${member.userId}`}>
-                        Data check
-                      </Link>
                       <Link className="btn btn-sm" href={`/schedule?member=${member.userId}`}>
-                        Schedule
+                        View schedule
+                      </Link>
+                      <Link className="btn btn-sm" href={`/jobs?assigned_to=${member.userId}`}>
+                        View jobs
                       </Link>
                       <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${member.userId}`}>
                         Assign job
@@ -306,49 +364,6 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
           })}
         </div>
       </div>
-
-      <details style={{ marginTop: 20 }}>
-        <summary style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 14 }}>More workspace metrics</summary>
-        <div className="dashboard-revenue-grid" style={{ marginTop: 12 }}>
-          {[
-            { label: 'Customers', value: safeTotals.customers, href: '/customers' },
-            { label: 'Team members', value: safeTotals.teamMembers, href: '/team' },
-            { label: 'Photos', value: safeTotals.photos, href: '/photos' },
-            { label: 'Reports', value: safeTotals.reports, href: '/activity' },
-            { label: 'Team activity', value: safeTotals.teamActivity, href: '/activity' },
-            { label: 'Jobs this month', value: safeTotals.jobsThisMonth, href: `/jobs?from=${jobsThisMonthFrom || ''}` }
-          ].map((card) => (
-            <Link key={card.label} href={card.href} className="dashboard-revenue-metric">
-              <span className="dashboard-revenue-metric-label">{card.label}</span>
-              <strong className="dashboard-revenue-metric-value">{card.value}</strong>
-            </Link>
-          ))}
-        </div>
-      </details>
-
-      <details style={{ marginTop: 18 }}>
-        <summary style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 14 }}>Recent team activity</summary>
-        {safeRecentActivity.length === 0 ? (
-          <p className="muted">No recent team activity yet.</p>
-        ) : (
-          <ul className="team-command-activity-list">
-            {safeRecentActivity.map((item) => (
-              <li key={item.id} className="activity-item">
-                <div>
-                  {item.href ? (
-                    <Link href={item.href}>{item.message || 'Activity update'}</Link>
-                  ) : (
-                    <span>{item.message || 'Activity update'}</span>
-                  )}
-                </div>
-                <p className="muted">
-                  {item.actorName || 'Team member'} · {formatDate(item.createdAt)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </details>
     </section>
   );
 }
