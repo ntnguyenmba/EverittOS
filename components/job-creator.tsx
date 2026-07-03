@@ -232,7 +232,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>Create a job</h3>
-      <p className="muted">Create the work record first. Add a primary teammate, outside crew, or both.</p>
       <form className="form" onSubmit={createJob}>
         <input
           className="input"
@@ -251,12 +250,12 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
 
         <div>
-          <label>Primary teammate</label>
+          <label>Assign team member</label>
           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
             <label className="list-row" style={{ cursor: 'pointer' }}>
               <span>
-                <strong>Needs assignment</strong>
-                <span className="muted" style={{ display: 'block' }}>Keep this job open for scheduling later.</span>
+                <strong>Unassigned</strong>
+                <span className="muted" style={{ display: 'block' }}>Choose this if you want to assign it later.</span>
               </span>
               <input type="radio" name="assigned-to" value="" checked={!assignedTo} onChange={() => setAssignedTo('')} />
             </label>
@@ -278,18 +277,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           </div>
         </div>
 
-        <div>
-          <label>Additional crew or outside help</label>
-          {workers.length === 0 ? (
-            <p className="muted" style={{ marginTop: 8 }}>Add workers first if you want to assign outside or non-login crew.</p>
-          ) : (
+        {workers.length > 0 ? (
+          <div>
+            <label>Add crew</label>
             <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
               {workers.map((worker) => (
                 <label key={worker.id} className="list-row" style={{ cursor: 'pointer' }}>
                   <span style={{ minWidth: 0 }}>
                     <strong style={{ overflowWrap: 'anywhere' }}>{worker.name}</strong>
                     <span className="muted" style={{ display: 'block' }}>
-                      {worker.auth_user_id ? 'Linked team worker' : 'Outside or field worker'}
+                      {worker.auth_user_id ? 'Team worker' : 'Worker'}
                     </span>
                   </span>
                   <input
@@ -300,11 +297,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 </label>
               ))}
             </div>
-          )}
-          <p className="muted" style={{ marginTop: 8 }}>
-            Use primary teammate for team dashboard ownership. Use crew for helpers, contractors, or outside field workers.
-          </p>
-        </div>
+          </div>
+        ) : null}
 
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
