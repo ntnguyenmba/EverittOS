@@ -14,7 +14,7 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { isAdminRole, isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -26,6 +26,10 @@ type DashboardJobRow = {
   start_date: string | null;
   scheduled_start?: string | null;
   created_at?: string | null;
+  assigned_to?: string | null;
+  customer_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
 };
 
 type ManagerWorkspaceMetrics = {
@@ -64,7 +68,11 @@ function normalizeDashboardJob(job: DashboardJobRow): DashboardJobRow {
     title: job.title,
     status: job.status,
     due_date: job.due_date || scheduledDate,
-    start_date: job.start_date || scheduledDate || createdDate
+    start_date: job.start_date || scheduledDate || createdDate,
+    assigned_to: job.assigned_to,
+    customer_name: job.customer_name,
+    phone: job.phone,
+    address: job.address
   };
 }
 
@@ -106,11 +114,7 @@ export default function DashboardPage() {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('plan, role')
-      .eq('id', user.id)
-      .maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
     const org = await ensureOrganizationForUser(user.id);
     const userPlan = normalizePlan(profile?.plan);
     const userRole = normalizeRole(org?.role || profile?.role);
@@ -123,41 +127,48 @@ export default function DashboardPage() {
     }
 
     const organizationId = org?.organizationId || null;
-    const [metrics, usageCounts, jobsRes, activityRes] = await Promise.all([
+    const staffView = isStaffRole(userRole);
+    const [metrics, usageCounts, jobsRes, activityRes, workersRes] = await Promise.all([
       fetchDashboardRevenueMetrics(supabase, organizationId),
       fetchUsageCounts(user.id, organizationId),
       organizationId
         ? supabase
             .from('jobs')
-            .select('id, title, status, due_date, start_date, scheduled_start, created_at')
+            .select('id, title, status, due_date, start_date, scheduled_start, created_at, assigned_to, customer_name, phone, address')
             .eq('organization_id', organizationId)
             .order('scheduled_start', { ascending: true, nullsFirst: false })
             .limit(500)
         : supabase
             .from('jobs')
-            .select('id, title, status, due_date, start_date, scheduled_start, created_at')
+            .select('id, title, status, due_date, start_date, scheduled_start, created_at, assigned_to, customer_name, phone, address')
             .eq('user_id', user.id)
             .order('scheduled_start', { ascending: true, nullsFirst: false })
             .limit(500),
       organizationId
-        ? supabase
-            .from('activity_logs')
-            .select('id', { count: 'exact', head: true })
-            .eq('organization_id', organizationId)
-        : supabase
-            .from('activity_logs')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id)
+        ? supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId)
+        : supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      organizationId
+        ? supabase.from('workers').select('id, auth_user_id').eq('organization_id', organizationId)
+        : Promise.resolve({ data: [] })
     ]);
+
+    const assignedWorkerIds = new Set(
+      ((workersRes.data || []) as { id: string; auth_user_id?: string | null }[])
+        .filter((worker) => worker.auth_user_id === user.id)
+        .map((worker) => worker.id)
+    );
+
+    const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
+    const visibleJobs = staffView ? normalizedJobs.filter((job) => job.assigned_to && assignedWorkerIds.has(job.assigned_to)) : normalizedJobs;
 
     setRevenueMetrics(metrics);
     setManagerWorkspaceMetrics({
-      jobs: ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob),
+      jobs: visibleJobs,
       photoCount: usageCounts.photos,
-      reportCount: usageCounts.reports,
-      activityCount: activityRes.error ? 0 : activityRes.count || 0,
-      customerCount: usageCounts.customers,
-      teamCount: usageCounts.teamMembers
+      reportCount: staffView ? 0 : usageCounts.reports,
+      activityCount: staffView ? 0 : activityRes.error ? 0 : activityRes.count || 0,
+      customerCount: staffView ? 0 : usageCounts.customers,
+      teamCount: staffView ? 0 : usageCounts.teamMembers
     });
     setLoading(false);
   }
@@ -166,6 +177,8 @@ export default function DashboardPage() {
     void loadDashboard();
   }, []);
 
+  const staffView = isStaffRole(role);
+
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
       <Suspense>
@@ -173,12 +186,9 @@ export default function DashboardPage() {
       </Suspense>
 
       <div className="today-page dashboard-home">
-        <PageHeader
-          title={t('dashboard.welcome')}
-          subtitle={t('dashboard.navSubtitle')}
-        />
+        <PageHeader title={staffView ? 'My work' : t('dashboard.welcome')} subtitle={staffView ? 'Today, assigned jobs, customer contact, and field actions.' : t('dashboard.navSubtitle')} />
 
-        <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} />
+        {!staffView ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
         <TeamCommandCenter enabled={isAdminRole(role)} />
 
@@ -194,15 +204,17 @@ export default function DashboardPage() {
           />
         ) : null}
 
-        <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
-          <div>
-            <h2>{t('supportTraining.dashboardTitle')}</h2>
-            <p>{t('supportTraining.dashboardBody')}</p>
-          </div>
-          <Link href="/support" className="dashboard-help-link">
-            {t('supportTraining.bookFreeCall')}
-          </Link>
-        </section>
+        {!staffView ? (
+          <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
+            <div>
+              <h2>{t('supportTraining.dashboardTitle')}</h2>
+              <p>{t('supportTraining.dashboardBody')}</p>
+            </div>
+            <Link href="/support" className="dashboard-help-link">
+              {t('supportTraining.bookFreeCall')}
+            </Link>
+          </section>
+        ) : null}
       </div>
     </AppShell>
   );
