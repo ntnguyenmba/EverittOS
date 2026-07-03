@@ -107,7 +107,7 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
     <div className="card" style={{ marginTop: 18 }}>
       <h3>Shared with teammates</h3>
       <p className="muted">
-        Share this {recordType} with selected teammates. Owners, admins, and managers can still view workspace work.
+        Share this {recordType} with selected teammates so they can view or edit the record.
       </p>
 
       {canManage ? (

@@ -638,7 +638,7 @@ export default function JobDetailPage({ params }: PageProps) {
           <h3>Before &amp; after photos</h3>
           <p className="muted">
             Document the job with before and after photos. Upload from your phone camera or desktop. Files are stored
-            securely in your workspace.
+            securely with this job.
           </p>
           <JobPhotosSection
             jobId={job.id}

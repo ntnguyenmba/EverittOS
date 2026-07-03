@@ -5,6 +5,7 @@ import {
   isActiveJobStatus,
   isCompletedJobStatus,
   jobEffectiveDate,
+  normalizeTeamCommandCenterData,
   resolveWorkloadStatus
 } from '@/lib/team-command-center';
 
@@ -40,5 +41,19 @@ describe('team command center helpers', () => {
     assert.equal(activityEntityHref('customer', 'cust-1'), '/customers/cust-1');
     assert.equal(activityEntityHref('invoice', 'inv-1'), null);
     assert.equal(activityEntityHref(null, 'job-1'), null);
+  });
+
+  it('normalizes partial API payloads with safe defaults', () => {
+    const normalized = normalizeTeamCommandCenterData({
+      members: undefined,
+      recentActivity: null,
+      totals: { activeJobs: 3 }
+    });
+
+    assert.deepEqual(normalized.members, []);
+    assert.deepEqual(normalized.recentActivity, []);
+    assert.equal(normalized.totals.activeJobs, 3);
+    assert.equal(normalized.totals.teamMembers, 0);
+    assert.match(normalized.jobsThisMonthFrom, /^\d{4}-\d{2}-\d{2}$/);
   });
 });

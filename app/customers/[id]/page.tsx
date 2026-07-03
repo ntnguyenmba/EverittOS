@@ -149,7 +149,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     if (!user) return;
     const org = await ensureOrganizationForUser(user.id);
     if (!org?.organizationId) {
-      appFeedback.error('Workspace is not ready yet. Refresh and try again.');
+      appFeedback.error('Your account is still setting up. Refresh and try again.');
       return;
     }
 

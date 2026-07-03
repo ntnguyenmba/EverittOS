@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { TeamCommandCenterData, WorkloadStatus } from '@/lib/team-command-center';
+import { normalizeTeamCommandCenterData } from '@/lib/team-command-center';
 
 type TeamCommandCenterProps = {
   enabled: boolean;
@@ -43,15 +44,24 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
       setLoading(true);
       setError('');
       const res = await fetch('/api/dashboard/team-command');
-      const json = (await res.json()) as TeamCommandCenterData & { error?: string };
+      const json = (await res.json()) as TeamCommandCenterData & {
+        error?: string;
+        detail?: string;
+        _detail?: string;
+      };
       if (!active) return;
       setLoading(false);
       if (!res.ok) {
-        setError(json.error || 'We could not load team command center data. Refresh and try again.');
+        const detail = json.detail || json._detail;
+        const message =
+          json.error ||
+          detail ||
+          'We could not load team command center data. Refresh and try again.';
+        setError(message);
         setData(null);
         return;
       }
-      setData(json);
+      setData(normalizeTeamCommandCenterData(json));
     }
 
     void load();
@@ -83,8 +93,21 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
   if (!data) return null;
 
   const { totals, members, recentActivity, jobsThisMonthFrom } = data;
-  const hasMembers = members.length > 0;
-  const hasWorkload = members.some(
+  const safeTotals = totals || {
+    teamMembers: 0,
+    activeJobs: 0,
+    completedJobs: 0,
+    overdueJobs: 0,
+    customers: 0,
+    photos: 0,
+    reports: 0,
+    teamActivity: 0,
+    jobsThisMonth: 0
+  };
+  const safeMembers = members || [];
+  const safeRecentActivity = recentActivity || [];
+  const hasMembers = safeMembers.length > 0;
+  const hasWorkload = safeMembers.some(
     (member) =>
       member.activeJobs > 0 ||
       member.completedJobs > 0 ||
@@ -94,15 +117,19 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
   );
 
   const metricCards = [
-    { label: 'Active jobs', value: totals.activeJobs, href: '/jobs?status=active' },
-    { label: 'Completed jobs', value: totals.completedJobs, href: '/jobs?status=completed' },
-    { label: 'Overdue jobs', value: totals.overdueJobs, href: '/jobs?status=overdue' },
-    { label: 'Customers', value: totals.customers, href: '/customers' },
-    { label: 'Team members', value: totals.teamMembers, href: '/team' },
-    { label: 'Photos', value: totals.photos, href: '/photos' },
-    { label: 'Reports', value: totals.reports, href: '/activity' },
-    { label: 'Team activity', value: totals.teamActivity, href: '/activity' },
-    { label: 'Jobs this month', value: totals.jobsThisMonth, href: `/jobs?from=${jobsThisMonthFrom}` }
+    { label: 'Active jobs', value: safeTotals.activeJobs, href: '/jobs?status=active' },
+    { label: 'Completed jobs', value: safeTotals.completedJobs, href: '/jobs?status=completed' },
+    { label: 'Overdue jobs', value: safeTotals.overdueJobs, href: '/jobs?status=overdue' },
+    { label: 'Customers', value: safeTotals.customers, href: '/customers' },
+    { label: 'Team members', value: safeTotals.teamMembers, href: '/team' },
+    { label: 'Photos', value: safeTotals.photos, href: '/photos' },
+    { label: 'Reports', value: safeTotals.reports, href: '/activity' },
+    { label: 'Team activity', value: safeTotals.teamActivity, href: '/activity' },
+    {
+      label: 'Jobs this month',
+      value: safeTotals.jobsThisMonth,
+      href: `/jobs?from=${jobsThisMonthFrom || ''}`
+    }
   ];
 
   return (
@@ -138,7 +165,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
           </p>
         ) : null}
         <div className="team-command-members">
-          {members.map((member) => (
+          {safeMembers.map((member) => (
             <article key={member.userId} className="card team-command-member-card">
               <div className="team-command-member-head">
                 <div>
@@ -201,11 +228,11 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
 
       <div style={{ marginTop: 24 }}>
         <h3>Recent team activity</h3>
-        {recentActivity.length === 0 ? (
+        {safeRecentActivity.length === 0 ? (
           <p className="muted">No recent team activity yet.</p>
         ) : (
           <ul className="team-command-activity-list">
-            {recentActivity.map((item) => (
+            {safeRecentActivity.map((item) => (
               <li key={item.id} className="activity-item">
                 <div>
                   {item.href ? (

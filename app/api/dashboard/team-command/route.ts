@@ -6,6 +6,10 @@ import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function isDevelopment(): boolean {
+  return process.env.NODE_ENV === 'development';
+}
+
 export async function GET() {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
@@ -16,17 +20,33 @@ export async function GET() {
     return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
   }
 
-  const { data, error } = await fetchTeamCommandCenterData(
+  const { data, error, warnings } = await fetchTeamCommandCenterData(
     ctx.supabase,
     ctx.workspace.organizationId
   );
 
-  if (error || !data) {
+  if (!data) {
+    console.error('Team Command Center:', error, { warnings, organizationId: ctx.workspace.organizationId });
     return NextResponse.json(
-      { error: 'We could not load team command center data. Refresh and try again.' },
+      {
+        error: isDevelopment()
+          ? error || 'Team Command Center failed to load.'
+          : 'We could not load team command center data. Refresh and try again.',
+        detail: error || undefined
+      },
       { status: 500 }
     );
   }
 
-  return NextResponse.json(data);
+  if (warnings.length) {
+    console.error('Team Command Center warnings:', warnings);
+  }
+
+  if (error) {
+    console.error('Team Command Center partial load:', error);
+  }
+
+  return NextResponse.json(
+    isDevelopment() && error ? { ...data, _warnings: warnings, _detail: error } : data
+  );
 }

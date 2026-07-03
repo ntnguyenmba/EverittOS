@@ -35,7 +35,7 @@ export default function NewCustomerPage() {
     <AppShell plan={plan} role={role}>
       <PageHeader
         title="New customer"
-        subtitle="Add a customer to your workspace."
+        subtitle="Add contact details, notes, and follow-ups for a new customer."
         action={
           <Link className="btn" href="/customers">
             Back to customers

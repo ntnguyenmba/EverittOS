@@ -102,7 +102,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (!isManagerRole(role)) {
       setPermissionBlocked(true);
       setLoading(false);
-      appFeedback.error('Only owners, admins, and managers can create jobs.');
+      appFeedback.error('You do not have access to create jobs on this account.');
       return;
     }
 
@@ -180,7 +180,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     return (
       <div className="card">
         <h3>Create a job</h3>
-        <p>Only owners, admins, and managers can create new jobs.</p>
+        <p>You do not have access to create jobs on this account.</p>
       </div>
     );
   }
@@ -214,7 +214,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             </option>
           ))}
         </select>
-        <p className="muted">Jobs without an assignee stay visible to owners, admins, and managers.</p>
+        <p className="muted">You can assign this job now or leave it unassigned for the team schedule.</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}

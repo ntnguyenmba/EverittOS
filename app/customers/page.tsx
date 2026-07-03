@@ -183,7 +183,7 @@ function CustomersPageContent() {
       table { width: 100%; border-collapse: collapse; font-size: 12px; }
       th, td { border: 1px solid #d9dedc; padding: 8px; text-align: left; vertical-align: top; }
       th { background: #f4f2ee; }
-    </style></head><body><h1>EverittOS Customer Export</h1><p>Shared workspace customer data exported from EverittOS.</p><table><thead><tr>${headers
+    </style></head><body><h1>EverittOS Customer Export</h1><p>Customer list exported from EverittOS.</p><table><thead><tr>${headers
       .map((header) => `<th>${escapeHtml(header)}</th>`)
       .join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`);
     printWindow.document.close();
@@ -324,18 +324,6 @@ function CustomersPageContent() {
             </div>
           }
         />
-
-        <div className="card" style={{ marginBottom: 18 }}>
-          <p className="muted">
-            Shared workspace data: customers created by invited team members belong to this organization. Workspace owners and admins can view shared customer records, notes, jobs, files, reports, and activity for this workspace.
-          </p>
-        </div>
-
-        {!canManage && (
-          <div className="card">
-            <p>Only owners, admins, and managers can manage customer records.</p>
-          </div>
-        )}
 
         {canManage && (
           <div className="card form" style={{ marginBottom: 18 }}>

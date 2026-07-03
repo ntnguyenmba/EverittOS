@@ -108,7 +108,7 @@ export default function LeadsPage() {
       <header className="page-header">
         <div className="page-header-text">
           <h1>Lead Generation</h1>
-          <p className="page-subtitle">Track new leads, conversion, sources, and form performance for this workspace.</p>
+          <p className="page-subtitle">Track new leads, conversion, sources, and form performance.</p>
         </div>
         {canManage ? (
           <div className="page-header-action">
