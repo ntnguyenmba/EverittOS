@@ -154,10 +154,22 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           line-height: 1.6;
         }
 
+        .auth-tech-card > .auth-message {
+          margin: 18px 0 20px;
+        }
+
+        .auth-tech-card > .auth-message + .auth-methods-note {
+          margin-top: 0;
+        }
+
         .auth-tech-card .auth-methods-note {
-          margin: -4px 0 16px;
+          margin: 0 0 16px;
           color: #54677d;
           font-size: 14px;
+        }
+
+        .auth-tech-card .auth-form .auth-message {
+          margin: 4px 0 0;
         }
 
         .auth-tech-card .auth-form .btn-primary {
@@ -277,7 +289,12 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           }
 
           .auth-card-description {
+            margin-bottom: 20px;
             font-size: 12.5px;
+          }
+
+          .auth-tech-card > .auth-message {
+            margin: 16px 0 18px;
           }
 
           .auth-password-row {
