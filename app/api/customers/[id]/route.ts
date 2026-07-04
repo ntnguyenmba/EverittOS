@@ -30,7 +30,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id, display_name, name, company_name, pipeline_stage, record_type')
+    .select('id, company_name, phone, email, pipeline_stage, record_type')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -85,7 +85,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id, display_name, name, company_name')
+    .select('id, company_name, phone, email')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
