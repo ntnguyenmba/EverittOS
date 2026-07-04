@@ -29,6 +29,7 @@ import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { combineDateAndTime, formatScheduleDuration, hoursBetween, localTimeFromIso } from '@/lib/schedule-times';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
+import { getJobDetailCopy } from '@/lib/i18n/job-detail-copy';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = {
@@ -68,17 +69,24 @@ type TimelineEntry = {
   created_at: string | null;
 };
 
-function displayValue(value: string | null | undefined, fallback = 'Not set') {
+function displayValue(value: string | null | undefined, fallback: string) {
   return value && value.trim() ? value : fallback;
 }
 
-function formatDate(value: string | null) {
-  if (!value) return 'Not scheduled';
+function formatPriority(value: string | null, labels: { low: string; normal: string; high: string; urgent: string }) {
+  if (value === 'low') return labels.low;
+  if (value === 'high') return labels.high;
+  if (value === 'urgent') return labels.urgent;
+  return labels.normal;
+}
+
+function formatDate(value: string | null, fallback: string) {
+  if (!value) return fallback;
   return new Date(`${value}T00:00:00`).toLocaleDateString();
 }
 
-function formatDateTime(value: string | null) {
-  if (!value) return 'Not set';
+function formatDateTime(value: string | null, fallback: string) {
+  if (!value) return fallback;
   return new Date(value).toLocaleString();
 }
 
@@ -110,7 +118,8 @@ export default function JobDetailPage({ params }: PageProps) {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const appFeedback = useAppFeedback();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = getJobDetailCopy(locale);
 
   useEffect(() => {
     params.then((p) => setJobId(p.id));
@@ -211,7 +220,7 @@ export default function JobDetailPage({ params }: PageProps) {
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save job.');
+      appFeedback.error(json.error || copy.unableToSaveJob);
       return false;
     }
     appFeedback.success(successMessage || FEEDBACK.updated);
@@ -221,7 +230,7 @@ export default function JobDetailPage({ params }: PageProps) {
   async function updateStatus(status: string) {
     if (!canEditStatus || updatingStatus) return;
     setUpdatingStatus(true);
-    const ok = await patchJob({ status }, `Status updated to ${status.replace('_', ' ')}.`);
+    const ok = await patchJob({ status }, copy.statusUpdated(status));
     setUpdatingStatus(false);
     if (!ok) return;
     if (orgId) {
@@ -230,7 +239,7 @@ export default function JobDetailPage({ params }: PageProps) {
         const {
           data: { user: u }
         } = await supabase.auth.getUser();
-        if (u) await createNotification(orgId, u.id, 'completion', 'Job completed', job?.title || 'Job marked completed', jobId);
+        if (u) await createNotification(orgId, u.id, 'completion', copy.jobCompletedTitle, job?.title || copy.jobMarkedCompleted, jobId);
       }
     }
     loadJob();
@@ -239,7 +248,7 @@ export default function JobDetailPage({ params }: PageProps) {
   async function saveJobFields() {
     if (!job || !canManage || savingDetails) return;
     if (!job.title?.trim()) {
-      appFeedback.error('Job title is required.');
+      appFeedback.error(copy.jobTitleRequired);
       return;
     }
     const emailCheck = validateAssignedEmail(job.assigned_email);
@@ -294,11 +303,11 @@ export default function JobDetailPage({ params }: PageProps) {
     setSavingSchedule(false);
 
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save schedule.');
+      appFeedback.error(json.error || copy.unableToSaveSchedule);
       return;
     }
 
-    appFeedback.success(json.message || 'Schedule saved.');
+    appFeedback.success(json.message || copy.scheduleSaved);
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', 'Schedule updated from job detail');
     }
@@ -329,7 +338,7 @@ export default function JobDetailPage({ params }: PageProps) {
       user_id: user.id,
       organization_id: orgId || job.organization_id,
       job_id: job.id,
-      title: `${job.title} report`
+      title: copy.reportTitle(job.title)
     });
 
     setCreatingReport(false);
@@ -345,9 +354,9 @@ export default function JobDetailPage({ params }: PageProps) {
 
     if (orgId) {
       await logClientActivity(orgId, 'job', job.id, 'report_generated', 'Proof report created');
-      await createNotification(orgId, user.id, 'report', 'Report generated', job.title, job.id);
+      await createNotification(orgId, user.id, 'report', copy.reportGeneratedTitle, job.title, job.id);
     }
-    appFeedback.success('Report created.');
+    appFeedback.success(copy.reportCreated);
     router.push(`/jobs/${job.id}/report`);
   }
 
@@ -358,7 +367,7 @@ export default function JobDetailPage({ params }: PageProps) {
   if (loading) {
     return (
       <AppShell plan={plan} role={userRole}>
-        <div className="card">Loading job...</div>
+        <div className="card">{copy.loadingJob}</div>
       </AppShell>
     );
   }
@@ -366,7 +375,7 @@ export default function JobDetailPage({ params }: PageProps) {
   if (!job) {
     return (
       <AppShell plan={plan} role={userRole}>
-        <div className="card">{loadError || 'Job not found or access denied.'}</div>
+        <div className="card">{loadError || copy.jobAccessDenied}</div>
       </AppShell>
     );
   }
@@ -374,10 +383,14 @@ export default function JobDetailPage({ params }: PageProps) {
   const crewEnabled = limitsForPlan(plan).crewAssignment;
   const canWorkJob = canManage || canEditStatus;
   const assignedEmailDisplay = job.assigned_email?.trim() || null;
-  const accessTitle = canManage ? 'Management access' : 'Field access';
-  const accessCopy = canManage
-    ? 'You can edit job details, schedule, assignment, customer notes, and verification. Team changes are recorded in the activity timeline.'
-    : 'You can view the job, update status, complete checklist items, and upload job photos. Details, schedule, customer info, and assignments are read-only.';
+  const accessTitle = canManage ? copy.managementAccess : copy.fieldAccess;
+  const accessCopy = canManage ? copy.managementAccessCopy : copy.fieldAccessCopy;
+  const priorityLabels = {
+    low: copy.priorityLow,
+    normal: copy.priorityNormal,
+    high: copy.priorityHigh,
+    urgent: copy.priorityUrgent
+  };
   const scheduleHours = hoursBetween(
     job.scheduled_start || (job.start_date ? combineDateAndTime(job.start_date, startTime) : null),
     job.scheduled_end || (job.due_date ? combineDateAndTime(job.due_date, endTime) : null)
@@ -388,7 +401,7 @@ export default function JobDetailPage({ params }: PageProps) {
       <div className="page-head">
         <div>
           <h2>{job.title}</h2>
-          <p>{job.address || 'No address added'}</p>
+          <p>{job.address || copy.noAddressAdded}</p>
         </div>
         <StatusPill status={job.status} />
       </div>
@@ -398,29 +411,29 @@ export default function JobDetailPage({ params }: PageProps) {
         <p className="muted">{accessCopy}</p>
         {assignedEmailDisplay ? (
           <p>
-            <strong>Assigned email:</strong> {assignedEmailDisplay}
+            <strong>{copy.assignedEmail}:</strong> {assignedEmailDisplay}
           </p>
         ) : null}
       </div>
 
       <div className="grid-2">
         <div className="card">
-          <h3>{canManage ? 'Job details' : 'Job details, read-only'}</h3>
+          <h3>{canManage ? copy.jobDetails : copy.jobDetailsReadOnly}</h3>
           {canManage ? (
             <div className="form">
-              <label>Title</label>
+              <label>{copy.title}</label>
               <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
-              <label>Customer</label>
+              <label>{copy.customer}</label>
               <input
                 className="input"
                 value={job.customer_name || ''}
                 onChange={(e) => setJob({ ...job, customer_name: e.target.value })}
               />
-              <label>Phone</label>
+              <label>{copy.phone}</label>
               <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
-              <label>Address</label>
+              <label>{copy.address}</label>
               <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
-              <label htmlFor="job-detail-assigned-email">Assigned email</label>
+              <label htmlFor="job-detail-assigned-email">{copy.assignedEmail}</label>
               <input
                 id="job-detail-assigned-email"
                 className="input"
@@ -430,18 +443,18 @@ export default function JobDetailPage({ params }: PageProps) {
                 onChange={(e) => setJob({ ...job, assigned_email: e.target.value })}
                 autoComplete="email"
               />
-              <label>Job notes</label>
+              <label>{copy.jobNotes}</label>
               <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
-              <label>Priority</label>
+              <label>{copy.priority}</label>
               <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                <option value="low">{copy.priorityLow}</option>
+                <option value="normal">{copy.priorityNormal}</option>
+                <option value="high">{copy.priorityHigh}</option>
+                <option value="urgent">{copy.priorityUrgent}</option>
               </select>
               {canViewInternalNotes(userRole) && (
                 <>
-                  <label>Internal notes</label>
+                  <label>{copy.internalNotes}</label>
                   <textarea
                     className="input"
                     rows={3}
@@ -450,7 +463,7 @@ export default function JobDetailPage({ params }: PageProps) {
                   />
                 </>
               )}
-              <label>Customer notes</label>
+              <label>{copy.customerNotes}</label>
               <textarea
                 className="input"
                 rows={3}
@@ -463,10 +476,10 @@ export default function JobDetailPage({ params }: PageProps) {
                   checked={!!job.completion_verified}
                   onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
                 />{' '}
-                Completion verified
+                {copy.completionVerified}
               </label>
               <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
-                {savingDetails ? FEEDBACK.loading : 'Save details'}
+                {savingDetails ? FEEDBACK.loading : copy.saveDetails}
               </button>
               <button
                 type="button"
@@ -474,38 +487,38 @@ export default function JobDetailPage({ params }: PageProps) {
                 style={{ marginLeft: 8 }}
                 disabled={removingJob}
                 onClick={async () => {
-                  if (!window.confirm('Remove this job?')) return;
+                  if (!window.confirm(copy.removeJobConfirm)) return;
                   setRemovingJob(true);
                   const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
                   const json = (await res.json().catch(() => ({}))) as { error?: string; cancelled?: boolean };
                   setRemovingJob(false);
                   if (!res.ok) {
-                    appFeedback.error(json.error || 'Unable to remove job.');
+                    appFeedback.error(json.error || copy.unableToRemoveJob);
                     return;
                   }
-                  appFeedback.success(json.cancelled ? 'Job marked cancelled (linked records kept).' : FEEDBACK.deleted);
+                  appFeedback.success(json.cancelled ? copy.jobMarkedCancelled : FEEDBACK.deleted);
                   router.push('/jobs');
                 }}
               >
-                {removingJob ? FEEDBACK.loading : 'Remove job'}
+                {removingJob ? FEEDBACK.loading : copy.removeJob}
               </button>
             </div>
           ) : (
             <>
-              <p><strong>Customer:</strong> {displayValue(job.customer_name)}</p>
-              <p><strong>Phone:</strong> {displayValue(job.phone)}</p>
-              <p><strong>Address:</strong> {displayValue(job.address)}</p>
-              <p><strong>Assigned email:</strong> {displayValue(job.assigned_email, 'Not set')}</p>
-              <p><strong>Notes:</strong> {displayValue(job.notes, 'No notes')}</p>
-              <p><strong>Priority:</strong> {job.priority || 'normal'}</p>
+              <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
+              <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
+              <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
+              <p><strong>{copy.assignedEmail}:</strong> {displayValue(job.assigned_email, copy.notSet)}</p>
+              <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
+              <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
             </>
           )}
-          <p><strong>Created:</strong> {formatDateTime(job.created_at)}</p>
+          <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
 
           {canEditStatus && (
             <div className="form" style={{ marginTop: 16 }}>
               <button className="btn" type="button" disabled={updatingStatus || job.status === 'in_progress'} onClick={() => updateStatus('in_progress')}>
-                {updatingStatus ? FEEDBACK.loading : 'Start job'}
+                {updatingStatus ? FEEDBACK.loading : copy.startJob}
               </button>
               <button
                 className="btn btn-primary"
@@ -513,42 +526,42 @@ export default function JobDetailPage({ params }: PageProps) {
                 disabled={updatingStatus || job.status === 'completed'}
                 onClick={() => updateStatus('completed')}
               >
-                {updatingStatus ? FEEDBACK.loading : 'Mark completed'}
+                {updatingStatus ? FEEDBACK.loading : copy.markCompleted}
               </button>
             </div>
           )}
         </div>
 
         <div className="card form">
-          <h3>{canManage ? 'Schedule' : 'Schedule, read-only'}</h3>
+          <h3>{canManage ? copy.schedule : copy.scheduleReadOnly}</h3>
           {canManage ? (
             <>
-              <label>Start date</label>
+              <label>{copy.startDate}</label>
               <input className="input" type="date" value={job.start_date || ''} onChange={(e) => setJob({ ...job, start_date: e.target.value })} />
-              <label>Start time</label>
+              <label>{copy.startTime}</label>
               <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-              <label>Due date</label>
+              <label>{copy.dueDate}</label>
               <input className="input" type="date" value={job.due_date || ''} onChange={(e) => setJob({ ...job, due_date: e.target.value })} />
-              <label>End time</label>
+              <label>{copy.endTime}</label>
               <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </>
           ) : (
             <>
-              <p><strong>Start:</strong> {job.scheduled_start ? formatDateTime(job.scheduled_start) : formatDate(job.start_date)}</p>
-              <p><strong>Due:</strong> {job.scheduled_end ? formatDateTime(job.scheduled_end) : formatDate(job.due_date)}</p>
+              <p><strong>{copy.start}:</strong> {job.scheduled_start ? formatDateTime(job.scheduled_start, copy.notSet) : formatDate(job.start_date, copy.notScheduled)}</p>
+              <p><strong>{copy.due}:</strong> {job.scheduled_end ? formatDateTime(job.scheduled_end, copy.notSet) : formatDate(job.due_date, copy.notScheduled)}</p>
             </>
           )}
           {scheduleHours != null ? (
             <p className="muted">
-              Scheduled duration: {formatScheduleDuration(
+              {copy.scheduledDuration(formatScheduleDuration(
                 combineDateAndTime(job.start_date || '', startTime),
                 combineDateAndTime(job.due_date || job.start_date || '', endTime)
-              )}
+              ))}
             </p>
           ) : null}
           {canManage && (
             <button className="btn btn-primary" type="button" onClick={saveSchedule} disabled={savingSchedule}>
-              {savingSchedule ? 'Saving...' : 'Save schedule'}
+              {savingSchedule ? copy.saving : copy.saveSchedule}
             </button>
           )}
         </div>
@@ -603,10 +616,8 @@ export default function JobDetailPage({ params }: PageProps) {
       <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
 
       <div className="card job-photos-card" style={{ marginTop: 18 }}>
-        <h3>Before &amp; after photos</h3>
-        <p className="muted">
-          Document the job with before and after photos. Upload from your phone camera or desktop. Files are stored securely with this job.
-        </p>
+        <h3>{copy.photosTitle}</h3>
+        <p className="muted">{copy.photosCopy}</p>
         <JobPhotosSection
           jobId={job.id}
           organizationId={orgId || job.organization_id}
@@ -623,29 +634,29 @@ export default function JobDetailPage({ params }: PageProps) {
 
       {canManage && (
         <div className="card" style={{ marginTop: 18 }}>
-          <h3>Proof report</h3>
-          <p>Generate a printable report with job details and photos.</p>
+          <h3>{copy.proofReport}</h3>
+          <p>{copy.proofReportCopy}</p>
           <button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>
-            {creatingReport ? 'Creating...' : 'Create report'}
+            {creatingReport ? copy.creating : copy.createReport}
           </button>
           <Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>
-            View latest
+            {copy.viewLatest}
           </Link>
         </div>
       )}
 
       {isManagerRole(userRole) && (
         <div className="card" style={{ marginTop: 18 }}>
-          <h3>Activity timeline</h3>
+          <h3>{copy.activityTimeline}</h3>
           {activity.length > 0 ? (
             <ActivityFeed items={activity} />
           ) : (
             <>
-              {timeline.length === 0 && <p>No timeline entries yet.</p>}
+              {timeline.length === 0 && <p>{copy.noTimelineEntries}</p>}
               {timeline.map((entry) => (
                 <div key={entry.id} style={{ marginTop: 10 }}>
                   <strong>{entry.event_type}</strong>
-                  <p>{entry.message || 'Update recorded'}</p>
+                  <p>{entry.message || copy.updateRecorded}</p>
                 </div>
               ))}
             </>
