@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/roles';
+import { isManagerRole } from '@/lib/roles';
 import { fetchTeamCommandCenterData } from '@/lib/team-command-center';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
-  if (!isAdminRole(ctx.workspace.role)) {
+  if (!isManagerRole(ctx.workspace.role)) {
     return NextResponse.json({ error: 'Permission denied.' }, { status: 403 });
   }
 
