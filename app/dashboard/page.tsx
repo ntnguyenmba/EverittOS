@@ -14,7 +14,7 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
-import { isAdminRole, isClientRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -178,6 +178,7 @@ export default function DashboardPage() {
   }, []);
 
   const staffView = isStaffRole(role);
+  const operationsView = isManagerRole(role);
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -190,7 +191,7 @@ export default function DashboardPage() {
 
         {!staffView ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
-        <TeamCommandCenter enabled={isAdminRole(role)} />
+        <TeamCommandCenter enabled={operationsView} />
 
         {!loading && !isAdminRole(role) ? (
           <RoleDashboard
