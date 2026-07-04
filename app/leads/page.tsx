@@ -57,7 +57,7 @@ export default function LeadsPage() {
     let leadsQuery = supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)
-      .in('pipeline_stage', ['lead', 'qualified'])
+      .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
       .order('created_at', { ascending: false });
     if (workspaceOrg?.organizationId) {
       leadsQuery = leadsQuery.eq('organization_id', workspaceOrg.organizationId);
