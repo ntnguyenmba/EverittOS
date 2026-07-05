@@ -21,6 +21,8 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [revenueAmount, setRevenueAmount] = useState('');
+  const [revenueNotes, setRevenueNotes] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,7 +33,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
       appFeedback.error(json.error || 'Unable to load profitability.');
       return;
     }
-    setProfitability(json.profitability);
+    const next = json.profitability as JobProfitability;
+    setProfitability(next);
+    setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
+    setRevenueNotes(next.revenueNotes || '');
   }, [appFeedback, jobId]);
 
   useEffect(() => {
@@ -42,6 +47,29 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     const params = new URLSearchParams({ jobId });
     if (customerId) params.set('customerId', customerId);
     router.push(`/invoices?${params.toString()}`);
+  }
+
+  async function saveRevenue() {
+    if (saving) return;
+    const amount = revenueAmount.trim() ? Number.parseFloat(revenueAmount) : null;
+    if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
+      appFeedback.error('Enter a valid revenue amount.');
+      return;
+    }
+    setSaving(true);
+    const res = await fetch(`/api/jobs/${jobId}/profitability`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ revenue_amount: amount, revenue_notes: revenueNotes })
+    });
+    const json = await res.json();
+    setSaving(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to save revenue.');
+      return;
+    }
+    setProfitability(json.profitability as JobProfitability);
+    appFeedback.success('Revenue saved.');
   }
 
   async function recordPayment() {
@@ -91,15 +119,44 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
 
   const p = profitability;
   const hasCosts = Boolean(p && (p.laborCost > 0 || p.materialCost > 0 || p.otherExpenses > 0));
+  const hasRevenue = Boolean(p && (p.hasInvoice || p.manualRevenue > 0));
 
   return (
     <div className="card finance-card">
       <h3>Job profitability</h3>
       <p className="muted">Simple estimated profit for this job. Not full accounting.</p>
 
-      {!p?.hasInvoice ? (
+      {canManage ? (
+        <div className="finance-actions" style={{ marginBottom: 16 }}>
+          <label>Revenue</label>
+          <div className="finance-inline-form">
+            <input
+              className="input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={revenueAmount}
+              onChange={(e) => setRevenueAmount(e.target.value)}
+            />
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>
+              {saving ? FEEDBACK.loading : 'Save revenue'}
+            </button>
+          </div>
+          <textarea
+            className="input"
+            rows={2}
+            placeholder="Optional revenue notes"
+            value={revenueNotes}
+            onChange={(e) => setRevenueNotes(e.target.value)}
+          />
+          {!p?.hasInvoice ? <p className="muted finance-note">Use this when there is no invoice yet.</p> : null}
+        </div>
+      ) : null}
+
+      {!hasRevenue ? (
         <div className="finance-empty-block">
-          <p>No invoice yet. Send an invoice to calculate profit.</p>
+          <p>No revenue or invoice yet. Add revenue or send an invoice to calculate profit.</p>
           {canManage ? (
             <button type="button" className="btn btn-primary" onClick={openSendInvoice}>
               Send invoice
@@ -108,42 +165,49 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
         </div>
       ) : (
         <div className="finance-metric-grid">
-          <div className="finance-metric">
-            <span className="finance-metric-label">Invoice total</span>
-            <strong>{formatCurrency(p.invoiceTotal)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">Payments received</span>
-            <strong>{formatCurrency(p.paymentsReceived)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">Outstanding</span>
-            <strong>{formatCurrency(p.outstanding)}</strong>
-          </div>
+          {p?.hasInvoice ? (
+            <>
+              <div className="finance-metric">
+                <span className="finance-metric-label">Invoice total</span>
+                <strong>{formatCurrency(p.invoiceTotal)}</strong>
+              </div>
+              <div className="finance-metric">
+                <span className="finance-metric-label">Payments received</span>
+                <strong>{formatCurrency(p.paymentsReceived)}</strong>
+              </div>
+              <div className="finance-metric">
+                <span className="finance-metric-label">Outstanding</span>
+                <strong>{formatCurrency(p.outstanding)}</strong>
+              </div>
+            </>
+          ) : (
+            <div className="finance-metric">
+              <span className="finance-metric-label">Revenue</span>
+              <strong>{formatCurrency(p?.manualRevenue || 0)}</strong>
+            </div>
+          )}
           <div className="finance-metric">
             <span className="finance-metric-label">Labor cost</span>
-            <strong>{formatCurrency(p.laborCost)}</strong>
+            <strong>{formatCurrency(p?.laborCost || 0)}</strong>
           </div>
           <div className="finance-metric">
             <span className="finance-metric-label">Material cost</span>
-            <strong>{formatCurrency(p.materialCost)}</strong>
+            <strong>{formatCurrency(p?.materialCost || 0)}</strong>
           </div>
           <div className="finance-metric">
             <span className="finance-metric-label">Other expenses</span>
-            <strong>{formatCurrency(p.otherExpenses)}</strong>
+            <strong>{formatCurrency(p?.otherExpenses || 0)}</strong>
           </div>
           <div className="finance-metric finance-metric-highlight">
             <span className="finance-metric-label">Estimated profit</span>
-            <strong className={p.estimatedProfit >= 0 ? 'finance-positive' : 'finance-negative'}>
-              {formatCurrency(p.estimatedProfit)}
+            <strong className={(p?.estimatedProfit || 0) >= 0 ? 'finance-positive' : 'finance-negative'}>
+              {formatCurrency(p?.estimatedProfit || 0)}
             </strong>
           </div>
         </div>
       )}
 
-      {p?.hasInvoice && !hasCosts ? (
-        <p className="muted finance-note">No expenses added for this job.</p>
-      ) : null}
+      {p && hasRevenue && !hasCosts ? <p className="muted finance-note">No expenses added for this job.</p> : null}
 
       {canManage && p?.hasInvoice ? (
         <div className="finance-actions">
