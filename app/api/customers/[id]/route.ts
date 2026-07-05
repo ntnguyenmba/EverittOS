@@ -28,11 +28,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     record_type?: string;
   };
 
+  const ownershipFilter = `organization_id.eq.${ctx.workspace.organizationId},user_id.eq.${ctx.userId}`;
+
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
     .select('id, company_name, phone, email, pipeline_stage, record_type')
     .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
+    .or(ownershipFilter)
     .maybeSingle();
 
   if (readError) {
@@ -57,7 +59,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     payload.logo_path = body.logo_path;
   }
 
-  const { error } = await ctx.supabase.from('customers').update(payload).eq('id', id);
+  const { error } = await ctx.supabase.from('customers').update(payload).eq('id', id).or(ownershipFilter);
 
   if (error) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
@@ -82,12 +84,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const ownershipFilter = `organization_id.eq.${ctx.workspace.organizationId},user_id.eq.${ctx.userId}`;
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
     .select('id, company_name, phone, email')
     .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
+    .or(ownershipFilter)
     .maybeSingle();
 
   if (readError) {
@@ -97,7 +100,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
   }
 
-  const { error } = await ctx.supabase.from('customers').delete().eq('id', id);
+  const { error } = await ctx.supabase.from('customers').delete().eq('id', id).or(ownershipFilter);
 
   if (error) {
     const msg = error.message.toLowerCase();
