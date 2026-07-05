@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LeadDetailForm } from '@/components/lead-detail-form';
@@ -16,6 +16,16 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
 type PageProps = { params: Promise<{ id: string }> };
+
+function bookingHrefForLead(lead: CustomerRecord) {
+  const params = new URLSearchParams();
+  params.set('clientName', customerDisplayName(lead));
+  if (lead.email) params.set('clientEmail', lead.email);
+  if (lead.phone) params.set('clientPhone', lead.phone);
+  if (lead.notes) params.set('notes', lead.notes);
+  params.set('service', 'Lead follow-up');
+  return `/bookings?${params.toString()}`;
+}
 
 export default function LeadDetailPage({ params }: PageProps) {
   const router = useRouter();
@@ -74,10 +84,12 @@ export default function LeadDetailPage({ params }: PageProps) {
     void load();
   }, [leadId]);
 
+  const convertHref = useMemo(() => (lead ? bookingHrefForLead(lead) : '/bookings'), [lead]);
+
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <div className="card">Loading lead…</div>
+        <div className="card">Loading lead...</div>
       </AppShell>
     );
   }
@@ -104,7 +116,12 @@ export default function LeadDetailPage({ params }: PageProps) {
             {leadSourceLabel(lead.lead_source)} · {leadPipelineLabel(lead.pipeline_stage)}
           </p>
         </div>
-        <div className="page-header-action">
+        <div className="page-header-action inline-actions">
+          {canManage ? (
+            <Link className="btn btn-primary" href={convertHref}>
+              Convert to booking
+            </Link>
+          ) : null}
           <Link className="btn" href={`/customers/${lead.id}`}>
             Open customer record
           </Link>
