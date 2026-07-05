@@ -99,7 +99,6 @@ export async function processBookingSideEffects(
         })
         .eq('id', bookingId);
     } else if (calendar.error) {
-      warnings.push('Booking saved, but calendar sync failed.');
       await admin
         .from('bookings')
         .update({ calendar_sync_error: calendar.error.slice(0, 500) })
