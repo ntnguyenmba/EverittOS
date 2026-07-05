@@ -144,12 +144,13 @@ export async function getGoogleCalendarConnection(admin: SupabaseClient, organiz
   return (data as GoogleCalendarConnectionRow | null) || null;
 }
 
-export async function disconnectGoogleCalendar(admin: SupabaseClient, organizationId: string): Promise<{ ok: boolean; error?: string }> {
+export async function disconnectGoogleCalendar(admin: SupabaseClient, organizationId: string, userId?: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await admin
     .from('google_calendar_connections')
     .update({ sync_enabled: false, last_sync_error: null, updated_at: new Date().toISOString() })
     .eq('organization_id', organizationId);
   if (error) return { ok: false, error: error.message };
+  logAuthEvent('google_calendar_disconnect', { organizationId, userId: userId || 'unknown' });
   return { ok: true };
 }
 
