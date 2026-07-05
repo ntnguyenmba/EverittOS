@@ -218,31 +218,31 @@ export default function DashboardPage() {
         {!staffView ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
         {operationsView ? (
-          <section className="card" aria-label="Team sales overview">
+          <section className="card" aria-label={t('dashboard.customersAndLeads')}>
             <div className="dashboard-section-head" style={{ alignItems: 'flex-start', gap: 18, marginBottom: 22 }}>
               <div>
-                <h2>Team sales overview</h2>
+                <h2>{t('dashboard.customersAndLeads')}</h2>
                 <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
-                  A quick CRM snapshot for this workspace.
+                  {t('dashboard.sidebar.crmSnapshot')}
                 </p>
               </div>
               <Link className="btn btn-sm" href="/leads">
-                View leads
+                {t('nav.leads')}
               </Link>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, alignItems: 'stretch' }}>
               <Link href="/leads" style={salesCardStyle}>
-                <span className="stat-label">Open leads</span>
+                <span className="stat-label">{t('nav.leads')}</span>
                 <strong className="stat-value" style={{ marginTop: 18 }}>{teamLeadCount}</strong>
                 <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
-                  Prospects not yet converted.
+                  {t('empty.leads.description')}
                 </p>
               </Link>
               <Link href="/customers" style={salesCardStyle}>
-                <span className="stat-label">Total CRM records</span>
+                <span className="stat-label">{t('dashboard.customersAndLeads')}</span>
                 <strong className="stat-value" style={{ marginTop: 18 }}>{managerWorkspaceMetrics.customerCount}</strong>
                 <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
-                  All contacts, leads, and customers.
+                  {t('ux.pageTitles.customers')}
                 </p>
               </Link>
             </div>
