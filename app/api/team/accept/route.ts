@@ -6,6 +6,40 @@ function normalizeEmail(value?: string | null): string {
   return (value || '').trim().toLowerCase();
 }
 
+async function moveUserRecordsToOrganization(admin: ReturnType<typeof createAdminSupabase>, userId: string, organizationId: string) {
+  if (!admin) return;
+
+  await admin
+    .from('customers')
+    .update({ organization_id: organizationId })
+    .eq('user_id', userId)
+    .neq('organization_id', organizationId);
+
+  await admin
+    .from('customers')
+    .update({ organization_id: organizationId })
+    .eq('user_id', userId)
+    .is('organization_id', null);
+
+  await admin
+    .from('customers')
+    .update({ record_type: 'lead' })
+    .eq('user_id', userId)
+    .in('pipeline_stage', ['lead', 'qualified']);
+
+  await admin
+    .from('jobs')
+    .update({ organization_id: organizationId })
+    .eq('user_id', userId)
+    .neq('organization_id', organizationId);
+
+  await admin
+    .from('jobs')
+    .update({ organization_id: organizationId })
+    .eq('user_id', userId)
+    .is('organization_id', null);
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
   const admin = createAdminSupabase();
@@ -65,6 +99,7 @@ export async function POST(request: Request) {
       { organization_id: invite.organization_id, user_id: user.id, role: invite.role, active: true },
       { onConflict: 'organization_id,user_id' }
     );
+    await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
     return NextResponse.json({ ok: true, organizationId: invite.organization_id, message: 'Invitation was already accepted. Access restored.' });
   }
 
@@ -100,6 +135,8 @@ export async function POST(request: Request) {
     .from('profiles')
     .update({ organization_id: invite.organization_id, role: invite.role })
     .eq('id', user.id);
+
+  await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
 
   if (invite.role === 'client' && invite.job_id) {
     const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle();
