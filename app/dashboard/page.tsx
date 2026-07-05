@@ -98,6 +98,7 @@ export default function DashboardPage() {
     totalJobs: 0
   });
   const [managerWorkspaceMetrics, setManagerWorkspaceMetrics] = useState<ManagerWorkspaceMetrics>(emptyManagerWorkspaceMetrics);
+  const [teamLeadCount, setTeamLeadCount] = useState(0);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
@@ -128,7 +129,7 @@ export default function DashboardPage() {
 
     const organizationId = org?.organizationId || null;
     const staffView = isStaffRole(userRole);
-    const [metrics, usageCounts, jobsRes, activityRes, workersRes] = await Promise.all([
+    const [metrics, usageCounts, jobsRes, activityRes, workersRes, leadsRes] = await Promise.all([
       fetchDashboardRevenueMetrics(supabase, organizationId),
       fetchUsageCounts(user.id, organizationId),
       organizationId
@@ -149,7 +150,18 @@ export default function DashboardPage() {
         : supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
       organizationId
         ? supabase.from('workers').select('id, auth_user_id').eq('organization_id', organizationId)
-        : Promise.resolve({ data: [] })
+        : Promise.resolve({ data: [] }),
+      organizationId
+        ? supabase
+            .from('customers')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
+        : supabase
+            .from('customers')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
     ]);
 
     const assignedWorkerIds = new Set(
@@ -162,6 +174,7 @@ export default function DashboardPage() {
     const visibleJobs = staffView ? normalizedJobs.filter((job) => job.assigned_to && assignedWorkerIds.has(job.assigned_to)) : normalizedJobs;
 
     setRevenueMetrics(metrics);
+    setTeamLeadCount(staffView || leadsRes.error ? 0 : leadsRes.count || 0);
     setManagerWorkspaceMetrics({
       jobs: visibleJobs,
       photoCount: usageCounts.photos,
@@ -190,6 +203,32 @@ export default function DashboardPage() {
         <PageHeader title={staffView ? 'My work' : t('dashboard.welcome')} subtitle={staffView ? 'Today, assigned jobs, customer contact, and field actions.' : t('dashboard.navSubtitle')} />
 
         {!staffView ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
+
+        {operationsView ? (
+          <section className="card" aria-label="Team sales overview">
+            <div className="dashboard-section-head" style={{ marginBottom: 18 }}>
+              <div>
+                <h2>Team sales overview</h2>
+                <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
+                  Open leads created by your team in this workspace.
+                </p>
+              </div>
+              <Link className="btn btn-sm" href="/leads">
+                View leads
+              </Link>
+            </div>
+            <div className="dashboard-stats-grid">
+              <Link className="card stat-card" href="/leads">
+                <span className="stat-label">Open leads</span>
+                <strong className="stat-value">{teamLeadCount}</strong>
+              </Link>
+              <Link className="card stat-card" href="/customers">
+                <span className="stat-label">CRM records</span>
+                <strong className="stat-value">{managerWorkspaceMetrics.customerCount}</strong>
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
         <TeamCommandCenter enabled={operationsView} />
 
