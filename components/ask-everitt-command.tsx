@@ -5,24 +5,68 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AiUpgradeModal } from '@/components/ai-upgrade-modal';
 import type { ProposedAiAction } from '@/lib/ai-actions';
-import type {
-  AskEverittMetric,
-  AskEverittSearchGroup,
-  AskEverittSearchRecord
-} from '@/lib/ask-everitt/types';
-import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import type { AskEverittMetric, AskEverittSearchGroup, AskEverittSearchRecord } from '@/lib/ask-everitt/types';
+import type { EverittosPlan } from '@/lib/everittos-plans';
 import { useTranslation } from '@/components/locale-provider';
-import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
-import { supabase } from '@/lib/supabase';
 
 type AskLocale = 'en' | 'es' | 'vi';
-
-type AskSuggestion = {
-  label: string;
-  prompt: string;
+type AskSuggestion = { label: string; prompt: string; mode?: 'search' | 'ai' };
+type AskCopy = {
+  title: string;
+  trigger: string;
+  inlineTrigger: string;
+  embeddedDescription: string;
+  embeddedButton: string;
+  placeholder: string;
+  tagline: string;
+  tryAsking: string;
+  aiBadge: string;
+  staffUsage: string;
+  unlimited: string;
+  monthlyUsage: string;
+  aiLocked: string;
+  viewPlans: string;
+  searching: string;
+  view: string;
+  results: string;
+  owner: string;
+  confirmAction: string;
+  running: string;
+  confirm: string;
+  cancel: string;
+  actionError: string;
+  actionComplete: string;
+  requestError: string;
+  aiPlanNotice: string;
+  footerPrefix: string;
+  usage: string;
+  recordLabels: Record<AskEverittSearchRecord['type'], string>;
+  suggestions: AskSuggestion[];
 };
 
-const ASK_EVERITT_COPY = {
+const SEARCH_PROMPTS = [
+  'What needs attention today?',
+  "Show today's schedule.",
+  'Which jobs are overdue?',
+  'Which invoices are unpaid?',
+  'Which leads need follow-up?',
+  'What changed this week?',
+  'Who are my best customers?',
+  'Show revenue this month.',
+  'Show new leads this week.',
+  'Show customers who have not booked in 90 days.'
+] as const;
+
+const AI_PROMPTS = [
+  "Write today's business brief.",
+  'Tell me what to focus on next.',
+  'Draft a follow-up message for open leads.',
+  'Write a payment reminder for unpaid invoices.',
+  'Summarize recent reviews.',
+  'Draft a reactivation message for inactive customers.'
+] as const;
+
+const COPY: Record<AskLocale, AskCopy> = {
   en: {
     title: 'Ask Everitt',
     trigger: 'Ask about customers, jobs, leads, workers, schedule, invoices…',
@@ -53,45 +97,13 @@ const ASK_EVERITT_COPY = {
     footerPrefix: 'Search uses your workspace data · AI only when needed · Esc to close ·',
     usage: 'Usage',
     recordLabels: {
-      customer: 'Customer',
-      job: 'Job',
-      lead: 'Lead',
-      worker: 'Team member',
-      schedule: 'Schedule',
-      booking: 'Booking',
-      service: 'Service',
-      availability: 'Availability',
-      calendar: 'Calendar',
-      form: 'Form',
-      sop: 'SOP',
-      document: 'Document',
-      review: 'Review',
-      note: 'Note',
-      invoice: 'Invoice',
-      expense: 'Expense',
-      revenue: 'Revenue',
-      activity: 'Activity',
-      photo: 'Photo'
+      customer: 'Customer', job: 'Job', lead: 'Lead', worker: 'Team member', schedule: 'Schedule', booking: 'Booking',
+      service: 'Service', availability: 'Availability', calendar: 'Calendar', form: 'Form', sop: 'SOP', document: 'Document',
+      review: 'Review', note: 'Note', invoice: 'Invoice', expense: 'Expense', revenue: 'Revenue', activity: 'Activity', photo: 'Photo'
     },
-    searchSuggestions: [
-      { label: 'What needs attention today?', prompt: 'What needs attention today?' },
-      { label: "Show today's schedule.", prompt: "Show today's schedule." },
-      { label: 'Which jobs are overdue?', prompt: 'Which jobs are overdue?' },
-      { label: 'Which invoices are unpaid?', prompt: 'Which invoices are unpaid?' },
-      { label: 'Which leads need follow-up?', prompt: 'Which leads need follow-up?' },
-      { label: 'What changed this week?', prompt: 'What changed this week?' },
-      { label: 'Who are my best customers?', prompt: 'Who are my best customers?' },
-      { label: 'Show revenue this month.', prompt: 'Show revenue this month.' },
-      { label: 'Show new leads this week.', prompt: 'Show new leads this week.' },
-      { label: 'Show customers who have not booked in 90 days.', prompt: 'Show customers who have not booked in 90 days.' }
-    ],
-    aiSuggestions: [
-      { label: "Write today's business brief.", prompt: "Write today's business brief." },
-      { label: 'Tell me what to focus on next.', prompt: 'Tell me what to focus on next.' },
-      { label: 'Draft a follow-up message for open leads.', prompt: 'Draft a follow-up message for open leads.' },
-      { label: 'Write a payment reminder for unpaid invoices.', prompt: 'Write a payment reminder for unpaid invoices.' },
-      { label: 'Summarize recent reviews.', prompt: 'Summarize recent reviews.' },
-      { label: 'Draft a reactivation message for inactive customers.', prompt: 'Draft a reactivation message for inactive customers.' }
+    suggestions: [
+      ...SEARCH_PROMPTS.map((prompt) => ({ label: prompt, prompt, mode: 'search' as const })),
+      ...AI_PROMPTS.map((prompt) => ({ label: prompt, prompt, mode: 'ai' as const }))
     ]
   },
   es: {
@@ -124,45 +136,27 @@ const ASK_EVERITT_COPY = {
     footerPrefix: 'La búsqueda usa los datos de su espacio · IA solo cuando se necesita · Esc para cerrar ·',
     usage: 'Uso',
     recordLabels: {
-      customer: 'Cliente',
-      job: 'Trabajo',
-      lead: 'Prospecto',
-      worker: 'Miembro del equipo',
-      schedule: 'Agenda',
-      booking: 'Reserva',
-      service: 'Servicio',
-      availability: 'Disponibilidad',
-      calendar: 'Calendario',
-      form: 'Formulario',
-      sop: 'SOP',
-      document: 'Documento',
-      review: 'Reseña',
-      note: 'Nota',
-      invoice: 'Factura',
-      expense: 'Gasto',
-      revenue: 'Ingresos',
-      activity: 'Actividad',
-      photo: 'Foto'
+      customer: 'Cliente', job: 'Trabajo', lead: 'Prospecto', worker: 'Miembro del equipo', schedule: 'Agenda', booking: 'Reserva',
+      service: 'Servicio', availability: 'Disponibilidad', calendar: 'Calendario', form: 'Formulario', sop: 'SOP', document: 'Documento',
+      review: 'Reseña', note: 'Nota', invoice: 'Factura', expense: 'Gasto', revenue: 'Ingresos', activity: 'Actividad', photo: 'Foto'
     },
-    searchSuggestions: [
-      { label: '¿Qué necesita atención hoy?', prompt: 'What needs attention today?' },
-      { label: 'Mostrar la agenda de hoy.', prompt: "Show today's schedule." },
-      { label: '¿Qué trabajos están atrasados?', prompt: 'Which jobs are overdue?' },
-      { label: '¿Qué facturas están sin pagar?', prompt: 'Which invoices are unpaid?' },
-      { label: '¿Qué prospectos necesitan seguimiento?', prompt: 'Which leads need follow-up?' },
-      { label: '¿Qué cambió esta semana?', prompt: 'What changed this week?' },
-      { label: '¿Quiénes son mis mejores clientes?', prompt: 'Who are my best customers?' },
-      { label: 'Mostrar ingresos de este mes.', prompt: 'Show revenue this month.' },
-      { label: 'Mostrar prospectos nuevos de esta semana.', prompt: 'Show new leads this week.' },
-      { label: 'Mostrar clientes sin reserva en 90 días.', prompt: 'Show customers who have not booked in 90 days.' }
-    ],
-    aiSuggestions: [
-      { label: 'Escribir el resumen comercial de hoy.', prompt: "Write today's business brief." },
-      { label: 'Dime en qué enfocarme después.', prompt: 'Tell me what to focus on next.' },
-      { label: 'Redactar seguimiento para prospectos abiertos.', prompt: 'Draft a follow-up message for open leads.' },
-      { label: 'Escribir recordatorio de pago para facturas sin pagar.', prompt: 'Write a payment reminder for unpaid invoices.' },
-      { label: 'Resumir reseñas recientes.', prompt: 'Summarize recent reviews.' },
-      { label: 'Redactar mensaje para reactivar clientes inactivos.', prompt: 'Draft a reactivation message for inactive customers.' }
+    suggestions: [
+      { label: '¿Qué necesita atención hoy?', prompt: SEARCH_PROMPTS[0], mode: 'search' },
+      { label: 'Mostrar la agenda de hoy.', prompt: SEARCH_PROMPTS[1], mode: 'search' },
+      { label: '¿Qué trabajos están atrasados?', prompt: SEARCH_PROMPTS[2], mode: 'search' },
+      { label: '¿Qué facturas están sin pagar?', prompt: SEARCH_PROMPTS[3], mode: 'search' },
+      { label: '¿Qué prospectos necesitan seguimiento?', prompt: SEARCH_PROMPTS[4], mode: 'search' },
+      { label: '¿Qué cambió esta semana?', prompt: SEARCH_PROMPTS[5], mode: 'search' },
+      { label: '¿Quiénes son mis mejores clientes?', prompt: SEARCH_PROMPTS[6], mode: 'search' },
+      { label: 'Mostrar ingresos de este mes.', prompt: SEARCH_PROMPTS[7], mode: 'search' },
+      { label: 'Mostrar prospectos nuevos de esta semana.', prompt: SEARCH_PROMPTS[8], mode: 'search' },
+      { label: 'Mostrar clientes sin reserva en 90 días.', prompt: SEARCH_PROMPTS[9], mode: 'search' },
+      { label: 'Escribir el resumen comercial de hoy.', prompt: AI_PROMPTS[0], mode: 'ai' },
+      { label: 'Dime en qué enfocarme después.', prompt: AI_PROMPTS[1], mode: 'ai' },
+      { label: 'Redactar seguimiento para prospectos abiertos.', prompt: AI_PROMPTS[2], mode: 'ai' },
+      { label: 'Escribir recordatorio de pago para facturas sin pagar.', prompt: AI_PROMPTS[3], mode: 'ai' },
+      { label: 'Resumir reseñas recientes.', prompt: AI_PROMPTS[4], mode: 'ai' },
+      { label: 'Redactar mensaje para reactivar clientes inactivos.', prompt: AI_PROMPTS[5], mode: 'ai' }
     ]
   },
   vi: {
@@ -195,50 +189,30 @@ const ASK_EVERITT_COPY = {
     footerPrefix: 'Tìm kiếm dùng dữ liệu không gian của bạn · Chỉ dùng AI khi cần · Esc để đóng ·',
     usage: 'Mức dùng',
     recordLabels: {
-      customer: 'Khách hàng',
-      job: 'Công việc',
-      lead: 'Khách tiềm năng',
-      worker: 'Thành viên nhóm',
-      schedule: 'Lịch',
-      booking: 'Đặt lịch',
-      service: 'Dịch vụ',
-      availability: 'Thời gian trống',
-      calendar: 'Lịch',
-      form: 'Biểu mẫu',
-      sop: 'SOP',
-      document: 'Tài liệu',
-      review: 'Đánh giá',
-      note: 'Ghi chú',
-      invoice: 'Hóa đơn',
-      expense: 'Chi phí',
-      revenue: 'Doanh thu',
-      activity: 'Hoạt động',
-      photo: 'Ảnh'
+      customer: 'Khách hàng', job: 'Công việc', lead: 'Khách tiềm năng', worker: 'Thành viên nhóm', schedule: 'Lịch', booking: 'Đặt lịch',
+      service: 'Dịch vụ', availability: 'Thời gian trống', calendar: 'Lịch', form: 'Biểu mẫu', sop: 'SOP', document: 'Tài liệu',
+      review: 'Đánh giá', note: 'Ghi chú', invoice: 'Hóa đơn', expense: 'Chi phí', revenue: 'Doanh thu', activity: 'Hoạt động', photo: 'Ảnh'
     },
-    searchSuggestions: [
-      { label: 'Hôm nay cần chú ý gì?', prompt: 'What needs attention today?' },
-      { label: 'Hiển thị lịch hôm nay.', prompt: "Show today's schedule." },
-      { label: 'Công việc nào đang quá hạn?', prompt: 'Which jobs are overdue?' },
-      { label: 'Hóa đơn nào chưa thanh toán?', prompt: 'Which invoices are unpaid?' },
-      { label: 'Khách tiềm năng nào cần theo dõi?', prompt: 'Which leads need follow-up?' },
-      { label: 'Tuần này có gì thay đổi?', prompt: 'What changed this week?' },
-      { label: 'Khách hàng tốt nhất của tôi là ai?', prompt: 'Who are my best customers?' },
-      { label: 'Hiển thị doanh thu tháng này.', prompt: 'Show revenue this month.' },
-      { label: 'Hiển thị khách tiềm năng mới tuần này.', prompt: 'Show new leads this week.' },
-      { label: 'Hiển thị khách chưa đặt lịch trong 90 ngày.', prompt: 'Show customers who have not booked in 90 days.' }
-    ],
-    aiSuggestions: [
-      { label: 'Viết tóm tắt kinh doanh hôm nay.', prompt: "Write today's business brief." },
-      { label: 'Cho tôi biết nên tập trung vào việc gì tiếp theo.', prompt: 'Tell me what to focus on next.' },
-      { label: 'Soạn tin nhắn theo dõi khách tiềm năng.', prompt: 'Draft a follow-up message for open leads.' },
-      { label: 'Viết nhắc thanh toán cho hóa đơn chưa trả.', prompt: 'Write a payment reminder for unpaid invoices.' },
-      { label: 'Tóm tắt đánh giá gần đây.', prompt: 'Summarize recent reviews.' },
-      { label: 'Soạn tin nhắn kích hoạt lại khách hàng cũ.', prompt: 'Draft a reactivation message for inactive customers.' }
+    suggestions: [
+      { label: 'Hôm nay cần chú ý gì?', prompt: SEARCH_PROMPTS[0], mode: 'search' },
+      { label: 'Hiển thị lịch hôm nay.', prompt: SEARCH_PROMPTS[1], mode: 'search' },
+      { label: 'Công việc nào đang quá hạn?', prompt: SEARCH_PROMPTS[2], mode: 'search' },
+      { label: 'Hóa đơn nào chưa thanh toán?', prompt: SEARCH_PROMPTS[3], mode: 'search' },
+      { label: 'Khách tiềm năng nào cần theo dõi?', prompt: SEARCH_PROMPTS[4], mode: 'search' },
+      { label: 'Tuần này có gì thay đổi?', prompt: SEARCH_PROMPTS[5], mode: 'search' },
+      { label: 'Khách hàng tốt nhất của tôi là ai?', prompt: SEARCH_PROMPTS[6], mode: 'search' },
+      { label: 'Hiển thị doanh thu tháng này.', prompt: SEARCH_PROMPTS[7], mode: 'search' },
+      { label: 'Hiển thị khách tiềm năng mới tuần này.', prompt: SEARCH_PROMPTS[8], mode: 'search' },
+      { label: 'Hiển thị khách chưa đặt lịch trong 90 ngày.', prompt: SEARCH_PROMPTS[9], mode: 'search' },
+      { label: 'Viết tóm tắt kinh doanh hôm nay.', prompt: AI_PROMPTS[0], mode: 'ai' },
+      { label: 'Cho tôi biết nên tập trung vào việc gì tiếp theo.', prompt: AI_PROMPTS[1], mode: 'ai' },
+      { label: 'Soạn tin nhắn theo dõi khách tiềm năng.', prompt: AI_PROMPTS[2], mode: 'ai' },
+      { label: 'Viết nhắc thanh toán cho hóa đơn chưa trả.', prompt: AI_PROMPTS[3], mode: 'ai' },
+      { label: 'Tóm tắt đánh giá gần đây.', prompt: AI_PROMPTS[4], mode: 'ai' },
+      { label: 'Soạn tin nhắn kích hoạt lại khách hàng cũ.', prompt: AI_PROMPTS[5], mode: 'ai' }
     ]
   }
-} as const;
-
-type AskCopy = (typeof ASK_EVERITT_COPY)['en'];
+};
 
 function normalizeAskLocale(locale: string | null | undefined): AskLocale {
   if (locale?.startsWith('es')) return 'es';
@@ -258,13 +232,7 @@ type AskEverittStatus = {
   planLocked: boolean;
   lockedMessage: string | null;
   usage?: { monthlyUsed: number; monthlyCap: number; unlimited: boolean; remaining: number | null };
-  staffAi?: {
-    applies?: boolean;
-    dailyUsed: number;
-    dailyCap: number;
-    monthlyUsed: number;
-    monthlyCap: number;
-  };
+  staffAi?: { applies?: boolean; dailyUsed: number; dailyCap: number; monthlyUsed: number; monthlyCap: number };
 };
 
 type SearchResponse = {
@@ -276,28 +244,16 @@ type SearchResponse = {
   noResultsHint?: string;
 };
 
-type AiResponse = {
-  mode: 'ai';
-  reply: string;
-  action?: ProposedAiAction | null;
-};
+type AiResponse = { mode: 'ai'; reply: string; action?: ProposedAiAction | null };
+type AskEverittCommandProps = { plan?: EverittosPlan | string | null; embedded?: boolean };
 
-type AskEverittCommandProps = {
-  plan?: EverittosPlan | string | null;
-  embedded?: boolean;
-};
-
-export function AskEverittCommand({ plan: planProp, embedded = false }: AskEverittCommandProps) {
+export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEverittCommandProps) {
   const router = useRouter();
   const { locale } = useTranslation();
   const askLocale = normalizeAskLocale(locale);
-  const copy = ASK_EVERITT_COPY[askLocale];
-  const workspacePlan = useWorkspacePlanOptional();
+  const copy = COPY[askLocale];
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [plan, setPlan] = useState<EverittosPlan | null>(
-    workspacePlan?.plan ?? (planProp != null ? normalizePlan(planProp) : null)
-  );
   const [query, setQuery] = useState('');
   const [searchSummary, setSearchSummary] = useState('');
   const [searchResults, setSearchResults] = useState<AskEverittSearchRecord[]>([]);
@@ -318,11 +274,6 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
   }, []);
 
-  useEffect(() => {
-    if (workspacePlan?.plan) setPlan(workspacePlan.plan);
-    else if (planProp != null) setPlan(normalizePlan(planProp));
-  }, [planProp, workspacePlan?.plan]);
-
   const loadStatus = useCallback(async () => {
     const res = await fetch('/api/ai/status', { cache: 'no-store' });
     if (!res.ok) return;
@@ -335,12 +286,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
       planLocked: Boolean(json.locked && json.gate?.code === 'plan_required'),
       lockedMessage: json.lockedMessage || null,
       usage: json.usage
-        ? {
-            monthlyUsed: json.usage.monthlyUsed,
-            monthlyCap: json.usage.monthlyCap,
-            unlimited: json.usage.unlimited,
-            remaining: json.usage.remaining
-          }
+        ? { monthlyUsed: json.usage.monthlyUsed, monthlyCap: json.usage.monthlyCap, unlimited: json.usage.unlimited, remaining: json.usage.remaining }
         : undefined,
       staffAi: json.staffAi || undefined
     });
@@ -411,11 +357,8 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
 
     if (!res.ok) {
       if (json.code === 'plan_required' || json.locked) {
-        if (json.searchAvailable) {
-          setNotice(json.error || copy.aiPlanNotice);
-        } else {
-          setUpgradeOpen(true);
-        }
+        if (json.searchAvailable) setNotice(json.error || copy.aiPlanNotice);
+        else setUpgradeOpen(true);
         return;
       }
       if (json.searchAvailable && (json.code === 'staff_daily_limit' || json.code === 'staff_monthly_limit')) {
@@ -470,6 +413,34 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
     router.push(href);
   }
 
+  const overlay = open ? (
+    <CommandOverlay
+      query={query}
+      setQuery={setQuery}
+      inputRef={inputRef}
+      kbd={kbd}
+      status={status}
+      busy={busy}
+      searchSummary={searchSummary}
+      searchResults={searchResults}
+      searchGroups={searchGroups}
+      searchMetrics={searchMetrics}
+      searchHint={searchHint}
+      aiReply={aiReply}
+      notice={notice}
+      pendingAction={pendingAction}
+      lastMode={lastMode}
+      submitAsk={submitAsk}
+      confirmAction={confirmAction}
+      actionBusy={actionBusy}
+      navigate={navigate}
+      setPendingAction={setPendingAction}
+      setUpgradeOpen={setUpgradeOpen}
+      onClose={() => setOpen(false)}
+      copy={copy}
+    />
+  ) : null;
+
   if (embedded) {
     return (
       <section className="card command-ask-everitt">
@@ -480,37 +451,9 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
           </button>
         </div>
         <p className="muted">{copy.embeddedDescription}</p>
-        <button type="button" className="btn btn-primary" onClick={openCommand}>
-          {copy.embeddedButton}
-        </button>
+        <button type="button" className="btn btn-primary" onClick={openCommand}>{copy.embeddedButton}</button>
         <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
-        {open ? (
-          <CommandOverlay
-            query={query}
-            setQuery={setQuery}
-            inputRef={inputRef}
-            kbd={kbd}
-            status={status}
-            busy={busy}
-            searchSummary={searchSummary}
-            searchResults={searchResults}
-            searchGroups={searchGroups}
-            searchMetrics={searchMetrics}
-            searchHint={searchHint}
-            aiReply={aiReply}
-            notice={notice}
-            pendingAction={pendingAction}
-            lastMode={lastMode}
-            submitAsk={submitAsk}
-            confirmAction={confirmAction}
-            actionBusy={actionBusy}
-            navigate={navigate}
-            setPendingAction={setPendingAction}
-            setUpgradeOpen={setUpgradeOpen}
-            onClose={() => setOpen(false)}
-            copy={copy}
-          />
-        ) : null}
+        {overlay}
       </section>
     );
   }
@@ -521,33 +464,7 @@ export function AskEverittCommand({ plan: planProp, embedded = false }: AskEveri
         <span className="everitt-cmd-placeholder">{copy.trigger}</span>
         <span className="everitt-cmd-kbd">{kbd}</span>
       </button>
-      {open ? (
-        <CommandOverlay
-          query={query}
-          setQuery={setQuery}
-          inputRef={inputRef}
-          kbd={kbd}
-          status={status}
-          busy={busy}
-          searchSummary={searchSummary}
-          searchResults={searchResults}
-          searchGroups={searchGroups}
-          searchMetrics={searchMetrics}
-          searchHint={searchHint}
-          aiReply={aiReply}
-          notice={notice}
-          pendingAction={pendingAction}
-          lastMode={lastMode}
-          submitAsk={submitAsk}
-          confirmAction={confirmAction}
-          actionBusy={actionBusy}
-          navigate={navigate}
-          setPendingAction={setPendingAction}
-          setUpgradeOpen={setUpgradeOpen}
-          onClose={() => setOpen(false)}
-          copy={copy}
-        />
-      ) : null}
+      {overlay}
       <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
   );
@@ -626,26 +543,21 @@ function CommandOverlay({
         {!query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
             <p className="everitt-cmd-section-label">{copy.tryAsking}</p>
-            {copy.searchSuggestions.map((s: AskSuggestion) => (
-              <button key={s.label} type="button" className="everitt-cmd-chip" onClick={() => void submitAsk(s.prompt, 'search')}>
-                {s.label}
-              </button>
-            ))}
-            {copy.aiSuggestions.map((s: AskSuggestion) => (
+            {copy.suggestions.map((s) => (
               <button
-                key={s.label}
+                key={`${s.mode}-${s.label}`}
                 type="button"
-                className="everitt-cmd-chip everitt-cmd-chip-premium"
+                className={s.mode === 'ai' ? 'everitt-cmd-chip everitt-cmd-chip-premium' : 'everitt-cmd-chip'}
                 onClick={() => {
-                  if (status?.aiLocked && status.planLocked) {
+                  if (s.mode === 'ai' && status?.aiLocked && status.planLocked) {
                     setUpgradeOpen(true);
                     return;
                   }
-                  void submitAsk(s.prompt, 'ai');
+                  void submitAsk(s.prompt, s.mode);
                 }}
               >
                 {s.label}
-                <span className="everitt-cmd-premium-badge">{copy.aiBadge}</span>
+                {s.mode === 'ai' ? <span className="everitt-cmd-premium-badge">{copy.aiBadge}</span> : null}
               </button>
             ))}
           </div>
@@ -669,9 +581,7 @@ function CommandOverlay({
         {status?.aiLocked && status.planLocked ? (
           <p className="everitt-cmd-hint muted">
             {copy.aiLocked}{' '}
-            <button type="button" className="link-button" onClick={() => setUpgradeOpen(true)}>
-              {copy.viewPlans}
-            </button>
+            <button type="button" className="link-button" onClick={() => setUpgradeOpen(true)}>{copy.viewPlans}</button>
           </p>
         ) : null}
 
@@ -681,37 +591,26 @@ function CommandOverlay({
           <div className="everitt-cmd-search-answer">
             <p className="everitt-cmd-summary">{searchSummary}</p>
             {searchHint ? <p className="muted everitt-cmd-hint">{searchHint}</p> : null}
-
             {searchMetrics.length > 0 ? (
               <div className="everitt-cmd-metrics">
                 {searchMetrics.map((m) => (
                   <div key={m.label} className="everitt-cmd-metric-card">
                     <span className="everitt-cmd-metric-label">{m.label}</span>
                     <strong className="everitt-cmd-metric-value">{m.value}</strong>
-                    {m.href ? (
-                      <button type="button" className="btn btn-sm" onClick={() => navigate(m.href!)}>
-                        {copy.view}
-                      </button>
-                    ) : null}
+                    {m.href ? <button type="button" className="btn btn-sm" onClick={() => navigate(m.href!)}>{copy.view}</button> : null}
                   </div>
                 ))}
               </div>
             ) : null}
-
-            {(searchGroups.length > 0 ? searchGroups : [{ sourceId: 'all', label: copy.results, results: searchResults }]).map(
-              (group) =>
-                group.results.length > 0 ? (
-                  <div key={group.sourceId} className="everitt-cmd-result-group">
-                    {searchGroups.length > 1 ? (
-                      <p className="everitt-cmd-section-label">{group.label || copy.results}</p>
-                    ) : null}
-                    <ul className="everitt-cmd-result-cards">
-                      {group.results.map((item) => (
-                        <RecordResultCard key={`${item.type}-${item.id}`} item={item} onOpen={navigate} copy={copy} />
-                      ))}
-                    </ul>
-                  </div>
-                ) : null
+            {(searchGroups.length > 0 ? searchGroups : [{ sourceId: 'all', label: copy.results, results: searchResults }]).map((group) =>
+              group.results.length > 0 ? (
+                <div key={group.sourceId} className="everitt-cmd-result-group">
+                  {searchGroups.length > 1 ? <p className="everitt-cmd-section-label">{group.label || copy.results}</p> : null}
+                  <ul className="everitt-cmd-result-cards">
+                    {group.results.map((item) => <RecordResultCard key={`${item.type}-${item.id}`} item={item} onOpen={navigate} copy={copy} />)}
+                  </ul>
+                </div>
+              ) : null
             )}
           </div>
         ) : null}
@@ -725,40 +624,24 @@ function CommandOverlay({
 
         {pendingAction ? (
           <div className="everitt-cmd-action">
-            <p>
-              <strong>{copy.confirmAction}</strong> {pendingAction.label}
-            </p>
+            <p><strong>{copy.confirmAction}</strong> {pendingAction.label}</p>
             <div className="settings-actions">
               <button type="button" className="btn btn-primary" disabled={actionBusy} onClick={() => void confirmAction()}>
                 {actionBusy ? copy.running : copy.confirm}
               </button>
-              <button type="button" className="btn" onClick={() => setPendingAction(null)}>
-                {copy.cancel}
-              </button>
+              <button type="button" className="btn" onClick={() => setPendingAction(null)}>{copy.cancel}</button>
             </div>
           </div>
         ) : null}
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
-
-        <p className="muted everitt-cmd-footer">
-          {copy.footerPrefix}{' '}
-          <Link href="/settings/billing">{copy.usage}</Link>
-        </p>
+        <p className="muted everitt-cmd-footer">{copy.footerPrefix} <Link href="/settings/billing">{copy.usage}</Link></p>
       </div>
     </div>
   );
 }
 
-function RecordResultCard({
-  item,
-  onOpen,
-  copy
-}: {
-  item: AskEverittSearchRecord;
-  onOpen: (href: string) => void;
-  copy: AskCopy;
-}) {
+function RecordResultCard({ item, onOpen, copy }: { item: AskEverittSearchRecord; onOpen: (href: string) => void; copy: AskCopy }) {
   return (
     <li className="everitt-cmd-result-card">
       <div className="everitt-cmd-result-card-head">
@@ -769,9 +652,7 @@ function RecordResultCard({
       <p className="everitt-cmd-result-title">{item.title}</p>
       {item.subtitle ? <p className="muted everitt-cmd-result-sub">{item.subtitle}</p> : null}
       {item.owner ? <p className="muted everitt-cmd-result-owner">{copy.owner}: {item.owner}</p> : null}
-      <button type="button" className="btn btn-sm" onClick={() => onOpen(item.href)}>
-        {copy.view}
-      </button>
+      <button type="button" className="btn btn-sm" onClick={() => onOpen(item.href)}>{copy.view}</button>
     </li>
   );
 }
