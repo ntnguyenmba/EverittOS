@@ -81,6 +81,25 @@ function addMinutesToLocalInput(startValue: string, minutes: number): string {
   return toLocalInputValue(end.toISOString());
 }
 
+function readLeadPrefill(): Partial<BookingFormState> | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const clientName = params.get('clientName') || params.get('name') || '';
+  const clientEmail = params.get('clientEmail') || params.get('email') || '';
+  const clientPhone = params.get('clientPhone') || params.get('phone') || '';
+  const service = params.get('service') || params.get('serviceName') || '';
+  const notes = params.get('notes') || '';
+  if (!clientName && !clientEmail && !clientPhone && !service && !notes) return null;
+  return {
+    client_name: clientName,
+    client_email: clientEmail,
+    client_phone: clientPhone,
+    manual_service_name: service || 'Lead follow-up',
+    notes: notes ? `Lead notes: ${notes}` : '',
+    send_confirmation: Boolean(clientEmail)
+  };
+}
+
 export default function BookingsPage() {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -158,6 +177,14 @@ export default function BookingsPage() {
     void load();
     void loadMeta();
   }, [load, loadMeta]);
+
+  useEffect(() => {
+    const prefill = readLeadPrefill();
+    if (!prefill) return;
+    setEditBookingId(null);
+    setForm((current) => ({ ...current, ...prefill }));
+    setShowCreateForm(true);
+  }, []);
 
   function openCreateForm() {
     setEditBookingId(null);
@@ -274,9 +301,7 @@ export default function BookingsPage() {
         startsAt: savedBooking.starts_at,
         endsAt: savedBooking.ends_at
       });
-      feedback.error(
-        'Booking saved, but it is not visible in the current list. Please refresh or contact support.'
-      );
+      feedback.error('Booking saved, but it is not visible in the current list. Please refresh or contact support.');
       return;
     }
 
@@ -360,50 +385,26 @@ export default function BookingsPage() {
         </label>
         <label>
           Service or appointment
-          <input
-            className="input"
-            placeholder="Example: Haircut, house cleaning, consultation"
-            value={form.manual_service_name}
-            onChange={(e) => updateFormField('manual_service_name', e.target.value)}
-          />
+          <input className="input" placeholder="Example: Haircut, house cleaning, consultation" value={form.manual_service_name} onChange={(e) => updateFormField('manual_service_name', e.target.value)} />
         </label>
         <label>
           Starts *
-          <input
-            className="input"
-            type="datetime-local"
-            value={form.starts_at}
-            onChange={(e) => updateFormField('starts_at', e.target.value)}
-          />
+          <input className="input" type="datetime-local" value={form.starts_at} onChange={(e) => updateFormField('starts_at', e.target.value)} />
         </label>
         <label>
           Ends *
-          <input
-            className="input"
-            type="datetime-local"
-            value={form.ends_at}
-            onChange={(e) => updateFormField('ends_at', e.target.value)}
-          />
+          <input className="input" type="datetime-local" value={form.ends_at} onChange={(e) => updateFormField('ends_at', e.target.value)} />
         </label>
         {isEdit ? (
           <>
             <label>
               Staff name
-              <input
-                className="input"
-                placeholder="Optional"
-                value={form.staff_name}
-                onChange={(e) => updateFormField('staff_name', e.target.value)}
-              />
+              <input className="input" placeholder="Optional" value={form.staff_name} onChange={(e) => updateFormField('staff_name', e.target.value)} />
             </label>
             <label>
               Status
               <select className="input" value={form.status} onChange={(e) => updateFormField('status', e.target.value as BookingStatus)}>
-                {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+                {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
           </>
@@ -414,21 +415,13 @@ export default function BookingsPage() {
         </label>
         {!isEdit ? (
           <label className="settings-checkbox-row">
-            <input
-              type="checkbox"
-              checked={form.send_confirmation}
-              onChange={(e) => updateFormField('send_confirmation', e.target.checked)}
-            />
+            <input type="checkbox" checked={form.send_confirmation} onChange={(e) => updateFormField('send_confirmation', e.target.checked)} />
             Send confirmation to customer
           </label>
         ) : null}
         <div className="inline-actions">
-          <button type="button" className="btn btn-primary" disabled={Boolean(busyId)} onClick={() => void saveBooking()}>
-            {busyId ? 'Saving…' : 'Save booking'}
-          </button>
-          <button type="button" className="btn" disabled={Boolean(busyId)} onClick={closeForms}>
-            Cancel
-          </button>
+          <button type="button" className="btn btn-primary" disabled={Boolean(busyId)} onClick={() => void saveBooking()}>{busyId ? 'Saving...' : 'Save booking'}</button>
+          <button type="button" className="btn" disabled={Boolean(busyId)} onClick={closeForms}>Cancel</button>
         </div>
       </div>
     );
@@ -442,125 +435,57 @@ export default function BookingsPage() {
           <p className="page-subtitle">Upcoming appointments from your public booking page and manual entries.</p>
         </div>
         <div className="inline-actions">
-          {canManage && !schemaMissing && !bookingsLocked ? (
-            <button type="button" className="btn btn-primary" onClick={openCreateForm}>
-              New booking
-            </button>
-          ) : null}
-          {bookingsLocked ? (
-            <a className="btn btn-primary" href={billingUpgradeHref('pro', 'Bookings')}>
-              Upgrade to Pro
-            </a>
-          ) : null}
-          <Link className="btn" href="/services">
-            Manage services
-          </Link>
+          {canManage && !schemaMissing && !bookingsLocked ? <button type="button" className="btn btn-primary" onClick={openCreateForm}>New booking</button> : null}
+          {bookingsLocked ? <a className="btn btn-primary" href={billingUpgradeHref('pro', 'Bookings')}>Upgrade to Pro</a> : null}
+          <Link className="btn" href="/services">Manage services</Link>
         </div>
       </header>
 
-      {bookingsLocked ? (
-        <PlanLockedMessage feature="Bookings" requiredPlan="Pro" />
-      ) : null}
-
-      {!bookingsLocked && schemaMissing ? (
-        <div className="settings-warning" style={{ marginBottom: 18 }}>
-          {bookingSchemaUnavailableMessage()}
-        </div>
-      ) : null}
-
+      {bookingsLocked ? <PlanLockedMessage feature="Bookings" requiredPlan="Pro" /> : null}
+      {!bookingsLocked && schemaMissing ? <div className="settings-warning" style={{ marginBottom: 18 }}>{bookingSchemaUnavailableMessage()}</div> : null}
       {!bookingsLocked && !schemaMissing ? <BookingShareCard bookingSlug={bookingSlug} /> : null}
 
       {!bookingsLocked ? (
-      <div className="card">
-        {showCreateForm && canManage ? renderBookingForm('New booking', false) : null}
-        {loading ? <p>Loading bookings…</p> : null}
-        {!loading && !schemaMissing && bookings.length === 0 && !showCreateForm ? (
-          <p className="muted">No upcoming bookings. Create a manual booking or share your public booking page.</p>
-        ) : null}
+        <div className="card">
+          {showCreateForm && canManage ? renderBookingForm('New booking', false) : null}
+          {loading ? <p>Loading bookings...</p> : null}
+          {!loading && !schemaMissing && bookings.length === 0 && !showCreateForm ? <p className="muted">No upcoming bookings. Create a manual booking or share your public booking page.</p> : null}
 
-        {bookings.map((booking) => {
-          const calendarUrl = googleCalendarEventUrl(booking.google_calendar_event_id);
-          const appointmentName = bookingAppointmentName(booking);
-          const staffLabel = bookingStaffLabel(booking);
-          const calendarLabel = bookingCalendarSyncLabel(booking);
-
-          if (editBookingId === booking.id) {
+          {bookings.map((booking) => {
+            const calendarUrl = googleCalendarEventUrl(booking.google_calendar_event_id);
+            const appointmentName = bookingAppointmentName(booking);
+            const staffLabel = bookingStaffLabel(booking);
+            const calendarLabel = bookingCalendarSyncLabel(booking);
+            if (editBookingId === booking.id) return <div key={booking.id} className="list-row booking-row">{renderBookingForm('Edit booking', true)}</div>;
             return (
-              <div key={booking.id} className="list-row booking-row">
-                {renderBookingForm('Edit booking', true)}
+              <div key={booking.id} className="list-row booking-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <strong>{appointmentName}</strong>
+                    <span className={`status-pill status-${booking.status}`}>{BOOKING_STATUS_LABELS[booking.status] || booking.status}</span>
+                  </div>
+                  <p className="muted" style={{ margin: '6px 0 0' }}>{booking.client_name} · {formatBookingWhen(booking.starts_at, booking.ends_at)}</p>
+                  <p className="muted">Staff: {staffLabel} · {calendarLabel}</p>
+                  {booking.services?.price_cents != null ? <p className="muted">{formatServicePrice(booking.services.price_cents)}</p> : null}
+                  {booking.notes ? <p className="muted">{booking.notes}</p> : null}
+                </div>
+                <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
+                  {booking.customer_id ? <Link className="btn btn-sm" href={`/customers/${booking.customer_id}`}>Open customer</Link> : null}
+                  {calendarUrl ? <a className="btn btn-sm" href={calendarUrl} target="_blank" rel="noopener noreferrer">Calendar</a> : null}
+                  <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void copyDetails(booking)}>Copy details</button>
+                  {canManage ? (
+                    <>
+                      <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => openEditForm(booking)}>Edit</button>
+                      {booking.client_email ? <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void resendConfirmation(booking.id)}>Resend confirmation</button> : null}
+                      {booking.status !== 'completed' ? <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void patchBooking(booking.id, { status: 'completed' }, 'Marked completed.')}>Mark completed</button> : null}
+                      {booking.status !== 'cancelled' ? <button type="button" className="btn btn-sm btn-danger" disabled={busyId === booking.id} onClick={() => void deleteBooking(booking.id, booking.client_name)}>Cancel</button> : null}
+                    </>
+                  ) : null}
+                </div>
               </div>
             );
-          }
-
-          return (
-            <div key={booking.id} className="list-row booking-row" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>{appointmentName}</strong>
-                  <span className={`status-pill status-${booking.status}`}>{BOOKING_STATUS_LABELS[booking.status] || booking.status}</span>
-                </div>
-                <p className="muted" style={{ margin: '6px 0 0' }}>
-                  {booking.client_name} · {formatBookingWhen(booking.starts_at, booking.ends_at)}
-                </p>
-                <p className="muted">
-                  Staff: {staffLabel} · {calendarLabel}
-                </p>
-                {booking.services?.price_cents != null ? (
-                  <p className="muted">{formatServicePrice(booking.services.price_cents)}</p>
-                ) : null}
-                {booking.notes ? <p className="muted">{booking.notes}</p> : null}
-              </div>
-              <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
-                {booking.customer_id ? (
-                  <Link className="btn btn-sm" href={`/customers/${booking.customer_id}`}>
-                    Open customer
-                  </Link>
-                ) : null}
-                {calendarUrl ? (
-                  <a className="btn btn-sm" href={calendarUrl} target="_blank" rel="noopener noreferrer">
-                    Calendar
-                  </a>
-                ) : null}
-                <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void copyDetails(booking)}>
-                  Copy details
-                </button>
-                {canManage ? (
-                  <>
-                    <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => openEditForm(booking)}>
-                      Edit
-                    </button>
-                    {booking.client_email ? (
-                      <button type="button" className="btn btn-sm" disabled={busyId === booking.id} onClick={() => void resendConfirmation(booking.id)}>
-                        Resend confirmation
-                      </button>
-                    ) : null}
-                    {booking.status !== 'completed' ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={busyId === booking.id}
-                        onClick={() => void patchBooking(booking.id, { status: 'completed' }, 'Marked completed.')}
-                      >
-                        Mark completed
-                      </button>
-                    ) : null}
-                    {booking.status !== 'cancelled' ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        disabled={busyId === booking.id}
-                        onClick={() => void deleteBooking(booking.id, booking.client_name)}
-                      >
-                        Cancel
-                      </button>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          })}
+        </div>
       ) : null}
     </AppShell>
   );
