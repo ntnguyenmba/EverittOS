@@ -68,6 +68,8 @@ export type InvoiceRecord = {
 export type JobProfitability = {
   hasInvoice: boolean;
   invoiceTotal: number;
+  manualRevenue: number;
+  revenueNotes: string | null;
   paymentsReceived: number;
   outstanding: number;
   laborCost: number;
