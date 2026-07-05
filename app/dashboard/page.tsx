@@ -206,25 +206,31 @@ export default function DashboardPage() {
 
         {operationsView ? (
           <section className="card" aria-label="Team sales overview">
-            <div className="dashboard-section-head" style={{ marginBottom: 18 }}>
+            <div className="dashboard-section-head" style={{ alignItems: 'flex-start', gap: 18, marginBottom: 22 }}>
               <div>
                 <h2>Team sales overview</h2>
                 <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
-                  Open leads created by your team in this workspace.
+                  A quick CRM snapshot for this workspace.
                 </p>
               </div>
               <Link className="btn btn-sm" href="/leads">
                 View leads
               </Link>
             </div>
-            <div className="dashboard-stats-grid">
-              <Link className="card stat-card" href="/leads">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <Link className="card stat-card" href="/leads" style={{ minHeight: 150, height: '100%', justifyContent: 'space-between' }}>
                 <span className="stat-label">Open leads</span>
                 <strong className="stat-value">{teamLeadCount}</strong>
+                <p className="muted" style={{ margin: 0, lineHeight: 1.45 }}>
+                  New prospects still in the sales pipeline.
+                </p>
               </Link>
-              <Link className="card stat-card" href="/customers">
-                <span className="stat-label">CRM records</span>
+              <Link className="card stat-card" href="/customers" style={{ minHeight: 150, height: '100%', justifyContent: 'space-between' }}>
+                <span className="stat-label">All CRM records</span>
                 <strong className="stat-value">{managerWorkspaceMetrics.customerCount}</strong>
+                <p className="muted" style={{ margin: 0, lineHeight: 1.45 }}>
+                  Every contact, lead, and customer in the workspace.
+                </p>
               </Link>
             </div>
           </section>
