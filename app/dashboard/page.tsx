@@ -192,6 +192,19 @@ export default function DashboardPage() {
 
   const staffView = isStaffRole(role);
   const operationsView = isManagerRole(role);
+  const salesCardStyle = {
+    display: 'flex',
+    minHeight: 172,
+    height: '100%',
+    flexDirection: 'column' as const,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    border: '1px solid var(--line)',
+    borderRadius: 'var(--radius-lg)',
+    background: 'var(--surface)',
+    padding: 22,
+    boxShadow: 'var(--shadow-subtle)'
+  };
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -217,19 +230,19 @@ export default function DashboardPage() {
                 View leads
               </Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-              <Link className="card stat-card" href="/leads" style={{ minHeight: 150, height: '100%', justifyContent: 'space-between' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, alignItems: 'stretch' }}>
+              <Link href="/leads" style={salesCardStyle}>
                 <span className="stat-label">Open leads</span>
-                <strong className="stat-value">{teamLeadCount}</strong>
-                <p className="muted" style={{ margin: 0, lineHeight: 1.45 }}>
-                  New prospects still in the sales pipeline.
+                <strong className="stat-value" style={{ marginTop: 18 }}>{teamLeadCount}</strong>
+                <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
+                  Prospects not yet converted.
                 </p>
               </Link>
-              <Link className="card stat-card" href="/customers" style={{ minHeight: 150, height: '100%', justifyContent: 'space-between' }}>
-                <span className="stat-label">All CRM records</span>
-                <strong className="stat-value">{managerWorkspaceMetrics.customerCount}</strong>
-                <p className="muted" style={{ margin: 0, lineHeight: 1.45 }}>
-                  Every contact, lead, and customer in the workspace.
+              <Link href="/customers" style={salesCardStyle}>
+                <span className="stat-label">Total CRM records</span>
+                <strong className="stat-value" style={{ marginTop: 18 }}>{managerWorkspaceMetrics.customerCount}</strong>
+                <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
+                  All contacts, leads, and customers.
                 </p>
               </Link>
             </div>
