@@ -21,6 +21,10 @@ function secureSignupPayload(body: Record<string, unknown>): Record<string, unkn
   return sanitizeAuthErrorPayload(body);
 }
 
+function cleanText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, 180) : null;
+}
+
 export async function POST(request: Request) {
   const diagnostics = supabaseConfigDiagnostics();
 
@@ -65,6 +69,9 @@ export async function POST(request: Request) {
       password?: string;
       businessName?: string;
       selectedPlan?: string;
+      referralSource?: string;
+      referralDetail?: string;
+      referralCode?: string;
       next?: string;
     };
     try {
@@ -78,6 +85,9 @@ export async function POST(request: Request) {
     const password = body.password || '';
     const businessName = (body.businessName || '').trim();
     const selectedPlan = (body.selectedPlan || 'free').trim();
+    const referralSource = cleanText(body.referralSource);
+    const referralDetail = cleanText(body.referralDetail || body.referralCode);
+    const referralCode = cleanText(body.referralCode);
     const next = body.next || '/onboarding';
 
     if (!email || !password) {
@@ -104,7 +114,9 @@ export async function POST(request: Request) {
 
     logAuthEvent('signup_attempt', {
       host: diagnostics.urlHost || 'unknown',
-      emailDomain: email.split('@')[1] || 'unknown'
+      emailDomain: email.split('@')[1] || 'unknown',
+      referralSource: referralSource || 'none',
+      referralCode: referralCode || 'none'
     });
 
     logAuthStep(ROUTE, 'sign_in', {
@@ -119,7 +131,11 @@ export async function POST(request: Request) {
         emailRedirectTo,
         data: {
           business_name: businessName || null,
-          selected_plan: selectedPlan
+          selected_plan: selectedPlan,
+          referral_source: referralSource,
+          referral_detail: referralDetail,
+          referral_code: referralCode,
+          referred_by: referralDetail || referralCode
         }
       }
     });
@@ -189,12 +205,25 @@ export async function POST(request: Request) {
       );
     }
 
+    if (data.user?.id) {
+      await supabase
+        .from('profiles')
+        .update({
+          referral_source: referralSource,
+          referral_detail: referralDetail,
+          referred_by: referralDetail || referralCode
+        })
+        .eq('id', data.user.id);
+    }
+
     logAuthEvent('signup_success', {
       userId: data.user?.id || 'unknown',
       sessionCreated: data.session ? 1 : 0,
       confirmationRequired: data.session ? 0 : 1,
       host: diagnostics.urlHost || 'unknown',
-      emailDomain: email.split('@')[1] || 'unknown'
+      emailDomain: email.split('@')[1] || 'unknown',
+      referralSource: referralSource || 'none',
+      referralCode: referralCode || 'none'
     });
 
     if (data.session) {
