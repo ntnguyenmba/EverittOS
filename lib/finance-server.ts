@@ -14,6 +14,8 @@ function num(value: unknown): number {
 
 export function computeJobProfitability(input: {
   invoiceTotal: number;
+  manualRevenue?: number;
+  revenueNotes?: string | null;
   paymentsReceived: number;
   laborCost: number;
   materialCost: number;
@@ -21,17 +23,20 @@ export function computeJobProfitability(input: {
   hasInvoice: boolean;
 }): JobProfitability {
   const invoiceTotal = num(input.invoiceTotal);
+  const manualRevenue = num(input.manualRevenue);
   const paymentsReceived = num(input.paymentsReceived);
   const laborCost = num(input.laborCost);
   const materialCost = num(input.materialCost);
   const otherExpenses = num(input.otherExpenses);
   const outstanding = Math.max(0, invoiceTotal - paymentsReceived);
-  const revenueBasis = paymentsReceived > 0 ? paymentsReceived : invoiceTotal;
+  const revenueBasis = paymentsReceived > 0 ? paymentsReceived : invoiceTotal > 0 ? invoiceTotal : manualRevenue;
   const estimatedProfit = revenueBasis - laborCost - materialCost - otherExpenses;
 
   return {
     hasInvoice: input.hasInvoice,
     invoiceTotal,
+    manualRevenue,
+    revenueNotes: input.revenueNotes || null,
     paymentsReceived,
     outstanding,
     laborCost,
@@ -99,7 +104,13 @@ export async function fetchJobProfitability(
   organizationId: string,
   jobId: string
 ): Promise<JobProfitability> {
-  const [invoiceRes, laborRes, expenseRes] = await Promise.all([
+  const [jobRes, invoiceRes, laborRes, expenseRes] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('revenue_amount, revenue_notes')
+      .eq('organization_id', organizationId)
+      .eq('id', jobId)
+      .maybeSingle(),
     supabase
       .from('invoices')
       .select('amount, amount_paid')
@@ -118,6 +129,8 @@ export async function fetchJobProfitability(
   return computeJobProfitability({
     hasInvoice: Boolean(invoice),
     invoiceTotal: num(invoice?.amount),
+    manualRevenue: num(jobRes.data?.revenue_amount),
+    revenueNotes: (jobRes.data?.revenue_notes as string | null) || null,
     paymentsReceived: num(invoice?.amount_paid),
     laborCost: Number(laborCost.toFixed(2)),
     materialCost,
@@ -258,76 +271,24 @@ export async function fetchBusinessPerformance(
 
   profitByJob.sort((a, b) => b.value - a.value);
 
-  const topCustomerEntry = Array.from(customerRevenue.entries()).sort((a, b) => b[1] - a[1])[0];
-  const topWorkerEntry = Array.from(workerRevenue.entries()).sort((a, b) => b[1] - a[1])[0];
-
-  const revenueByMonth: BusinessPerformanceSummary['revenueByMonth'] = [];
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(sixMonthsAgo);
-    d.setMonth(sixMonthsAgo.getMonth() + i);
-    const key = d.toISOString().slice(0, 7);
-    const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-    revenueByMonth.push({ label, value: Number((monthRevenue.get(key) || 0).toFixed(2)) });
-  }
-
-  const revenueByCustomer = Array.from(customerRevenue.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([id, value]) => ({
-      label: customerMap.get(id) || jobMap.get(id)?.customer_name || 'Customer',
-      value: Number(value.toFixed(2))
-    }));
-
-  const revenueByWorker = Array.from(workerRevenue.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([id, value]) => ({
-      label: workerMap.get(id) || 'Team member',
-      value: Number(value.toFixed(2))
-    }));
-
-  const expensesByCategory = Array.from(categoryExpenses.entries())
-    .sort((a, b) => b[1] - a[1])
+  const revenueByMonth = Array.from(monthRevenue.entries())
+    .filter(([label]) => label >= rangeStart.slice(0, 7))
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([label, value]) => ({ label, value: Number(value.toFixed(2)) }));
-
-  const estimatedProfitThisMonth = paymentsThisMonth - expensesThisMonth;
 
   return {
     revenueThisMonth: Number(revenueThisMonth.toFixed(2)),
     paymentsThisMonth: Number(paymentsThisMonth.toFixed(2)),
     outstandingInvoices: Number(outstandingInvoices.toFixed(2)),
     expensesThisMonth: Number(expensesThisMonth.toFixed(2)),
-    estimatedProfitThisMonth: Number(estimatedProfitThisMonth.toFixed(2)),
-    topCustomer: topCustomerEntry
-      ? {
-          name: customerMap.get(topCustomerEntry[0]) || 'Customer',
-          revenue: Number(topCustomerEntry[1].toFixed(2))
-        }
-      : null,
-    topWorker: topWorkerEntry
-      ? {
-          name: workerMap.get(topWorkerEntry[0]) || 'Team member',
-          revenue: Number(topWorkerEntry[1].toFixed(2))
-        }
-      : null,
+    estimatedProfitThisMonth: Number((paymentsThisMonth - expensesThisMonth).toFixed(2)),
+    topCustomer: Array.from(customerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: customerMap.get(id) || 'Customer', revenue: Number(revenue.toFixed(2)) }))[0] || null,
+    topWorker: Array.from(workerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: workerMap.get(id) || 'Team member', revenue: Number(revenue.toFixed(2)) }))[0] || null,
     mostProfitableJob,
     revenueByMonth,
-    revenueByCustomer,
-    revenueByWorker,
-    expensesByCategory,
+    revenueByCustomer: Array.from(customerRevenue.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, value]) => ({ label: customerMap.get(id) || 'Customer', value: Number(value.toFixed(2)) })),
+    revenueByWorker: Array.from(workerRevenue.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, value]) => ({ label: workerMap.get(id) || 'Team member', value: Number(value.toFixed(2)) })),
+    expensesByCategory: Array.from(categoryExpenses.entries()).sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value: Number(value.toFixed(2)) })),
     profitByJob: profitByJob.slice(0, 8)
-  };
-}
-
-export function buildLaborRow(input: {
-  hours: number;
-  hourlyCost: number;
-}): { hours: number; hourly_cost: number; total_cost: number } {
-  const hours = num(input.hours);
-  const hourly_cost = num(input.hourlyCost);
-  return {
-    hours,
-    hourly_cost,
-    total_cost: laborTotal(hours, hourly_cost)
   };
 }
