@@ -9,7 +9,6 @@ import { NoRefundDisclosure } from '@/components/legal/no-refund-disclosure';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { safeNextPath } from '@/lib/app-url';
-import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
 import { mapAuthError } from '@/lib/auth-errors';
 import { normalizeEmail } from '@/lib/input-validation';
@@ -20,6 +19,19 @@ import { PasskeySetupPrompt } from '@/components/passkey-setup-prompt';
 import { useTranslation } from '@/components/locale-provider';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
+
+const REFERRAL_OPTIONS = [
+  'Google Search',
+  'Facebook',
+  'Instagram',
+  'LinkedIn',
+  'YouTube',
+  'Reddit',
+  'Friend or colleague',
+  'Another cleaning company',
+  'Everitt Ventures',
+  'Other'
+];
 
 function signupRedirect(plan: EverittosPlan, next: string): string {
   if (plan !== 'free') {
@@ -33,10 +45,13 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'), '/onboarding');
   const selectedPlan = normalizePlan(searchParams.get('plan'));
+  const referralCode = (searchParams.get('ref') || '').trim();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [referralSource, setReferralSource] = useState(referralCode ? 'Referral code' : '');
+  const [referralDetail, setReferralDetail] = useState(referralCode);
   const urlError = useMemo(() => {
     const message = searchParams.get('error');
     if (!message) return '';
@@ -56,6 +71,7 @@ function SignupForm() {
   const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
+  const showReferralDetail = referralSource === 'Friend or colleague' || referralSource === 'Another cleaning company' || referralSource === 'Other' || referralSource === 'Referral code';
 
   async function createAccount(event: React.FormEvent) {
     event.preventDefault();
@@ -99,7 +115,7 @@ function SignupForm() {
         return;
       }
     } catch {
-      /* continue; Supabase still enforces auth limits */
+      /* continue */
     }
 
     const redirectTarget = signupRedirect(selectedPlan, next);
@@ -113,6 +129,9 @@ function SignupForm() {
           password,
           businessName: businessName.trim(),
           selectedPlan,
+          referralSource: referralSource.trim(),
+          referralDetail: referralDetail.trim(),
+          referralCode,
           next: redirectTarget.startsWith('http') ? next : redirectTarget
         })
       });
@@ -164,8 +183,7 @@ function SignupForm() {
       {selectedPlan !== 'free' ? (
         <>
           <p className="auth-plan-note">
-            You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that
-            plan.
+            You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
           </p>
           <NoRefundDisclosure variant="card" className="auth-plan-refund-note" />
         </>
@@ -176,111 +194,65 @@ function SignupForm() {
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
           <label htmlFor="business_name">Business or display name (optional)</label>
-          <input
-            id="business_name"
-            className="input"
-            placeholder="Leave blank for a personal workspace"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-          />
+          <input id="business_name" className="input" placeholder="Leave blank for a personal workspace" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         </div>
 
         <div className="auth-field">
+          <label htmlFor="signup_referral_source">How did you hear about us? (optional)</label>
+          <select id="signup_referral_source" className="input" value={referralSource} onChange={(e) => setReferralSource(e.target.value)}>
+            <option value="">Select one</option>
+            {referralCode ? <option value="Referral code">Referral code</option> : null}
+            {REFERRAL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+        </div>
+
+        {showReferralDetail ? (
+          <div className="auth-field">
+            <label htmlFor="signup_referral_detail">Who referred you or where did you see us? (optional)</label>
+            <input id="signup_referral_detail" className="input" placeholder="Name, company, group, or referral code" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
+          </div>
+        ) : null}
+
+        <div className="auth-field">
           <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            className="input"
-            placeholder="you@company.com"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <input id="email" className="input" placeholder="you@company.com" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
         <div className="auth-field">
           <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            className="input"
-            placeholder="Minimum 6 characters"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <input id="password" className="input" placeholder="Minimum 6 characters" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
 
         <div className="auth-field">
           <label htmlFor="confirm_password">Confirm password</label>
-          <input
-            id="confirm_password"
-            className="input"
-            placeholder="Repeat password"
-            type="password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+          <input id="confirm_password" className="input" placeholder="Repeat password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
         </div>
 
         <label className="auth-consent" htmlFor="signup_accept_legal">
-          <input
-            id="signup_accept_legal"
-            type="checkbox"
-            checked={acceptLegal}
-            onChange={(e) => setAcceptLegal(e.target.checked)}
-            required
-            aria-describedby="signup-legal-consent-text"
-          />
+          <input id="signup_accept_legal" type="checkbox" checked={acceptLegal} onChange={(e) => setAcceptLegal(e.target.checked)} required aria-describedby="signup-legal-consent-text" />
           <LegalConsentLabel idPrefix="signup-legal-consent" id="signup-legal-consent-text" />
         </label>
 
         <AuthMessages error={error} success={success} />
 
-        {signInRecommended ? (
-          <p className="auth-recovery-note">
-            <Link href={loginHref}>Sign in with this email</Link>
-          </p>
-        ) : null}
+        {signInRecommended ? <p className="auth-recovery-note"><Link href={loginHref}>Sign in with this email</Link></p> : null}
+        {errorCode === 'existing_unconfirmed' ? <p className="auth-recovery-note muted">Did not get the email? Try signing in — we send another confirmation link when needed.</p> : null}
 
-        {errorCode === 'existing_unconfirmed' ? (
-          <p className="auth-recovery-note muted">
-            Did not get the email? Try signing in — we send another confirmation link when needed.
-          </p>
-        ) : null}
-
-        <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Creating account...' : 'Create account'}
-        </button>
+        <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Creating account...' : 'Create account'}</button>
       </form>
 
       {showPasskeyPrompt && pendingRedirect ? (
         <>
           <OnboardingSupportPromo variant="welcome" />
-          <PasskeySetupPrompt
-            onDone={() => {
-              router.push(pendingRedirect);
-              router.refresh();
-            }}
-          />
+          <PasskeySetupPrompt onDone={() => { router.push(pendingRedirect); router.refresh(); }} />
         </>
       ) : null}
 
-      <div className="auth-links">
-        <Link href={loginHref}>Already have an account? Sign in</Link>
-      </div>
+      <div className="auth-links"><Link href={loginHref}>Already have an account? Sign in</Link></div>
     </AuthShell>
   );
 }
 
 export default function SignupPage() {
-  return (
-    <Suspense>
-      <SignupForm />
-    </Suspense>
-  );
+  return <Suspense><SignupForm /></Suspense>;
 }
