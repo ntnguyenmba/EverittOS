@@ -3,6 +3,7 @@ import { AI_ACTION_SYSTEM_HINT, parseProposedAction } from '@/lib/ai-actions';
 import { assertAskEverittSearchAccess, searchUsageEvent } from '@/lib/ask-everitt-access';
 import { detectAskEverittMode } from '@/lib/ask-everitt-intent';
 import { formatPrefetchedContextForAi, prefetchAskEverittContextForAi } from '@/lib/ask-everitt/ai-prefetch';
+import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/ask-everitt/localize';
 import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
@@ -17,14 +18,14 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function normalizeAskLocale(value?: string | null): 'en' | 'es' | 'vi' {
+function normalizeAskLocale(value?: string | null): AskEverittLocale {
   const normalized = String(value || '').toLowerCase();
   if (normalized.startsWith('es')) return 'es';
   if (normalized.startsWith('vi')) return 'vi';
   return 'en';
 }
 
-function languageInstruction(locale: 'en' | 'es' | 'vi'): string {
+function languageInstruction(locale: AskEverittLocale): string {
   if (locale === 'es') return 'Respond in Spanish. Keep business names, customer names, and database field values unchanged.';
   if (locale === 'vi') return 'Respond in Vietnamese. Keep business names, customer names, and database field values unchanged.';
   return 'Respond in English.';
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
       prompt
     }));
 
-    return NextResponse.json(searchResult);
+    return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
