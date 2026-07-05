@@ -40,10 +40,7 @@ type JobVisitForCalendarSync = {
   notes: string | null;
 };
 
-type CalendarMapping = {
-  id: string;
-  google_event_id: string;
-};
+type CalendarMapping = { id: string; google_event_id: string };
 
 type GoogleCalendarEventBody = {
   summary: string;
@@ -70,7 +67,6 @@ async function ensureAccessToken(admin: SupabaseClient, connection: GoogleCalend
     const refreshed = await refreshGoogleAccessToken(connection.refresh_token);
     const nextExpires = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
     await admin.from('google_calendar_connections').update({ access_token: refreshed.access_token, token_expires_at: nextExpires, last_sync_error: null, updated_at: new Date().toISOString() }).eq('id', connection.id);
-    logAuthEvent('google_calendar_token_refresh', { organizationId: connection.organization_id, connectionFound: true, refreshPresent: true, expiryPresent: true, phase: 'refreshed' });
     return refreshed.access_token;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Google token refresh failed.';
@@ -108,9 +104,8 @@ function buildEventBody(job: JobForCalendarSync, timeZone: string): GoogleCalend
 }
 
 function buildVisitEventBody(job: JobForCalendarSync, visit: JobVisitForCalendarSync, timeZone: string): GoogleCalendarEventBody {
-  const summary = job.title || 'EverittOS job';
   return {
-    summary,
+    summary: job.title || 'EverittOS job',
     description: eventDescription(job, visit.notes),
     location: job.address || undefined,
     start: { dateTime: new Date(`${visit.visit_date}T${visit.start_time}`).toISOString(), timeZone },
@@ -149,26 +144,30 @@ export async function getGoogleCalendarConnection(admin: SupabaseClient, organiz
   return (data as GoogleCalendarConnectionRow | null) || null;
 }
 
+export async function disconnectGoogleCalendar(admin: SupabaseClient, organizationId: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await admin
+    .from('google_calendar_connections')
+    .update({ sync_enabled: false, last_sync_error: null, updated_at: new Date().toISOString() })
+    .eq('organization_id', organizationId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizationId: string, jobId: string, timeZone = 'America/New_York'): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const connection = await getGoogleCalendarConnection(admin, organizationId);
   if (!connection || !connection.sync_enabled) return { ok: true, skipped: true };
   const { data: job } = await admin.from('jobs').select('id, organization_id, title, status, customer_name, address, notes, scheduled_start, scheduled_end, due_date, start_date').eq('id', jobId).eq('organization_id', organizationId).maybeSingle();
   if (!job) return { ok: false, error: 'Job not found.' };
-
   const typedJob = job as JobForCalendarSync;
   const accessToken = await ensureAccessToken(admin, connection);
   const calendarId = encodeURIComponent(connection.calendar_id || 'primary');
-  const shouldRemove = typedJob.status === 'cancelled' || typedJob.status === 'completed';
-  if (shouldRemove) {
+  if (typedJob.status === 'cancelled' || typedJob.status === 'completed') {
     await clearExistingCalendarEvents(admin, accessToken, calendarId, jobId);
     return { ok: true };
   }
-
   const { data: visits } = await admin.from('job_visits').select('id, visit_date, start_time, end_time, notes').eq('job_id', jobId).eq('organization_id', organizationId).order('visit_date', { ascending: true }).order('start_time', { ascending: true });
   const visitRows = (visits || []) as JobVisitForCalendarSync[];
-
   await clearExistingCalendarEvents(admin, accessToken, calendarId, jobId);
-
   if (visitRows.length > 0) {
     for (const visit of visitRows) {
       const insertRes = await googleCalendarRequest(accessToken, `/calendars/${calendarId}/events`, { method: 'POST', body: JSON.stringify(buildVisitEventBody(typedJob, visit, timeZone)) });
@@ -179,7 +178,6 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
     }
     return { ok: true };
   }
-
   const eventBody = buildEventBody(typedJob, timeZone);
   if (!eventBody) return { ok: true, skipped: true };
   const insertRes = await googleCalendarRequest(accessToken, `/calendars/${calendarId}/events`, { method: 'POST', body: JSON.stringify(eventBody) });
