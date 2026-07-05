@@ -17,6 +17,19 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function normalizeAskLocale(value?: string | null): 'en' | 'es' | 'vi' {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.startsWith('es')) return 'es';
+  if (normalized.startsWith('vi')) return 'vi';
+  return 'en';
+}
+
+function languageInstruction(locale: 'en' | 'es' | 'vi'): string {
+  if (locale === 'es') return 'Respond in Spanish. Keep business names, customer names, and database field values unchanged.';
+  if (locale === 'vi') return 'Respond in Vietnamese. Keep business names, customer names, and database field values unchanged.';
+  return 'Respond in English.';
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
   const {
@@ -32,8 +45,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
   }
 
-  const body = (await request.json()) as { prompt?: string; forceMode?: 'search' | 'ai' };
+  const body = (await request.json()) as { prompt?: string; forceMode?: 'search' | 'ai'; locale?: string };
   const prompt = body.prompt?.trim();
+  const locale = normalizeAskLocale(body.locale);
   if (!prompt) {
     return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
   }
@@ -76,7 +90,6 @@ export async function POST(request: Request) {
     return NextResponse.json(searchResult);
   }
 
-  // Everitt AI Mode — premium, cost-controlled (staff/plan gates inside verifyAiRequest)
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
     const status =
@@ -108,10 +121,10 @@ export async function POST(request: Request) {
   const messages: AiChatMessage[] = [
     {
       role: 'user',
-      content: `${prompt}\n\n--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
+      content: `${languageInstruction(locale)}\n\n${prompt}\n\n--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
     }
   ];
-  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${orgContext}`, {
+  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${orgContext}`, {
     feature: 'ask_everitt'
   });
 
