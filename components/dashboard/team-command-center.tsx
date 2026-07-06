@@ -38,18 +38,6 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
   const [error, setError] = useState('');
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
 
-  const formatDate = (value: string | null | undefined): string => {
-    if (!value) return t('dashboard.teamCommand.summary.notUpdatedYet');
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return t('dashboard.teamCommand.summary.notUpdatedYet');
-    return date.toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    });
-  };
-
   const initialsFor = (member: TeamCommandMember): string => {
     const source = member.name || member.email || t('dashboard.teamCommand.member.defaultName');
     const parts = source
@@ -66,10 +54,17 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
     if (member.dueTodayJobs > 0) return t('dashboard.teamCommand.status.scheduled');
     if (status === 'busy') return t('dashboard.teamCommand.status.scheduled');
     if (status === 'overloaded') return t('dashboard.teamCommand.status.overloaded');
-    return t('dashboard.teamCommand.status.available');
+    return '';
   };
 
-  const memberSummary = (member: TeamCommandMember): string => {
+  const shouldShowStatusPill = (member: TeamCommandMember): boolean =>
+    member.overdueJobs > 0 ||
+    member.activeJobs > 0 ||
+    member.dueTodayJobs > 0 ||
+    member.workloadStatus === 'busy' ||
+    member.workloadStatus === 'overloaded';
+
+  const memberSummary = (member: TeamCommandMember): string | null => {
     if (member.nextUpcomingJob) return member.nextUpcomingJob.title;
     if (member.activeJobs > 0) {
       return member.activeJobs === 1
@@ -79,7 +74,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
     if (member.dueTodayJobs > 0) {
       return t('dashboard.teamCommand.summary.dueTodayCount', { count: member.dueTodayJobs });
     }
-    return t('dashboard.teamCommand.summary.readyForAssignment');
+    return null;
   };
 
   const smallMetric = (label: string, value: number) => (
@@ -126,7 +121,6 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
   const compactMetrics = useMemo(() => {
     if (!data) return [];
     const safeMembers = data.members || [];
-    const availableMembers = safeMembers.filter((member) => member.activeJobs === 0 && member.overdueJobs === 0).length;
     const dueTodayTotal = safeMembers.reduce((sum, member) => sum + member.dueTodayJobs, 0);
     const safeTotals = data.totals || {
       activeJobs: 0,
@@ -135,8 +129,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
     return [
       { label: t('dashboard.teamCommand.metrics.onJob'), value: safeTotals.activeJobs, href: '/jobs?status=active' },
       { label: t('dashboard.teamCommand.metrics.dueToday'), value: dueTodayTotal, href: '/schedule' },
-      { label: t('dashboard.teamCommand.metrics.needsAttention'), value: safeTotals.overdueJobs, href: '/jobs?status=overdue' },
-      { label: t('dashboard.teamCommand.metrics.availableTeam'), value: availableMembers, href: '/people' }
+      { label: t('dashboard.teamCommand.metrics.needsAttention'), value: safeTotals.overdueJobs, href: '/jobs?status=overdue' }
     ];
   }, [data, t]);
 
@@ -222,6 +215,8 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
             const expanded = expandedMemberId === member.userId;
             const avatarUrl = avatarUrlFor(member);
             const emailLabel = member.email || t('dashboard.teamCommand.member.noEmailOnFile');
+            const summary = memberSummary(member);
+            const showStatusPill = shouldShowStatusPill(member);
             return (
               <article
                 key={member.userId}
@@ -289,30 +284,34 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                     </span>
                   </span>
 
-                  <span style={{ minWidth: 0, overflowWrap: 'anywhere', flex: '1 1 220px' }}>
-                    <strong style={{ display: 'block', fontWeight: 500, lineHeight: 1.25 }}>{memberSummary(member)}</strong>
-                    <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 6 }}>
-                      {member.nextUpcomingJob
-                        ? `${t('dashboard.teamCommand.summary.nextPrefix')} ${member.nextUpcomingJob.date}`
-                        : `${t('dashboard.teamCommand.summary.updatedPrefix')} ${formatDate(member.lastActivityAt)}`}
+                  {summary ? (
+                    <span style={{ minWidth: 0, overflowWrap: 'anywhere', flex: '1 1 220px' }}>
+                      <strong style={{ display: 'block', fontWeight: 500, lineHeight: 1.25 }}>{summary}</strong>
+                      {member.nextUpcomingJob ? (
+                        <span className="muted" style={{ display: 'block', lineHeight: 1.35, marginTop: 6 }}>
+                          {`${t('dashboard.teamCommand.summary.nextPrefix')} ${member.nextUpcomingJob.date}`}
+                        </span>
+                      ) : null}
                     </span>
-                  </span>
+                  ) : null}
 
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 14, flex: '0 0 auto', marginLeft: 'auto' }}>
-                    <span
-                      style={{
-                        border: '1px solid',
-                        borderRadius: 999,
-                        padding: '5px 12px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                        ...statusTone(member)
-                      }}
-                    >
-                      {statusLabel(member.workloadStatus, member)}
-                    </span>
+                    {showStatusPill ? (
+                      <span
+                        style={{
+                          border: '1px solid',
+                          borderRadius: 999,
+                          padding: '5px 12px',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          ...statusTone(member)
+                        }}
+                      >
+                        {statusLabel(member.workloadStatus, member)}
+                      </span>
+                    ) : null}
                     <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 18, flexShrink: 0 }}>
                       {expanded ? '−' : '+'}
                     </span>
