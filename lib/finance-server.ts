@@ -12,6 +12,20 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+export function buildLaborRow(input: { hours?: unknown; hourlyCost?: unknown }): {
+  hours: number;
+  hourly_cost: number;
+  total_cost: number;
+} {
+  const hours = Math.max(0, num(input.hours));
+  const hourly_cost = Math.max(0, num(input.hourlyCost));
+  return {
+    hours,
+    hourly_cost,
+    total_cost: laborTotal(hours, hourly_cost)
+  };
+}
+
 export function computeJobProfitability(input: {
   invoiceTotal: number;
   manualRevenue?: number;
