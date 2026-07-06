@@ -1,0 +1,74 @@
+.job-detail-shell,
+.job-detail-shell * {
+  max-width: 100%;
+}
+
+.job-detail-shell .card,
+.job-detail-shell .panel,
+.job-detail-shell .form,
+.job-detail-shell .input,
+.job-detail-shell textarea,
+.job-detail-shell select,
+.job-detail-shell button {
+  min-width: 0;
+}
+
+.job-detail-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.job-detail-actions .btn {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.job-detail-danger {
+  border-color: rgba(133, 77, 77, 0.24);
+  color: #854d4d;
+}
+
+.job-detail-danger:hover {
+  background: rgba(133, 77, 77, 0.07);
+  border-color: rgba(133, 77, 77, 0.34);
+}
+
+@media (max-width: 720px) {
+  .job-detail-shell {
+    overflow-x: hidden;
+  }
+
+  .job-detail-shell .page-head {
+    gap: 10px;
+  }
+
+  .job-detail-shell .card {
+    overflow: hidden;
+  }
+
+  .job-detail-shell .form {
+    gap: 12px;
+  }
+
+  .job-detail-shell label {
+    display: block;
+    font-size: 14px;
+  }
+
+  .job-detail-shell .input,
+  .job-detail-shell textarea,
+  .job-detail-shell select,
+  .job-detail-shell .btn {
+    width: 100%;
+    max-width: 100%;
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .job-detail-actions {
+    grid-template-columns: 1fr;
+  }
+}
