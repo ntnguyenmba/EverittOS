@@ -13,7 +13,7 @@ import { JobProfitabilityCard } from '@/components/job-profitability-card';
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
 import { AppShell } from '@/components/app-shell';
-import { canAccessFinancialTracking } from '@/lib/finance-access';
+import { canAccessFinancials } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { logClientActivity, createNotification } from '@/lib/activity';
 import { StatusPill } from '@/components/status-pill';
@@ -354,7 +354,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
         {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
         <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
-        {canAccessFinancialTracking(plan) ? <><div style={{ marginTop: 18 }}><JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} /></div><div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage} /></div></> : null}
+        {canAccessFinancials(userRole, plan) ? <><div style={{ marginTop: 18 }}><JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} /></div><div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage} /></div></> : null}
         <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
         <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
         {canManage ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.proofReport}</h3><p>{copy.proofReportCopy}</p><button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>{creatingReport ? copy.creating : copy.createReport}</button><Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>{copy.viewLatest}</Link></div> : null}

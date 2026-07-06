@@ -8,14 +8,13 @@ import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
-import { canAccessFinancialTracking, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
+import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
 import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
-import { canSeeOrgWideData } from '@/lib/permissions';
-import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type JobOption = { id: string; title: string; customer_id: string | null };
@@ -48,6 +47,7 @@ function ExpensesContent() {
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roleDenied, setRoleDenied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -63,8 +63,8 @@ function ExpensesContent() {
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterWorkerId, setFilterWorkerId] = useState('');
 
-  const canManage = isManagerRole(role);
-  const hasAccess = canAccessFinancialTracking(plan);
+  const hasAccess = canAccessFinancials(role, plan);
+  const canManage = hasAccess;
 
   const jobMap = useMemo(() => new Map(jobs.map((j) => [j.id, j.title])), [jobs]);
   const customerMap = useMemo(() => new Map(customers.map((c) => [c.id, c.company_name])), [customers]);
@@ -99,18 +99,22 @@ function ExpensesContent() {
       }
 
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+      const org = await fetchOrganizationContext(user.id);
       const userPlan = normalizePlan(profile?.plan);
-      const userRole = normalizeRole(profile?.role);
+      const userRole = normalizeRole(org?.role || profile?.role);
       setPlan(userPlan);
       setRole(userRole);
+      setRoleDenied(false);
 
-      if (!canSeeOrgWideData(userRole)) {
+      if (!canAccessFinancials(userRole, userPlan)) {
         setLoading(false);
-        appFeedback.error('Your role cannot access expenses.');
+        if (userRole !== 'owner' && userRole !== 'admin') {
+          setRoleDenied(true);
+          appFeedback.error('Your role cannot access expenses.');
+        }
         return;
       }
 
-      const org = await fetchOrganizationContext(user.id);
       if (org?.organizationId) {
         const [jobsRes, customersRes, workersRes] = await Promise.all([
           supabase.from('jobs').select('id, title, customer_id').eq('organization_id', org.organizationId).order('title'),
@@ -123,9 +127,7 @@ function ExpensesContent() {
       }
 
       setLoading(false);
-      if (canAccessFinancialTracking(userPlan)) {
-        await loadExpenses();
-      }
+      await loadExpenses();
     }
     void init();
   }, [loadExpenses, router]);
@@ -242,6 +244,18 @@ function ExpensesContent() {
   }
 
   const totalFiltered = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  if (roleDenied) {
+    return (
+      <AppShell plan={plan} role={role}>
+        <PageHeader title="Expenses" subtitle="Track business spending without full bookkeeping." />
+        <div className="card plan-gate-card">
+          <h3>Expenses are owner/admin only</h3>
+          <p className="muted">Your workspace role cannot access business expenses, revenue, or profit tracking.</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!hasAccess) {
     return (

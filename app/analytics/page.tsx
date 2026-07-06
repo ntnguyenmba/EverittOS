@@ -5,12 +5,13 @@ import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { BusinessPerformanceSection } from '@/components/business-performance-section';
 import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
-import { canAccessFinancialTracking } from '@/lib/finance-access';
+import { canAccessFinancials } from '@/lib/finance-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { normalizeRole, type UserRole } from '@/lib/roles';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -47,8 +48,9 @@ export default function AnalyticsPage() {
       }
 
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+      const org = await fetchOrganizationContext(user.id);
       const p = normalizePlan(profile?.plan);
-      const r = normalizeRole(profile?.role);
+      const r = normalizeRole(org?.role || profile?.role);
       setPlan(p);
       setRole(r);
 
@@ -85,7 +87,7 @@ export default function AnalyticsPage() {
         <LocalizedEmptyState emptyKey="analytics" />
       ) : null}
 
-      {canAccessFinancialTracking(plan) ? (
+      {!error && canAccessFinancials(role, plan) ? (
         <div style={{ marginBottom: 28 }}>
           <BusinessPerformanceSection />
         </div>

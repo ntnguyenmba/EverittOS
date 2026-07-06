@@ -14,6 +14,7 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
+import { canAccessFinancials } from '@/lib/finance-access';
 import { isAdminRole, isClientRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
@@ -68,6 +69,25 @@ const emptyCrmDashboardMetrics: CrmDashboardMetrics = {
   inactiveCustomers: 0
 };
 
+const emptyDashboardRevenueMetrics: DashboardRevenueMetrics = {
+  revenueThisMonth: 0,
+  outstandingInvoices: 0,
+  overdueInvoiceCount: 0,
+  unpaidInvoiceTotal: 0,
+  jobsCompleted: 0,
+  jobsCompletedThisMonth: 0,
+  activeCustomers: 0,
+  customerCount: 0,
+  upcomingJobs: 0,
+  expenseTotalThisMonth: 0,
+  netEstimateThisMonth: 0,
+  bookingCountThisMonth: 0,
+  messageCount: 0,
+  reportCount: 0,
+  jobsByStatus: {},
+  totalJobs: 0
+};
+
 const OPEN_LEAD_STAGES = new Set(['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened', 'lead']);
 const CLOSED_LEAD_STAGES = new Set(['won', 'closed_lost', 'cancelled', 'lost']);
 
@@ -110,24 +130,7 @@ function crmCard(title: string, value: number, href: string, body: string, style
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>({
-    revenueThisMonth: 0,
-    outstandingInvoices: 0,
-    overdueInvoiceCount: 0,
-    unpaidInvoiceTotal: 0,
-    jobsCompleted: 0,
-    jobsCompletedThisMonth: 0,
-    activeCustomers: 0,
-    customerCount: 0,
-    upcomingJobs: 0,
-    expenseTotalThisMonth: 0,
-    netEstimateThisMonth: 0,
-    bookingCountThisMonth: 0,
-    messageCount: 0,
-    reportCount: 0,
-    jobsByStatus: {},
-    totalJobs: 0
-  });
+  const [revenueMetrics, setRevenueMetrics] = useState<DashboardRevenueMetrics>(emptyDashboardRevenueMetrics);
   const [managerWorkspaceMetrics, setManagerWorkspaceMetrics] = useState<ManagerWorkspaceMetrics>(emptyManagerWorkspaceMetrics);
   const [crmMetrics, setCrmMetrics] = useState<CrmDashboardMetrics>(emptyCrmDashboardMetrics);
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -160,12 +163,13 @@ export default function DashboardPage() {
 
     const organizationId = org?.organizationId || null;
     const staffView = isStaffRole(userRole);
+    const canViewFinancials = canAccessFinancials(userRole, userPlan);
     const customerScope = organizationId
       ? supabase.from('customers').select('id, record_type, pipeline_stage').eq('organization_id', organizationId).limit(10000)
       : supabase.from('customers').select('id, record_type, pipeline_stage').eq('user_id', user.id).limit(10000);
 
     const [metrics, usageCounts, jobsRes, activityRes, workersRes, customersRes] = await Promise.all([
-      fetchDashboardRevenueMetrics(supabase, organizationId),
+      canViewFinancials ? fetchDashboardRevenueMetrics(supabase, organizationId) : Promise.resolve(emptyDashboardRevenueMetrics),
       fetchUsageCounts(user.id, organizationId),
       organizationId
         ? supabase
@@ -259,7 +263,7 @@ export default function DashboardPage() {
       <div className="today-page dashboard-home">
         <PageHeader title={staffView ? 'My work' : t('dashboard.welcome')} subtitle={staffView ? 'Today, assigned jobs, customer contact, and field actions.' : t('dashboard.navSubtitle')} />
 
-        {!staffView ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
+        {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
         {operationsView ? (
           <section className="card" aria-label={t('dashboard.customersAndLeads')}>
