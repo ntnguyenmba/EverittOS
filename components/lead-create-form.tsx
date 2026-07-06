@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { LEAD_SOURCE_OPTIONS } from '@/lib/lead-sources';
+import { useTeamOptions } from '@/lib/team-options-client';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -16,9 +17,13 @@ type LeadCreateFormProps = {
 export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateFormProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
+  const { teamOptions, teamOptionsLoading } = useTeamOptions();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [leadSource, setLeadSource] = useState('website');
   const [saving, setSaving] = useState(false);
 
@@ -31,9 +36,8 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
 
     setSaving(true);
 
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth.user;
     if (!user) {
       setSaving(false);
       router.push('/login?next=/leads/new');
@@ -54,7 +58,10 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
         displayName,
         email,
         phone,
-        pipeline_stage: 'lead',
+        address,
+        notes,
+        assigned_to: assignedTo || null,
+        pipeline_stage: 'open',
         lead_source: leadSource,
         record_type: 'lead'
       })
@@ -71,6 +78,9 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
     setDisplayName('');
     setEmail('');
     setPhone('');
+    setAddress('');
+    setNotes('');
+    setAssignedTo('');
     setLeadSource('website');
 
     if (json.customer?.id) {
@@ -87,6 +97,14 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
       <input className="input" placeholder="Name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+      <label>Assign to</label>
+      <select className="input" value={assignedTo} disabled={teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
+        <option value="">Unassigned</option>
+        {teamOptions.map((member) => (
+          <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
+        ))}
+      </select>
       <label className="auth-field">
         <span>Lead Source</span>
         <select className="input" value={leadSource} onChange={(e) => setLeadSource(e.target.value)}>
@@ -97,6 +115,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
           ))}
         </select>
       </label>
+      <textarea className="input" rows={4} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveLead()}>
         {saving ? FEEDBACK.loading : 'Save lead'}
       </button>
