@@ -1,5 +1,5 @@
 import type { UserRole } from '@/lib/roles';
-import { isClientRole, isContractorRole, isManagerRole, normalizeRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, isContractorRole, isManagerRole, normalizeRole } from '@/lib/roles';
 
 export type Permission =
   | 'view_assigned_tasks'
@@ -57,8 +57,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_schedules',
     'view_assigned_customers',
     'view_assigned_projects',
-    'view_team',
-    'view_all_org_data'
+    'view_team'
   ],
   employee: [
     'view_assigned_tasks',
@@ -99,16 +98,16 @@ export function hasPermission(roleInput: string | null | undefined, permission: 
   return permissionsForRole(roleInput).includes(permission);
 }
 
-/** Contractors and viewers must not browse unrelated org records in the UI. */
+/** Managers, contractors, and viewers must not browse unrelated org records in the UI. */
 export function requiresAssignmentScope(roleInput: string | null | undefined): boolean {
   const role = normalizeRole(roleInput);
-  return isContractorRole(role) || role === 'viewer';
+  return isManagerRole(role) && !isAdminRole(role) || isContractorRole(role) || role === 'viewer';
 }
 
 export function canSeeOrgWideData(roleInput: string | null | undefined): boolean {
   const role = normalizeRole(roleInput);
   if (isClientRole(role)) return false;
-  return hasPermission(role, 'view_all_org_data');
+  return isAdminRole(role) && hasPermission(role, 'view_all_org_data');
 }
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
