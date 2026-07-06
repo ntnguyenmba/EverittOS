@@ -12,6 +12,7 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { customerDisplayAddress, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { uploadCustomerLogo } from '@/lib/customer-logo';
+import { useTeamOptions } from '@/lib/team-options-client';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
@@ -21,9 +22,17 @@ import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type PageProps = { params: Promise<{ id: string }> };
 
+const CUSTOMER_STAGES = [
+  { value: 'active', label: 'Active' },
+  { value: 'recurring', label: 'Recurring' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'former', label: 'Former customer' }
+];
+
 export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { teamOptions, teamOptionsLoading } = useTeamOptions();
   const [customerId, setCustomerId] = useState('');
   const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -33,6 +42,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [pipelineStage, setPipelineStage] = useState('active');
   const [properties, setProperties] = useState<{ id: string; name: string; address: string | null }[]>([]);
   const [jobs, setJobs] = useState<{ id: string; title: string; status: string | null }[]>([]);
   const [reports, setReports] = useState<{ id: string; title: string; job_id: string }[]>([]);
@@ -44,6 +55,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [savingCustomer, setSavingCustomer] = useState(false);
+  const [movingToLead, setMovingToLead] = useState(false);
   const [loading, setLoading] = useState(true);
   const appFeedback = useAppFeedback();
 
@@ -81,12 +93,15 @@ export default function CustomerDetailPage({ params }: PageProps) {
       return;
     }
 
-    setDisplayName(customerDisplayName(customer as CustomerRecord));
+    const customerRecord = customer as CustomerRecord;
+    setDisplayName(customerDisplayName(customerRecord));
     setPhone(customer.phone || '');
     setEmail(customer.email || '');
-    setAddress(customerDisplayAddress(customer as CustomerRecord, ''));
+    setAddress(customerDisplayAddress(customerRecord, ''));
     setNotes(customer.notes || '');
-    setLogoPath((customer as CustomerRecord).logo_path || null);
+    setAssignedTo(customerRecord.assigned_to || '');
+    setPipelineStage(customerRecord.pipeline_stage || 'active');
+    setLogoPath(customerRecord.logo_path || null);
 
     const resolvedOrgId = org?.organizationId || customer.organization_id || '';
     setOrgId(resolvedOrgId);
@@ -132,6 +147,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
           };
         })
       );
+    } else {
+      setPortalAccess([]);
     }
 
     setLoading(false);
@@ -182,7 +199,16 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName, phone, email, address, notes })
+      body: JSON.stringify({
+        displayName,
+        phone,
+        email,
+        address,
+        notes,
+        assigned_to: assignedTo || null,
+        pipeline_stage: pipelineStage,
+        record_type: 'customer'
+      })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSavingCustomer(false);
@@ -192,6 +218,25 @@ export default function CustomerDetailPage({ params }: PageProps) {
     }
     appFeedback.saved();
     load();
+  }
+
+  async function moveBackToLead() {
+    if (!canEdit || !customerId || movingToLead) return;
+    if (!window.confirm('Move this customer back to Leads?')) return;
+    setMovingToLead(true);
+    const res = await fetch(`/api/customers/${customerId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_type: 'lead', pipeline_stage: 'reopened' })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setMovingToLead(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to move customer back to leads.');
+      return;
+    }
+    appFeedback.saved();
+    router.push(`/leads/${customerId}`);
   }
 
   async function addProperty() {
@@ -225,7 +270,10 @@ export default function CustomerDetailPage({ params }: PageProps) {
     <AppShell plan={plan}>
         <div className="page-head customer-card-row">
           <CustomerLogo logoPath={logoPath} alt={displayName} size={56} />
-          <h2>{displayName}</h2>
+          <div>
+            <h2>{displayName}</h2>
+            <p className="muted">{CUSTOMER_STAGES.find((stage) => stage.value === pipelineStage)?.label || pipelineStage}</p>
+          </div>
           <Link className="btn" href="/customers">
             Back
           </Link>
@@ -234,10 +282,28 @@ export default function CustomerDetailPage({ params }: PageProps) {
         <div className="grid-2">
           <div className="card form">
             <h3>Edit customer</h3>
+            <label>Name</label>
             <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
+            <label>Phone</label>
             <input className="input" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
+            <label>Email</label>
             <input className="input" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
+            <label>Address</label>
             <input className="input" value={address} disabled={!canEdit} onChange={(e) => setAddress(e.target.value)} />
+            <label>Assign to</label>
+            <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
+              <option value="">Unassigned</option>
+              {teamOptions.map((member) => (
+                <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
+              ))}
+            </select>
+            <label>Status</label>
+            <select className="input" value={pipelineStage} disabled={!canEdit} onChange={(e) => setPipelineStage(e.target.value)}>
+              {CUSTOMER_STAGES.map((stage) => (
+                <option key={stage.value} value={stage.value}>{stage.label}</option>
+              ))}
+            </select>
+            <label>Notes</label>
             <textarea className="input" rows={4} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} />
             {canEdit && (
               <>
@@ -252,27 +318,31 @@ export default function CustomerDetailPage({ params }: PageProps) {
                   />
                 </label>
                 {logoUploading ? <p className="loading-state" role="status">Uploading logo...</p> : null}
-                <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
-                  {savingCustomer ? FEEDBACK.loading : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  style={{ marginLeft: 8 }}
-                  onClick={async () => {
-                    if (!window.confirm('Remove this customer?')) return;
-                    const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
-                    const json = (await res.json().catch(() => ({}))) as { error?: string };
-                    if (!res.ok) {
-                      appFeedback.error(json.error || 'Unable to remove customer.');
-                      return;
-                    }
-                    appFeedback.deleted();
-                    router.push('/customers');
-                  }}
-                >
-                  Remove customer
-                </button>
+                <div className="inline-actions">
+                  <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
+                    {savingCustomer ? FEEDBACK.loading : 'Save'}
+                  </button>
+                  <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>
+                    {movingToLead ? FEEDBACK.loading : 'Move back to lead'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={async () => {
+                      if (!window.confirm('Remove this customer?')) return;
+                      const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
+                      const json = (await res.json().catch(() => ({}))) as { error?: string };
+                      if (!res.ok) {
+                        appFeedback.error(json.error || 'Unable to remove customer.');
+                        return;
+                      }
+                      appFeedback.deleted();
+                      router.push('/customers');
+                    }}
+                  >
+                    Remove customer
+                  </button>
+                </div>
               </>
             )}
           </div>
