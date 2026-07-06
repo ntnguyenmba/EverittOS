@@ -24,11 +24,12 @@ const ALLOWED_FIELDS = new Set([
   'assigned_to',
   'assigned_email',
   'priority',
-  'internal_notes',
   'customer_notes',
   'completion_verified',
   'customer_id'
 ]);
+
+const INTERNAL_ONLY_FIELDS = new Set(['internal_notes']);
 
 const MANAGER_ONLY_FIELDS = new Set([
   'title',
@@ -43,10 +44,10 @@ const MANAGER_ONLY_FIELDS = new Set([
   'assigned_to',
   'assigned_email',
   'priority',
-  'internal_notes',
   'customer_notes',
   'completion_verified',
-  'customer_id'
+  'customer_id',
+  ...INTERNAL_ONLY_FIELDS
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status']);
@@ -74,9 +75,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
+  if (Object.keys(body).some((key) => INTERNAL_ONLY_FIELDS.has(key)) && !ctx.canManage) {
+    return NextResponse.json({ error: 'Only owners, admins, and managers can edit internal job notes.' }, { status: 403 });
+  }
+
   const payload: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body)) {
-    if (ALLOWED_FIELDS.has(key)) {
+    if (ALLOWED_FIELDS.has(key) || (ctx.canManage && INTERNAL_ONLY_FIELDS.has(key))) {
       payload[key] = value;
     }
   }
