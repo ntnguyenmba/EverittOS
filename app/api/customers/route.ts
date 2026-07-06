@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     record_type?: string;
     pipeline_stage?: string;
     lead_source?: string;
+    assigned_to?: string | null;
   };
 
   if (!body.displayName?.trim()) {
@@ -34,6 +35,19 @@ export async function POST(request: Request) {
   const planCheck = await enforcePlanForUser(ctx.supabase, ctx.userId, 'customers');
   if (!planCheck.allowed) {
     return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
+  }
+
+  if (body.assigned_to) {
+    const { data: assignee } = await ctx.supabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('user_id', body.assigned_to)
+      .eq('active', true)
+      .maybeSingle();
+    if (!assignee) {
+      return NextResponse.json({ error: 'Assigned team member is not active in this workspace.' }, { status: 400 });
+    }
   }
 
   const insertResult = await insertCustomerRecord({
@@ -48,9 +62,10 @@ export async function POST(request: Request) {
         email: body.email,
         address: body.address,
         notes: body.notes,
-        record_type: body.record_type,
+        record_type: body.record_type || 'customer',
         pipeline_stage: body.pipeline_stage,
-        lead_source: body.lead_source
+        lead_source: body.lead_source,
+        assigned_to: body.assigned_to || null
       })
     }
   });
@@ -59,7 +74,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: insertResult.error, code: insertResult.code }, { status: 400 });
   }
 
-  const isLead = body.record_type === 'lead' || body.pipeline_stage === 'lead';
+  const isLead = body.record_type === 'lead';
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
     ctx.userId,
@@ -72,7 +87,7 @@ export async function POST(request: Request) {
   await trackProductEventServer(ctx.supabase, isLead ? 'lead_created' : 'customer_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { customerId: insertResult.id, lead_source: body.lead_source || null }
+    metadata: { customerId: insertResult.id, lead_source: body.lead_source || null, assigned_to: body.assigned_to || null }
   });
 
   return NextResponse.json({
