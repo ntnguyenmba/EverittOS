@@ -41,6 +41,15 @@ type ManagerWorkspaceMetrics = {
   teamCount: number;
 };
 
+type CrmDashboardMetrics = {
+  totalLeads: number;
+  openLeads: number;
+  closedLeads: number;
+  activeCustomers: number;
+  recurringCustomers: number;
+  inactiveCustomers: number;
+};
+
 const emptyManagerWorkspaceMetrics: ManagerWorkspaceMetrics = {
   jobs: [],
   photoCount: 0,
@@ -49,6 +58,18 @@ const emptyManagerWorkspaceMetrics: ManagerWorkspaceMetrics = {
   customerCount: 0,
   teamCount: 0
 };
+
+const emptyCrmDashboardMetrics: CrmDashboardMetrics = {
+  totalLeads: 0,
+  openLeads: 0,
+  closedLeads: 0,
+  activeCustomers: 0,
+  recurringCustomers: 0,
+  inactiveCustomers: 0
+};
+
+const OPEN_LEAD_STAGES = new Set(['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened', 'lead']);
+const CLOSED_LEAD_STAGES = new Set(['won', 'closed_lost', 'cancelled', 'lost']);
 
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
@@ -76,6 +97,16 @@ function normalizeDashboardJob(job: DashboardJobRow): DashboardJobRow {
   };
 }
 
+function crmCard(title: string, value: number, href: string, body: string, style: React.CSSProperties) {
+  return (
+    <Link href={href} style={style}>
+      <span className="stat-label">{title}</span>
+      <strong className="stat-value" style={{ marginTop: 18 }}>{value}</strong>
+      <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>{body}</p>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -98,7 +129,7 @@ export default function DashboardPage() {
     totalJobs: 0
   });
   const [managerWorkspaceMetrics, setManagerWorkspaceMetrics] = useState<ManagerWorkspaceMetrics>(emptyManagerWorkspaceMetrics);
-  const [teamLeadCount, setTeamLeadCount] = useState(0);
+  const [crmMetrics, setCrmMetrics] = useState<CrmDashboardMetrics>(emptyCrmDashboardMetrics);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
@@ -129,7 +160,11 @@ export default function DashboardPage() {
 
     const organizationId = org?.organizationId || null;
     const staffView = isStaffRole(userRole);
-    const [metrics, usageCounts, jobsRes, activityRes, workersRes, leadsRes] = await Promise.all([
+    const customerScope = organizationId
+      ? supabase.from('customers').select('id, record_type, pipeline_stage').eq('organization_id', organizationId).limit(10000)
+      : supabase.from('customers').select('id, record_type, pipeline_stage').eq('user_id', user.id).limit(10000);
+
+    const [metrics, usageCounts, jobsRes, activityRes, workersRes, customersRes] = await Promise.all([
       fetchDashboardRevenueMetrics(supabase, organizationId),
       fetchUsageCounts(user.id, organizationId),
       organizationId
@@ -151,17 +186,7 @@ export default function DashboardPage() {
       organizationId
         ? supabase.from('workers').select('id, auth_user_id').eq('organization_id', organizationId)
         : Promise.resolve({ data: [] }),
-      organizationId
-        ? supabase
-            .from('customers')
-            .select('id', { count: 'exact', head: true })
-            .eq('organization_id', organizationId)
-            .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
-        : supabase
-            .from('customers')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
+      customerScope
     ]);
 
     const assignedWorkerIds = new Set(
@@ -172,15 +197,34 @@ export default function DashboardPage() {
 
     const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
     const visibleJobs = staffView ? normalizedJobs.filter((job) => job.assigned_to && assignedWorkerIds.has(job.assigned_to)) : normalizedJobs;
+    const rows = ((customersRes.data || []) as { id: string; record_type: string | null; pipeline_stage: string | null }[]);
+    const leadRows = rows.filter((row) => row.record_type === 'lead');
+    const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');
+    const openLeadCount = leadRows.filter((row) => OPEN_LEAD_STAGES.has(row.pipeline_stage || 'open')).length;
+    const closedLeadCount = leadRows.filter((row) => CLOSED_LEAD_STAGES.has(row.pipeline_stage || '')).length;
+    const activeCustomerCount = customerRows.filter((row) => !row.pipeline_stage || row.pipeline_stage === 'active').length;
+    const recurringCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'recurring').length;
+    const inactiveCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'inactive' || row.pipeline_stage === 'former').length;
 
     setRevenueMetrics(metrics);
-    setTeamLeadCount(staffView || leadsRes.error ? 0 : leadsRes.count || 0);
+    setCrmMetrics(
+      staffView || customersRes.error
+        ? emptyCrmDashboardMetrics
+        : {
+            totalLeads: leadRows.length,
+            openLeads: openLeadCount,
+            closedLeads: closedLeadCount,
+            activeCustomers: activeCustomerCount,
+            recurringCustomers: recurringCustomerCount,
+            inactiveCustomers: inactiveCustomerCount
+          }
+    );
     setManagerWorkspaceMetrics({
       jobs: visibleJobs,
       photoCount: usageCounts.photos,
       reportCount: staffView ? 0 : usageCounts.reports,
       activityCount: staffView ? 0 : activityRes.error ? 0 : activityRes.count || 0,
-      customerCount: staffView ? 0 : usageCounts.customers,
+      customerCount: staffView ? 0 : customerRows.length,
       teamCount: staffView ? 0 : usageCounts.teamMembers
     });
     setLoading(false);
@@ -226,25 +270,17 @@ export default function DashboardPage() {
                   {t('dashboard.sidebar.crmSnapshot')}
                 </p>
               </div>
-              <Link className="btn btn-sm" href="/leads">
-                {t('nav.leads')}
-              </Link>
+              <div className="inline-actions">
+                <Link className="btn btn-sm" href="/leads">{t('nav.leads')}</Link>
+                <Link className="btn btn-sm" href="/customers">Customers</Link>
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, alignItems: 'stretch' }}>
-              <Link href="/leads" style={salesCardStyle}>
-                <span className="stat-label">{t('nav.leads')}</span>
-                <strong className="stat-value" style={{ marginTop: 18 }}>{teamLeadCount}</strong>
-                <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
-                  {t('empty.leads.description')}
-                </p>
-              </Link>
-              <Link href="/customers" style={salesCardStyle}>
-                <span className="stat-label">{t('dashboard.customersAndLeads')}</span>
-                <strong className="stat-value" style={{ marginTop: 18 }}>{managerWorkspaceMetrics.customerCount}</strong>
-                <p className="muted" style={{ margin: '18px 0 0', lineHeight: 1.45 }}>
-                  {t('ux.pageTitles.customers')}
-                </p>
-              </Link>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+              {crmCard('Open leads', crmMetrics.openLeads, '/leads?status=open', 'New, contacted, qualified, proposal, and reopened leads.', salesCardStyle)}
+              {crmCard('Closed leads', crmMetrics.closedLeads, '/leads?status=closed', 'Won, closed lost, and cancelled leads.', salesCardStyle)}
+              {crmCard('Active customers', crmMetrics.activeCustomers, '/customers?status=active', 'Customers currently active in your workspace.', salesCardStyle)}
+              {crmCard('Recurring customers', crmMetrics.recurringCustomers, '/customers?status=recurring', 'Customers marked as recurring service accounts.', salesCardStyle)}
+              {crmCard('Inactive customers', crmMetrics.inactiveCustomers, '/customers?status=inactive', 'Inactive and former customers.', salesCardStyle)}
             </div>
           </section>
         ) : null}
