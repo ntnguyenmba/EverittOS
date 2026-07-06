@@ -158,62 +158,47 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   if (loading) return <p className="loading-state">Loading visits...</p>;
 
   return (
-    <div className="form">
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0, flex: '1 1 220px' }}>
-          <h3 style={{ marginBottom: 4 }}>Visits</h3>
-          <p className="muted" style={{ margin: 0 }}>Schedule each workday separately for accurate crew hours and calendar events.</p>
+    <div className="job-visits form">
+      <div className="job-visits-head">
+        <div className="job-visits-title">
+          <h3>Visits</h3>
+          <p className="muted">Schedule each workday separately for accurate crew hours and calendar events.</p>
         </div>
         {props.canManage ? (
-          <button className="btn" type="button" onClick={addVisit} style={{ width: 'auto', maxWidth: '100%' }}>+ Add visit</button>
+          <button className="btn job-visits-add" type="button" onClick={addVisit}>+ Add visit</button>
         ) : null}
       </div>
 
-      <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+      <div className="job-visits-list">
         {visits.map((visit, index) => (
-          <div
-            key={visit.id || index}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: 10,
-              alignItems: 'end',
-              width: '100%',
-              maxWidth: '100%',
-              minWidth: 0,
-              padding: 12,
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--surface)'
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
+          <div className="job-visit-row" key={visit.id || index}>
+            <div className="job-visit-field">
               <label>Date</label>
-              <input className="input" type="date" value={visit.visit_date} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'visit_date', e.target.value)} style={{ minHeight: 46, padding: '10px 12px', width: '100%' }} />
+              <input className="input" type="date" value={visit.visit_date} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'visit_date', e.target.value)} />
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div className="job-visit-field">
               <label>Start</label>
-              <input className="input" type="time" value={visit.start_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'start_time', e.target.value)} style={{ minHeight: 46, padding: '10px 12px', width: '100%' }} />
+              <input className="input" type="time" value={visit.start_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'start_time', e.target.value)} />
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div className="job-visit-field">
               <label>End</label>
-              <input className="input" type="time" value={visit.end_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'end_time', e.target.value)} style={{ minHeight: 46, padding: '10px 12px', width: '100%' }} />
+              <input className="input" type="time" value={visit.end_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'end_time', e.target.value)} />
             </div>
             {props.canManage ? (
-              <button className="btn" type="button" disabled={visits.length === 1} onClick={() => removeVisit(index)} style={{ width: '100%' }}>Remove</button>
+              <button className="btn job-visit-remove" type="button" disabled={visits.length === 1} onClick={() => removeVisit(index)}>Remove</button>
             ) : (
-              <span className="muted">{formatHours(visitHours(visit))}</span>
+              <span className="muted job-visit-hours">{formatHours(visitHours(visit))}</span>
             )}
           </div>
         ))}
       </div>
 
-      <p className="muted" style={{ marginTop: 12 }}>
+      <p className="muted job-visits-total">
         Total scheduled: {formatHours(totalHours)} across {visits.length} {visits.length === 1 ? 'visit' : 'visits'}.
       </p>
 
       {props.canManage ? (
-        <button className="btn btn-primary" type="button" onClick={saveVisits} disabled={saving}>
+        <button className="btn btn-primary job-visits-save" type="button" onClick={saveVisits} disabled={saving}>
           {saving ? 'Saving...' : 'Save visits'}
         </button>
       ) : null}
