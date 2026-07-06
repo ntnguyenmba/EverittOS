@@ -8,10 +8,6 @@ import { SettingsShell } from '@/components/settings/settings-shell';
 import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import {
-  GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI,
-  googleCalendarRedirectUri
-} from '@/lib/google-calendar-config';
 import type { GoogleCalendarHealth } from '@/lib/google-calendar-health';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
@@ -213,9 +209,7 @@ function IntegrationsContent() {
 
         {!status?.configured ? (
           <p className="muted" style={{ marginTop: 12 }}>
-            Google Calendar OAuth is not configured on this server. Set <code>GOOGLE_CLIENT_ID</code> and{' '}
-            <code>GOOGLE_CLIENT_SECRET</code> in your deployment environment. See{' '}
-            <code>docs/GOOGLE_CALENDAR_SETUP.md</code>.
+            Google Calendar is not fully configured yet. Contact EverittOS support to finish setup.
           </p>
         ) : null}
 
@@ -249,15 +243,6 @@ function IntegrationsContent() {
               </Link>
             </div>
           </>
-        ) : null}
-
-        <p className="muted integration-callback-note" style={{ marginTop: 16 }}>
-          OAuth redirect URI for Google Cloud Console: <code>{GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI}</code>
-        </p>
-        {status?.configured ? (
-          <p className="muted">
-            Active callback for this deployment: <code>{googleCalendarRedirectUri()}</code>
-          </p>
         ) : null}
       </div>
 
