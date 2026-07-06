@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
@@ -16,16 +17,95 @@ type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
 };
 
+type TeamMemberOption = {
+  userId: string;
+  label: string;
+  role: string;
+};
+
+type MemberRow = {
+  user_id: string;
+  role: string;
+  active: boolean;
+};
+
+type ProfileRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+};
+
+function memberLabel(member: MemberRow, profile?: ProfileRow) {
+  const name = profile?.full_name?.trim();
+  const email = profile?.email?.trim();
+  if (name && email) return `${name} (${email})`;
+  return name || email || member.user_id;
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
+  const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState(searchParams.get('assigned_to') || '');
+  const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
+  const [loadingTeam, setLoadingTeam] = useState(true);
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    async function loadTeamMembers() {
+      setLoadingTeam(true);
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoadingTeam(false);
+        return;
+      }
+
+      const workspace = await ensureWorkspaceForSave(user.id);
+      if (!workspace.ok) {
+        setLoadingTeam(false);
+        return;
+      }
+
+      const { data: memberRows } = await supabase
+        .from('organization_members')
+        .select('user_id, role, active')
+        .eq('organization_id', workspace.workspace.organizationId)
+        .eq('active', true)
+        .in('role', ['owner', 'admin', 'manager', 'employee', 'contractor'])
+        .order('role');
+
+      const members = (memberRows || []) as MemberRow[];
+      const memberIds = members.map((member) => member.user_id);
+      const { data: profileRows } = memberIds.length
+        ? await supabase.from('profiles').select('id, email, full_name').in('id', memberIds)
+        : { data: [] as ProfileRow[] };
+
+      const profiles = new Map<string, ProfileRow>();
+      for (const profile of (profileRows || []) as ProfileRow[]) {
+        profiles.set(profile.id, profile);
+      }
+
+      setTeamMembers(
+        members.map((member) => ({
+          userId: member.user_id,
+          role: normalizeRole(member.role),
+          label: memberLabel(member, profiles.get(member.user_id))
+        }))
+      );
+      setLoadingTeam(false);
+    }
+
+    void loadTeamMembers();
+  }, []);
 
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
@@ -96,6 +176,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
+        assigned_to: assignedTo || null,
         status: 'new'
       })
     });
@@ -127,6 +208,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
+    setAssignedTo('');
     appFeedback.created();
     onJobCreated?.(createdJob.id);
   }
@@ -148,8 +230,18 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <label htmlFor="assigned-to">Assign to</label>
+        <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
+          <option value="">Unassigned</option>
+          {teamMembers.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.label} · {member.role}
+            </option>
+          ))}
+        </select>
+        {loadingTeam ? <p className="muted">Loading team members...</p> : null}
+        {!loadingTeam && teamMembers.length === 0 ? <p className="muted">No active team members found.</p> : null}
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        <p className="muted">After saving, open the job to assign employees or contractors.</p>
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
         </Button>
