@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 import { countOrganizationJobs } from '@/lib/jobs-org-query';
 
+const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
+
 export type DashboardRevenueMetrics = {
   revenueThisMonth: number;
   outstandingInvoices: number;
@@ -36,6 +38,10 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function excludeCancelledJobs<T extends { neq: (column: string, value: string) => T }>(query: T): T {
+  return CANCELLED_JOB_STATUSES.reduce((current, status) => current.neq('status', status), query);
+}
+
 export async function fetchDashboardRevenueMetrics(
   supabase: SupabaseClient,
   organizationId: string | null
@@ -62,6 +68,18 @@ export async function fetchDashboardRevenueMetrics(
   };
 
   if (!organizationId) return empty;
+
+  const upcomingJobsQuery = excludeCancelledJobs(
+    supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .neq('status', 'completed')
+      .gte('scheduled_start', `${today}T00:00:00`)
+  );
+  const jobsByStatusQuery = excludeCancelledJobs(
+    supabase.from('jobs').select('status').eq('organization_id', organizationId)
+  );
 
   const [
     invoicesRes,
@@ -96,14 +114,8 @@ export async function fetchDashboardRevenueMetrics(
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
       .neq('pipeline_stage', 'archived'),
-    supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
-      .neq('status', 'completed')
-      .neq('status', 'cancelled')
-      .gte('scheduled_start', `${today}T00:00:00`),
-    supabase.from('jobs').select('status').eq('organization_id', organizationId),
+    upcomingJobsQuery,
+    jobsByStatusQuery,
     supabase
       .from('expenses')
       .select('amount, date')
@@ -122,7 +134,7 @@ export async function fetchDashboardRevenueMetrics(
       .from('job_reports')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId),
-    countOrganizationJobs(supabase, organizationId)
+    countOrganizationJobs(supabase, organizationId, { excludeStatuses: CANCELLED_JOB_STATUSES })
   ]);
 
   const safeCount = (res: { count: number | null; error: unknown }) => (res.error ? 0 : res.count || 0);
@@ -174,8 +186,8 @@ export async function fetchDashboardRevenueMetrics(
     activeCustomers: safeCount(customersRes),
     customerCount: safeCount(customersRes),
     upcomingJobs: safeCount(upcomingJobsRes),
-    expenseTotalThisMonth: safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0),
-    netEstimateThisMonth: revenueThisMonth - safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0),
+    expenseTotalThisMonth,
+    netEstimateThisMonth: revenueThisMonth - expenseTotalThisMonth,
     bookingCountThisMonth: safeCount(bookingsRes),
     messageCount: safeCount(messagesRes),
     reportCount: safeCount(reportsRes),
