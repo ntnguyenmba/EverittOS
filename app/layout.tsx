@@ -28,6 +28,7 @@ import './dashboard-final-polish.css';
 import './app-readability-pass.css';
 import './customer-ready-polish.css';
 import './dashboard-mobile-balance.css';
+import './job-mobile-fixes.css';
 
 const inter = Inter({
   subsets: ['latin'],
