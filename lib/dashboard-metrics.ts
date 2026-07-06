@@ -3,6 +3,7 @@ import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 import { countOrganizationJobs } from '@/lib/jobs-org-query';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
+const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
 
 export type DashboardRevenueMetrics = {
   revenueThisMonth: number;
@@ -121,6 +122,7 @@ export async function fetchDashboardRevenueMetrics(
       .from('bookings')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
+      .not('status', 'in', `(${CANCELLED_BOOKING_STATUSES.join(',')})`)
       .gte('starts_at', `${monthStart}T00:00:00`),
     supabase
       .from('customer_messages')
