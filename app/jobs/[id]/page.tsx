@@ -178,6 +178,8 @@ export default function JobDetailPage({ params }: PageProps) {
 
   async function updateStatus(status: string) {
     if (!canEditStatus || updatingStatus) return;
+    const confirmed = status === 'cancelled' ? window.confirm('Cancel this job? It will be hidden from dashboard metrics.') : true;
+    if (!confirmed) return;
     setUpdatingStatus(true);
     const ok = await patchJob({ status }, copy.statusUpdated(status));
     setUpdatingStatus(false);
@@ -246,78 +248,86 @@ export default function JobDetailPage({ params }: PageProps) {
 
   return (
     <AppShell plan={plan} role={userRole}>
-      <div className="page-head">
-        <div>
-          <h2>{job.title}</h2>
-          <p>{job.address || copy.noAddressAdded}</p>
+      <div className="job-detail-shell">
+        <div className="page-head">
+          <div>
+            <h2>{job.title}</h2>
+            <p>{job.address || copy.noAddressAdded}</p>
+          </div>
+          <StatusPill status={job.status} />
         </div>
-        <StatusPill status={job.status} />
+
+        <div className="card" style={{ marginBottom: 18 }}>
+          <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
+          <p className="muted">{canManage ? 'You can edit job details, visits, assigned team, customer notes, and verification.' : copy.fieldAccessCopy}</p>
+        </div>
+
+        <div className="grid-2">
+          <div className="card">
+            <h3>{canManage ? copy.jobDetails : copy.jobDetailsReadOnly}</h3>
+            {canManage ? (
+              <div className="form">
+                <label>{copy.title}</label>
+                <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
+                <label>{copy.customer}</label>
+                <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
+                <label>{copy.phone}</label>
+                <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
+                <label>{copy.address}</label>
+                <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
+                <label>{copy.jobNotes}</label>
+                <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
+                <label>{copy.priority}</label>
+                <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
+                  <option value="low">{copy.priorityLow}</option>
+                  <option value="normal">{copy.priorityNormal}</option>
+                  <option value="high">{copy.priorityHigh}</option>
+                  <option value="urgent">{copy.priorityUrgent}</option>
+                </select>
+                {canViewInternalNotes(userRole) ? <><label>{copy.internalNotes}</label><textarea className="input" rows={3} value={job.internal_notes || ''} onChange={(e) => setJob({ ...job, internal_notes: e.target.value })} /></> : null}
+                <label>{copy.customerNotes}</label>
+                <textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
+                <label><input type="checkbox" checked={!!job.completion_verified} onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })} /> {copy.completionVerified}</label>
+                <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? FEEDBACK.loading : copy.saveDetails}</button>
+              </div>
+            ) : (
+              <>
+                <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
+                <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
+                <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
+                <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
+                <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
+              </>
+            )}
+            <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
+            {canEditStatus ? (
+              <div className="job-detail-actions">
+                <button className="btn" type="button" disabled={updatingStatus || job.status === 'in_progress'} onClick={() => updateStatus('in_progress')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
+                <button className="btn btn-primary" type="button" disabled={updatingStatus || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
+                <button className="btn job-detail-danger" type="button" disabled={updatingStatus || job.status === 'cancelled'} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="card">
+            <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage} scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date} dueDate={job.due_date} onSaved={loadJob} />
+          </div>
+        </div>
+
+        {orgId && limitsForPlan(plan).crewAssignment ? (
+          <div className="card" style={{ marginTop: 18 }}>
+            <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments} canManage={canManage} onChange={loadJob} />
+          </div>
+        ) : null}
+
+        {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
+        <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
+        {canAccessFinancialTracking(plan) ? <><div style={{ marginTop: 18 }}><JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} /></div><div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage} /></div></> : null}
+        <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
+        <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
+        {canManage ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.proofReport}</h3><p>{copy.proofReportCopy}</p><button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>{creatingReport ? copy.creating : copy.createReport}</button><Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>{copy.viewLatest}</Link></div> : null}
+        {isManagerRole(userRole) ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.activityTimeline}</h3>{activity.length > 0 ? <ActivityFeed items={activity} /> : <>{timeline.length === 0 && <p>{copy.noTimelineEntries}</p>}{timeline.map((entry) => <div key={entry.id} style={{ marginTop: 10 }}><strong>{entry.event_type}</strong><p>{entry.message || copy.updateRecorded}</p></div>)}</>}</div> : null}
       </div>
-
-      <div className="card" style={{ marginBottom: 18 }}>
-        <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
-        <p className="muted">{canManage ? 'You can edit job details, visits, assigned team, customer notes, and verification.' : copy.fieldAccessCopy}</p>
-      </div>
-
-      <div className="grid-2">
-        <div className="card">
-          <h3>{canManage ? copy.jobDetails : copy.jobDetailsReadOnly}</h3>
-          {canManage ? (
-            <div className="form">
-              <label>{copy.title}</label>
-              <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
-              <label>{copy.customer}</label>
-              <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
-              <label>{copy.phone}</label>
-              <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
-              <label>{copy.address}</label>
-              <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
-              <label>{copy.jobNotes}</label>
-              <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
-              <label>{copy.priority}</label>
-              <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
-                <option value="low">{copy.priorityLow}</option>
-                <option value="normal">{copy.priorityNormal}</option>
-                <option value="high">{copy.priorityHigh}</option>
-                <option value="urgent">{copy.priorityUrgent}</option>
-              </select>
-              {canViewInternalNotes(userRole) ? <><label>{copy.internalNotes}</label><textarea className="input" rows={3} value={job.internal_notes || ''} onChange={(e) => setJob({ ...job, internal_notes: e.target.value })} /></> : null}
-              <label>{copy.customerNotes}</label>
-              <textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
-              <label><input type="checkbox" checked={!!job.completion_verified} onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })} /> {copy.completionVerified}</label>
-              <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? FEEDBACK.loading : copy.saveDetails}</button>
-            </div>
-          ) : (
-            <>
-              <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
-              <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
-              <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
-              <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
-              <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
-            </>
-          )}
-          <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
-          {canEditStatus ? <div className="form" style={{ marginTop: 16 }}><button className="btn" type="button" disabled={updatingStatus || job.status === 'in_progress'} onClick={() => updateStatus('in_progress')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button><button className="btn btn-primary" type="button" disabled={updatingStatus || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button></div> : null}
-        </div>
-
-        <div className="card">
-          <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage} scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date} dueDate={job.due_date} onSaved={loadJob} />
-        </div>
-      </div>
-
-      {orgId && limitsForPlan(plan).crewAssignment ? (
-        <div className="card" style={{ marginTop: 18 }}>
-          <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments} canManage={canManage} onChange={loadJob} />
-        </div>
-      ) : null}
-
-      {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
-      <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
-      {canAccessFinancialTracking(plan) ? <><div style={{ marginTop: 18 }}><JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} /></div><div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage} /></div></> : null}
-      <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
-      <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
-      {canManage ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.proofReport}</h3><p>{copy.proofReportCopy}</p><button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>{creatingReport ? copy.creating : copy.createReport}</button><Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>{copy.viewLatest}</Link></div> : null}
-      {isManagerRole(userRole) ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.activityTimeline}</h3>{activity.length > 0 ? <ActivityFeed items={activity} /> : <>{timeline.length === 0 && <p>{copy.noTimelineEntries}</p>}{timeline.map((entry) => <div key={entry.id} style={{ marginTop: 10 }}><strong>{entry.event_type}</strong><p>{entry.message || copy.updateRecorded}</p></div>)}</>}</div> : null}
     </AppShell>
   );
 }
