@@ -10,7 +10,6 @@ import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { validatePlanAction } from '@/lib/plan-validate';
-import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 
 type JobCreatorProps = {
@@ -23,7 +22,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
-  const [assignedEmail, setAssignedEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const appFeedback = useAppFeedback();
@@ -36,12 +34,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     if (!title.trim()) {
       appFeedback.error('Add a job title first.');
-      return;
-    }
-
-    const emailCheck = validateAssignedEmail(assignedEmail);
-    if (!emailCheck.ok) {
-      appFeedback.error(emailCheck.error);
       return;
     }
 
@@ -104,7 +96,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
-        assigned_email: emailCheck.email,
         status: 'new'
       })
     });
@@ -136,7 +127,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
-    setAssignedEmail('');
     appFeedback.created();
     onJobCreated?.(createdJob.id);
   }
@@ -158,18 +148,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <label htmlFor="job-assigned-email">{t('pages.jobs.assignedEmail')}</label>
-        <input
-          id="job-assigned-email"
-          className="input"
-          type="email"
-          placeholder="name@company.com"
-          value={assignedEmail}
-          onChange={(e) => setAssignedEmail(e.target.value)}
-          autoComplete="email"
-        />
-        <p className="muted">{t('pages.jobs.assignedEmailHint')}</p>
         <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <p className="muted">After saving, open the job to assign employees or contractors.</p>
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
         </Button>
