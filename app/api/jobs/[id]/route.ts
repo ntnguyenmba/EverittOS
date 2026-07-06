@@ -47,7 +47,7 @@ const MANAGER_ONLY_FIELDS = new Set([
   'customer_notes',
   'completion_verified',
   'customer_id',
-  ...INTERNAL_ONLY_FIELDS
+  'internal_notes'
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status']);
