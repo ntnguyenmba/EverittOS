@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+const VALID_RECORD_TYPES = new Set(['lead', 'customer', 'staffing']);
+
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
@@ -26,6 +28,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     pipeline_stage?: string;
     lead_source?: string;
     record_type?: string;
+    assigned_to?: string | null;
   };
 
   const ownershipFilter = `organization_id.eq.${ctx.workspace.organizationId},user_id.eq.${ctx.userId}`;
@@ -44,6 +47,23 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
   }
 
+  if (body.record_type && !VALID_RECORD_TYPES.has(body.record_type)) {
+    return NextResponse.json({ error: 'Invalid record type.' }, { status: 400 });
+  }
+
+  if (body.assigned_to) {
+    const { data: assignee } = await ctx.supabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('user_id', body.assigned_to)
+      .eq('active', true)
+      .maybeSingle();
+    if (!assignee) {
+      return NextResponse.json({ error: 'Assigned team member is not active in this workspace.' }, { status: 400 });
+    }
+  }
+
   const payload = buildCustomerUpdatePayload({
     displayName: body.displayName,
     phone: body.phone,
@@ -52,8 +72,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     notes: body.notes,
     pipeline_stage: body.pipeline_stage,
     lead_source: body.lead_source,
-    record_type: body.record_type
+    record_type: body.record_type,
+    assigned_to: body.assigned_to
   });
+
+  if (body.record_type === 'customer' && body.pipeline_stage === undefined) {
+    payload.pipeline_stage = 'active';
+  }
+  if (body.record_type === 'lead' && body.pipeline_stage === undefined) {
+    payload.pipeline_stage = 'open';
+  }
 
   if (body.logo_path !== undefined) {
     payload.logo_path = body.logo_path;
@@ -65,16 +93,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
+  const nextType = body.record_type || existing.record_type || 'customer';
+  const action = body.record_type && body.record_type !== existing.record_type ? `${nextType}_converted` : `${nextType}_updated`;
+
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
     ctx.userId,
-    'customer',
+    nextType,
     id,
-    'customer_updated',
-    `Customer updated: ${customerDisplayName(existing)}`
+    action,
+    `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${customerDisplayName(existing)}`
   );
 
-  return NextResponse.json({ ok: true, message: 'Customer saved successfully.' });
+  return NextResponse.json({ ok: true, message: nextType === 'lead' ? 'Lead saved successfully.' : 'Customer saved successfully.' });
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
