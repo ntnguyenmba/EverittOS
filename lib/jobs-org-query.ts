@@ -80,7 +80,7 @@ function isCompletedJobStatus(status: string | null | undefined): boolean {
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
   organizationId: string,
-  options?: { sinceIso?: string; status?: string }
+  options?: { sinceIso?: string; status?: string; excludeStatuses?: string[] }
 ): Promise<{ count: number; error: string | null }> {
   let query = supabase
     .from('jobs')
@@ -92,6 +92,9 @@ export async function countOrganizationJobs(
   }
   if (options?.status) {
     query = query.eq('status', options.status);
+  }
+  for (const status of options?.excludeStatuses || []) {
+    query = query.neq('status', status);
   }
 
   const { count, error } = await query;
