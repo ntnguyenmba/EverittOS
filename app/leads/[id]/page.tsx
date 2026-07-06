@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LeadDetailForm } from '@/components/lead-detail-form';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
-import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
-import { leadPipelineLabel } from '@/lib/lead-pipeline';
+import { CUSTOMER_LIST_SELECT, customerDisplayAddress, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
+import { leadPipelineLabel, normalizeLeadStage } from '@/lib/lead-pipeline';
 import { leadSourceLabel } from '@/lib/lead-sources';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -84,7 +84,7 @@ export default function LeadDetailPage({ params }: PageProps) {
     void load();
   }, [leadId]);
 
-  const convertHref = useMemo(() => (lead ? bookingHrefForLead(lead) : '/bookings'), [lead]);
+  const bookingHref = useMemo(() => (lead ? bookingHrefForLead(lead) : '/bookings'), [lead]);
 
   if (loading) {
     return (
@@ -117,13 +117,11 @@ export default function LeadDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="page-header-action inline-actions">
-          {canManage ? (
-            <Link className="btn btn-primary" href={convertHref}>
-              Convert to booking
-            </Link>
-          ) : null}
-          <Link className="btn" href={`/customers/${lead.id}`}>
-            Open customer record
+          <Link className="btn" href={bookingHref}>
+            Create booking
+          </Link>
+          <Link className="btn" href="/leads">
+            Back to leads
           </Link>
         </div>
       </header>
@@ -136,9 +134,11 @@ export default function LeadDetailPage({ params }: PageProps) {
           displayName: customerDisplayName(lead),
           phone: lead.phone || '',
           email: lead.email || '',
+          address: customerDisplayAddress(lead, ''),
           notes: lead.notes || '',
+          assignedTo: lead.assigned_to || '',
           leadSource: lead.lead_source || 'website',
-          pipelineStage: lead.pipeline_stage || 'lead'
+          pipelineStage: normalizeLeadStage(lead.pipeline_stage)
         }}
       />
     </AppShell>
