@@ -38,10 +38,6 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function excludeCancelledJobs<T extends { neq: (column: string, value: string) => T }>(query: T): T {
-  return CANCELLED_JOB_STATUSES.reduce((current, status) => current.neq('status', status), query);
-}
-
 export async function fetchDashboardRevenueMetrics(
   supabase: SupabaseClient,
   organizationId: string | null
@@ -68,18 +64,6 @@ export async function fetchDashboardRevenueMetrics(
   };
 
   if (!organizationId) return empty;
-
-  const upcomingJobsQuery = excludeCancelledJobs(
-    supabase
-      .from('jobs')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
-      .neq('status', 'completed')
-      .gte('scheduled_start', `${today}T00:00:00`)
-  );
-  const jobsByStatusQuery = excludeCancelledJobs(
-    supabase.from('jobs').select('status').eq('organization_id', organizationId)
-  );
 
   const [
     invoicesRes,
@@ -114,8 +98,20 @@ export async function fetchDashboardRevenueMetrics(
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
       .neq('pipeline_stage', 'archived'),
-    upcomingJobsQuery,
-    jobsByStatusQuery,
+    supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .neq('status', 'completed')
+      .neq('status', 'cancelled')
+      .neq('status', 'canceled')
+      .gte('scheduled_start', `${today}T00:00:00`),
+    supabase
+      .from('jobs')
+      .select('status')
+      .eq('organization_id', organizationId)
+      .neq('status', 'cancelled')
+      .neq('status', 'canceled'),
     supabase
       .from('expenses')
       .select('amount, date')
