@@ -4,6 +4,8 @@ import { appUrl } from '@/lib/app-url';
 import { isRevokedTokenError } from '@/lib/google-calendar-health';
 import { refreshGoogleAccessToken } from '@/lib/google-calendar-oauth';
 
+const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
+
 export type GoogleCalendarConnectionRow = {
   id: string;
   organization_id: string;
@@ -49,6 +51,10 @@ type GoogleCalendarEventBody = {
   start: { dateTime?: string; date?: string; timeZone?: string };
   end: { dateTime?: string; date?: string; timeZone?: string };
 };
+
+function isCancelledJobStatus(status: string | null | undefined): boolean {
+  return CANCELLED_JOB_STATUSES.includes((status || '').toLowerCase());
+}
 
 async function markGoogleCalendarReconnectRequired(admin: SupabaseClient, connection: GoogleCalendarConnectionRow, reason: string): Promise<void> {
   await admin.from('google_calendar_connections').update({ last_sync_error: reason.slice(0, 500), updated_at: new Date().toISOString() }).eq('id', connection.id);
@@ -162,7 +168,7 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
   const typedJob = job as JobForCalendarSync;
   const accessToken = await ensureAccessToken(admin, connection);
   const calendarId = encodeURIComponent(connection.calendar_id || 'primary');
-  if (typedJob.status === 'cancelled' || typedJob.status === 'completed') {
+  if (isCancelledJobStatus(typedJob.status) || typedJob.status === 'completed') {
     await clearExistingCalendarEvents(admin, accessToken, calendarId, jobId);
     return { ok: true };
   }
@@ -192,7 +198,7 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
 export async function syncOrganizationJobsToGoogleCalendar(admin: SupabaseClient, organizationId: string, timeZone = 'America/New_York'): Promise<{ synced: number; failed: number; error?: string }> {
   const connection = await getGoogleCalendarConnection(admin, organizationId);
   if (!connection || !connection.sync_enabled) return { synced: 0, failed: 0, error: 'Google Calendar is not connected.' };
-  const { data: jobs } = await admin.from('jobs').select('id').eq('organization_id', organizationId).not('status', 'eq', 'cancelled');
+  const { data: jobs } = await admin.from('jobs').select('id').eq('organization_id', organizationId).not('status', 'in', `(${CANCELLED_JOB_STATUSES.join(',')})`);
   let synced = 0;
   let failed = 0;
   let lastError: string | undefined;
