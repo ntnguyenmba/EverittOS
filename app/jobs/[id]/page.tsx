@@ -77,6 +77,10 @@ function formatDateTime(value: string | null, fallback: string) {
   return new Date(value).toLocaleString();
 }
 
+function isActiveStatus(status: string | null | undefined) {
+  return status === 'active' || status === 'in_progress';
+}
+
 export default function JobDetailPage({ params }: PageProps) {
   const router = useRouter();
   const [jobId, setJobId] = useState('');
@@ -302,7 +306,7 @@ export default function JobDetailPage({ params }: PageProps) {
             <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
             {canEditStatus ? (
               <div className="job-detail-actions">
-                <button className="btn" type="button" disabled={updatingStatus || job.status === 'in_progress'} onClick={() => updateStatus('in_progress')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
+                <button className="btn" type="button" disabled={updatingStatus || isActiveStatus(job.status)} onClick={() => updateStatus('active')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
                 <button className="btn btn-primary" type="button" disabled={updatingStatus || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
                 <button className="btn job-detail-danger" type="button" disabled={updatingStatus || job.status === 'cancelled'} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
               </div>
