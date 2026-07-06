@@ -11,6 +11,7 @@ import { JobPhotosSection } from '@/components/job-photos-section';
 import { JobLaborSection } from '@/components/job-labor-section';
 import { JobProfitabilityCard } from '@/components/job-profitability-card';
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
+import { JobAssignments } from '@/components/job-assignments';
 import { AppShell } from '@/components/app-shell';
 import { canAccessFinancialTracking } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -27,7 +28,6 @@ import { useTranslation } from '@/components/locale-provider';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { getJobDetailCopy } from '@/lib/i18n/job-detail-copy';
 import { supabase } from '@/lib/supabase';
 
@@ -58,6 +58,7 @@ type Job = {
 };
 
 type Worker = { id: string; name: string };
+type Assignment = { id: string; worker_id: string; responsibility: string | null };
 type TimelineEntry = { id: string; message: string | null; event_type: string; created_at: string | null };
 
 function displayValue(value: string | null | undefined, fallback: string) {
@@ -81,6 +82,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [jobId, setJobId] = useState('');
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [activity, setActivity] = useState<{ id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]>([]);
   const [checklist, setChecklist] = useState<{ id: string; label: string; completed: boolean; sort_order: number }[]>([]);
@@ -126,17 +128,19 @@ export default function JobDetailPage({ params }: PageProps) {
 
     const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
     const { data: notes } = await supabase.from('job_timeline').select('id, message, event_type, created_at').eq('job_id', jobId).order('created_at', { ascending: false });
-    const [{ data: checklistRows }, { data: activityRows }] = await Promise.all([
+    const [{ data: checklistRows }, { data: activityRows }, { data: assignmentRows }] = await Promise.all([
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
       org?.organizationId && limitsForPlan(userPlan).activityLog
         ? supabase.from('activity_logs').select('id, action, message, entity_type, created_at, actor_name').eq('organization_id', org.organizationId).eq('entity_id', jobId).order('created_at', { ascending: false }).limit(30)
-        : Promise.resolve({ data: [] })
+        : Promise.resolve({ data: [] }),
+      supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId)
     ]);
     setChecklist(checklistRows || []);
     setActivity(activityRows || []);
+    setAssignments((assignmentRows || []) as Assignment[]);
 
     if (limitsForPlan(userPlan).crewAssignment) {
-      let workersQuery = supabase.from('workers').select('id, name').order('name');
+      let workersQuery = supabase.from('workers').select('id, name').eq('active', true).order('name');
       workersQuery = org?.organizationId ? workersQuery.eq('organization_id', org.organizationId) : workersQuery.eq('user_id', user.id);
       const { data: crew } = await workersQuery;
       setWorkers(crew || []);
@@ -194,13 +198,8 @@ export default function JobDetailPage({ params }: PageProps) {
       appFeedback.error(copy.jobTitleRequired);
       return;
     }
-    const emailCheck = validateAssignedEmail(job.assigned_email);
-    if (!emailCheck.ok) {
-      appFeedback.error(emailCheck.error);
-      return;
-    }
     setSavingDetails(true);
-    const ok = await patchJob({ title: job.title.trim(), customer_name: job.customer_name, phone: job.phone, address: job.address, notes: job.notes, priority: job.priority, internal_notes: job.internal_notes, customer_notes: job.customer_notes, completion_verified: job.completion_verified, assigned_email: emailCheck.email }, FEEDBACK.saved);
+    const ok = await patchJob({ title: job.title.trim(), customer_name: job.customer_name, phone: job.phone, address: job.address, notes: job.notes, priority: job.priority, internal_notes: job.internal_notes, customer_notes: job.customer_notes, completion_verified: job.completion_verified }, FEEDBACK.saved);
     setSavingDetails(false);
     if (!ok) return;
     if (orgId) await logClientActivity(orgId, 'job', jobId, 'job_edited', 'Job details updated');
@@ -243,7 +242,6 @@ export default function JobDetailPage({ params }: PageProps) {
   if (!job) return <AppShell plan={plan} role={userRole}><div className="card">{loadError || copy.jobAccessDenied}</div></AppShell>;
 
   const canWorkJob = canManage || canEditStatus;
-  const assignedEmailDisplay = job.assigned_email?.trim() || null;
   const priorityLabels = { low: copy.priorityLow, normal: copy.priorityNormal, high: copy.priorityHigh, urgent: copy.priorityUrgent };
 
   return (
@@ -258,8 +256,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
       <div className="card" style={{ marginBottom: 18 }}>
         <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
-        <p className="muted">{canManage ? 'You can edit job details, visits, customer notes, and verification. Team access is handled through shared records.' : copy.fieldAccessCopy}</p>
-        {assignedEmailDisplay ? <p><strong>{copy.assignedEmail}:</strong> {assignedEmailDisplay}</p> : null}
+        <p className="muted">{canManage ? 'You can edit job details, visits, assigned team, customer notes, and verification.' : copy.fieldAccessCopy}</p>
       </div>
 
       <div className="grid-2">
@@ -275,8 +272,6 @@ export default function JobDetailPage({ params }: PageProps) {
               <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
               <label>{copy.address}</label>
               <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
-              <label htmlFor="job-detail-assigned-email">{copy.assignedEmail}</label>
-              <input id="job-detail-assigned-email" className="input" type="email" placeholder="name@company.com" value={job.assigned_email || ''} onChange={(e) => setJob({ ...job, assigned_email: e.target.value })} autoComplete="email" />
               <label>{copy.jobNotes}</label>
               <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
               <label>{copy.priority}</label>
@@ -297,7 +292,6 @@ export default function JobDetailPage({ params }: PageProps) {
               <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
               <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
               <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
-              <p><strong>{copy.assignedEmail}:</strong> {displayValue(job.assigned_email, copy.notSet)}</p>
               <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
               <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
             </>
@@ -310,6 +304,12 @@ export default function JobDetailPage({ params }: PageProps) {
           <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage} scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date} dueDate={job.due_date} onSaved={loadJob} />
         </div>
       </div>
+
+      {orgId && limitsForPlan(plan).crewAssignment ? (
+        <div className="card" style={{ marginTop: 18 }}>
+          <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments} canManage={canManage} onChange={loadJob} />
+        </div>
+      ) : null}
 
       {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
       <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
