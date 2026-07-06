@@ -61,6 +61,33 @@ type Worker = { id: string; name: string };
 type Assignment = { id: string; worker_id: string; responsibility: string | null };
 type TimelineEntry = { id: string; message: string | null; event_type: string; created_at: string | null };
 
+const SAFE_JOB_DETAIL_COLUMNS = [
+  'id',
+  'user_id',
+  'title',
+  'customer_name',
+  'phone',
+  'address',
+  'notes',
+  'status',
+  'start_date',
+  'due_date',
+  'scheduled_start',
+  'scheduled_end',
+  'assigned_to',
+  'assigned_email',
+  'organization_id',
+  'customer_id',
+  'priority',
+  'customer_notes',
+  'completion_verified',
+  'created_at'
+];
+
+function jobDetailColumns(canReadInternalNotes: boolean): string {
+  return [...SAFE_JOB_DETAIL_COLUMNS, ...(canReadInternalNotes ? ['internal_notes'] : [])].join(', ');
+}
+
 function displayValue(value: string | null | undefined, fallback: string) {
   return value && value.trim() ? value : fallback;
 }
@@ -123,6 +150,7 @@ export default function JobDetailPage({ params }: PageProps) {
     const org = await fetchOrganizationContext(user.id);
     const role = normalizeRole(org?.role || profile?.role);
     const userPlan = normalizePlan(profile?.plan);
+    const canReadInternalNotes = canViewInternalNotes(role);
     setUserRole(role);
     setPlan(userPlan);
     setCanManage(isManagerRole(role));
@@ -130,7 +158,7 @@ export default function JobDetailPage({ params }: PageProps) {
     setCanUploadPhotos(isManagerRole(role) || hasPermission(role, 'upload_before_photos') || hasPermission(role, 'upload_after_photos'));
     if (org) setOrgId(org.organizationId);
 
-    const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
+    const { data, error } = await supabase.from('jobs').select(jobDetailColumns(canReadInternalNotes)).eq('id', jobId).single();
     const { data: notes } = await supabase.from('job_timeline').select('id, message, event_type, created_at').eq('job_id', jobId).order('created_at', { ascending: false });
     const [{ data: checklistRows }, { data: activityRows }, { data: assignmentRows }] = await Promise.all([
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
@@ -165,7 +193,7 @@ export default function JobDetailPage({ params }: PageProps) {
       appFeedback.error(msg);
       return;
     }
-    setJob(data);
+    setJob({ ...data, internal_notes: canReadInternalNotes ? data.internal_notes ?? null : null } as Job);
     setTimeline(notes || []);
   }
 
