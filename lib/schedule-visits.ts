@@ -9,6 +9,51 @@ export type ScheduleVisit = {
   notes: string | null;
 };
 
+function isIsoDate(value: string | null | undefined): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+}
+
+function addDays(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function timeFromDateTime(value: string | null | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toTimeString().slice(0, 5);
+}
+
+function fallbackRangeEntries(job: ScheduleJob): ScheduleJob[] {
+  const start = job.start_date || job.scheduled_start?.slice(0, 10) || job.due_date;
+  const end = job.due_date || job.scheduled_end?.slice(0, 10) || start;
+  if (!isIsoDate(start) || !isIsoDate(end) || end <= start) return [job];
+
+  const entries: ScheduleJob[] = [];
+  let cursor = start;
+  let index = 0;
+  const startTime = timeFromDateTime(job.scheduled_start, '09:00');
+  const endTime = timeFromDateTime(job.scheduled_end, '17:00');
+
+  while (cursor <= end && index < 31) {
+    entries.push({
+      ...job,
+      schedule_key: `${job.id}:range:${cursor}`,
+      visit_id: null,
+      visit_date: cursor,
+      visit_start_time: startTime,
+      visit_end_time: endTime,
+      visit_notes: null
+    });
+    cursor = addDays(cursor, 1);
+    index += 1;
+  }
+
+  return entries.length ? entries : [job];
+}
+
 export function expandScheduleJobsByVisits(jobs: ScheduleJob[], visits: ScheduleVisit[]): ScheduleJob[] {
   const visitsByJob = new Map<string, ScheduleVisit[]>();
   visits.forEach((visit) => {
@@ -19,7 +64,7 @@ export function expandScheduleJobsByVisits(jobs: ScheduleJob[], visits: Schedule
 
   return jobs.flatMap((job) => {
     const jobVisits = visitsByJob.get(job.id) || [];
-    if (!jobVisits.length) return [job];
+    if (!jobVisits.length) return fallbackRangeEntries(job);
     return jobVisits.map((visit) => ({
       ...job,
       schedule_key: `${job.id}:${visit.id}`,
