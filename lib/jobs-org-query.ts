@@ -76,6 +76,40 @@ function isCompletedJobStatus(status: string | null | undefined): boolean {
   return ['completed', 'done', 'complete', 'closed'].includes(normalized);
 }
 
+async function assignmentScopeForUser(
+  supabase: SupabaseClient,
+  organizationId: string | null | undefined,
+  userId: string
+): Promise<{ workerIds: string[]; jobIds: string[] }> {
+  if (!organizationId) return { workerIds: [], jobIds: [] };
+
+  const { data: workerRows } = await supabase
+    .from('workers')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('auth_user_id', userId);
+
+  const workerIds = (workerRows || []).map((row) => row.id as string).filter(Boolean);
+  if (!workerIds.length) return { workerIds: [], jobIds: [] };
+
+  const { data: assignmentRows } = await supabase
+    .from('job_assignments')
+    .select('job_id')
+    .in('worker_id', workerIds);
+
+  return {
+    workerIds,
+    jobIds: Array.from(new Set((assignmentRows || []).map((row) => row.job_id as string).filter(Boolean)))
+  };
+}
+
+function assignmentOrFilters(userId: string, workerIds: string[], jobIds: string[]): string[] {
+  const filters = [`assigned_to.eq.${userId}`];
+  if (workerIds.length) filters.push(`assigned_to.in.(${workerIds.join(',')})`);
+  if (jobIds.length) filters.push(`id.in.(${jobIds.join(',')})`);
+  return filters;
+}
+
 /** Count jobs for an organization (source of truth for analytics dashboards). */
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
@@ -115,12 +149,18 @@ export async function listWorkspaceJobs(
   let query = supabase.from('jobs').select(JOB_LIST_COLUMNS).order('created_at', { ascending: false });
 
   const managerView = role === undefined || role === null || isManagerRole(normalizeRole(role));
+  const scope = managerView ? { workerIds: [], jobIds: [] } : await assignmentScopeForUser(supabase, organizationId, userId);
+
   if (organizationId) {
     if (managerView) {
       query = query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${userId})`);
     } else {
       query = query.or(
-        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),and(organization_id.eq.${organizationId},assigned_to.eq.${userId}),and(organization_id.is.null,user_id.eq.${userId})`
+        [
+          `and(organization_id.eq.${organizationId},user_id.eq.${userId})`,
+          ...assignmentOrFilters(userId, scope.workerIds, scope.jobIds).map((filter) => `and(organization_id.eq.${organizationId},${filter})`),
+          `and(organization_id.is.null,user_id.eq.${userId})`
+        ].join(',')
       );
     }
   } else {
@@ -137,34 +177,8 @@ export async function listWorkspaceJobs(
     query = query.gte('completed_at', filters.completedSince);
   }
   if (filters?.assignedTo) {
-    if (organizationId) {
-      const { data: workerRows } = await supabase
-        .from('workers')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .eq('auth_user_id', filters.assignedTo);
-      const workerIds = (workerRows || []).map((row) => row.id as string).filter(Boolean);
-      if (workerIds.length) {
-        const { data: assignmentRows } = await supabase
-          .from('job_assignments')
-          .select('job_id')
-          .in('worker_id', workerIds);
-        const assignedJobIds = Array.from(
-          new Set((assignmentRows || []).map((row) => row.job_id as string).filter(Boolean))
-        );
-        if (assignedJobIds.length) {
-          query = query.or(
-            `assigned_to.eq.${filters.assignedTo},id.in.(${assignedJobIds.join(',')})`
-          );
-        } else {
-          query = query.eq('assigned_to', filters.assignedTo);
-        }
-      } else {
-        query = query.eq('assigned_to', filters.assignedTo);
-      }
-    } else {
-      query = query.eq('assigned_to', filters.assignedTo);
-    }
+    const assignedScope = await assignmentScopeForUser(supabase, organizationId, filters.assignedTo);
+    query = query.or(assignmentOrFilters(filters.assignedTo, assignedScope.workerIds, assignedScope.jobIds).join(','));
   }
   if (filters?.createdFrom) {
     query = query.gte('created_at', `${filters.createdFrom}T00:00:00`);
