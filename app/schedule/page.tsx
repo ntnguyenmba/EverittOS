@@ -17,6 +17,7 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { daysAheadIso, todayIso } from '@/lib/date-filters';
 import { logClientActivity } from '@/lib/activity';
+import { loadScheduleVisits, loadWorkerNames } from '@/lib/schedule-page-loader';
 import { supabase } from '@/lib/supabase';
 
 function SchedulePageContent() {
@@ -37,9 +38,7 @@ function SchedulePageContent() {
 
   async function load() {
     setLoading(true);
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
       return;
@@ -51,47 +50,39 @@ function SchedulePageContent() {
 
     const org = await ensureOrganizationForUser(user.id);
     const workspaceRole = normalizeRole(org?.role || profile?.role);
+    const organizationId = org?.organizationId || '';
     setRole(workspaceRole);
-    setOrgId(org?.organizationId || '');
+    setOrgId(organizationId);
     setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(workspaceRole));
 
-    let jobsQuery = scopeJobsForWorkspace(
+    const jobsQuery = scopeJobsForWorkspace(
       supabase
         .from('jobs')
         .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
         .not('status', 'eq', 'cancelled')
         .order('due_date', { ascending: true, nullsFirst: false }),
       user.id,
-      org?.organizationId,
+      organizationId,
       workspaceRole
     );
 
     const { data, error: fetchError } = await jobsQuery;
-
-    setLoading(false);
     if (fetchError) {
+      setLoading(false);
       setError(fetchError.message);
       return;
     }
 
     let rows = (data || []) as ScheduleJob[];
-    if (memberFilter) {
-      rows = rows.filter((job) => job.assigned_to === memberFilter);
-    }
-    setJobs(rows);
+    if (memberFilter) rows = rows.filter((job) => job.assigned_to === memberFilter);
 
-    let workersQuery = supabase.from('workers').select('id, name').order('name');
-    if (org?.organizationId) {
-      workersQuery = workersQuery.eq('organization_id', org.organizationId);
-    } else {
-      workersQuery = workersQuery.eq('user_id', user.id);
-    }
-    const { data: workers } = await workersQuery;
-    const map: Record<string, string> = {};
-    (workers || []).forEach((w: { id: string; name: string }) => {
-      map[w.id] = w.name;
-    });
-    setWorkerNames(map);
+    const [expandedRows, workers] = await Promise.all([
+      loadScheduleVisits(supabase, rows, organizationId),
+      loadWorkerNames(supabase, user.id, organizationId)
+    ]);
+    setJobs(expandedRows);
+    setWorkerNames(workers);
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -106,7 +97,8 @@ function SchedulePageContent() {
       (j) =>
         j.status !== 'completed' &&
         j.status !== 'cancelled' &&
-        ((j.due_date && j.due_date >= today && j.due_date <= end) ||
+        ((j.visit_date && j.visit_date >= today && j.visit_date <= end) ||
+          (j.due_date && j.due_date >= today && j.due_date <= end) ||
           (j.start_date && j.start_date >= today && j.start_date <= end))
     );
   }, [jobs, rangeFilter]);
@@ -126,9 +118,7 @@ function SchedulePageContent() {
     }
     setError('');
     appFeedback.success('Assignment updated.');
-    if (orgId) {
-      await logClientActivity(orgId, 'job', jobId, 'schedule_changed', workerId ? 'Worker assigned on schedule' : 'Worker unassigned');
-    }
+    if (orgId) await logClientActivity(orgId, 'job', jobId, 'schedule_changed', workerId ? 'Worker assigned on schedule' : 'Worker unassigned');
     load();
   }
 
@@ -153,9 +143,7 @@ function SchedulePageContent() {
     }
     setError('');
     appFeedback.success('Schedule updated.');
-    if (orgId) {
-      await logClientActivity(orgId, 'job', jobId, 'schedule_changed', `Moved to ${dateKey}`);
-    }
+    if (orgId) await logClientActivity(orgId, 'job', jobId, 'schedule_changed', `Moved to ${dateKey}`);
     load();
   }
 
@@ -163,43 +151,25 @@ function SchedulePageContent() {
     <AppShell plan={plan} role={role}>
       <PageHeader
         title={t('ux.pageTitles.schedule')}
-        subtitle={t('ux.helperSchedule')}
-        action={
-          <Link className="btn btn-primary" href="/schedule/new">
-            Schedule work
-          </Link>
-        }
+        subtitle="Jobs and visits by day, time, and assignment."
+        action={<Link className="btn btn-primary" href="/schedule/new">Schedule work</Link>}
       />
 
       {loading && <div className="card"><p className="loading-state">{t('common.loading')}</p></div>}
-      {error && (
-        <p className="auth-message auth-message-error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <p className="auth-message auth-message-error" role="alert">{error}</p>}
       {!loading && !error && visibleJobs.length === 0 && (
         <div className="card empty-action-card" style={{ marginTop: 18 }}>
           <h3>Nothing scheduled</h3>
-          <p className="muted">Create a job first, then schedule it here so it appears on the calendar.</p>
+          <p className="muted">Create a job first, then schedule each visit so it appears on the calendar.</p>
           <div className="settings-actions">
-            <Link className="btn btn-primary" href="/jobs/new">
-              Create job
-            </Link>
-            <Link className="btn" href="/schedule/new">
-              Schedule existing job
-            </Link>
+            <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+            <Link className="btn" href="/schedule/new">Schedule existing job</Link>
           </div>
         </div>
       )}
       {!loading && !error && visibleJobs.length > 0 && (
         <div className="card" style={{ marginTop: 18 }}>
-          <ScheduleViews
-            jobs={visibleJobs}
-            workerNames={workerNames}
-            canAssign={canAssign}
-            onAssign={assignWorker}
-            onReschedule={canAssign ? rescheduleJob : undefined}
-          />
+          <ScheduleViews jobs={visibleJobs} workerNames={workerNames} canAssign={canAssign} onAssign={assignWorker} onReschedule={canAssign ? rescheduleJob : undefined} />
         </div>
       )}
     </AppShell>
