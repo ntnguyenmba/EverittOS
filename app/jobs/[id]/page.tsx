@@ -331,11 +331,13 @@ export default function JobDetailPage({ params }: PageProps) {
               <div className="job-detail-actions">
                 <button className="btn" type="button" disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)} onClick={() => updateStatus('active')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
                 <button className="btn btn-primary" type="button" disabled={updatingStatus || isCancelledJob || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
-                {isCancelledJob ? (
-                  <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>{updatingStatus ? FEEDBACK.loading : 'Restore job'}</button>
-                ) : (
-                  <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
-                )}
+                {canManage ? (
+                  isCancelledJob ? (
+                    <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>{updatingStatus ? FEEDBACK.loading : 'Restore job'}</button>
+                  ) : (
+                    <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
+                  )
+                ) : null}
               </div>
             ) : null}
           </div>
