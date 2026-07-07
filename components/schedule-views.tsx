@@ -27,7 +27,7 @@ type ScheduleViewsProps = {
   workerNames: Record<string, string>;
   canAssign: boolean;
   onAssign?: (jobId: string, workerId: string | null) => void;
-  onReschedule?: (jobId: string, dateKey: string) => void;
+  onReschedule?: (jobId: string, dateKey: string, job?: ScheduleJob) => void;
 };
 
 type ViewMode = 'calendar' | 'day' | 'week' | 'list';
@@ -64,7 +64,7 @@ function jobKey(job: ScheduleJob): string {
 export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onReschedule }: ScheduleViewsProps) {
   const [view, setView] = useState<ViewMode>('week');
   const [anchor, setAnchor] = useState(() => new Date());
-  const [dragJobId, setDragJobId] = useState<string | null>(null);
+  const [dragJob, setDragJob] = useState<ScheduleJob | null>(null);
 
   const scheduled = useMemo(
     () =>
@@ -90,21 +90,21 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
   const jobsForDay = scheduled.filter((j) => jobDateKey(j) === dayKey);
 
   function handleDrop(targetKey: string) {
-    if (!dragJobId || !onReschedule) return;
-    onReschedule(dragJobId, targetKey);
-    setDragJobId(null);
+    if (!dragJob || !onReschedule) return;
+    onReschedule(dragJob.id, targetKey, dragJob);
+    setDragJob(null);
   }
 
   function JobChip({ job }: { job: ScheduleJob }) {
     return (
       <div
         className="schedule-job-chip"
-        draggable={canAssign && Boolean(onReschedule) && !job.visit_id}
-        onDragStart={() => setDragJobId(job.id)}
-        onDragEnd={() => setDragJobId(null)}
+        draggable={canAssign && Boolean(onReschedule)}
+        onDragStart={() => setDragJob(job)}
+        onDragEnd={() => setDragJob(null)}
       >
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
-        {job.visit_id ? <span className="schedule-chip-meta">{formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))}</span> : null}
+        {job.visit_date ? <span className="schedule-chip-meta">{formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))}</span> : null}
       </div>
     );
   }
@@ -112,27 +112,13 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
   return (
     <div className="schedule-views">
       <div className="schedule-toolbar">
-        <button type="button" className={`btn ${view === 'calendar' ? 'btn-primary' : ''}`} onClick={() => setView('calendar')}>
-          Calendar
-        </button>
-        <button type="button" className={`btn ${view === 'day' ? 'btn-primary' : ''}`} onClick={() => setView('day')}>
-          Day
-        </button>
-        <button type="button" className={`btn ${view === 'week' ? 'btn-primary' : ''}`} onClick={() => setView('week')}>
-          Week
-        </button>
-        <button type="button" className={`btn ${view === 'list' ? 'btn-primary' : ''}`} onClick={() => setView('list')}>
-          Upcoming
-        </button>
-        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() - 86400000 * 7))}>
-          Prev
-        </button>
-        <button type="button" className="btn" onClick={() => setAnchor(new Date())}>
-          Today
-        </button>
-        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() + 86400000 * 7))}>
-          Next
-        </button>
+        <button type="button" className={`btn ${view === 'calendar' ? 'btn-primary' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
+        <button type="button" className={`btn ${view === 'day' ? 'btn-primary' : ''}`} onClick={() => setView('day')}>Day</button>
+        <button type="button" className={`btn ${view === 'week' ? 'btn-primary' : ''}`} onClick={() => setView('week')}>Week</button>
+        <button type="button" className={`btn ${view === 'list' ? 'btn-primary' : ''}`} onClick={() => setView('list')}>Upcoming</button>
+        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() - 86400000 * 7))}>Prev</button>
+        <button type="button" className="btn" onClick={() => setAnchor(new Date())}>Today</button>
+        <button type="button" className="btn" onClick={() => setAnchor(new Date(anchor.getTime() + 86400000 * 7))}>Next</button>
       </div>
 
       {unscheduled.length > 0 ? (
@@ -141,13 +127,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
           <p className="muted">Drag a job onto a day below, or set dates on the job detail page.</p>
           <div className="inline-actions">
             {unscheduled.map((j) => (
-              <div
-                key={jobKey(j)}
-                className="schedule-job-chip"
-                draggable={canAssign && Boolean(onReschedule)}
-                onDragStart={() => setDragJobId(j.id)}
-                onDragEnd={() => setDragJobId(null)}
-              >
+              <div key={jobKey(j)} className="schedule-job-chip" draggable={canAssign && Boolean(onReschedule)} onDragStart={() => setDragJob(j)} onDragEnd={() => setDragJob(null)}>
                 <Link href={`/jobs/${j.id}`}>{j.title}</Link>
               </div>
             ))}
@@ -161,16 +141,9 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
             const key = dateKey(d);
             const dayJobs = scheduled.filter((j) => jobDateKey(j) === key);
             return (
-              <div
-                key={key}
-                className="schedule-day-cell"
-                onDragOver={(e) => canAssign && e.preventDefault()}
-                onDrop={() => handleDrop(key)}
-              >
+              <div key={key} className="schedule-day-cell" onDragOver={(e) => canAssign && e.preventDefault()} onDrop={() => handleDrop(key)}>
                 <div className="schedule-day-label">{d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-                {dayJobs.map((j) => (
-                  <JobChip key={jobKey(j)} job={j} />
-                ))}
+                {dayJobs.map((j) => <JobChip key={jobKey(j)} job={j} />)}
               </div>
             );
           })}
@@ -181,9 +154,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
         <div className="card">
           <h4>{anchor.toLocaleDateString()}</h4>
           {jobsForDay.length === 0 && <p className="muted">No scheduled work yet.</p>}
-          {jobsForDay.map((j) => (
-            <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
-          ))}
+          {jobsForDay.map((j) => <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />)}
         </div>
       )}
 
@@ -193,16 +164,9 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
             const key = dateKey(d);
             const dayJobs = scheduled.filter((j) => jobDateKey(j) === key);
             return (
-              <div
-                key={key}
-                className="schedule-week-col"
-                onDragOver={(e) => canAssign && e.preventDefault()}
-                onDrop={() => handleDrop(key)}
-              >
+              <div key={key} className="schedule-week-col" onDragOver={(e) => canAssign && e.preventDefault()} onDrop={() => handleDrop(key)}>
                 <strong>{d.toLocaleDateString(undefined, { weekday: 'short' })}</strong>
-                {dayJobs.map((j) => (
-                  <JobChip key={jobKey(j)} job={j} />
-                ))}
+                {dayJobs.map((j) => <JobChip key={jobKey(j)} job={j} />)}
               </div>
             );
           })}
@@ -213,59 +177,30 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
         <div className="card">
           <h4>Upcoming jobs</h4>
           {scheduled.length === 0 && <p className="muted">No scheduled work yet.</p>}
-          {scheduled.slice(0, 40).map((j) => (
-            <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
-          ))}
+          {scheduled.slice(0, 40).map((j) => <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />)}
         </div>
       )}
     </div>
   );
 }
 
-function ScheduleRow({
-  job,
-  workerNames,
-  canAssign,
-  onAssign,
-  onReschedule
-}: {
-  job: ScheduleJob;
-  workerNames: Record<string, string>;
-  canAssign: boolean;
-  onAssign?: (jobId: string, workerId: string | null) => void;
-  onReschedule?: (jobId: string, dateKey: string) => void;
-}) {
+function ScheduleRow({ job, workerNames, canAssign, onAssign, onReschedule }: { job: ScheduleJob; workerNames: Record<string, string>; canAssign: boolean; onAssign?: (jobId: string, workerId: string | null) => void; onReschedule?: (jobId: string, dateKey: string, job?: ScheduleJob) => void; }) {
   return (
     <div className="list-row schedule-row">
       <div>
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
         <p className="muted">
-          {formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))} ·{' '}
-          {job.customer_name || 'No customer'}
-          {job.visit_notes ? ` · ${job.visit_notes}` : ''}
+          {formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))} · {job.customer_name || 'No customer'}{job.visit_notes ? ` · ${job.visit_notes}` : ''}
         </p>
       </div>
       <div className="inline-actions">
-        {canAssign && onReschedule && !job.visit_id ? (
-          <input
-            className="input"
-            type="date"
-            defaultValue={jobDateKey(job) || ''}
-            onChange={(e) => onReschedule(job.id, e.target.value)}
-          />
+        {canAssign && onReschedule ? (
+          <input className="input" type="date" defaultValue={jobDateKey(job) || ''} onChange={(e) => onReschedule(job.id, e.target.value, job)} />
         ) : null}
         {canAssign && onAssign ? (
-          <select
-            className="input"
-            value={job.assigned_to || ''}
-            onChange={(e) => onAssign(job.id, e.target.value || null)}
-          >
+          <select className="input" value={job.assigned_to || ''} onChange={(e) => onAssign(job.id, e.target.value || null)}>
             <option value="">Needs assignment</option>
-            {Object.entries(workerNames).map(([id, name]) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
+            {Object.entries(workerNames).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         ) : (
           <span>{job.assigned_to ? workerNames[job.assigned_to] || 'Assigned' : 'Needs assignment'}</span>
