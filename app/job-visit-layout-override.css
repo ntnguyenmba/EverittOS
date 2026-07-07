@@ -1,0 +1,41 @@
+.job-detail-shell .job-visits,
+.job-detail-shell .job-visits-list,
+.job-detail-shell .job-visit-row,
+.job-detail-shell .job-visit-field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.job-detail-shell .job-visits {
+  overflow: hidden;
+}
+
+.job-detail-shell .job-visit-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.job-detail-shell .job-visit-field .input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.job-detail-shell .job-visit-remove {
+  width: 100%;
+  max-width: 100%;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .job-detail-shell .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .job-detail-shell .job-detail-actions {
+    grid-template-columns: 1fr;
+  }
+}
