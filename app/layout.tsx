@@ -29,6 +29,7 @@ import './app-readability-pass.css';
 import './customer-ready-polish.css';
 import './dashboard-mobile-balance.css';
 import './job-mobile-fixes.css';
+import './job-visit-layout-override.css';
 
 const inter = Inter({
   subsets: ['latin'],
