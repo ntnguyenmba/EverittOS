@@ -6,6 +6,7 @@ import { formatScheduleTimeRange } from '@/lib/schedule-times';
 
 export type ScheduleJob = {
   id: string;
+  schedule_key?: string;
   title: string;
   status: string | null;
   start_date: string | null;
@@ -14,6 +15,11 @@ export type ScheduleJob = {
   scheduled_end: string | null;
   assigned_to: string | null;
   customer_name: string | null;
+  visit_id?: string | null;
+  visit_date?: string | null;
+  visit_start_time?: string | null;
+  visit_end_time?: string | null;
+  visit_notes?: string | null;
 };
 
 type ScheduleViewsProps = {
@@ -30,11 +36,29 @@ function dateKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function visitDateTime(date?: string | null, time?: string | null) {
+  if (!date || !time) return null;
+  return `${date}T${time}:00`;
+}
+
 function jobDateKey(job: ScheduleJob): string | null {
+  if (job.visit_date) return job.visit_date;
   if (job.start_date) return job.start_date;
   if (job.due_date) return job.due_date;
   if (job.scheduled_start) return job.scheduled_start.slice(0, 10);
   return null;
+}
+
+function jobStart(job: ScheduleJob): string | null {
+  return visitDateTime(job.visit_date, job.visit_start_time) || job.scheduled_start;
+}
+
+function jobEnd(job: ScheduleJob): string | null {
+  return visitDateTime(job.visit_date, job.visit_end_time) || job.scheduled_end;
+}
+
+function jobKey(job: ScheduleJob): string {
+  return job.schedule_key || job.visit_id || job.id;
 }
 
 export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onReschedule }: ScheduleViewsProps) {
@@ -46,7 +70,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
     () =>
       jobs
         .filter((j) => jobDateKey(j))
-        .sort((a, b) => (jobDateKey(a) || '').localeCompare(jobDateKey(b) || '')),
+        .sort((a, b) => `${jobDateKey(a) || ''} ${jobStart(a) || ''}`.localeCompare(`${jobDateKey(b) || ''} ${jobStart(b) || ''}`)),
     [jobs]
   );
 
@@ -75,11 +99,12 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
     return (
       <div
         className="schedule-job-chip"
-        draggable={canAssign && Boolean(onReschedule)}
+        draggable={canAssign && Boolean(onReschedule) && !job.visit_id}
         onDragStart={() => setDragJobId(job.id)}
         onDragEnd={() => setDragJobId(null)}
       >
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+        {job.visit_id ? <span className="schedule-chip-meta">{formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))}</span> : null}
       </div>
     );
   }
@@ -117,7 +142,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
           <div className="inline-actions">
             {unscheduled.map((j) => (
               <div
-                key={j.id}
+                key={jobKey(j)}
                 className="schedule-job-chip"
                 draggable={canAssign && Boolean(onReschedule)}
                 onDragStart={() => setDragJobId(j.id)}
@@ -144,7 +169,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
               >
                 <div className="schedule-day-label">{d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                 {dayJobs.map((j) => (
-                  <JobChip key={j.id} job={j} />
+                  <JobChip key={jobKey(j)} job={j} />
                 ))}
               </div>
             );
@@ -157,7 +182,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
           <h4>{anchor.toLocaleDateString()}</h4>
           {jobsForDay.length === 0 && <p className="muted">No scheduled work yet.</p>}
           {jobsForDay.map((j) => (
-            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
+            <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}
         </div>
       )}
@@ -176,7 +201,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
               >
                 <strong>{d.toLocaleDateString(undefined, { weekday: 'short' })}</strong>
                 {dayJobs.map((j) => (
-                  <JobChip key={j.id} job={j} />
+                  <JobChip key={jobKey(j)} job={j} />
                 ))}
               </div>
             );
@@ -188,8 +213,8 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
         <div className="card">
           <h4>Upcoming jobs</h4>
           {scheduled.length === 0 && <p className="muted">No scheduled work yet.</p>}
-          {scheduled.slice(0, 20).map((j) => (
-            <ScheduleRow key={j.id} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
+          {scheduled.slice(0, 40).map((j) => (
+            <ScheduleRow key={jobKey(j)} job={j} workerNames={workerNames} canAssign={canAssign} onAssign={onAssign} onReschedule={onReschedule} />
           ))}
         </div>
       )}
@@ -215,12 +240,13 @@ function ScheduleRow({
       <div>
         <Link href={`/jobs/${job.id}`}>{job.title}</Link>
         <p className="muted">
-          {formatScheduleTimeRange(job.scheduled_start, job.scheduled_end, job.start_date, job.due_date)} ·{' '}
+          {formatScheduleTimeRange(jobStart(job), jobEnd(job), jobDateKey(job), jobDateKey(job))} ·{' '}
           {job.customer_name || 'No customer'}
+          {job.visit_notes ? ` · ${job.visit_notes}` : ''}
         </p>
       </div>
       <div className="inline-actions">
-        {canAssign && onReschedule ? (
+        {canAssign && onReschedule && !job.visit_id ? (
           <input
             className="input"
             type="date"
