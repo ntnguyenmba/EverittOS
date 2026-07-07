@@ -1,4 +1,5 @@
 import type { ScheduleJob } from '@/components/schedule-views';
+import { legacyScheduleRange } from '@/lib/legacy-schedule-range';
 
 export type ScheduleVisit = {
   id: string;
@@ -8,10 +9,6 @@ export type ScheduleVisit = {
   end_time: string;
   notes: string | null;
 };
-
-function isIsoDate(value: string | null | undefined): value is string {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
-}
 
 function addDays(dateKey: string, days: number): string {
   const date = new Date(`${dateKey}T00:00:00`);
@@ -27,9 +24,8 @@ function timeFromDateTime(value: string | null | undefined, fallback: string): s
 }
 
 function fallbackRangeEntries(job: ScheduleJob): ScheduleJob[] {
-  const start = job.start_date || job.scheduled_start?.slice(0, 10) || job.due_date;
-  const end = job.due_date || job.scheduled_end?.slice(0, 10) || start;
-  if (!isIsoDate(start) || !isIsoDate(end) || end <= start) return [job];
+  const { start, end } = legacyScheduleRange(job);
+  if (!start || !end || end <= start) return [job];
 
   const entries: ScheduleJob[] = [];
   let cursor = start;
