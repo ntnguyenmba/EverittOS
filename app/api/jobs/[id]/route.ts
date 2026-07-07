@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { resolveAssigneeWorkerId } from '@/lib/job-assignee';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { canAssignJobs } from '@/lib/roles';
@@ -122,10 +123,60 @@ export async function PATCH(request: Request, context: RouteContext) {
     payload.assigned_email = emailCheck.email;
   }
 
+  let assignedUserId: string | null = null;
+  let assignedWorkerId: string | null = null;
+
+  if ('assigned_to' in payload) {
+    assignedUserId = typeof payload.assigned_to === 'string' && payload.assigned_to.trim() ? payload.assigned_to.trim() : null;
+
+    if (assignedUserId) {
+      const { data: member } = await ctx.supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', ctx.workspace.organizationId)
+        .eq('user_id', assignedUserId)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (!member) {
+        return NextResponse.json({ error: 'Assigned teammate must be an active member of this workspace.' }, { status: 400 });
+      }
+
+      try {
+        assignedWorkerId = await resolveAssigneeWorkerId(
+          ctx.supabase,
+          ctx.workspace.organizationId,
+          ctx.workspace.ownerUserId || ctx.userId,
+          assignedUserId
+        );
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : 'Unable to link assigned teammate.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    payload.assigned_to = assignedWorkerId || assignedUserId;
+  }
+
   const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  }
+
+  if (assignedWorkerId) {
+    await ctx.supabase.from('job_assignments').upsert(
+      {
+        organization_id: ctx.workspace.organizationId,
+        user_id: ctx.userId,
+        job_id: id,
+        worker_id: assignedWorkerId,
+        responsibility: 'primary'
+      },
+      { onConflict: 'job_id,worker_id' }
+    );
   }
 
   await logWorkspaceActivity(
@@ -134,7 +185,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     'job',
     id,
     ctx.canManage ? 'job_updated' : 'job_status_updated',
-    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`
+    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`,
+    assignedUserId || assignedWorkerId ? { assignedTo: assignedUserId, assignedWorkerId } : undefined
   );
 
   return NextResponse.json({ ok: true, message: 'Job saved successfully.' });
