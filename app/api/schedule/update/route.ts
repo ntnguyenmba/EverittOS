@@ -16,12 +16,16 @@ type VisitInput = {
   notes?: string | null;
 };
 
-function isValidDate(value: string | undefined) {
-  return !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+function normalizeDate(value: string | undefined) {
+  const trimmed = value?.trim() || '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  return '';
 }
 
-function isValidTime(value: string | undefined) {
-  return !!value && /^\d{2}:\d{2}$/.test(value);
+function normalizeTime(value: string | undefined) {
+  const trimmed = value?.trim() || '';
+  const match = trimmed.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
+  return match ? match[1] : '';
 }
 
 function combineVisitDateTime(date: string, time: string) {
@@ -31,9 +35,9 @@ function combineVisitDateTime(date: string, time: string) {
 function cleanVisits(visits: VisitInput[]) {
   return visits.map((visit) => ({
     id: visit.id || undefined,
-    visit_date: visit.visit_date || '',
-    start_time: visit.start_time || '',
-    end_time: visit.end_time || '',
+    visit_date: normalizeDate(visit.visit_date),
+    start_time: normalizeTime(visit.start_time),
+    end_time: normalizeTime(visit.end_time),
     notes: visit.notes?.trim() || null
   }));
 }
@@ -97,7 +101,7 @@ export async function POST(request: Request) {
     }
 
     for (const visit of visits) {
-      if (!isValidDate(visit.visit_date) || !isValidTime(visit.start_time) || !isValidTime(visit.end_time)) {
+      if (!visit.visit_date || !visit.start_time || !visit.end_time) {
         return NextResponse.json({ error: 'Each visit needs a valid date, start time, and end time.' }, { status: 400 });
       }
       if (visit.end_time <= visit.start_time) {
