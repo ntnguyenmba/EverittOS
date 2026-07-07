@@ -1,3 +1,12 @@
+.job-detail-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+
+.job-detail-shell .page-head,
+.job-detail-shell .card,
 .job-detail-shell .job-visits,
 .job-detail-shell .job-visits-list,
 .job-detail-shell .job-visit-row,
@@ -7,26 +16,47 @@
   max-width: 100%;
 }
 
+.job-detail-shell .card {
+  box-sizing: border-box;
+}
+
+.job-detail-shell .grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.92fr);
+  align-items: start;
+  gap: 18px;
+}
+
 .job-detail-shell .job-visits {
   overflow: hidden;
 }
 
 .job-detail-shell .job-visit-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.job-detail-shell .job-visit-field .input {
+.job-detail-shell .job-visit-field .input,
+.job-detail-shell .input,
+.job-detail-shell select,
+.job-detail-shell textarea {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+}
+
+.job-detail-shell .job-visit-remove,
+.job-detail-shell .job-visits-save,
+.job-detail-shell .job-detail-actions .btn {
+  width: 100%;
+  max-width: 100%;
 }
 
 .job-detail-shell .job-visit-remove {
-  width: 100%;
-  max-width: 100%;
   grid-column: 1 / -1;
 }
 
@@ -37,5 +67,11 @@
 
   .job-detail-shell .job-detail-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .job-detail-shell {
+    padding-inline: 12px;
   }
 }
