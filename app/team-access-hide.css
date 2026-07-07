@@ -1,0 +1,4 @@
+/* Hide the permanent team role guide from the customer-facing People page. */
+.settings-card:has(#team-access-header) {
+  display: none;
+}
