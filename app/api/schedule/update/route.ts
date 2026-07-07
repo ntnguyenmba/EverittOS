@@ -7,6 +7,7 @@ import { canAssignJobs } from '@/lib/roles';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
+import { updateSingleVisitSchedule } from '@/lib/visit-schedule-update';
 
 type VisitInput = {
   id?: string;
@@ -53,6 +54,11 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     jobId?: string;
+    visitId?: string;
+    visit_date?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    visit_notes?: string | null;
     scheduled_start?: string | null;
     scheduled_end?: string | null;
     start_date?: string | null;
@@ -89,6 +95,25 @@ export async function POST(request: Request) {
     if (!validDepartment) {
       return NextResponse.json({ error: 'Department not found in organization' }, { status: 400 });
     }
+  }
+
+  if (body.visitId) {
+    const result = await updateSingleVisitSchedule(admin, ctx.workspace.organizationId, body.jobId, {
+      visitId: body.visitId,
+      visit_date: body.visit_date,
+      start_time: body.start_time,
+      end_time: body.end_time,
+      notes: body.visit_notes
+    });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId);
+    await logWorkspaceActivity(ctx.workspace.organizationId, ctx.userId, 'job', body.jobId, 'schedule_changed', `Visit updated: ${job.title || 'Job'}`);
+    await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
+      organizationId: ctx.workspace.organizationId,
+      userId: ctx.userId,
+      metadata: { jobId: body.jobId, visitId: body.visitId, visitCount: 1 }
+    });
+    return NextResponse.json({ ok: true, message: 'Visit updated successfully.' });
   }
 
   const update: Record<string, unknown> = {};
@@ -165,14 +190,7 @@ export async function POST(request: Request) {
 
   await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, body.jobId);
 
-  await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    'job',
-    body.jobId,
-    'schedule_changed',
-    `Schedule updated: ${job.title || 'Job'}`
-  );
+  await logWorkspaceActivity(ctx.workspace.organizationId, ctx.userId, 'job', body.jobId, 'schedule_changed', `Schedule updated: ${job.title || 'Job'}`);
 
   await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
     organizationId: ctx.workspace.organizationId,
