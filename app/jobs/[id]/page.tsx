@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActivityFeed } from '@/components/activity-feed';
 import { JobChecklist } from '@/components/job-checklist';
 import { ClientAccessPanel } from '@/components/client-access-panel';
-import { JobWorkflow } from '@/components/job-workflow';
 import { JobPhotosSection } from '@/components/job-photos-section';
 import { JobLaborSection } from '@/components/job-labor-section';
 import { JobProfitabilityCard } from '@/components/job-profitability-card';
@@ -59,7 +57,6 @@ type Job = {
 
 type Worker = { id: string; name: string };
 type Assignment = { id: string; worker_id: string; responsibility: string | null };
-type TimelineEntry = { id: string; message: string | null; event_type: string; created_at: string | null };
 
 const SAFE_JOB_DETAIL_COLUMNS = [
   'id',
@@ -114,8 +111,6 @@ export default function JobDetailPage({ params }: PageProps) {
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [activity, setActivity] = useState<{ id: string; action: string; message: string | null; entity_type: string; created_at: string | null; actor_name: string | null }[]>([]);
   const [checklist, setChecklist] = useState<{ id: string; label: string; completed: boolean; sort_order: number }[]>([]);
   const [orgId, setOrgId] = useState('');
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -159,16 +154,11 @@ export default function JobDetailPage({ params }: PageProps) {
     if (org) setOrgId(org.organizationId);
 
     const { data, error } = await supabase.from('jobs').select(jobDetailColumns(canReadInternalNotes)).eq('id', jobId).single();
-    const { data: notes } = await supabase.from('job_timeline').select('id, message, event_type, created_at').eq('job_id', jobId).order('created_at', { ascending: false });
-    const [{ data: checklistRows }, { data: activityRows }, { data: assignmentRows }] = await Promise.all([
+    const [{ data: checklistRows }, { data: assignmentRows }] = await Promise.all([
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
-      org?.organizationId && limitsForPlan(userPlan).activityLog
-        ? supabase.from('activity_logs').select('id, action, message, entity_type, created_at, actor_name').eq('organization_id', org.organizationId).eq('entity_id', jobId).order('created_at', { ascending: false }).limit(30)
-        : Promise.resolve({ data: [] }),
       supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId)
     ]);
     setChecklist(checklistRows || []);
-    setActivity(activityRows || []);
     setAssignments((assignmentRows || []) as Assignment[]);
 
     if (limitsForPlan(userPlan).crewAssignment) {
@@ -194,7 +184,6 @@ export default function JobDetailPage({ params }: PageProps) {
       return;
     }
     setJob({ ...data, internal_notes: canReadInternalNotes ? data.internal_notes ?? null : null } as Job);
-    setTimeline(notes || []);
   }
 
   async function patchJob(fields: Record<string, unknown>, successMessage: string) {
@@ -297,7 +286,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
         <div className="card" style={{ marginBottom: 18 }}>
           <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
-          <p className="muted">{canManage ? 'You can edit job details, visits, assigned team, customer notes, and verification.' : copy.fieldAccessCopy}</p>
+          <p className="muted">{canManage ? 'Manage the job, visits, assigned team, notes, photos, and verification.' : 'Your assigned work details are below: customer, address, visit dates, times, notes, and photos.'}</p>
         </div>
 
         <div className="grid-2">
@@ -356,19 +345,17 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {orgId && limitsForPlan(plan).crewAssignment ? (
+        {orgId && limitsForPlan(plan).crewAssignment && canManage ? (
           <div className="card" style={{ marginTop: 18 }}>
             <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments} canManage={canManage} onChange={loadJob} />
           </div>
         ) : null}
 
         {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
-        <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
         {canAccessFinancials(userRole, plan) ? <><div style={{ marginTop: 18 }}><JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} /></div><div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage} /></div></> : null}
         <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
         <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
         {canManage ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.proofReport}</h3><p>{copy.proofReportCopy}</p><button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>{creatingReport ? copy.creating : copy.createReport}</button><Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>{copy.viewLatest}</Link></div> : null}
-        {isManagerRole(userRole) ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.activityTimeline}</h3>{activity.length > 0 ? <ActivityFeed items={activity} /> : <>{timeline.length === 0 && <p>{copy.noTimelineEntries}</p>}{timeline.map((entry) => <div key={entry.id} style={{ marginTop: 10 }}><strong>{entry.event_type}</strong><p>{entry.message || copy.updateRecorded}</p></div>)}</>}</div> : null}
       </div>
     </AppShell>
   );
