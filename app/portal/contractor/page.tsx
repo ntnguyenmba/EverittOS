@@ -16,10 +16,24 @@ type AssignedJob = {
   title: string;
   status: string | null;
   due_date: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
   address: string | null;
   customer_name: string | null;
+  phone?: string | null;
+  notes?: string | null;
   user_id: string;
 };
+
+function formatVisit(job: AssignedJob) {
+  if (!job.scheduled_start) return job.due_date || 'Date not set';
+  const start = new Date(job.scheduled_start);
+  const end = job.scheduled_end ? new Date(job.scheduled_end) : null;
+  const date = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  const startTime = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const endTime = end ? end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  return `${date} ${startTime}${endTime ? ` to ${endTime}` : ''}`;
+}
 
 export default function ContractorPortalPage() {
   const router = useRouter();
@@ -61,14 +75,14 @@ export default function ContractorPortalPage() {
         if (ids.length) {
           const { data } = await supabase
             .from('jobs')
-            .select('id, title, status, due_date, address, customer_name, user_id')
+            .select('id, title, status, due_date, scheduled_start, scheduled_end, address, customer_name, phone, notes, user_id')
             .in('id', ids);
           jobRows = (data || []) as AssignedJob[];
         }
 
         const { data: direct } = await supabase
           .from('jobs')
-          .select('id, title, status, due_date, address, customer_name, user_id')
+          .select('id, title, status, due_date, scheduled_start, scheduled_end, address, customer_name, phone, notes, user_id')
           .eq('assigned_to', worker.id);
         const merged = new Map<string, AssignedJob>();
         [...jobRows, ...((direct || []) as AssignedJob[])].forEach((j) => merged.set(j.id, j));
@@ -82,14 +96,18 @@ export default function ContractorPortalPage() {
   }, [router]);
 
   async function updateStatus(jobId: string, status: string) {
-    await supabase.from('jobs').update({ status }).eq('id', jobId);
+    await fetch(`/api/jobs/${jobId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
     router.refresh();
   }
 
   return (
     <AuthenticatedSection role="contractor">
-        <h2>Contractor portal</h2>
-        <p className="muted">Assigned jobs, due dates, and field updates. Organization-wide data is not shown.</p>
+        <h2>My Jobs</h2>
+        <p className="muted">Assigned work only: customer, address, date, time, notes, photos, start, and complete.</p>
 
         {loading && <div className="card">Loading...</div>}
         {message && <div className="card">{message}</div>}
@@ -97,20 +115,22 @@ export default function ContractorPortalPage() {
 
         {jobs.map((job) => (
           <div key={job.id} className="card" style={{ marginTop: 16 }}>
+            <p className="muted">{formatVisit(job)}</p>
             <h3>{job.title}</h3>
-            <p>Customer: {job.customer_name || 'Not set'}</p>
-            <p>Due: {job.due_date || 'Not set'}</p>
-            <p>Address: {job.address || 'Not set'}</p>
-            <p>Status: {job.status || 'new'}</p>
+            <p><strong>Customer:</strong> {job.customer_name || 'Not set'}</p>
+            <p><strong>Phone:</strong> {job.phone || 'Not set'}</p>
+            <p><strong>Address:</strong> {job.address || 'Not set'}</p>
+            <p><strong>Notes:</strong> {job.notes || 'No notes'}</p>
+            <p><strong>Status:</strong> {job.status || 'new'}</p>
             <div className="inline-actions">
               <button type="button" className="btn" onClick={() => updateStatus(job.id, 'in_progress')}>
                 Start
               </button>
               <button type="button" className="btn btn-primary" onClick={() => updateStatus(job.id, 'completed')}>
-                Mark complete
+                Complete
               </button>
               <Link className="btn" href={`/jobs/${job.id}`}>
-                Open job
+                Details
               </Link>
             </div>
             {photoUploadAllowed(plan) && (
