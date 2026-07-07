@@ -106,10 +106,12 @@ export function AppNavItems({
     portalLinks.push({ label: 'Client portal', href: '/portal/client' });
   }
   if (isContractorRole(normalizedRole) && limitsForPlan(normalized).contractorPortal) {
-    portalLinks.push({ label: 'Contractor portal', href: '/portal/contractor' });
+    portalLinks.push({ label: 'My Jobs', href: '/portal/contractor' });
+    portalLinks.push({ label: 'My Schedule', href: '/schedule' });
+    portalLinks.push({ label: 'My Profile', href: '/settings/account' });
   }
 
-  if (isClientRole(normalizedRole)) {
+  if (isClientRole(normalizedRole) || isContractorRole(normalizedRole)) {
     return (
       <nav className="app-nav" aria-label="App navigation">
         {portalLinks.map(({ label, href }) => {
@@ -135,24 +137,6 @@ export function AppNavItems({
 
   return (
     <nav className="app-nav" aria-label="App navigation">
-      {portalLinks.map(({ label, href }) => {
-        const resolution = resolveNavItem(normalizedRole, normalized, href);
-        if (!resolution.visible) return null;
-        return (
-          <NavLinkRow
-            key={href}
-            href={href}
-            label={navLabel(href, t, label)}
-            accessible={resolution.accessible}
-            requiredPlan={resolution.requiredPlan}
-            pathname={pathname}
-            linkClassName={linkClassName}
-            lockedClassName={lockedClassName}
-            onNavigate={onNavigate}
-          />
-        );
-      })}
-
       {APP_NAV_SECTIONS.map((section, index) => {
         const visibleItems = section.items
           .map((item) => {
