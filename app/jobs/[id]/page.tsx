@@ -210,14 +210,19 @@ export default function JobDetailPage({ params }: PageProps) {
 
   async function updateStatus(status: string) {
     if (!canEditStatus || updatingStatus) return;
-    const confirmed = status === 'cancelled' ? window.confirm('Cancel this job? It will be hidden from dashboard metrics.') : true;
+    const isRestoringCancelledJob = job?.status === 'cancelled' && status === 'scheduled';
+    const confirmed = status === 'cancelled'
+      ? window.confirm('Cancel this job? It will be hidden from dashboard metrics.')
+      : isRestoringCancelledJob
+        ? window.confirm('Restore this cancelled job? It will become scheduled again.')
+        : true;
     if (!confirmed) return;
     setUpdatingStatus(true);
-    const ok = await patchJob({ status }, copy.statusUpdated(status));
+    const ok = await patchJob({ status }, isRestoringCancelledJob ? 'Job restored to scheduled.' : copy.statusUpdated(status));
     setUpdatingStatus(false);
     if (!ok) return;
     if (orgId) {
-      await logClientActivity(orgId, 'job', jobId, 'status_changed', `Status set to ${status}`);
+      await logClientActivity(orgId, 'job', jobId, 'status_changed', isRestoringCancelledJob ? 'Status restored from cancelled to scheduled' : `Status set to ${status}`);
       if (status === 'completed') {
         const { data: { user: u } } = await supabase.auth.getUser();
         if (u) await createNotification(orgId, u.id, 'completion', copy.jobCompletedTitle, job?.title || copy.jobMarkedCompleted, jobId);
@@ -277,6 +282,7 @@ export default function JobDetailPage({ params }: PageProps) {
 
   const canWorkJob = canManage || canEditStatus;
   const priorityLabels = { low: copy.priorityLow, normal: copy.priorityNormal, high: copy.priorityHigh, urgent: copy.priorityUrgent };
+  const isCancelledJob = job.status === 'cancelled';
 
   return (
     <AppShell plan={plan} role={userRole}>
@@ -334,9 +340,13 @@ export default function JobDetailPage({ params }: PageProps) {
             <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
             {canEditStatus ? (
               <div className="job-detail-actions">
-                <button className="btn" type="button" disabled={updatingStatus || isActiveStatus(job.status)} onClick={() => updateStatus('active')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
-                <button className="btn btn-primary" type="button" disabled={updatingStatus || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
-                <button className="btn job-detail-danger" type="button" disabled={updatingStatus || job.status === 'cancelled'} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
+                <button className="btn" type="button" disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)} onClick={() => updateStatus('active')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
+                <button className="btn btn-primary" type="button" disabled={updatingStatus || isCancelledJob || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
+                {isCancelledJob ? (
+                  <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>{updatingStatus ? FEEDBACK.loading : 'Restore job'}</button>
+                ) : (
+                  <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : 'Cancel job'}</button>
+                )}
               </div>
             ) : null}
           </div>
