@@ -70,13 +70,23 @@ export default function MyWorkPage() {
       return;
     }
 
+    const { data: workerRows } = await supabase
+      .from('workers')
+      .select('id')
+      .eq('organization_id', org.organizationId)
+      .eq('auth_user_id', user.id);
+    const assignedIds = Array.from(
+      new Set([user.id, ...((workerRows || []) as { id: string }[]).map((worker) => worker.id)].filter(Boolean))
+    );
+
+    const jobsQuery = supabase
+      .from('jobs')
+      .select('id, title, customer_name, address, status, due_date, assigned_to')
+      .eq('organization_id', org.organizationId)
+      .order('due_date', { ascending: true, nullsFirst: false });
+
     const [{ data: jobs }, { data: shares }] = await Promise.all([
-      supabase
-        .from('jobs')
-        .select('id, title, customer_name, address, status, due_date, assigned_to')
-        .eq('organization_id', org.organizationId)
-        .eq('assigned_to', user.id)
-        .order('due_date', { ascending: true, nullsFirst: false }),
+      assignedIds.length ? jobsQuery.in('assigned_to', assignedIds) : jobsQuery.eq('assigned_to', user.id),
       supabase
         .from('record_shares')
         .select('id, record_type, record_id, access_level, created_at')
