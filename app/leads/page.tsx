@@ -111,7 +111,7 @@ export default function LeadsPage() {
       appFeedback.error(json.error || 'Unable to archive lead.');
       return;
     }
-    appFeedback.saved();
+    appFeedback.success('Lead archived.');
     void load();
   }
 
@@ -129,7 +129,7 @@ export default function LeadsPage() {
       appFeedback.error(json.error || 'Unable to reopen lead.');
       return;
     }
-    appFeedback.saved();
+    appFeedback.success('Lead reopened.');
     setFilter('active');
     void load();
   }
@@ -150,7 +150,7 @@ export default function LeadsPage() {
         ) : null}
       </header>
 
-      {loading ? <p>Loading metrics…</p> : null}
+      {loading ? <p>Loading metrics...</p> : null}
 
       {metrics ? (
         <>
