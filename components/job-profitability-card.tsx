@@ -35,7 +35,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/jobs/${jobId}/profitability`);
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to load job financials.');
@@ -61,7 +61,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     if (saving) return;
     const amount = revenueAmount.trim() ? Number.parseFloat(revenueAmount) : null;
     if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
-      appFeedback.error('Enter a valid client revenue amount.');
+      appFeedback.error('Enter a valid client income amount.');
       return;
     }
     setSaving(true);
@@ -70,14 +70,18 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ revenue_amount: amount, revenue_notes: revenueNotes })
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     setSaving(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save revenue.');
+      appFeedback.error(json.error || 'Unable to save client income.');
       return;
     }
-    setProfitability(json.profitability as JobProfitability);
+    const next = json.profitability as JobProfitability;
+    setProfitability(next);
+    setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
+    setRevenueNotes(next.revenueNotes || '');
     appFeedback.success('Client income saved.');
+    void load();
   }
 
   async function saveContractorPay() {
@@ -108,7 +112,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
         notes: [notePrefix, contractorNotes.trim()].filter(Boolean).join(' · ')
       })
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     setSaving(false);
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to save contractor pay.');
@@ -132,7 +136,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     }
 
     const invRes = await fetch(`/api/invoices?jobId=${jobId}`);
-    const invJson = await invRes.json();
+    const invJson = await invRes.json().catch(() => ({}));
     const invoice = invJson.invoices?.[0];
     if (!invoice) {
       appFeedback.error('Add an invoice before recording a payment.');
@@ -146,7 +150,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount_paid: newPaid })
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     setSaving(false);
 
     if (!res.ok) {
@@ -318,52 +322,45 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
         </div>
       </div>
 
-      <div className="job-financials-section">
-        <h4>Summary</h4>
+      <div className="job-financials-section profit-summary-section">
+        <h4>Profit summary</h4>
         <div className="finance-metric-grid financials-summary-grid">
-          <div className="finance-metric">
-            <span className="finance-metric-label">Revenue</span>
-            <strong>{formatCurrency(revenue)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">Total costs</span>
-            <strong>{formatCurrency(totalCosts)}</strong>
-          </div>
-          <div className="finance-metric finance-metric-highlight">
+          <div className="finance-metric featured">
             <span className="finance-metric-label">Estimated profit</span>
-            <strong className={estimatedProfit >= 0 ? 'finance-positive' : 'finance-negative'}>{formatCurrency(estimatedProfit)}</strong>
+            <strong>{formatCurrency(estimatedProfit)}</strong>
           </div>
-          <div className="finance-metric finance-metric-highlight">
-            <span className="finance-metric-label">Profit margin</span>
-            <strong className={estimatedProfit >= 0 ? 'finance-positive' : 'finance-negative'}>{revenue > 0 ? `${profitMargin.toFixed(1)}%` : 'Not ready'}</strong>
+          <div className="finance-metric">
+            <span className="finance-metric-label">Margin</span>
+            <strong>{revenue > 0 ? `${profitMargin.toFixed(1)}%` : '0%'}</strong>
           </div>
         </div>
+        <p className="muted finance-note">
+          Profit is based on client income or invoices minus contractor pay and linked expenses.
+        </p>
       </div>
 
-      {canManage && p?.hasInvoice ? (
-        <div className="finance-actions">
-          <label>Record payment</label>
+      {p?.hasInvoice ? (
+        <div className="job-financials-section">
+          <h4>Record payment</h4>
           <div className="finance-inline-form">
             <input
               className="input"
               type="number"
               min="0"
               step="0.01"
-              placeholder="0.00"
+              placeholder="Payment amount"
               value={paymentAmount}
               onChange={(e) => setPaymentAmount(e.target.value)}
             />
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void recordPayment()}>
-              {saving ? FEEDBACK.loading : 'Record payment'}
+            <button type="button" className="btn" disabled={saving} onClick={() => void recordPayment()}>
+              Record payment
             </button>
           </div>
+          <Link className="muted-link" href="/invoices">
+            View invoices
+          </Link>
         </div>
       ) : null}
-
-      <div className="finance-actions financials-link-row">
-        <Link className="btn" href={`/expenses?jobId=${jobId}`}>View expenses</Link>
-        <Link className="btn" href={`/invoices?jobId=${jobId}${customerId ? `&customerId=${customerId}` : ''}`}>Invoice history</Link>
-      </div>
     </div>
   );
 }
