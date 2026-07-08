@@ -5,6 +5,7 @@ import { listWorkspaceJobs } from '@/lib/jobs-org-query';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
+import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -87,18 +88,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: emailCheck.error }, { status: 400 });
   }
 
-  const assignedTo = body.assigned_to?.trim() || null;
-  if (assignedTo) {
+  const assignedUserId = body.assigned_to?.trim() || null;
+  let assignedWorkerId: string | null = null;
+  let assignedDisplayName = 'Team member';
+
+  if (assignedUserId) {
     const { data: member } = await ctx.supabase
       .from('organization_members')
       .select('user_id')
       .eq('organization_id', ctx.workspace.organizationId)
-      .eq('user_id', assignedTo)
+      .eq('user_id', assignedUserId)
       .eq('active', true)
       .maybeSingle();
 
     if (!member) {
       return NextResponse.json({ error: 'Assigned teammate must be an active member of this workspace.' }, { status: 400 });
+    }
+
+    const { data: profile } = await ctx.supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', assignedUserId)
+      .maybeSingle();
+
+    assignedDisplayName = profile?.full_name?.trim() || profile?.email?.trim() || 'Team member';
+
+    try {
+      assignedWorkerId = await ensureWorkerForPerson(
+        ctx.supabase,
+        ctx.workspace.organizationId,
+        assignedUserId,
+        assignedDisplayName,
+        ctx.workspace.ownerUserId || ctx.userId
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to link this teammate to a worker record.';
+      return NextResponse.json({ error: message }, { status: 400 });
     }
   }
 
@@ -117,7 +142,7 @@ export async function POST(request: Request) {
       address: body.address?.trim() || null,
       notes: body.notes?.trim() || null,
       customer_id: body.customer_id || null,
-      assigned_to: assignedTo,
+      assigned_to: assignedWorkerId,
       assigned_email: emailCheck.email,
       status: body.status?.trim() || 'new'
     })
@@ -146,13 +171,13 @@ export async function POST(request: Request) {
     data.id,
     'job_created',
     `Job created: ${body.title.trim()}`,
-    { assignedTo, assignedEmail: emailCheck.email }
+    { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
   );
 
-  if (assignedTo) {
+  if (assignedUserId) {
     await ctx.supabase.from('notifications').insert({
       organization_id: ctx.workspace.organizationId,
-      user_id: assignedTo,
+      user_id: assignedUserId,
       type: 'assignment',
       title: 'New job assigned',
       body: body.title.trim(),
@@ -166,14 +191,14 @@ export async function POST(request: Request) {
       data.id,
       'job_assigned',
       `Job assigned to a teammate`,
-      { assignedTo, assignedEmail: emailCheck.email }
+      { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
     );
   }
 
   await trackProductEventServer(ctx.supabase, 'job_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: data.id, assignedTo }
+    metadata: { jobId: data.id, assignedTo: assignedWorkerId, assignedUserId }
   });
 
   return NextResponse.json({ ok: true, job: data, message: 'Job saved successfully.' });
