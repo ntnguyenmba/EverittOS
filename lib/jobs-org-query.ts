@@ -76,6 +76,27 @@ function isCompletedJobStatus(status: string | null | undefined): boolean {
   return ['completed', 'done', 'complete', 'closed'].includes(normalized);
 }
 
+async function workerIdsForUser(
+  supabase: SupabaseClient,
+  organizationId: string | null | undefined,
+  userId: string
+): Promise<string[]> {
+  if (!organizationId) return [];
+
+  const { data } = await supabase
+    .from('workers')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('auth_user_id', userId);
+
+  return (data || []).map((row) => row.id as string).filter(Boolean);
+}
+
+function assignedToClause(userId: string, workerIds: string[]): string {
+  const ids = Array.from(new Set([userId, ...workerIds].filter(Boolean)));
+  return ids.map((id) => `assigned_to.eq.${id}`).join(',');
+}
+
 /** Count jobs for an organization (source of truth for analytics dashboards). */
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
@@ -115,12 +136,16 @@ export async function listWorkspaceJobs(
   let query = supabase.from('jobs').select(JOB_LIST_COLUMNS).order('created_at', { ascending: false });
 
   const managerView = role === undefined || role === null || isManagerRole(normalizeRole(role));
+  const currentUserWorkerIds = await workerIdsForUser(supabase, organizationId, userId);
   if (organizationId) {
     if (managerView) {
       query = query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${userId})`);
     } else {
       query = query.or(
-        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),and(organization_id.eq.${organizationId},assigned_to.eq.${userId}),and(organization_id.is.null,user_id.eq.${userId})`
+        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),and(organization_id.eq.${organizationId},${assignedToClause(
+          userId,
+          currentUserWorkerIds
+        )}),and(organization_id.is.null,user_id.eq.${userId})`
       );
     }
   } else {
@@ -137,31 +162,20 @@ export async function listWorkspaceJobs(
     query = query.gte('completed_at', filters.completedSince);
   }
   if (filters?.assignedTo) {
-    if (organizationId) {
-      const { data: workerRows } = await supabase
-        .from('workers')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .eq('auth_user_id', filters.assignedTo);
-      const workerIds = (workerRows || []).map((row) => row.id as string).filter(Boolean);
-      if (workerIds.length) {
-        const { data: assignmentRows } = await supabase
-          .from('job_assignments')
-          .select('job_id')
-          .in('worker_id', workerIds);
-        const assignedJobIds = Array.from(
-          new Set((assignmentRows || []).map((row) => row.job_id as string).filter(Boolean))
-        );
-        if (assignedJobIds.length) {
-          query = query.or(
-            `assigned_to.eq.${filters.assignedTo},id.in.(${assignedJobIds.join(',')})`
-          );
-        } else {
-          query = query.eq('assigned_to', filters.assignedTo);
-        }
-      } else {
-        query = query.eq('assigned_to', filters.assignedTo);
+    const filterWorkerIds = await workerIdsForUser(supabase, organizationId, filters.assignedTo);
+    if (organizationId && filterWorkerIds.length) {
+      const { data: assignmentRows } = await supabase
+        .from('job_assignments')
+        .select('job_id')
+        .in('worker_id', filterWorkerIds);
+      const assignedJobIds = Array.from(
+        new Set((assignmentRows || []).map((row) => row.job_id as string).filter(Boolean))
+      );
+      const clauses = [assignedToClause(filters.assignedTo, filterWorkerIds)];
+      if (assignedJobIds.length) {
+        clauses.push(`id.in.(${assignedJobIds.join(',')})`);
       }
+      query = query.or(clauses.join(','));
     } else {
       query = query.eq('assigned_to', filters.assignedTo);
     }
