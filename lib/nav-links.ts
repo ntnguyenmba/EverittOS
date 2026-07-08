@@ -64,7 +64,6 @@ export const SECONDARY_APP_ROUTES = [
   '/people',
   '/workers',
   '/team',
-  '/activity',
   '/photos',
   '/workflows',
   '/notifications',
