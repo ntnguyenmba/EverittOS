@@ -174,7 +174,7 @@ function JobsList() {
                     <td className="table-actions">
                       <RecordActions
                         viewHref={`/jobs/${job.id}`}
-                        editHref={`/jobs/${job.id}`}
+                        viewLabel="Open"
                         onRemove={() => void removeJob(job)}
                         removing={removingId === job.id}
                       />
