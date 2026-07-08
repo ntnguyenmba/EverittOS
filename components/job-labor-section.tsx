@@ -12,9 +12,10 @@ type JobLaborSectionProps = {
   jobId: string;
   workers: WorkerOption[];
   canManage: boolean;
+  onChange?: () => void;
 };
 
-export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionProps) {
+export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +79,8 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
     setHours('');
     setHourlyCost('');
     setNotes('');
-    void load();
+    await load();
+    onChange?.();
   }
 
   async function removeEntry(id: string) {
@@ -93,7 +95,8 @@ export function JobLaborSection({ jobId, workers, canManage }: JobLaborSectionPr
       return;
     }
     appFeedback.deleted();
-    void load();
+    await load();
+    onChange?.();
   }
 
   const totalLabor = entries.reduce((s, e) => s + Number(e.total_cost || 0), 0);
