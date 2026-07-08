@@ -119,7 +119,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id, company_name, phone, email')
+    .select('id, company_name, phone, email, record_type')
     .eq('id', id)
     .or(ownershipFilter)
     .maybeSingle();
@@ -129,6 +129,29 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
   if (!existing) {
     return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
+  }
+
+  if (existing.record_type === 'lead') {
+    const { error } = await ctx.supabase
+      .from('customers')
+      .update({ pipeline_stage: 'cancelled' })
+      .eq('id', id)
+      .or(ownershipFilter);
+
+    if (error) {
+      return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+    }
+
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      'lead',
+      id,
+      'lead_archived',
+      `Lead archived: ${customerDisplayName(existing)}`
+    );
+
+    return NextResponse.json({ ok: true, message: 'Lead archived successfully. You can reopen it later.' });
   }
 
   const { error } = await ctx.supabase.from('customers').delete().eq('id', id).or(ownershipFilter);
