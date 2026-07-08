@@ -42,6 +42,13 @@ function memberLabel(member: MemberRow, profile?: ProfileRow) {
   return name || email || member.user_id;
 }
 
+function toIsoDateTime(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const parsed = new Date(`${date}T${time}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
@@ -49,6 +56,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [assignedTo, setAssignedTo] = useState(searchParams.get('assigned_to') || '');
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(true);
@@ -117,6 +127,24 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    const scheduledStart = toIsoDateTime(scheduledDate, startTime);
+    const scheduledEnd = toIsoDateTime(scheduledDate, endTime);
+
+    if ((startTime || endTime) && !scheduledDate) {
+      appFeedback.error('Add a date before adding job times.');
+      return;
+    }
+
+    if (scheduledDate && endTime && !startTime) {
+      appFeedback.error('Add a start time before adding an end time.');
+      return;
+    }
+
+    if (scheduledStart && scheduledEnd && new Date(scheduledEnd).getTime() <= new Date(scheduledStart).getTime()) {
+      appFeedback.error('End time must be after start time.');
+      return;
+    }
+
     setLoading(true);
 
     const {
@@ -177,6 +205,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         address: address.trim() || null,
         notes: notes.trim() || null,
         assigned_to: assignedTo || null,
+        start_date: scheduledDate || null,
+        due_date: scheduledDate || null,
+        scheduled_start: scheduledStart,
+        scheduled_end: scheduledEnd,
         status: 'new'
       })
     });
@@ -208,6 +240,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
+    setScheduledDate('');
+    setStartTime('');
+    setEndTime('');
     setAssignedTo('');
     appFeedback.created();
     onJobCreated?.(createdJob.id);
@@ -230,6 +265,18 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
         <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <label htmlFor="job-date">Day</label>
+        <input id="job-date" className="input" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+        <div className="grid-2">
+          <div className="form-group">
+            <label htmlFor="job-start-time">Start time</label>
+            <input id="job-start-time" className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="job-end-time">End time</label>
+            <input id="job-end-time" className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </div>
+        </div>
         <label htmlFor="assigned-to">Assign to</label>
         <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
           <option value="">Unassigned</option>
