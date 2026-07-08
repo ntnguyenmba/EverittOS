@@ -14,6 +14,8 @@ type JobProfitabilityCardProps = {
   canManage: boolean;
 };
 
+type PayMode = 'hourly' | 'flat';
+
 export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfitabilityCardProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
@@ -24,7 +26,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
   const [revenueAmount, setRevenueAmount] = useState('');
   const [revenueNotes, setRevenueNotes] = useState('');
   const [contractorName, setContractorName] = useState('');
+  const [payMode, setPayMode] = useState<PayMode>('flat');
   const [contractorPay, setContractorPay] = useState('');
+  const [contractorHours, setContractorHours] = useState('');
+  const [visitCount, setVisitCount] = useState('1');
   const [contractorNotes, setContractorNotes] = useState('');
 
   const load = useCallback(async () => {
@@ -77,11 +82,20 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
 
   async function saveContractorPay() {
     if (saving) return;
-    const amount = Number.parseFloat(contractorPay);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      appFeedback.error('Enter a valid contractor pay amount.');
+    const rateOrFlatAmount = Number.parseFloat(contractorPay);
+    if (!Number.isFinite(rateOrFlatAmount) || rateOrFlatAmount <= 0) {
+      appFeedback.error(payMode === 'hourly' ? 'Enter a valid hourly rate.' : 'Enter a valid flat amount.');
       return;
     }
+
+    const hours = payMode === 'hourly' ? Number.parseFloat(contractorHours) : Math.max(1, Number.parseFloat(visitCount) || 1);
+    if (!Number.isFinite(hours) || hours <= 0) {
+      appFeedback.error(payMode === 'hourly' ? 'Enter valid hours worked.' : 'Enter a valid number of visits.');
+      return;
+    }
+
+    const calculatedTotal = payMode === 'hourly' ? hours * rateOrFlatAmount : hours * rateOrFlatAmount;
+    const notePrefix = payMode === 'hourly' ? `${hours} hours at ${formatCurrency(rateOrFlatAmount)}/hr` : `${hours} visit${hours === 1 ? '' : 's'} at ${formatCurrency(rateOrFlatAmount)} flat`;
 
     setSaving(true);
     const res = await fetch(`/api/jobs/${jobId}/labor`, {
@@ -89,9 +103,9 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         worker_name: contractorName.trim() || 'Contractor',
-        hours: 1,
-        hourly_cost: amount,
-        notes: contractorNotes.trim() || 'Contractor pay entered from Job Financials'
+        hours,
+        hourly_cost: rateOrFlatAmount,
+        notes: [notePrefix, contractorNotes.trim()].filter(Boolean).join(' · ')
       })
     });
     const json = await res.json();
@@ -102,8 +116,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
     }
     setContractorName('');
     setContractorPay('');
+    setContractorHours('');
+    setVisitCount('1');
     setContractorNotes('');
-    appFeedback.success('Contractor pay saved.');
+    appFeedback.success(`Contractor pay saved: ${formatCurrency(calculatedTotal)}.`);
     void load();
   }
 
@@ -161,6 +177,9 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
   const estimatedProfit = p?.estimatedProfit || 0;
   const profitMargin = revenue > 0 ? (estimatedProfit / revenue) * 100 : 0;
   const hasRevenue = Boolean(p && (p.hasInvoice || p.manualRevenue > 0));
+  const previewUnits = payMode === 'hourly' ? Number.parseFloat(contractorHours) : Math.max(1, Number.parseFloat(visitCount) || 1);
+  const previewRate = Number.parseFloat(contractorPay);
+  const previewTotal = Number.isFinite(previewUnits) && Number.isFinite(previewRate) ? previewUnits * previewRate : 0;
 
   return (
     <div className="card finance-card job-financials-card">
@@ -238,9 +257,36 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
           <h4>Contractor pay</h4>
           <div className="finance-form-block compact-finance-form">
             <label>Contractor or cleaner name</label>
-            <input className="input" placeholder="Chelsea Garcia" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
-            <label>Amount paid</label>
-            <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorPay} onChange={(e) => setContractorPay(e.target.value)} />
+            <input className="input" placeholder="Name" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
+            <label>Pay type</label>
+            <select className="input" value={payMode} onChange={(e) => setPayMode(e.target.value as PayMode)}>
+              <option value="flat">Flat rate by visit</option>
+              <option value="hourly">Hourly</option>
+            </select>
+            {payMode === 'hourly' ? (
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Hours worked</label>
+                  <input className="input" type="number" min="0" step="0.25" placeholder="0" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Hourly rate</label>
+                  <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorPay} onChange={(e) => setContractorPay(e.target.value)} />
+                </div>
+              </div>
+            ) : (
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Visits</label>
+                  <input className="input" type="number" min="1" step="1" placeholder="1" value={visitCount} onChange={(e) => setVisitCount(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Flat rate per visit</label>
+                  <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorPay} onChange={(e) => setContractorPay(e.target.value)} />
+                </div>
+              </div>
+            )}
+            <p className="muted finance-note">Calculated contractor cost: {formatCurrency(previewTotal)}</p>
             <label>Notes</label>
             <input className="input" placeholder="Optional notes" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveContractorPay()}>
