@@ -69,7 +69,7 @@ export function teamInviteEmailHtml(input: {
   return renderEmailTemplate({
     title: `Join ${input.organizationName}`,
     organizationName: input.organizationName,
-    bodyHtml: `<p>You have been invited to join <strong>${input.organizationName}</strong> as <strong>${input.role}</strong>.</p><p>Accept the invitation to access jobs, schedules, and reports.</p>`,
+    bodyHtml: `<p>You have been invited to join <strong>${input.organizationName}</strong>.</p><p>Accept the invitation to access the workspace items shared with you.</p>`,
     ctaLabel: 'Accept invitation',
     ctaUrl: input.acceptUrl
   });
@@ -105,7 +105,7 @@ export function passwordResetEmailNote(): string {
 export function trialEndingEmailHtml(daysLeft: number): string {
   return renderEmailTemplate({
     title: 'Your trial is ending soon',
-    bodyHtml: `<p>Your EverittOS trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}. Upgrade to keep team management, activity logs, and advanced reporting.</p>`,
+    bodyHtml: `<p>Your EverittOS trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}. Upgrade to keep team management, advanced operations tools, and reporting.</p>`,
     ctaLabel: 'View billing',
     ctaUrl: appUrl('/settings/billing')
   });
