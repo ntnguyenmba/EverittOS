@@ -101,12 +101,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    acceptUrl,
-    portalUrl,
-    portalToken,
     emailSent: emailResult.sent,
-    message: emailResult.sent
-      ? 'Email sent. Client can accept the invite and open the portal.'
-      : 'Email not configured. Copy the invite link below.'
+    message: emailResult.sent ? 'Invitation sent. Check your email.' : 'Email not configured.'
   });
 }
