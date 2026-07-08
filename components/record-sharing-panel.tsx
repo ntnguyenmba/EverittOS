@@ -16,10 +16,13 @@ type RecordSharingPanelProps = {
 type MemberOption = {
   user_id: string;
   role: string;
-  profiles?: {
-    email?: string | null;
-    full_name?: string | null;
-  } | null;
+  profile?: ProfileRow | null;
+};
+
+type ProfileRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
 };
 
 type ShareRecord = {
@@ -30,7 +33,10 @@ type ShareRecord = {
 };
 
 function memberLabel(member: MemberOption): string {
-  return member.profiles?.full_name || member.profiles?.email || 'Pending profile';
+  const name = member.profile?.full_name?.trim();
+  const email = member.profile?.email?.trim();
+  if (name && email) return `${name} (${email})`;
+  return name || email || member.user_id;
 }
 
 export function RecordSharingPanel({ organizationId, recordType, recordId, canManage }: RecordSharingPanelProps) {
@@ -43,14 +49,35 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
 
   async function loadMembers() {
     if (!organizationId) return;
-    const { data } = await supabase
+    const { data: memberRows, error } = await supabase
       .from('organization_members')
-      .select('user_id, role, profiles(email, full_name)')
+      .select('user_id, role')
       .eq('organization_id', organizationId)
       .eq('active', true)
-      .in('role', ['manager', 'employee', 'contractor', 'staff', 'crew_lead', 'viewer']);
+      .in('role', ['owner', 'admin', 'manager', 'employee', 'contractor', 'staff', 'crew_lead', 'viewer'])
+      .order('role');
 
-    setMembers((data || []) as MemberOption[]);
+    if (error) {
+      feedback.error(error.message || 'Unable to load teammates.');
+      setMembers([]);
+      return;
+    }
+
+    const rows = (memberRows || []) as Array<Pick<MemberOption, 'user_id' | 'role'>>;
+    const ids = rows.map((member) => member.user_id).filter(Boolean);
+    const { data: profileRows } = ids.length
+      ? await supabase.from('profiles').select('id, email, full_name').in('id', ids)
+      : { data: [] as ProfileRow[] };
+
+    const profiles = new Map<string, ProfileRow>();
+    for (const profile of (profileRows || []) as ProfileRow[]) profiles.set(profile.id, profile);
+
+    setMembers(
+      rows.map((member) => ({
+        ...member,
+        profile: profiles.get(member.user_id) || null
+      }))
+    );
   }
 
   async function loadShares() {
@@ -138,7 +165,7 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
         return (
           <div key={share.id} className="list-row compact">
             <div>
-              <strong>{member ? memberLabel(member) : 'Pending profile'}</strong>
+              <strong>{member ? memberLabel(member) : 'Team member'}</strong>
               <p className="muted">{share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
             </div>
             {canManage ? (
