@@ -12,11 +12,12 @@ type JobProfitabilityCardProps = {
   jobId: string;
   customerId?: string | null;
   canManage: boolean;
+  refreshKey?: number;
 };
 
 type PayMode = 'hourly' | 'flat';
 
-export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfitabilityCardProps) {
+export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey = 0 }: JobProfitabilityCardProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
   const [profitability, setProfitability] = useState<JobProfitability | null>(null);
@@ -49,7 +50,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   function openSendInvoice() {
     const params = new URLSearchParams({ jobId });
@@ -98,7 +99,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage }: JobProfit
       return;
     }
 
-    const calculatedTotal = payMode === 'hourly' ? hours * rateOrFlatAmount : hours * rateOrFlatAmount;
+    const calculatedTotal = hours * rateOrFlatAmount;
     const notePrefix = payMode === 'hourly' ? `${hours} hours at ${formatCurrency(rateOrFlatAmount)}/hr` : `${hours} visit${hours === 1 ? '' : 's'} at ${formatCurrency(rateOrFlatAmount)} flat`;
 
     setSaving(true);
