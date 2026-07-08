@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
+import { leadPipelineLabel, normalizeLeadStage } from '@/lib/lead-pipeline';
 import { leadSourceLabel } from '@/lib/lead-sources';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -25,6 +26,8 @@ type LeadMetrics = {
   bySource: Record<string, number>;
 };
 
+type LeadFilter = 'active' | 'archived';
+
 export default function LeadsPage() {
   const router = useRouter();
   const appFeedback = useAppFeedback();
@@ -34,6 +37,8 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<LeadFilter>('active');
   const [canManage, setCanManage] = useState(false);
 
   async function load() {
@@ -57,7 +62,7 @@ export default function LeadsPage() {
     let leadsQuery = supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)
-      .or('record_type.eq.lead,pipeline_stage.in.(lead,qualified)')
+      .eq('record_type', 'lead')
       .order('created_at', { ascending: false });
     if (workspaceOrg?.organizationId) {
       leadsQuery = leadsQuery.eq('organization_id', workspaceOrg.organizationId);
@@ -88,18 +93,44 @@ export default function LeadsPage() {
     void load();
   }, [router]);
 
-  async function removeLead(id: string, name: string) {
+  const visibleLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      const stage = normalizeLeadStage(lead.pipeline_stage);
+      return filter === 'archived' ? stage === 'cancelled' : stage !== 'cancelled';
+    });
+  }, [filter, leads]);
+
+  async function archiveLead(id: string, name: string) {
     if (removingId) return;
-    if (!window.confirm(`Remove lead ${name}?`)) return;
+    if (!window.confirm(`Archive lead ${name}? You can reopen it later.`)) return;
     setRemovingId(id);
     const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
     setRemovingId(null);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to remove lead.');
+      appFeedback.error(json.error || 'Unable to archive lead.');
       return;
     }
-    appFeedback.label('removed');
+    appFeedback.label('archived');
+    void load();
+  }
+
+  async function reopenLead(id: string) {
+    if (reopeningId) return;
+    setReopeningId(id);
+    const res = await fetch(`/api/customers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_type: 'lead', pipeline_stage: 'reopened' })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    setReopeningId(null);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to reopen lead.');
+      return;
+    }
+    appFeedback.saved();
+    setFilter('active');
     void load();
   }
 
@@ -143,29 +174,53 @@ export default function LeadsPage() {
           </div>
 
           <div className="card" style={{ marginTop: 18 }}>
-            <h3>Open leads</h3>
-            {leads.length === 0 ? (
+            <div className="inline-actions" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3>{filter === 'archived' ? 'Archived leads' : 'Open leads'}</h3>
+              <div className="inline-actions">
+                <button type="button" className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : ''}`} onClick={() => setFilter('active')}>
+                  Active
+                </button>
+                <button type="button" className={`btn btn-sm ${filter === 'archived' ? 'btn-primary' : ''}`} onClick={() => setFilter('archived')}>
+                  Archived
+                </button>
+              </div>
+            </div>
+            {visibleLeads.length === 0 ? (
               <LocalizedEmptyState emptyKey="leads" compact />
             ) : (
-              leads.map((lead) => (
-                <div key={lead.id} className="dashboard-today-row" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
-                  <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
-                  <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
-                    Edit
-                  </Link>
-                  {canManage ? (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger"
-                      disabled={removingId === lead.id}
-                      onClick={() => void removeLead(lead.id, customerDisplayName(lead))}
-                    >
-                      {removingId === lead.id ? FEEDBACK.loading : 'Remove'}
-                    </button>
-                  ) : null}
-                </div>
-              ))
+              visibleLeads.map((lead) => {
+                const isArchived = normalizeLeadStage(lead.pipeline_stage) === 'cancelled';
+                return (
+                  <div key={lead.id} className="dashboard-today-row" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
+                    <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
+                    <span className="muted">{leadPipelineLabel(lead.pipeline_stage)}</span>
+                    <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
+                      Edit
+                    </Link>
+                    {canManage && isArchived ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        disabled={reopeningId === lead.id}
+                        onClick={() => void reopenLead(lead.id)}
+                      >
+                        {reopeningId === lead.id ? FEEDBACK.loading : 'Reopen'}
+                      </button>
+                    ) : null}
+                    {canManage && !isArchived ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        disabled={removingId === lead.id}
+                        onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}
+                      >
+                        {removingId === lead.id ? FEEDBACK.loading : 'Archive lead'}
+                      </button>
+                    ) : null}
+                  </div>
+                );
+              })
             )}
           </div>
         </>
