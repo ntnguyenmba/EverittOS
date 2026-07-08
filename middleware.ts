@@ -50,7 +50,6 @@ const AUTH_PREFIXES = [
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
 
-/** Session-authenticated API routes that skip disabled-account enforcement in middleware. */
 const PUBLIC_API_PREFIXES = [
   '/api/auth/login',
   '/api/auth/signup',
@@ -97,7 +96,7 @@ function redirectWithCookies(url: URL, source: NextResponse) {
   return redirect;
 }
 
-function roleBlockedRedirect(request: NextRequest, source: NextResponse) {
+function roleBlockedRedirect(request: NextRequest, source: NextResponse, _pathname?: string, _detail?: string) {
   return redirectWithCookies(new URL('/dashboard', request.url), source);
 }
 
@@ -145,7 +144,6 @@ export async function middleware(request: NextRequest) {
   }
 
   let supabaseResponse = NextResponse.next({ request });
-
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: createSupabaseCookieAdapter({
       getAll() {
@@ -171,12 +169,7 @@ export async function middleware(request: NextRequest) {
     if (user) {
       const profileRead = await fetchProfileByUserId(supabase, user.id);
       const onboarding = await resolveOnboardingState(supabase, profileRead.profile?.organization_id);
-      const destination = postAuthRedirectPath(
-        profileRead.profile?.role,
-        '/dashboard',
-        onboarding.completed,
-        onboarding.skipped
-      );
+      const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped);
       return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
     }
     return redirectWithCookies(new URL('/login', request.url), supabaseResponse);
@@ -185,12 +178,7 @@ export async function middleware(request: NextRequest) {
   if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const profileRead = await fetchProfileByUserId(supabase, user.id);
     const onboarding = await resolveOnboardingState(supabase, profileRead.profile?.organization_id);
-    const destination = postAuthRedirectPath(
-      profileRead.profile?.role,
-      '/dashboard',
-      onboarding.completed,
-      onboarding.skipped
-    );
+    const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped);
     return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
   }
 
@@ -225,51 +213,29 @@ export async function middleware(request: NextRequest) {
   }
 
   const idleRedirect = await enforceIdleSession(request, supabase, supabaseResponse);
-  if (idleRedirect) {
-    return idleRedirect;
-  }
+  if (idleRedirect) return idleRedirect;
 
   const profileRead = await fetchProfileByUserId(supabase, user.id);
   const profile = profileRead.profile;
 
   const onboarding = await resolveOnboardingState(supabase, profile?.organization_id);
-  if (
-    shouldRedirectToOnboarding(profile?.role, onboarding.completed, pathname) &&
-    pathname !== '/onboarding' &&
-    !pathname.startsWith('/onboarding/')
-  ) {
+  if (shouldRedirectToOnboarding(profile?.role, onboarding.completed, pathname) && pathname !== '/onboarding' && !pathname.startsWith('/onboarding/')) {
     return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
   }
 
-  if (
-    (pathname === '/onboarding' || pathname.startsWith('/onboarding/')) &&
-    onboarding.skipped &&
-    onboarding.completed
-  ) {
+  if ((pathname === '/onboarding' || pathname.startsWith('/onboarding/')) && onboarding.skipped && onboarding.completed) {
     const destination = postAuthRedirectPath(profile?.role, '/dashboard', true, true);
     return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
   }
 
   if (isAccountDeleted(profile?.deleted_at)) {
-    const withinRecovery =
-      profile?.deletion_scheduled_at && new Date(profile.deletion_scheduled_at) > new Date();
-    const recoveryPath =
-      pathname.startsWith('/settings/account') ||
-      pathname.startsWith('/api/account/restore') ||
-      pathname.startsWith('/api/account/profile');
-
-    if (withinRecovery && recoveryPath) {
-      // Allow signed-in recovery during grace period.
-    } else {
+    const withinRecovery = profile?.deletion_scheduled_at && new Date(profile.deletion_scheduled_at) > new Date();
+    const recoveryPath = pathname.startsWith('/settings/account') || pathname.startsWith('/api/account/restore') || pathname.startsWith('/api/account/profile');
+    if (!withinRecovery || !recoveryPath) {
       await supabase.auth.signOut();
       const login = new URL('/login', request.url);
       login.searchParams.set('reason', 'deleted');
-      login.searchParams.set(
-        'detail',
-        withinRecovery
-          ? 'This account is scheduled for deletion. Sign in again to restore it from Account settings.'
-          : 'This account has been deleted. Contact support if you need help.'
-      );
+      login.searchParams.set('detail', withinRecovery ? 'This account is scheduled for deletion. Sign in again to restore it from Account settings.' : 'This account has been deleted. Contact support if you need help.');
       const deletedRedirect = redirectWithCookies(login, supabaseResponse);
       clearSessionMarkers(deletedRedirect);
       return deletedRedirect;
@@ -289,50 +255,27 @@ export async function middleware(request: NextRequest) {
   const organizationId = profile?.organization_id || null;
   let resolvedOrgId = organizationId;
   if (!resolvedOrgId) {
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('active', true)
-      .limit(1)
-      .maybeSingle();
+    const { data: membership } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).eq('active', true).limit(1).maybeSingle();
     resolvedOrgId = membership?.organization_id || null;
   }
 
   if (resolvedOrgId && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('deleted_at, owner_user_id, deletion_scheduled_at')
-      .eq('id', resolvedOrgId)
-      .maybeSingle();
-
+    const { data: org } = await supabase.from('organizations').select('deleted_at, owner_user_id, deletion_scheduled_at').eq('id', resolvedOrgId).maybeSingle();
     if (org?.deleted_at && org.owner_user_id !== user.id) {
       await supabase.auth.signOut();
       const login = new URL('/login', request.url);
       login.searchParams.set('reason', 'workspace_deleted');
-      login.searchParams.set(
-        'detail',
-        'This workspace is scheduled for deletion and is no longer available.'
-      );
+      login.searchParams.set('detail', 'This workspace is scheduled for deletion and is no longer available.');
       return redirectWithCookies(login, supabaseResponse);
     }
   }
 
   const role = normalizeRole(profile?.role || 'owner');
-  const userPlan = profile
-    ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile))
-    : 'free';
-  const subscriptionStatus = profile
-    ? await resolveProfileSubscriptionStatus(supabase, user.id, profile)
-    : 'free';
+  const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
+  const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
   if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) {
-    return roleBlockedRedirect(
-      request,
-      supabaseResponse,
-      pathname,
-      'Platform admin access is limited to authorized Everitt Ventures operators.'
-    );
+    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Platform admin access is limited to authorized Everitt Ventures operators.');
   }
 
   if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
@@ -345,53 +288,30 @@ export async function middleware(request: NextRequest) {
   }
 
   for (const rule of ROLE_BLOCKED_PREFIXES) {
-    if (pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) {
-      if (!hasPermission(role, rule.permission)) {
-        return roleBlockedRedirect(
-          request,
-          supabaseResponse,
-          pathname,
-          `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`
-        );
-      }
+    if ((pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) && !hasPermission(role, rule.permission)) {
+      return roleBlockedRedirect(request, supabaseResponse, pathname, `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`);
     }
   }
 
   if (isClientRole(role)) {
-    const allowedClient =
-      pathname.startsWith('/portal/client') ||
-      pathname.startsWith('/settings/account') ||
-      pathname.startsWith('/settings/security');
-    if (!allowedClient) {
-      return redirectWithCookies(new URL('/portal/client', request.url), supabaseResponse);
-    }
+    const allowedClient = pathname.startsWith('/portal/client') || pathname.startsWith('/settings/account') || pathname.startsWith('/settings/security');
+    if (!allowedClient) return redirectWithCookies(new URL('/portal/client', request.url), supabaseResponse);
   }
 
   if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers') || pathname.startsWith('/people'))) {
-    return roleBlockedRedirect(
-      request,
-      supabaseResponse,
-      pathname,
-      'Your role only includes assigned work, not full customer or people lists.'
-    );
+    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Your role only includes assigned work, not full customer or people lists.');
   }
 
   if (!canSeeOrgWideData(role) && (pathname.startsWith('/activity') || pathname.startsWith('/workflows'))) {
-    return roleBlockedRedirect(
-      request,
-      supabaseResponse,
-      pathname,
-      'Your role cannot access organization-wide activity or workflow settings.'
-    );
+    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Your role cannot access organization-wide activity or workflow settings.');
   }
 
   if (pathname.startsWith('/settings') && !canAccessSettingsPath(role, pathname, userPlan)) {
-    const detail =
-      pathname.startsWith('/settings/billing')
-        ? 'Billing is limited to workspace owners and admins.'
-        : pathname === '/settings' || pathname.startsWith('/settings?')
-          ? 'Workspace settings are limited to workspace owners and admins.'
-          : `Your role (${role}) cannot access ${pathname}.`;
+    const detail = pathname.startsWith('/settings/billing')
+      ? 'Billing is limited to workspace owners and admins.'
+      : pathname === '/settings' || pathname.startsWith('/settings?')
+        ? 'Workspace settings are limited to workspace owners and admins.'
+        : `Your role (${role}) cannot access ${pathname}.`;
     return roleBlockedRedirect(request, supabaseResponse, pathname, detail);
   }
 
@@ -421,19 +341,13 @@ export async function middleware(request: NextRequest) {
   ];
   const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
-    return roleBlockedRedirect(
-      request,
-      supabaseResponse,
-      pathname,
-      `Your role (${role}) cannot access ${matchedNav}.`
-    );
+    return roleBlockedRedirect(request, supabaseResponse, pathname, `Your role (${role}) cannot access ${matchedNav}.`);
   }
 
   const requiredPlan = minimumPlanForPath(pathname);
   if (requiredPlan) {
     const { plan } = await resolveOrganizationPlan(supabase, user.id);
     const effectivePlan = normalizePlan(plan || userPlan);
-
     if (!meetsMinimumPlan(effectivePlan, requiredPlan)) {
       const billing = new URL('/settings/billing', request.url);
       billing.searchParams.set('upgrade', requiredPlan);
