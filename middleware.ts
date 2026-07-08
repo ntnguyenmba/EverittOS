@@ -97,11 +97,8 @@ function redirectWithCookies(url: URL, source: NextResponse) {
   return redirect;
 }
 
-function roleBlockedRedirect(request: NextRequest, source: NextResponse, pathname: string, detail: string) {
-  const dashboard = new URL('/dashboard', request.url);
-  dashboard.searchParams.set('reason', 'role');
-  dashboard.searchParams.set('detail', detail);
-  return redirectWithCookies(dashboard, source);
+function roleBlockedRedirect(request: NextRequest, source: NextResponse) {
+  return redirectWithCookies(new URL('/dashboard', request.url), source);
 }
 
 async function resolveOnboardingState(
