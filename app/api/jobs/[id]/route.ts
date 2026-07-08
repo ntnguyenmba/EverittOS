@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sendAssignmentNotification } from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
@@ -217,13 +218,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   );
 
   if (assignedUserId) {
-    await ctx.supabase.from('notifications').insert({
-      organization_id: ctx.workspace.organizationId,
-      user_id: assignedUserId,
-      type: 'assignment',
-      title: 'Job assignment updated',
-      body: existing.title || 'Untitled job',
-      related_job_id: id
+    await sendAssignmentNotification({
+      supabase: ctx.supabase,
+      organizationId: ctx.workspace.organizationId,
+      assignedUserId,
+      kind: 'job',
+      recordId: id,
+      title: existing.title || 'Untitled job',
+      email: typeof payload.assigned_email === 'string' ? payload.assigned_email : null
     });
   }
 
@@ -259,21 +261,27 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (msg.includes('foreign key') || msg.includes('violates')) {
       const { error: cancelError } = await ctx.supabase
         .from('jobs')
-        .update({ status: 'cancelled' })
-        .eq('id', id);
+        .update({ status: 'cancelled', completed_at: null })
+        .eq('id', id)
+        .eq('organization_id', ctx.workspace.organizationId);
+
       if (cancelError) {
         return NextResponse.json({ error: mapWorkspaceSaveError(cancelError.message) }, { status: 400 });
       }
+
       await logWorkspaceActivity(
         ctx.workspace.organizationId,
         ctx.userId,
         'job',
         id,
-        'job_deleted',
-        `Job cancelled: ${existing.title || 'Untitled'}`
+        'job_cancelled',
+        `Job cancelled: ${existing.title || 'Untitled'}`,
+        {}
       );
-      return NextResponse.json({ ok: true, cancelled: true, message: 'Job removed from schedule.' });
+
+      return NextResponse.json({ ok: true, message: 'Job cancelled because related records exist.' });
     }
+
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
@@ -283,8 +291,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
     'job',
     id,
     'job_deleted',
-    `Job deleted: ${existing.title || 'Untitled'}`
+    `Job deleted: ${existing.title || 'Untitled'}`,
+    {}
   );
 
-  return NextResponse.json({ ok: true, message: 'Job removed successfully.' });
+  return NextResponse.json({ ok: true, message: 'Job removed.' });
 }
