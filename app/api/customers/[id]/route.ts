@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sendAssignmentNotification } from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { buildCustomerUpdatePayload, customerDisplayName } from '@/lib/customer-record';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
@@ -35,7 +36,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('customers')
-    .select('id, company_name, phone, email, pipeline_stage, record_type')
+    .select('id, company_name, phone, email, pipeline_stage, record_type, assigned_to')
     .eq('id', id)
     .or(ownershipFilter)
     .maybeSingle();
@@ -95,6 +96,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const nextType = body.record_type || existing.record_type || 'customer';
   const action = body.record_type && body.record_type !== existing.record_type ? `${nextType}_converted` : `${nextType}_updated`;
+  const title = customerDisplayName(existing);
 
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
@@ -102,8 +104,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     nextType,
     id,
     action,
-    `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${customerDisplayName(existing)}`
+    `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${title}`
   );
+
+  if (body.assigned_to && body.assigned_to !== existing.assigned_to) {
+    await sendAssignmentNotification({
+      supabase: ctx.supabase,
+      organizationId: ctx.workspace.organizationId,
+      assignedUserId: body.assigned_to,
+      kind: nextType === 'lead' ? 'lead' : 'customer',
+      recordId: id,
+      title
+    });
+  }
 
   return NextResponse.json({ ok: true, message: nextType === 'lead' ? 'Lead saved successfully.' : 'Customer saved successfully.' });
 }
