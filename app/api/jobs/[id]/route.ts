@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { validateAssignedEmail } from '@/lib/job-assigned-email';
+import { ensureWorkerForPerson } from '@/lib/people-assignment';
+import { canAssignJobs } from '@/lib/roles';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
-import { canAssignJobs } from '@/lib/roles';
-import { validateAssignedEmail } from '@/lib/job-assigned-email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,58 @@ const MANAGER_ONLY_FIELDS = new Set([
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status']);
+
+async function resolveAssignedWorkerId(
+  ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
+  assignedTo: unknown
+): Promise<{ ok: true; workerId: string | null; assignedUserId: string | null } | { ok: false; error: string }> {
+  const rawAssignedTo = typeof assignedTo === 'string' ? assignedTo.trim() : '';
+  if (!rawAssignedTo) return { ok: true, workerId: null, assignedUserId: null };
+
+  const { data: member } = await ctx.supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', ctx.workspace.organizationId)
+    .eq('user_id', rawAssignedTo)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (member?.user_id) {
+    const { data: profile } = await ctx.supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', rawAssignedTo)
+      .maybeSingle();
+
+    const displayName = profile?.full_name?.trim() || profile?.email?.trim() || 'Team member';
+    try {
+      const workerId = await ensureWorkerForPerson(
+        ctx.supabase,
+        ctx.workspace.organizationId,
+        rawAssignedTo,
+        displayName,
+        ctx.workspace.ownerUserId || ctx.userId
+      );
+      return { ok: true, workerId, assignedUserId: rawAssignedTo };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to link this teammate to a worker record.';
+      return { ok: false, error: message };
+    }
+  }
+
+  const { data: worker } = await ctx.supabase
+    .from('workers')
+    .select('id, auth_user_id')
+    .eq('id', rawAssignedTo)
+    .eq('organization_id', ctx.workspace.organizationId)
+    .maybeSingle();
+
+  if (worker?.id) {
+    return { ok: true, workerId: worker.id, assignedUserId: worker.auth_user_id || null };
+  }
+
+  return { ok: false, error: 'Assigned teammate must be an active member or worker in this workspace.' };
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const ctx = await requireWorkspaceSession();
@@ -106,8 +159,18 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
   }
 
-  if ('assigned_to' in payload && !canAssignJobs(ctx.workspace.role)) {
-    return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
+  let assignedUserId: string | null = null;
+  if ('assigned_to' in payload) {
+    if (!canAssignJobs(ctx.workspace.role)) {
+      return NextResponse.json({ error: 'You do not have permission to assign jobs.' }, { status: 403 });
+    }
+
+    const resolvedAssignment = await resolveAssignedWorkerId(ctx, payload.assigned_to);
+    if (!resolvedAssignment.ok) {
+      return NextResponse.json({ error: resolvedAssignment.error }, { status: 400 });
+    }
+    payload.assigned_to = resolvedAssignment.workerId;
+    assignedUserId = resolvedAssignment.assignedUserId;
   }
 
   if ('assigned_email' in payload && !canAssignJobs(ctx.workspace.role)) {
@@ -134,8 +197,20 @@ export async function PATCH(request: Request, context: RouteContext) {
     'job',
     id,
     ctx.canManage ? 'job_updated' : 'job_status_updated',
-    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`
+    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`,
+    { assignedTo: payload.assigned_to ?? null, assignedUserId }
   );
+
+  if (assignedUserId) {
+    await ctx.supabase.from('notifications').insert({
+      organization_id: ctx.workspace.organizationId,
+      user_id: assignedUserId,
+      type: 'assignment',
+      title: 'Job assignment updated',
+      body: existing.title || 'Untitled job',
+      related_job_id: id
+    });
+  }
 
   return NextResponse.json({ ok: true, message: 'Job saved successfully.' });
 }
