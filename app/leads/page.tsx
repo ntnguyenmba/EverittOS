@@ -111,7 +111,7 @@ export default function LeadsPage() {
       appFeedback.error(json.error || 'Unable to archive lead.');
       return;
     }
-    appFeedback.label('archived');
+    appFeedback.saved();
     void load();
   }
 
@@ -215,7 +215,7 @@ export default function LeadsPage() {
                         disabled={removingId === lead.id}
                         onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}
                       >
-                        {removingId === lead.id ? FEEDBACK.loading : 'Archive lead'}
+                        {removingId === lead.id ? FEEDBACK.loading : 'Archive'}
                       </button>
                     ) : null}
                   </div>
