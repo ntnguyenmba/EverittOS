@@ -97,6 +97,13 @@ function assignedToClause(userId: string, workerIds: string[]): string {
   return ids.map((id) => `assigned_to.eq.${id}`).join(',');
 }
 
+function scopedAssignedToClause(organizationId: string, userId: string, workerIds: string[]): string {
+  const clause = assignedToClause(userId, workerIds);
+  return clause.includes(',')
+    ? `and(organization_id.eq.${organizationId},or(${clause}))`
+    : `and(organization_id.eq.${organizationId},${clause})`;
+}
+
 /** Count jobs for an organization (source of truth for analytics dashboards). */
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
@@ -142,10 +149,11 @@ export async function listWorkspaceJobs(
       query = query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${userId})`);
     } else {
       query = query.or(
-        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),and(organization_id.eq.${organizationId},${assignedToClause(
+        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),${scopedAssignedToClause(
+          organizationId,
           userId,
           currentUserWorkerIds
-        )}),and(organization_id.is.null,user_id.eq.${userId})`
+        )},and(organization_id.is.null,user_id.eq.${userId})`
       );
     }
   } else {
