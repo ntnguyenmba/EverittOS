@@ -39,6 +39,10 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function invoiceDate(row: { invoice_date?: unknown; created_at?: unknown }): string {
+  return String(row.invoice_date || row.created_at || '').slice(0, 10);
+}
+
 export async function fetchDashboardRevenueMetrics(
   supabase: SupabaseClient,
   organizationId: string | null
@@ -68,6 +72,8 @@ export async function fetchDashboardRevenueMetrics(
 
   const [
     invoicesRes,
+    manualRevenueJobsRes,
+    laborRes,
     completedJobsRes,
     completedThisMonthRes,
     customersRes,
@@ -81,8 +87,18 @@ export async function fetchDashboardRevenueMetrics(
   ] = await Promise.all([
     supabase
       .from('invoices')
-      .select('amount, amount_paid, invoice_date, created_at, due_date, payment_status')
+      .select('amount, amount_paid, invoice_date, created_at, due_date, payment_status, job_id')
       .eq('organization_id', organizationId),
+    supabase
+      .from('jobs')
+      .select('id, revenue_amount, created_at, start_date, scheduled_start')
+      .eq('organization_id', organizationId)
+      .not('revenue_amount', 'is', null),
+    supabase
+      .from('job_labor')
+      .select('total_cost, created_at')
+      .eq('organization_id', organizationId)
+      .gte('created_at', `${monthStart}T00:00:00`),
     supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
@@ -139,12 +155,23 @@ export async function fetchDashboardRevenueMetrics(
   const safeData = <T,>(res: { data: T | null; error: unknown }, fallback: T): T => (res.error ? fallback : res.data || fallback);
 
   const invoices = safeData(invoicesRes, []);
-  const revenueThisMonth = invoices.reduce((sum, inv) => {
-    const date = (inv.invoice_date as string | null) || (inv.created_at as string | null)?.slice(0, 10);
+  const invoicedJobIds = new Set<string>();
+  const invoiceRevenueThisMonth = invoices.reduce((sum, inv) => {
+    const date = invoiceDate(inv);
     if (!date || date < monthStart) return sum;
+    if (inv.job_id) invoicedJobIds.add(String(inv.job_id));
     const paid = num(inv.amount_paid);
     return sum + (paid > 0 ? paid : num(inv.amount));
   }, 0);
+
+  const manualRevenueThisMonth = safeData(manualRevenueJobsRes, []).reduce((sum, job) => {
+    if (invoicedJobIds.has(String(job.id))) return sum;
+    const date = String(job.start_date || job.scheduled_start || job.created_at || '').slice(0, 10);
+    if (!date || date < monthStart) return sum;
+    return sum + num(job.revenue_amount);
+  }, 0);
+
+  const revenueThisMonth = invoiceRevenueThisMonth + manualRevenueThisMonth;
 
   let outstandingInvoices = 0;
   let unpaidInvoiceTotal = 0;
@@ -173,19 +200,21 @@ export async function fetchDashboardRevenueMetrics(
   }
 
   const expenseTotalThisMonth = safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0);
+  const laborTotalThisMonth = safeData(laborRes, []).reduce((sum, row) => sum + num(row.total_cost), 0);
+  const totalCostsThisMonth = expenseTotalThisMonth + laborTotalThisMonth;
 
   return {
-    revenueThisMonth,
-    outstandingInvoices,
+    revenueThisMonth: Number(revenueThisMonth.toFixed(2)),
+    outstandingInvoices: Number(outstandingInvoices.toFixed(2)),
     overdueInvoiceCount,
-    unpaidInvoiceTotal,
+    unpaidInvoiceTotal: Number(unpaidInvoiceTotal.toFixed(2)),
     jobsCompleted: safeCount(completedJobsRes),
     jobsCompletedThisMonth: safeCount(completedThisMonthRes),
     activeCustomers: safeCount(customersRes),
     customerCount: safeCount(customersRes),
     upcomingJobs: safeCount(upcomingJobsRes),
-    expenseTotalThisMonth,
-    netEstimateThisMonth: revenueThisMonth - expenseTotalThisMonth,
+    expenseTotalThisMonth: Number(totalCostsThisMonth.toFixed(2)),
+    netEstimateThisMonth: Number((revenueThisMonth - totalCostsThisMonth).toFixed(2)),
     bookingCountThisMonth: safeCount(bookingsRes),
     messageCount: safeCount(messagesRes),
     reportCount: safeCount(reportsRes),
