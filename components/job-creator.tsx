@@ -23,6 +23,14 @@ type TeamMemberOption = {
   role: string;
 };
 
+type VisitDraft = {
+  id: string;
+  visit_date: string;
+  start_time: string;
+  end_time: string;
+  notes: string;
+};
+
 type MemberRow = {
   user_id: string;
   role: string;
@@ -42,11 +50,23 @@ function memberLabel(member: MemberRow, profile?: ProfileRow) {
   return name || email || member.user_id;
 }
 
-function toIsoDateTime(date: string, time: string): string | null {
+function newVisit(): VisitDraft {
+  return {
+    id: crypto.randomUUID(),
+    visit_date: '',
+    start_time: '',
+    end_time: '',
+    notes: ''
+  };
+}
+
+function toLocalDateTime(date: string, time: string): string | null {
   if (!date || !time) return null;
-  const parsed = new Date(`${date}T${time}`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString();
+  return `${date}T${time}:00`;
+}
+
+function validVisits(visits: VisitDraft[]) {
+  return visits.filter((visit) => visit.visit_date || visit.start_time || visit.end_time || visit.notes.trim());
 }
 
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
@@ -56,9 +76,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [visits, setVisits] = useState<VisitDraft[]>([newVisit()]);
   const [assignedTo, setAssignedTo] = useState(searchParams.get('assigned_to') || '');
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(true);
@@ -117,6 +135,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     void loadTeamMembers();
   }, []);
 
+  function updateVisit(id: string, patch: Partial<VisitDraft>) {
+    setVisits((rows) => rows.map((visit) => (visit.id === id ? { ...visit, ...patch } : visit)));
+  }
+
+  function removeVisit(id: string) {
+    setVisits((rows) => (rows.length === 1 ? rows : rows.filter((visit) => visit.id !== id)));
+  }
+
   async function createJob(event?: FormEvent) {
     event?.preventDefault();
 
@@ -127,23 +153,22 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const scheduledStart = toIsoDateTime(scheduledDate, startTime);
-    const scheduledEnd = toIsoDateTime(scheduledDate, endTime);
-
-    if ((startTime || endTime) && !scheduledDate) {
-      appFeedback.error('Add a date before adding job times.');
-      return;
+    const scheduledVisits = validVisits(visits);
+    for (const visit of scheduledVisits) {
+      if (!visit.visit_date || !visit.start_time || !visit.end_time) {
+        appFeedback.error('Each visit needs a date, start time, and end time.');
+        return;
+      }
+      if (visit.end_time <= visit.start_time) {
+        appFeedback.error('Visit end time must be after start time.');
+        return;
+      }
     }
 
-    if (scheduledDate && endTime && !startTime) {
-      appFeedback.error('Add a start time before adding an end time.');
-      return;
-    }
-
-    if (scheduledStart && scheduledEnd && new Date(scheduledEnd).getTime() <= new Date(scheduledStart).getTime()) {
-      appFeedback.error('End time must be after start time.');
-      return;
-    }
+    const firstVisit = scheduledVisits[0];
+    const lastVisit = scheduledVisits[scheduledVisits.length - 1];
+    const scheduledStart = firstVisit ? toLocalDateTime(firstVisit.visit_date, firstVisit.start_time) : null;
+    const scheduledEnd = lastVisit ? toLocalDateTime(lastVisit.visit_date, lastVisit.end_time) : null;
 
     setLoading(true);
 
@@ -205,10 +230,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         address: address.trim() || null,
         notes: notes.trim() || null,
         assigned_to: assignedTo || null,
-        start_date: scheduledDate || null,
-        due_date: scheduledDate || null,
+        start_date: firstVisit?.visit_date || null,
+        due_date: lastVisit?.visit_date || null,
         scheduled_start: scheduledStart,
         scheduled_end: scheduledEnd,
+        visits: scheduledVisits.map((visit) => ({
+          visit_date: visit.visit_date,
+          start_time: visit.start_time,
+          end_time: visit.end_time,
+          notes: visit.notes.trim() || null
+        })),
         status: 'new'
       })
     });
@@ -240,9 +271,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setCustomerName('');
     setPhone('');
     setNotes('');
-    setScheduledDate('');
-    setStartTime('');
-    setEndTime('');
+    setVisits([newVisit()]);
     setAssignedTo('');
     appFeedback.created();
     onJobCreated?.(createdJob.id);
@@ -260,23 +289,45 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   return (
     <div className="card">
       <h3>{t('pages.jobs.createTitle')}</h3>
+      <p className="muted">Add the job once, including all days and hours needed.</p>
       <form className="form" onSubmit={createJob}>
         <input className="input" placeholder="Job title *" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-        <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <label htmlFor="job-date">Day</label>
-        <input id="job-date" className="input" type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
         <div className="grid-2">
-          <div className="form-group">
-            <label htmlFor="job-start-time">Start time</label>
-            <input id="job-start-time" className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="job-end-time">End time</label>
-            <input id="job-end-time" className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-          </div>
+          <input className="input" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
+        <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+
+        <div className="card" style={{ boxShadow: 'none' }}>
+          <h4>Days and hours</h4>
+          <p className="muted">Add one or more visits before saving the job.</p>
+          {visits.map((visit, index) => (
+            <div key={visit.id} className="form" style={{ borderTop: index ? '1px solid var(--line)' : 0, paddingTop: index ? 16 : 0 }}>
+              <label>Visit {index + 1}</label>
+              <input className="input" type="date" value={visit.visit_date} onChange={(e) => updateVisit(visit.id, { visit_date: e.target.value })} />
+              <div className="grid-2">
+                <div className="form-group">
+                  <label>Start time</label>
+                  <input className="input" type="time" value={visit.start_time} onChange={(e) => updateVisit(visit.id, { start_time: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>End time</label>
+                  <input className="input" type="time" value={visit.end_time} onChange={(e) => updateVisit(visit.id, { end_time: e.target.value })} />
+                </div>
+              </div>
+              <input className="input" placeholder="Visit notes" value={visit.notes} onChange={(e) => updateVisit(visit.id, { notes: e.target.value })} />
+              {visits.length > 1 ? (
+                <button className="btn" type="button" onClick={() => removeVisit(visit.id)}>
+                  Remove visit
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <button className="btn" type="button" onClick={() => setVisits((rows) => [...rows, newVisit()])}>
+            Add another visit
+          </button>
+        </div>
+
         <label htmlFor="assigned-to">Assign to</label>
         <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
           <option value="">Unassigned</option>
@@ -288,7 +339,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </select>
         {loadingTeam ? <p className="muted">Loading team members...</p> : null}
         {!loadingTeam && teamMembers.length === 0 ? <p className="muted">No active team members found.</p> : null}
-        <textarea className="input" placeholder="Notes" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea className="input" placeholder="Notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <Button className="btn-primary" type="submit" disabled={loading}>
           {loading ? FEEDBACK.loading : 'Save job'}
         </Button>
