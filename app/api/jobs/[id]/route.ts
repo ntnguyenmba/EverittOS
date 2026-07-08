@@ -128,6 +128,21 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
+  const { data: editableShare } = ctx.canManage
+    ? { data: null }
+    : await ctx.supabase
+        .from('record_shares')
+        .select('id')
+        .eq('organization_id', ctx.workspace.organizationId)
+        .eq('record_type', 'job')
+        .eq('record_id', id)
+        .eq('shared_with_user_id', ctx.userId)
+        .eq('access_level', 'edit')
+        .maybeSingle();
+
+  const canEditSharedJob = Boolean(editableShare?.id);
+  const canEditJobDetails = ctx.canManage || canEditSharedJob;
+
   if (Object.keys(body).some((key) => INTERNAL_ONLY_FIELDS.has(key)) && !ctx.canManage) {
     return NextResponse.json({ error: 'Only owners, admins, and managers can edit internal job notes.' }, { status: 403 });
   }
@@ -145,17 +160,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'No valid fields to update.' }, { status: 400 });
   }
 
-  if (!ctx.canManage) {
+  if (!canEditJobDetails) {
     const staffOnlyUpdate = payloadKeys.every((key) => STAFF_ALLOWED_FIELDS.has(key));
     if (!staffOnlyUpdate) {
       return NextResponse.json(
-        { error: 'Only owners, admins, and managers can edit job details, schedule, customer info, and assignments.' },
+        { error: 'Only owners, admins, managers, or teammates with edit access can edit job details.' },
         { status: 403 }
       );
     }
   }
 
-  if (payloadKeys.some((key) => MANAGER_ONLY_FIELDS.has(key)) && !ctx.canManage) {
+  if (payloadKeys.some((key) => MANAGER_ONLY_FIELDS.has(key)) && !canEditJobDetails) {
     return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
   }
 
@@ -196,8 +211,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     ctx.userId,
     'job',
     id,
-    ctx.canManage ? 'job_updated' : 'job_status_updated',
-    ctx.canManage ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`,
+    canEditJobDetails ? 'job_updated' : 'job_status_updated',
+    canEditJobDetails ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`,
     { assignedTo: payload.assigned_to ?? null, assignedUserId }
   );
 
