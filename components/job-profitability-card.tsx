@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatCurrency } from '@/lib/finance-format';
-import type { JobProfitability } from '@/lib/finance-types';
+import type { JobLaborRecord, JobProfitability } from '@/lib/finance-types';
 
 type JobProfitabilityCardProps = {
   jobId: string;
@@ -21,8 +21,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const router = useRouter();
   const appFeedback = useAppFeedback();
   const [profitability, setProfitability] = useState<JobProfitability | null>(null);
+  const [laborEntries, setLaborEntries] = useState<JobLaborRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [revenueAmount, setRevenueAmount] = useState('');
   const [revenueNotes, setRevenueNotes] = useState('');
@@ -32,12 +35,14 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const [contractorHours, setContractorHours] = useState('');
   const [visitCount, setVisitCount] = useState('1');
   const [contractorNotes, setContractorNotes] = useState('');
+  const [editWorkerName, setEditWorkerName] = useState('');
+  const [editHours, setEditHours] = useState('');
+  const [editHourlyCost, setEditHourlyCost] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const loadFinancials = useCallback(async () => {
     const res = await fetch(`/api/jobs/${jobId}/profitability`);
     const json = await res.json().catch(() => ({}));
-    setLoading(false);
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to load job financials.');
       return;
@@ -48,6 +53,22 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setRevenueNotes(next.revenueNotes || '');
   }, [appFeedback, jobId]);
 
+  const loadLabor = useCallback(async () => {
+    const res = await fetch(`/api/jobs/${jobId}/labor`);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to load contractor pay.');
+      return;
+    }
+    setLaborEntries(json.labor || []);
+  }, [appFeedback, jobId]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([loadFinancials(), loadLabor()]);
+    setLoading(false);
+  }, [loadFinancials, loadLabor]);
+
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
@@ -56,6 +77,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     const params = new URLSearchParams({ jobId });
     if (customerId) params.set('customerId', customerId);
     router.push(`/invoices?${params.toString()}`);
+  }
+
+  async function refreshAfterLaborChange() {
+    await Promise.all([loadFinancials(), loadLabor()]);
   }
 
   async function saveRevenue() {
@@ -82,7 +107,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
     setRevenueNotes(next.revenueNotes || '');
     appFeedback.success('Client income saved.');
-    void load();
+    void loadFinancials();
   }
 
   async function saveContractorPay() {
@@ -125,7 +150,70 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setVisitCount('1');
     setContractorNotes('');
     appFeedback.success(`Contractor pay saved: ${formatCurrency(calculatedTotal)}.`);
-    void load();
+    void refreshAfterLaborChange();
+  }
+
+  function startEditLabor(entry: JobLaborRecord) {
+    setEditingId(entry.id);
+    setEditWorkerName(entry.worker_name || '');
+    setEditHours(String(entry.hours ?? ''));
+    setEditHourlyCost(String(entry.hourly_cost ?? ''));
+    setEditNotes(entry.notes || '');
+  }
+
+  function cancelEditLabor() {
+    setEditingId(null);
+    setEditWorkerName('');
+    setEditHours('');
+    setEditHourlyCost('');
+    setEditNotes('');
+  }
+
+  async function updateLabor(entryId: string) {
+    if (saving) return;
+    const hours = Number.parseFloat(editHours);
+    const hourlyCost = Number.parseFloat(editHourlyCost || '0');
+    if (!Number.isFinite(hours) || hours <= 0) {
+      appFeedback.error('Enter valid hours or visits.');
+      return;
+    }
+
+    setSaving(true);
+    const res = await fetch(`/api/jobs/${jobId}/labor/${entryId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        worker_name: editWorkerName.trim() || 'Contractor',
+        hours,
+        hourly_cost: Number.isFinite(hourlyCost) ? hourlyCost : 0,
+        notes: editNotes.trim() || null
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to update contractor pay.');
+      return;
+    }
+    cancelEditLabor();
+    appFeedback.success('Contractor pay updated.');
+    void refreshAfterLaborChange();
+  }
+
+  async function removeLabor(entryId: string) {
+    if (deletingId) return;
+    if (!window.confirm('Delete this contractor pay entry?')) return;
+    setDeletingId(entryId);
+    const res = await fetch(`/api/jobs/${jobId}/labor/${entryId}`, { method: 'DELETE' });
+    const json = await res.json().catch(() => ({}));
+    setDeletingId(null);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to delete contractor pay.');
+      return;
+    }
+    if (editingId === entryId) cancelEditLabor();
+    appFeedback.deleted();
+    void refreshAfterLaborChange();
   }
 
   async function recordPayment() {
@@ -161,7 +249,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
     appFeedback.label('paymentRecorded');
     setPaymentAmount('');
-    void load();
+    void loadFinancials();
   }
 
   if (loading) {
@@ -260,6 +348,57 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       {canManage ? (
         <div className="job-financials-section">
           <h4>Contractor pay</h4>
+          {laborEntries.length > 0 ? (
+            <div className="finance-list" style={{ marginBottom: 16 }}>
+              {laborEntries.map((entry) => {
+                const isEditing = editingId === entry.id;
+                return (
+                  <div key={entry.id} className="finance-list-card">
+                    {isEditing ? (
+                      <div className="finance-form-block compact-finance-form" style={{ width: '100%' }}>
+                        <label>Contractor or cleaner name</label>
+                        <input className="input" value={editWorkerName} onChange={(e) => setEditWorkerName(e.target.value)} />
+                        <div className="grid-2">
+                          <div className="form-group">
+                            <label>Hours or visits</label>
+                            <input className="input" type="number" min="0" step="0.25" value={editHours} onChange={(e) => setEditHours(e.target.value)} />
+                          </div>
+                          <div className="form-group">
+                            <label>Rate</label>
+                            <input className="input" type="number" min="0" step="0.01" value={editHourlyCost} onChange={(e) => setEditHourlyCost(e.target.value)} />
+                          </div>
+                        </div>
+                        <label>Notes</label>
+                        <input className="input" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+                        <div className="job-detail-actions">
+                          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void updateLabor(entry.id)}>
+                            {saving ? FEEDBACK.loading : 'Save changes'}
+                          </button>
+                          <button type="button" className="btn" disabled={saving} onClick={cancelEditLabor}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <strong>{entry.worker_name || 'Contractor'}</strong>
+                          <p className="muted">
+                            {entry.hours} x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}
+                          </p>
+                          {entry.notes ? <p className="muted">{entry.notes}</p> : null}
+                        </div>
+                        <div className="job-detail-actions">
+                          <button type="button" className="btn" disabled={saving || Boolean(deletingId)} onClick={() => startEditLabor(entry)}>Edit</button>
+                          <button type="button" className="btn" disabled={deletingId === entry.id} onClick={() => void removeLabor(entry.id)}>
+                            {deletingId === entry.id ? FEEDBACK.loading : 'Delete'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="finance-form-block compact-finance-form">
             <label>Contractor or cleaner name</label>
             <input className="input" placeholder="Name" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
