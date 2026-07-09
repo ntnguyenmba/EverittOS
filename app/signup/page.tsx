@@ -71,7 +71,6 @@ function SignupForm() {
   const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
-  const showReferralDetail = referralSource === 'Friend or colleague' || referralSource === 'Another cleaning company' || referralSource === 'Other' || referralSource === 'Referral code';
 
   async function createAccount(event: React.FormEvent) {
     event.preventDefault();
@@ -206,12 +205,10 @@ function SignupForm() {
           </select>
         </div>
 
-        {showReferralDetail ? (
-          <div className="auth-field">
-            <label htmlFor="signup_referral_detail">Who referred you or where did you see us? (optional)</label>
-            <input id="signup_referral_detail" className="input" placeholder="Name, company, group, or referral code" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
-          </div>
-        ) : null}
+        <div className="auth-field">
+          <label htmlFor="signup_referral_detail">Referral details for credit or payout tracking (optional)</label>
+          <input id="signup_referral_detail" className="input" placeholder="Person, company, Facebook group, salesperson, or referral code" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
+        </div>
 
         <div className="auth-field">
           <label htmlFor="email">Email</label>
@@ -236,7 +233,7 @@ function SignupForm() {
         <AuthMessages error={error} success={success} />
 
         {signInRecommended ? <p className="auth-recovery-note"><Link href={loginHref}>Sign in with this email</Link></p> : null}
-        {errorCode === 'existing_unconfirmed' ? <p className="auth-recovery-note muted">Did not get the email? Try signing in — we send another confirmation link when needed.</p> : null}
+        {errorCode === 'existing_unconfirmed' ? <p className="auth-recovery-note muted">Did not get the email? Try signing in. We send another confirmation link when needed.</p> : null}
 
         <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Creating account...' : 'Create account'}</button>
       </form>
