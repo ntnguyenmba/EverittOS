@@ -13,6 +13,8 @@ type PasskeyActionResult = {
   canceled?: boolean;
 };
 
+const noPasskeyFoundMessage = 'No passkey found. Sign in with your email and password instead.';
+
 export function browserSupportsPasskeys(): boolean {
   return typeof window !== 'undefined' && typeof PublicKeyCredential !== 'undefined';
 }
@@ -45,6 +47,23 @@ function getPasskeyErrorText(error: unknown): string {
     .toLowerCase();
 }
 
+export function isNoPasskeyAvailableError(error: unknown): boolean {
+  const text = getPasskeyErrorText(error);
+
+  return (
+    text.includes('no passkey') ||
+    text.includes('no passkeys') ||
+    text.includes('no credential') ||
+    text.includes('no credentials') ||
+    text.includes('credential not found') ||
+    text.includes('credentials not found') ||
+    text.includes('not registered') ||
+    text.includes('unknown credential') ||
+    text.includes('no discoverable credential') ||
+    text.includes('no matching credential')
+  );
+}
+
 export function isPasskeyCancellationError(error: unknown): boolean {
   const text = getPasskeyErrorText(error);
 
@@ -64,6 +83,9 @@ export function isPasskeyCancellationError(error: unknown): boolean {
 export function passkeyErrorMessage(error: { message?: string } | null | undefined): string {
   const message = (error?.message || '').toLowerCase();
   if (!message) return 'Passkey action failed. Try again or use email and password.';
+  if (isNoPasskeyAvailableError(error)) {
+    return noPasskeyFoundMessage;
+  }
   if (isPasskeyCancellationError(error)) {
     return 'Passkey action was canceled.';
   }
@@ -84,12 +106,14 @@ export async function signInWithPasskey(): Promise<PasskeyActionResult> {
   try {
     const { data, error } = await supabase.auth.signInWithPasskey();
     if (error) {
+      if (isNoPasskeyAvailableError(error)) return { ok: false, error: noPasskeyFoundMessage };
       if (isPasskeyCancellationError(error)) return { ok: false, canceled: true };
       return { ok: false, error: passkeyErrorMessage(error) };
     }
     if (!data?.session) return { ok: false, error: 'Passkey sign-in did not create a session.' };
     return { ok: true };
   } catch (error) {
+    if (isNoPasskeyAvailableError(error)) return { ok: false, error: noPasskeyFoundMessage };
     if (isPasskeyCancellationError(error)) return { ok: false, canceled: true };
     return { ok: false, error: passkeyErrorMessage(error as { message?: string }) };
   }
