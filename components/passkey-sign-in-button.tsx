@@ -46,14 +46,24 @@ export function PasskeySignInButton({ next = '/dashboard', disabled = false }: P
   async function handlePasskeySignIn() {
     setLoading(true);
     setError('');
-    const result = await signInWithPasskey();
-    setLoading(false);
-    if (!result.ok) {
-      setError(result.error || copy.error);
-      return;
+
+    try {
+      const result = await signInWithPasskey();
+
+      if (result.canceled) {
+        return;
+      }
+
+      if (!result.ok) {
+        setError(result.error || copy.error);
+        return;
+      }
+
+      router.push(safeNextPath(next, '/dashboard'));
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
-    router.push(safeNextPath(next, '/dashboard'));
-    router.refresh();
   }
 
   return (
