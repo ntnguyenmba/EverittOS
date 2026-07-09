@@ -279,16 +279,16 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       <div className="job-financials-head">
         <div>
           <h3>Job Financials</h3>
-          <p className="muted">Track what the client pays, what contractors cost, and the estimated profit for this job.</p>
+          <p className="muted">Client income is what the customer pays you. Contractor pay is your cost to the cleaner or contractor.</p>
         </div>
         {canManage ? <button type="button" className="btn" onClick={openSendInvoice}>Send invoice</button> : null}
       </div>
 
       <div className="job-financials-section">
-        <h4>Income</h4>
+        <h4>Client income</h4>
         {canManage ? (
           <div className="finance-form-block compact-finance-form">
-            <label>Client income</label>
+            <label>Amount customer pays you</label>
             <div className="finance-inline-form">
               <input
                 className="input"
@@ -300,7 +300,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 onChange={(e) => setRevenueAmount(e.target.value)}
               />
               <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>
-                {saving ? FEEDBACK.loading : 'Save income'}
+                {saving ? FEEDBACK.loading : 'Save client income'}
               </button>
             </div>
             <textarea
@@ -310,13 +310,13 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
               value={revenueNotes}
               onChange={(e) => setRevenueNotes(e.target.value)}
             />
-            {!p?.hasInvoice ? <p className="muted finance-note">Use this when there is no invoice yet.</p> : null}
+            {!p?.hasInvoice ? <p className="muted finance-note">Use this when the client paid or quoted you but there is no invoice yet.</p> : null}
           </div>
         ) : null}
 
         {!hasRevenue ? (
           <div className="finance-empty-block">
-            <p>No client income or invoice yet. Add income or send an invoice to calculate profit.</p>
+            <p>No client income or invoice yet. Add the amount the client pays you or send an invoice to calculate profit.</p>
           </div>
         ) : (
           <div className="finance-metric-grid financials-summary-grid">
@@ -348,8 +348,10 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       {canManage ? (
         <div className="job-financials-section">
           <h4>Contractor pay</h4>
+          <p className="muted finance-note">This is what you pay the cleaner or contractor. It is separate from client income and reduces profit.</p>
           {laborEntries.length > 0 ? (
             <div className="finance-list" style={{ marginBottom: 16 }}>
+              <h5>Saved contractor pay entries</h5>
               {laborEntries.map((entry) => {
                 const isEditing = editingId === entry.id;
                 return (
@@ -364,7 +366,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                             <input className="input" type="number" min="0" step="0.25" value={editHours} onChange={(e) => setEditHours(e.target.value)} />
                           </div>
                           <div className="form-group">
-                            <label>Rate</label>
+                            <label>Rate or flat amount</label>
                             <input className="input" type="number" min="0" step="0.01" value={editHourlyCost} onChange={(e) => setEditHourlyCost(e.target.value)} />
                           </div>
                         </div>
@@ -372,7 +374,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                         <input className="input" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
                         <div className="job-detail-actions">
                           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void updateLabor(entry.id)}>
-                            {saving ? FEEDBACK.loading : 'Save changes'}
+                            {saving ? FEEDBACK.loading : 'Save contractor pay changes'}
                           </button>
                           <button type="button" className="btn" disabled={saving} onClick={cancelEditLabor}>Cancel</button>
                         </div>
@@ -382,14 +384,14 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                         <div>
                           <strong>{entry.worker_name || 'Contractor'}</strong>
                           <p className="muted">
-                            {entry.hours} x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}
+                            Contractor pay: {entry.hours} x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}
                           </p>
                           {entry.notes ? <p className="muted">{entry.notes}</p> : null}
                         </div>
                         <div className="job-detail-actions">
-                          <button type="button" className="btn" disabled={saving || Boolean(deletingId)} onClick={() => startEditLabor(entry)}>Edit</button>
+                          <button type="button" className="btn" disabled={saving || Boolean(deletingId)} onClick={() => startEditLabor(entry)}>Edit contractor pay</button>
                           <button type="button" className="btn" disabled={deletingId === entry.id} onClick={() => void removeLabor(entry.id)}>
-                            {deletingId === entry.id ? FEEDBACK.loading : 'Delete'}
+                            {deletingId === entry.id ? FEEDBACK.loading : 'Remove contractor pay'}
                           </button>
                         </div>
                       </>
@@ -398,8 +400,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 );
               })}
             </div>
-          ) : null}
+          ) : (
+            <p className="muted finance-note">No contractor pay entries yet.</p>
+          )}
           <div className="finance-form-block compact-finance-form">
+            <h5>Add contractor pay</h5>
             <label>Contractor or cleaner name</label>
             <input className="input" placeholder="Name" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
             <label>Pay type</label>
@@ -414,7 +419,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                   <input className="input" type="number" min="0" step="0.25" placeholder="0" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Hourly rate</label>
+                  <label>Hourly rate paid to contractor</label>
                   <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorPay} onChange={(e) => setContractorPay(e.target.value)} />
                 </div>
               </div>
@@ -425,7 +430,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                   <input className="input" type="number" min="1" step="1" placeholder="1" value={visitCount} onChange={(e) => setVisitCount(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Flat rate per visit</label>
+                  <label>Flat amount paid per visit</label>
                   <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorPay} onChange={(e) => setContractorPay(e.target.value)} />
                 </div>
               </div>
