@@ -205,6 +205,12 @@ export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPl
   return resolveNavItem(role, plan, href).accessible;
 }
 
+/** Backward-compatible settings gate used by middleware. */
+export function canAccessSettingsPath(role: UserRole, path: string, plan: EverittosPlan): boolean {
+  if (!path.startsWith('/settings')) return false;
+  return canAccessNavHref(role, path, plan);
+}
+
 export function billingUpgradeHref(requiredPlan: EverittosPlan, featureLabel?: string): string {
   const params = new URLSearchParams({ upgrade: requiredPlan, reason: 'plan' });
   if (featureLabel) {
