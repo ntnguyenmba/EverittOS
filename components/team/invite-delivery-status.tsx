@@ -13,29 +13,24 @@ type InviteResult = {
   invitationEmail?: string;
 };
 
-function requestUrl(input: RequestInfo | URL): string {
-  if (typeof input === 'string') return input;
-  if (input instanceof URL) return input.toString();
-  return input.url;
-}
-
-function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
-  if (init?.method) return init.method.toUpperCase();
-  if (input instanceof Request) return input.method.toUpperCase();
-  return 'GET';
-}
-
 export function InviteDeliveryStatus() {
   const feedback = useAppFeedback();
   const [result, setResult] = useState<InviteResult | null>(null);
 
   useEffect(() => {
-    const originalFetch = window.fetch;
+    const originalFetch = window.fetch.bind(window);
 
-    const interceptedFetch: typeof window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const response = await originalFetch(input, init);
-      const target = requestUrl(input);
-      const method = requestMethod(input, init);
+    const interceptedFetch = async (input: unknown, init?: RequestInit): Promise<Response> => {
+      const response = await originalFetch(input as RequestInfo | URL, init);
+      const target =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input instanceof Request
+              ? input.url
+              : '';
+      const method = (init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
 
       if (
         method === 'POST' &&
@@ -51,17 +46,17 @@ export function InviteDeliveryStatus() {
             });
           }
         } catch {
-          // Leave the original response untouched for the Team screen.
+          // Keep the original response unchanged for the Team screen.
         }
       }
 
       return response;
     };
 
-    window.fetch = interceptedFetch;
+    window.fetch = interceptedFetch as typeof window.fetch;
 
     return () => {
-      window.fetch = originalFetch;
+      window.fetch = originalFetch as typeof window.fetch;
     };
   }, []);
 
