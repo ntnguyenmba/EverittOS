@@ -11,11 +11,33 @@ type DashboardRevenueSnapshotProps = {
 
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { t } = useTranslation();
+  const revenue = metrics.revenueThisMonth || 0;
+  const profitMargin = revenue > 0 ? (metrics.netEstimateThisMonth / revenue) * 100 : 0;
 
   const items = [
     {
       label: t('dashboard.revenue.revenueMonth'),
-      value: formatCurrency(metrics.revenueThisMonth),
+      value: formatCurrency(revenue),
+      href: '/analytics'
+    },
+    {
+      label: 'Contractor pay this month',
+      value: formatCurrency(metrics.contractorPayThisMonth || 0),
+      href: '/jobs'
+    },
+    {
+      label: 'Other expenses this month',
+      value: formatCurrency(metrics.otherExpensesThisMonth || 0),
+      href: '/expenses'
+    },
+    {
+      label: t('dashboard.revenue.netEstimate'),
+      value: formatCurrency(metrics.netEstimateThisMonth),
+      href: '/analytics'
+    },
+    {
+      label: 'Estimated profit margin',
+      value: `${profitMargin.toFixed(1)}%`,
       href: '/analytics'
     },
     {
@@ -52,11 +74,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: t('dashboard.revenue.expensesMonth'),
       value: formatCurrency(metrics.expenseTotalThisMonth),
       href: '/expenses'
-    },
-    {
-      label: t('dashboard.revenue.netEstimate'),
-      value: formatCurrency(metrics.netEstimateThisMonth),
-      href: '/analytics'
     },
     {
       label: t('dashboard.revenue.bookingsMonth'),
