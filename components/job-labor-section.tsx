@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatCurrency } from '@/lib/finance-format';
-import type { JobLaborRecord } from '@/lib/finance-types';
+import type { ContractorPaymentStatus, JobLaborRecord } from '@/lib/finance-types';
 
 type WorkerOption = { id: string; name: string };
 
@@ -15,6 +15,17 @@ type JobLaborSectionProps = {
   onChange?: () => void;
 };
 
+function paymentStatusLabel(status: ContractorPaymentStatus | null | undefined) {
+  if (status === 'paid') return 'Paid';
+  if (status === 'pending') return 'Pending';
+  return 'Unpaid';
+}
+
+function formatPaidDate(value: string | null | undefined) {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
@@ -23,6 +34,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [workerId, setWorkerId] = useState('');
   const [workerName, setWorkerName] = useState('');
@@ -152,6 +164,28 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
     onChange?.();
   }
 
+  async function updatePaymentStatus(id: string, status: ContractorPaymentStatus) {
+    if (updatingPaymentId) return;
+    setUpdatingPaymentId(id);
+    const res = await fetch(`/api/jobs/${jobId}/labor/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payment_status: status,
+        paid_at: status === 'paid' ? new Date().toISOString() : null
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    setUpdatingPaymentId(null);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to update contractor payment status.');
+      return;
+    }
+    appFeedback.success(status === 'paid' ? 'Contractor payment marked paid.' : `Contractor payment marked ${status}.`);
+    await load();
+    onChange?.();
+  }
+
   async function duplicateEntry(id: string) {
     if (duplicatingId) return;
     setDuplicatingId(id);
@@ -185,6 +219,15 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   }
 
   const totalLabor = entries.reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
+  const unpaidLabor = entries
+    .filter((entry) => !entry.payment_status || entry.payment_status === 'unpaid')
+    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
+  const pendingLabor = entries
+    .filter((entry) => entry.payment_status === 'pending')
+    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
+  const paidLabor = entries
+    .filter((entry) => entry.payment_status === 'paid')
+    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
   const previewHours = Number.parseFloat(hours);
   const previewRate = Number.parseFloat(hourlyCost);
   const previewCost = Number.isFinite(previewHours) && Number.isFinite(previewRate) ? previewHours * previewRate : 0;
@@ -210,6 +253,15 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       {loading ? <p className="loading-state">Loading...</p> : null}
       {!loading && entries.length === 0 ? <p className="muted">No contractor pay entries yet.</p> : null}
 
+      {!loading && entries.length > 0 ? (
+        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
+          <div className="finance-metric"><span className="finance-metric-label">Unpaid</span><strong>{formatCurrency(unpaidLabor)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Pending</span><strong>{formatCurrency(pendingLabor)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>{formatCurrency(paidLabor)}</strong></div>
+          <div className="finance-metric featured"><span className="finance-metric-label">Total contractor pay</span><strong>{formatCurrency(totalLabor)}</strong></div>
+        </div>
+      ) : null}
+
       {!loading && contractorTotals.length > 0 ? (
         <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
           {contractorTotals.map((contractor) => (
@@ -219,10 +271,6 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
               <span className="muted">{contractor.entries} entr{contractor.entries === 1 ? 'y' : 'ies'}</span>
             </div>
           ))}
-          <div className="finance-metric featured">
-            <span className="finance-metric-label">Total contractor pay</span>
-            <strong>{formatCurrency(totalLabor)}</strong>
-          </div>
         </div>
       ) : null}
 
@@ -235,6 +283,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
             const editedRate = Number.parseFloat(editHourlyCost);
             const editedCost = Number.isFinite(editedHours) && Number.isFinite(editedRate) ? editedHours * editedRate : 0;
             const editedProfit = currentProfit + Number(entry.total_cost || 0) - editedCost;
+            const paymentStatus = entry.payment_status || 'unpaid';
             return (
               <div key={entry.id} className="finance-list-card">
                 {isEditing ? (
@@ -273,10 +322,28 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                     <div>
                       <strong>{entry.worker_name || 'Contractor'}</strong>
                       <p className="muted">{entry.hours} x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}</p>
+                      <p className="muted">
+                        Payment: {paymentStatusLabel(paymentStatus)}
+                        {entry.paid_at ? ` · Paid ${formatPaidDate(entry.paid_at)}` : ''}
+                      </p>
+                      {entry.payment_method ? <p className="muted">Method: {entry.payment_method}</p> : null}
+                      {entry.payment_reference ? <p className="muted">Reference: {entry.payment_reference}</p> : null}
                       {entry.notes ? <p className="muted">{entry.notes}</p> : null}
                     </div>
                     {canManage ? (
                       <div className="job-detail-actions">
+                        {paymentStatus !== 'paid' ? (
+                          <button type="button" className="btn btn-primary" disabled={updatingPaymentId === entry.id} onClick={() => void updatePaymentStatus(entry.id, 'paid')}>
+                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Mark paid'}
+                          </button>
+                        ) : (
+                          <button type="button" className="btn" disabled={updatingPaymentId === entry.id} onClick={() => void updatePaymentStatus(entry.id, 'unpaid')}>
+                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Mark unpaid'}
+                          </button>
+                        )}
+                        {paymentStatus === 'unpaid' ? (
+                          <button type="button" className="btn" disabled={updatingPaymentId === entry.id} onClick={() => void updatePaymentStatus(entry.id, 'pending')}>Mark pending</button>
+                        ) : null}
                         <button type="button" className="btn" disabled={saving || Boolean(deletingId) || Boolean(duplicatingId)} onClick={() => startEdit(entry)}>Edit</button>
                         <button type="button" className="btn" disabled={duplicatingId === entry.id || Boolean(deletingId)} onClick={() => void duplicateEntry(entry.id)}>{duplicatingId === entry.id ? FEEDBACK.loading : 'Duplicate'}</button>
                         <button type="button" className="btn" disabled={deletingId === entry.id || Boolean(duplicatingId)} onClick={() => void removeEntry(entry.id)}>{deletingId === entry.id ? FEEDBACK.loading : 'Remove'}</button>
