@@ -16,6 +16,8 @@ export type DashboardRevenueMetrics = {
   customerCount: number;
   upcomingJobs: number;
   contractorPayThisMonth?: number;
+  unpaidContractorPay?: number;
+  pendingContractorPay?: number;
   otherExpensesThisMonth?: number;
   expenseTotalThisMonth: number;
   netEstimateThisMonth: number;
@@ -62,6 +64,8 @@ export async function fetchDashboardRevenueMetrics(
     customerCount: 0,
     upcomingJobs: 0,
     contractorPayThisMonth: 0,
+    unpaidContractorPay: 0,
+    pendingContractorPay: 0,
     otherExpensesThisMonth: 0,
     expenseTotalThisMonth: 0,
     netEstimateThisMonth: 0,
@@ -100,9 +104,8 @@ export async function fetchDashboardRevenueMetrics(
       .not('revenue_amount', 'is', null),
     supabase
       .from('job_labor')
-      .select('total_cost, created_at')
-      .eq('organization_id', organizationId)
-      .gte('created_at', `${monthStart}T00:00:00`),
+      .select('total_cost, created_at, payment_status')
+      .eq('organization_id', organizationId),
     supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
@@ -203,8 +206,20 @@ export async function fetchDashboardRevenueMetrics(
     jobsByStatus[status] = (jobsByStatus[status] || 0) + 1;
   }
 
+  const laborRows = safeData(laborRes, []);
+  const contractorPayThisMonth = laborRows.reduce((sum, row) => {
+    const createdAt = String(row.created_at || '').slice(0, 10);
+    return createdAt >= monthStart ? sum + num(row.total_cost) : sum;
+  }, 0);
+  const unpaidContractorPay = laborRows.reduce((sum, row) => {
+    const status = String(row.payment_status || 'unpaid').toLowerCase();
+    return status === 'unpaid' ? sum + num(row.total_cost) : sum;
+  }, 0);
+  const pendingContractorPay = laborRows.reduce((sum, row) => {
+    const status = String(row.payment_status || '').toLowerCase();
+    return status === 'pending' ? sum + num(row.total_cost) : sum;
+  }, 0);
   const otherExpensesThisMonth = safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0);
-  const contractorPayThisMonth = safeData(laborRes, []).reduce((sum, row) => sum + num(row.total_cost), 0);
   const totalCostsThisMonth = otherExpensesThisMonth + contractorPayThisMonth;
 
   return {
@@ -218,6 +233,8 @@ export async function fetchDashboardRevenueMetrics(
     customerCount: safeCount(customersRes),
     upcomingJobs: safeCount(upcomingJobsRes),
     contractorPayThisMonth: Number(contractorPayThisMonth.toFixed(2)),
+    unpaidContractorPay: Number(unpaidContractorPay.toFixed(2)),
+    pendingContractorPay: Number(pendingContractorPay.toFixed(2)),
     otherExpensesThisMonth: Number(otherExpensesThisMonth.toFixed(2)),
     expenseTotalThisMonth: Number(totalCostsThisMonth.toFixed(2)),
     netEstimateThisMonth: Number((revenueThisMonth - totalCostsThisMonth).toFixed(2)),
