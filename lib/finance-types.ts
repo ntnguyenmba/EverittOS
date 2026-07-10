@@ -35,6 +35,8 @@ export type ExpenseRecord = {
   updated_at: string;
 };
 
+export type ContractorPaymentStatus = 'unpaid' | 'pending' | 'paid';
+
 export type JobLaborRecord = {
   id: string;
   organization_id: string;
@@ -45,6 +47,10 @@ export type JobLaborRecord = {
   hourly_cost: number;
   total_cost: number;
   notes: string | null;
+  payment_status: ContractorPaymentStatus;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
   created_at: string;
   updated_at: string;
 };
