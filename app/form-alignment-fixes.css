@@ -1,0 +1,142 @@
+/* App-wide form alignment and unified job creation layout */
+
+.input,
+select.input,
+textarea.input,
+input.input {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  line-height: 1.4;
+  padding: 0.78rem 0.9rem;
+}
+
+input.input,
+select.input {
+  min-height: 46px;
+}
+
+textarea.input {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.btn,
+button.btn,
+a.btn {
+  align-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1.2;
+  min-height: 42px;
+  padding: 0.68rem 1rem;
+  text-align: center;
+  white-space: normal;
+}
+
+.form,
+.form-group,
+.settings-form-grid,
+.finance-form-block {
+  min-width: 0;
+}
+
+.form-group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.form label,
+.form-group label,
+.settings-form-grid label,
+.finance-form-block label {
+  display: block;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.grid-2 > *,
+.inline-actions > *,
+.job-detail-actions > * {
+  min-width: 0;
+}
+
+.unified-job-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.job-create-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem;
+}
+
+.job-create-section h4,
+.job-create-section p {
+  margin: 0;
+}
+
+.visit-editor {
+  border-top: 1px solid var(--line);
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+.visit-editor:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.segmented-control {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.unified-job-save {
+  justify-self: stretch;
+  min-height: 50px;
+  width: 100%;
+}
+
+.finance-metric,
+.dashboard-revenue-metric,
+.list-row,
+.finance-list-card,
+.settings-card,
+.card {
+  min-width: 0;
+}
+
+.finance-metric-label,
+.dashboard-revenue-metric-label,
+.muted,
+.auth-message,
+code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .grid-2,
+  .segmented-control {
+    grid-template-columns: 1fr;
+  }
+
+  .job-create-section {
+    padding: 0.95rem;
+  }
+
+  .inline-actions,
+  .job-detail-actions {
+    align-items: stretch;
+  }
+
+  .inline-actions .btn,
+  .job-detail-actions .btn {
+    width: 100%;
+  }
+}
