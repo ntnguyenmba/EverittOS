@@ -12,14 +12,14 @@ import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type SettingsShellProps = {
-  plan: EverittosPlan;
+  plan?: EverittosPlan;
   title: string;
   description?: string;
   role?: UserRole | string | null;
   children: React.ReactNode;
 };
 
-export function SettingsShell({ plan, title, description, role: roleProp, children }: SettingsShellProps) {
+export function SettingsShell({ plan = 'free', title, description, role: roleProp, children }: SettingsShellProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const normalizedPlan = normalizePlan(plan);
