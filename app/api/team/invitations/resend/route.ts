@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const { data: invite, error } = await admin
     .from('organization_invitations')
-    .select('id, email, role, token, status')
+    .select('id, email, role, token, status, expires_at')
     .eq('id', body.invitationId)
     .eq('organization_id', org.organizationId)
     .eq('status', 'pending')
@@ -47,15 +47,32 @@ export async function POST(request: Request) {
     role: invite.role
   });
 
+  const resentAt = new Date().toISOString();
   await admin
     .from('organization_invitations')
-    .update({ updated_at: new Date().toISOString() })
+    .update({ updated_at: resentAt })
     .eq('id', invite.id);
+
+  const deliveryStatus = emailResult.sent ? 'email_sent' : 'manual_action_required';
+  const message = emailResult.sent
+    ? `Invitation email resent successfully to ${invite.email}.`
+    : `Invitation is still active, but the email was not sent. Copy the invite link and send it manually to ${invite.email}.`;
 
   return NextResponse.json({
     ok: true,
     acceptUrl,
+    invitationId: invite.id,
+    invitationEmail: invite.email,
+    invitationStatus: invite.status,
+    expiresAt: invite.expires_at,
+    resentAt,
     emailSent: emailResult.sent,
-    message: emailResult.sent ? 'Invitation resent by email.' : 'Email not configured. Copy the accept link.'
+    deliveryStatus,
+    requiresManualSend: !emailResult.sent,
+    message,
+    emailProviderMessage: emailResult.message,
+    nextAction: emailResult.sent
+      ? 'Wait for the invitee to accept the invitation.'
+      : 'Use the Copy link button and send the invitation link manually.'
   });
 }
