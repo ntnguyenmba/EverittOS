@@ -12,7 +12,18 @@ type DashboardRevenueSnapshotProps = {
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { t } = useTranslation();
   const revenue = metrics.revenueThisMonth || 0;
-  const profitMargin = revenue > 0 ? (metrics.netEstimateThisMonth / revenue) * 100 : 0;
+  const contractorPay = metrics.contractorPayThisMonth || 0;
+  const otherExpenses = metrics.otherExpensesThisMonth || 0;
+  const netProfit = metrics.netEstimateThisMonth || 0;
+  const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+  const comparisonBase = Math.max(revenue, contractorPay, otherExpenses, Math.abs(netProfit), 1);
+
+  const financialBreakdown = [
+    { label: 'Client income', value: revenue, href: '/analytics' },
+    { label: 'Contractor pay', value: contractorPay, href: '/jobs' },
+    { label: 'Other expenses', value: otherExpenses, href: '/expenses' },
+    { label: 'Estimated profit', value: netProfit, href: '/analytics' }
+  ];
 
   const items = [
     {
@@ -22,17 +33,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: 'Contractor pay this month',
-      value: formatCurrency(metrics.contractorPayThisMonth || 0),
+      value: formatCurrency(contractorPay),
       href: '/jobs'
     },
     {
       label: 'Other expenses this month',
-      value: formatCurrency(metrics.otherExpensesThisMonth || 0),
+      value: formatCurrency(otherExpenses),
       href: '/expenses'
     },
     {
       label: t('dashboard.revenue.netEstimate'),
-      value: formatCurrency(metrics.netEstimateThisMonth),
+      value: formatCurrency(netProfit),
       href: '/analytics'
     },
     {
@@ -102,14 +113,58 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       </div>
       {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
       {!loading ? (
-        <div className="dashboard-revenue-grid">
-          {items.map((item) => (
-            <Link key={item.label} href={item.href} className="dashboard-revenue-metric">
-              <span className="dashboard-revenue-metric-label">{item.label}</span>
-              <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="settings-card" style={{ marginBottom: 18 }}>
+            <div className="job-financials-head">
+              <div>
+                <h3>Income versus costs</h3>
+                <p className="muted">A quick comparison of this month&apos;s client income, contractor pay, expenses, and estimated profit.</p>
+              </div>
+              <strong>{profitMargin.toFixed(1)}% margin</strong>
+            </div>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {financialBreakdown.map((item) => {
+                const width = Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
+                return (
+                  <Link key={item.label} href={item.href} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
+                      <span>{item.label}</span>
+                      <strong>{formatCurrency(item.value)}</strong>
+                    </div>
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        background: 'var(--surface-subtle, rgba(127, 127, 127, 0.14))',
+                        borderRadius: 999,
+                        height: 10,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: item.value < 0 ? 'var(--danger, currentColor)' : 'var(--accent, currentColor)',
+                          borderRadius: 999,
+                          height: '100%',
+                          minWidth: item.value === 0 ? 0 : 4,
+                          width: `${width}%`
+                        }}
+                      />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="dashboard-revenue-grid">
+            {items.map((item) => (
+              <Link key={item.label} href={item.href} className="dashboard-revenue-metric">
+                <span className="dashboard-revenue-metric-label">{item.label}</span>
+                <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+              </Link>
+            ))}
+          </div>
+        </>
       ) : null}
     </section>
   );
