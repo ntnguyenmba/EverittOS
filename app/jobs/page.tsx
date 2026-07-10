@@ -112,6 +112,7 @@ function JobsList() {
 
   return (
     <AppShell plan={plan} role={role}>
+      <div className="jobs-list-page">
         <PageHeader
           title={t('nav.jobs')}
           action={
@@ -140,12 +141,12 @@ function JobsList() {
           </p>
         ) : null}
 
-        <div className="card table-responsive-wrap">
+        <div className="card table-responsive-wrap jobs-mobile-table-wrap">
           {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
           {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
           {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
           {!loading && jobs.length > 0 && (
-            <table className="table">
+            <table className="table jobs-mobile-table">
               <thead>
                 <tr>
                   <th>Job</th>
@@ -158,20 +159,20 @@ function JobsList() {
               <tbody>
                 {jobs.map((job) => (
                   <tr key={job.id}>
-                    <td>
-                      {job.title}
-                      {job.photo_count ? (
-                        <span className="muted" style={{ marginLeft: 8 }}>
-                          {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
-                        </span>
-                      ) : null}
+                    <td data-label="Job">
+                      <span className="jobs-mobile-value">
+                        {job.title}
+                        {job.photo_count ? (
+                          <span className="muted jobs-photo-count">
+                            {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
+                          </span>
+                        ) : null}
+                      </span>
                     </td>
-                    <td>{job.customer_name || 'Not set'}</td>
-                    <td>{job.address || 'Not set'}</td>
-                    <td>
-                      <StatusPill status={job.status} />
-                    </td>
-                    <td className="table-actions">
+                    <td data-label="Customer"><span className="jobs-mobile-value">{job.customer_name || 'Not set'}</span></td>
+                    <td data-label="Address"><span className="jobs-mobile-value">{job.address || 'Not set'}</span></td>
+                    <td data-label="Status"><span className="jobs-mobile-value"><StatusPill status={job.status} /></span></td>
+                    <td className="table-actions jobs-mobile-actions" data-label="Actions">
                       <RecordActions
                         viewHref={`/jobs/${job.id}`}
                         viewLabel="Open"
@@ -185,6 +186,7 @@ function JobsList() {
             </table>
           )}
         </div>
+      </div>
     </AppShell>
   );
 }
