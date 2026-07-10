@@ -13,6 +13,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const { t } = useTranslation();
   const revenue = metrics.revenueThisMonth || 0;
   const contractorPay = metrics.contractorPayThisMonth || 0;
+  const unpaidContractorPay = metrics.unpaidContractorPay || 0;
+  const pendingContractorPay = metrics.pendingContractorPay || 0;
   const otherExpenses = metrics.otherExpensesThisMonth || 0;
   const netProfit = metrics.netEstimateThisMonth || 0;
   const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
@@ -34,6 +36,16 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: 'Contractor pay this month',
       value: formatCurrency(contractorPay),
+      href: '/jobs'
+    },
+    {
+      label: 'Unpaid contractor pay',
+      value: formatCurrency(unpaidContractorPay),
+      href: '/jobs'
+    },
+    {
+      label: 'Pending contractor pay',
+      value: formatCurrency(pendingContractorPay),
       href: '/jobs'
     },
     {
