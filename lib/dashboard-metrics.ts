@@ -15,6 +15,8 @@ export type DashboardRevenueMetrics = {
   activeCustomers: number;
   customerCount: number;
   upcomingJobs: number;
+  contractorPayThisMonth: number;
+  otherExpensesThisMonth: number;
   expenseTotalThisMonth: number;
   netEstimateThisMonth: number;
   bookingCountThisMonth: number;
@@ -59,6 +61,8 @@ export async function fetchDashboardRevenueMetrics(
     activeCustomers: 0,
     customerCount: 0,
     upcomingJobs: 0,
+    contractorPayThisMonth: 0,
+    otherExpensesThisMonth: 0,
     expenseTotalThisMonth: 0,
     netEstimateThisMonth: 0,
     bookingCountThisMonth: 0,
@@ -199,9 +203,9 @@ export async function fetchDashboardRevenueMetrics(
     jobsByStatus[status] = (jobsByStatus[status] || 0) + 1;
   }
 
-  const expenseTotalThisMonth = safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0);
-  const laborTotalThisMonth = safeData(laborRes, []).reduce((sum, row) => sum + num(row.total_cost), 0);
-  const totalCostsThisMonth = expenseTotalThisMonth + laborTotalThisMonth;
+  const otherExpensesThisMonth = safeData(expensesRes, []).reduce((sum, row) => sum + num(row.amount), 0);
+  const contractorPayThisMonth = safeData(laborRes, []).reduce((sum, row) => sum + num(row.total_cost), 0);
+  const totalCostsThisMonth = otherExpensesThisMonth + contractorPayThisMonth;
 
   return {
     revenueThisMonth: Number(revenueThisMonth.toFixed(2)),
@@ -213,6 +217,8 @@ export async function fetchDashboardRevenueMetrics(
     activeCustomers: safeCount(customersRes),
     customerCount: safeCount(customersRes),
     upcomingJobs: safeCount(upcomingJobsRes),
+    contractorPayThisMonth: Number(contractorPayThisMonth.toFixed(2)),
+    otherExpensesThisMonth: Number(otherExpensesThisMonth.toFixed(2)),
     expenseTotalThisMonth: Number(totalCostsThisMonth.toFixed(2)),
     netEstimateThisMonth: Number((revenueThisMonth - totalCostsThisMonth).toFixed(2)),
     bookingCountThisMonth: safeCount(bookingsRes),
