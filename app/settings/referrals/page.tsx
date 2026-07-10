@@ -40,8 +40,9 @@ function formatDate(value: string | null) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function referralKey(row: ReferralRow) {
-  return row.referral_detail || row.referred_by || row.referral_source || 'Unknown';
+function monthLabel(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 }
 
 function statusLabel(value: string | null | undefined): PayoutStatus {
@@ -160,6 +161,44 @@ export default function ReferralReportPage() {
     return { unpaid, pending, paid };
   }, [rows, payouts]);
 
+  const leaderboard = useMemo(() => {
+    const map = new Map<string, { signups: number; paid: number; pending: number; unpaid: number }>();
+    for (const row of rows) {
+      const payout = payouts[row.id] || payoutDraft(row);
+      const key = payout.referralDetail || payout.referredBy || payout.referralSource || 'Unknown';
+      const current = map.get(key) || { signups: 0, paid: 0, pending: 0, unpaid: 0 };
+      const amount = Number.parseFloat(payout.amount) || 0;
+      current.signups += 1;
+      if (payout.status === 'Paid') current.paid += amount;
+      else if (payout.status === 'Pending') current.pending += amount;
+      else current.unpaid += amount;
+      map.set(key, current);
+    }
+    return Array.from(map.entries())
+      .map(([name, values]) => ({ name, ...values }))
+      .sort((a, b) => b.signups - a.signups || b.paid - a.paid || a.name.localeCompare(b.name));
+  }, [rows, payouts]);
+
+  const monthlyTotals = useMemo(() => {
+    const map = new Map<string, { signups: number; paid: number; pending: number; unpaid: number }>();
+    for (const row of rows) {
+      const payout = payouts[row.id] || payoutDraft(row);
+      const date = payout.paidAt || row.created_at || '';
+      const month = date.slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(month)) continue;
+      const current = map.get(month) || { signups: 0, paid: 0, pending: 0, unpaid: 0 };
+      const amount = Number.parseFloat(payout.amount) || 0;
+      current.signups += 1;
+      if (payout.status === 'Paid') current.paid += amount;
+      else if (payout.status === 'Pending') current.pending += amount;
+      else current.unpaid += amount;
+      map.set(month, current);
+    }
+    return Array.from(map.entries())
+      .map(([month, values]) => ({ month, ...values }))
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }, [rows, payouts]);
+
   function updatePayout(rowId: string, patch: Partial<PayoutDraft>) {
     setPayouts((current) => ({
       ...current,
@@ -219,6 +258,48 @@ export default function ReferralReportPage() {
         <div className="finance-metric"><span className="finance-metric-label">Pending payouts</span><strong>${totals.pending.toFixed(2)}</strong></div>
         <div className="finance-metric"><span className="finance-metric-label">Paid referrals</span><strong>${totals.paid.toFixed(2)}</strong></div>
       </div>
+
+      {leaderboard.length > 0 ? (
+        <section className="settings-card">
+          <h3>Referral leaderboard</h3>
+          <div className="finance-list">
+            {leaderboard.map((item, index) => (
+              <div key={item.name} className="finance-list-card">
+                <div>
+                  <strong>#{index + 1} {item.name}</strong>
+                  <p className="muted">{item.signups} signup{item.signups === 1 ? '' : 's'}</p>
+                </div>
+                <div className="finance-metric-grid financials-summary-grid">
+                  <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>${item.paid.toFixed(2)}</strong></div>
+                  <div className="finance-metric"><span className="finance-metric-label">Pending</span><strong>${item.pending.toFixed(2)}</strong></div>
+                  <div className="finance-metric"><span className="finance-metric-label">Unpaid</span><strong>${item.unpaid.toFixed(2)}</strong></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {monthlyTotals.length > 0 ? (
+        <section className="settings-card">
+          <h3>Monthly referral totals</h3>
+          <div className="finance-list">
+            {monthlyTotals.map((item) => (
+              <div key={item.month} className="finance-list-card">
+                <div>
+                  <strong>{monthLabel(item.month)}</strong>
+                  <p className="muted">{item.signups} signup{item.signups === 1 ? '' : 's'}</p>
+                </div>
+                <div className="finance-metric-grid financials-summary-grid">
+                  <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>${item.paid.toFixed(2)}</strong></div>
+                  <div className="finance-metric"><span className="finance-metric-label">Pending</span><strong>${item.pending.toFixed(2)}</strong></div>
+                  <div className="finance-metric"><span className="finance-metric-label">Unpaid</span><strong>${item.unpaid.toFixed(2)}</strong></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="settings-card form settings-form-grid">
         <label htmlFor="referral-search">Search referrals</label>
