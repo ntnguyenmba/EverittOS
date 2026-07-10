@@ -18,6 +18,7 @@ type JobLaborSectionProps = {
 export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
+  const [currentProfit, setCurrentProfit] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -36,14 +37,21 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/jobs/${jobId}/labor`);
-    const json = await res.json().catch(() => ({}));
+    const [laborRes, profitabilityRes] = await Promise.all([
+      fetch(`/api/jobs/${jobId}/labor`),
+      fetch(`/api/jobs/${jobId}/profitability`)
+    ]);
+    const laborJson = await laborRes.json().catch(() => ({}));
+    const profitabilityJson = await profitabilityRes.json().catch(() => ({}));
     setLoading(false);
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load contractor pay entries.');
+    if (!laborRes.ok) {
+      appFeedback.error(laborJson.error || 'Unable to load contractor pay entries.');
       return;
     }
-    setEntries(json.labor || []);
+    setEntries(laborJson.labor || []);
+    if (profitabilityRes.ok) {
+      setCurrentProfit(Number(profitabilityJson.profitability?.estimatedProfit || 0));
+    }
   }, [appFeedback, jobId]);
 
   useEffect(() => {
@@ -177,6 +185,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   }
 
   const totalLabor = entries.reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
+  const previewHours = Number.parseFloat(hours);
+  const previewRate = Number.parseFloat(hourlyCost);
+  const previewCost = Number.isFinite(previewHours) && Number.isFinite(previewRate) ? previewHours * previewRate : 0;
+  const previewProfit = currentProfit - previewCost;
   const contractorTotals = useMemo(() => {
     const totals = new Map<string, { name: string; entries: number; total: number }>();
     for (const entry of entries) {
@@ -219,6 +231,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
           <h4>Saved contractor pay entries</h4>
           {entries.map((entry) => {
             const isEditing = editingId === entry.id;
+            const editedHours = Number.parseFloat(editHours);
+            const editedRate = Number.parseFloat(editHourlyCost);
+            const editedCost = Number.isFinite(editedHours) && Number.isFinite(editedRate) ? editedHours * editedRate : 0;
+            const editedProfit = currentProfit + Number(entry.total_cost || 0) - editedCost;
             return (
               <div key={entry.id} className="finance-list-card">
                 {isEditing ? (
@@ -240,6 +256,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                         <label>Rate or flat amount</label>
                         <input className="input" type="number" min="0" step="0.01" value={editHourlyCost} onChange={(e) => setEditHourlyCost(e.target.value)} />
                       </div>
+                    </div>
+                    <div className="finance-metric-grid financials-summary-grid">
+                      <div className="finance-metric"><span className="finance-metric-label">Updated contractor pay</span><strong>{formatCurrency(editedCost)}</strong></div>
+                      <div className="finance-metric featured"><span className="finance-metric-label">Profit after update</span><strong>{formatCurrency(editedProfit)}</strong></div>
                     </div>
                     <label>Notes</label>
                     <input className="input" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
@@ -285,6 +305,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
           <input className="input" type="number" min="0" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} />
           <label>Hourly rate or flat amount</label>
           <input className="input" type="number" min="0" step="0.01" value={hourlyCost} onChange={(e) => setHourlyCost(e.target.value)} />
+          <div className="finance-metric-grid financials-summary-grid">
+            <div className="finance-metric"><span className="finance-metric-label">New contractor pay</span><strong>{formatCurrency(previewCost)}</strong></div>
+            <div className="finance-metric featured"><span className="finance-metric-label">Profit after this pay</span><strong>{formatCurrency(previewProfit)}</strong></div>
+          </div>
           <label>Notes (optional)</label>
           <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>{saving ? FEEDBACK.loading : 'Add contractor pay'}</button>
