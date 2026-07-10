@@ -13,17 +13,29 @@ type InviteResult = {
   invitationEmail?: string;
 };
 
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
+function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method) return init.method.toUpperCase();
+  if (input instanceof Request) return input.method.toUpperCase();
+  return 'GET';
+}
+
 export function InviteDeliveryStatus() {
   const feedback = useAppFeedback();
   const [result, setResult] = useState<InviteResult | null>(null);
 
   useEffect(() => {
-    const originalFetch = window.fetch.bind(window);
+    const originalFetch = window.fetch;
 
-    window.fetch = async (...args: Parameters<typeof fetch>) => {
-      const response = await originalFetch(...args);
-      const target = typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : '';
-      const method = (args[1]?.method || (args[0] instanceof Request ? args[0].method : 'GET')).toUpperCase();
+    const interceptedFetch: typeof window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await originalFetch(input, init);
+      const target = requestUrl(input);
+      const method = requestMethod(input, init);
 
       if (
         method === 'POST' &&
@@ -39,12 +51,14 @@ export function InviteDeliveryStatus() {
             });
           }
         } catch {
-          // The original caller still receives the untouched response.
+          // Leave the original response untouched for the Team screen.
         }
       }
 
       return response;
     };
+
+    window.fetch = interceptedFetch;
 
     return () => {
       window.fetch = originalFetch;
@@ -68,11 +82,17 @@ export function InviteDeliveryStatus() {
   return (
     <div className="settings-card" role="status" aria-live="polite">
       <h3>{sent ? 'Invitation email sent' : 'Manual action required'}</h3>
-      <p>{result.message || (sent ? 'The invitation email was sent successfully.' : 'The invitation was created, but the email was not sent.')}</p>
+      <p>
+        {result.message ||
+          (sent
+            ? 'The invitation email was sent successfully.'
+            : 'The invitation was created, but the email was not sent.')}
+      </p>
       <p className="muted">
-        {result.nextAction || (sent
-          ? 'The invitee should open the email, sign in with the same email address, and accept the invitation.'
-          : 'Copy the link below and send it to the invitee manually.')}
+        {result.nextAction ||
+          (sent
+            ? 'The invitee should open the email, sign in with the same email address, and accept the invitation.'
+            : 'Copy the link below and send it to the invitee manually.')}
       </p>
       {result.acceptUrl ? (
         <div className="invite-link-row">
