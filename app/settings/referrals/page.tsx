@@ -63,7 +63,7 @@ function payoutDraft(row: ReferralRow): PayoutDraft {
   };
 }
 
-function downloadCsv(rows: ReferralRow[], payouts: Record<string, PayoutDraft>) {
+function downloadCsv(rows: ReferralRow[], payouts: Record<string, PayoutDraft>, from: string, to: string) {
   const headers = ['signup_date', 'customer_email', 'customer_name', 'business_name', 'source', 'referral_detail', 'referred_by', 'payout_status', 'payout_amount', 'payout_date', 'payout_notes'];
   const csvRows = rows.map((row) => {
     const payout = payouts[row.id] || payoutDraft(row);
@@ -85,8 +85,9 @@ function downloadCsv(rows: ReferralRow[], payouts: Record<string, PayoutDraft>) 
   const blob = new Blob([[headers.join(','), ...csvRows].join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
+  const range = from || to ? `-${from || 'start'}-to-${to || 'today'}` : '';
   link.href = url;
-  link.download = `everitt-referrals-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `everitt-referrals${range}-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -99,13 +100,20 @@ export default function ReferralReportPage() {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [appliedFrom, setAppliedFrom] = useState('');
+  const [appliedTo, setAppliedTo] = useState('');
   const [savingId, setSavingId] = useState('');
   const [payouts, setPayouts] = useState<Record<string, PayoutDraft>>({});
 
-  async function load() {
+  async function load(from = '', to = '') {
     setLoading(true);
     setError('');
-    const res = await fetch('/api/settings/referrals');
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const res = await fetch(`/api/settings/referrals${params.size ? `?${params.toString()}` : ''}`);
     const json = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
@@ -115,6 +123,8 @@ export default function ReferralReportPage() {
     const nextRows = (json.referrals || []) as ReferralRow[];
     setRows(nextRows);
     setPayouts(Object.fromEntries(nextRows.map((row) => [row.id, payoutDraft(row)])));
+    setAppliedFrom(from);
+    setAppliedTo(to);
   }
 
   useEffect(() => {
@@ -151,7 +161,7 @@ export default function ReferralReportPage() {
     let unpaid = 0;
     let pending = 0;
     let paid = 0;
-    for (const row of rows) {
+    for (const row of filteredRows) {
       const payout = payouts[row.id] || payoutDraft(row);
       const amount = Number.parseFloat(payout.amount) || 0;
       if (payout.status === 'Paid') paid += amount;
@@ -159,11 +169,11 @@ export default function ReferralReportPage() {
       else unpaid += amount;
     }
     return { unpaid, pending, paid };
-  }, [rows, payouts]);
+  }, [filteredRows, payouts]);
 
   const leaderboard = useMemo(() => {
     const map = new Map<string, { signups: number; paid: number; pending: number; unpaid: number }>();
-    for (const row of rows) {
+    for (const row of filteredRows) {
       const payout = payouts[row.id] || payoutDraft(row);
       const key = payout.referralDetail || payout.referredBy || payout.referralSource || 'Unknown';
       const current = map.get(key) || { signups: 0, paid: 0, pending: 0, unpaid: 0 };
@@ -177,11 +187,11 @@ export default function ReferralReportPage() {
     return Array.from(map.entries())
       .map(([name, values]) => ({ name, ...values }))
       .sort((a, b) => b.signups - a.signups || b.paid - a.paid || a.name.localeCompare(b.name));
-  }, [rows, payouts]);
+  }, [filteredRows, payouts]);
 
   const monthlyTotals = useMemo(() => {
     const map = new Map<string, { signups: number; paid: number; pending: number; unpaid: number }>();
-    for (const row of rows) {
+    for (const row of filteredRows) {
       const payout = payouts[row.id] || payoutDraft(row);
       const date = payout.paidAt || row.created_at || '';
       const month = date.slice(0, 7);
@@ -197,7 +207,7 @@ export default function ReferralReportPage() {
     return Array.from(map.entries())
       .map(([month, values]) => ({ month, ...values }))
       .sort((a, b) => b.month.localeCompare(a.month));
-  }, [rows, payouts]);
+  }, [filteredRows, payouts]);
 
   function updatePayout(rowId: string, patch: Partial<PayoutDraft>) {
     setPayouts((current) => ({
@@ -243,7 +253,21 @@ export default function ReferralReportPage() {
       return;
     }
     setSuccess(`Referral payout saved for ${row.email || row.business_name || 'signup'}.`);
-    await load();
+    await load(appliedFrom, appliedTo);
+  }
+
+  async function applyDateRange() {
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      setError('The start date must be before or equal to the end date.');
+      return;
+    }
+    await load(dateFrom, dateTo);
+  }
+
+  async function clearDateRange() {
+    setDateFrom('');
+    setDateTo('');
+    await load('', '');
   }
 
   return (
@@ -253,7 +277,29 @@ export default function ReferralReportPage() {
         <p><Link href="/settings">Back to settings</Link></p>
       </div>
 
+      <div className="settings-card form settings-form-grid">
+        <h3>Signup date range</h3>
+        <label htmlFor="referral-date-from">From</label>
+        <input id="referral-date-from" className="input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        <label htmlFor="referral-date-to">To</label>
+        <input id="referral-date-to" className="input" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        <div className="inline-actions">
+          <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void applyDateRange()}>
+            {loading ? 'Loading...' : 'Apply date range'}
+          </button>
+          <button type="button" className="btn" disabled={loading || (!dateFrom && !dateTo && !appliedFrom && !appliedTo)} onClick={() => void clearDateRange()}>
+            Clear dates
+          </button>
+        </div>
+        <p className="muted">
+          {appliedFrom || appliedTo
+            ? `Showing signups from ${appliedFrom || 'the beginning'} through ${appliedTo || 'today'}.`
+            : 'Showing referral signups from all dates.'}
+        </p>
+      </div>
+
       <div className="finance-metric-grid financials-summary-grid">
+        <div className="finance-metric"><span className="finance-metric-label">Matching signups</span><strong>{filteredRows.length}</strong></div>
         <div className="finance-metric"><span className="finance-metric-label">Unpaid liability</span><strong>${totals.unpaid.toFixed(2)}</strong></div>
         <div className="finance-metric"><span className="finance-metric-label">Pending payouts</span><strong>${totals.pending.toFixed(2)}</strong></div>
         <div className="finance-metric"><span className="finance-metric-label">Paid referrals</span><strong>${totals.paid.toFixed(2)}</strong></div>
@@ -316,13 +362,13 @@ export default function ReferralReportPage() {
           <option value="Pending">Pending</option>
           <option value="Paid">Paid</option>
         </select>
-        <button type="button" className="btn" onClick={() => downloadCsv(filteredRows, payouts)} disabled={filteredRows.length === 0}>Export CSV</button>
+        <button type="button" className="btn" onClick={() => downloadCsv(filteredRows, payouts, appliedFrom, appliedTo)} disabled={filteredRows.length === 0}>Export filtered CSV</button>
       </div>
 
       {success ? <div className="settings-card"><p className="auth-message">{success}</p></div> : null}
       {loading ? <p className="loading-state">Loading referrals...</p> : null}
       {error ? <div className="settings-card"><p className="auth-message auth-message-error">{error}</p></div> : null}
-      {!loading && !error && filteredRows.length === 0 ? <div className="settings-card"><p className="muted">No referral signups found yet.</p></div> : null}
+      {!loading && !error && filteredRows.length === 0 ? <div className="settings-card"><p className="muted">No referral signups found for the selected filters.</p></div> : null}
 
       {grouped.map(([referrer, signups]) => (
         <section key={referrer} className="settings-card">
