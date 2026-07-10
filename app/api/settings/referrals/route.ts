@@ -35,6 +35,12 @@ function cleanStatus(value: unknown): 'unpaid' | 'pending' | 'paid' {
   return 'unpaid';
 }
 
+function cleanDateParam(value: string | null): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : value;
+}
+
 function allowedAdminEmails(): Set<string> {
   const configured = [process.env.EVERITT_ADMIN_EMAILS, process.env.ADMIN_EMAILS]
     .filter(Boolean)
@@ -70,16 +76,32 @@ async function requireReferralAdmin() {
   return { ok: true as const, admin };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const ctx = await requireReferralAdmin();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
-  const { data, error } = await ctx.admin
+  const url = new URL(request.url);
+  const from = cleanDateParam(url.searchParams.get('from'));
+  const to = cleanDateParam(url.searchParams.get('to'));
+  if (url.searchParams.get('from') && !from) {
+    return NextResponse.json({ error: 'Invalid from date. Use YYYY-MM-DD.' }, { status: 400 });
+  }
+  if (url.searchParams.get('to') && !to) {
+    return NextResponse.json({ error: 'Invalid to date. Use YYYY-MM-DD.' }, { status: 400 });
+  }
+  if (from && to && from > to) {
+    return NextResponse.json({ error: 'The from date must be before or equal to the to date.' }, { status: 400 });
+  }
+
+  let query = ctx.admin
     .from('profiles')
     .select('id, email, full_name, business_name, referral_source, referral_detail, referred_by, created_at')
-    .or('referral_source.not.is.null,referral_detail.not.is.null,referred_by.not.is.null')
-    .order('created_at', { ascending: false })
-    .limit(500);
+    .or('referral_source.not.is.null,referral_detail.not.is.null,referred_by.not.is.null');
+
+  if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`);
+  if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
+
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(500);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
@@ -93,6 +115,8 @@ export async function GET() {
   const payoutMap = new Map((payouts || []).map((payout) => [payout.profile_id, payout]));
 
   return NextResponse.json({
+    filters: { from, to },
+    count: data?.length || 0,
     referrals: (data || []).map((row) => ({
       ...row,
       payout: payoutMap.get(row.id) || null
