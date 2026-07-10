@@ -106,6 +106,11 @@ export async function POST(request: Request) {
     role
   });
 
+  const deliveryStatus = emailResult.sent ? 'email_sent' : 'manual_action_required';
+  const userMessage = emailResult.sent
+    ? `Invitation email sent successfully to ${email}. They must open the email, sign in with that same address, and accept the invitation.`
+    : `Invitation created, but the email was not sent. Copy the invite link and send it manually to ${email}.`;
+
   const { data: actorProfile } = await admin.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle();
   const actorName = actorProfile?.full_name || actorProfile?.email || user.email || 'Team member';
   await admin.from('activity_logs').insert({
@@ -115,8 +120,17 @@ export async function POST(request: Request) {
     entity_type: 'invitation',
     entity_id: savedInvite.id,
     action: 'user_invited',
-    message: `Invited ${email} as ${role}`,
-    metadata: { email, role, invitationStatus: savedInvite.status, emailSent: emailResult.sent, emailMessage: emailResult.message, ...(note ? { note } : {}) }
+    message: userMessage,
+    metadata: {
+      email,
+      role,
+      invitationStatus: savedInvite.status,
+      emailSent: emailResult.sent,
+      deliveryStatus,
+      emailMessage: emailResult.message,
+      acceptUrl,
+      ...(note ? { note } : {})
+    }
   });
 
   return NextResponse.json({
@@ -126,6 +140,12 @@ export async function POST(request: Request) {
     invitationEmail: savedInvite.email,
     invitationStatus: savedInvite.status,
     emailSent: emailResult.sent,
-    message: emailResult.message
+    deliveryStatus,
+    requiresManualSend: !emailResult.sent,
+    message: userMessage,
+    emailProviderMessage: emailResult.message,
+    nextAction: emailResult.sent
+      ? 'Wait for the invitee to accept the invitation.'
+      : 'Use the Copy link button and send the invitation link manually.'
   });
 }
