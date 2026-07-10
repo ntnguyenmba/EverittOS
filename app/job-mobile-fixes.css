@@ -283,7 +283,7 @@
 
   .jobs-mobile-table-wrap {
     padding: 12px;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .jobs-mobile-table,
@@ -292,6 +292,7 @@
   .jobs-mobile-table td {
     display: block;
     width: 100%;
+    max-width: 100%;
   }
 
   .jobs-mobile-table {
@@ -326,35 +327,50 @@
 
   .jobs-mobile-table td {
     display: grid;
-    grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     align-items: start;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 4px;
+    padding: 13px 14px;
     border-bottom: 1px solid var(--line);
     color: var(--text);
     text-align: left;
+    white-space: normal !important;
+    overflow: visible;
   }
 
   .jobs-mobile-table td::before {
     content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
     color: var(--muted);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.06em;
+    line-height: 1.25;
     text-transform: uppercase;
+    white-space: normal;
   }
 
   .jobs-mobile-table td:last-child {
     border-bottom: 0;
   }
 
-  .jobs-mobile-value {
+  .jobs-mobile-value,
+  .jobs-mobile-value *,
+  .jobs-mobile-table td > span,
+  .jobs-mobile-table td > div {
     display: block;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
     color: var(--text);
     line-height: 1.45;
     text-align: left;
+    white-space: normal !important;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
   }
 
   .jobs-photo-count {
@@ -407,12 +423,6 @@
   }
 
   .jobs-mobile-table td {
-    grid-template-columns: 1fr;
-    gap: 4px;
     padding: 12px;
-  }
-
-  .jobs-mobile-table td::before {
-    margin-bottom: 2px;
   }
 }
