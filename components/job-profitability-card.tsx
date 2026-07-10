@@ -76,7 +76,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setProfitability(next);
     setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
     setRevenueNotes(next.revenueNotes || '');
-    appFeedback.success('Client income saved.');
+    appFeedback.success('Client income section saved.');
   }
 
   async function recordPayment() {
@@ -153,22 +153,19 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
         {canManage ? (
           <div className="finance-form-block compact-finance-form">
             <label htmlFor={`client-income-${jobId}`}>Amount customer pays you</label>
-            <div className="finance-inline-form">
-              <input
-                id={`client-income-${jobId}`}
-                className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={revenueAmount}
-                onChange={(e) => setRevenueAmount(e.target.value)}
-              />
-              <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>
-                {saving ? FEEDBACK.loading : 'Save client income'}
-              </button>
-            </div>
+            <input
+              id={`client-income-${jobId}`}
+              className="input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={revenueAmount}
+              onChange={(e) => setRevenueAmount(e.target.value)}
+            />
+            <label htmlFor={`client-income-notes-${jobId}`}>Notes (optional)</label>
             <textarea
+              id={`client-income-notes-${jobId}`}
               className="input"
               rows={2}
               placeholder="Optional client income notes"
@@ -176,6 +173,9 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
               onChange={(e) => setRevenueNotes(e.target.value)}
             />
             {!p?.hasInvoice ? <p className="muted finance-note">Use this only when there is no invoice yet.</p> : null}
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>
+              {saving ? FEEDBACK.loading : 'Save client income section'}
+            </button>
           </div>
         ) : null}
 
