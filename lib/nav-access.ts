@@ -21,6 +21,7 @@ export type SettingsNavLink = {
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings', label: 'Workspace' },
   { href: '/settings/people', label: 'People' },
+  { href: '/settings/referrals', label: 'Referrals' },
   { href: '/settings/branding', label: 'Branding' },
   { href: '/settings/integrations', label: 'Integrations' },
   { href: '/settings/account', label: 'Account' },
@@ -113,6 +114,7 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
   if (path.startsWith('/settings/ai-usage')) return canManageBilling(role);
+  if (path.startsWith('/settings/referrals')) return canManageOrganizationSettings(role);
   if (path.startsWith('/settings/people') || path.startsWith('/settings/team')) return canViewTeam(role);
   if (path.startsWith('/settings/branding') || path.startsWith('/settings/integrations')) {
     return canManageOrganizationSettings(role);
@@ -250,6 +252,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   return SETTINGS_NAV_LINKS.filter((link) => {
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
     if (link.href === '/settings/ai-usage' && !canManageBilling(role)) return false;
+    if (link.href === '/settings/referrals' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
     if ((link.href === '/settings/people' || link.href === '/settings/team') && !canViewTeam(role)) return false;
     if (link.href === '/settings/branding' && !canManageOrganizationSettings(role)) return false;
@@ -261,38 +264,11 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   });
 }
 
-export function canAccessSettingsPath(role: UserRole, path: string, plan: EverittosPlan): boolean {
-  const normalizedPlan = normalizePlan(plan);
-
-  if (isClientRole(role)) {
-    return (
-      path.startsWith('/settings/account') ||
-      path.startsWith('/settings/security') ||
-      path.startsWith('/settings/privacy') ||
-      path.startsWith('/settings/notifications') ||
-      path.startsWith('/settings/support')
-    );
-  }
-
-  if (path.startsWith('/settings/billing') && !canManageBilling(role)) return false;
-  if (path.startsWith('/settings/ai-usage') && !canManageBilling(role)) return false;
-  if ((path.startsWith('/settings/people') || path.startsWith('/settings/team')) && !canViewTeam(role)) return false;
-  if (path.startsWith('/settings/branding') && !canManageOrganizationSettings(role)) return false;
-  if ((path === '/settings' || path.startsWith('/settings?')) && !canManageOrganizationSettings(role)) {
-    return false;
-  }
-  if (path.startsWith('/settings/departments') && !canManageDepartments(role, normalizedPlan)) return false;
-  if (path.startsWith('/settings/integrations') && !canManageOrganizationSettings(role)) return false;
-  if (path.startsWith('/settings/api') && !limitsForPlan(normalizedPlan).apiAccess) return false;
-  if (path.startsWith('/settings/ai-memory') && !limitsForPlan(normalizedPlan).aiAccess) return false;
-
-  return true;
-}
-
-export function portalHrefForRole(role: UserRole): string {
-  return isClientRole(role) ? '/portal/client' : '/dashboard';
-}
-
-export function isAppNavHref(href: string): href is AppNavHref {
-  return APP_NAV_LINKS.some((link) => link.href === href);
+export function appNavItemsForRole(role: UserRole, plan: EverittosPlan) {
+  return APP_NAV_LINKS.map((link) => ({
+    ...link,
+    resolution: resolveNavItem(role, plan, link.href)
+  })).filter((link) => link.resolution.visible) as Array<
+    (typeof APP_NAV_LINKS)[number] & { resolution: NavItemResolution; href: AppNavHref }
+  >;
 }
