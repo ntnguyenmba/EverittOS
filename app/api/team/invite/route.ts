@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     .eq('email', email)
     .eq('status', 'pending');
 
+  const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
   const { data: invite, error } = await admin
     .from('organization_invitations')
     .insert({
@@ -73,9 +74,9 @@ export async function POST(request: Request) {
       role,
       invited_by: user.id,
       status: 'pending',
-      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      expires_at: expiresAt
     })
-    .select('id, token, email, status, organization_id')
+    .select('id, token, email, status, organization_id, created_at, expires_at')
     .single();
 
   if (error || !invite?.id || !invite?.token) {
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
 
   const { data: savedInvite } = await admin
     .from('organization_invitations')
-    .select('id, token, email, status, organization_id')
+    .select('id, token, email, status, organization_id, created_at, expires_at')
     .eq('id', invite.id)
     .maybeSingle();
 
@@ -129,6 +130,8 @@ export async function POST(request: Request) {
       deliveryStatus,
       emailMessage: emailResult.message,
       acceptUrl,
+      createdAt: savedInvite.created_at,
+      expiresAt: savedInvite.expires_at,
       ...(note ? { note } : {})
     }
   });
@@ -139,6 +142,8 @@ export async function POST(request: Request) {
     invitationId: savedInvite.id,
     invitationEmail: savedInvite.email,
     invitationStatus: savedInvite.status,
+    createdAt: savedInvite.created_at,
+    expiresAt: savedInvite.expires_at,
     emailSent: emailResult.sent,
     deliveryStatus,
     requiresManualSend: !emailResult.sent,
