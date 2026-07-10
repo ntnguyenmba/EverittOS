@@ -3,7 +3,6 @@
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
-import { InviteDeliveryStatus } from '@/components/team/invite-delivery-status';
 import { EverittteamAiUsagePanel } from '@/components/team/everittteam-ai-usage-panel';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -51,7 +50,6 @@ export default function SettingsPeoplePage() {
       title="People"
       description="Invite people and manage roles."
     >
-      <InviteDeliveryStatus />
       <EverittteamAiUsagePanel />
       <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />
     </SettingsShell>
