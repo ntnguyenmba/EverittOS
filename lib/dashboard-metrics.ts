@@ -15,8 +15,8 @@ export type DashboardRevenueMetrics = {
   activeCustomers: number;
   customerCount: number;
   upcomingJobs: number;
-  contractorPayThisMonth: number;
-  otherExpensesThisMonth: number;
+  contractorPayThisMonth?: number;
+  otherExpensesThisMonth?: number;
   expenseTotalThisMonth: number;
   netEstimateThisMonth: number;
   bookingCountThisMonth: number;
