@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import { resolvePhotoType } from '@/lib/job-photos-client';
 import { photoTagLabel } from '@/lib/job-photo-tags';
@@ -19,6 +20,19 @@ type BeforeAfterComparisonProps = {
   after: JobPhotoView | null;
 };
 
+function ComparisonImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={1200}
+      height={900}
+      unoptimized
+      style={{ width: '100%', height: 'auto' }}
+    />
+  );
+}
+
 export function BeforeAfterComparison({ before, after }: BeforeAfterComparisonProps) {
   if (!before && !after) return null;
 
@@ -28,7 +42,7 @@ export function BeforeAfterComparison({ before, after }: BeforeAfterComparisonPr
         <p className="before-after-label">Before</p>
         {before ? (
           <>
-            <img src={before.url} alt="Before photo" />
+            <ComparisonImage src={before.url} alt="Before photo" />
             <p className="before-after-meta">
               {formatPhotoWhen(before.created_at)}
               {before.uploader_display_name ? ` · ${before.uploader_display_name}` : ''}
@@ -42,7 +56,7 @@ export function BeforeAfterComparison({ before, after }: BeforeAfterComparisonPr
         <p className="before-after-label">After</p>
         {after ? (
           <>
-            <img src={after.url} alt="After photo" />
+            <ComparisonImage src={after.url} alt="After photo" />
             <p className="before-after-meta">
               {formatPhotoWhen(after.created_at)}
               {after.uploader_display_name ? ` · ${after.uploader_display_name}` : ''}
