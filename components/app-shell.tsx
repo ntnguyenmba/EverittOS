@@ -6,6 +6,7 @@ import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageContent } from '@/components/app-page-content';
 import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
+import { PersonalMetricsMount } from '@/components/dashboard/personal-metrics-mount';
 import { Sidebar } from '@/components/sidebar';
 import { UnsavedChangesGuard } from '@/components/unsaved-changes-guard';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
@@ -39,6 +40,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         <AppPageTop role={resolvedRole} showBackButton={showBackButton} />
         <AppPageContent>
           {showAi ? <AskEverittCommand plan={resolvedPlan} /> : null}
+          <PersonalMetricsMount role={resolvedRole} />
           {children}
         </AppPageContent>
         <AppFooter />
