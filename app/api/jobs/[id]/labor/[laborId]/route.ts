@@ -4,11 +4,22 @@ import { buildLaborRow } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
 
 const PAYMENT_STATUSES = new Set(['unpaid', 'pending', 'paid']);
+const PAYMENT_METADATA_FIELDS = ['paid_at', 'payment_method', 'payment_reference'];
 
 type RouteParams = { params: Promise<{ id: string; laborId: string }> };
 
 function cleanOptionalText(value: unknown, max = 240): string | null {
   return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+}
+
+function missingColumnName(message?: string | null): string | null {
+  if (!message) return null;
+  const match = message.match(/Could not find the '([^']+)' column/i) || message.match(/column ["']?([^"'\s]+)["']? does not exist/i);
+  return match?.[1] || null;
+}
+
+function contractorPaymentMigrationMessage() {
+  return 'Contractor payment tracking needs the latest database migration. Contractor pay amounts can still be edited, but paid, pending, method, and reference tracking will be unavailable until the migration is applied.';
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
@@ -73,20 +84,62 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'No contractor pay changes provided' }, { status: 400 });
   }
 
-  const { data, error } = await ctx.supabase
-    .from('job_labor')
-    .update(patch)
-    .eq('id', laborId)
-    .eq('job_id', jobId)
-    .eq('organization_id', ctx.organizationId)
-    .select('*')
-    .single();
+  const updateLabor = (changes: Record<string, unknown>) =>
+    ctx.supabase
+      .from('job_labor')
+      .update(changes)
+      .eq('id', laborId)
+      .eq('job_id', jobId)
+      .eq('organization_id', ctx.organizationId)
+      .select('*')
+      .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  let result = await updateLabor(patch);
+  let migrationWarning: string | null = null;
+
+  if (result.error) {
+    const missingColumn = missingColumnName(result.error.message);
+
+    if (missingColumn && PAYMENT_METADATA_FIELDS.includes(missingColumn)) {
+      const fallbackPatch = { ...patch };
+      for (const field of PAYMENT_METADATA_FIELDS) delete fallbackPatch[field];
+
+      if (Object.keys(fallbackPatch).length === 0) {
+        return NextResponse.json(
+          {
+            error: contractorPaymentMigrationMessage(),
+            code: 'CONTRACTOR_PAYMENT_MIGRATION_REQUIRED',
+            missingColumn
+          },
+          { status: 409 }
+        );
+      }
+
+      result = await updateLabor(fallbackPatch);
+      migrationWarning = contractorPaymentMigrationMessage();
+    }
   }
 
-  return NextResponse.json({ labor: data });
+  if (result.error) {
+    const missingColumn = missingColumnName(result.error.message);
+    if (missingColumn === 'payment_status' || (missingColumn && PAYMENT_METADATA_FIELDS.includes(missingColumn))) {
+      return NextResponse.json(
+        {
+          error: contractorPaymentMigrationMessage(),
+          code: 'CONTRACTOR_PAYMENT_MIGRATION_REQUIRED',
+          missingColumn
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: result.error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({
+    labor: result.data,
+    migrationWarning,
+    paymentTrackingAvailable: !migrationWarning
+  });
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
