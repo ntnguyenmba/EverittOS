@@ -16,6 +16,7 @@ export type NavSectionDef = {
 
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Operations', href: '/operations' },
   { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
   { label: 'Photos', href: '/photos' },
@@ -61,6 +62,7 @@ export const APP_NAV_LINKS = APP_NAV_SECTIONS.flatMap((section) => section.items
 export type AppNavHref = (typeof APP_NAV_LINKS)[number]['href'];
 
 export const SECONDARY_APP_ROUTES = [
+  '/operations',
   '/people',
   '/workers',
   '/team',
