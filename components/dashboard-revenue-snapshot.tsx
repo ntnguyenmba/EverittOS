@@ -9,6 +9,13 @@ type DashboardRevenueSnapshotProps = {
   loading?: boolean;
 };
 
+type FinancialBreakdownItem = {
+  label: string;
+  value: number | null;
+  displayValue: string;
+  href: string;
+};
+
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { t } = useTranslation();
   const revenue = metrics.revenueThisMonth || 0;
@@ -17,14 +24,20 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const pendingContractorPay = metrics.pendingContractorPay || 0;
   const otherExpenses = metrics.otherExpensesThisMonth || 0;
   const netProfit = metrics.netEstimateThisMonth || 0;
-  const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-  const comparisonBase = Math.max(revenue, contractorPay, otherExpenses, Math.abs(netProfit), 1);
+  const hasRecordedCosts = contractorPay > 0 || otherExpenses > 0;
+  const profitMargin = hasRecordedCosts && revenue > 0 ? (netProfit / revenue) * 100 : null;
+  const comparisonBase = Math.max(revenue, contractorPay, otherExpenses, hasRecordedCosts ? Math.abs(netProfit) : 0, 1);
 
-  const financialBreakdown = [
-    { label: 'Client income', value: revenue, href: '/analytics' },
-    { label: 'Contractor pay', value: contractorPay, href: '/jobs' },
-    { label: 'Other expenses', value: otherExpenses, href: '/expenses' },
-    { label: 'Estimated profit', value: netProfit, href: '/analytics' }
+  const financialBreakdown: FinancialBreakdownItem[] = [
+    { label: 'Client income', value: revenue, displayValue: formatCurrency(revenue), href: '/analytics' },
+    { label: 'Contractor pay', value: contractorPay, displayValue: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/jobs' },
+    { label: 'Other expenses', value: otherExpenses, displayValue: formatCurrency(otherExpenses), href: '/expenses' },
+    {
+      label: 'Gross profit',
+      value: hasRecordedCosts ? netProfit : null,
+      displayValue: hasRecordedCosts ? formatCurrency(netProfit) : 'Pending costs',
+      href: '/analytics'
+    }
   ];
 
   const items = [
@@ -35,7 +48,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: 'Contractor pay this month',
-      value: formatCurrency(contractorPay),
+      value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered',
       href: '/jobs'
     },
     {
@@ -54,13 +67,13 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: '/expenses'
     },
     {
-      label: t('dashboard.revenue.netEstimate'),
-      value: formatCurrency(netProfit),
+      label: 'Gross profit',
+      value: hasRecordedCosts ? formatCurrency(netProfit) : 'Pending costs',
       href: '/analytics'
     },
     {
-      label: 'Estimated profit margin',
-      value: `${profitMargin.toFixed(1)}%`,
+      label: 'Profit margin',
+      value: profitMargin === null ? 'Pending contractor pay' : `${profitMargin.toFixed(1)}%`,
       href: '/analytics'
     },
     {
@@ -130,18 +143,18 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             <div className="job-financials-head">
               <div>
                 <h3>Income versus costs</h3>
-                <p className="muted">A quick comparison of this month&apos;s client income, contractor pay, expenses, and estimated profit.</p>
+                <p className="muted">A quick comparison of this month&apos;s client income, contractor pay, other expenses, and gross profit.</p>
               </div>
-              <strong>{profitMargin.toFixed(1)}% margin</strong>
+              <strong>{profitMargin === null ? 'Pending contractor pay' : `${profitMargin.toFixed(1)}% margin`}</strong>
             </div>
             <div style={{ display: 'grid', gap: 14 }}>
               {financialBreakdown.map((item) => {
-                const width = Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
+                const width = item.value === null ? 0 : Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
                 return (
                   <Link key={item.label} href={item.href} style={{ color: 'inherit', textDecoration: 'none' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
                       <span>{item.label}</span>
-                      <strong>{formatCurrency(item.value)}</strong>
+                      <strong>{item.displayValue}</strong>
                     </div>
                     <div
                       aria-hidden="true"
@@ -154,10 +167,10 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
                     >
                       <div
                         style={{
-                          background: item.value < 0 ? 'var(--danger, currentColor)' : 'var(--accent, currentColor)',
+                          background: item.value !== null && item.value < 0 ? 'var(--danger, currentColor)' : 'var(--accent, currentColor)',
                           borderRadius: 999,
                           height: '100%',
-                          minWidth: item.value === 0 ? 0 : 4,
+                          minWidth: item.value === null || item.value === 0 ? 0 : 4,
                           width: `${width}%`
                         }}
                       />
