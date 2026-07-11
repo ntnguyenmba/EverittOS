@@ -5,6 +5,7 @@ import { errorFeedback, readApiError, type ActionFeedback } from '@/lib/action-m
 import { type FeedbackLabelKey } from '@/lib/feedback-labels';
 import { useToastContext, type ToastKind } from '@/components/feedback/toast-provider';
 import { useTranslation } from '@/components/locale-provider';
+import { markChangesSaved } from '@/components/unsaved-changes-guard';
 
 export function useAppFeedback() {
   const { push } = useToastContext();
@@ -17,6 +18,7 @@ export function useAppFeedback() {
 
   const show = useCallback(
     (kind: ToastKind, message: string) => {
+      if (kind === 'success') markChangesSaved();
       push({ kind, message });
     },
     [push]
@@ -24,6 +26,7 @@ export function useAppFeedback() {
 
   const success = useCallback(
     (message?: string) => {
+      markChangesSaved();
       push({ kind: 'success', message: message ?? feedbackMessage('saved') });
     },
     [push, feedbackMessage]
@@ -45,6 +48,7 @@ export function useAppFeedback() {
 
   const label = useCallback(
     (key: FeedbackLabelKey) => {
+      markChangesSaved();
       push({ kind: 'success', message: feedbackMessage(key) });
     },
     [push, feedbackMessage]
@@ -53,6 +57,7 @@ export function useAppFeedback() {
   const fromActionFeedback = useCallback(
     (feedback: ActionFeedback | null | undefined) => {
       if (!feedback) return;
+      if (feedback.kind === 'success') markChangesSaved();
       push({ kind: feedback.kind, message: feedback.message });
     },
     [push]
