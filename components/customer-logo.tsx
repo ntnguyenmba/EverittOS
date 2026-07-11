@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { resolveCustomerLogoUrl } from '@/lib/customer-logo';
 import { supabase } from '@/lib/supabase';
@@ -33,11 +34,12 @@ export function CustomerLogo({ logoPath, alt, size = 40, className }: CustomerLo
   if (!src) return null;
 
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
       width={size}
       height={size}
+      unoptimized
       className={className ? `customer-logo-image ${className}` : 'customer-logo-image'}
       style={{ width: size, height: size, objectFit: 'contain', borderRadius: 8 }}
     />
