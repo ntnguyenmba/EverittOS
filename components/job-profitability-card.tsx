@@ -130,13 +130,16 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const materialCost = p?.materialCost || 0;
   const otherExpenses = p?.otherExpenses || 0;
   const totalCosts = laborCost + materialCost + otherExpenses;
-  const estimatedProfit = p?.estimatedProfit || 0;
-  const profitMargin = revenue > 0 ? (estimatedProfit / revenue) * 100 : 0;
+  const grossProfit = p?.estimatedProfit || 0;
+  const hasContractorPay = laborCost > 0;
+  const profitMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
   const hasRevenue = Boolean(p && (p.hasInvoice || p.manualRevenue > 0));
   const typedRevenue = revenueAmount.trim() ? Number.parseFloat(revenueAmount) : 0;
   const liveRevenue = Number.isFinite(typedRevenue) ? typedRevenue : revenue;
   const liveProfit = liveRevenue - totalCosts;
   const liveMargin = liveRevenue > 0 ? (liveProfit / liveRevenue) * 100 : 0;
+  const savedMarginText = hasContractorPay && revenue > 0 ? `${profitMargin.toFixed(1)}%` : 'Pending contractor pay';
+  const liveMarginText = hasContractorPay && liveRevenue > 0 ? `${liveMargin.toFixed(1)}%` : 'Pending contractor pay';
 
   return (
     <div className="card finance-card job-financials-card">
@@ -211,16 +214,18 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       <div className="job-financials-section profit-summary-section">
         <h4>Profit summary</h4>
         <div className="finance-metric-grid financials-summary-grid">
-          <div className="finance-metric featured"><span className="finance-metric-label">Saved estimated profit</span><strong>{formatCurrency(estimatedProfit)}</strong></div>
-          <div className="finance-metric"><span className="finance-metric-label">Saved margin</span><strong>{revenue > 0 ? `${profitMargin.toFixed(1)}%` : '0%'}</strong></div>
+          <div className="finance-metric featured"><span className="finance-metric-label">Gross profit</span><strong>{formatCurrency(grossProfit)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Profit margin</span><strong>{savedMarginText}</strong></div>
           {canManage && revenueAmount.trim() ? (
             <>
-              <div className="finance-metric"><span className="finance-metric-label">Live profit preview</span><strong>{formatCurrency(liveProfit)}</strong></div>
-              <div className="finance-metric"><span className="finance-metric-label">Live margin preview</span><strong>{liveRevenue > 0 ? `${liveMargin.toFixed(1)}%` : '0%'}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Gross profit preview</span><strong>{formatCurrency(liveProfit)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Profit margin preview</span><strong>{liveMarginText}</strong></div>
             </>
           ) : null}
         </div>
-        <p className="muted finance-note">Profit equals client income minus contractor pay and other job costs.</p>
+        <p className="muted finance-note">
+          Gross profit equals client income minus contractor pay and other job costs. Profit margin appears after contractor pay is entered.
+        </p>
       </div>
 
       {p?.hasInvoice ? (
