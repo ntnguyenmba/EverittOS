@@ -6,7 +6,7 @@ export type NavLinkDef = {
   flag?: FeatureFlag;
 };
 
-export type NavSectionId = 'primary' | 'tools' | 'insights' | 'settings';
+export type NavSectionId = 'primary' | 'workspace' | 'business' | 'settings';
 
 export type NavSectionDef = {
   id: NavSectionId;
@@ -15,72 +15,5 @@ export type NavSectionDef = {
 };
 
 const PRIMARY_NAV: NavLinkDef[] = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Operations', href: '/operations' },
-  { label: 'Customers', href: '/customers' },
-  { label: 'Jobs', href: '/jobs' },
-  { label: 'Photos', href: '/photos' },
-  { label: 'Leads', href: '/leads', flag: 'leadsNav' },
-  { label: 'Schedule', href: '/schedule' },
-  { label: 'Routes', href: '/routes', flag: 'routesNav' },
-  { label: 'People', href: '/people' }
-];
-
-const TOOLS_NAV: NavLinkDef[] = [
-  { label: 'Forms', href: '/forms', flag: 'formsNav' },
-  { label: 'Templates', href: '/templates', flag: 'templatesNav' },
-  { label: 'Reviews', href: '/reviews', flag: 'reviewsNav' },
-  { label: 'Services', href: '/services', flag: 'servicesNav' },
-  { label: 'Bookings', href: '/bookings', flag: 'bookingsNav' },
-  { label: 'Proposals', href: '/proposals', flag: 'proposalsNav' },
-  { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
-  { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'Messages', href: '/messages', flag: 'messagesNav' },
-  { label: 'Inventory', href: '/inventory', flag: 'inventoryNav' }
-];
-
-const INSIGHTS_NAV: NavLinkDef[] = [
-  { label: 'Expenses', href: '/expenses' },
-  { label: 'Analytics', href: '/analytics' }
-];
-
-const SETTINGS_NAV: NavLinkDef[] = [{ label: 'Settings', href: '/settings' }];
-
-function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
-  return items.filter((item) => !item.flag || isFeatureEnabled(item.flag));
-}
-
-export const APP_NAV_SECTIONS: NavSectionDef[] = [
-  { id: 'primary', items: PRIMARY_NAV },
-  { id: 'tools', showSectionLabel: true, items: filterFlagged(TOOLS_NAV) },
-  { id: 'insights', showSectionLabel: true, items: INSIGHTS_NAV },
-  { id: 'settings', items: SETTINGS_NAV }
-];
-
-export const APP_NAV_LINKS = APP_NAV_SECTIONS.flatMap((section) => section.items);
-
-export type AppNavHref = (typeof APP_NAV_LINKS)[number]['href'];
-
-export const SECONDARY_APP_ROUTES = [
-  '/operations',
-  '/people',
-  '/workers',
-  '/team',
-  '/photos',
-  '/workflows',
-  '/notifications',
-  '/proposals',
-  '/estimates',
-  '/invoices',
-  '/messages',
-  '/projects',
-  '/knowledge',
-  '/automations',
-  '/clients',
-  '/services',
-  '/bookings',
-  '/inventory',
-  '/routes',
-  '/portal/client',
-  '/portal/contractor'
-] as const;
+  { label: 'Overview', href: '/dashboard' },
+ 
