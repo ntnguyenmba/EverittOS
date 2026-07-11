@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { OsModulePage } from '@/components/os-module-page';
 import { canAccessFeature } from '@/lib/plan-access';
@@ -18,7 +18,7 @@ export default function AutomationsPage() {
   const [role, setRole] = useState(normalizeRole('employee'));
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -40,11 +40,11 @@ export default function AutomationsPage() {
       .order('created_at', { ascending: false });
     setRows(data || []);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, [router]);
+  }, [load]);
 
   async function createAutomation() {
     if (!name.trim() || !isManagerRole(role)) return;
