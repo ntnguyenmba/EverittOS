@@ -42,7 +42,7 @@ export default function RoutesPage() {
       return;
     }
     setRuns(json.runs || []);
-  }, [appFeedback, t]);
+  }, [appFeedback]);
 
   useEffect(() => {
     async function init() {
