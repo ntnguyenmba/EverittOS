@@ -147,11 +147,11 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     setSaving(false);
 
     if (!res.ok) {
-      feedback.error(json.error || 'Unable to save visits.');
+      feedback.error(json.error || 'Unable to save schedule section.');
       return;
     }
 
-    feedback.success(json.message || 'Visits saved.');
+    feedback.success(json.message || 'Schedule section saved.');
     props.onSaved?.();
   }
 
@@ -199,7 +199,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
       {props.canManage ? (
         <button className="btn btn-primary job-visits-save" type="button" onClick={saveVisits} disabled={saving}>
-          {saving ? 'Saving...' : 'Save visits'}
+          {saving ? 'Saving...' : 'Save schedule section'}
         </button>
       ) : null}
     </div>
