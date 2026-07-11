@@ -26,6 +26,10 @@ function formatPaidDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
@@ -166,13 +170,36 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
   async function updatePaymentStatus(id: string, status: ContractorPaymentStatus) {
     if (updatingPaymentId) return;
+
+    let paidAt: string | null = null;
+    let paymentMethod: string | null = null;
+    let paymentReference: string | null = null;
+
+    if (status === 'paid') {
+      const paidDate = window.prompt('Payment date (YYYY-MM-DD)', todayInputValue());
+      if (paidDate === null) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(paidDate)) {
+        appFeedback.error('Enter the payment date as YYYY-MM-DD.');
+        return;
+      }
+      paidAt = new Date(`${paidDate}T12:00:00`).toISOString();
+      const method = window.prompt('Payment method, such as Zelle, ACH, check, or cash', '');
+      if (method === null) return;
+      paymentMethod = method.trim() || null;
+      const reference = window.prompt('Payment reference or confirmation number (optional)', '');
+      if (reference === null) return;
+      paymentReference = reference.trim() || null;
+    }
+
     setUpdatingPaymentId(id);
     const res = await fetch(`/api/jobs/${jobId}/labor/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         payment_status: status,
-        paid_at: status === 'paid' ? new Date().toISOString() : null
+        paid_at: paidAt,
+        payment_method: status === 'paid' ? paymentMethod : null,
+        payment_reference: status === 'paid' ? paymentReference : null
       })
     });
     const json = await res.json().catch(() => ({}));
@@ -181,7 +208,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       appFeedback.error(json.error || 'Unable to update contractor payment status.');
       return;
     }
-    appFeedback.success(status === 'paid' ? 'Contractor payment marked paid.' : `Contractor payment marked ${status}.`);
+    appFeedback.success(status === 'paid' ? 'Contractor payment and payment details saved.' : `Contractor payment marked ${status}.`);
     await load();
     onChange?.();
   }
@@ -255,10 +282,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
       {!loading && entries.length > 0 ? (
         <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
-          <div className="finance-metric"><span className="finance-metric-label">Unpaid</span><strong>{formatCurrency(unpaidLabor)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Contractor pay owed</span><strong>{formatCurrency(unpaidLabor)}</strong></div>
           <div className="finance-metric"><span className="finance-metric-label">Pending</span><strong>{formatCurrency(pendingLabor)}</strong></div>
           <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>{formatCurrency(paidLabor)}</strong></div>
-          <div className="finance-metric featured"><span className="finance-metric-label">Total contractor pay</span><strong>{formatCurrency(totalLabor)}</strong></div>
+          <div className="finance-metric featured"><span className="finance-metric-label">Total contractor cost</span><strong>{formatCurrency(totalLabor)}</strong></div>
         </div>
       ) : null}
 
@@ -334,7 +361,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                       <div className="job-detail-actions">
                         {paymentStatus !== 'paid' ? (
                           <button type="button" className="btn btn-primary" disabled={updatingPaymentId === entry.id} onClick={() => void updatePaymentStatus(entry.id, 'paid')}>
-                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Mark paid'}
+                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Record payment'}
                           </button>
                         ) : (
                           <button type="button" className="btn" disabled={updatingPaymentId === entry.id} onClick={() => void updatePaymentStatus(entry.id, 'unpaid')}>
