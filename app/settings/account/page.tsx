@@ -16,6 +16,15 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
 import { supabase } from '@/lib/supabase';
 
+const DEFAULT_NOTIFICATIONS = {
+  marketingEmails: false,
+  productUpdates: true,
+  operationalNotifications: true,
+  emailNotifications: true,
+  pushNotifications: false,
+  smsNotifications: false
+};
+
 export default function AccountSettingsPage() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -44,14 +53,7 @@ export default function AccountSettingsPage() {
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
-  const [notifications, setNotifications] = useState({
-    marketingEmails: false,
-    productUpdates: true,
-    operationalNotifications: true,
-    emailNotifications: true,
-    pushNotifications: false,
-    smsNotifications: false
-  });
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function AccountSettingsPage() {
         setDisplayName(json.displayName || '');
         setEmail(json.email || user.email || '');
         setPhone(json.phone || '');
-        setNotifications(json.notifications || notifications);
+        setNotifications(json.notifications || DEFAULT_NOTIFICATIONS);
       } else {
         setEmail(user.email || '');
       }
