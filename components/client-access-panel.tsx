@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { appUrl } from '@/lib/app-url';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -29,7 +29,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
 
   const portalAllowed = limitsForPlan(plan).clientPortal;
 
-  async function loadWorkspace() {
+  const loadWorkspace = useCallback(async () => {
     const { supabase } = await import('@/lib/supabase');
     const {
       data: { user }
@@ -37,9 +37,9 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     if (!user) return;
     const org = await fetchOrganizationContext(user.id);
     setOrgId(org?.organizationId || '');
-  }
+  }, []);
 
-  async function loadAccess() {
+  const loadAccess = useCallback(async () => {
     const { supabase } = await import('@/lib/supabase');
     const { data } = await supabase
       .from('job_client_access')
@@ -61,12 +61,12 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
         };
       })
     );
-  }
+  }, [jobId]);
 
   useEffect(() => {
     void loadWorkspace();
-    if (portalAllowed) loadAccess();
-  }, [jobId, portalAllowed]);
+    if (portalAllowed) void loadAccess();
+  }, [loadAccess, loadWorkspace, portalAllowed]);
 
   async function grantAccess() {
     if (!email.trim() || busy) return;
@@ -85,7 +85,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     }
     setMessage(json.message + (json.acceptUrl ? ` Link: ${json.acceptUrl}` : ''));
     setEmail('');
-    loadAccess();
+    void loadAccess();
   }
 
   async function revokeAccess(clientUserId: string) {
@@ -98,7 +98,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     const json = await res.json();
     setBusy(false);
     setMessage(json.message || json.error || 'Updated.');
-    loadAccess();
+    void loadAccess();
   }
 
   function copyLink(token: string | null) {
