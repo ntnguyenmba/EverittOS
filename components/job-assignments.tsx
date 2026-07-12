@@ -26,6 +26,7 @@ type JobAssignmentsProps = {
   workers: Worker[];
   assignments: Assignment[];
   canManage: boolean;
+  isCompleted?: boolean;
   onChange: () => void;
 };
 
@@ -42,29 +43,31 @@ export function JobAssignments({
   workers,
   assignments,
   canManage,
+  isCompleted = false,
   onChange
 }: JobAssignmentsProps) {
   const appFeedback = useAppFeedback();
   const [workerId, setWorkerId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const assignedIds = new Set(assignments.map((a) => a.worker_id));
-  const availableWorkers = workers.filter((w) => !assignedIds.has(w.id));
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const assignedIds = new Set(assignments.map((assignment) => assignment.worker_id));
+  const availableWorkers = workers.filter((worker) => !assignedIds.has(worker.id));
+  const busy = Boolean(busyId);
 
   async function addAssignment() {
     if (!workerId || !canManage || busy) return;
-    setBusy(true);
+    setBusyId('new');
     const { error } = await supabase.from('job_assignments').insert({
       job_id: jobId,
       worker_id: workerId,
       user_id: userId,
       organization_id: organizationId
     });
-    setBusy(false);
+    setBusyId(null);
     if (error) {
       appFeedback.error(error.message);
       return;
     }
-    const worker = workers.find((w) => w.id === workerId);
+    const worker = workers.find((item) => item.id === workerId);
     await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'team member'}`, {
       worker_id: workerId
     });
@@ -73,11 +76,39 @@ export function JobAssignments({
     onChange();
   }
 
+  async function replaceAssignment(assignment: Assignment, nextWorkerId: string) {
+    if (!canManage || busy || !nextWorkerId || nextWorkerId === assignment.worker_id) return;
+    setBusyId(assignment.id);
+    const previousWorker = workers.find((worker) => worker.id === assignment.worker_id);
+    const nextWorker = workers.find((worker) => worker.id === nextWorkerId);
+    const { error } = await supabase
+      .from('job_assignments')
+      .update({ worker_id: nextWorkerId })
+      .eq('id', assignment.id)
+      .eq('job_id', jobId)
+      .eq('organization_id', organizationId);
+    setBusyId(null);
+    if (error) {
+      appFeedback.error(error.message);
+      return;
+    }
+    await logClientActivity(
+      organizationId,
+      'job',
+      jobId,
+      'worker_assignment_corrected',
+      `Changed assignment from ${previousWorker?.name || 'team member'} to ${nextWorker?.name || 'team member'}`,
+      { previous_worker_id: assignment.worker_id, worker_id: nextWorkerId }
+    );
+    appFeedback.success(isCompleted ? 'Completed job assignment corrected.' : 'Assigned team updated.');
+    onChange();
+  }
+
   async function removeAssignment(assignmentId: string, workerName: string) {
     if (!canManage || busy) return;
-    setBusy(true);
+    setBusyId(assignmentId);
     const { error } = await supabase.from('job_assignments').delete().eq('id', assignmentId);
-    setBusy(false);
+    setBusyId(null);
     if (error) {
       appFeedback.error(error.message);
       return;
@@ -90,33 +121,59 @@ export function JobAssignments({
   return (
     <div className="form">
       <h4>Assigned team</h4>
-      <p className="muted">People assigned to work on this job.</p>
+      <p className="muted">
+        People assigned to work on this job. {isCompleted && canManage ? 'Completed job assignments can still be corrected here.' : ''}
+      </p>
       {assignments.length === 0 && <p>No team assigned yet.</p>}
-      {assignments.map((a) => {
-        const w = workers.find((x) => x.id === a.worker_id);
+      {assignments.map((assignment) => {
+        const assignedWorker = workers.find((worker) => worker.id === assignment.worker_id);
+        const replacementOptions = workers.filter(
+          (worker) => worker.id === assignment.worker_id || !assignedIds.has(worker.id)
+        );
         return (
-          <div key={a.id} className="list-row">
-            <span>{workerLabel(w)}</span>
-            {canManage && (
-              <button type="button" className="btn" disabled={busy} onClick={() => removeAssignment(a.id, w?.name || 'team member')}>
-                Remove
-              </button>
+          <div key={assignment.id} className="list-row">
+            {canManage ? (
+              <select
+                className="input"
+                aria-label="Assigned team member"
+                value={assignment.worker_id}
+                disabled={busy}
+                onChange={(event) => void replaceAssignment(assignment, event.target.value)}
+              >
+                {replacementOptions.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {workerLabel(worker)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span>{workerLabel(assignedWorker)}</span>
             )}
+            {canManage ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={busy}
+                onClick={() => void removeAssignment(assignment.id, assignedWorker?.name || 'team member')}
+              >
+                {busyId === assignment.id ? FEEDBACK.loading : 'Remove'}
+              </button>
+            ) : null}
           </div>
         );
       })}
       {canManage && availableWorkers.length > 0 ? (
         <>
-          <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-            <option value="">Select team member</option>
-            {availableWorkers.map((w) => (
-              <option key={w.id} value={w.id}>
-                {workerLabel(w)}
+          <select className="input" value={workerId} disabled={busy} onChange={(event) => setWorkerId(event.target.value)}>
+            <option value="">Select additional team member</option>
+            {availableWorkers.map((worker) => (
+              <option key={worker.id} value={worker.id}>
+                {workerLabel(worker)}
               </option>
             ))}
           </select>
           <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={() => void addAssignment()}>
-            {busy ? FEEDBACK.loading : 'Assign to job'}
+            {busyId === 'new' ? FEEDBACK.loading : 'Assign to job'}
           </button>
         </>
       ) : null}
