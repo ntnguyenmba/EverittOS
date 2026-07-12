@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -32,7 +32,7 @@ export default function OperationsPage() {
   const [filter, setFilter] = useState<'all' | OperationsPriority>('all');
   const [error, setError] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -71,11 +71,11 @@ export default function OperationsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const visibleItems = useMemo(
     () => (filter === 'all' ? items : items.filter((item) => item.priority === filter)),
