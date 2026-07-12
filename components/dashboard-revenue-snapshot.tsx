@@ -88,16 +88,16 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
   const financialBreakdown: FinancialBreakdownItem[] = [
     { label: 'Client income received', value: revenue, displayValue: formatCurrency(revenue), href: '/analytics' },
-    { label: 'Contractor cost', value: contractorPay, displayValue: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/jobs' },
+    { label: 'Contractor cost', value: contractorPay, displayValue: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/contractor-pay?status=all' },
     { label: 'Other expenses', value: otherExpenses, displayValue: formatCurrency(otherExpenses), href: '/expenses' },
     { label: 'Gross profit', value: hasRecordedCosts ? netProfit : null, displayValue: hasRecordedCosts ? formatCurrency(netProfit) : 'Pending costs', href: '/analytics' }
   ];
 
   const items: MetricItem[] = [
     { label: `Revenue received · ${rangeLabel}`, value: formatCurrency(revenue), href: '/analytics', help: 'Money actually recorded as received during the selected period. Unpaid invoice balances are not counted as revenue.' },
-    { label: `Contractor cost · ${rangeLabel}`, value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/jobs', help: 'Contractor labor recorded during the selected period, whether paid or still owed.' },
-    { label: 'Contractor pay owed', value: formatCurrency(unpaidContractorPay), href: '/jobs', help: 'The total currently owed on contractor entries marked unpaid. This is a current balance and does not change with the date selector.' },
-    { label: 'Contractor pay pending', value: formatCurrency(pendingContractorPay), href: '/jobs', help: 'The total on contractor entries marked pending. This is a current balance and does not change with the date selector.' },
+    { label: `Contractor cost · ${rangeLabel}`, value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/contractor-pay?status=all', help: 'Contractor labor recorded during the selected period, whether paid or still owed.' },
+    { label: 'Contractor pay owed', value: formatCurrency(unpaidContractorPay), href: '/contractor-pay?status=unpaid', help: 'Open the exact contractor entries currently marked unpaid, including contractor, job, hours, rate, and amount.' },
+    { label: 'Contractor pay pending', value: formatCurrency(pendingContractorPay), href: '/contractor-pay?status=pending', help: 'Open the exact contractor entries currently marked pending and update their payment status.' },
     { label: `Other expenses · ${rangeLabel}`, value: formatCurrency(otherExpenses), href: '/expenses' },
     { label: `Gross profit · ${rangeLabel}`, value: hasRecordedCosts ? formatCurrency(netProfit) : 'Pending costs', href: '/analytics' },
     { label: 'Profit margin', value: profitMargin === null ? 'Pending contractor costs' : `${profitMargin.toFixed(1)}%`, href: '/analytics' },
