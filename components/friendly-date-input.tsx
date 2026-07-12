@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type FriendlyDateInputProps = {
   value: string;
@@ -11,22 +11,15 @@ type FriendlyDateInputProps = {
   ariaLabel?: string;
 };
 
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec'
-];
+type DateParts = {
+  year: string;
+  month: string;
+  day: string;
+};
 
-function parts(value: string) {
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function parseParts(value: string): DateParts {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return { year: '', month: '', day: '' };
   return { year: match[1], month: match[2], day: match[3] };
@@ -42,11 +35,16 @@ export function FriendlyDateInput({
   value,
   onChange,
   disabled = false,
-  minYear = new Date().getFullYear() - 5,
+  minYear = new Date().getFullYear() - 10,
   maxYear = new Date().getFullYear() + 10,
   ariaLabel = 'Date'
 }: FriendlyDateInputProps) {
-  const selected = parts(value);
+  const [selected, setSelected] = useState<DateParts>(() => parseParts(value));
+
+  useEffect(() => {
+    setSelected(parseParts(value));
+  }, [value]);
+
   const years = useMemo(() => {
     const rows: number[] = [];
     for (let year = maxYear; year >= minYear; year -= 1) rows.push(year);
@@ -55,15 +53,19 @@ export function FriendlyDateInput({
 
   const maxDay = daysInMonth(selected.year, selected.month);
 
-  function update(next: Partial<typeof selected>) {
+  function update(next: Partial<DateParts>) {
     const merged = { ...selected, ...next };
+    if (merged.day && Number(merged.day) > daysInMonth(merged.year, merged.month)) {
+      merged.day = String(daysInMonth(merged.year, merged.month)).padStart(2, '0');
+    }
+    setSelected(merged);
+
     if (!merged.year || !merged.month || !merged.day) {
       onChange('');
       return;
     }
 
-    const safeDay = Math.min(Number(merged.day), daysInMonth(merged.year, merged.month));
-    onChange(`${merged.year}-${merged.month}-${String(safeDay).padStart(2, '0')}`);
+    onChange(`${merged.year}-${merged.month}-${merged.day}`);
   }
 
   return (
