@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -41,7 +41,7 @@ export default function LeadsPage() {
   const [filter, setFilter] = useState<LeadFilter>('active');
   const [canManage, setCanManage] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const {
       data: { user }
@@ -87,11 +87,11 @@ export default function LeadsPage() {
     } else {
       setLeads((leadsRes.data || []) as CustomerRecord[]);
     }
-  }
+  }, [appFeedback, router]);
 
   useEffect(() => {
     void load();
-  }, [router]);
+  }, [load]);
 
   const visibleLeads = useMemo(() => {
     return leads.filter((lead) => {
