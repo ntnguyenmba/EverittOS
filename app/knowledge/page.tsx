@@ -8,4 +8,4 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
-type Doc = { id: string; title: string; category: string; updated_at: string
+type Doc = { id: string; title: string; category: string; updated_at: string | null }
