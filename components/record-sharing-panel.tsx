@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { normalizeRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
@@ -47,7 +47,7 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
   const [accessLevel, setAccessLevel] = useState<'view' | 'edit'>('view');
   const [saving, setSaving] = useState(false);
 
-  async function loadMembers() {
+  const loadMembers = useCallback(async () => {
     if (!organizationId) return;
     const { data: memberRows, error } = await supabase
       .from('organization_members')
@@ -78,9 +78,9 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
         profile: profiles.get(member.user_id) || null
       }))
     );
-  }
+  }, [feedback, organizationId]);
 
-  async function loadShares() {
+  const loadShares = useCallback(async () => {
     if (!recordId) return;
     const res = await fetch(`/api/record-shares?recordType=${recordType}&recordId=${recordId}`);
     const json = (await res.json().catch(() => ({}))) as { shares?: ShareRecord[]; error?: string };
@@ -89,12 +89,12 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
       return;
     }
     setShares(json.shares || []);
-  }
+  }, [feedback, recordId, recordType]);
 
   useEffect(() => {
     void loadMembers();
     void loadShares();
-  }, [organizationId, recordType, recordId]);
+  }, [loadMembers, loadShares]);
 
   async function addShare() {
     if (!selectedUserId || saving) return;
@@ -132,9 +132,9 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
 
   return (
     <div className="card" style={{ marginTop: 18 }}>
-      <h3>Shared with teammates</h3>
+      <h3>Shared access</h3>
       <p className="muted">
-        Share this {recordType} with selected teammates so they can view or edit the record.
+        Sharing gives a teammate permission to view or edit this {recordType}. It does not assign the job or add it to their assigned work.
       </p>
 
       {canManage ? (
@@ -154,23 +154,23 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
             <option value="edit">Can edit</option>
           </select>
           <button className="btn btn-primary" type="button" disabled={!selectedUserId || saving} onClick={() => void addShare()}>
-            {saving ? FEEDBACK.loading : 'Share record'}
+            {saving ? FEEDBACK.loading : 'Share access'}
           </button>
         </div>
       ) : null}
 
-      {shares.length === 0 ? <p className="muted">Not shared with anyone yet.</p> : null}
+      {shares.length === 0 ? <p className="muted">No shared access yet.</p> : null}
       {shares.map((share) => {
         const member = members.find((item) => item.user_id === share.shared_with_user_id);
         return (
           <div key={share.id} className="list-row compact">
             <div>
               <strong>{member ? memberLabel(member) : 'Team member'}</strong>
-              <p className="muted">{share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
+              <p className="muted">Shared access · {share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
             </div>
             {canManage ? (
               <button className="btn" type="button" onClick={() => void removeShare(share.id)}>
-                Remove
+                Remove access
               </button>
             ) : null}
           </div>
