@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     const {
@@ -60,11 +60,11 @@ export default function NotificationsPage() {
       return;
     }
     setItems(json.notifications || []);
-  }
+  }, [router]);
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+  }, [load]);
 
   async function markRead(id: string) {
     setBusy(true);
@@ -74,7 +74,7 @@ export default function NotificationsPage() {
       body: JSON.stringify({ id })
     });
     setBusy(false);
-    load();
+    void load();
   }
 
   async function markAllRead() {
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
       body: JSON.stringify({ markAll: true })
     });
     setBusy(false);
-    load();
+    void load();
   }
 
   const unread = items.filter((n) => !n.read_at).length;
@@ -134,7 +134,7 @@ export default function NotificationsPage() {
                 </Link>
               )}
               {!n.read_at && (
-                <button type="button" className="btn" disabled={busy} onClick={() => markRead(n.id)}>
+                <button type="button" className="btn" disabled={busy} onClick={() => void markRead(n.id)}>
                   Mark read
                 </button>
               )}
