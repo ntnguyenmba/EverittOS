@@ -8,7 +8,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Contractor = {
   id: string;
@@ -35,7 +35,7 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  async function loadContractors() {
+  const loadContractors = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from('workers')
@@ -47,11 +47,11 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
     const { data } = await query;
     setContractors((data || []) as Contractor[]);
     setLoading(false);
-  }
+  }, [organizationId, userId]);
 
   useEffect(() => {
     void loadContractors();
-  }, [userId, organizationId]);
+  }, [loadContractors]);
 
   async function addContractor() {
     if (!canManage || saving) return;
