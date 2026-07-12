@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Message = {
   id: string;
@@ -20,17 +20,17 @@ export function PortalMessagesPanel({ jobId, canReply = true }: PortalMessagesPa
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/portal-messages?jobId=${encodeURIComponent(jobId)}`);
     const json = await res.json();
     setLoading(false);
     if (res.ok) setMessages(json.messages || []);
-  }
+  }, [jobId]);
 
   useEffect(() => {
     void load();
-  }, [jobId]);
+  }, [load]);
 
   async function sendMessage() {
     if (!body.trim() || busy) return;
