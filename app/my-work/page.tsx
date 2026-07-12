@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { StatusPill } from '@/components/status-pill';
@@ -36,7 +36,7 @@ function formatDate(value: string | null) {
 function recordHref(recordType: string, recordId: string) {
   if (recordType === 'job') return `/jobs/${recordId}`;
   if (recordType === 'customer') return `/customers/${recordId}`;
-  if (recordType === 'report') return `/reports`;
+  if (recordType === 'report') return '/reports';
   return '#';
 }
 
@@ -48,7 +48,7 @@ export default function MyWorkPage() {
   const [sharedRecords, setSharedRecords] = useState<ShareRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const {
       data: { user }
@@ -98,11 +98,11 @@ export default function MyWorkPage() {
     setAssignedJobs((jobs || []) as JobRow[]);
     setSharedRecords((shares || []) as ShareRow[]);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   return (
     <AppShell plan={plan} role={role}>
