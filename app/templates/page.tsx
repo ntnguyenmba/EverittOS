@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -31,7 +31,7 @@ export default function TemplatesPage() {
   const [canManage, setCanManage] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const {
       data: { user }
@@ -59,11 +59,11 @@ export default function TemplatesPage() {
     setSchemaReady(json.schemaReady !== false);
     setTemplates(json.templates || []);
     setCategories(json.categories || []);
-  }
+  }, [feedback, filter, router]);
 
   useEffect(() => {
     void load();
-  }, [router, filter]);
+  }, [load]);
 
   async function saveTemplate() {
     if (!title.trim() || saving) return;
