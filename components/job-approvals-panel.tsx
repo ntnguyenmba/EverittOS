@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Approval = {
   id: string;
@@ -22,17 +22,17 @@ export function JobApprovalsPanel({ jobId, canManage = false, isClient = false }
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/job-approvals?jobId=${encodeURIComponent(jobId)}`);
     const json = await res.json();
     setLoading(false);
     if (res.ok) setApprovals(json.approvals || []);
-  }
+  }, [jobId]);
 
   useEffect(() => {
     void load();
-  }, [jobId]);
+  }, [load]);
 
   async function requestApproval(approvalType: 'quote' | 'completion') {
     if (busy) return;
