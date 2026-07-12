@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
@@ -35,7 +34,7 @@ function SchedulePageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const {
       data: { user }
@@ -55,7 +54,7 @@ function SchedulePageContent() {
     setOrgId(org?.organizationId || '');
     setCanAssign(limitsForPlan(p).crewAssignment && canAssignJobs(workspaceRole));
 
-    let jobsQuery = scopeJobsForWorkspace(
+    const jobsQuery = scopeJobsForWorkspace(
       supabase
         .from('jobs')
         .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
@@ -88,26 +87,26 @@ function SchedulePageContent() {
     }
     const { data: workers } = await workersQuery;
     const map: Record<string, string> = {};
-    (workers || []).forEach((w: { id: string; name: string }) => {
-      map[w.id] = w.name;
+    (workers || []).forEach((worker: { id: string; name: string }) => {
+      map[worker.id] = worker.name;
     });
     setWorkerNames(map);
-  }
+  }, [memberFilter, router]);
 
   useEffect(() => {
     void load();
-  }, [memberFilter]);
+  }, [load]);
 
   const visibleJobs = useMemo(() => {
     if (rangeFilter !== 'upcoming') return jobs;
     const today = todayIso();
     const end = daysAheadIso(7);
     return jobs.filter(
-      (j) =>
-        j.status !== 'completed' &&
-        j.status !== 'cancelled' &&
-        ((j.due_date && j.due_date >= today && j.due_date <= end) ||
-          (j.start_date && j.start_date >= today && j.start_date <= end))
+      (job) =>
+        job.status !== 'completed' &&
+        job.status !== 'cancelled' &&
+        ((job.due_date && job.due_date >= today && job.due_date <= end) ||
+          (job.start_date && job.start_date >= today && job.start_date <= end))
     );
   }, [jobs, rangeFilter]);
 
@@ -129,7 +128,7 @@ function SchedulePageContent() {
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', workerId ? 'Worker assigned on schedule' : 'Worker unassigned');
     }
-    load();
+    void load();
   }
 
   async function rescheduleJob(jobId: string, dateKey: string) {
@@ -156,7 +155,7 @@ function SchedulePageContent() {
     if (orgId) {
       await logClientActivity(orgId, 'job', jobId, 'schedule_changed', `Moved to ${dateKey}`);
     }
-    load();
+    void load();
   }
 
   return (
