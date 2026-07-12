@@ -109,7 +109,7 @@ export default function MyWorkPage() {
       <div className="page-head">
         <div>
           <h1>My Work</h1>
-          <p className="muted">Assigned jobs and records shared with you by your team.</p>
+          <p className="muted">Assigned jobs are work you are responsible for. Shared records only give you access to view or edit information.</p>
         </div>
         <Link className="btn" href="/notifications">
           Notifications
@@ -118,9 +118,10 @@ export default function MyWorkPage() {
 
       <div className="grid-2" style={{ marginTop: 18 }}>
         <div className="card">
-          <h3>Assigned to me</h3>
+          <h3>Jobs assigned to me</h3>
+          <p className="muted">These jobs count as your assigned work and appear in your personal metrics.</p>
           {loading ? <p className="loading-state">Loading...</p> : null}
-          {!loading && assignedJobs.length === 0 ? <p className="muted">No assigned jobs yet.</p> : null}
+          {!loading && assignedJobs.length === 0 ? <p className="muted">No jobs are assigned to you yet.</p> : null}
           {assignedJobs.map((job) => (
             <div key={job.id} className="list-row">
               <div>
@@ -139,18 +140,19 @@ export default function MyWorkPage() {
         </div>
 
         <div className="card">
-          <h3>Shared with me</h3>
+          <h3>Records shared with me</h3>
+          <p className="muted">Shared access does not assign the job to you and does not add it to your assigned-job metrics.</p>
           {loading ? <p className="loading-state">Loading...</p> : null}
-          {!loading && sharedRecords.length === 0 ? <p className="muted">No shared records yet.</p> : null}
+          {!loading && sharedRecords.length === 0 ? <p className="muted">No records have been shared with you yet.</p> : null}
           {sharedRecords.map((share) => (
             <div key={share.id} className="list-row">
               <div>
                 <strong>{share.record_type.replace('_', ' ')}</strong>
-                <p className="muted">{share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
+                <p className="muted">Shared access · {share.access_level === 'edit' ? 'Can edit' : 'View only'}</p>
                 <p className="muted">Shared {share.created_at ? new Date(share.created_at).toLocaleString() : 'recently'}</p>
               </div>
               <Link className="btn" href={recordHref(share.record_type, share.record_id)}>
-                Open
+                Open shared record
               </Link>
             </div>
           ))}
