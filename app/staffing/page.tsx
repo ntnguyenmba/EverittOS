@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
@@ -42,7 +42,7 @@ export default function StaffingPage() {
   const [records, setRecords] = useState<StaffingRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const { data: auth } = await supabase.auth.getUser();
     const user = auth.user;
@@ -73,11 +73,11 @@ export default function StaffingPage() {
 
     setRecords((data || []) as StaffingRecord[]);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const counts = useMemo(() => {
     const next = { ...emptyCounts } as Record<string, number>;
