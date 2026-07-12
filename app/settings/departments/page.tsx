@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { AppShell } from '@/components/app-shell';
@@ -31,7 +31,7 @@ export default function DepartmentsSettingsPage() {
   const [selectedDept, setSelectedDept] = useState('');
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -46,11 +46,11 @@ export default function DepartmentsSettingsPage() {
     setCanManage(Boolean(json.canManage));
     setDepartments(json.departments || []);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
-    load();
-  }, [router]);
+    void load();
+  }, [load]);
 
   async function createDepartment() {
     const res = await runResponse(
@@ -64,7 +64,7 @@ export default function DepartmentsSettingsPage() {
     );
     if (!res) return;
     setName('');
-    load();
+    void load();
   }
 
   async function addMember(departmentId: string) {
@@ -84,7 +84,7 @@ export default function DepartmentsSettingsPage() {
     );
     if (!res) return;
     setMemberEmail('');
-    load();
+    void load();
   }
 
   if (loading) {
