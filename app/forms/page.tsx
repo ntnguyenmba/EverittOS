@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -35,7 +35,7 @@ export default function FormsPage() {
   const [loading, setLoading] = useState(true);
   const [canManage, setCanManage] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const {
       data: { user }
@@ -59,11 +59,11 @@ export default function FormsPage() {
       return;
     }
     setForms(json.forms || []);
-  }
+  }, [feedback, router]);
 
   useEffect(() => {
     void load();
-  }, [router]);
+  }, [load]);
 
   async function createForm() {
     if (!name.trim() || busy) return;
