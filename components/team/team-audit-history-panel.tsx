@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -29,7 +29,7 @@ export function TeamAuditHistoryPanel({ role }: TeamAuditHistoryPanelProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!canView || loading || items.length > 0) return;
     setLoading(true);
     const {
@@ -56,11 +56,11 @@ export function TeamAuditHistoryPanel({ role }: TeamAuditHistoryPanelProps) {
 
     setItems((data || []) as AuditItem[]);
     setLoading(false);
-  }
+  }, [canView, items.length, loading]);
 
   useEffect(() => {
     if (open) void load();
-  }, [open]);
+  }, [load, open]);
 
   if (!canView) return null;
 
