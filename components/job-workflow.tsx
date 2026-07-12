@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type WorkflowStep = {
   id: string;
@@ -32,7 +32,7 @@ export function JobWorkflow({ jobId, canManage, canComplete, hasWorkflowFeature 
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/jobs/${jobId}/workflow`);
     const json = await res.json();
@@ -47,13 +47,15 @@ export function JobWorkflow({ jobId, canManage, canComplete, hasWorkflowFeature 
       const wfRes = await fetch('/api/workflows');
       const wfJson = await wfRes.json();
       setWorkflows((wfJson.workflows || []).map((w: { id: string; name: string }) => ({ id: w.id, name: w.name })));
+    } else {
+      setWorkflows([]);
     }
     setLoading(false);
-  }
+  }, [canManage, hasWorkflowFeature, jobId]);
 
   useEffect(() => {
-    if (hasWorkflowFeature) load();
-  }, [jobId, hasWorkflowFeature]);
+    if (hasWorkflowFeature) void load();
+  }, [hasWorkflowFeature, load]);
 
   async function attachWorkflow() {
     if (!selectedWorkflow) return;
@@ -68,7 +70,7 @@ export function JobWorkflow({ jobId, canManage, canComplete, hasWorkflowFeature 
       return;
     }
     setMessage('Workflow attached.');
-    load();
+    void load();
   }
 
   async function toggleStep(stepId: string, step: WorkflowStep) {
@@ -92,7 +94,7 @@ export function JobWorkflow({ jobId, canManage, canComplete, hasWorkflowFeature 
       setMessage(json.error || 'Unable to update step.');
       return;
     }
-    load();
+    void load();
   }
 
   if (!hasWorkflowFeature) {
