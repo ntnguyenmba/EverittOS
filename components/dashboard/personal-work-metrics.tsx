@@ -148,7 +148,7 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
     () => [
       { label: 'My active jobs', value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
       { label: 'Due today', value: String(metrics.dueToday), href: '/schedule?mine=true' },
-      { label: 'My completed jobs', value: String(metrics.completedJobs), href: '/jobs?mine=true&status=completed' },
+      { label: 'My completed jobs, all time', value: String(metrics.completedJobs), href: '/jobs?mine=true&status=completed' },
       { label: 'My overdue jobs', value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
       { label: 'My photos uploaded', value: String(metrics.photosUploaded), href: '/photos?mine=true' },
       { label: 'My reports', value: String(metrics.reportsCreated), href: '/reports?mine=true' },
@@ -165,7 +165,7 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       <div className="dashboard-section-head">
         <div>
           <h2>My metrics</h2>
-          <p className="muted">Only work you created, were assigned, or personally completed is included.</p>
+          <p className="muted">Only jobs you created or were assigned are included. Shared access alone does not count as an assignment.</p>
         </div>
         <Link href="/my-work" className="dashboard-section-link">Open my work</Link>
       </div>
