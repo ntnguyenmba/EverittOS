@@ -11,6 +11,11 @@ import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { WorkspacePlanProvider } from '@/components/workspace-plan-provider';
 import { AppConnectivityBanner } from '@/components/app-connectivity-banner';
+import { NetworkStatusBanner } from '@/components/network-status-banner';
+import { NativeAppProvider } from '@/components/native-app-provider';
+import { MobileDocumentFlags } from '@/components/mobile-document-flags';
+import { PwaRegistration } from '@/components/pwa-registration';
+import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
@@ -31,6 +36,7 @@ import './dashboard-mobile-balance.css';
 import './job-mobile-fixes.css';
 import './job-visit-layout-override.css';
 import './form-alignment-fixes.css';
+import './mobile-safe-areas.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -74,7 +80,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-deployment={deployment} className={inter.variable}>
       <body>
         <SupabaseRuntimeConfig />
+        <PwaRegistration />
+        <MobileDocumentFlags />
+        <NativeAppProvider />
         <AppConnectivityBanner />
+        <NetworkStatusBanner />
+        <PwaUpdatePrompt />
         <SuppressVercelToolbar />
         <LocaleProvider>
           <ToastProvider>

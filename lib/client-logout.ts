@@ -1,4 +1,5 @@
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { performPlatformLogoutCleanup } from '@/lib/platform/session-cleanup';
 import { supabase } from '@/lib/supabase';
 
 /** Signs out via API (clears session markers) with client fallback. */
@@ -8,6 +9,8 @@ export async function performClientLogout(router?: AppRouterInstance) {
   } catch {
     await supabase.auth.signOut();
   }
+
+  await performPlatformLogoutCleanup();
 
   if (router) {
     router.push('/login');

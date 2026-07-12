@@ -49,7 +49,7 @@ function buildSecurityHeaders() {
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy':
-      'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")',
+      'camera=(self), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")',
     'X-DNS-Prefetch-Control': 'on'
   };
 
@@ -74,6 +74,14 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: '/.well-known/apple-app-site-association',
+        headers: [{ key: 'Content-Type', value: 'application/json' }]
+      },
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }]
+      },
       {
         source: '/:path*',
         headers: securityHeaders

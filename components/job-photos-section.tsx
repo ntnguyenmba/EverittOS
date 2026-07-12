@@ -20,6 +20,8 @@ import { normalizeRole, isManagerRole } from '@/lib/roles';
 import { logClientActivity } from '@/lib/activity';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
+import { isNativePlatform } from '@/lib/platform/detect';
+import { pickJobPhotoFromCamera, pickJobPhotoFromLibrary } from '@/lib/platform/upload';
 import { supabase } from '@/lib/supabase';
 
 const PRIMARY_PHOTO_TYPES: JobPhotoTag[] = ['before', 'after'];
@@ -268,6 +270,38 @@ export function JobPhotosSection({
     fileInputRef.current?.click();
   }
 
+  async function openNativeCamera(tag: JobPhotoTag) {
+    setActiveTag(tag);
+    const result = await pickJobPhotoFromCamera();
+    if (!result.ok) {
+      if (result.code !== 'cancelled') {
+        appFeedback.error(result.error);
+      }
+      return;
+    }
+    const list = new DataTransfer();
+    for (const file of result.files) {
+      list.items.add(file);
+    }
+    await uploadFiles(list.files, tag);
+  }
+
+  async function openNativeLibrary(tag: JobPhotoTag) {
+    setActiveTag(tag);
+    const result = await pickJobPhotoFromLibrary();
+    if (!result.ok) {
+      if (result.code !== 'cancelled') {
+        appFeedback.error(result.error);
+      }
+      return;
+    }
+    const list = new DataTransfer();
+    for (const file of result.files) {
+      list.items.add(file);
+    }
+    await uploadFiles(list.files, tag);
+  }
+
   function onDrop(event: React.DragEvent, tag: JobPhotoTag) {
     event.preventDefault();
     setDragOverTag(null);
@@ -316,10 +350,20 @@ export function JobPhotosSection({
                 type="button"
                 className="btn btn-primary photo-capture-btn"
                 disabled={uploading}
-                onClick={() => openFilePicker(tag)}
+                onClick={() => (isNativePlatform() ? void openNativeCamera(tag) : openFilePicker(tag))}
               >
                 {uploading && activeTag === tag ? FEEDBACK.loading : `Add ${photoTagLabel(tag).toLowerCase()} photo`}
               </button>
+              {isNativePlatform() ? (
+                <button
+                  type="button"
+                  className="btn photo-capture-btn"
+                  disabled={uploading}
+                  onClick={() => void openNativeLibrary(tag)}
+                >
+                  Choose from library
+                </button>
+              ) : null}
             </div>
           ))}
 
@@ -329,7 +373,7 @@ export function JobPhotosSection({
               type="button"
               className="btn photo-capture-btn"
               disabled={uploading}
-              onClick={() => openFilePicker('progress')}
+              onClick={() => (isNativePlatform() ? void openNativeLibrary('progress') : openFilePicker('progress'))}
             >
               {uploading ? FEEDBACK.loading : 'Add progress photo'}
             </button>

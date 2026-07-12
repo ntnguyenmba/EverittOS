@@ -12,7 +12,8 @@ function isEditableField(target: EventTarget | null): target is HTMLInputElement
 
 function isGuardedField(target: EventTarget | null): boolean {
   if (!isEditableField(target)) return false;
-  if (target.disabled || target.readOnly) return false;
+  if (target.disabled) return false;
+  if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) && target.readOnly) return false;
   if (target.closest('.everitt-cmd-overlay')) return false;
   return Boolean(target.closest('form, .form, [data-unsaved-guard="true"]'));
 }

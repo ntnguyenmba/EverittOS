@@ -11,6 +11,7 @@ import {
 } from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { resolveBillingVisibility, nativeBillingNotice } from '@/lib/platform/billing';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { useTranslation } from '@/components/locale-provider';
 
@@ -168,6 +169,7 @@ export function BillingPlansGrid({
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
   const isFreeUser = normalizedCurrent === 'free';
+  const billingVisibility = resolveBillingVisibility();
   const [checkoutAvailableByPlan, setCheckoutAvailableByPlan] = useState<Partial<Record<PaidPlanKey, boolean>>>({});
 
   useEffect(() => {
@@ -245,7 +247,9 @@ export function BillingPlansGrid({
                   {tier.featured && !isCurrent ? <span style={badgeStyle}>Popular</span> : null}
                 </div>
                 <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.25 }}>{tier.name}</h3>
-                <p className="pricing-plan-price" style={priceStyle}>{tier.priceLabel}</p>
+                {billingVisibility.showUpgradePrices ? (
+                  <p className="pricing-plan-price" style={priceStyle}>{tier.priceLabel}</p>
+                ) : null}
                 <p className="billing-plan-headline" style={headlineStyle}>{tier.headline}</p>
                 <ul className="billing-plan-features" style={featuresStyle}>
                   {tier.features.slice(0, 5).map((feature) => (
@@ -259,7 +263,7 @@ export function BillingPlansGrid({
                   <p className="billing-plan-current-label" style={currentStyle}>{t('billing.currentPlanBadge')}</p>
                 ) : null}
 
-                {ui.kind === 'checkout' ? (
+                {ui.kind === 'checkout' && billingVisibility.allowCheckout ? (
                   <PlanCheckoutButton
                     plan={ui.plan}
                     label={ui.label}
@@ -269,13 +273,19 @@ export function BillingPlansGrid({
                   />
                 ) : null}
 
+                {ui.kind === 'checkout' && !billingVisibility.allowCheckout ? (
+                  <p className="billing-plan-current-label" style={currentStyle}>
+                    Manage subscription at app.everittventures.com
+                  </p>
+                ) : null}
+
                 {ui.kind === 'unavailable' ? (
                   <p className="billing-plan-current-label" style={currentStyle}>
                     {ui.label}
                   </p>
                 ) : null}
 
-                {ui.kind === 'portal' && onOpenPortal ? (
+                {ui.kind === 'portal' && onOpenPortal && billingVisibility.allowPortal ? (
                   <button
                     type="button"
                     className="btn btn-primary btn-block"
@@ -296,6 +306,12 @@ export function BillingPlansGrid({
           );
         })}
       </div>
+
+      {billingVisibility.showWebBillingNotice ? (
+        <p className="billing-native-notice" style={noteStyle}>
+          {nativeBillingNotice()}
+        </p>
+      ) : null}
 
       {!portalAvailable && hasActiveSubscription && !isFreeUser ? (
         <p className="billing-support-fallback">

@@ -109,7 +109,7 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       const organizationId = org?.organizationId || null;
       const workerQuery = supabase.from('workers').select('id').eq('auth_user_id', user.id);
       const { data: workerRows } = organizationId ? await workerQuery.eq('organization_id', organizationId) : await workerQuery;
-      const workerIds = (workerRows || []).map((row) => String(row.id));
+      const workerIds = (workerRows || []).map((row: { id: string }) => String(row.id));
       const assigneeIds = Array.from(new Set([user.id, ...workerIds]));
 
       const assignmentJobIds = new Set<string>();

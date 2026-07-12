@@ -1,0 +1,81 @@
+/* Safe-area support for installed PWA and Capacitor shells only. */
+
+@supports (padding: env(safe-area-inset-top)) {
+  html[data-native-app='true'] body,
+  html[data-standalone='true'] body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  html[data-native-app='true'] .app-shell-header,
+  html[data-standalone='true'] .app-shell-header,
+  html[data-native-app='true'] .mobile-nav-top,
+  html[data-standalone='true'] .mobile-nav-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  html[data-native-app='true'] .mobile-bottom-nav,
+  html[data-standalone='true'] .mobile-bottom-nav,
+  html[data-native-app='true'] .feedback-toast-stack,
+  html[data-standalone='true'] .feedback-toast-stack {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  html[data-native-app='true'] .modal-overlay,
+  html[data-standalone='true'] .modal-overlay,
+  html[data-native-app='true'] .dialog-panel,
+  html[data-standalone='true'] .dialog-panel {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+.network-offline-banner,
+.pwa-update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Prevent iOS input zoom without changing desktop typography */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
+/* Responsive table safety without redesigning desktop tables */
+@media (max-width: 1024px) {
+  .table-responsive,
+  .data-table-wrap,
+  .billing-table-wrap,
+  .settings-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .table-responsive table,
+  .data-table-wrap table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-shell-main,
+  .dashboard-shell-main,
+  .settings-shell-main {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .modal-panel,
+  .dialog-panel {
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+}
