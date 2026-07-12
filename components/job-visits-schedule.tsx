@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { FriendlyDateInput } from '@/components/friendly-date-input';
 
 export type JobVisitRow = {
   id?: string;
@@ -162,7 +163,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       <div className="job-visits-head">
         <div className="job-visits-title">
           <h3>Visits</h3>
-          <p className="muted">Schedule each workday separately for accurate crew hours and calendar events.</p>
+          <p className="muted">Choose month, day, and year directly. No long calendar scrolling.</p>
         </div>
         {props.canManage ? (
           <button className="btn job-visits-add" type="button" onClick={addVisit}>+ Add visit</button>
@@ -174,7 +175,12 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
           <div className="job-visit-row" key={visit.id || index}>
             <div className="job-visit-field">
               <label>Date</label>
-              <input className="input" type="date" value={visit.visit_date} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'visit_date', e.target.value)} />
+              <FriendlyDateInput
+                value={visit.visit_date}
+                disabled={!props.canManage}
+                ariaLabel={`Visit ${index + 1} date`}
+                onChange={(value) => updateVisit(index, 'visit_date', value)}
+              />
             </div>
             <div className="job-visit-field">
               <label>Start</label>
