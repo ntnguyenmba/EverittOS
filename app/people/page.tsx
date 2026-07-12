@@ -3,6 +3,13 @@
 import { AppShell } from '@/components/app-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { useTranslation } from '@/components/locale-provider';
+import {
+  contractorClassificationOptions,
+  formatContractorCompensationLabel,
+  normalizeContractorClassification,
+  parseHourlyRateInput,
+  type ContractorClassification
+} from '@/lib/contractor-compensation';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -17,6 +24,7 @@ type Contractor = {
   phone: string | null;
   company_name: string | null;
   hourly_rate: number | null;
+  contractor_classification: ContractorClassification | null;
   active: boolean | null;
 };
 
@@ -25,29 +33,40 @@ const EMPTY_CONTRACTOR = {
   email: '',
   phone: '',
   companyName: '',
-  hourlyRate: ''
+  hourlyRate: '',
+  contractorClassification: 'contractor' as ContractorClassification
 };
 
-function ContractorPanel({ userId, organizationId, canManage }: { userId: string; organizationId: string | null; canManage: boolean }) {
+function ContractorPanel({ canManage }: { canManage: boolean }) {
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [form, setForm] = useState(EMPTY_CONTRACTOR);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [rateError, setRateError] = useState('');
 
   const loadContractors = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from('workers')
-      .select('id, name, email, phone, company_name, hourly_rate, active')
-      .eq('worker_type', 'contractor')
-      .order('name');
-    if (organizationId) query = query.eq('organization_id', organizationId);
-    else query = query.eq('user_id', userId);
-    const { data } = await query;
-    setContractors((data || []) as Contractor[]);
+    const res = await fetch('/api/contractors', { cache: 'no-store' });
+    const json = (await res.json().catch(() => ({}))) as {
+      contractors?: Contractor[];
+      error?: string;
+    };
     setLoading(false);
-  }, [organizationId, userId]);
+
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to load contractors.');
+      setContractors([]);
+      return;
+    }
+
+    setContractors(
+      (json.contractors || []).map((row) => ({
+        ...row,
+        contractor_classification: normalizeContractorClassification(row.contractor_classification)
+      }))
+    );
+  }, []);
 
   useEffect(() => {
     void loadContractors();
@@ -59,24 +78,37 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
       setMessage('Add a contractor name first.');
       return;
     }
-    setSaving(true);
-    setMessage('');
-    const { error } = await supabase.from('workers').insert({
-      user_id: userId,
-      organization_id: organizationId,
-      worker_type: 'contractor',
-      name: form.name.trim(),
-      email: form.email.trim() || null,
-      phone: form.phone.trim() || null,
-      company_name: form.companyName.trim() || null,
-      hourly_rate: form.hourlyRate ? Number(form.hourlyRate) : null,
-      active: true
-    });
-    setSaving(false);
-    if (error) {
-      setMessage(error.message || 'Unable to add contractor.');
+
+    const parsedRate = parseHourlyRateInput(form.hourlyRate);
+    if (!parsedRate.ok) {
+      setRateError(parsedRate.error);
       return;
     }
+
+    setSaving(true);
+    setMessage('');
+    setRateError('');
+
+    const res = await fetch('/api/contractors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name.trim(),
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        companyName: form.companyName.trim() || null,
+        hourlyRate: form.hourlyRate,
+        contractorClassification: form.contractorClassification
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+
+    setSaving(false);
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to add contractor.');
+      return;
+    }
+
     setForm(EMPTY_CONTRACTOR);
     setMessage('Contractor added.');
     void loadContractors();
@@ -84,9 +116,14 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
 
   async function toggleContractor(contractor: Contractor) {
     if (!canManage) return;
-    const { error } = await supabase.from('workers').update({ active: !contractor.active }).eq('id', contractor.id);
-    if (error) {
-      setMessage(error.message || 'Unable to update contractor.');
+    const res = await fetch(`/api/contractors/${contractor.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: contractor.active === false })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setMessage(json.error || 'Unable to update contractor.');
       return;
     }
     void loadContractors();
@@ -121,10 +158,45 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
               <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Optional" />
             </label>
             <label>
-              Hourly rate
-              <input className="input" type="number" min="0" step="0.01" value={form.hourlyRate} onChange={(e) => setForm({ ...form, hourlyRate: e.target.value })} placeholder="Optional" />
+              Contractor type
+              <select
+                className="input"
+                value={form.contractorClassification}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    contractorClassification: normalizeContractorClassification(e.target.value)
+                  })
+                }
+              >
+                {contractorClassificationOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Hourly compensation
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.hourlyRate}
+                onChange={(e) => {
+                  setForm({ ...form, hourlyRate: e.target.value });
+                  if (rateError) setRateError('');
+                }}
+                placeholder="Optional"
+              />
             </label>
           </div>
+          {rateError ? (
+            <p className="auth-message auth-message-error" role="alert">
+              {rateError}
+            </p>
+          ) : null}
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addContractor()}>
             {saving ? 'Adding...' : 'Add contractor'}
           </button>
@@ -143,7 +215,12 @@ function ContractorPanel({ userId, organizationId, canManage }: { userId: string
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {[contractor.company_name, contractor.phone, contractor.email].filter(Boolean).join(' · ') || 'No contact details'}
                 </p>
-                {contractor.hourly_rate != null ? <p className="muted" style={{ margin: 0 }}>${Number(contractor.hourly_rate).toFixed(2)}/hr</p> : null}
+                <p className="muted" style={{ margin: 0 }}>
+                  {formatContractorCompensationLabel({
+                    classification: contractor.contractor_classification,
+                    hourlyRate: contractor.hourly_rate
+                  })}
+                </p>
               </div>
               <span className={`status-pill status-${contractor.active === false ? 'cancelled' : 'completed'}`}>{contractor.active === false ? 'Inactive' : 'Active'}</span>
               {canManage ? (
@@ -165,8 +242,6 @@ export default function PeoplePage() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState('');
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -177,12 +252,10 @@ export default function PeoplePage() {
         router.push('/login?next=/people');
         return;
       }
-      setUserId(user.id);
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       const org = await fetchOrganizationContext(user.id);
       setPlan(normalizePlan(profile?.plan));
       setRole(normalizeRole(org?.role || profile?.role));
-      setOrganizationId(org?.organizationId || null);
       setLoading(false);
     }
     void load();
@@ -201,7 +274,7 @@ export default function PeoplePage() {
       <h1>{t('nav.team')}</h1>
       <p className="muted">Invite people, manage roles, and control access. Add contractors below when they do not need an EverittOS login.</p>
       <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />
-      {userId ? <ContractorPanel userId={userId} organizationId={organizationId} canManage={isManagerRole(role)} /> : null}
+      <ContractorPanel canManage={isManagerRole(role)} />
     </AppShell>
   );
 }
