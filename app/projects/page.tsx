@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -26,7 +26,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -52,11 +52,11 @@ export default function ProjectsPage() {
 
     setTasks(data || []);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, [router]);
+  }, [load]);
 
   async function createTask() {
     if (!title.trim()) return;
