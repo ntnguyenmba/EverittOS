@@ -14,12 +14,13 @@ export type BillingVisibility = {
   showUpgradeActions: boolean;
   /** Neutral plan summary is permitted on native. */
   showPlanSummary: boolean;
-  /** Explain that billing is managed on the web. */
+  /** Explain that billing changes are unavailable in the native app. */
   showWebBillingNotice: boolean;
 };
 
 /**
- * Native store policy: hide Stripe purchase initiation until legal approves a release model.
+ * Native store policy: hide Stripe purchase initiation and external purchase
+ * direction until an approved mobile billing model is in place.
  * Existing paid subscribers can sign in and use authorized features.
  */
 export function resolveBillingVisibility(): BillingVisibility {
@@ -51,5 +52,5 @@ export function resolveBillingVisibility(): BillingVisibility {
 }
 
 export function nativeBillingNotice(): string {
-  return 'Subscription changes are managed at app.everittventures.com. Sign in with your existing account to use your current plan in the mobile app.';
+  return 'Subscription changes are not available in this app. Sign in with your existing account to use your current plan.';
 }
