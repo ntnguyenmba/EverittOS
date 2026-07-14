@@ -275,7 +275,7 @@ export function BillingPlansGrid({
 
                 {ui.kind === 'checkout' && !billingVisibility.allowCheckout ? (
                   <p className="billing-plan-current-label" style={currentStyle}>
-                    Manage subscription at app.everittventures.com
+                    {nativeBillingNotice()}
                   </p>
                 ) : null}
 

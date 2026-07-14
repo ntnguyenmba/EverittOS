@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { minimumAiUpgradePlan, plansWithEverittAi } from '@/lib/billing-config';
 import { resolveBillingVisibility } from '@/lib/platform/billing';
 
 type AiUpgradeModalProps = {
@@ -14,10 +13,31 @@ export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
   if (!open) return null;
 
   const billingVisibility = resolveBillingVisibility();
-  const upgradePlan = plan || minimumAiUpgradePlan();
-  const aiPlans = plansWithEverittAi()
-    .map((tier) => tier.replace(/^./, (c) => c.toUpperCase()))
-    .join(', ');
+
+  // Native shells must never show plan upsells or purchase links.
+  if (billingVisibility.surface === 'native') {
+    return (
+      <div className="ai-modal-overlay" role="presentation" onClick={onClose}>
+        <div
+          className="ai-modal-card"
+          role="dialog"
+          aria-labelledby="ai-unavailable-title"
+          aria-modal="true"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="ai-unavailable-title">Ask Everitt</h2>
+          <p className="muted">This feature is unavailable for this account.</p>
+          <div className="ai-modal-actions">
+            <button type="button" className="btn btn-primary" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const upgradePlan = plan || 'business';
 
   return (
     <div className="ai-modal-overlay" role="presentation" onClick={onClose}>
@@ -30,14 +50,7 @@ export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
       >
         <h2 id="ai-upgrade-title">Everitt AI</h2>
         <p className="muted">
-          {billingVisibility.surface === 'native'
-            ? 'Ask Everitt search is available. Everitt AI writing, summarizing, and analysis are not available on your current plan in this app.'
-            : (
-                <>
-                  Ask Everitt search is included on every plan. Everitt AI writing, summarizing, and analysis is available on{' '}
-                  {aiPlans} plans.
-                </>
-              )}
+          Ask Everitt search is included on every plan. Everitt AI writing, summarizing, and analysis is available on Business and Enterprise plans.
         </p>
         <div className="ai-modal-actions">
           {billingVisibility.showUpgradeActions ? (

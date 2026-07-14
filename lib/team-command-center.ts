@@ -159,7 +159,13 @@ export function activityEntityHref(entityType: string | null, entityId: string |
 }
 
 export function normalizeTeamCommandCenterData(
-  payload: Partial<TeamCommandCenterData> | null | undefined
+  payload:
+    | (Partial<Omit<TeamCommandCenterData, 'totals' | 'recentActivity'>> & {
+        recentActivity?: TeamCommandActivity[] | null;
+        totals?: Partial<TeamCommandTotals> | null;
+      })
+    | null
+    | undefined
 ): TeamCommandCenterData {
   const totals = payload?.totals || EMPTY_TEAM_COMMAND_TOTALS;
   return {

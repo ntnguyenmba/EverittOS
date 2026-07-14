@@ -72,7 +72,7 @@ export function PlanCheckoutButton({
 
   async function startCheckout() {
     if (!billingVisibility.allowCheckout) {
-      setError('Subscription changes are managed at app.everittventures.com.');
+      setError('Subscription changes are not available in this app.');
       return;
     }
 

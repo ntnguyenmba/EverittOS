@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AiUpgradeModal } from '@/components/ai-upgrade-modal';
 import type { ProposedAiAction } from '@/lib/ai-actions';
 import type { AskEverittMetric, AskEverittSearchGroup, AskEverittSearchRecord } from '@/lib/ask-everitt/types';
+import { resolveAskEverittUiAccess, shouldOpenAskEverittUpgrade, type AskEverittUiAccess } from '@/lib/ask-everitt-ui-access';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 import { useTranslation } from '@/components/locale-provider';
 
@@ -269,6 +270,19 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
   const [lastMode, setLastMode] = useState<'search' | 'ai' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [kbd, setKbd] = useState('Ctrl+K');
+  const askAccess = useMemo(() => resolveAskEverittUiAccess(status), [status]);
+
+  function openUpgradeIfAllowed() {
+    if (shouldOpenAskEverittUpgrade(status)) {
+      setUpgradeOpen(true);
+      return true;
+    }
+    if (askAccess.isNative && !askAccess.canUseAi) {
+      setNotice(askAccess.unavailableMessage);
+      setUpgradeOpen(false);
+    }
+    return false;
+  }
 
   useEffect(() => {
     setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
@@ -358,7 +372,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     if (!res.ok) {
       if (json.code === 'plan_required' || json.locked) {
         if (json.searchAvailable) setNotice(json.error || copy.aiPlanNotice);
-        else setUpgradeOpen(true);
+        else if (!openUpgradeIfAllowed()) setNotice(askAccess.unavailableMessage);
         return;
       }
       if (json.searchAvailable && (json.code === 'staff_daily_limit' || json.code === 'staff_monthly_limit')) {
@@ -399,8 +413,9 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     const json = await res.json();
     setActionBusy(false);
     if (!res.ok) {
-      if (json.locked) setUpgradeOpen(true);
-      else setNotice(json.error || copy.actionError);
+      if (json.locked) {
+        if (!openUpgradeIfAllowed()) setNotice(askAccess.unavailableMessage);
+      } else setNotice(json.error || copy.actionError);
       return;
     }
     setNotice(json.message || copy.actionComplete);
@@ -436,6 +451,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
       navigate={navigate}
       setPendingAction={setPendingAction}
       setUpgradeOpen={setUpgradeOpen}
+      askAccess={askAccess}
       onClose={() => setOpen(false)}
       copy={copy}
     />
@@ -452,7 +468,9 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
         </div>
         <p className="muted">{copy.embeddedDescription}</p>
         <button type="button" className="btn btn-primary" onClick={openCommand}>{copy.embeddedButton}</button>
-        <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+        {askAccess.shouldShowAiUpsell ? (
+          <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+        ) : null}
         {overlay}
       </section>
     );
@@ -465,7 +483,9 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
         <span className="everitt-cmd-kbd">{kbd}</span>
       </button>
       {overlay}
-      <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      {askAccess.shouldShowAiUpsell ? (
+        <AiUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      ) : null}
     </>
   );
 }
@@ -492,6 +512,7 @@ type OverlayProps = {
   navigate: (href: string) => void;
   setPendingAction: (a: ProposedAiAction | null) => void;
   setUpgradeOpen: (v: boolean) => void;
+  askAccess: AskEverittUiAccess;
   onClose: () => void;
   copy: AskCopy;
 };
@@ -518,9 +539,14 @@ function CommandOverlay({
   navigate,
   setPendingAction,
   setUpgradeOpen,
+  askAccess,
   onClose,
   copy
 }: OverlayProps) {
+  const visibleSuggestions = askAccess.shouldShowAiSuggestions
+    ? copy.suggestions
+    : copy.suggestions.filter((s) => s.mode !== 'ai');
+
   return (
     <div className="everitt-cmd-overlay" role="presentation" onClick={onClose}>
       <div className="everitt-cmd-palette" role="dialog" aria-label={copy.title} onClick={(e) => e.stopPropagation()}>
@@ -543,27 +569,29 @@ function CommandOverlay({
         {!query && !lastMode ? (
           <div className="everitt-cmd-suggestions">
             <p className="everitt-cmd-section-label">{copy.tryAsking}</p>
-            {copy.suggestions.map((s) => (
+            {visibleSuggestions.map((s) => (
               <button
                 key={`${s.mode}-${s.label}`}
                 type="button"
                 className={s.mode === 'ai' ? 'everitt-cmd-chip everitt-cmd-chip-premium' : 'everitt-cmd-chip'}
                 onClick={() => {
-                  if (s.mode === 'ai' && status?.aiLocked && status.planLocked) {
-                    setUpgradeOpen(true);
+                  if (s.mode === 'ai' && !askAccess.canUseAi) {
+                    if (askAccess.shouldShowAiUpsell) setUpgradeOpen(true);
                     return;
                   }
                   void submitAsk(s.prompt, s.mode);
                 }}
               >
                 {s.label}
-                {s.mode === 'ai' ? <span className="everitt-cmd-premium-badge">{copy.aiBadge}</span> : null}
+                {s.mode === 'ai' && askAccess.shouldShowAiControls ? (
+                  <span className="everitt-cmd-premium-badge">{copy.aiBadge}</span>
+                ) : null}
               </button>
             ))}
           </div>
         ) : null}
 
-        {status?.staffAi ? (
+        {status?.staffAi && askAccess.shouldShowAiControls ? (
           <p className="muted everitt-cmd-usage">
             {fill(copy.staffUsage, {
               dailyUsed: status.staffAi.dailyUsed,
@@ -572,17 +600,24 @@ function CommandOverlay({
               monthlyCap: status.staffAi.monthlyCap
             })}
           </p>
-        ) : status?.usage && status.aiModeAvailable ? (
+        ) : status?.usage && askAccess.shouldShowAiControls ? (
           <p className="muted everitt-cmd-usage">
             {status.usage.unlimited ? copy.unlimited : fill(copy.monthlyUsage, { used: status.usage.monthlyUsed, cap: status.usage.monthlyCap })}
           </p>
         ) : null}
 
-        {status?.aiLocked && status.planLocked ? (
+        {status?.aiLocked && status.planLocked && askAccess.shouldShowAiUpsell ? (
           <p className="everitt-cmd-hint muted">
             {copy.aiLocked}{' '}
             <button type="button" className="link-button" onClick={() => setUpgradeOpen(true)}>{copy.viewPlans}</button>
           </p>
+        ) : null}
+
+        {askAccess.isNative && !askAccess.canUseAi && !askAccess.canUseWorkspaceSearch ? (
+          <div className="everitt-cmd-hint">
+            <p>{askAccess.unavailableMessage}</p>
+            <button type="button" className="btn" onClick={onClose}>{copy.cancel || 'Close'}</button>
+          </div>
         ) : null}
 
         {busy ? <p className="everitt-cmd-hint">{copy.searching}</p> : null}
@@ -615,14 +650,14 @@ function CommandOverlay({
           </div>
         ) : null}
 
-        {aiReply ? (
+        {aiReply && askAccess.shouldShowAiControls ? (
           <div className="everitt-cmd-ai-block">
             <p className="everitt-cmd-section-label">Everitt AI</p>
             <div className="everitt-cmd-reply">{aiReply}</div>
           </div>
         ) : null}
 
-        {pendingAction ? (
+        {pendingAction && askAccess.shouldShowAiControls ? (
           <div className="everitt-cmd-action">
             <p><strong>{copy.confirmAction}</strong> {pendingAction.label}</p>
             <div className="settings-actions">
@@ -635,7 +670,11 @@ function CommandOverlay({
         ) : null}
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
-        <p className="muted everitt-cmd-footer">{copy.footerPrefix} <Link href="/settings/billing">{copy.usage}</Link></p>
+        {askAccess.shouldShowAiUpsell ? (
+          <p className="muted everitt-cmd-footer">{copy.footerPrefix} <Link href="/settings/billing">{copy.usage}</Link></p>
+        ) : (
+          <p className="muted everitt-cmd-footer">{copy.footerPrefix}</p>
+        )}
       </div>
     </div>
   );

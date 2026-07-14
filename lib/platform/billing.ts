@@ -1,4 +1,4 @@
-import { getAppPlatform, isNativePlatform } from '@/lib/platform/detect';
+import { isNativePlatform } from '@/lib/platform/detect';
 
 export type BillingSurface = 'web' | 'native';
 
@@ -19,13 +19,12 @@ export type BillingVisibility = {
 };
 
 /**
- * Native store policy: hide Stripe purchase initiation and external purchase
- * direction until an approved mobile billing model is in place.
- * Existing paid subscribers can sign in and use authorized features.
+ * Native store policy: EverittOS native apps are existing-account access apps.
+ * Subscription purchase, pricing, Stripe checkout/portal, and external purchase
+ * direction are web-only. Existing paid subscribers retain their features.
  */
 export function resolveBillingVisibility(): BillingVisibility {
   const native = isNativePlatform();
-  const platform = getAppPlatform();
 
   if (!native) {
     return {
@@ -46,8 +45,7 @@ export function resolveBillingVisibility(): BillingVisibility {
     showUpgradePrices: false,
     showUpgradeActions: false,
     showPlanSummary: true,
-    showWebBillingNotice: true,
-    ...(platform === 'ios' || platform === 'android' ? {} : {})
+    showWebBillingNotice: true
   };
 }
 

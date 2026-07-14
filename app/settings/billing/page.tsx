@@ -97,6 +97,10 @@ function BillingSettingsContent() {
   ]);
 
   useEffect(() => {
+    if (resolveBillingVisibility().surface === 'native') {
+      return;
+    }
+
     const checkout = searchParams.get('checkout');
     const sessionId = (searchParams.get('session_id') || '').trim();
 
@@ -297,6 +301,32 @@ function BillingSettingsContent() {
   const renewalLabel = renewalDate
     ? new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
     : 'Not scheduled';
+
+  if (billingVisibility.surface === 'native') {
+    return (
+      <SettingsShell plan={plan} role={role} title="Account access" description="Review the features included with your current account.">
+        <section className="settings-card" style={{ display: 'grid', gap: 16, padding: 24 }}>
+          <div>
+            <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current access</p>
+            <h3 style={{ margin: 0 }}>{planDisplayName(plan)}</h3>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">Account status</span>
+            <span className="settings-row-value" style={{ textTransform: 'capitalize' }}>
+              {planStatus.replaceAll('_', ' ')}
+            </span>
+          </div>
+          <div className="settings-row">
+            <span className="settings-row-label">Plan access</span>
+            <span className="settings-row-value">{subscriptionInfo.ok ? 'Active' : 'Action needed'}</span>
+          </div>
+          <p className="muted" style={{ margin: 0 }}>
+            {nativeBillingNotice()}
+          </p>
+        </section>
+      </SettingsShell>
+    );
+  }
 
   return (
     <SettingsShell plan={plan} role={role} title="Plans & billing" description="Manage your EverittOS plan and payment settings.">

@@ -103,6 +103,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     { label: 'Pending incoming', value: formatCurrency(pendingIncoming), href: '/invoices', help: 'Current unpaid and partially paid customer invoice balances.' },
     { label: 'Overdue amount', value: formatCurrency(overdueAmount), href: '/invoices', help: 'Current unpaid balances whose due date has passed.' },
     { label: 'Overdue invoices', value: String(activeMetrics.overdueInvoiceCount), href: '/invoices' },
+    { label: 'Outstanding invoices', value: String(activeMetrics.outstandingInvoiceCount ?? 0), href: '/invoices' },
     { label: 'Average days to payment', value: activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined ? 'Not enough data' : `${activeMetrics.averageDaysToPayment} days`, href: '/invoices', help: 'Average number of days from invoice date to recorded payment date for payments in the selected period.' },
     { label: `Contractor cost · ${rangeLabel}`, value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/contractor-pay?status=all', help: 'Contractor labor recorded during the selected period, whether paid or still owed.' },
     { label: 'Contractor pay owed', value: formatCurrency(unpaidContractorPay), href: '/contractor-pay?status=unpaid' },

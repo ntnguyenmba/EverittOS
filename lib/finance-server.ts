@@ -217,7 +217,9 @@ export async function fetchBusinessPerformance(
   const categoryExpenses = new Map<string, number>();
 
   for (const inv of invoices) {
-    const revenue = num(inv.amount_paid) > 0 ? num(inv.amount_paid) : num(inv.amount);
+    // Analytics best-customer / monthly charts use booked invoice amount, not cash collected.
+    // Unpaid invoices must not be treated as collected cash.
+    const revenue = num(inv.amount);
     const monthKey = (inv.invoice_date || inv.created_at || '').slice(0, 7);
     if (monthKey) {
       monthRevenue.set(monthKey, (monthRevenue.get(monthKey) || 0) + revenue);
@@ -269,7 +271,7 @@ export async function fetchBusinessPerformance(
 
   for (const job of jobs) {
     const inv = invoices.find((i) => i.job_id === job.id);
-    const revenue = inv ? (num(inv.amount_paid) > 0 ? num(inv.amount_paid) : num(inv.amount)) : 0;
+    const revenue = inv ? num(inv.amount) : 0;
     const costs = (laborByJob.get(job.id) || 0) + (expenseByJob.get(job.id) || 0);
     const profit = revenue - costs;
     if (revenue > 0 || costs > 0) {

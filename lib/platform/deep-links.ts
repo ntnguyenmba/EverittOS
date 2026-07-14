@@ -22,8 +22,13 @@ export type ParsedDeepLink =
   | { ok: true; path: string; search: string }
   | { ok: false; reason: string };
 
+const DENIED_PREFIXES = ['/settings/billing', '/pricing', '/checkout'];
+
 function isAllowedPath(pathname: string): boolean {
   if (!pathname.startsWith('/')) return false;
+  if (DENIED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}?`))) {
+    return false;
+  }
   return ALLOWED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 

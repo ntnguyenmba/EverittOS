@@ -9,21 +9,41 @@ import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/inpu
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
 import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
-import { getCurrentWorkspaceForUser } from '@/lib/workspace-server';
-import { checkSupabaseConnectivity } from '@/lib/supabase-connectivity';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
+import { normalizeRole } from '@/lib/roles';
 
 export const runtime = 'nodejs';
 
 const ROUTE = 'login';
+const SIDE_EFFECT_TIMEOUT_MS = 400;
 
 function secureLoginPayload(body: Record<string, unknown>): Record<string, unknown> {
   return sanitizeAuthErrorPayload(body);
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function roleNeedsOnboarding(role: string | null | undefined): boolean {
+  const normalized = normalizeRole(role || 'owner');
+  return normalized === 'owner' || normalized === 'admin';
+}
+
 export async function POST(request: Request) {
   const configDiagnostics = supabaseConfigDiagnostics();
+  const startedAt = Date.now();
 
   try {
     logAuthStep(ROUTE, 'config_check', {
@@ -44,25 +64,6 @@ export async function POST(request: Request) {
           code: 'config_error',
           diagnostics: workspaceDiagnostics({ authStep: 'config_check', sessionVerified: false }),
           config: configDiagnostics
-        }),
-        { status: 503 }
-      );
-    }
-
-    logAuthStep(ROUTE, 'connectivity', { host: configDiagnostics.urlHost || 'unknown' });
-    const connectivity = await checkSupabaseConnectivity();
-    if (!connectivity.ok) {
-      const { json } = await createRouteHandlerSupabase();
-      return json(
-        secureLoginPayload({
-          error: 'We could not reach the authentication service. Try again in a moment or contact support.',
-          title: 'Supabase unreachable',
-          details: connectivity.error,
-          code: 'supabase_unreachable',
-          supabaseMessage: connectivity.error,
-          diagnostics: workspaceDiagnostics({ authStep: 'connectivity', sessionVerified: false }),
-          config: configDiagnostics,
-          connectivity
         }),
         { status: 503 }
       );
@@ -102,26 +103,38 @@ export async function POST(request: Request) {
 
     if (error) {
       const isFetchFailure = error.message.toLowerCase().includes('fetch failed');
-      const diagnosis = isFetchFailure ? null : await diagnoseLoginFailure(email);
+      const lower = error.message.toLowerCase();
+      const needsDeepDiagnosis =
+        !isFetchFailure &&
+        (lower.includes('email') ||
+          lower.includes('confirm') ||
+          lower.includes('ban') ||
+          lower.includes('disabled') ||
+          lower.includes('not allowed'));
+
+      const diagnosis = needsDeepDiagnosis ? await diagnoseLoginFailure(email) : null;
       const meta = requestClientMeta(request);
-      await logSecurityEvent({
-        eventType: isFetchFailure ? 'suspicious_activity' : 'login_failed',
-        severity: 'warn',
-        message: `Login failed for ${email.split('@')[1] || 'unknown domain'}`,
-        ipAddress: meta.ipAddress,
-        userAgent: meta.userAgent,
-        metadata: {
-          code: error.message,
-          diagnosisReason: diagnosis?.reason || 'unknown'
-        }
-      });
+
+      // Failure logging must not delay the auth error response beyond a short budget.
+      await withTimeout(
+        logSecurityEvent({
+          eventType: isFetchFailure ? 'suspicious_activity' : 'login_failed',
+          severity: 'warn',
+          message: `Login failed for ${email.split('@')[1] || 'unknown domain'}`,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+          metadata: {
+            code: error.message,
+            diagnosisReason: diagnosis?.reason || 'unknown'
+          }
+        }),
+        SIDE_EFFECT_TIMEOUT_MS
+      );
+
       logAuthEvent('login_failed', {
         emailDomain: email.split('@')[1] || 'unknown',
         reason: error.message,
         diagnosisReason: diagnosis?.reason || 'unknown',
-        userExists: diagnosis?.userExists ? 1 : 0,
-        emailConfirmed: diagnosis?.emailConfirmed === false ? 0 : diagnosis?.emailConfirmed ? 1 : -1,
-        profileExists: diagnosis?.profileExists ? 1 : diagnosis?.profileExists === false ? 0 : -1,
         host: configDiagnostics.urlHost || 'unknown',
         fetchFailure: isFetchFailure ? 1 : 0
       });
@@ -138,66 +151,38 @@ export async function POST(request: Request) {
         ? error.message ||
           'We could not reach the authentication service. Try again in a moment or contact support.'
         : mapped.message;
+
       return json(
         secureLoginPayload({
           error: displayError,
           title: isFetchFailure ? 'Supabase connection failed' : mapped.title,
-          details: isFetchFailure
-            ? `${error.message}. Host: ${configDiagnostics.urlHost || 'unknown'}. Connectivity: ${connectivity.latencyMs}ms.`
-            : mapped.details,
+          details: isFetchFailure ? error.message : mapped.details,
           code: mapped.code || error.message,
           supabaseMessage: error.message,
           diagnosisReason: diagnosis?.reason,
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
-          config: configDiagnostics,
-          connectivity
+          config: configDiagnostics
         }),
         { status: isFetchFailure ? 503 : 401 }
       );
     }
 
     const user = data.user;
-    if (!user) {
+    const session = data.session;
+    if (!user || !session) {
       return json(
         secureLoginPayload({
           error: 'Sign in did not return a user session.',
           title: 'Session missing',
           code: 'no_user',
           diagnostics: workspaceDiagnostics({ authStep: 'sign_in', sessionVerified: false }),
-          config: configDiagnostics,
-          connectivity
+          config: configDiagnostics
         }),
         { status: 500 }
       );
     }
 
-    logAuthStep(ROUTE, 'session_verify', { userId: user.id });
-    const {
-      data: { user: verifiedUser },
-      error: verifyError
-    } = await supabase.auth.getUser();
-
-    if (verifyError || !verifiedUser) {
-      logAuthEvent('session_verify_failed', { userId: user.id, reason: verifyError?.message || 'no user' });
-      return json(
-        secureLoginPayload({
-          error: 'Supabase accepted your credentials but the session cookie was not saved. Try again or contact support.',
-          title: 'Session not persisted',
-          details: verifyError?.message || 'getUser() returned no session after signInWithPassword.',
-          code: 'session_not_persisted',
-          supabaseMessage: verifyError?.message,
-          diagnostics: workspaceDiagnostics({
-            authStep: 'session_verify',
-            userId: user.id,
-            sessionVerified: false
-          }),
-          config: configDiagnostics,
-          connectivity
-        }),
-        { status: 500 }
-      );
-    }
-
+    // Session cookie writing is handled by jsonWithAuthSession; skip redundant getUser().
     logAuthStep(ROUTE, 'workspace_bootstrap', { userId: user.id });
     let bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
 
@@ -242,8 +227,7 @@ export async function POST(request: Request) {
             profileLookupRan: true,
             membershipLookupRan: bootstrap.code !== 'profile_read_failed'
           }),
-          config: configDiagnostics,
-          connectivity
+          config: configDiagnostics
         }),
         {
           status:
@@ -253,12 +237,6 @@ export async function POST(request: Request) {
     }
 
     const profile = bootstrap.profile;
-
-    await getCurrentWorkspaceForUser(supabase, user.id, {
-      email,
-      userMetadata: user.user_metadata || undefined,
-      repair: true
-    });
 
     if (isAccountDeleted(profile.deleted_at)) {
       await supabase.auth.signOut();
@@ -279,8 +257,7 @@ export async function POST(request: Request) {
             profileLookupRan: true,
             membershipLookupRan: true
           }),
-          config: configDiagnostics,
-          connectivity
+          config: configDiagnostics
         }),
         { status: 403 }
       );
@@ -305,8 +282,7 @@ export async function POST(request: Request) {
             profileLookupRan: true,
             membershipLookupRan: true
           }),
-          config: configDiagnostics,
-          connectivity
+          config: configDiagnostics
         }),
         { status: 403 }
       );
@@ -314,7 +290,7 @@ export async function POST(request: Request) {
 
     let onboardingCompleted = true;
     let onboardingSkipped = false;
-    if (profile.organization_id) {
+    if (profile.organization_id && roleNeedsOnboarding(profile.role)) {
       const { data: settings } = await supabase
         .from('organization_settings')
         .select('onboarding_completed, onboarding_skipped')
@@ -330,22 +306,32 @@ export async function POST(request: Request) {
       userId: user.id,
       role: profile.role,
       bootstrapped: bootstrap.created ? 1 : 0,
-      host: configDiagnostics.urlHost || 'unknown'
+      host: configDiagnostics.urlHost || 'unknown',
+      ...(process.env.NODE_ENV === 'development' ? { durationMs: Date.now() - startedAt } : {})
     });
 
     const meta = requestClientMeta(request);
-    await logSecurityEvent({
-      organizationId: profile.organization_id,
-      userId: user.id,
-      eventType: 'login_success',
-      message: 'User signed in',
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent
-    });
-    await trackProductEventServer(supabase, 'login', {
-      organizationId: profile.organization_id,
-      userId: user.id
-    });
+    // Side-effects must not block a successful login response.
+    await Promise.allSettled([
+      withTimeout(
+        logSecurityEvent({
+          organizationId: profile.organization_id,
+          userId: user.id,
+          eventType: 'login_success',
+          message: 'User signed in',
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent
+        }),
+        SIDE_EFFECT_TIMEOUT_MS
+      ),
+      withTimeout(
+        trackProductEventServer(supabase, 'login', {
+          organizationId: profile.organization_id,
+          userId: user.id
+        }),
+        SIDE_EFFECT_TIMEOUT_MS
+      )
+    ]);
 
     return jsonWithAuthSession(
       secureLoginPayload({
@@ -357,15 +343,14 @@ export async function POST(request: Request) {
         workspaceCreated: bootstrap.created,
         diagnostics: workspaceDiagnostics({
           authStep: 'complete',
-          userId: verifiedUser.id,
+          userId: user.id,
           sessionVerified: true,
           profile,
           hasMembership: Boolean(profile.organization_id),
           profileLookupRan: true,
           membershipLookupRan: true
         }),
-        config: configDiagnostics,
-        connectivity
+        config: configDiagnostics
       })
     );
   } catch (err) {

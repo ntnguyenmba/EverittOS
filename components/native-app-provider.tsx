@@ -23,7 +23,10 @@ async function refreshSessionAfterResume(): Promise<void> {
     const { error: refreshError } = await supabase.auth.refreshSession();
     if (refreshError) {
       window.location.href = '/login?reason=session_expired';
+      return;
     }
+
+    window.dispatchEvent(new Event('everittos:workspace-plan-refresh'));
   } catch {
     // Network may still be unavailable immediately after resume.
   }

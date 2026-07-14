@@ -15,6 +15,7 @@ export type DashboardRevenueMetrics = {
   overdueAmount: number;
   averageDaysToPayment: number | null;
   outstandingInvoices: number;
+  outstandingInvoiceCount: number;
   overdueInvoiceCount: number;
   unpaidInvoiceTotal: number;
   jobsCompleted: number;
@@ -36,12 +37,18 @@ export type DashboardRevenueMetrics = {
   totalJobs: number;
 };
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+function formatLocalDateOnly(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function rangeBounds(range: DashboardDateRange): { start: string | null; end: string | null } {
-  const now = new Date();
+function todayIso(): string {
+  return formatLocalDateOnly(new Date());
+}
+
+export function rangeBounds(range: DashboardDateRange, now = new Date()): { start: string | null; end: string | null } {
   const year = now.getFullYear();
   if (range === 'all_time') return { start: null, end: null };
   if (range === 'last_year') return { start: `${year - 1}-01-01`, end: `${year}-01-01` };
@@ -50,11 +57,11 @@ function rangeBounds(range: DashboardDateRange): { start: string | null; end: st
     const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
     const start = new Date(year, quarterStartMonth, 1);
     const end = new Date(year, quarterStartMonth + 3, 1);
-    return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+    return { start: formatLocalDateOnly(start), end: formatLocalDateOnly(end) };
   }
   const start = new Date(year, now.getMonth(), 1);
   const end = new Date(year, now.getMonth() + 1, 1);
-  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+  return { start: formatLocalDateOnly(start), end: formatLocalDateOnly(end) };
 }
 
 function inRange(value: unknown, start: string | null, end: string | null): boolean {
@@ -100,6 +107,7 @@ export async function fetchDashboardRevenueMetrics(
     overdueAmount: 0,
     averageDaysToPayment: null,
     outstandingInvoices: 0,
+    outstandingInvoiceCount: 0,
     overdueInvoiceCount: 0,
     unpaidInvoiceTotal: 0,
     jobsCompleted: 0,
@@ -124,7 +132,7 @@ export async function fetchDashboardRevenueMetrics(
   if (!organizationId) return empty;
 
   const [invoicesRes, manualRevenueJobsRes, laborRes, completedJobsRes, customersRes, upcomingJobsRes, jobsRes, expensesRes, bookingsRes, messagesRes, reportsRes, totalJobsRes] = await Promise.all([
-    supabase.from('invoices').select('amount, amount_paid, invoice_date, created_at, due_date, payment_status, paid_at, last_payment_at, job_id').eq('organization_id', organizationId),
+    supabase.from('invoices').select('amount, amount_paid, invoice_date, created_at, due_date, payment_status, status, paid_at, last_payment_at, job_id').eq('organization_id', organizationId),
     supabase.from('jobs').select('id, revenue_amount, created_at, start_date, scheduled_start, completed_at, status').eq('organization_id', organizationId).not('revenue_amount', 'is', null),
     supabase.from('job_labor').select('total_cost, created_at, payment_status').eq('organization_id', organizationId),
     supabase.from('jobs').select('id, completed_at').eq('organization_id', organizationId).eq('status', 'completed'),
@@ -146,6 +154,7 @@ export async function fetchDashboardRevenueMetrics(
   let cashCollected = 0;
   let bookedInvoiceRevenue = 0;
   let pendingIncoming = 0;
+  let outstandingInvoiceCount = 0;
   let overdueAmount = 0;
   let overdueInvoiceCount = 0;
   const paymentDurations: number[] = [];
@@ -158,19 +167,32 @@ export async function fetchDashboardRevenueMetrics(
     const paidDate = paymentDate(inv);
 
     if (inv.job_id) invoicedJobIds.add(String(inv.job_id));
+
+    const statusHint = String(inv.payment_status || inv.status || '').toLowerCase();
+    const cancelled = statusHint === 'cancelled' || statusHint === 'canceled';
+    if (cancelled) {
+      continue;
+    }
+
     if (inRange(bookedDate, start, end)) bookedInvoiceRevenue += amount;
     if ((range === 'all_time' && paid > 0) || (paidDate && inRange(paidDate, start, end))) cashCollected += paid;
 
     if (balance > 0) {
       pendingIncoming += balance;
-      const status = calculateInvoicePaymentStatus({ amount, amount_paid: paid, due_date: inv.due_date as string | null, payment_status: inv.payment_status as string | null });
+      outstandingInvoiceCount += 1;
+      const status = calculateInvoicePaymentStatus({
+        amount,
+        amount_paid: paid,
+        due_date: inv.due_date as string | null,
+        payment_status: inv.payment_status as string | null
+      });
       if (status === 'overdue') {
         overdueInvoiceCount += 1;
         overdueAmount += balance;
       }
     }
 
-    if (paid > 0 && paidDate) {
+    if (paid > 0 && paidDate && paid >= amount) {
       const duration = daysBetween(bookedDate, paidDate);
       if (duration !== null && inRange(paidDate, start, end)) paymentDurations.push(duration);
     }
@@ -215,6 +237,7 @@ export async function fetchDashboardRevenueMetrics(
     overdueAmount: Number(overdueAmount.toFixed(2)),
     averageDaysToPayment: averageDaysToPayment === null ? null : Number(averageDaysToPayment.toFixed(1)),
     outstandingInvoices: Number(pendingIncoming.toFixed(2)),
+    outstandingInvoiceCount,
     overdueInvoiceCount,
     unpaidInvoiceTotal: Number(pendingIncoming.toFixed(2)),
     jobsCompleted: completedRows.length,

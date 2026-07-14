@@ -180,7 +180,7 @@ async function queryBestCustomers(supabase: SupabaseClient, orgId: string): Prom
   const totals = new Map<string, number>();
   for (const inv of invoices || []) {
     if (!inv.customer_id) continue;
-    const paidAmount = Number(inv.amount_paid || 0) > 0 ? Number(inv.amount_paid || 0) : isClosedStatus(inv.status) ? Number(inv.amount || 0) : 0;
+    const paidAmount = Number(inv.amount_paid || 0);
     if (paidAmount <= 0) continue;
     totals.set(inv.customer_id, (totals.get(inv.customer_id) || 0) + paidAmount);
   }

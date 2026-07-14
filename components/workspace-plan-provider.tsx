@@ -135,8 +135,14 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    const onNativeResume = () => {
+      void refresh({ silent: true });
+    };
+    window.addEventListener('everittos:workspace-plan-refresh', onNativeResume);
+
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('everittos:workspace-plan-refresh', onNativeResume);
     };
   }, [refresh]);
 
