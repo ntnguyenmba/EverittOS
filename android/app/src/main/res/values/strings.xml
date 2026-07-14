@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EverittOS</string>
+    <string name="title_activity_main">EverittOS</string>
+    <string name="package_name">com.everittventures.everittos</string>
+    <string name="custom_url_scheme">com.everittventures.everittos</string>
+</resources>

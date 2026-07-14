@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
+import { resolveBillingVisibility } from '@/lib/platform/billing';
 import type { EverittosPlan } from '@/lib/everittos-plans';
 
 type PlanCheckoutButtonProps = {
@@ -65,10 +66,16 @@ export function PlanCheckoutButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [acceptedRefundPolicy, setAcceptedRefundPolicy] = useState(false);
+  const billingVisibility = resolveBillingVisibility();
 
   const checkoutBlocked = requireRefundAck && !acceptedRefundPolicy;
 
   async function startCheckout() {
+    if (!billingVisibility.allowCheckout) {
+      setError('Subscription changes are managed at app.everittventures.com.');
+      return;
+    }
+
     if (checkoutBlocked) {
       setError(t('billing.noRefund.ackRequired'));
       return;

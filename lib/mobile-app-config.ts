@@ -1,8 +1,12 @@
-/** Deep-link and universal-link configuration for future native wrappers. */
+/** Deep-link and universal-link configuration for native wrappers. */
+export const MOBILE_APP_SCHEME = 'everittos';
+
 export const MOBILE_APP_CONFIG = {
   iosBundleId: 'com.everittventures.everittos',
   androidPackage: 'com.everittventures.everittos',
-  /** Paths handled by the web app and future native shells. */
+  productionHost: 'app.everittventures.com',
+  customScheme: MOBILE_APP_SCHEME,
+  /** Paths handled by the web app and native shells. */
   deepLinkPaths: [
     '/dashboard',
     '/jobs',
@@ -17,6 +21,10 @@ export const MOBILE_APP_CONFIG = {
     '/auth/callback',
     '/confirm-email',
     '/reset-password',
-    '/team/accept'
+    '/team/accept',
+    '/reports',
+    '/invoices',
+    '/expenses',
+    '/photos'
   ]
 } as const;

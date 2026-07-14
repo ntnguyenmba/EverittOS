@@ -14,6 +14,7 @@ import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
+import { resolveBillingVisibility, nativeBillingNotice } from '@/lib/platform/billing';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
@@ -287,7 +288,8 @@ function BillingSettingsContent() {
   }
 
   const canManageWorkspaceBilling = canManageBilling(role);
-  const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal);
+  const billingVisibility = resolveBillingVisibility();
+  const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal && billingVisibility.allowPortal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
   const hasActiveSubscription = plan !== 'free' && Boolean(stripeCustomerId) && subscriptionStatus !== 'canceled';
   const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free');
@@ -382,6 +384,11 @@ function BillingSettingsContent() {
             ) : null}
           </div>
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
+          {billingVisibility.showWebBillingNotice ? (
+            <p className="auth-message" style={{ marginTop: 8 }}>
+              {nativeBillingNotice()}
+            </p>
+          ) : null}
         </section>
 
         {couponName ? (
