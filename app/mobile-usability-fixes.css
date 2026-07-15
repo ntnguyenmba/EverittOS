@@ -1,0 +1,112 @@
+/* Focused mobile usability corrections. Loaded last so they only repair
+   scrolling and spacing without changing the EverittOS visual direction. */
+
+@media (max-width: 1023px) {
+  .mobile-nav-overlay,
+  .mobile-nav-overlay-portal {
+    position: fixed !important;
+    inset: 0 !important;
+    height: 100dvh !important;
+    z-index: 1000 !important;
+    overflow: hidden !important;
+  }
+
+  .mobile-nav-drawer {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .mobile-nav-panel {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    padding: 2px 2px 18px !important;
+    touch-action: pan-y !important;
+  }
+
+  .mobile-nav-panel .app-nav {
+    min-height: min-content !important;
+    padding-bottom: 8px !important;
+  }
+
+  .mobile-nav-drawer-footer {
+    flex: 0 0 auto !important;
+    max-height: 42dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
+  }
+
+  body.mobile-nav-open {
+    overflow: hidden !important;
+    touch-action: none !important;
+  }
+
+  body.mobile-nav-open .mobile-nav-drawer,
+  body.mobile-nav-open .mobile-nav-panel,
+  body.mobile-nav-open .mobile-nav-drawer-footer {
+    touch-action: pan-y !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .dashboard-home {
+    gap: 28px !important;
+  }
+
+  .dashboard-home > .page-header,
+  .dashboard-home > .dashboard-header {
+    margin-bottom: 12px !important;
+  }
+
+  .dashboard-today-card .dashboard-section-head {
+    row-gap: 18px !important;
+    margin-bottom: 22px !important;
+  }
+
+  .dashboard-today-card .dashboard-section-head > .inline-actions {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    column-gap: 16px !important;
+    row-gap: 12px !important;
+  }
+
+  .dashboard-today-card .dashboard-section-head select.input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-today-card > .settings-card,
+  .dashboard-today-card .settings-card {
+    margin-top: 24px !important;
+    padding: 22px !important;
+  }
+
+  .dashboard-today-card .job-financials-head {
+    display: grid !important;
+    gap: 16px !important;
+    margin-bottom: 22px !important;
+  }
+
+  .dashboard-today-card .job-financials-head > strong {
+    display: block !important;
+    margin-top: 2px !important;
+  }
+
+  .dashboard-revenue-grid {
+    margin-top: 24px !important;
+  }
+
+  .dashboard-revenue-metric {
+    padding: 18px 0 !important;
+  }
+}
