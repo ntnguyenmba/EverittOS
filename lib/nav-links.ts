@@ -22,12 +22,12 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Schedule', href: '/schedule' }
 ];
 
+// Keep the main menu focused on destinations that are not already handled
+// inside job records. Photos, forms, templates, and routes remain available
+// from their related job and operations workflows without duplicating them
+// in the primary navigation.
 const WORKSPACE_NAV: NavLinkDef[] = [
-  { label: 'People', href: '/people' },
-  { label: 'Photos', href: '/photos' },
-  { label: 'Forms', href: '/forms', flag: 'formsNav' },
-  { label: 'Templates', href: '/templates', flag: 'templatesNav' },
-  { label: 'Routes', href: '/routes', flag: 'routesNav' }
+  { label: 'People', href: '/people' }
 ];
 
 const BUSINESS_NAV: NavLinkDef[] = [
@@ -63,6 +63,8 @@ export const SECONDARY_APP_ROUTES = [
   '/workers',
   '/team',
   '/photos',
+  '/forms',
+  '/templates',
   '/workflows',
   '/notifications',
   '/proposals',
