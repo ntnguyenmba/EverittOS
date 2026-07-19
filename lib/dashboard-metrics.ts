@@ -228,8 +228,11 @@ export function calculatePaidToYou(input: {
   range: DashboardDateRange;
 }): { paidToYou: number; paymentsMissingDates: number } {
   const { invoices, paymentRows, start, end, range } = input;
+  const cancelledInvoiceIds = new Set(
+    invoices.filter((inv) => isCancelledInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
+  );
   const activeInvoiceIds = new Set(
-    invoices.filter((inv) => !isCancelledInvoice(inv)).map((inv) => String(inv.id || ''))
+    invoices.filter((inv) => !isCancelledInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
   );
 
   let paidToYou = 0;
@@ -237,8 +240,10 @@ export function calculatePaidToYou(input: {
 
   for (const row of paymentRows) {
     const invoiceId = String(row.invoice_id || '');
-    if (invoiceId && !activeInvoiceIds.has(invoiceId) && activeInvoiceIds.size > 0) {
-      // Still count if invoice list omitted id; prefer including valid org-scoped payments.
+    if (invoiceId && cancelledInvoiceIds.has(invoiceId)) continue;
+    if (invoiceId && activeInvoiceIds.size > 0 && !activeInvoiceIds.has(invoiceId)) {
+      // Payment belongs to an invoice outside this org/result set.
+      continue;
     }
     if (invoiceId) invoicesWithLedger.add(invoiceId);
     if (range === 'all_time') {

@@ -16,6 +16,14 @@ function InvoicesPageContent() {
   const { t } = useTranslation();
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
+  const paymentParam = (searchParams.get('payment') || 'all').toLowerCase();
+  const paymentFilter =
+    paymentParam === 'unpaid' ||
+    paymentParam === 'overdue' ||
+    paymentParam === 'paid' ||
+    paymentParam === 'history'
+      ? paymentParam
+      : 'all';
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
@@ -49,6 +57,7 @@ function InvoicesPageContent() {
         showAmount
         initialJobId={jobId}
         initialCustomerId={customerId}
+        paymentFilter={paymentFilter}
       />
 
       <RecurringInvoicesPanel canManage={canManage} />

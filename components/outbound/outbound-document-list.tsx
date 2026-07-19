@@ -4,17 +4,31 @@ import { useState } from 'react';
 import { invoiceDeliveryPaymentLabel, INVOICE_PAYMENT_METHODS } from '@/lib/outbound/invoice-payment';
 import type { OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
+export type InvoicePaymentFilter = 'all' | 'unpaid' | 'overdue' | 'paid' | 'history';
+
 type OutboundDocumentListProps = {
   documents: OutboundDocument[];
   tab: OutboundTab;
   loading: boolean;
   canManage: boolean;
+  paymentFilter?: InvoicePaymentFilter;
   onEdit: (doc: OutboundDocument) => void;
   onSend: (id: string) => void;
   onDelete: (id: string) => void;
   onRetry: (id: string) => void;
   onPaymentRecorded?: () => void;
 };
+
+function matchesPaymentFilter(doc: OutboundDocument, filter: InvoicePaymentFilter | undefined): boolean {
+  if (!filter || filter === 'all' || doc.doc_type !== 'invoice') return true;
+  const status = String(doc.payment_status || '').toLowerCase();
+  const stillOwed = Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0));
+  if (filter === 'unpaid') return stillOwed > 0 && status !== 'cancelled';
+  if (filter === 'overdue') return status === 'overdue' || (stillOwed > 0 && Boolean(doc.due_date) && String(doc.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10));
+  if (filter === 'paid') return status === 'paid' || (stillOwed <= 0 && Number(doc.amount_paid || 0) > 0);
+  if (filter === 'history') return Number(doc.amount_paid || 0) > 0;
+  return true;
+}
 
 function formatWhen(doc: OutboundDocument): string {
   const iso = doc.sent_at || doc.scheduled_at || doc.failed_at || doc.updated_at;
@@ -50,6 +64,10 @@ function removeLabel(tab: OutboundTab): string {
   return 'Delete draft';
 }
 
+function money(value: number): string {
+  return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
 function RecordPaymentForm({
   doc,
   onDone
@@ -65,7 +83,9 @@ function RecordPaymentForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const balance = Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0));
+  const invoiceTotal = Math.max(0, Number(doc.amount || 0));
+  const paid = Math.max(0, Number(doc.amount_paid || 0));
+  const stillOwed = Math.max(0, invoiceTotal - paid);
 
   async function submit() {
     setSaving(true);
@@ -92,7 +112,23 @@ function RecordPaymentForm({
 
   return (
     <div className="outbound-payment-form" style={{ marginTop: 8 }}>
-      <p className="muted">Balance due: {balance.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+        <div>
+          <span className="muted" style={{ display: 'block' }}>Invoice total</span>
+          <strong>{money(invoiceTotal)}</strong>
+        </div>
+        <div>
+          <span className="muted" style={{ display: 'block' }}>Paid</span>
+          <strong>{money(paid)}</strong>
+        </div>
+        <div>
+          <span className="muted" style={{ display: 'block' }}>Still owed</span>
+          <strong>{money(stillOwed)}</strong>
+        </div>
+      </div>
+      <p className="muted" style={{ marginTop: 8 }}>
+        Record this payment once. Dashboard, reports, and cash metrics update automatically.
+      </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
         <input
           className="input"
@@ -100,10 +136,18 @@ function RecordPaymentForm({
           min="0"
           step="0.01"
           placeholder="Payment amount"
+          aria-label="Payment amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
-        <select className="input" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <input
+          className="input"
+          type="date"
+          aria-label="Payment date"
+          value={paidDate}
+          onChange={(e) => setPaidDate(e.target.value)}
+        />
+        <select className="input" aria-label="Payment method" value={method} onChange={(e) => setMethod(e.target.value)}>
           {INVOICE_PAYMENT_METHODS.map((m) => (
             <option key={m} value={m}>
               {m}
@@ -112,22 +156,23 @@ function RecordPaymentForm({
         </select>
         <input
           className="input"
-          placeholder="Reference"
+          placeholder="Reference number"
+          aria-label="Reference number"
           value={reference}
           onChange={(e) => setReference(e.target.value)}
         />
-        <input className="input" type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} />
       </div>
       <input
         className="input"
         style={{ marginTop: 8, width: '100%' }}
-        placeholder="Payment note"
+        placeholder="Notes"
+        aria-label="Payment notes"
         value={note}
         onChange={(e) => setNote(e.target.value)}
       />
       {error ? <span className="outbound-document-error">{error}</span> : null}
       <button type="button" className="btn btn-sm btn-primary" style={{ marginTop: 8 }} disabled={saving} onClick={() => void submit()}>
-        {saving ? 'Saving…' : 'Record payment'}
+        {saving ? 'Saving…' : 'Save payment'}
       </button>
     </div>
   );
@@ -138,6 +183,7 @@ export function OutboundDocumentList({
   tab,
   loading,
   canManage,
+  paymentFilter = 'all',
   onEdit,
   onSend,
   onDelete,
@@ -145,6 +191,7 @@ export function OutboundDocumentList({
   onPaymentRecorded
 }: OutboundDocumentListProps) {
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const visibleDocuments = documents.filter((doc) => matchesPaymentFilter(doc, paymentFilter));
 
   if (loading) return <p className="muted">Loading…</p>;
   if (!documents.length) {
@@ -156,12 +203,15 @@ export function OutboundDocumentList({
     };
     return <p className="muted">{empty[tab]}</p>;
   }
+  if (!visibleDocuments.length) {
+    return <p className="muted">No invoices match this payment filter.</p>;
+  }
 
   return (
     <div className="outbound-document-list">
       {tab === 'sent' ? (
         <p className="muted" style={{ marginBottom: 12 }}>
-          Sent items cannot be unsent. Hiding an item only removes it from this history list.
+          Sent items cannot be unsent. Hiding an item only removes it from this history list. Use Record payment when a customer pays.
         </p>
       ) : null}
       {tab === 'failed' ? (
@@ -169,27 +219,29 @@ export function OutboundDocumentList({
           Failed deliveries were not sent. Fix the recipient or email settings, then retry.
         </p>
       ) : null}
-      {documents.map((doc) => {
+      {visibleDocuments.map((doc) => {
         const amount = amountLabel(doc);
+        const stillOwed = Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0));
         const showPayment =
           canManage &&
           tab === 'sent' &&
           doc.doc_type === 'invoice' &&
-          doc.status === 'sent' &&
           doc.payment_status !== 'paid' &&
-          doc.payment_status !== 'cancelled';
+          doc.payment_status !== 'cancelled' &&
+          stillOwed > 0 &&
+          !['draft', 'cancelled', 'canceled'].includes(String(doc.status || '').toLowerCase());
         return (
           <div key={doc.id} className="outbound-document-row">
             <div className="outbound-document-main">
               <strong>{doc.subject || doc.recipient_email || 'Untitled'}</strong>
               <span className="muted">
                 {doc.recipient_email || 'No recipient'}
-                {amount ? ` · ${amount}` : ''}
+                {amount ? ` · Invoice total ${amount}` : ''}
                 {doc.amount_paid != null && Number(doc.amount_paid) > 0
                   ? ` · Paid ${Number(doc.amount_paid).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
                   : ''}
-                {doc.doc_type === 'invoice' && Number(doc.amount || 0) - Number(doc.amount_paid || 0) > 0
-                  ? ` · Still owed ${Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0)).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
+                {doc.doc_type === 'invoice' && stillOwed > 0
+                  ? ` · Still owed ${stillOwed.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
                   : ''}
               </span>
               <span className="muted">{statusLabel(doc)}</span>

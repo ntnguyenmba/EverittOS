@@ -6,6 +6,7 @@ import { OutboundComposer } from '@/components/outbound/outbound-composer';
 import { OutboundDocumentList } from '@/components/outbound/outbound-document-list';
 import { OutboundStatusTabs } from '@/components/outbound/outbound-status-tabs';
 import { useOutboundAutosave } from '@/components/outbound/use-outbound-autosave';
+import type { InvoicePaymentFilter } from '@/components/outbound/outbound-document-list';
 import type { OutboundDocType, OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
 type OutboundHubProps = {
@@ -14,6 +15,7 @@ type OutboundHubProps = {
   showAmount?: boolean;
   initialJobId?: string;
   initialCustomerId?: string;
+  paymentFilter?: InvoicePaymentFilter;
   footer?: React.ReactNode;
 };
 
@@ -23,6 +25,7 @@ export function OutboundHub({
   showAmount = false,
   initialJobId,
   initialCustomerId,
+  paymentFilter = 'all',
   footer
 }: OutboundHubProps) {
   const appFeedback = useAppFeedback();
@@ -154,7 +157,12 @@ export function OutboundHub({
 
       <div className="card outbound-history-card">
         <div className="outbound-history-head">
-          <h3>Sent history</h3>
+          <h3>{docType === 'invoice' ? 'Invoices' : 'Sent history'}</h3>
+          {docType === 'invoice' && paymentFilter !== 'all' ? (
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              Showing {paymentFilter === 'history' ? 'payment history' : paymentFilter} invoices. Record payment here once — every dashboard metric updates from this.
+            </p>
+          ) : null}
         </div>
         <OutboundStatusTabs active={tab} onChange={setTab} />
         <OutboundDocumentList
@@ -162,6 +170,7 @@ export function OutboundHub({
           tab={tab}
           loading={loading}
           canManage={canManage}
+          paymentFilter={docType === 'invoice' ? paymentFilter : 'all'}
           onEdit={handleEdit}
           onSend={(id) => void handleSendExisting(id)}
           onRetry={(id) => void handleSendExisting(id)}

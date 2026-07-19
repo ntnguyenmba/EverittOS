@@ -1,32 +1,32 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
-import { requireOutboundApiAccess } from '@/lib/outbound/auth';
-import { recordInvoicePaymentByOutboundId } from '@/lib/finance/record-invoice-payment';
-import { canRecordInvoicePayments } from '@/lib/roles';
+import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { recordInvoicePaymentByInvoiceId } from '@/lib/finance/record-invoice-payment';
 import { isValidUuid } from '@/lib/input-validation';
-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type RouteContext = { params: Promise<{ id: string }> };
+type RouteParams = { params: Promise<{ id: string }> };
 
 /**
- * Canonical customer payment API (outbound invoice document id).
- * Delegates to the shared finance payment recorder so ledger + summaries stay in sync.
+ * Canonical customer payment API.
+ * POST /api/invoices/[id]/payment
+ *
+ * Body: { amount, paid_date?, payment_method?, payment_reference?, payment_notes?, cancel? }
  */
-export async function POST(request: Request, context: RouteContext) {
-  const ctx = await requireOutboundApiAccess();
+export async function POST(request: Request, { params }: RouteParams) {
+  const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error }, { status: ctx.status });
   }
 
-  if (!canRecordInvoicePayments(ctx.role)) {
+  if (!ctx.canManage) {
     return NextResponse.json({ error: 'You do not have permission to record payments.' }, { status: 403 });
   }
 
-  const { id } = await context.params;
+  const { id } = await params;
   if (!isValidUuid(id)) {
-    return NextResponse.json({ error: 'Invalid document id.' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid invoice id.' }, { status: 400 });
   }
 
   const body = (await request.json()) as {
@@ -38,7 +38,7 @@ export async function POST(request: Request, context: RouteContext) {
     cancel?: boolean;
   };
 
-  const result = await recordInvoicePaymentByOutboundId(ctx.supabase, id, {
+  const result = await recordInvoicePaymentByInvoiceId(ctx.supabase, id, {
     organizationId: ctx.organizationId,
     userId: ctx.userId,
     amount: body.amount !== undefined ? Number(body.amount) : undefined,
@@ -77,8 +77,8 @@ export async function POST(request: Request, context: RouteContext) {
   );
 
   return NextResponse.json({
-    document: result.document,
     invoice: result.invoice,
+    document: result.document,
     payment_status: result.paymentStatus,
     amount_paid: result.amountPaid,
     balance_due: result.balanceDue

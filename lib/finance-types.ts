@@ -62,8 +62,15 @@ export type InvoiceRecord = {
   customer_id: string | null;
   amount: number;
   amount_paid: number;
+  balance_due?: number | null;
+  payment_status?: string | null;
   status: string;
   due_date: string | null;
+  paid_at?: string | null;
+  last_payment_at?: string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  payment_notes?: string | null;
   description: string | null;
   notes: string | null;
   invoice_date: string | null;

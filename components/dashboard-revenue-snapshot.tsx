@@ -10,6 +10,7 @@ import {
   type DashboardDateRange,
   type DashboardRevenueMetrics
 } from '@/lib/dashboard-metrics';
+import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -120,28 +121,28 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: `Paid to you · ${rangeLabel}`,
       value: paidToYou,
       displayValue: formatCurrency(paidToYou),
-      href: '/analytics',
-      help: 'Customer payments recorded during this period.'
+      href: DASHBOARD_LINKS.paidToYou,
+      help: 'Customer payments recorded during this period. Tap to open payment history.'
     },
     {
       label: `Customer invoices · ${rangeLabel}`,
       value: customerInvoices,
       displayValue: formatCurrency(customerInvoices),
-      href: '/invoices',
+      href: DASHBOARD_LINKS.customerInvoices,
       help: 'Total non-cancelled invoices created during this period.'
     },
     {
       label: stillOwedLabel,
       value: stillOwed,
       displayValue: formatCurrency(stillOwed),
-      href: '/invoices',
-      help: 'Current unpaid balances across all non-cancelled invoices.'
+      href: DASHBOARD_LINKS.stillOwed,
+      help: 'Current unpaid balances across all non-cancelled invoices. Tap to open unpaid invoices.'
     },
     {
       label: `Cash after expenses · ${rangeLabel}`,
       value: cashAfterExpenses,
       displayValue: formatCurrency(cashAfterExpenses),
-      href: '/analytics',
+      href: DASHBOARD_LINKS.cashAfterExpenses,
       help: 'Customer payments received minus contractor payments and other recorded expenses paid during this period.'
     }
   ];
@@ -150,36 +151,36 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: `Paid to you · ${rangeLabel}`,
       value: formatCurrency(paidToYou),
-      href: '/analytics',
-      help: 'Customer payments recorded during this period.'
+      href: DASHBOARD_LINKS.paidToYou,
+      help: 'Customer payments recorded during this period. Tap to open payment history.'
     },
     {
       label: `Customer invoices · ${rangeLabel}`,
       value: formatCurrency(customerInvoices),
-      href: '/invoices',
+      href: DASHBOARD_LINKS.customerInvoices,
       help: 'Total non-cancelled invoices created during this period.'
     },
     {
       label: stillOwedLabel,
       value: formatCurrency(stillOwed),
-      href: '/invoices',
-      help: 'Current unpaid balances across all non-cancelled invoices.'
+      href: DASHBOARD_LINKS.stillOwed,
+      help: 'Current unpaid balances across all non-cancelled invoices. Tap to open unpaid invoices.'
     },
     {
       label: 'Late payments · Current',
       value: formatCurrency(latePayments),
-      href: '/invoices',
+      href: DASHBOARD_LINKS.latePayments,
       help: 'Current unpaid balances that are past their due dates.'
     },
     {
       label: 'Late invoices',
       value: String(activeMetrics.overdueInvoiceCount),
-      href: '/invoices'
+      href: DASHBOARD_LINKS.latePayments
     },
     {
       label: 'Unpaid invoices',
       value: String(activeMetrics.outstandingInvoiceCount ?? 0),
-      href: '/invoices',
+      href: DASHBOARD_LINKS.unpaidInvoices,
       help: 'Count of non-cancelled invoices with a remaining balance.'
     },
     {
@@ -188,47 +189,47 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
           ? 'Not enough data'
           : `${activeMetrics.averageDaysToPayment} days`,
-      href: '/invoices',
+      href: DASHBOARD_LINKS.paidToYou,
       help: 'Average number of days from invoice date to recorded payment date for payments in the selected period.'
     },
     {
       label: `Contractor pay · ${rangeLabel}`,
       value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered',
-      href: '/contractor-pay?status=all',
+      href: DASHBOARD_LINKS.contractorPay,
       help: 'Contractor pay recorded for work in the selected period, whether paid or still owed.'
     },
     {
       label: 'Contractor pay owed',
       value: formatCurrency(unpaidContractorPay),
-      href: '/contractor-pay?status=unpaid'
+      href: DASHBOARD_LINKS.contractorPayOwed
     },
     {
       label: 'Contractor pay pending',
       value: formatCurrency(pendingContractorPay),
-      href: '/contractor-pay?status=pending'
+      href: DASHBOARD_LINKS.contractorPayPending
     },
     {
       label: `Other expenses · ${rangeLabel}`,
       value: formatCurrency(otherExpenses),
-      href: '/expenses'
+      href: DASHBOARD_LINKS.otherExpenses
     },
     {
       label: `Estimated profit · ${rangeLabel}`,
       value: formatCurrency(estimatedProfit),
-      href: '/analytics',
+      href: DASHBOARD_LINKS.estimatedProfit,
       help: 'Customer invoices minus contractor pay and other recorded expenses for this period.',
       warning: costsMissing ? 'Only recorded costs are included.' : undefined
     },
     {
       label: `Cash after expenses · ${rangeLabel}`,
       value: formatCurrency(cashAfterExpenses),
-      href: '/analytics',
+      href: DASHBOARD_LINKS.cashAfterExpenses,
       help: 'Customer payments received minus contractor payments and other recorded expenses paid during this period.'
     },
     {
       label: 'Estimated profit percentage',
       value: profitPercentage === null ? 'Not available' : `${profitPercentage}% estimated profit`,
-      href: '/analytics',
+      href: DASHBOARD_LINKS.estimatedProfit,
       help:
         profitPercentage === null
           ? 'Estimated profit percentage needs customer invoices greater than zero.'
@@ -240,7 +241,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           {
             label: `Uninvoiced completed work · ${rangeLabel}`,
             value: formatCurrency(uninvoicedCompletedWork),
-            href: '/jobs?status=completed',
+            href: DASHBOARD_LINKS.completedJobs,
             help: 'Completed job revenue that has not been invoiced. Not included in Customer invoices.'
           } satisfies MetricItem
         ]
@@ -250,7 +251,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           {
             label: 'Payments missing dates',
             value: String(activeMetrics.paymentsMissingDates),
-            href: '/invoices',
+            href: DASHBOARD_LINKS.customerInvoices,
             help: 'Invoices with a paid amount but no payment date. These are included in All time, or in a period only when the invoice was created in that period.'
           } satisfies MetricItem
         ]
@@ -258,37 +259,37 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: `Completed jobs · ${rangeLabel}`,
       value: String(activeMetrics.jobsCompletedThisMonth),
-      href: '/jobs?status=completed'
+      href: DASHBOARD_LINKS.completedJobs
     },
     {
       label: `Jobs · ${rangeLabel}`,
       value: String(activeMetrics.totalJobs),
-      href: '/jobs'
+      href: DASHBOARD_LINKS.jobs
     },
     {
       label: t('dashboard.revenue.upcomingJobs'),
       value: String(activeMetrics.upcomingJobs),
-      href: '/schedule'
+      href: DASHBOARD_LINKS.upcomingJobs
     },
     {
       label: t('dashboard.revenue.activeCustomers'),
       value: String(activeMetrics.activeCustomers),
-      href: '/customers'
+      href: DASHBOARD_LINKS.activeCustomers
     },
     {
       label: `Bookings · ${rangeLabel}`,
       value: String(activeMetrics.bookingCountThisMonth),
-      href: '/bookings'
+      href: DASHBOARD_LINKS.bookings
     },
     {
       label: `Messages · ${rangeLabel}`,
       value: String(activeMetrics.messageCount),
-      href: '/messages'
+      href: DASHBOARD_LINKS.messages
     },
     {
       label: `Reports · ${rangeLabel}`,
       value: String(activeMetrics.reportCount),
-      href: '/jobs'
+      href: DASHBOARD_LINKS.reports
     }
   ];
 

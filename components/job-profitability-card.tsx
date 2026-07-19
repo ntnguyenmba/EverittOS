@@ -21,7 +21,6 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const [profitability, setProfitability] = useState<JobProfitability | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
   const [revenueAmount, setRevenueAmount] = useState('');
   const [revenueNotes, setRevenueNotes] = useState('');
 
@@ -46,6 +45,12 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
   function openSendInvoice() {
     const params = new URLSearchParams({ jobId });
+    if (customerId) params.set('customerId', customerId);
+    router.push(`/invoices?${params.toString()}`);
+  }
+
+  function openRecordPayment() {
+    const params = new URLSearchParams({ jobId, payment: 'unpaid' });
     if (customerId) params.set('customerId', customerId);
     router.push(`/invoices?${params.toString()}`);
   }
@@ -77,42 +82,6 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
     setRevenueNotes(next.revenueNotes || '');
     appFeedback.success('Client income section saved.');
-  }
-
-  async function recordPayment() {
-    if (saving) return;
-    const paid = Number.parseFloat(paymentAmount);
-    if (!Number.isFinite(paid) || paid <= 0) {
-      appFeedback.error('Enter a valid payment amount.');
-      return;
-    }
-
-    const invRes = await fetch(`/api/invoices?jobId=${jobId}`);
-    const invJson = await invRes.json().catch(() => ({}));
-    const invoice = invJson.invoices?.[0];
-    if (!invoice) {
-      appFeedback.error('Add an invoice before recording a payment.');
-      return;
-    }
-
-    setSaving(true);
-    const newPaid = Number(invoice.amount_paid || 0) + paid;
-    const res = await fetch(`/api/invoices/${invoice.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount_paid: newPaid })
-    });
-    const json = await res.json().catch(() => ({}));
-    setSaving(false);
-
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to record payment.');
-      return;
-    }
-
-    appFeedback.label('paymentRecorded');
-    setPaymentAmount('');
-    void loadFinancials();
   }
 
   if (loading) {
@@ -191,8 +160,8 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
             {p?.hasInvoice ? (
               <>
                 <div className="finance-metric"><span className="finance-metric-label">Invoice total</span><strong>{formatCurrency(p.invoiceTotal)}</strong></div>
-                <div className="finance-metric"><span className="finance-metric-label">Payments received</span><strong>{formatCurrency(p.paymentsReceived)}</strong></div>
-                <div className="finance-metric"><span className="finance-metric-label">Outstanding</span><strong>{formatCurrency(p.outstanding)}</strong></div>
+                <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>{formatCurrency(p.paymentsReceived)}</strong></div>
+                <div className="finance-metric"><span className="finance-metric-label">Still owed</span><strong>{formatCurrency(p.outstanding)}</strong></div>
               </>
             ) : (
               <div className="finance-metric"><span className="finance-metric-label">Saved client income</span><strong>{formatCurrency(p?.manualRevenue || 0)}</strong></div>
@@ -230,12 +199,18 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
       {p?.hasInvoice ? (
         <div className="job-financials-section">
-          <h4>Record client payment</h4>
-          <div className="finance-inline-form">
-            <input className="input" type="number" min="0" step="0.01" placeholder="Payment amount" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} />
-            <button type="button" className="btn" disabled={saving} onClick={() => void recordPayment()}>Record payment</button>
+          <h4>Record payment</h4>
+          <p className="muted finance-note">
+            Record customer payments once on the invoice. That updates Paid to you, Still owed, cash after expenses, and reports everywhere.
+          </p>
+          <div className="button-row" style={{ marginTop: 8 }}>
+            <button type="button" className="btn btn-primary" onClick={openRecordPayment}>
+              Record payment on invoice
+            </button>
+            <Link className="btn" href="/invoices">
+              View invoices
+            </Link>
           </div>
-          <Link className="muted-link" href="/invoices">View invoices</Link>
         </div>
       ) : null}
     </div>

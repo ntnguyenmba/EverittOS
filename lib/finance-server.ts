@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  calculateEstimatedProfit,
+  fetchDashboardRevenueMetrics,
+  remainingBalance
+} from '@/lib/dashboard-metrics';
+import {
   MATERIAL_EXPENSE_CATEGORIES,
   type BusinessPerformanceSummary,
   type ExpenseRecord,
@@ -42,7 +47,7 @@ export function computeJobProfitability(input: {
   const laborCost = num(input.laborCost);
   const materialCost = num(input.materialCost);
   const otherExpenses = num(input.otherExpenses);
-  const outstanding = Math.max(0, invoiceTotal - paymentsReceived);
+  const outstanding = remainingBalance(invoiceTotal, paymentsReceived);
   const revenueBasis = paymentsReceived > 0 ? paymentsReceived : invoiceTotal > 0 ? invoiceTotal : manualRevenue;
   const estimatedProfit = revenueBasis - laborCost - materialCost - otherExpenses;
 
@@ -109,6 +114,8 @@ type InvoiceRow = {
   amount_paid: number;
   invoice_date: string | null;
   created_at: string;
+  payment_status?: string | null;
+  status?: string | null;
 };
 
 type AssignmentRow = { job_id: string; worker_id: string };
@@ -163,11 +170,14 @@ export async function fetchBusinessPerformance(
   sixMonthsAgo.setDate(1);
   const rangeStart = sixMonthsAgo.toISOString().slice(0, 10);
 
+  // Canonical month KPIs — same source as the dashboard Business overview.
+  const dashboardMetrics = await fetchDashboardRevenueMetrics(supabase, organizationId, 'month');
+
   const [invoicesRes, expensesRes, jobsRes, laborRes, workersRes, customersRes, assignmentsRes] =
     await Promise.all([
       supabase
         .from('invoices')
-        .select('id, job_id, customer_id, amount, amount_paid, invoice_date, created_at')
+        .select('id, job_id, customer_id, amount, amount_paid, invoice_date, created_at, payment_status, status')
         .eq('organization_id', organizationId),
       supabase
         .from('expenses')
@@ -186,18 +196,15 @@ export async function fetchBusinessPerformance(
     ]);
 
   const invoices = (invoicesRes.data || []) as InvoiceRow[];
-  const monthInvoices = invoices.filter((inv) => {
-    const d = inv.invoice_date || inv.created_at?.slice(0, 10);
-    return d && d >= start && d <= end;
+  const revenueThisMonth = dashboardMetrics.customerInvoices;
+  const paymentsThisMonth = dashboardMetrics.paidToYou;
+  const outstandingInvoices = dashboardMetrics.stillOwed;
+  const expensesThisMonth = dashboardMetrics.otherExpensesThisMonth || 0;
+  const estimatedProfitThisMonth = calculateEstimatedProfit({
+    customerInvoices: revenueThisMonth,
+    contractorPay: dashboardMetrics.contractorPayThisMonth || 0,
+    otherExpenses: expensesThisMonth
   });
-
-  const revenueThisMonth = monthInvoices.reduce((s, inv) => s + num(inv.amount), 0);
-  const paymentsThisMonth = monthInvoices.reduce((s, inv) => s + num(inv.amount_paid), 0);
-  const outstandingInvoices = invoices.reduce(
-    (s, inv) => s + Math.max(0, num(inv.amount) - num(inv.amount_paid)),
-    0
-  );
-  const expensesThisMonth = (expensesRes.data || []).reduce((s, row) => s + num(row.amount), 0);
 
   const jobs = (jobsRes.data || []) as JobRow[];
   const jobMap = new Map(jobs.map((j) => [j.id, j]));
@@ -217,8 +224,10 @@ export async function fetchBusinessPerformance(
   const categoryExpenses = new Map<string, number>();
 
   for (const inv of invoices) {
-    // Analytics best-customer / monthly charts use booked invoice amount, not cash collected.
-    // Unpaid invoices must not be treated as collected cash.
+    const statusHint = String(inv.payment_status || inv.status || '').toLowerCase();
+    if (statusHint === 'cancelled' || statusHint === 'canceled') continue;
+
+    // Charts use booked invoice amount (customer invoices), not cash collected.
     const revenue = num(inv.amount);
     const monthKey = (inv.invoice_date || inv.created_at || '').slice(0, 7);
     if (monthKey) {
@@ -297,7 +306,7 @@ export async function fetchBusinessPerformance(
     paymentsThisMonth: Number(paymentsThisMonth.toFixed(2)),
     outstandingInvoices: Number(outstandingInvoices.toFixed(2)),
     expensesThisMonth: Number(expensesThisMonth.toFixed(2)),
-    estimatedProfitThisMonth: Number((paymentsThisMonth - expensesThisMonth).toFixed(2)),
+    estimatedProfitThisMonth: Number(estimatedProfitThisMonth.toFixed(2)),
     topCustomer: Array.from(customerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: customerMap.get(id) || 'Customer', revenue: Number(revenue.toFixed(2)) }))[0] || null,
     topWorker: Array.from(workerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: workerMap.get(id) || 'Team member', revenue: Number(revenue.toFixed(2)) }))[0] || null,
     mostProfitableJob,

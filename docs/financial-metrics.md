@@ -2,6 +2,8 @@
 
 Plain-language definitions used by the EverittOS dashboard and related summaries.
 
+Canonical architecture (payment workflow, ledger, clickable cards): see [financial-architecture.md](./financial-architecture.md).
+
 ## Labels
 
 | Label | Meaning | Time basis |
