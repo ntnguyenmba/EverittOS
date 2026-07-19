@@ -1,0 +1,10 @@
+/* Final dashboard metric-card guardrails.
+   Loaded last so revenue values and explanatory copy stay inside their cards
+   across desktop, tablet, and mobile widths. */
+
+.dashboard-home .dashboard-revenue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+  max-width: 100% !important
