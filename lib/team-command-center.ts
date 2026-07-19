@@ -1,6 +1,15 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 import { isMissingColumnError } from '@/lib/profile-query';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import {
+  buildAssignmentWorkerIdsByJob,
+  formatLocalDateOnly,
+  getEffectiveJobSchedule,
+  getWorkerAssignmentSummary,
+  isJobAssignedToWorker,
+  normalizeJobStatus,
+  type WorkerIdentity
+} from '@/lib/worker-assignment';
 
 export type WorkloadStatus = 'available' | 'busy' | 'overloaded';
 
@@ -43,6 +52,7 @@ export type TeamCommandMember = {
   workloadStatus: WorkloadStatus;
   lastActivityAt: string | null;
   nextUpcomingJob: { id: string; title: string; date: string } | null;
+  hasUnscheduledAssignments: boolean;
   debug?: TeamCommandMemberDebug;
 };
 
@@ -93,6 +103,7 @@ type JobRow = {
   status: string | null;
   due_date: string | null;
   scheduled_start: string | null;
+  start_date: string | null;
   assigned_to: string | null;
   created_at: string | null;
 };
@@ -107,37 +118,32 @@ type MemberRow = {
 type WorkerRow = { id: string; auth_user_id: string | null };
 type AssignmentRow = { job_id: string; worker_id: string };
 
-const COMPLETED_STATUSES = new Set(['completed', 'done', 'complete', 'closed']);
-const CANCELLED_STATUSES = new Set(['cancelled', 'canceled']);
-
 const JOBS_SELECT_FULL =
-  'id, title, status, due_date, scheduled_start, assigned_to, created_at';
+  'id, title, status, due_date, scheduled_start, start_date, assigned_to, created_at';
 const JOBS_SELECT_BASE = 'id, title, status, due_date, assigned_to, created_at';
 
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return formatLocalDateOnly();
 }
 
 export function monthStartIso(date = new Date()): string {
-  const d = new Date(date);
-  d.setDate(1);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  return formatLocalDateOnly(d);
 }
 
-export function jobEffectiveDate(job: Pick<JobRow, 'due_date' | 'scheduled_start'>): string | null {
-  if (job.due_date) return job.due_date.slice(0, 10);
-  if (job.scheduled_start) return job.scheduled_start.slice(0, 10);
-  return null;
+/** @deprecated Prefer getEffectiveJobSchedule from worker-assignment. */
+export function jobEffectiveDate(
+  job: Pick<JobRow, 'due_date' | 'scheduled_start' | 'start_date'>
+): string | null {
+  return getEffectiveJobSchedule(job);
 }
 
 export function isActiveJobStatus(status: string | null | undefined): boolean {
-  const normalized = (status || '').toLowerCase();
-  return !COMPLETED_STATUSES.has(normalized) && !CANCELLED_STATUSES.has(normalized);
+  return normalizeJobStatus(status) === 'active' || normalizeJobStatus(status) === 'unknown';
 }
 
 export function isCompletedJobStatus(status: string | null | undefined): boolean {
-  const normalized = (status || '').toLowerCase();
-  return COMPLETED_STATUSES.has(normalized);
+  return normalizeJobStatus(status) === 'completed';
 }
 
 export function resolveWorkloadStatus(
@@ -199,79 +205,41 @@ function displayName(member: MemberRow): string {
   return member.profiles?.full_name?.trim() || member.profiles?.email?.trim() || 'Pending profile';
 }
 
-function buildJobAssignees(
-  jobs: JobRow[],
-  workers: WorkerRow[],
-  assignments: AssignmentRow[]
-): Map<string, Set<string>> {
-  const workerAuthById = new Map(
-    workers.map((w) => [w.id, w.auth_user_id]).filter(([, uid]) => uid) as [string, string][]
-  );
-  const map = new Map<string, Set<string>>();
-
-  for (const job of jobs) {
-    const assignees = new Set<string>();
-    if (job.assigned_to) assignees.add(job.assigned_to);
-    map.set(job.id, assignees);
-  }
-
-  for (const row of assignments) {
-    const authUserId = workerAuthById.get(row.worker_id);
-    if (!authUserId) continue;
-    const existing = map.get(row.job_id) || new Set<string>();
-    existing.add(authUserId);
-    map.set(row.job_id, existing);
-  }
-
-  return map;
+function workerIdsForUser(workers: WorkerRow[], userId: string): string[] {
+  return workers.filter((worker) => worker.auth_user_id === userId).map((worker) => worker.id).filter(Boolean);
 }
 
-function jobAssignedToUser(assignees: Map<string, Set<string>>, jobId: string, userId: string): boolean {
-  return assignees.get(jobId)?.has(userId) ?? false;
+function identityForMember(userId: string, workers: WorkerRow[]): WorkerIdentity {
+  return {
+    userId,
+    workerIds: workerIdsForUser(workers, userId)
+  };
 }
 
 function summarizeMemberJobs(
   userId: string,
   jobs: JobRow[],
-  assignees: Map<string, Set<string>>,
+  workers: WorkerRow[],
+  assignmentWorkerIdsByJob: Map<string, string[]>,
   lastActivityByUser: Map<string, string>,
   today: string
 ): Omit<TeamCommandMember, 'userId' | 'name' | 'email' | 'role' | 'active' | 'debug'> {
-  let activeJobs = 0;
-  let completedJobs = 0;
-  let overdueJobs = 0;
-  let dueTodayJobs = 0;
-  let nextUpcomingJob: TeamCommandMember['nextUpcomingJob'] = null;
-
-  const memberJobs = jobs.filter((job) => jobAssignedToUser(assignees, job.id, userId));
-
-  for (const job of memberJobs) {
-    if (isCompletedJobStatus(job.status)) {
-      completedJobs += 1;
-      continue;
-    }
-    if (!isActiveJobStatus(job.status)) continue;
-
-    activeJobs += 1;
-    const effectiveDate = jobEffectiveDate(job);
-    if (effectiveDate && effectiveDate < today) overdueJobs += 1;
-    if (effectiveDate === today) dueTodayJobs += 1;
-
-    if (effectiveDate && effectiveDate >= today) {
-      if (!nextUpcomingJob || effectiveDate < nextUpcomingJob.date) {
-        nextUpcomingJob = { id: job.id, title: job.title, date: effectiveDate };
-      }
-    }
-  }
+  const summary = getWorkerAssignmentSummary(
+    jobs,
+    identityForMember(userId, workers),
+    today,
+    assignmentWorkerIdsByJob
+  );
 
   return {
-    activeJobs,
-    completedJobs,
-    overdueJobs,
-    dueTodayJobs,
-    workloadStatus: resolveWorkloadStatus(activeJobs, overdueJobs, dueTodayJobs),
+    activeJobs: summary.active,
+    completedJobs: summary.completed,
+    overdueJobs: summary.overdue,
+    dueTodayJobs: summary.dueToday,
+    workloadStatus: resolveWorkloadStatus(summary.active, summary.overdue, summary.dueToday),
     lastActivityAt: lastActivityByUser.get(userId) || null,
-    nextUpcomingJob
+    nextUpcomingJob: summary.nextAssignment,
+    hasUnscheduledAssignments: summary.hasUnscheduledAssignments
   };
 }
 
@@ -280,24 +248,28 @@ function buildMemberDebug(
   jobs: JobRow[],
   workers: WorkerRow[],
   assignments: AssignmentRow[],
-  assignees: Map<string, Set<string>>,
+  assignmentWorkerIdsByJob: Map<string, string[]>,
   today: string
 ): TeamCommandMemberDebug {
-  const workerIds = workers
-    .filter((worker) => worker.auth_user_id === userId)
-    .map((worker) => worker.id)
-    .filter(Boolean);
+  const identity = identityForMember(userId, workers);
+  const workerIds = identity.workerIds || [];
   const workerIdSet = new Set(workerIds);
   const assignmentRowsForWorker = assignments.filter((assignment) => workerIdSet.has(assignment.worker_id));
   const assignmentJobIds = Array.from(new Set(assignmentRowsForWorker.map((assignment) => assignment.job_id)));
-  const directAssignedJobIds = jobs.filter((job) => job.assigned_to === userId).map((job) => job.id);
-  const matchingJobs = jobs.filter((job) => jobAssignedToUser(assignees, job.id, userId));
+  const directAssignedJobIds = jobs
+    .filter((job) => isJobAssignedToWorker(job, identity))
+    .map((job) => job.id);
+  const matchingJobs = jobs.filter((job) => isJobAssignedToWorker(job, identity, assignmentWorkerIdsByJob));
   const matchingJobIds = matchingJobs.map((job) => job.id);
   const unassignedWorkspaceJobIds = jobs
-    .filter((job) => !job.assigned_to && (assignees.get(job.id)?.size || 0) === 0)
+    .filter((job) => !job.assigned_to && !(assignmentWorkerIdsByJob.get(job.id)?.length))
     .map((job) => job.id);
   const otherAssignedWorkspaceJobIds = jobs
-    .filter((job) => !jobAssignedToUser(assignees, job.id, userId) && ((assignees.get(job.id)?.size || 0) > 0 || Boolean(job.assigned_to)))
+    .filter(
+      (job) =>
+        !isJobAssignedToWorker(job, identity, assignmentWorkerIdsByJob) &&
+        (Boolean(job.assigned_to) || Boolean(assignmentWorkerIdsByJob.get(job.id)?.length))
+    )
     .map((job) => job.id);
 
   const matchingJobDetails = matchingJobs.map((job) => {
@@ -309,7 +281,7 @@ function buildMemberDebug(
       title: job.title,
       status: job.status,
       effectiveDate,
-      assignedDirectly: job.assigned_to === userId,
+      assignedDirectly: Boolean(job.assigned_to && (job.assigned_to === userId || workerIdSet.has(job.assigned_to))),
       assignedThroughWorker: assignmentJobIds.includes(job.id),
       active,
       completed,
@@ -433,6 +405,7 @@ async function fetchOrgJobs(supabase: SupabaseClient, organizationId: string): P
     status: typeof row.status === 'string' ? row.status : null,
     due_date: typeof row.due_date === 'string' ? row.due_date : null,
     scheduled_start: typeof row.scheduled_start === 'string' ? row.scheduled_start : null,
+    start_date: typeof row.start_date === 'string' ? row.start_date : null,
     assigned_to: typeof row.assigned_to === 'string' ? row.assigned_to : null,
     created_at: typeof row.created_at === 'string' ? row.created_at : null
   }));
@@ -643,7 +616,7 @@ export async function fetchTeamCommandCenterData(
   const reports = await fetchOrgCount(supabase, 'job_reports', organizationId);
 
   const members = membersResult.members;
-  const assignees = buildJobAssignees(jobs, workers, assignments);
+  const assignmentWorkerIdsByJob = buildAssignmentWorkerIdsByJob(assignments);
   const lastActivityByUser = await fetchMemberLastActivity(
     supabase,
     organizationId,
@@ -651,7 +624,14 @@ export async function fetchTeamCommandCenterData(
   );
 
   const memberSummaries: TeamCommandMember[] = members.map((member) => {
-    const stats = summarizeMemberJobs(member.user_id, jobs, assignees, lastActivityByUser, today);
+    const stats = summarizeMemberJobs(
+      member.user_id,
+      jobs,
+      workers,
+      assignmentWorkerIdsByJob,
+      lastActivityByUser,
+      today
+    );
     return {
       userId: member.user_id,
       name: displayName(member),
@@ -659,7 +639,7 @@ export async function fetchTeamCommandCenterData(
       role: member.role,
       active: member.active,
       ...stats,
-      debug: buildMemberDebug(member.user_id, jobs, workers, assignments, assignees, today)
+      debug: buildMemberDebug(member.user_id, jobs, workers, assignments, assignmentWorkerIdsByJob, today)
     };
   });
 

@@ -6,7 +6,7 @@ import { normalizeRole } from '@/lib/roles';
  *
  * - organization_members are the primary source for assignees.
  * - workers is compatibility storage for schedule APIs and job_assignments.
- * - jobs.assigned_to may store auth user IDs (preferred) or legacy worker IDs.
+ * - jobs.assigned_to stores workers.id (canonical). Legacy rows may still store auth user IDs.
  */
 
 export type PersonAssignmentOption = {

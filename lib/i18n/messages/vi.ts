@@ -604,6 +604,7 @@ export const messages: Messages = {
         completed: 'Hoàn thành',
         nextAssignment: 'Phân công tiếp theo',
         noScheduledAssignment: 'Chưa có phân công theo lịch.',
+        assignedDateNotScheduled: 'Đã phân công, chưa lên lịch ngày',
         contact: 'Liên hệ',
         noEmailOnFile: 'Chưa có email',
         viewSchedule: 'Xem lịch',

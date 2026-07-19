@@ -17,6 +17,10 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { daysAheadIso, todayIso } from '@/lib/date-filters';
 import { logClientActivity } from '@/lib/activity';
 import { supabase } from '@/lib/supabase';
+import {
+  buildAssignmentWorkerIdsByJob,
+  isJobAssignedToWorker
+} from '@/lib/worker-assignment';
 
 function SchedulePageContent() {
   const router = useRouter();
@@ -67,6 +71,26 @@ function SchedulePageContent() {
 
     const { data, error: fetchError } = await jobsQuery;
 
+    let workersQuery = supabase.from('workers').select('id, name, auth_user_id').order('name');
+    if (org?.organizationId) {
+      workersQuery = workersQuery.eq('organization_id', org.organizationId);
+    } else {
+      workersQuery = workersQuery.eq('user_id', user.id);
+    }
+    const { data: workers } = await workersQuery;
+    const map: Record<string, string> = {};
+    const workerIdsForMember: string[] = [];
+    (workers || []).forEach((worker: { id: string; name: string; auth_user_id?: string | null }) => {
+      map[worker.id] = worker.name;
+      if (
+        memberFilter &&
+        (worker.id === memberFilter || worker.auth_user_id === memberFilter)
+      ) {
+        workerIdsForMember.push(worker.id);
+      }
+    });
+    setWorkerNames(map);
+
     setLoading(false);
     if (fetchError) {
       setError(fetchError.message);
@@ -75,22 +99,23 @@ function SchedulePageContent() {
 
     let rows = (data || []) as ScheduleJob[];
     if (memberFilter) {
-      rows = rows.filter((job) => job.assigned_to === memberFilter);
+      const assignmentWorkerIdsByJob = new Map<string, string[]>();
+      if (workerIdsForMember.length) {
+        const { data: assignmentRows } = await supabase
+          .from('job_assignments')
+          .select('job_id, worker_id')
+          .in('worker_id', workerIdsForMember);
+        buildAssignmentWorkerIdsByJob(assignmentRows || []).forEach((ids, jobId) => {
+          assignmentWorkerIdsByJob.set(jobId, ids);
+        });
+      }
+      const identity = {
+        userId: memberFilter,
+        workerIds: workerIdsForMember.length ? workerIdsForMember : [memberFilter]
+      };
+      rows = rows.filter((job) => isJobAssignedToWorker(job, identity, assignmentWorkerIdsByJob));
     }
     setJobs(rows);
-
-    let workersQuery = supabase.from('workers').select('id, name').order('name');
-    if (org?.organizationId) {
-      workersQuery = workersQuery.eq('organization_id', org.organizationId);
-    } else {
-      workersQuery = workersQuery.eq('user_id', user.id);
-    }
-    const { data: workers } = await workersQuery;
-    const map: Record<string, string> = {};
-    (workers || []).forEach((worker: { id: string; name: string }) => {
-      map[worker.id] = worker.name;
-    });
-    setWorkerNames(map);
   }, [memberFilter, router]);
 
   useEffect(() => {

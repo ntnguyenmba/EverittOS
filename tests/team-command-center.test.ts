@@ -27,13 +27,21 @@ describe('team command center helpers', () => {
     assert.equal(isCompletedJobStatus('in_progress'), false);
   });
 
-  it('prefers due_date over scheduled_start for effective date', () => {
+  it('prefers scheduled_start, then start_date, then due_date for effective date', () => {
     assert.equal(
-      jobEffectiveDate({ due_date: '2026-05-10', scheduled_start: '2026-05-01' }),
-      '2026-05-10'
+      jobEffectiveDate({
+        due_date: '2026-05-10',
+        scheduled_start: '2026-05-01T09:00:00Z',
+        start_date: '2026-05-03'
+      }),
+      '2026-05-01'
     );
-    assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: '2026-05-01T09:00:00Z' }), '2026-05-01');
-    assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: null }), null);
+    assert.equal(
+      jobEffectiveDate({ due_date: '2026-05-10', scheduled_start: null, start_date: '2026-05-03' }),
+      '2026-05-03'
+    );
+    assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: '2026-05-01T09:00:00Z', start_date: null }), '2026-05-01');
+    assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: null, start_date: null }), null);
   });
 
   it('builds entity links for supported activity types', () => {

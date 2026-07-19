@@ -460,6 +460,7 @@ export type MessageTree = {
         completed: string;
         nextAssignment: string;
         noScheduledAssignment: string;
+        assignedDateNotScheduled: string;
         contact: string;
         noEmailOnFile: string;
         viewSchedule: string;

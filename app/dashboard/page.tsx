@@ -18,6 +18,7 @@ import { canAccessFinancials } from '@/lib/finance-access';
 import { isAdminRole, isClientRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
+import { isJobAssignedToWorker } from '@/lib/worker-assignment';
 
 type DashboardJobRow = {
   id: string;
@@ -213,14 +214,17 @@ export default function DashboardPage() {
       customerScope
     ]);
 
-    const assignedWorkerIds = new Set(
+    const assignedWorkerIds = (
       ((workersRes.data || []) as { id: string; auth_user_id?: string | null }[])
         .filter((worker) => worker.auth_user_id === user.id)
         .map((worker) => worker.id)
     );
+    const staffIdentity = { userId: user.id, workerIds: assignedWorkerIds };
 
     const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
-    const visibleJobs = staffView ? normalizedJobs.filter((job) => job.assigned_to && assignedWorkerIds.has(job.assigned_to)) : normalizedJobs;
+    const visibleJobs = staffView
+      ? normalizedJobs.filter((job) => isJobAssignedToWorker(job, staffIdentity))
+      : normalizedJobs;
     const rows = ((customersRes.data || []) as { id: string; record_type: string | null; pipeline_stage: string | null }[]);
     const leadRows = rows.filter((row) => row.record_type === 'lead');
     const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');

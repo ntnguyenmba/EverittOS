@@ -604,6 +604,7 @@ export const messages: Messages = {
         completed: 'Completed',
         nextAssignment: 'Next assignment',
         noScheduledAssignment: 'No scheduled assignment yet.',
+        assignedDateNotScheduled: 'Assigned, date not scheduled',
         contact: 'Contact',
         noEmailOnFile: 'No email on file',
         viewSchedule: 'View schedule',

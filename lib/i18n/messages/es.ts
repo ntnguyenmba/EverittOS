@@ -606,6 +606,7 @@ export const messages: Messages = {
         completed: 'Completados',
         nextAssignment: 'Próxima asignación',
         noScheduledAssignment: 'Aún no hay asignación programada.',
+        assignedDateNotScheduled: 'Asignado, fecha sin programar',
         contact: 'Contacto',
         noEmailOnFile: 'Sin correo registrado',
         viewSchedule: 'Ver horario',

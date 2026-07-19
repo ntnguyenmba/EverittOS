@@ -66,6 +66,9 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
 
   const memberSummary = (member: TeamCommandMember): string | null => {
     if (member.nextUpcomingJob) return member.nextUpcomingJob.title;
+    if (member.hasUnscheduledAssignments) {
+      return t('dashboard.teamCommand.member.assignedDateNotScheduled');
+    }
     if (member.activeJobs > 0) {
       return member.activeJobs === 1
         ? t('dashboard.teamCommand.summary.activeJobsOne', { count: member.activeJobs })
@@ -345,7 +348,9 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                           </p>
                         ) : (
                           <p className="muted" style={{ margin: '4px 0 0' }}>
-                            {t('dashboard.teamCommand.member.noScheduledAssignment')}
+                            {member.hasUnscheduledAssignments
+                              ? t('dashboard.teamCommand.member.assignedDateNotScheduled')
+                              : t('dashboard.teamCommand.member.noScheduledAssignment')}
                           </p>
                         )}
                       </div>
