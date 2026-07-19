@@ -1,0 +1,175 @@
+/**
+ * Client helpers for native purchase → backend verification → entitlement refresh.
+ */
+import { EverittBilling, isStoreBillingAvailable, type StoreProductInfo } from '@/lib/plugins/everitt-billing';
+import { getAppPlatform } from '@/lib/platform/detect';
+
+export type NativePurchaseOutcome =
+  | { ok: true; plan: string; status: string; expiresAt: string | null }
+  | { ok: false; pending?: boolean; cancelled?: boolean; error: string };
+
+export async function loadNativeStoreProducts(productIds: string[]): Promise<StoreProductInfo[]> {
+  if (!isStoreBillingAvailable()) return [];
+  const result = await EverittBilling.loadProducts({ productIds });
+  return result.products || [];
+}
+
+export async function purchaseNativePlan(productId: string): Promise<NativePurchaseOutcome> {
+  if (!isStoreBillingAvailable()) {
+    return { ok: false, error: 'Store billing is only available in the native app.' };
+  }
+
+  try {
+    const purchase = await EverittBilling.purchase({ productId });
+    if (purchase.cancelled) {
+      return { ok: false, cancelled: true, error: 'Purchase cancelled.' };
+    }
+    if (purchase.pending) {
+      return {
+        ok: false,
+        pending: true,
+        error: 'Your purchase is pending. Access will activate after the store confirms payment.'
+      };
+    }
+
+    const platform = getAppPlatform();
+    if (platform === 'ios') {
+      if (!purchase.signedTransaction) {
+        return { ok: false, error: 'Missing Apple signed transaction.' };
+      }
+      const res = await fetch('/api/billing/apple/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          signedTransaction: purchase.signedTransaction,
+          productId: purchase.productId || productId
+        })
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        plan?: string;
+        status?: string;
+        expiresAt?: string | null;
+        error?: string;
+      };
+      if (!res.ok || !json.ok) {
+        return { ok: false, error: json.error || 'Unable to verify Apple purchase.' };
+      }
+      return {
+        ok: true,
+        plan: json.plan || 'free',
+        status: json.status || 'active',
+        expiresAt: json.expiresAt ?? null
+      };
+    }
+
+    if (platform === 'android') {
+      if (!purchase.purchaseToken) {
+        return { ok: false, error: 'Missing Google Play purchase token.' };
+      }
+      const res = await fetch('/api/billing/google/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          purchaseToken: purchase.purchaseToken,
+          productId: purchase.productId || productId
+        })
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        pending?: boolean;
+        plan?: string;
+        status?: string;
+        expiresAt?: string | null;
+        error?: string;
+        message?: string;
+      };
+      if (json.pending) {
+        return { ok: false, pending: true, error: json.message || 'Purchase pending.' };
+      }
+      if (!res.ok || !json.ok) {
+        return { ok: false, error: json.error || 'Unable to verify Google Play purchase.' };
+      }
+      return {
+        ok: true,
+        plan: json.plan || 'free',
+        status: json.status || 'active',
+        expiresAt: json.expiresAt ?? null
+      };
+    }
+
+    return { ok: false, error: 'Unsupported platform.' };
+  } catch (error) {
+    return { ok: false, error: (error as Error).message || 'Purchase failed.' };
+  }
+}
+
+export async function restoreNativePurchases(): Promise<{
+  restored: boolean;
+  message: string;
+  plan?: string;
+}> {
+  if (!isStoreBillingAvailable()) {
+    return { restored: false, message: 'Restore is only available in the native app.' };
+  }
+
+  try {
+    const { purchases } = await EverittBilling.restorePurchases();
+    if (!purchases?.length) {
+      return { restored: false, message: 'No active purchases found.' };
+    }
+
+    const platform = getAppPlatform();
+    let lastPlan: string | undefined;
+
+    for (const purchase of purchases) {
+      if (platform === 'ios' && purchase.signedTransaction) {
+        const res = await fetch('/api/billing/apple/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            signedTransaction: purchase.signedTransaction,
+            productId: purchase.productId
+          })
+        });
+        const json = (await res.json().catch(() => ({}))) as { ok?: boolean; plan?: string; pending?: boolean };
+        if (json.pending) {
+          return { restored: false, message: 'Purchase still pending.' };
+        }
+        if (res.ok && json.ok) lastPlan = json.plan;
+      }
+      if (platform === 'android' && purchase.purchaseToken && purchase.productId) {
+        const res = await fetch('/api/billing/google/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            purchaseToken: purchase.purchaseToken,
+            productId: purchase.productId
+          })
+        });
+        const json = (await res.json().catch(() => ({}))) as { ok?: boolean; plan?: string; pending?: boolean };
+        if (json.pending) {
+          return { restored: false, message: 'Purchase still pending.' };
+        }
+        if (res.ok && json.ok) lastPlan = json.plan;
+      }
+    }
+
+    if (!lastPlan) {
+      return { restored: false, message: 'Unable to verify purchase.' };
+    }
+    return { restored: true, message: 'Purchases restored', plan: lastPlan };
+  } catch (error) {
+    return { restored: false, message: (error as Error).message || 'Unable to verify purchase.' };
+  }
+}
+
+export async function openNativeSubscriptionManagement(): Promise<boolean> {
+  if (!isStoreBillingAvailable()) return false;
+  const result = await EverittBilling.manageSubscriptions();
+  return Boolean(result.opened);
+}
