@@ -85,7 +85,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const pendingContractorPay = activeMetrics.pendingContractorPay || 0;
   const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
   const grossProfit = activeMetrics.netEstimateThisMonth || 0;
-  // Prefer server netCashFlow; fallback uses cash paid (not accrued contractor cost).
   const netCashFlow =
     activeMetrics.netCashFlow ??
     Number((cashCollected - contractorPaymentsPaid - otherExpenses).toFixed(2));
@@ -95,28 +94,28 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label || 'This month';
 
   const financialBreakdown: FinancialBreakdownItem[] = [
-    { label: 'Cash collected', value: cashCollected, displayValue: formatCurrency(cashCollected), href: '/analytics' },
-    { label: 'Booked revenue', value: bookedRevenue, displayValue: formatCurrency(bookedRevenue), href: '/invoices' },
-    { label: 'Pending incoming', value: pendingIncoming, displayValue: formatCurrency(pendingIncoming), href: '/invoices' },
-    { label: 'Net cash flow', value: netCashFlow, displayValue: formatCurrency(netCashFlow), href: '/analytics' }
+    { label: 'Money received', value: cashCollected, displayValue: formatCurrency(cashCollected), href: '/analytics' },
+    { label: 'Work value', value: bookedRevenue, displayValue: formatCurrency(bookedRevenue), href: '/invoices' },
+    { label: 'Customers still owe', value: pendingIncoming, displayValue: formatCurrency(pendingIncoming), href: '/invoices' },
+    { label: 'Money left', value: netCashFlow, displayValue: formatCurrency(netCashFlow), href: '/analytics' }
   ];
 
   const items: MetricItem[] = [
-    { label: `Cash collected · ${rangeLabel}`, value: formatCurrency(cashCollected), href: '/analytics', help: 'Payments actually received during the selected period, based on the payment date.' },
-    { label: `Booked revenue · ${rangeLabel}`, value: formatCurrency(bookedRevenue), href: '/invoices', help: 'Invoice value booked during the selected period, plus completed job revenue that has not been invoiced.' },
-    { label: 'Pending incoming', value: formatCurrency(pendingIncoming), href: '/invoices', help: 'Current unpaid and partially paid customer invoice balances.' },
-    { label: 'Overdue amount', value: formatCurrency(overdueAmount), href: '/invoices', help: 'Current unpaid balances whose due date has passed.' },
-    { label: 'Overdue invoices', value: String(activeMetrics.overdueInvoiceCount), href: '/invoices' },
-    { label: 'Outstanding invoices', value: String(activeMetrics.outstandingInvoiceCount ?? 0), href: '/invoices' },
-    { label: 'Average days to payment', value: activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined ? 'Not enough data' : `${activeMetrics.averageDaysToPayment} days`, href: '/invoices', help: 'Average number of days from invoice date to recorded payment date for payments in the selected period.' },
-    { label: `Contractor cost · ${rangeLabel}`, value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/contractor-pay?status=all', help: 'Contractor labor recorded during the selected period, whether paid or still owed.' },
+    { label: `Money received · ${rangeLabel}`, value: formatCurrency(cashCollected), href: '/analytics', help: 'Money customers paid during this period.' },
+    { label: `Work value · ${rangeLabel}`, value: formatCurrency(bookedRevenue), href: '/invoices', help: 'The value of invoices and completed work created during this period.' },
+    { label: 'Customers still owe', value: formatCurrency(pendingIncoming), href: '/invoices', help: 'Money customers have not paid yet.' },
+    { label: 'Late payments', value: formatCurrency(overdueAmount), href: '/invoices', help: 'Money that is past its due date.' },
+    { label: 'Late invoices', value: String(activeMetrics.overdueInvoiceCount), href: '/invoices' },
+    { label: 'Unpaid invoices', value: String(activeMetrics.outstandingInvoiceCount ?? 0), href: '/invoices' },
+    { label: 'Average time to get paid', value: activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined ? 'Not enough data' : `${activeMetrics.averageDaysToPayment} days`, href: '/invoices', help: 'The average number of days customers take to pay.' },
+    { label: `Contractor pay · ${rangeLabel}`, value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered', href: '/contractor-pay?status=all', help: 'Pay recorded for cleaners, contractors, and team members during this period.' },
     { label: 'Contractor pay owed', value: formatCurrency(unpaidContractorPay), href: '/contractor-pay?status=unpaid' },
     { label: 'Contractor pay pending', value: formatCurrency(pendingContractorPay), href: '/contractor-pay?status=pending' },
     { label: `Other expenses · ${rangeLabel}`, value: formatCurrency(otherExpenses), href: '/expenses' },
-    { label: `Gross profit · ${rangeLabel}`, value: hasRecordedCosts ? formatCurrency(grossProfit) : 'Pending costs', href: '/analytics', help: 'Booked revenue minus contractor labor recorded in the period and other expenses for the selected period.' },
-    { label: `Net cash flow · ${rangeLabel}`, value: formatCurrency(netCashFlow), href: '/analytics', help: 'Cash collected minus contractor payments actually paid and other cash expenses during the selected period.' },
-    { label: 'Profit margin', value: profitMargin === null ? 'Pending costs' : `${profitMargin.toFixed(1)}%`, href: '/analytics' },
-    { label: `Jobs completed · ${rangeLabel}`, value: String(activeMetrics.jobsCompletedThisMonth), href: '/jobs?status=completed' },
+    { label: `Profit · ${rangeLabel}`, value: hasRecordedCosts ? formatCurrency(grossProfit) : 'Add costs', href: '/analytics', help: 'Work value minus contractor pay and other expenses.' },
+    { label: `Money left · ${rangeLabel}`, value: formatCurrency(netCashFlow), href: '/analytics', help: 'Money received minus contractor payments and other expenses paid.' },
+    { label: 'Profit percentage', value: profitMargin === null ? 'Add costs' : `${profitMargin.toFixed(1)}%`, href: '/analytics' },
+    { label: `Completed jobs · ${rangeLabel}`, value: String(activeMetrics.jobsCompletedThisMonth), href: '/jobs?status=completed' },
     { label: `Jobs · ${rangeLabel}`, value: String(activeMetrics.totalJobs), href: '/jobs' },
     { label: t('dashboard.revenue.upcomingJobs'), value: String(activeMetrics.upcomingJobs), href: '/schedule' },
     { label: t('dashboard.revenue.activeCustomers'), value: String(activeMetrics.activeCustomers), href: '/customers' },
@@ -131,15 +130,15 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     <section className="card dashboard-today-card" aria-label={t('dashboard.revenue.title')}>
       <div className="dashboard-section-head" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2>{t('dashboard.revenue.title')}</h2>
-          <p className="muted" style={{ margin: '6px 0 0' }}>Cash uses payment dates, booked revenue uses invoice or completed-job dates, and pending balances show what is owed now.</p>
+          <h2>Business overview</h2>
+          <p className="muted" style={{ margin: '6px 0 0' }}>See money received, money still owed, contractor pay, expenses, and profit in one place.</p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
           <label className="sr-only" htmlFor="dashboard-date-range">Dashboard period</label>
           <select id="dashboard-date-range" className="input" value={range} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 150 }}>
             {RANGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <Link href="/analytics" className="dashboard-section-link">{t('dashboard.revenue.viewAnalytics')}</Link>
+          <Link href="/analytics" className="dashboard-section-link">View details</Link>
         </div>
       </div>
 
@@ -150,10 +149,10 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           <div className="settings-card" style={{ marginBottom: 18 }}>
             <div className="job-financials-head">
               <div>
-                <h3>Revenue and cash position</h3>
-                <p className="muted">Collected cash, booked work, pending customer payments, and net cash flow for {rangeLabel.toLowerCase()}.</p>
+                <h3>Money summary</h3>
+                <p className="muted">Money received, work value, customer payments due, and money left for {rangeLabel.toLowerCase()}.</p>
               </div>
-              <strong>{profitMargin === null ? 'Pending costs' : `${profitMargin.toFixed(1)}% margin`}</strong>
+              <strong>{profitMargin === null ? 'Add costs' : `${profitMargin.toFixed(1)}% profit`}</strong>
             </div>
             <div style={{ display: 'grid', gap: 14 }}>
               {financialBreakdown.map((item) => {
