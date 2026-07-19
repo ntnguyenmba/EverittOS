@@ -20,7 +20,35 @@ function dataUrlToFile(dataUrl: string, fileName: string): File | null {
   return new File([bytes], fileName, { type: mime });
 }
 
+async function requestSourcePermission(source: CameraSource): Promise<PhotoPickResult | null> {
+  const permissionName = source === CameraSource.Camera ? 'camera' : 'photos';
+
+  try {
+    const current = await Camera.checkPermissions();
+    const currentState = current[permissionName];
+    if (currentState === 'granted' || currentState === 'limited') return null;
+
+    const requested = await Camera.requestPermissions({ permissions: [permissionName] });
+    const requestedState = requested[permissionName];
+    if (requestedState === 'granted' || requestedState === 'limited') return null;
+
+    return {
+      ok: false,
+      error:
+        source === CameraSource.Camera
+          ? 'Camera access is off. Open device Settings, allow Camera access for EverittOS, then try again.'
+          : 'Photo access is off. Open device Settings, allow Photos access for EverittOS, then try again.',
+      code: 'permission_denied'
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function pickNativePhoto(source: CameraSource): Promise<PhotoPickResult> {
+  const permissionError = await requestSourcePermission(source);
+  if (permissionError) return permissionError;
+
   try {
     const photo = await Camera.getPhoto({
       quality: 85,
@@ -28,7 +56,11 @@ async function pickNativePhoto(source: CameraSource): Promise<PhotoPickResult> {
       resultType: CameraResultType.DataUrl,
       source,
       correctOrientation: true,
-      saveToGallery: false
+      saveToGallery: false,
+      promptLabelHeader: 'Add job photo',
+      promptLabelPhoto: 'Choose from photos',
+      promptLabelPicture: 'Take photo',
+      promptLabelCancel: 'Cancel'
     });
 
     if (!photo.dataUrl) {
@@ -59,18 +91,18 @@ async function pickNativePhoto(source: CameraSource): Promise<PhotoPickResult> {
       return { ok: false, error: 'Photo selection was cancelled.', code: 'cancelled' };
     }
 
-    if (lower.includes('permission') || lower.includes('denied')) {
+    if (lower.includes('permission') || lower.includes('denied') || lower.includes('restricted')) {
       return {
         ok: false,
         error:
           source === CameraSource.Camera
-            ? 'Camera access was denied. You can choose a photo from your library instead, or enable camera access in device settings.'
-            : 'Photo library access was denied. Enable photo access in device settings to attach job photos.',
+            ? 'Camera access is off. Open device Settings, allow Camera access for EverittOS, then try again.'
+            : 'Photo access is off. Open device Settings, allow Photos access for EverittOS, then try again.',
         code: 'permission_denied'
       };
     }
 
-    return { ok: false, error: 'Unable to access the camera or photo library.', code: 'unsupported' };
+    return { ok: false, error: `Unable to access ${source === CameraSource.Camera ? 'the camera' : 'your photos'}.`, code: 'unsupported' };
   }
 }
 
