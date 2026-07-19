@@ -12,3 +12,6 @@ export type DashboardRevenueMetrics = {
   cashCollected: number;
   bookedRevenue: number;
   pendingIncoming: number;
+  overdueAmount: number;
+  averageDaysToPayment: number | null;
+  outstandingInvoices: number;
