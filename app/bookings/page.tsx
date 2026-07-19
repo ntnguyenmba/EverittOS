@@ -432,7 +432,7 @@ export default function BookingsPage() {
       <header className="page-header">
         <div className="page-header-text">
           <h1>Bookings</h1>
-          <p className="page-subtitle">Upcoming appointments from your public booking page and manual entries.</p>
+          <p className="page-subtitle">Upcoming appointments from your public booking page and bookings you add yourself.</p>
         </div>
         <div className="inline-actions">
           {canManage && !schemaMissing && !bookingsLocked ? <button type="button" className="btn btn-primary" onClick={openCreateForm}>New booking</button> : null}

@@ -614,7 +614,7 @@ async function queryRecentActivity(
   );
 
   return response(
-    results.length > 0 ? `${results.length} recent activity entries.` : 'No activity logged yet.',
+    results.length > 0 ? `${results.length} recent activity update${results.length === 1 ? '' : 's'}.` : 'No activity logged yet.',
     results,
     { sourcesUsed: ['activity'] }
   );

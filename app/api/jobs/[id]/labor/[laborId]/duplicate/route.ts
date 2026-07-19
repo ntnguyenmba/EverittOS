@@ -12,7 +12,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
   const { id: jobId, laborId } = await params;
   if (!isValidUuid(jobId) || !isValidUuid(laborId)) {
-    return NextResponse.json({ error: 'Invalid job or contractor pay entry id' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid job or contractor pay id' }, { status: 400 });
   }
 
   const { data: job } = await ctx.supabase
@@ -35,7 +35,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
     .maybeSingle();
 
   if (sourceError || !source) {
-    return NextResponse.json({ error: sourceError?.message || 'Contractor pay entry not found' }, { status: 404 });
+    return NextResponse.json({ error: sourceError?.message || 'Contractor pay not found' }, { status: 404 });
   }
 
   const duplicateNotes = [source.notes, `Duplicated ${new Date().toLocaleDateString('en-US')}`]
@@ -61,5 +61,5 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ labor: duplicated, message: 'Contractor pay entry duplicated.' });
+  return NextResponse.json({ labor: duplicated, message: 'Contractor pay duplicated.' });
 }

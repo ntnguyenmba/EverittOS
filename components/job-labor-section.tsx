@@ -61,7 +61,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
     const profitabilityJson = await profitabilityRes.json().catch(() => ({}));
     setLoading(false);
     if (!laborRes.ok) {
-      appFeedback.error(laborJson.error || 'Unable to load contractor pay entries.');
+      appFeedback.error(laborJson.error || 'Unable to load contractor pay.');
       return;
     }
     setEntries(laborJson.labor || []);
@@ -230,7 +230,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
   async function removeEntry(id: string) {
     if (deletingId) return;
-    if (!window.confirm('Remove this contractor pay entry?')) return;
+    if (!window.confirm('Remove this contractor pay?')) return;
     setDeletingId(id);
     const res = await fetch(`/api/jobs/${jobId}/labor/${id}`, { method: 'DELETE' });
     const json = await res.json().catch(() => ({}));
@@ -260,13 +260,13 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const previewCost = Number.isFinite(previewHours) && Number.isFinite(previewRate) ? previewHours * previewRate : 0;
   const previewProfit = currentProfit - previewCost;
   const contractorTotals = useMemo(() => {
-    const totals = new Map<string, { name: string; entries: number; total: number }>();
-    for (const entry of entries) {
-      const name = (entry.worker_name || 'Contractor').trim() || 'Contractor';
+    const totals = new Map<string, { name: string; total: number; hours: number }>();
+    for (const row of entries) {
+      const name = (row.worker_name || 'Contractor').trim() || 'Contractor';
       const key = name.toLowerCase();
-      const current = totals.get(key) || { name, entries: 0, total: 0 };
-      current.entries += 1;
-      current.total += Number(entry.total_cost || 0);
+      const current = totals.get(key) || { name, total: 0, hours: 0 };
+      current.total += Number(row.total_cost || 0);
+      current.hours += Number(row.hours || 0);
       totals.set(key, current);
     }
     return Array.from(totals.values()).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -278,7 +278,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       <p className="muted">This is what you pay cleaners, contractors, or team members. It is not client income.</p>
 
       {loading ? <p className="loading-state">Loading...</p> : null}
-      {!loading && entries.length === 0 ? <p className="muted">No contractor pay entries yet.</p> : null}
+      {!loading && entries.length === 0 ? <p className="muted">No contractor pay recorded yet.</p> : null}
 
       {!loading && entries.length > 0 ? (
         <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
@@ -295,7 +295,11 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
             <div key={contractor.name.toLowerCase()} className="finance-metric">
               <span className="finance-metric-label">{contractor.name}</span>
               <strong>{formatCurrency(contractor.total)}</strong>
-              <span className="muted">{contractor.entries} entr{contractor.entries === 1 ? 'y' : 'ies'}</span>
+              {contractor.hours > 0 ? (
+                <span className="muted">
+                  {contractor.hours} hour{contractor.hours === 1 ? '' : 's'}
+                </span>
+              ) : null}
             </div>
           ))}
         </div>
@@ -303,7 +307,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
       {!loading && entries.length > 0 ? (
         <div className="finance-list">
-          <h4>Saved contractor pay entries</h4>
+          <h4>Saved contractor pay</h4>
           {entries.map((entry) => {
             const isEditing = editingId === entry.id;
             const editedHours = Number.parseFloat(editHours);

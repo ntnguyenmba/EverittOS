@@ -68,7 +68,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .maybeSingle();
 
     if (!existing) {
-      return NextResponse.json({ error: 'Labor entry not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Contractor pay not found' }, { status: 404 });
     }
 
     const labor = buildLaborRow({

@@ -100,7 +100,7 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       sopMatches: (count) => `${count} SOP, checklist, or document matches.`,
       onboardingDocs: (count) => `${count} onboarding-related document${count === 1 ? '' : 's'}.`,
       noOnboardingDocs: 'No onboarding documents found.',
-      activity: (count) => `${count} recent activity entries.`,
+      activity: (count) => `${count} recent activity update${count === 1 ? '' : 's'}.`,
       noActivity: 'No activity logged yet.',
       noOutstandingBalances: 'No customers with outstanding balances.',
       customersOwe: (count) => `${count} customer${count === 1 ? '' : 's'} with outstanding balances.`
@@ -169,7 +169,7 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       sopMatches: (count) => `${count} coincidencia${count === 1 ? '' : 's'} de SOP, lista o documento.`,
       onboardingDocs: (count) => `${count} documento${count === 1 ? '' : 's'} relacionado${count === 1 ? '' : 's'} con incorporación.`,
       noOnboardingDocs: 'No se encontraron documentos de incorporación.',
-      activity: (count) => `${count} entrada${count === 1 ? '' : 's'} de actividad reciente.`,
+      activity: (count) => `${count} actualizaci${count === 1 ? 'ón' : 'ones'} de actividad reciente.`,
       noActivity: 'Aún no hay actividad registrada.',
       noOutstandingBalances: 'No hay clientes con saldos pendientes.',
       customersOwe: (count) => `${count} cliente${count === 1 ? '' : 's'} con saldo${count === 1 ? '' : 's'} pendiente${count === 1 ? '' : 's'}.`
@@ -317,6 +317,9 @@ function localizeSummary(summary: string, copy: LocalCopy): string {
   m = summary.match(/^(\d+) onboarding-related documents?\.$/);
   if (m) return copy.generic.onboardingDocs(Number(m[1]));
   if (summary === 'No onboarding documents found.') return copy.generic.noOnboardingDocs;
+  m = summary.match(/^(\d+) recent activity updates?\.$/);
+  if (m) return copy.generic.activity(Number(m[1]));
+  // Legacy English phrasing (pre plain-language cleanup)
   m = summary.match(/^(\d+) recent activity entries\.$/);
   if (m) return copy.generic.activity(Number(m[1]));
   if (summary === 'No activity logged yet.') return copy.generic.noActivity;

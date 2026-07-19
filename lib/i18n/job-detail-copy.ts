@@ -138,7 +138,7 @@ const copy: Record<Locale, JobDetailCopy> = {
     createReport: 'Create report',
     viewLatest: 'View latest',
     activityTimeline: 'Activity timeline',
-    noTimelineEntries: 'No timeline entries yet.',
+    noTimelineEntries: 'No timeline updates yet.',
     updateRecorded: 'Update recorded'
   },
   es: {
@@ -209,7 +209,7 @@ const copy: Record<Locale, JobDetailCopy> = {
     createReport: 'Crear informe',
     viewLatest: 'Ver el más reciente',
     activityTimeline: 'Historial de actividad',
-    noTimelineEntries: 'Aún no hay entradas en el historial.',
+    noTimelineEntries: 'Aún no hay actualizaciones en el historial.',
     updateRecorded: 'Actualización registrada'
   },
   vi: {
