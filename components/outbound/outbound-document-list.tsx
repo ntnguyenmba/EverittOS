@@ -188,6 +188,9 @@ export function OutboundDocumentList({
                 {doc.amount_paid != null && Number(doc.amount_paid) > 0
                   ? ` · Paid ${Number(doc.amount_paid).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
                   : ''}
+                {doc.doc_type === 'invoice' && Number(doc.amount || 0) - Number(doc.amount_paid || 0) > 0
+                  ? ` · Still owed ${Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0)).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
+                  : ''}
               </span>
               <span className="muted">{statusLabel(doc)}</span>
               <span className="muted outbound-document-time">{formatWhen(doc)}</span>

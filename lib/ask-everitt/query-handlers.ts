@@ -430,11 +430,12 @@ async function queryRevenueThisMonth(
   orgId: string
 ): Promise<AskEverittSearchResponse | null> {
   const metrics = await fetchDashboardRevenueMetrics(supabase, orgId);
-  return response(`Revenue this month: ${formatCurrency(metrics.revenueThisMonth)}.`, [], {
+  return response(`Paid to you this month: ${formatCurrency(metrics.paidToYou ?? metrics.revenueThisMonth)}.`, [], {
     sourcesUsed: ['revenue', 'invoices'],
     metrics: [
-      { label: 'Revenue this month', value: formatCurrency(metrics.revenueThisMonth), href: '/analytics' },
-      { label: 'Outstanding invoices', value: formatCurrency(metrics.outstandingInvoices), href: '/invoices' },
+      { label: 'Paid to you this month', value: formatCurrency(metrics.paidToYou ?? metrics.revenueThisMonth), href: '/analytics' },
+      { label: 'Customer invoices this month', value: formatCurrency(metrics.customerInvoices ?? metrics.bookedRevenue), href: '/invoices' },
+      { label: 'Still owed', value: formatCurrency(metrics.stillOwed ?? metrics.outstandingInvoices), href: '/invoices' },
       { label: 'Jobs completed', value: String(metrics.jobsCompleted), href: '/jobs' },
       { label: 'Active customers', value: String(metrics.activeCustomers), href: '/customers' }
     ]

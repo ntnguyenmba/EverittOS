@@ -214,17 +214,17 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       <div className="job-financials-section profit-summary-section">
         <h4>Profit summary</h4>
         <div className="finance-metric-grid financials-summary-grid">
-          <div className="finance-metric featured"><span className="finance-metric-label">Gross profit</span><strong>{formatCurrency(grossProfit)}</strong></div>
+          <div className="finance-metric featured"><span className="finance-metric-label">Estimated profit</span><strong>{formatCurrency(grossProfit)}</strong></div>
           <div className="finance-metric"><span className="finance-metric-label">Profit margin</span><strong>{savedMarginText}</strong></div>
           {canManage && revenueAmount.trim() ? (
             <>
-              <div className="finance-metric"><span className="finance-metric-label">Gross profit preview</span><strong>{formatCurrency(liveProfit)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Estimated profit preview</span><strong>{formatCurrency(liveProfit)}</strong></div>
               <div className="finance-metric"><span className="finance-metric-label">Profit margin preview</span><strong>{liveMarginText}</strong></div>
             </>
           ) : null}
         </div>
         <p className="muted finance-note">
-          Gross profit equals client income minus contractor pay and other job costs. Profit margin appears after contractor pay is entered.
+          Estimated profit equals client income minus contractor pay and other job costs. Profit margin appears after contractor pay is entered.
         </p>
       </div>
 

@@ -7,12 +7,31 @@ const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
 
 export type DashboardDateRange = 'month' | 'quarter' | 'year' | 'last_year' | 'all_time';
 
+/**
+ * Dashboard financial metrics.
+ * Internal field names keep compatibility; UI uses plain-language labels.
+ */
 export type DashboardRevenueMetrics = {
+  /** @deprecated Prefer paidToYou */
   revenueThisMonth: number;
+  /** Paid to you — customer payments in the selected period */
   cashCollected: number;
+  paidToYou: number;
+  /** Customer invoices created in the selected period (invoices only, no manual job revenue) */
+  customerInvoices: number;
+  /** Uninvoiced completed work (manual job revenue) in the selected period */
+  uninvoicedCompletedWork: number;
+  /**
+   * @deprecated Prefer customerInvoices for invoice totals.
+   * Previously mixed invoices + manual job revenue. Now equals customerInvoices only.
+   */
   bookedRevenue: number;
+  /** Still owed — current unpaid balances across all non-cancelled invoices */
   pendingIncoming: number;
+  stillOwed: number;
+  /** Late payments — current overdue unpaid balances */
   overdueAmount: number;
+  latePayments: number;
   averageDaysToPayment: number | null;
   outstandingInvoices: number;
   outstandingInvoiceCount: number;
@@ -23,15 +42,22 @@ export type DashboardRevenueMetrics = {
   activeCustomers: number;
   customerCount: number;
   upcomingJobs: number;
+  /** Contractor pay recorded/incurred in the selected period */
   contractorPayThisMonth?: number;
-  /** Contractor payments with payment_status=paid and paid_at in the selected range. */
+  /** Contractor payments actually paid in the selected period */
   contractorPaymentsPaid?: number;
   unpaidContractorPay?: number;
   pendingContractorPay?: number;
   otherExpensesThisMonth?: number;
   expenseTotalThisMonth: number;
+  /** Estimated profit = customer invoices − contractor pay − other expenses */
   netEstimateThisMonth: number;
+  estimatedProfit: number;
+  /** Cash after expenses = paid to you − contractor cash paid − other expenses */
   netCashFlow: number;
+  cashAfterExpenses: number;
+  /** Invoices with amount_paid > 0 but no payment date (diagnostic) */
+  paymentsMissingDates: number;
   bookingCountThisMonth: number;
   messageCount: number;
   reportCount: number;
@@ -44,6 +70,26 @@ export type LaborCostRow = {
   created_at?: unknown;
   payment_status?: unknown;
   paid_at?: unknown;
+};
+
+export type InvoiceMetricRow = {
+  id?: unknown;
+  amount?: unknown;
+  amount_paid?: unknown;
+  invoice_date?: unknown;
+  created_at?: unknown;
+  due_date?: unknown;
+  payment_status?: unknown;
+  status?: unknown;
+  paid_at?: unknown;
+  last_payment_at?: unknown;
+  job_id?: unknown;
+};
+
+export type InvoicePaymentRow = {
+  amount?: unknown;
+  paid_at?: unknown;
+  invoice_id?: unknown;
 };
 
 function formatLocalDateOnly(date: Date): string {
@@ -86,12 +132,29 @@ export function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function invoiceDate(row: { invoice_date?: unknown; created_at?: unknown }): string {
+export function isCancelledInvoice(row: { payment_status?: unknown; status?: unknown }): boolean {
+  const statusHint = String(row.payment_status || row.status || '').toLowerCase();
+  return statusHint === 'cancelled' || statusHint === 'canceled';
+}
+
+export function invoiceDate(row: { invoice_date?: unknown; created_at?: unknown }): string {
   return String(row.invoice_date || row.created_at || '').slice(0, 10);
 }
 
-function paymentDate(row: { paid_at?: unknown; last_payment_at?: unknown }): string {
+export function paymentDate(row: { paid_at?: unknown; last_payment_at?: unknown }): string {
   return String(row.paid_at || row.last_payment_at || '').slice(0, 10);
+}
+
+/** Cap paid amount at invoice total so overpayments do not inflate cash or understate still owed. */
+export function cappedAmountPaid(amount: unknown, amountPaid: unknown): number {
+  const total = Math.max(0, num(amount));
+  const paid = Math.max(0, num(amountPaid));
+  if (total <= 0) return paid;
+  return Math.min(paid, total);
+}
+
+export function remainingBalance(amount: unknown, amountPaid: unknown): number {
+  return Math.max(0, num(amount) - cappedAmountPaid(amount, amountPaid));
 }
 
 function daysBetween(startValue: unknown, endValue: unknown): number | null {
@@ -101,7 +164,128 @@ function daysBetween(startValue: unknown, endValue: unknown): number | null {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000));
 }
 
-/** Accrued contractor labor cost recorded/incurred in the selected period (for gross profit). */
+/** Customer invoices = non-cancelled invoice totals created in the selected period. */
+export function calculateCustomerInvoices(
+  invoices: InvoiceMetricRow[],
+  start: string | null,
+  end: string | null
+): number {
+  return invoices.reduce((sum, inv) => {
+    if (isCancelledInvoice(inv)) return sum;
+    return inRange(invoiceDate(inv), start, end) ? sum + num(inv.amount) : sum;
+  }, 0);
+}
+
+/** Still owed = current unpaid balances on non-cancelled invoices. */
+export function calculateStillOwed(invoices: InvoiceMetricRow[]): number {
+  return invoices.reduce((sum, inv) => {
+    if (isCancelledInvoice(inv)) return sum;
+    return sum + remainingBalance(inv.amount, inv.amount_paid);
+  }, 0);
+}
+
+/** Late payments = current overdue unpaid balances. */
+export function calculateLatePayments(invoices: InvoiceMetricRow[], today = todayIso()): {
+  amount: number;
+  count: number;
+} {
+  let amount = 0;
+  let count = 0;
+  for (const inv of invoices) {
+    if (isCancelledInvoice(inv)) continue;
+    const balance = remainingBalance(inv.amount, inv.amount_paid);
+    if (balance <= 0) continue;
+    const status = calculateInvoicePaymentStatus({
+      amount: num(inv.amount),
+      amount_paid: cappedAmountPaid(inv.amount, inv.amount_paid),
+      due_date: inv.due_date as string | null,
+      payment_status: inv.payment_status as string | null
+    });
+    if (status === 'overdue' || (inv.due_date && String(inv.due_date).slice(0, 10) < today && balance > 0)) {
+      amount += balance;
+      count += 1;
+    }
+  }
+  return { amount, count };
+}
+
+export function countUnpaidInvoices(invoices: InvoiceMetricRow[]): number {
+  return invoices.reduce((count, inv) => {
+    if (isCancelledInvoice(inv)) return count;
+    return remainingBalance(inv.amount, inv.amount_paid) > 0 ? count + 1 : count;
+  }, 0);
+}
+
+/**
+ * Paid to you from payment ledger rows whose paid_at falls in range.
+ * Falls back to invoice summary fields when no ledger rows exist for an invoice.
+ */
+export function calculatePaidToYou(input: {
+  invoices: InvoiceMetricRow[];
+  paymentRows: InvoicePaymentRow[];
+  start: string | null;
+  end: string | null;
+  range: DashboardDateRange;
+}): { paidToYou: number; paymentsMissingDates: number } {
+  const { invoices, paymentRows, start, end, range } = input;
+  const activeInvoiceIds = new Set(
+    invoices.filter((inv) => !isCancelledInvoice(inv)).map((inv) => String(inv.id || ''))
+  );
+
+  let paidToYou = 0;
+  const invoicesWithLedger = new Set<string>();
+
+  for (const row of paymentRows) {
+    const invoiceId = String(row.invoice_id || '');
+    if (invoiceId && !activeInvoiceIds.has(invoiceId) && activeInvoiceIds.size > 0) {
+      // Still count if invoice list omitted id; prefer including valid org-scoped payments.
+    }
+    if (invoiceId) invoicesWithLedger.add(invoiceId);
+    if (range === 'all_time') {
+      paidToYou += num(row.amount);
+      continue;
+    }
+    if (inRange(row.paid_at, start, end)) {
+      paidToYou += num(row.amount);
+    }
+  }
+
+  let paymentsMissingDates = 0;
+
+  // Legacy fallback for invoices that have amount_paid but no ledger payment rows.
+  for (const inv of invoices) {
+    if (isCancelledInvoice(inv)) continue;
+    const invoiceId = String(inv.id || '');
+    if (invoiceId && invoicesWithLedger.has(invoiceId)) continue;
+
+    const paid = cappedAmountPaid(inv.amount, inv.amount_paid);
+    if (paid <= 0) continue;
+
+    const paidDate = paymentDate(inv);
+    if (!paidDate) {
+      paymentsMissingDates += 1;
+      // Undated payments: include in all_time only. For bounded periods, include only when
+      // the invoice itself was created in the period (documented legacy fallback).
+      if (range === 'all_time') {
+        paidToYou += paid;
+      } else if (inRange(invoiceDate(inv), start, end)) {
+        paidToYou += paid;
+      }
+      continue;
+    }
+
+    if (range === 'all_time' || inRange(paidDate, start, end)) {
+      paidToYou += paid;
+    }
+  }
+
+  return {
+    paidToYou: Number(paidToYou.toFixed(2)),
+    paymentsMissingDates
+  };
+}
+
+/** Accrued contractor labor cost recorded/incurred in the selected period. */
 export function calculateContractorAccruedCost(
   laborRows: LaborCostRow[],
   start: string | null,
@@ -146,7 +330,18 @@ export function calculatePendingContractorPay(laborRows: LaborCostRow[]): number
   }, 0);
 }
 
-/** Net cash flow = cash in − contractor cash paid − other cash expenses. */
+/** Estimated profit = customer invoices − contractor pay − other expenses. */
+export function calculateEstimatedProfit(input: {
+  customerInvoices: number;
+  contractorPay: number;
+  otherExpenses: number;
+}): number {
+  return Number(
+    (num(input.customerInvoices) - num(input.contractorPay) - num(input.otherExpenses)).toFixed(2)
+  );
+}
+
+/** Cash after expenses = paid to you − contractor cash paid − other cash expenses. */
 export function calculateNetCashFlow(input: {
   cashCollected: number;
   contractorCashPaid: number;
@@ -157,19 +352,45 @@ export function calculateNetCashFlow(input: {
   );
 }
 
-export async function fetchDashboardRevenueMetrics(
-  supabase: SupabaseClient,
-  organizationId: string | null,
-  range: DashboardDateRange = 'month'
-): Promise<DashboardRevenueMetrics> {
-  const { start, end } = rangeBounds(range);
-  const today = todayIso();
-  const empty: DashboardRevenueMetrics = {
+export const calculateCashAfterExpenses = calculateNetCashFlow;
+
+export function calculateEstimatedProfitPercentage(
+  estimatedProfit: number,
+  customerInvoices: number
+): number | null {
+  if (customerInvoices <= 0) return null;
+  return Number(((estimatedProfit / customerInvoices) * 100).toFixed(1));
+}
+
+/**
+ * All-time reconciliation for non-cancelled invoices:
+ * customer invoices ≈ paid to you + still owed (within rounding).
+ */
+export function reconcileAllTimeInvoices(input: {
+  customerInvoices: number;
+  paidToYou: number;
+  stillOwed: number;
+  tolerance?: number;
+}): { ok: boolean; difference: number } {
+  const difference = Number(
+    (num(input.customerInvoices) - num(input.paidToYou) - num(input.stillOwed)).toFixed(2)
+  );
+  const tolerance = input.tolerance ?? 0.02;
+  return { ok: Math.abs(difference) <= tolerance, difference };
+}
+
+function emptyMetrics(): DashboardRevenueMetrics {
+  return {
     revenueThisMonth: 0,
     cashCollected: 0,
+    paidToYou: 0,
+    customerInvoices: 0,
+    uninvoicedCompletedWork: 0,
     bookedRevenue: 0,
     pendingIncoming: 0,
+    stillOwed: 0,
     overdueAmount: 0,
+    latePayments: 0,
     averageDaysToPayment: null,
     outstandingInvoices: 0,
     outstandingInvoiceCount: 0,
@@ -187,18 +408,32 @@ export async function fetchDashboardRevenueMetrics(
     otherExpensesThisMonth: 0,
     expenseTotalThisMonth: 0,
     netEstimateThisMonth: 0,
+    estimatedProfit: 0,
     netCashFlow: 0,
+    cashAfterExpenses: 0,
+    paymentsMissingDates: 0,
     bookingCountThisMonth: 0,
     messageCount: 0,
     reportCount: 0,
     jobsByStatus: {},
     totalJobs: 0
   };
+}
+
+export async function fetchDashboardRevenueMetrics(
+  supabase: SupabaseClient,
+  organizationId: string | null,
+  range: DashboardDateRange = 'month'
+): Promise<DashboardRevenueMetrics> {
+  const { start, end } = rangeBounds(range);
+  const today = todayIso();
+  const empty = emptyMetrics();
 
   if (!organizationId) return empty;
 
   const [
     invoicesRes,
+    paymentRowsRes,
     manualRevenueJobsRes,
     laborRes,
     completedJobsRes,
@@ -214,8 +449,12 @@ export async function fetchDashboardRevenueMetrics(
     supabase
       .from('invoices')
       .select(
-        'amount, amount_paid, invoice_date, created_at, due_date, payment_status, status, paid_at, last_payment_at, job_id'
+        'id, amount, amount_paid, invoice_date, created_at, due_date, payment_status, status, paid_at, last_payment_at, job_id'
       )
+      .eq('organization_id', organizationId),
+    supabase
+      .from('invoice_payments')
+      .select('amount, paid_at, invoice_id')
       .eq('organization_id', organizationId),
     supabase
       .from('jobs')
@@ -262,64 +501,50 @@ export async function fetchDashboardRevenueMetrics(
   const safeData = <T,>(res: { data: T | null; error: unknown }, fallback: T): T =>
     res.error ? fallback : res.data || fallback;
 
-  const invoices = safeData(invoicesRes, []);
+  const invoices = safeData(invoicesRes, []) as InvoiceMetricRow[];
+  // If invoice_payments table is missing (migration not applied), fall back gracefully.
+  const paymentRows = paymentRowsRes.error ? [] : (safeData(paymentRowsRes, []) as InvoicePaymentRow[]);
+
   const invoicedJobIds = new Set<string>();
-  let cashCollected = 0;
-  let bookedInvoiceRevenue = 0;
-  let pendingIncoming = 0;
-  let outstandingInvoiceCount = 0;
-  let overdueAmount = 0;
-  let overdueInvoiceCount = 0;
-  const paymentDurations: number[] = [];
-
   for (const inv of invoices) {
-    const amount = num(inv.amount);
-    const paid = Math.min(num(inv.amount_paid), amount);
-    const balance = Math.max(0, amount - paid);
-    const bookedDate = invoiceDate(inv);
-    const paidDate = paymentDate(inv);
-
     if (inv.job_id) invoicedJobIds.add(String(inv.job_id));
+  }
 
-    const statusHint = String(inv.payment_status || inv.status || '').toLowerCase();
-    const cancelled = statusHint === 'cancelled' || statusHint === 'canceled';
-    if (cancelled) {
-      continue;
-    }
+  const customerInvoices = calculateCustomerInvoices(invoices, start, end);
+  const { paidToYou, paymentsMissingDates } = calculatePaidToYou({
+    invoices,
+    paymentRows,
+    start,
+    end,
+    range
+  });
+  const stillOwed = calculateStillOwed(invoices);
+  const late = calculateLatePayments(invoices, today);
+  const outstandingInvoiceCount = countUnpaidInvoices(invoices);
 
-    if (inRange(bookedDate, start, end)) bookedInvoiceRevenue += amount;
-    if ((range === 'all_time' && paid > 0) || (paidDate && inRange(paidDate, start, end))) {
-      cashCollected += paid;
-    }
-
-    if (balance > 0) {
-      pendingIncoming += balance;
-      outstandingInvoiceCount += 1;
-      const status = calculateInvoicePaymentStatus({
-        amount,
-        amount_paid: paid,
-        due_date: inv.due_date as string | null,
-        payment_status: inv.payment_status as string | null
-      });
-      if (status === 'overdue') {
-        overdueInvoiceCount += 1;
-        overdueAmount += balance;
-      }
-    }
-
+  const paymentDurations: number[] = [];
+  for (const inv of invoices) {
+    if (isCancelledInvoice(inv)) continue;
+    const amount = num(inv.amount);
+    const paid = cappedAmountPaid(inv.amount, inv.amount_paid);
+    const paidDate = paymentDate(inv);
+    const bookedDate = invoiceDate(inv);
     if (paid > 0 && paidDate && paid >= amount) {
       const duration = daysBetween(bookedDate, paidDate);
-      if (duration !== null && inRange(paidDate, start, end)) paymentDurations.push(duration);
+      if (duration !== null && (range === 'all_time' || inRange(paidDate, start, end))) {
+        paymentDurations.push(duration);
+      }
     }
   }
 
-  const manualRevenue = safeData(manualRevenueJobsRes, []).reduce((sum, job) => {
+  const uninvoicedCompletedWork = safeData(manualRevenueJobsRes, []).reduce((sum, job) => {
     if (invoicedJobIds.has(String(job.id))) return sum;
+    const status = String(job.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'canceled') return sum;
     const bookedDate = job.completed_at || job.start_date || job.scheduled_start || job.created_at;
     return inRange(bookedDate, start, end) ? sum + num(job.revenue_amount) : sum;
   }, 0);
 
-  const bookedRevenue = bookedInvoiceRevenue + manualRevenue;
   const averageDaysToPayment = paymentDurations.length
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
     : null;
@@ -346,28 +571,40 @@ export async function fetchDashboardRevenueMetrics(
   );
 
   const accruedCosts = contractorPay + otherExpenses;
+  const estimatedProfit = calculateEstimatedProfit({
+    customerInvoices,
+    contractorPay,
+    otherExpenses
+  });
+  const cashAfterExpenses = calculateCashAfterExpenses({
+    cashCollected: paidToYou,
+    contractorCashPaid: contractorPaymentsPaid,
+    otherCashExpenses: otherExpenses
+  });
+
   const completedRows = safeData(completedJobsRes, []);
   const completedInRange = completedRows.filter((row) => inRange(row.completed_at, start, end)).length;
   const bookingCount = safeData(bookingsRes, []).filter((row) => inRange(row.starts_at, start, end)).length;
   const messageCount = safeData(messagesRes, []).filter((row) => inRange(row.created_at, start, end)).length;
   const reportCount = safeData(reportsRes, []).filter((row) => inRange(row.created_at, start, end)).length;
-  const netCashFlow = calculateNetCashFlow({
-    cashCollected,
-    contractorCashPaid: contractorPaymentsPaid,
-    otherCashExpenses: otherExpenses
-  });
 
   return {
-    revenueThisMonth: Number(cashCollected.toFixed(2)),
-    cashCollected: Number(cashCollected.toFixed(2)),
-    bookedRevenue: Number(bookedRevenue.toFixed(2)),
-    pendingIncoming: Number(pendingIncoming.toFixed(2)),
-    overdueAmount: Number(overdueAmount.toFixed(2)),
+    revenueThisMonth: Number(paidToYou.toFixed(2)),
+    cashCollected: Number(paidToYou.toFixed(2)),
+    paidToYou: Number(paidToYou.toFixed(2)),
+    customerInvoices: Number(customerInvoices.toFixed(2)),
+    uninvoicedCompletedWork: Number(uninvoicedCompletedWork.toFixed(2)),
+    // bookedRevenue now means customer invoices only (manual work is separate).
+    bookedRevenue: Number(customerInvoices.toFixed(2)),
+    pendingIncoming: Number(stillOwed.toFixed(2)),
+    stillOwed: Number(stillOwed.toFixed(2)),
+    overdueAmount: Number(late.amount.toFixed(2)),
+    latePayments: Number(late.amount.toFixed(2)),
     averageDaysToPayment: averageDaysToPayment === null ? null : Number(averageDaysToPayment.toFixed(1)),
-    outstandingInvoices: Number(pendingIncoming.toFixed(2)),
+    outstandingInvoices: Number(stillOwed.toFixed(2)),
     outstandingInvoiceCount,
-    overdueInvoiceCount,
-    unpaidInvoiceTotal: Number(pendingIncoming.toFixed(2)),
+    overdueInvoiceCount: late.count,
+    unpaidInvoiceTotal: Number(stillOwed.toFixed(2)),
     jobsCompleted: completedRows.length,
     jobsCompletedThisMonth: completedInRange,
     activeCustomers: safeCount(customersRes),
@@ -379,8 +616,11 @@ export async function fetchDashboardRevenueMetrics(
     pendingContractorPay: Number(pendingContractorPay.toFixed(2)),
     otherExpensesThisMonth: Number(otherExpenses.toFixed(2)),
     expenseTotalThisMonth: Number(accruedCosts.toFixed(2)),
-    netEstimateThisMonth: Number((bookedRevenue - accruedCosts).toFixed(2)),
-    netCashFlow,
+    netEstimateThisMonth: estimatedProfit,
+    estimatedProfit,
+    netCashFlow: cashAfterExpenses,
+    cashAfterExpenses,
+    paymentsMissingDates,
     bookingCountThisMonth: bookingCount,
     messageCount,
     reportCount,

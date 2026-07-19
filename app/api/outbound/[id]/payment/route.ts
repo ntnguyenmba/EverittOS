@@ -104,11 +104,12 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const balanceDue = calculateBalanceDue(invoiceAmount || nextPaid, nextPaid);
+  const paymentIncrement = body.cancel ? 0 : Math.max(0, nextPaid - existingPaid);
   const docPatch: Record<string, unknown> = {
     amount_paid: nextPaid,
     balance_due: balanceDue,
     payment_status: paymentStatus,
-    last_payment_at: body.cancel ? document.last_payment_at : now,
+    last_payment_at: body.cancel ? document.last_payment_at : `${paidDate}T12:00:00.000Z`,
     updated_at: now
   };
 
@@ -122,7 +123,13 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (paymentStatus === 'paid') {
       docPatch.paid_at = `${paidDate}T12:00:00.000Z`;
+      docPatch.status = 'paid';
+    } else if (paymentStatus === 'partially_paid' || paymentStatus === 'overdue') {
+      docPatch.paid_at = null;
+      docPatch.status = paymentStatus === 'partially_paid' ? 'partial' : document.status;
     }
+  } else {
+    docPatch.status = 'cancelled';
   }
 
   const { data: updated, error: updateError } = await ctx.supabase
@@ -152,6 +159,7 @@ export async function POST(request: Request, context: RouteContext) {
       invoicePatch.paid_at = docPatch.paid_at;
       invoicePatch.status = 'paid';
     } else if (paymentStatus === 'partially_paid') {
+      invoicePatch.paid_at = null;
       invoicePatch.status = 'partial';
     } else if (paymentStatus === 'cancelled') {
       invoicePatch.status = 'cancelled';
@@ -161,6 +169,26 @@ export async function POST(request: Request, context: RouteContext) {
       .update(invoicePatch)
       .eq('id', document.source_entity_id)
       .eq('organization_id', ctx.organizationId);
+
+    // Record individual payment for period-accurate "Paid to you". Preserve history on cancel.
+    if (!body.cancel && paymentIncrement > 0) {
+      const { error: paymentInsertError } = await ctx.supabase.from('invoice_payments').insert({
+        organization_id: ctx.organizationId,
+        invoice_id: document.source_entity_id,
+        outbound_document_id: id,
+        amount: paymentIncrement,
+        paid_at: `${paidDate}T12:00:00.000Z`,
+        payment_method: (docPatch.payment_method as string | null) || null,
+        payment_reference: (docPatch.payment_reference as string | null) || null,
+        notes: body.payment_notes?.trim() || null,
+        source: 'recorded',
+        created_by: ctx.userId
+      });
+      if (paymentInsertError) {
+        // Non-fatal if migration is not applied yet; invoice summary fields remain correct.
+        console.error('INVOICE_PAYMENT_LEDGER_INSERT_FAILED', paymentInsertError.message);
+      }
+    }
   }
 
   await logWorkspaceActivity(
@@ -172,6 +200,7 @@ export async function POST(request: Request, context: RouteContext) {
     activityMessage,
     {
       amount_paid: nextPaid,
+      payment_increment: paymentIncrement,
       payment_status: paymentStatus,
       payment_method: docPatch.payment_method,
       payment_reference: docPatch.payment_reference
