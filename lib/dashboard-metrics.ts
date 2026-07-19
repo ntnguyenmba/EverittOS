@@ -7,4 +7,12 @@ const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
 
 export type DashboardDateRange = 'month' | 'quarter' | 'year' | 'last_year' | 'all_time';
 
-export type DashboardRevenue
+export type DashboardRevenueMetrics = {
+  revenueThisMonth: number;
+  cashCollected: number;
+  bookedRevenue: number;
+  pendingIncoming: number;
+  overdueAmount: number;
+  averageDaysToPayment: number | null;
+  outstandingInvoices: number;
+  outstandingInvoiceCount: number
