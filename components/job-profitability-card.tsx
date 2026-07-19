@@ -43,16 +43,18 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     void loadFinancials();
   }, [loadFinancials, refreshKey]);
 
-  function openSendInvoice() {
-    const params = new URLSearchParams({ jobId });
+  function invoiceParams(extra?: Record<string, string>) {
+    const params = new URLSearchParams({ jobId, ...extra });
     if (customerId) params.set('customerId', customerId);
-    router.push(`/invoices?${params.toString()}`);
+    return params;
+  }
+
+  function openSendInvoice() {
+    router.push(`/invoices?${invoiceParams({ action: 'new' }).toString()}`);
   }
 
   function openRecordPayment() {
-    const params = new URLSearchParams({ jobId, payment: 'unpaid' });
-    if (customerId) params.set('customerId', customerId);
-    router.push(`/invoices?${params.toString()}`);
+    router.push(`/invoices?${invoiceParams({ payment: 'unpaid' }).toString()}`);
   }
 
   async function saveRevenue() {
@@ -87,7 +89,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   if (loading) {
     return (
       <div className="card finance-card job-financials-card">
-        <h3>Client income and profit</h3>
+        <h3>Client payment and profit</h3>
         <p className="loading-state">Loading...</p>
       </div>
     );
@@ -109,22 +111,45 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   const liveMargin = liveRevenue > 0 ? (liveProfit / liveRevenue) * 100 : 0;
   const savedMarginText = hasContractorPay && revenue > 0 ? `${profitMargin.toFixed(1)}%` : 'Pending contractor pay';
   const liveMarginText = hasContractorPay && liveRevenue > 0 ? `${liveMargin.toFixed(1)}%` : 'Pending contractor pay';
+  const paymentStatus = !p?.hasInvoice
+    ? 'No invoice yet'
+    : p.outstanding <= 0 && p.invoiceTotal > 0
+      ? 'Paid in full'
+      : p.paymentsReceived > 0
+        ? 'Partially paid'
+        : 'Unpaid';
 
   return (
     <div className="card finance-card job-financials-card">
       <div className="job-financials-head">
         <div>
-          <h3>Client income and profit</h3>
-          <p className="muted">Client income is the amount the customer pays your business. Contractor pay is entered separately in the Contractor pay card below.</p>
+          <h3>Client payment and profit</h3>
+          <p className="muted">Record money received from the client here so paid revenue, balances, and reports stay accurate.</p>
         </div>
         {canManage ? <button type="button" className="btn" onClick={openSendInvoice}>Send invoice</button> : null}
       </div>
 
+      <div className="job-financials-section profit-summary-section">
+        <h4>Client payment status</h4>
+        <div className="finance-metric-grid financials-summary-grid">
+          <div className="finance-metric featured"><span className="finance-metric-label">Status</span><strong>{paymentStatus}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Money received</span><strong>{formatCurrency(p?.paymentsReceived || 0)}</strong></div>
+          <div className="finance-metric"><span className="finance-metric-label">Still owed</span><strong>{formatCurrency(p?.outstanding || 0)}</strong></div>
+        </div>
+        {canManage ? (
+          <div className="button-row" style={{ marginTop: 12 }}>
+            <button type="button" className="btn btn-primary" onClick={openRecordPayment}>Record client payment</button>
+            {!p?.hasInvoice ? <button type="button" className="btn" onClick={openSendInvoice}>Create invoice first</button> : null}
+          </div>
+        ) : null}
+        <p className="muted finance-note">Paid revenue uses payments recorded on the invoice, not the quoted job amount.</p>
+      </div>
+
       <div className="job-financials-section">
-        <h4>Client income</h4>
+        <h4>Job amount</h4>
         {canManage ? (
           <div className="finance-form-block compact-finance-form">
-            <label htmlFor={`client-income-${jobId}`}>Amount customer pays you</label>
+            <label htmlFor={`client-income-${jobId}`}>Amount customer is expected to pay</label>
             <input
               id={`client-income-${jobId}`}
               className="input"
@@ -140,21 +165,19 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
               id={`client-income-notes-${jobId}`}
               className="input"
               rows={2}
-              placeholder="Optional client income notes"
+              placeholder="Optional job amount notes"
               value={revenueNotes}
               onChange={(e) => setRevenueNotes(e.target.value)}
             />
-            {!p?.hasInvoice ? <p className="muted finance-note">Use this only when there is no invoice yet.</p> : null}
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRevenue()}>
-              {saving ? FEEDBACK.loading : 'Save client income section'}
+            {!p?.hasInvoice ? <p className="muted finance-note">This saves the expected job amount. Use Record client payment after money is received.</p> : null}
+            <button type="button" className="btn" disabled={saving} onClick={() => void saveRevenue()}>
+              {saving ? FEEDBACK.loading : 'Save job amount'}
             </button>
           </div>
         ) : null}
 
         {!hasRevenue ? (
-          <div className="finance-empty-block">
-            <p>No client income or invoice yet.</p>
-          </div>
+          <div className="finance-empty-block"><p>No job amount or invoice yet.</p></div>
         ) : (
           <div className="finance-metric-grid financials-summary-grid">
             {p?.hasInvoice ? (
@@ -164,7 +187,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 <div className="finance-metric"><span className="finance-metric-label">Still owed</span><strong>{formatCurrency(p.outstanding)}</strong></div>
               </>
             ) : (
-              <div className="finance-metric"><span className="finance-metric-label">Saved client income</span><strong>{formatCurrency(p?.manualRevenue || 0)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Expected job amount</span><strong>{formatCurrency(p?.manualRevenue || 0)}</strong></div>
             )}
           </div>
         )}
@@ -192,24 +215,15 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
             </>
           ) : null}
         </div>
-        <p className="muted finance-note">
-          Estimated profit equals client income minus contractor pay and other job costs. Profit margin appears after contractor pay is entered.
-        </p>
+        <p className="muted finance-note">Estimated profit equals the recorded revenue basis minus contractor pay and other job costs.</p>
       </div>
 
       {p?.hasInvoice ? (
         <div className="job-financials-section">
-          <h4>Record payment</h4>
-          <p className="muted finance-note">
-            Record customer payments once on the invoice. That updates Paid to you, Still owed, cash after expenses, and reports everywhere.
-          </p>
+          <h4>Invoice</h4>
           <div className="button-row" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-primary" onClick={openRecordPayment}>
-              Record payment on invoice
-            </button>
-            <Link className="btn" href="/invoices">
-              View invoices
-            </Link>
+            {canManage ? <button type="button" className="btn btn-primary" onClick={openRecordPayment}>Record another payment</button> : null}
+            <Link className="btn" href="/invoices">View invoices</Link>
           </div>
         </div>
       ) : null}
