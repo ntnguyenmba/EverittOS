@@ -86,6 +86,7 @@ const emptyDashboardRevenueMetrics: DashboardRevenueMetrics = {
   customerCount: 0,
   upcomingJobs: 0,
   contractorPayThisMonth: 0,
+  contractorPaymentsPaid: 0,
   unpaidContractorPay: 0,
   pendingContractorPay: 0,
   otherExpensesThisMonth: 0,

@@ -80,11 +80,15 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const pendingIncoming = activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
   const overdueAmount = activeMetrics.overdueAmount ?? 0;
   const contractorPay = activeMetrics.contractorPayThisMonth || 0;
+  const contractorPaymentsPaid = activeMetrics.contractorPaymentsPaid || 0;
   const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
   const pendingContractorPay = activeMetrics.pendingContractorPay || 0;
   const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
   const grossProfit = activeMetrics.netEstimateThisMonth || 0;
-  const netCashFlow = activeMetrics.netCashFlow ?? (cashCollected - contractorPay - otherExpenses);
+  // Prefer server netCashFlow; fallback uses cash paid (not accrued contractor cost).
+  const netCashFlow =
+    activeMetrics.netCashFlow ??
+    Number((cashCollected - contractorPaymentsPaid - otherExpenses).toFixed(2));
   const hasRecordedCosts = contractorPay > 0 || otherExpenses > 0;
   const profitMargin = hasRecordedCosts && bookedRevenue > 0 ? (grossProfit / bookedRevenue) * 100 : null;
   const comparisonBase = Math.max(cashCollected, bookedRevenue, pendingIncoming, contractorPay, otherExpenses, Math.abs(netCashFlow), 1);
@@ -109,8 +113,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     { label: 'Contractor pay owed', value: formatCurrency(unpaidContractorPay), href: '/contractor-pay?status=unpaid' },
     { label: 'Contractor pay pending', value: formatCurrency(pendingContractorPay), href: '/contractor-pay?status=pending' },
     { label: `Other expenses · ${rangeLabel}`, value: formatCurrency(otherExpenses), href: '/expenses' },
-    { label: `Gross profit · ${rangeLabel}`, value: hasRecordedCosts ? formatCurrency(grossProfit) : 'Pending costs', href: '/analytics', help: 'Booked revenue minus contractor costs and other expenses for the selected period.' },
-    { label: `Net cash flow · ${rangeLabel}`, value: formatCurrency(netCashFlow), href: '/analytics', help: 'Cash collected minus contractor costs and other expenses for the selected period.' },
+    { label: `Gross profit · ${rangeLabel}`, value: hasRecordedCosts ? formatCurrency(grossProfit) : 'Pending costs', href: '/analytics', help: 'Booked revenue minus contractor labor recorded in the period and other expenses for the selected period.' },
+    { label: `Net cash flow · ${rangeLabel}`, value: formatCurrency(netCashFlow), href: '/analytics', help: 'Cash collected minus contractor payments actually paid and other cash expenses during the selected period.' },
     { label: 'Profit margin', value: profitMargin === null ? 'Pending costs' : `${profitMargin.toFixed(1)}%`, href: '/analytics' },
     { label: `Jobs completed · ${rangeLabel}`, value: String(activeMetrics.jobsCompletedThisMonth), href: '/jobs?status=completed' },
     { label: `Jobs · ${rangeLabel}`, value: String(activeMetrics.totalJobs), href: '/jobs' },
