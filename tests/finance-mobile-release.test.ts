@@ -94,8 +94,10 @@ test('ask Everitt UI access hides AI upsell when platform is native', () => {
 
     const billing = resolveBillingVisibility();
     assert.equal(billing.allowCheckout, false);
-    assert.equal(billing.showUpgradeActions, false);
-    assert.equal(billing.showUpgradePrices, false);
+    assert.equal(billing.allowNativeStorePurchase, true);
+    assert.equal(billing.showUpgradeActions, true);
+    assert.equal(billing.showUpgradePrices, true);
+    assert.equal(billing.showRestorePurchases, true);
   } finally {
     Object.defineProperty(Capacitor, 'isNativePlatform', {
       configurable: true,

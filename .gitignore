@@ -11,3 +11,14 @@ android/local.properties
 ios/App/Pods
 ios/DerivedData
 *.keystore
+*.jks
+*.p12
+*.pem
+*.p8
+AuthKey_*.p8
+google-services.json
+**/service-account*.json
+**/play-service-account*.json
+android/key.properties
+ios/certs/
+*.mobileprovision

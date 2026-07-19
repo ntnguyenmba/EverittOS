@@ -2,38 +2,38 @@
 
 ## Selected release model
 
-**EverittOS for iOS and Android is an account-access application for existing customers.**
+**Native iOS and Android apps use platform store billing for digital subscriptions.**
 
-Native apps do **not** offer:
+| Platform | Purchase | Manage |
+|----------|----------|--------|
+| Web / PWA | Stripe Checkout | Stripe Customer Portal |
+| iOS | StoreKit 2 | Apple subscription management |
+| Android | Google Play Billing | Google Play Subscription Center |
 
-* subscription purchases
-* pricing
-* upgrade buttons
-* external purchase links
-* website purchase instructions
-* Stripe Checkout
-* Stripe Customer Portal
-* coupons or promo purchase UI
+Rules:
 
-Existing customers sign in and use the features already included in their account. Subscription purchase and management remain on the web application only.
-
-This document does **not** claim Apple or Google approval or a formal legal exception. Owner/legal review remains required before store submission.
+* Do **not** show Stripe Checkout inside the iOS or Android app for digital subscriptions
+* Do **not** unlock paid features from client-only purchase callbacks
+* Backend verifies every Apple/Google transaction before granting entitlement
+* Existing Stripe web subscriptions continue to work on web and unlock the same account after sign-in
 
 ## Platform helper
 
-| Surface | Checkout | Portal | Prices | Upgrade actions | Plan summary |
-|---------|----------|--------|--------|-----------------|--------------|
-| Web / PWA | Yes | Yes | Yes | Yes | Yes |
-| Native iOS/Android | No | No | No | No | Yes (neutral) |
+| Surface | Stripe checkout | Stripe portal | Store purchase | Prices | Upgrade actions |
+|---------|-----------------|---------------|----------------|--------|-----------------|
+| Web / PWA | Yes | Yes | No | Yes (list) | Yes |
+| Native iOS | No | No | Yes (StoreKit) | Store-localized | Yes |
+| Native Android | No | No | Yes (Play Billing) | Store-localized | Yes |
 
 ## Ask Everitt
 
-* AI-enabled native accounts: Ask Everitt works; no billing controls.
-* Non-AI native accounts: AI controls/suggestions/upsells hidden; message if needed: “This feature is unavailable for this account.”
-* Web non-AI accounts: existing upgrade messaging retained.
+* Native AI upsells remain suppressed (`shouldShowAiUpsell` is web-only)
+* Users manage plans from Settings → Plans & billing
 
 ## Owner action items
 
-- [ ] Legal review of existing-account mobile access model
-- [ ] App Store / Play billing declarations aligned with this model
-- [ ] Reviewer notes prepared (no purchase flow in native apps)
+- [ ] Create App Store / Play subscription products
+- [ ] Configure Apple + Google server credentials
+- [ ] Apply store billing migration
+- [ ] Legal review of store + Stripe cross-platform entitlements
+- [ ] Reviewer notes with sandbox accounts

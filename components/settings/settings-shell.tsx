@@ -8,7 +8,6 @@ import { useTranslation } from '@/components/locale-provider';
 import { settingsLinksForRole } from '@/lib/nav-access';
 import { settingsNavLabel } from '@/lib/nav-i18n';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { isNativePlatform } from '@/lib/platform/detect';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -44,10 +43,8 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     loadRole();
   }, [roleProp]);
 
-  const links = settingsLinksForRole(role, normalizedPlan).filter((link) => {
-    if (!isNativePlatform()) return true;
-    return link.href !== '/settings/billing';
-  });
+  // Native apps keep billing visible for StoreKit / Play purchases (Stripe checkout stays web-only).
+  const links = settingsLinksForRole(role, normalizedPlan);
 
   return (
     <AppShell plan={normalizedPlan} role={role}>

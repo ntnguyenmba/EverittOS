@@ -14,7 +14,15 @@ import { subscriptionAccess } from '@/lib/subscription-access';
 import { isPaidPlanActive } from '@/lib/workspace-subscription';
 import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
-import { resolveBillingVisibility, nativeBillingNotice } from '@/lib/platform/billing';
+import {
+  manageSubscriptionLabel,
+  nativeBillingNotice,
+  resolveBillingVisibility
+} from '@/lib/platform/billing';
+import {
+  openNativeSubscriptionManagement,
+  restoreNativePurchases
+} from '@/lib/billing/native-purchase';
 import { supabase } from '@/lib/supabase';
 
 function BillingSettingsContent() {
@@ -304,10 +312,15 @@ function BillingSettingsContent() {
 
   if (billingVisibility.surface === 'native') {
     return (
-      <SettingsShell plan={plan} role={role} title="Account access" description="Review the features included with your current account.">
+      <SettingsShell
+        plan={plan}
+        role={role}
+        title="Plans & billing"
+        description="Subscribe with the App Store or Google Play. Paid features unlock after server verification."
+      >
         <section className="settings-card" style={{ display: 'grid', gap: 16, padding: 24 }}>
           <div>
-            <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current access</p>
+            <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current plan</p>
             <h3 style={{ margin: 0 }}>{planDisplayName(plan)}</h3>
           </div>
           <div className="settings-row">
@@ -323,7 +336,75 @@ function BillingSettingsContent() {
           <p className="muted" style={{ margin: 0 }}>
             {nativeBillingNotice()}
           </p>
+          <div className="settings-actions" style={{ marginTop: 0, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {billingVisibility.showRestorePurchases ? (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  void (async () => {
+                    setMessage('Restoring…');
+                    const result = await restoreNativePurchases();
+                    setMessage(result.message);
+                    if (result.restored) {
+                      await refreshWorkspacePlan();
+                    }
+                  })();
+                }}
+              >
+                Restore Purchases
+              </button>
+            ) : null}
+            {billingVisibility.showManageStoreSubscription ? (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  void openNativeSubscriptionManagement().then((opened) => {
+                    if (!opened) setMessage('Unable to open subscription management.');
+                  });
+                }}
+              >
+                {manageSubscriptionLabel(billingVisibility.platform === 'ios' ? 'apple' : 'google')}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                void (async () => {
+                  setMessage('Refreshing…');
+                  const res = await fetch('/api/billing/entitlement', { credentials: 'same-origin' });
+                  const json = (await res.json().catch(() => ({}))) as { plan?: string; error?: string };
+                  if (!res.ok) {
+                    setMessage(json.error || 'Unable to refresh subscription status.');
+                    return;
+                  }
+                  setMessage('Subscription status refreshed.');
+                  await refreshWorkspacePlan();
+                })();
+              }}
+            >
+              Refresh Subscription Status
+            </button>
+          </div>
+          {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
         </section>
+
+        {canManageWorkspaceBilling ? (
+          <BillingPlansGrid
+            currentPlan={plan}
+            highlightPlan={upgradePlan}
+            hasActiveSubscription={hasActiveSubscription}
+            portalAvailable={false}
+            onNativePurchaseSuccess={() => {
+              void refreshWorkspacePlan();
+              setMessage('Subscription activated.');
+            }}
+          />
+        ) : (
+          <p className="muted">Only workspace owners and admins can change the subscription.</p>
+        )}
       </SettingsShell>
     );
   }

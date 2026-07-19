@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
+import { NativeStoreSubscribeButton } from '@/components/native-store-subscribe-button';
 import {
   BILLING_UI_BUILD_ID,
   resolveBillingPlanCardUi,
@@ -22,6 +23,7 @@ type BillingPlansGridProps = {
   portalAvailable?: boolean;
   onOpenPortal?: () => void;
   portalLoading?: boolean;
+  onNativePurchaseSuccess?: () => void;
 };
 
 const shellStyle: CSSProperties = {
@@ -164,7 +166,8 @@ export function BillingPlansGrid({
   hasActiveSubscription = false,
   portalAvailable = false,
   onOpenPortal,
-  portalLoading = false
+  portalLoading = false,
+  onNativePurchaseSuccess
 }: BillingPlansGridProps) {
   const { t } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
@@ -247,8 +250,18 @@ export function BillingPlansGrid({
                   {tier.featured && !isCurrent ? <span style={badgeStyle}>Popular</span> : null}
                 </div>
                 <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.25 }}>{tier.name}</h3>
-                {billingVisibility.showUpgradePrices ? (
+                {billingVisibility.showUpgradePrices && !billingVisibility.allowNativeStorePurchase ? (
                   <p className="pricing-plan-price" style={priceStyle}>{tier.priceLabel}</p>
+                ) : null}
+                {billingVisibility.allowNativeStorePurchase && (tier.id === 'pro' || tier.id === 'business') ? (
+                  <p className="pricing-plan-price" style={priceStyle}>
+                    Store price shown at purchase
+                  </p>
+                ) : null}
+                {billingVisibility.allowNativeStorePurchase && tier.id !== 'pro' && tier.id !== 'business' && tier.id !== 'free' ? (
+                  <p className="pricing-plan-price" style={{ ...priceStyle, fontSize: 14 }}>
+                    Available on web (Stripe)
+                  </p>
                 ) : null}
                 <p className="billing-plan-headline" style={headlineStyle}>{tier.headline}</p>
                 <ul className="billing-plan-features" style={featuresStyle}>
@@ -273,9 +286,30 @@ export function BillingPlansGrid({
                   />
                 ) : null}
 
-                {ui.kind === 'checkout' && !billingVisibility.allowCheckout ? (
+                {ui.kind === 'checkout' &&
+                billingVisibility.allowNativeStorePurchase &&
+                (ui.plan === 'pro' || ui.plan === 'business') ? (
+                  <NativeStoreSubscribeButton
+                    plan={ui.plan}
+                    label={ui.label}
+                    onSuccess={() => onNativePurchaseSuccess?.()}
+                  />
+                ) : null}
+
+                {ui.kind === 'checkout' &&
+                !billingVisibility.allowCheckout &&
+                !billingVisibility.allowNativeStorePurchase ? (
                   <p className="billing-plan-current-label" style={currentStyle}>
                     {nativeBillingNotice()}
+                  </p>
+                ) : null}
+
+                {ui.kind === 'checkout' &&
+                billingVisibility.allowNativeStorePurchase &&
+                ui.plan !== 'pro' &&
+                ui.plan !== 'business' ? (
+                  <p className="billing-plan-current-label" style={currentStyle}>
+                    This plan is available on the web with Stripe.
                   </p>
                 ) : null}
 
@@ -322,7 +356,9 @@ export function BillingPlansGrid({
 
       <footer className="billing-plans-footnote-group" style={footnotesStyle}>
         <p className="billing-plans-footnote" style={noteStyle}>
-          Subscriptions renew monthly until canceled. Promo codes, when available, are entered in Stripe Checkout.
+          {billingVisibility.allowNativeStorePurchase
+            ? 'Subscriptions renew automatically until cancelled in the App Store or Google Play. Deleting your EverittOS account does not cancel a store subscription.'
+            : 'Subscriptions renew monthly until canceled. Promo codes, when available, are entered in Stripe Checkout.'}
         </p>
         <p className="billing-plans-footnote billing-legal-links" style={noteStyle}>
           <Link href="/terms">{t('legal.terms')}</Link> · <Link href="/privacy">{t('legal.privacy')}</Link>

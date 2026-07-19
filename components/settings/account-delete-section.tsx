@@ -67,6 +67,8 @@ export function AccountDeleteSection({ hasActiveSubscription, busy = false }: Ac
         <h4>Delete Account</h4>
         <p className="muted">
           Permanently delete your account and associated profile information. This action cannot be undone.
+          Deleting your EverittOS account does not automatically cancel an App Store or Google Play subscription —
+          manage those in Apple Settings or Google Play Subscriptions.
         </p>
 
         {hasActiveSubscription ? (
