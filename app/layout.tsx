@@ -8,5 +8,4 @@ import { LocaleSync } from '@/components/locale-sync';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { SessionGuard } from '@/components/session-guard';
-import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
-import { WorkspacePlan
+import { WorkspaceBootstrap } from '@/components
