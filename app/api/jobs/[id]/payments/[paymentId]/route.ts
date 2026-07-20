@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { deleteJobPayment, updateJobPayment } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
@@ -44,6 +45,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'job',
+    jobId,
+    'job_payment_updated',
+    'Client payment updated on job',
+    {
+      payment_id: paymentId,
+      amount: body.amount !== undefined ? Number(body.amount) : undefined,
+      paid_date: body.paid_date || null,
+      payment_method: body.payment_method || null
+    }
+  );
+
   const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
   return NextResponse.json({ ok: true, payment: result.payment, profitability });
 }
@@ -67,6 +83,16 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
+
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'job',
+    jobId,
+    'job_payment_removed',
+    'Client payment removed from job',
+    { payment_id: paymentId }
+  );
 
   const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
   return NextResponse.json({ ok: true, profitability });
