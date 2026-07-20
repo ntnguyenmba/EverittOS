@@ -16,15 +16,15 @@ export type NavSectionDef = {
 
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Overview', href: '/dashboard' },
-  { label: 'Operations', href: '/operations' },
-  { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
-  { label: 'Schedule', href: '/schedule' }
+  { label: 'Schedule', href: '/schedule' },
+  { label: 'Customers', href: '/customers' },
+  { label: 'People', href: '/people' },
+  { label: 'Analytics', href: '/analytics' }
 ];
 
 const WORKSPACE_NAV: NavLinkDef[] = [
-  { label: 'People', href: '/people' },
-  { label: 'Photos', href: '/photos' },
+  { label: 'Operations', href: '/operations' },
   { label: 'Forms', href: '/forms', flag: 'formsNav' },
   { label: 'Templates', href: '/templates', flag: 'templatesNav' },
   { label: 'Routes', href: '/routes', flag: 'routesNav' }
@@ -33,11 +33,9 @@ const WORKSPACE_NAV: NavLinkDef[] = [
 const BUSINESS_NAV: NavLinkDef[] = [
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Bookings', href: '/bookings', flag: 'bookingsNav' },
-  { label: 'Proposals', href: '/proposals', flag: 'proposalsNav' },
   { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
   { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'Expenses', href: '/expenses' },
-  { label: 'Analytics', href: '/analytics' }
+  { label: 'Expenses', href: '/expenses' }
 ];
 
 const SETTINGS_NAV: NavLinkDef[] = [{ label: 'Settings', href: '/settings' }];
