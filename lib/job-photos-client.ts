@@ -4,7 +4,7 @@ import type { JobPhotoRecord, JobPhotoView } from '@/lib/job-photos-types';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 export const JOB_PHOTO_SELECT =
-  'id, job_id, user_id, organization_id, storage_path, label, photo_type, uploaded_by, file_name, public_url, created_at, uploader_display_name, file_size_bytes, mime_type';
+  'id, job_id, user_id, organization_id, storage_path, label, photo_type, uploaded_by, file_name, public_url, created_at, uploader_display_name, file_size_bytes, mime_type, customer_visible, customer_caption';
 
 /** Fallback when newer metadata columns are not migrated yet. */
 export const JOB_PHOTO_SELECT_MINIMAL =

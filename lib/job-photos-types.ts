@@ -15,6 +15,8 @@ export type JobPhotoRecord = {
   uploader_display_name: string | null;
   file_size_bytes: number | null;
   mime_type: string | null;
+  customer_visible?: boolean;
+  customer_caption?: string | null;
 };
 
 export type JobPhotoView = JobPhotoRecord & {

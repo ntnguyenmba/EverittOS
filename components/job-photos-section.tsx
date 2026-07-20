@@ -19,6 +19,8 @@ import { fetchUsageCounts, photoLimitReached, limitMessage } from '@/lib/everitt
 import { normalizeRole, isManagerRole } from '@/lib/roles';
 import { logClientActivity } from '@/lib/activity';
 import { formatSupabaseError } from '@/lib/action-messages';
+import { getJobFinanceCopy } from '@/lib/i18n/job-finance-copy';
+import { useTranslation } from '@/components/locale-provider';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { pickJobPhotoFromCamera, pickJobPhotoFromLibrary } from '@/lib/platform/upload';
@@ -72,7 +74,10 @@ export function JobPhotosSection({
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null);
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const financeCopy = getJobFinanceCopy(locale);
   const [activeTag, setActiveTag] = useState<JobPhotoTag>('before');
   const [dragOverTag, setDragOverTag] = useState<JobPhotoTag | null>(null);
   const [currentUserId, setCurrentUserId] = useState('');
@@ -245,6 +250,35 @@ export function JobPhotosSection({
     }
   }
 
+  async function toggleCustomerVisible(photoId: string, nextVisible: boolean) {
+    if (visibilityBusyId || readOnly) return;
+    setVisibilityBusyId(photoId);
+    const res = await fetch(`/api/jobs/${jobId}/photos/${photoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_visible: nextVisible })
+    });
+    const json = await res.json().catch(() => ({}));
+    setVisibilityBusyId(null);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to update photo visibility.');
+      return;
+    }
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        photo.id === photoId ? { ...photo, customer_visible: nextVisible } : photo
+      )
+    );
+    appFeedback.success(financeCopy.photoVisibilitySaved);
+    onChange?.();
+  }
+
+  function photoCategoryLabel(tag: JobPhotoTag) {
+    if (tag === 'before') return financeCopy.photoBefore;
+    if (tag === 'after') return financeCopy.photoAfter;
+    return financeCopy.photoOther;
+  }
+
   async function deletePhoto(photoId: string) {
     if (deletingId) return;
     setDeletingId(photoId);
@@ -405,6 +439,10 @@ export function JobPhotosSection({
         <p className="muted">Photo uploads are not available on your current plan.</p>
       ) : null}
 
+      {!loading && photos.length > 0 && canDeleteAny ? (
+        <p className="muted">{financeCopy.photoVisibilityHelper}</p>
+      ) : null}
+
       {loading ? <p className="loading-state" role="status">Loading photos…</p> : null}
 
       {!loading && photos.length === 0 ? (
@@ -428,7 +466,10 @@ export function JobPhotosSection({
                         <div className="before-after-empty">Preview unavailable</div>
                       )}
                       <figcaption>
-                        <span className="photo-tag-pill">{photoTagLabel(photoType)}</span>
+                        <span className="photo-tag-pill">{photoCategoryLabel(photoType)}</span>
+                        <span className="photo-tag-pill photo-visibility-pill">
+                          {photo.customer_visible ? financeCopy.photoCustomerReport : financeCopy.photoInternalOnly}
+                        </span>
                         <span className="photo-meta-line">{formatPhotoWhen(photo.created_at)}</span>
                         {photo.uploader_display_name ? (
                           <span className="photo-meta-line">By {photo.uploader_display_name}</span>
@@ -436,6 +477,17 @@ export function JobPhotosSection({
                         {photo.file_name ? <span className="photo-meta-line">{photo.file_name}</span> : null}
                         {photo.file_size_bytes ? (
                           <span className="photo-meta-line">{formatFileSize(photo.file_size_bytes)}</span>
+                        ) : null}
+                        {canDeleteAny && !readOnly ? (
+                          <button
+                            type="button"
+                            className="btn photo-visibility-btn"
+                            disabled={visibilityBusyId === photo.id}
+                            aria-pressed={Boolean(photo.customer_visible)}
+                            onClick={() => void toggleCustomerVisible(photo.id, !photo.customer_visible)}
+                          >
+                            {photo.customer_visible ? financeCopy.photoInternalOnly : financeCopy.photoCustomerReport}
+                          </button>
                         ) : null}
                         {canDelete && !readOnly ? (
                           confirmDeleteId === photo.id ? (

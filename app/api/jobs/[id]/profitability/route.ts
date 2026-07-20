@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
 
@@ -33,7 +34,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 
   const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
-  return NextResponse.json({ profitability });
+  const history = await fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId);
+  return NextResponse.json({ profitability: { ...profitability, payments: history.payments } });
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {

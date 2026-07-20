@@ -78,18 +78,44 @@ export type InvoiceRecord = {
   updated_at: string;
 };
 
+export type JobPaymentHistoryEntry = {
+  id: string;
+  source: 'job' | 'invoice';
+  amount: number;
+  paidAt: string;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  notes: string | null;
+  invoiceId: string | null;
+  createdBy: string | null;
+};
+
+export type JobPaymentStatus = 'unpaid' | 'partially_paid' | 'paid' | 'no_amount_set';
+
 export type JobProfitability = {
   hasInvoice: boolean;
   invoiceTotal: number;
   manualRevenue: number;
   revenueNotes: string | null;
+  /** Expected job amount (invoice total when invoiced, else manual revenue). */
+  expectedAmount: number;
+  /** Total confirmed client payments for this job. */
+  collectedAmount: number;
+  /** @deprecated Use collectedAmount */
   paymentsReceived: number;
   outstanding: number;
+  paymentStatus: JobPaymentStatus;
   laborCost: number;
   materialCost: number;
   otherExpenses: number;
+  totalExpenses: number;
+  expectedProfit: number;
+  collectedProfit: number;
+  /** @deprecated Prefer collectedProfit or expectedProfit */
   estimatedProfit: number;
+  /** @deprecated */
   revenueBasis: number;
+  payments: JobPaymentHistoryEntry[];
 };
 
 export type BusinessPerformanceSummary = {

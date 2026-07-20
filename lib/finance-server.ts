@@ -5,6 +5,13 @@ import {
   remainingBalance
 } from '@/lib/dashboard-metrics';
 import {
+  calculateJobPaymentStatus,
+  calculateOutstandingBalance,
+  fetchJobPaymentHistory,
+  resolveExpectedJobAmount,
+  sumJobCollectedPayments
+} from '@/lib/finance/job-payments';
+import {
   MATERIAL_EXPENSE_CATEGORIES,
   type BusinessPerformanceSummary,
   type ExpenseRecord,
@@ -35,34 +42,54 @@ export function computeJobProfitability(input: {
   invoiceTotal: number;
   manualRevenue?: number;
   revenueNotes?: string | null;
-  paymentsReceived: number;
+  collectedAmount: number;
   laborCost: number;
   materialCost: number;
   otherExpenses: number;
   hasInvoice: boolean;
+  payments?: JobProfitability['payments'];
 }): JobProfitability {
   const invoiceTotal = num(input.invoiceTotal);
   const manualRevenue = num(input.manualRevenue);
-  const paymentsReceived = num(input.paymentsReceived);
+  const collectedAmount = num(input.collectedAmount);
   const laborCost = num(input.laborCost);
   const materialCost = num(input.materialCost);
   const otherExpenses = num(input.otherExpenses);
-  const outstanding = remainingBalance(invoiceTotal, paymentsReceived);
-  const revenueBasis = paymentsReceived > 0 ? paymentsReceived : invoiceTotal > 0 ? invoiceTotal : manualRevenue;
-  const estimatedProfit = revenueBasis - laborCost - materialCost - otherExpenses;
+  const totalExpenses = laborCost + materialCost + otherExpenses;
+  const expectedAmount = resolveExpectedJobAmount({
+    manualRevenue,
+    invoiceTotal,
+    hasInvoice: input.hasInvoice
+  });
+  const outstanding =
+    input.hasInvoice && invoiceTotal > 0
+      ? remainingBalance(invoiceTotal, collectedAmount)
+      : calculateOutstandingBalance(expectedAmount, collectedAmount);
+  const paymentStatus = calculateJobPaymentStatus(expectedAmount, collectedAmount);
+  const expectedProfit = expectedAmount - totalExpenses;
+  const collectedProfit = collectedAmount - totalExpenses;
+  const revenueBasis = collectedAmount > 0 ? collectedAmount : expectedAmount;
+  const estimatedProfit = collectedAmount > 0 ? collectedProfit : expectedProfit;
 
   return {
     hasInvoice: input.hasInvoice,
     invoiceTotal,
     manualRevenue,
     revenueNotes: input.revenueNotes || null,
-    paymentsReceived,
-    outstanding,
+    expectedAmount,
+    collectedAmount,
+    paymentsReceived: collectedAmount,
+    outstanding: Number(outstanding.toFixed(2)),
+    paymentStatus,
     laborCost,
     materialCost,
     otherExpenses,
+    totalExpenses: Number(totalExpenses.toFixed(2)),
+    expectedProfit: Number(expectedProfit.toFixed(2)),
+    collectedProfit: Number(collectedProfit.toFixed(2)),
     estimatedProfit: Number(estimatedProfit.toFixed(2)),
-    revenueBasis
+    revenueBasis,
+    payments: input.payments || []
   };
 }
 
@@ -146,16 +173,22 @@ export async function fetchJobProfitability(
   const invoice = invoiceRes.data?.[0];
   const laborCost = (laborRes.data || []).reduce((s, r) => s + num(r.total_cost), 0);
   const { materialCost, otherExpenses } = splitExpenseCosts((expenseRes.data || []) as ExpenseRecord[]);
+  const hasInvoice = Boolean(invoice);
+  const collectedAmount = hasInvoice
+    ? num(invoice?.amount_paid)
+    : await sumJobCollectedPayments(supabase, organizationId, jobId);
+  const { payments } = await fetchJobPaymentHistory(supabase, organizationId, jobId);
 
   return computeJobProfitability({
-    hasInvoice: Boolean(invoice),
+    hasInvoice,
     invoiceTotal: num(invoice?.amount),
     manualRevenue: num(jobRes.data?.revenue_amount),
     revenueNotes: (jobRes.data?.revenue_notes as string | null) || null,
-    paymentsReceived: num(invoice?.amount_paid),
+    collectedAmount,
     laborCost: Number(laborCost.toFixed(2)),
     materialCost,
-    otherExpenses
+    otherExpenses,
+    payments
   });
 }
 

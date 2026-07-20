@@ -9,6 +9,7 @@ import { JobWorkflow } from '@/components/job-workflow';
 import { JobPhotosSection } from '@/components/job-photos-section';
 import { JobLaborSection } from '@/components/job-labor-section';
 import { JobProfitabilityCard } from '@/components/job-profitability-card';
+import { CustomerReportSharePanel } from '@/components/customer-report-share-panel';
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
 import { AppShell } from '@/components/app-shell';
@@ -387,7 +388,21 @@ export default function JobDetailPage({ params }: PageProps) {
         ) : null}
         <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
         <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
-        {canManage ? <div className="card" style={{ marginTop: 18 }}><h3>{copy.proofReport}</h3><p>{copy.proofReportCopy}</p><button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>{creatingReport ? copy.creating : copy.createReport}</button><Link className="btn" href={`/jobs/${job.id}/report`} style={{ marginLeft: 8 }}>{copy.viewLatest}</Link></div> : null}
+        {canManage ? (
+          <div className="card" style={{ marginTop: 18 }}>
+            <h3>{copy.proofReport}</h3>
+            <p>{copy.proofReportCopy}</p>
+            <CustomerReportSharePanel jobId={job.id} canManage={canManage} />
+            <div className="button-row" style={{ marginTop: 12 }}>
+              <button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>
+                {creatingReport ? copy.creating : copy.createReport}
+              </button>
+              <Link className="btn" href={`/jobs/${job.id}/report`}>
+                {copy.viewLatest}
+              </Link>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );

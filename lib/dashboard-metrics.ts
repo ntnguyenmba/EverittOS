@@ -92,6 +92,17 @@ export type InvoicePaymentRow = {
   invoice_id?: unknown;
 };
 
+export type JobPaymentMetricRow = {
+  amount?: unknown;
+  paid_at?: unknown;
+  job_id?: unknown;
+};
+
+export type JobRevenueRow = {
+  id?: unknown;
+  revenue_amount?: unknown;
+};
+
 function formatLocalDateOnly(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -176,6 +187,34 @@ export function calculateCustomerInvoices(
   }, 0);
 }
 
+/** Still owed on non-invoiced jobs with an expected amount set. */
+export function calculateDirectJobOutstanding(
+  jobs: JobRevenueRow[],
+  invoicedJobIds: Set<string>,
+  collectedByJobId: Map<string, number>
+): number {
+  let total = 0;
+  for (const job of jobs) {
+    const jobId = String(job.id || '');
+    if (!jobId || invoicedJobIds.has(jobId)) continue;
+    const expected = num(job.revenue_amount);
+    if (expected <= 0) continue;
+    const collected = collectedByJobId.get(jobId) || 0;
+    total += Math.max(0, expected - collected);
+  }
+  return Number(total.toFixed(2));
+}
+
+export function sumJobPaymentsByJobId(rows: JobPaymentMetricRow[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    const jobId = String(row.job_id || '');
+    if (!jobId) continue;
+    map.set(jobId, Number(((map.get(jobId) || 0) + num(row.amount)).toFixed(2)));
+  }
+  return map;
+}
+
 /** Still owed = current unpaid balances on non-cancelled invoices. */
 export function calculateStillOwed(invoices: InvoiceMetricRow[]): number {
   return invoices.reduce((sum, inv) => {
@@ -223,11 +262,12 @@ export function countUnpaidInvoices(invoices: InvoiceMetricRow[]): number {
 export function calculatePaidToYou(input: {
   invoices: InvoiceMetricRow[];
   paymentRows: InvoicePaymentRow[];
+  jobPaymentRows?: JobPaymentMetricRow[];
   start: string | null;
   end: string | null;
   range: DashboardDateRange;
 }): { paidToYou: number; paymentsMissingDates: number } {
-  const { invoices, paymentRows, start, end, range } = input;
+  const { invoices, paymentRows, jobPaymentRows = [], start, end, range } = input;
   const cancelledInvoiceIds = new Set(
     invoices.filter((inv) => isCancelledInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
   );
@@ -281,6 +321,16 @@ export function calculatePaidToYou(input: {
 
     if (range === 'all_time' || inRange(paidDate, start, end)) {
       paidToYou += paid;
+    }
+  }
+
+  for (const row of jobPaymentRows) {
+    if (range === 'all_time') {
+      paidToYou += num(row.amount);
+      continue;
+    }
+    if (inRange(row.paid_at, start, end)) {
+      paidToYou += num(row.amount);
     }
   }
 
@@ -439,6 +489,7 @@ export async function fetchDashboardRevenueMetrics(
   const [
     invoicesRes,
     paymentRowsRes,
+    jobPaymentRowsRes,
     manualRevenueJobsRes,
     laborRes,
     completedJobsRes,
@@ -460,6 +511,10 @@ export async function fetchDashboardRevenueMetrics(
     supabase
       .from('invoice_payments')
       .select('amount, paid_at, invoice_id')
+      .eq('organization_id', organizationId),
+    supabase
+      .from('job_payments')
+      .select('amount, paid_at, job_id')
       .eq('organization_id', organizationId),
     supabase
       .from('jobs')
@@ -509,6 +564,7 @@ export async function fetchDashboardRevenueMetrics(
   const invoices = safeData(invoicesRes, []) as InvoiceMetricRow[];
   // If invoice_payments table is missing (migration not applied), fall back gracefully.
   const paymentRows = paymentRowsRes.error ? [] : (safeData(paymentRowsRes, []) as InvoicePaymentRow[]);
+  const jobPaymentRows = jobPaymentRowsRes.error ? [] : (safeData(jobPaymentRowsRes, []) as JobPaymentMetricRow[]);
 
   const invoicedJobIds = new Set<string>();
   for (const inv of invoices) {
@@ -519,11 +575,18 @@ export async function fetchDashboardRevenueMetrics(
   const { paidToYou, paymentsMissingDates } = calculatePaidToYou({
     invoices,
     paymentRows,
+    jobPaymentRows,
     start,
     end,
     range
   });
-  const stillOwed = calculateStillOwed(invoices);
+  const invoiceStillOwed = calculateStillOwed(invoices);
+  const directJobOutstanding = calculateDirectJobOutstanding(
+    safeData(manualRevenueJobsRes, []) as JobRevenueRow[],
+    invoicedJobIds,
+    sumJobPaymentsByJobId(jobPaymentRows)
+  );
+  const stillOwed = Number((invoiceStillOwed + directJobOutstanding).toFixed(2));
   const late = calculateLatePayments(invoices, today);
   const outstandingInvoiceCount = countUnpaidInvoices(invoices);
 

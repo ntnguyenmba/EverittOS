@@ -37,3 +37,7 @@ Capacitor plugin `EverittBilling`:
 
 Scheme: `everittos://`  
 Auth callback path: `/auth/callback` (also listed in `lib/mobile-app-config.ts`)
+
+## Shared web features in native shells
+
+Direct job payments, customer photo reports, and localized finance UI ship in the shared Next.js app. iOS and Android Capacitor builds pick them up automatically on the next shell sync against production. No separate Swift or Kotlin payment or report modules are required.
