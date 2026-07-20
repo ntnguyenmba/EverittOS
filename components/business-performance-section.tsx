@@ -40,13 +40,14 @@ export function BusinessPerformanceSection() {
     data.revenueByMonth.some((p) => p.value > 0) ||
     data.revenueByCustomer.length > 0 ||
     data.expensesByCategory.length > 0;
+  const cashAfterExpenses = data.paymentsThisMonth - data.expensesThisMonth;
 
   return (
     <section className="finance-performance-section">
       <div className="page-head" style={{ marginBottom: 16 }}>
         <div>
           <h2>Business performance</h2>
-          <p className="muted">Revenue, expenses, and estimated profit. Simple tracking, not full bookkeeping.</p>
+          <p className="muted">Revenue, expenses, and cash tracking. Simple tracking, not full bookkeeping.</p>
         </div>
         <Link className="btn" href="/expenses">
           View expenses
@@ -59,9 +60,9 @@ export function BusinessPerformanceSection() {
         <MetricCard label="Outstanding invoices" value={formatCurrency(data.outstandingInvoices)} loading={loading} />
         <MetricCard label="Expenses this month" value={formatCurrency(data.expensesThisMonth)} loading={loading} />
         <MetricCard
-          label="Estimated profit"
-          value={formatCurrency(data.estimatedProfitThisMonth)}
-          hint="Payments minus expenses this month"
+          label="Cash after expenses"
+          value={formatCurrency(cashAfterExpenses)}
+          hint="Payments received minus expenses this month"
           loading={loading}
         />
         <MetricCard
