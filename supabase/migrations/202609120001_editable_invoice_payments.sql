@@ -7,4 +7,13 @@ alter table public.invoice_payments
 create or replace function public.set_invoice_payment_updated_at()
 returns trigger
 language plpgsql
-set
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists invoice_payments_set_updated_at on public.invoice_payments;
+create trigger invoice_pay
