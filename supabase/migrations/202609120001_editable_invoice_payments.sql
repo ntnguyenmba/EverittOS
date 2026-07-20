@@ -16,4 +16,10 @@ end;
 $$;
 
 drop trigger if exists invoice_payments_set_updated_at on public.invoice_payments;
-create trigger invoice_pay
+create trigger invoice_payments_set_updated_at
+before update on public.invoice_payments
+for each row
+execute function public.set_invoice_payment_updated_at();
+
+-- Owners, administrators, and managers may correct or remove payment entries.
+-- Organization membership and invoice ownership cannot be moved during an edit
