@@ -13,4 +13,20 @@ type PageProps = {
 };
 
 function formatDate(value: string) {
-  const date = new Date
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : value;
+}
+
+function textOrDash(value: string | null | undefined) {
+  return value?.trim() || 'Not provided';
+}
+
+function contactLink(type: 'email' | 'phone', value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return 'Not provided';
+
+  const href = type === 'email' ? `mailto:${trimmed}` : `tel:${trimmed.replace(/[^+\d]/g, '')}`;
+  return <a href={href}>{trimmed}</a>;
+}
+
+export default async function
