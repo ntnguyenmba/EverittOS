@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { ContactLink } from '@/components/contact-link';
 import { CustomerLogo } from '@/components/customer-logo';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -366,8 +367,8 @@ function CustomersPageContent() {
                   {(customer.pipeline_stage || 'lead').replace('_', ' ')}
                   {customer.lead_source ? ` · ${customer.lead_source}` : ''}
                 </p>
-                <p>{customer.phone || 'No phone'}</p>
-                <p>{customer.email || 'No email'}</p>
+                <p><ContactLink type="phone" value={customer.phone} /></p>
+                <p><ContactLink type="email" value={customer.email} /></p>
                 <p>{customerDisplayAddress(customer, 'No address')}</p>
                 <RecordActions
                   viewHref={`/customers/${customer.id}`}
