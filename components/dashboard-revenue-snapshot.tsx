@@ -118,59 +118,59 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
   const financialBreakdown: FinancialBreakdownItem[] = [
     {
-      label: `Paid to you · ${rangeLabel}`,
+      label: `Client paid · ${rangeLabel}`,
       value: paidToYou,
       displayValue: formatCurrency(paidToYou),
       href: DASHBOARD_LINKS.paidToYou,
-      help: 'Customer payments recorded during this period. Tap to open payment history.'
+      help: 'Client payments recorded during this period, including direct job payments and invoice payments.'
     },
     {
-      label: `Customer invoices · ${rangeLabel}`,
+      label: `Billed to customers · ${rangeLabel}`,
       value: customerInvoices,
       displayValue: formatCurrency(customerInvoices),
       href: DASHBOARD_LINKS.customerInvoices,
-      help: 'Total non-cancelled invoices created during this period.'
+      help: 'Total non-cancelled invoices created during this period. This can be $0 when invoicing is optional and client payments were added directly to jobs.'
     },
     {
       label: stillOwedLabel,
       value: stillOwed,
       displayValue: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
-      help: 'Current unpaid balances across all non-cancelled invoices. Tap to open unpaid invoices.'
+      help: 'Current unpaid balances across non-cancelled invoices and uninvoiced jobs with an expected amount.'
     },
     {
       label: `Cash after expenses · ${rangeLabel}`,
       value: cashAfterExpenses,
       displayValue: formatCurrency(cashAfterExpenses),
       href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Customer payments received minus contractor payments and other recorded expenses paid during this period.'
+      help: 'Client payments received minus contractor payments and other recorded expenses paid during this period.'
     }
   ];
 
   const items: MetricItem[] = [
     {
-      label: `Paid to you · ${rangeLabel}`,
+      label: `Client paid · ${rangeLabel}`,
       value: formatCurrency(paidToYou),
       href: DASHBOARD_LINKS.paidToYou,
-      help: 'Customer payments recorded during this period. Tap to open payment history.'
+      help: 'Client payments recorded during this period, including direct job payments and invoice payments.'
     },
     {
-      label: `Customer invoices · ${rangeLabel}`,
+      label: `Billed to customers · ${rangeLabel}`,
       value: formatCurrency(customerInvoices),
       href: DASHBOARD_LINKS.customerInvoices,
-      help: 'Total non-cancelled invoices created during this period.'
+      help: 'Invoice totals created during this period. A $0 total is normal when you record client payments without creating invoices in EverittOS.'
     },
     {
       label: stillOwedLabel,
       value: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
-      help: 'Current unpaid balances across all non-cancelled invoices. Tap to open unpaid invoices.'
+      help: 'Current unpaid balances across non-cancelled invoices and uninvoiced jobs with an expected amount.'
     },
     {
       label: 'Late payments · Current',
       value: formatCurrency(latePayments),
       href: DASHBOARD_LINKS.latePayments,
-      help: 'Current unpaid balances that are past their due dates.'
+      help: 'Current unpaid invoice balances that are past their due dates.'
     },
     {
       label: 'Late invoices',
@@ -217,14 +217,14 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: `Estimated profit · ${rangeLabel}`,
       value: formatCurrency(estimatedProfit),
       href: DASHBOARD_LINKS.estimatedProfit,
-      help: 'Customer invoices minus contractor pay and other recorded expenses for this period.',
+      help: 'Amounts billed to customers minus contractor pay and other recorded expenses for this period.',
       warning: costsMissing ? 'Only recorded costs are included.' : undefined
     },
     {
       label: `Cash after expenses · ${rangeLabel}`,
       value: formatCurrency(cashAfterExpenses),
       href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Customer payments received minus contractor payments and other recorded expenses paid during this period.'
+      help: 'Client payments received minus contractor payments and other recorded expenses paid during this period.'
     },
     {
       label: 'Estimated profit percentage',
@@ -232,8 +232,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: DASHBOARD_LINKS.estimatedProfit,
       help:
         profitPercentage === null
-          ? 'Estimated profit percentage needs customer invoices greater than zero.'
-          : 'Estimated profit divided by customer invoices for this period.',
+          ? 'Estimated profit percentage needs an amount billed to customers greater than zero.'
+          : 'Estimated profit divided by the amount billed to customers for this period.',
       warning: costsMissing ? 'Only recorded costs are included.' : undefined
     },
     ...(uninvoicedCompletedWork > 0
@@ -242,7 +242,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             label: `Uninvoiced completed work · ${rangeLabel}`,
             value: formatCurrency(uninvoicedCompletedWork),
             href: DASHBOARD_LINKS.completedJobs,
-            help: 'Completed job revenue that has not been invoiced. Not included in Customer invoices.'
+            help: 'Completed job revenue that has not been invoiced. It is not included in Billed to customers.'
           } satisfies MetricItem
         ]
       : []),
@@ -301,7 +301,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         <div>
           <h2>Business overview</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            See what customers paid, what you billed, what is still owed, expenses, and estimated profit.
+            See what clients paid, what you billed, what is still owed, expenses, and estimated profit.
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
@@ -340,7 +340,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
               <div>
                 <h3>Money summary</h3>
                 <p className="muted">
-                  Payments received, invoices created, current unpaid balances, and cash after expenses.
+                  Client payments received, amounts billed, current unpaid balances, and cash after expenses.
                 </p>
               </div>
               <strong>
