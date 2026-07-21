@@ -8,6 +8,8 @@ import {
   calculateEstimatedProfitPercentage,
   fetchDashboardRevenueMetrics,
   formatCurrency,
+  inRange,
+  rangeBounds,
   type DashboardDateRange,
   type DashboardRevenueMetrics
 } from '@/lib/dashboard-metrics';
@@ -26,6 +28,19 @@ type MetricItem = {
   href: string;
   help?: string;
   warning?: string;
+};
+
+type OperationalCounts = {
+  jobs: number;
+  completedJobs: number;
+  activeCustomers: number;
+};
+
+type OperationalJobRow = {
+  status?: string | null;
+  start_date?: string | null;
+  scheduled_start?: string | null;
+  completed_at?: string | null;
 };
 
 const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
@@ -49,6 +64,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const [rangeMetrics, setRangeMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
   const [rangeError, setRangeError] = useState(false);
+  const [operationalCounts, setOperationalCounts] = useState<OperationalCounts | null>(null);
 
   useEffect(() => {
     if (range === 'month') {
@@ -99,6 +115,69 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     };
   }, [range]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadOperationalCounts() {
+      setOperationalCounts(null);
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const org = await ensureOrganizationForUser(user.id);
+      if (!org?.organizationId) return;
+
+      const [jobsResult, customersResult] = await Promise.all([
+        supabase
+          .from('jobs')
+          .select('status, start_date, scheduled_start, completed_at')
+          .eq('organization_id', org.organizationId)
+          .neq('status', 'cancelled')
+          .neq('status', 'canceled'),
+        supabase
+          .from('customers')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', org.organizationId)
+          .eq('record_type', 'customer')
+          .eq('pipeline_stage', 'active')
+      ]);
+
+      if (cancelled) return;
+
+      const { start, end } = rangeBounds(range);
+      const jobs = (jobsResult.data || []) as OperationalJobRow[];
+      let jobsInRange = 0;
+      let completedInRange = 0;
+
+      for (const job of jobs) {
+        const status = String(job.status || '').toLowerCase();
+        const completedDate = job.completed_at;
+        const operationalDate = status === 'completed'
+          ? completedDate
+          : job.start_date || job.scheduled_start;
+
+        if (range === 'all_time' || inRange(operationalDate, start, end)) {
+          jobsInRange += 1;
+        }
+        if (status === 'completed' && (range === 'all_time' || inRange(completedDate, start, end))) {
+          completedInRange += 1;
+        }
+      }
+
+      setOperationalCounts({
+        jobs: jobsResult.error ? 0 : jobsInRange,
+        completedJobs: jobsResult.error ? 0 : completedInRange,
+        activeCustomers: customersResult.error ? 0 : customersResult.count || 0
+      });
+    }
+
+    void loadOperationalCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
   const activeMetrics = range === 'month' ? metrics : rangeMetrics;
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
   const customerInvoices = activeMetrics.customerInvoices ?? activeMetrics.bookedRevenue ?? 0;
@@ -117,6 +196,9 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && customerInvoices > 0;
   const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label || 'This month';
   const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
+  const displayedJobs = operationalCounts?.jobs ?? activeMetrics.totalJobs ?? 0;
+  const displayedCompletedJobs = operationalCounts?.completedJobs ?? activeMetrics.jobsCompletedThisMonth ?? 0;
+  const displayedActiveCustomers = operationalCounts?.activeCustomers ?? activeMetrics.activeCustomers ?? 0;
 
   const moneySummary = buildMoneySummaryMetrics({
     rangeLabel,
@@ -254,15 +336,15 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       : []),
     {
       label: `Completed jobs · ${rangeLabel}`,
-      value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
+      value: String(displayedCompletedJobs),
       href: DASHBOARD_LINKS.completedJobs,
       help: 'Jobs whose completion date falls in the selected period.'
     },
     {
       label: `Jobs · ${rangeLabel}`,
-      value: String(activeMetrics.totalJobs ?? 0),
+      value: String(displayedJobs),
       href: DASHBOARD_LINKS.jobs,
-      help: 'Jobs scheduled or started in the selected period. Record creation dates are not used when a job date exists.'
+      help: 'Jobs scheduled, started, or completed in the selected period. Record entry dates are not counted.'
     },
     {
       label: t('dashboard.revenue.upcomingJobs'),
@@ -271,7 +353,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: t('dashboard.revenue.activeCustomers'),
-      value: String(activeMetrics.activeCustomers ?? 0),
+      value: String(displayedActiveCustomers),
       href: DASHBOARD_LINKS.activeCustomers,
       help: 'Customers currently marked active. Leads, past customers, cancelled records, and archived records are kept but are not counted here.'
     },
