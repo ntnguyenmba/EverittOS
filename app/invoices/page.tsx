@@ -17,6 +17,7 @@ function InvoicesPageContent() {
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
   const paymentParam = (searchParams.get('payment') || 'all').toLowerCase();
+  const focusOutstanding = searchParams.get('focus') === 'outstanding';
   const paymentFilter =
     paymentParam === 'unpaid' ||
     paymentParam === 'overdue' ||
@@ -47,8 +48,12 @@ function InvoicesPageContent() {
   return (
     <AppShell plan={plan} role={role}>
       <header className="page-header">
-        <h1>{t('pages.invoices.title')}</h1>
-        <p className="page-subtitle">{t('pages.invoices.subtitle')}</p>
+        <h1>{focusOutstanding ? 'Outstanding balances' : t('pages.invoices.title')}</h1>
+        <p className="page-subtitle">
+          {focusOutstanding
+            ? 'See exactly which invoices are unpaid or overdue. Uninvoiced job balances are reviewed from Jobs.'
+            : t('pages.invoices.subtitle')}
+        </p>
       </header>
 
       <OutboundHub
@@ -58,9 +63,10 @@ function InvoicesPageContent() {
         initialJobId={jobId}
         initialCustomerId={customerId}
         paymentFilter={paymentFilter}
+        focusOutstanding={focusOutstanding}
       />
 
-      <RecurringInvoicesPanel canManage={canManage} />
+      {!focusOutstanding ? <RecurringInvoicesPanel canManage={canManage} /> : null}
     </AppShell>
   );
 }
