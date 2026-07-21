@@ -62,32 +62,37 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const body = await request.json();
   const labor = buildLaborRow({
-    hours: body.hours,
-    hourlyCost: body.hourly_cost ?? body.hourlyCost
+    hours: body.payment_basis === 'flat' ? 1 : body.hours,
+    hourlyCost: body.hourly_cost ?? body.hourlyCost,
+    paymentBasis: body.payment_basis ?? body.paymentBasis
   });
 
-  if (labor.hours <= 0) {
-    return NextResponse.json({ error: 'Hours worked must be greater than zero' }, { status: 400 });
+  if (labor.payment_basis !== 'flat' && labor.hours <= 0) {
+    return NextResponse.json({ error: 'Quantity must be greater than zero' }, { status: 400 });
   }
 
-  const { data, error } = await ctx.supabase
-    .from('job_labor')
-    .insert({
-      organization_id: ctx.organizationId,
-      job_id: jobId,
-      worker_id: body.worker_id || null,
-      worker_name: body.worker_name?.trim() || null,
-      hours: labor.hours,
-      hourly_cost: labor.hourly_cost,
-      total_cost: labor.total_cost,
-      notes: body.notes?.trim() || null
-    })
-    .select('*')
-    .single();
+  const insertPayload: Record<string, unknown> = {
+    organization_id: ctx.organizationId,
+    job_id: jobId,
+    worker_id: body.worker_id || null,
+    worker_name: body.worker_name?.trim() || null,
+    hours: labor.hours,
+    hourly_cost: labor.hourly_cost,
+    total_cost: labor.total_cost,
+    notes: body.notes?.trim() || null,
+    payment_basis: labor.payment_basis
+  };
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  let result = await ctx.supabase.from('job_labor').insert(insertPayload).select('*').single();
+
+  if (result.error && /payment_basis/i.test(result.error.message || '')) {
+    delete insertPayload.payment_basis;
+    result = await ctx.supabase.from('job_labor').insert(insertPayload).select('*').single();
   }
 
-  return NextResponse.json({ labor: data });
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ labor: result.data });
 }

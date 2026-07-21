@@ -24,7 +24,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
 
   const customerSelect = `id, company_name, email, phone, ${CUSTOMER_ADDRESS_FIELDS}`;
 
-  const [{ data: job }, history, profitability, orgRes, settingsRes] = await Promise.all([
+  const [{ data: job }, history, profitability, orgRes, settingsRes, profileRes] = await Promise.all([
     ctx.supabase
       .from('jobs')
       .select(`id, title, address, customer_name, phone, customer_id, customers(${customerSelect})`)
@@ -38,7 +38,8 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
       .from('organization_settings')
       .select('company_phone, company_email, company_address, website')
       .eq('organization_id', ctx.organizationId)
-      .maybeSingle()
+      .maybeSingle(),
+    ctx.supabase.from('profiles').select('locale').eq('id', ctx.userId).maybeSingle()
   ]);
 
   if (!job) notFound();
@@ -85,7 +86,8 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
       website: settingsRes.data?.website || null,
       address: settingsRes.data?.company_address || null
     },
-    outstanding: profitability.outstanding || 0
+    outstanding: profitability.outstanding || 0,
+    locale: profileRes.data?.locale || 'en-US'
   });
 
   return (

@@ -142,10 +142,10 @@ export async function fetchPublicCustomerReport(
     return { report: null, error: 'This report link is not available.', status: 404 };
   }
 
-  const { data: settings } = await admin
-    .from('organization_settings')
-    .select('company_name')
-    .eq('organization_id', job.organization_id)
+  const { data: organization } = await admin
+    .from('organizations')
+    .select('name')
+    .eq('id', job.organization_id)
     .maybeSingle();
 
   const photosRes = await admin
@@ -184,7 +184,7 @@ export async function fetchPublicCustomerReport(
 
   return {
     report: {
-      companyName: (settings?.company_name as string | null) || 'EverittOS',
+      companyName: (organization?.name as string | null) || 'EverittOS',
       jobTitle: String(job.title || reportRow.title || 'Service report'),
       customerName: (job.customer_name as string | null) || null,
       serviceAddress: (job.address as string | null) || null,

@@ -58,10 +58,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     patch.payment_reference = cleanOptionalText(body.payment_reference, 240);
   }
 
-  if (body.hours !== undefined || body.hourly_cost !== undefined || body.hourlyCost !== undefined) {
+  if (body.hours !== undefined || body.hourly_cost !== undefined || body.hourlyCost !== undefined || body.payment_basis !== undefined) {
     const { data: existing } = await ctx.supabase
       .from('job_labor')
-      .select('hours, hourly_cost')
+      .select('hours, hourly_cost, payment_basis')
       .eq('id', laborId)
       .eq('job_id', jobId)
       .eq('organization_id', ctx.organizationId)
@@ -71,13 +71,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'Contractor pay not found' }, { status: 404 });
     }
 
+    const paymentBasis = body.payment_basis ?? body.paymentBasis ?? existing.payment_basis;
     const labor = buildLaborRow({
-      hours: body.hours ?? existing.hours,
-      hourlyCost: body.hourly_cost ?? body.hourlyCost ?? existing.hourly_cost
+      hours: paymentBasis === 'flat' ? 1 : body.hours ?? existing.hours,
+      hourlyCost: body.hourly_cost ?? body.hourlyCost ?? existing.hourly_cost,
+      paymentBasis
     });
     patch.hours = labor.hours;
     patch.hourly_cost = labor.hourly_cost;
     patch.total_cost = labor.total_cost;
+    patch.payment_basis = labor.payment_basis;
   }
 
   if (Object.keys(patch).length === 0) {
@@ -100,9 +103,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (result.error) {
     const missingColumn = missingColumnName(result.error.message);
 
-    if (missingColumn && PAYMENT_METADATA_FIELDS.includes(missingColumn)) {
+    if (missingColumn === 'payment_basis') {
+      const fallbackPatch = { ...patch };
+      delete fallbackPatch.payment_basis;
+      result = await updateLabor(fallbackPatch);
+      migrationWarning = migrationWarning || 'Contractor payment basis will be available after the latest database migration.';
+    } else if (missingColumn && PAYMENT_METADATA_FIELDS.includes(missingColumn)) {
       const fallbackPatch = { ...patch };
       for (const field of PAYMENT_METADATA_FIELDS) delete fallbackPatch[field];
+      delete fallbackPatch.payment_basis;
 
       if (Object.keys(fallbackPatch).length === 0) {
         return NextResponse.json(

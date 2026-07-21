@@ -67,11 +67,40 @@ function trimText(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-export function formatReceiptPaidOn(value: string, locale = 'en-US'): string {
+export type ReceiptCopy = {
+  paidOnPrefix?: string;
+  paidOnUnknown?: string;
+  amountPaid?: string;
+  customerDetails?: string;
+  service?: string;
+  paymentDate?: string;
+  paymentMethod?: string;
+  reference?: string;
+  remainingBalance?: string;
+  thankYou?: string;
+  keepCopy?: string;
+};
+
+const DEFAULT_RECEIPT_COPY: Required<ReceiptCopy> = {
+  paidOnPrefix: 'Paid on',
+  paidOnUnknown: 'Paid on an unknown date.',
+  amountPaid: 'Amount paid',
+  customerDetails: 'Customer details',
+  service: 'Service',
+  paymentDate: 'Payment date',
+  paymentMethod: 'Payment method',
+  reference: 'Reference',
+  remainingBalance: 'Remaining balance',
+  thankYou: 'Thank you for your payment.',
+  keepCopy: 'Please keep this receipt for your records.'
+};
+
+export function formatReceiptPaidOn(value: string, locale = 'en-US', copy: ReceiptCopy = {}): string {
+  const labels = { ...DEFAULT_RECEIPT_COPY, ...copy };
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) {
     const fallback = String(value || '').slice(0, 10);
-    return fallback ? `Paid on ${fallback}.` : 'Paid on an unknown date.';
+    return fallback ? `${labels.paidOnPrefix} ${fallback}.` : labels.paidOnUnknown;
   }
 
   const formatted = new Intl.DateTimeFormat(locale, {
@@ -81,7 +110,7 @@ export function formatReceiptPaidOn(value: string, locale = 'en-US'): string {
     timeZone: 'UTC'
   }).format(date);
 
-  return `Paid on ${formatted}.`;
+  return `${labels.paidOnPrefix} ${formatted}.`;
 }
 
 export function buildReceiptNumber(paymentId: string): string {
@@ -157,31 +186,36 @@ export function buildReceiptDetailRows(input: {
   outstanding: number;
   includePaymentDate?: boolean;
   paidAt?: string;
+  locale?: string;
+  copy?: ReceiptCopy;
 }): ReceiptDetailRow[] {
+  const labels = { ...DEFAULT_RECEIPT_COPY, ...(input.copy || {}) };
   const rows: ReceiptDetailRow[] = [
-    { label: 'Service', value: input.serviceTitle || 'Service' }
+    { label: labels.service, value: input.serviceTitle || labels.service }
   ];
 
   if (input.includePaymentDate && input.paidAt) {
     rows.push({
-      label: 'Payment date',
-      value: formatReceiptPaidOn(input.paidAt).replace(/^Paid on\s+/i, '').replace(/\.$/, '')
+      label: labels.paymentDate,
+      value: formatReceiptPaidOn(input.paidAt, input.locale || 'en-US', labels)
+        .replace(new RegExp(`^${labels.paidOnPrefix}\\s+`, 'i'), '')
+        .replace(/\.$/, '')
     });
   }
 
   const method = trimText(input.paymentMethod);
   if (method) {
-    rows.push({ label: 'Payment method', value: method });
+    rows.push({ label: labels.paymentMethod, value: method });
   }
 
   const reference = trimText(input.paymentReference);
   if (reference) {
-    rows.push({ label: 'Reference', value: reference });
+    rows.push({ label: labels.reference, value: reference });
   }
 
   const outstanding = Math.max(0, Number(input.outstanding || 0));
   if (outstanding > 0) {
-    rows.push({ label: 'Remaining balance', value: formatCurrency(outstanding) });
+    rows.push({ label: labels.remainingBalance, value: formatCurrency(outstanding) });
   }
 
   return rows;
@@ -194,7 +228,9 @@ export function buildPaymentReceiptView(input: {
   business?: ReceiptBusinessSource | null;
   outstanding: number;
   locale?: string;
+  copy?: ReceiptCopy;
 }): PaymentReceiptView {
+  const labels = { ...DEFAULT_RECEIPT_COPY, ...(input.copy || {}) };
   const customer = resolveReceiptCustomer({
     linkedCustomer: input.linkedCustomer,
     job: input.job
@@ -219,23 +255,25 @@ export function buildPaymentReceiptView(input: {
 
   return {
     receiptNumber: buildReceiptNumber(input.payment.id),
-    paidOnLabel: formatReceiptPaidOn(input.payment.paidAt, input.locale || 'en-US'),
-    amountPaidLabel: 'Amount paid',
+    paidOnLabel: formatReceiptPaidOn(input.payment.paidAt, input.locale || 'en-US', labels),
+    amountPaidLabel: labels.amountPaid,
     amountPaidValue: formatCurrency(input.payment.amount),
     businessName: trimText(input.business?.companyName),
     businessLines,
-    customerHeading: 'Customer details',
+    customerHeading: labels.customerDetails,
     customerLines: customerLines.length ? customerLines : ['Customer'],
     receiptDetails: buildReceiptDetailRows({
-      serviceTitle: trimText(input.job?.title) || 'Service',
+      serviceTitle: trimText(input.job?.title) || labels.service,
       paymentMethod: input.payment.paymentMethod,
       paymentReference: input.payment.paymentReference,
       outstanding,
       includePaymentDate: true,
-      paidAt: input.payment.paidAt
+      paidAt: input.payment.paidAt,
+      locale: input.locale,
+      copy: labels
     }),
-    thankYou: 'Thank you for your payment.',
-    keepCopy: 'Please keep this receipt for your records.',
+    thankYou: labels.thankYou,
+    keepCopy: labels.keepCopy,
     paidInFull
   };
 }

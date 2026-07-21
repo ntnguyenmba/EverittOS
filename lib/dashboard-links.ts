@@ -21,7 +21,7 @@ export const DASHBOARD_LINKS = {
   todayTasks: '/projects',
   notifications: '/notifications',
   customers: '/customers',
-  activeCustomers: '/customers',
+  activeCustomers: '/dashboard/details?metric=active-customers',
   customersLeads: '/customers?stage=lead',
   people: '/people',
   workers: '/people',

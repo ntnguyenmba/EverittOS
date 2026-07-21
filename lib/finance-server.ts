@@ -24,17 +24,33 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function buildLaborRow(input: { hours?: unknown; hourlyCost?: unknown }): {
+export function buildLaborRow(input: {
+  hours?: unknown;
+  hourlyCost?: unknown;
+  paymentBasis?: unknown;
+}): {
   hours: number;
   hourly_cost: number;
   total_cost: number;
+  payment_basis: 'hourly' | 'flat' | 'visit';
 } {
   const hours = Math.max(0, num(input.hours));
   const hourly_cost = Math.max(0, num(input.hourlyCost));
+  const rawBasis = String(input.paymentBasis || '')
+    .trim()
+    .toLowerCase();
+  const payment_basis =
+    rawBasis === 'flat' || rawBasis === 'visit' || rawBasis === 'hourly'
+      ? rawBasis
+      : hours === 1
+        ? 'flat'
+        : 'hourly';
+
   return {
-    hours,
+    hours: payment_basis === 'flat' ? Math.max(hours, 1) || 1 : hours,
     hourly_cost,
-    total_cost: laborTotal(hours, hourly_cost)
+    total_cost: laborTotal(payment_basis === 'flat' ? Math.max(hours, 1) || 1 : hours, hourly_cost),
+    payment_basis
   };
 }
 

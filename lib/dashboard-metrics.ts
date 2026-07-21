@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 import { countOrganizationJobs } from '@/lib/jobs-org-query';
+import { getJobOperationalDate } from '@/lib/job-operational-date';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
@@ -598,12 +599,17 @@ export async function fetchDashboardRevenueMetrics(
       .from('job_labor')
       .select('total_cost, created_at, payment_status, paid_at')
       .eq('organization_id', organizationId),
-    supabase.from('jobs').select('id, completed_at').eq('organization_id', organizationId).eq('status', 'completed'),
+    supabase
+      .from('jobs')
+      .select('id, status, completed_at, start_date, scheduled_start, due_date, created_at')
+      .eq('organization_id', organizationId)
+      .eq('status', 'completed'),
     supabase
       .from('customers')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
-      .neq('pipeline_stage', 'archived'),
+      .eq('record_type', 'customer')
+      .eq('pipeline_stage', 'active'),
     supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
@@ -614,7 +620,7 @@ export async function fetchDashboardRevenueMetrics(
       .gte('scheduled_start', `${today}T00:00:00`),
     supabase
       .from('jobs')
-      .select('status, created_at, start_date, scheduled_start')
+      .select('status, created_at, start_date, scheduled_start, completed_at, due_date')
       .eq('organization_id', organizationId)
       .neq('status', 'cancelled')
       .neq('status', 'canceled'),
@@ -685,7 +691,7 @@ export async function fetchDashboardRevenueMetrics(
     if (invoicedJobIds.has(String(job.id))) return sum;
     const status = String(job.status || '').toLowerCase();
     if (status === 'cancelled' || status === 'canceled') return sum;
-    const bookedDate = job.completed_at || job.start_date || job.scheduled_start || job.created_at;
+    const bookedDate = getJobOperationalDate(job);
     return inRange(bookedDate, start, end) ? sum + num(job.revenue_amount) : sum;
   }, 0);
 
@@ -694,7 +700,7 @@ export async function fetchDashboardRevenueMetrics(
     : null;
 
   const rangeJobs = safeData(jobsRes, []).filter((job) =>
-    inRange(job.start_date || job.scheduled_start || job.created_at, start, end)
+    inRange(getJobOperationalDate(job), start, end)
   );
   const jobsByStatus: Record<string, number> = {};
   for (const job of rangeJobs) {
@@ -729,7 +735,9 @@ export async function fetchDashboardRevenueMetrics(
   const hasCreatedInvoices = invoices.length > 0;
 
   const completedRows = safeData(completedJobsRes, []);
-  const completedInRange = completedRows.filter((row) => inRange(row.completed_at, start, end)).length;
+  const completedInRange = completedRows.filter((row) =>
+    inRange(getJobOperationalDate(row), start, end)
+  ).length;
   const bookingCount = safeData(bookingsRes, []).filter((row) => inRange(row.starts_at, start, end)).length;
   const messageCount = safeData(messagesRes, []).filter((row) => inRange(row.created_at, start, end)).length;
   const reportCount = safeData(reportsRes, []).filter((row) => inRange(row.created_at, start, end)).length;

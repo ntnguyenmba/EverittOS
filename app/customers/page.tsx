@@ -126,7 +126,13 @@ function CustomersPageContent() {
       query = query.gte('created_at', monthStartIso());
     }
     if (stageFilter === 'lead') {
-      query = query.in('pipeline_stage', ['lead', 'qualified']);
+      query = query.in('pipeline_stage', ['lead', 'qualified', 'open', 'contacted', 'quoted']);
+    } else if (stageFilter === 'active') {
+      query = query.eq('record_type', 'customer').eq('pipeline_stage', 'active');
+    } else if (stageFilter === 'past') {
+      query = query.eq('record_type', 'customer').in('pipeline_stage', ['past', 'inactive', 'former']);
+    } else if (stageFilter === 'archived') {
+      query = query.eq('pipeline_stage', 'archived');
     }
 
     const [{ data, error }, orgIsDemo] = await Promise.all([

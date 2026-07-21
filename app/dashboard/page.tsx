@@ -233,7 +233,7 @@ export default function DashboardPage() {
     const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');
     const openLeadCount = leadRows.filter((row) => OPEN_LEAD_STAGES.has(row.pipeline_stage || 'open')).length;
     const closedLeadCount = leadRows.filter((row) => CLOSED_LEAD_STAGES.has(row.pipeline_stage || '')).length;
-    const activeCustomerCount = customerRows.filter((row) => !row.pipeline_stage || row.pipeline_stage === 'active').length;
+    const activeCustomerCount = customerRows.filter((row) => (row.pipeline_stage || 'active') === 'active').length;
     const recurringCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'recurring').length;
     const inactiveCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'inactive' || row.pipeline_stage === 'former').length;
 

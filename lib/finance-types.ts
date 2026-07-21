@@ -46,6 +46,7 @@ export type JobLaborRecord = {
   hours: number;
   hourly_cost: number;
   total_cost: number;
+  payment_basis?: 'hourly' | 'flat' | 'visit' | null;
   notes: string | null;
   payment_status: ContractorPaymentStatus;
   paid_at: string | null;
