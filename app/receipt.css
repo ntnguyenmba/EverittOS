@@ -17,6 +17,18 @@
   min-height: 44px;
 }
 
+.receipt-action-message {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(31, 41, 55, 0.12);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .receipt-card {
   max-width: 720px;
   margin: 0 auto;
