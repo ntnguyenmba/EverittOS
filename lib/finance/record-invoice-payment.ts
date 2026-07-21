@@ -4,10 +4,10 @@
  * ONE write path for every customer payment:
  * 1. Update invoice summary fields (amount_paid, balance_due, payment_status)
  * 2. Sync linked outbound_documents summary fields
- * 3. Insert an immutable invoice_payments ledger row
+ * 3. Insert an invoice_payments ledger row (required for cash reporting)
  *
- * All UI and API entry points must call these helpers.
- * Never overwrite payment history — partial payments create multiple ledger rows.
+ * All UI and API entry points must call these helpers for new payments.
+ * Partial payments create multiple ledger rows. Corrections use edit-invoice-payment helpers.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -144,7 +144,7 @@ async function insertLedgerRow(
     notes: string | null;
     userId: string;
   }
-): Promise<string | null> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { error } = await supabase.from('invoice_payments').insert({
     organization_id: input.organizationId,
     invoice_id: input.invoiceId,
@@ -158,10 +158,9 @@ async function insertLedgerRow(
     created_by: input.userId
   });
   if (error) {
-    console.error('INVOICE_PAYMENT_LEDGER_INSERT_FAILED', error.message);
-    return error.message;
+    return { ok: false, error: error.message || 'Unable to record payment ledger entry.' };
   }
-  return null;
+  return { ok: true };
 }
 
 async function syncOutboundForInvoice(
@@ -251,7 +250,7 @@ export async function recordInvoicePaymentByInvoiceId(
   );
 
   if (!input.cancel && summary.paymentIncrement > 0) {
-    await insertLedgerRow(supabase, {
+    const ledger = await insertLedgerRow(supabase, {
       organizationId: input.organizationId,
       invoiceId,
       outboundDocumentId: updatedDocument ? String(updatedDocument.id) : null,
@@ -262,6 +261,9 @@ export async function recordInvoicePaymentByInvoiceId(
       notes: input.paymentNotes?.trim() || null,
       userId: input.userId
     });
+    if (!ledger.ok) {
+      return { ok: false, error: ledger.error, status: 400 };
+    }
   }
 
   return {
@@ -363,7 +365,7 @@ export async function recordInvoicePaymentByOutboundId(
   if (invoiceId) {
     updatedInvoice = await syncInvoice(supabase, input.organizationId, invoiceId, summary.patch);
     if (!input.cancel && summary.paymentIncrement > 0) {
-      await insertLedgerRow(supabase, {
+      const ledger = await insertLedgerRow(supabase, {
         organizationId: input.organizationId,
         invoiceId,
         outboundDocumentId,
@@ -374,6 +376,9 @@ export async function recordInvoicePaymentByOutboundId(
         notes: input.paymentNotes?.trim() || null,
         userId: input.userId
       });
+      if (!ledger.ok) {
+        return { ok: false, error: ledger.error, status: 400 };
+      }
     }
   }
 

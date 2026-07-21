@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
+import { reconcileInvoiceFromLedger } from '@/lib/finance/edit-invoice-payment';
 import { recordInvoicePaymentByInvoiceId } from '@/lib/finance/record-invoice-payment';
 import { isValidUuid } from '@/lib/input-validation';
 import {
@@ -121,8 +122,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ invoice: data });
     }
 
-    // Decreases / same value: recompute summary without inventing negative ledger rows.
-    patch.amount_paid = nextPaid;
+    if (nextPaid < previousPaid) {
+      return NextResponse.json(
+        {
+          error:
+            'To reduce the paid amount, edit or remove payment records from the job payment history.'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Same value: refresh summaries from the ledger so dashboards stay accurate.
+    if (nextPaid === previousPaid) {
+      const reconciled = await reconcileInvoiceFromLedger(ctx.supabase, ctx.organizationId, id);
+      return NextResponse.json({ invoice: reconciled.invoice });
+    }
   }
 
   if (patch.amount !== undefined || patch.amount_paid !== undefined || patch.due_date !== undefined) {
