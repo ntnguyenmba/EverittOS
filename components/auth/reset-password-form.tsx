@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthMessages } from '@/components/auth/auth-messages';
 import { PasswordField } from '@/components/auth/password-field';
+import { useTranslation } from '@/components/locale-provider';
 import { authApiFetch } from '@/lib/auth-fetch';
 import { mapAuthError } from '@/lib/auth-errors';
 import { parseFetchFailure, parseLoginApiResponse } from '@/lib/auth-request-error';
 import { resolveClientApiUrl } from '@/lib/client-api-url';
+import { getAuthFlowCopy } from '@/lib/i18n/auth-copy';
 
 const UPDATE_PASSWORD_API_PATH = '/api/auth/update-password';
 
@@ -18,6 +20,8 @@ type ResetPasswordFormProps = {
 };
 
 export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPasswordFormProps) {
+  const { locale } = useTranslation();
+  const copy = getAuthFlowCopy(locale).reset;
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState(initialError);
@@ -37,12 +41,12 @@ export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPa
     }
 
     if (password.length < 6) {
-      setError({ title: 'Password too short', message: 'Password must be at least 6 characters.' });
+      setError({ title: copy.passwordTooShortTitle, message: copy.passwordTooShort });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError({ title: 'Passwords do not match', message: 'Enter the same password in both fields.' });
+      setError({ title: copy.passwordsMismatchTitle, message: copy.passwordsMismatch });
       return;
     }
 
@@ -69,7 +73,7 @@ export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPa
       }
 
       const json = parsed.json;
-      setSuccess((json.message as string) || 'Password updated. Redirecting to sign in...');
+      setSuccess((json.message as string) || copy.successFallback);
       const destination = (json.redirectTo as string) || '/login?reset=1';
       setTimeout(() => {
         window.location.href = destination;
@@ -85,12 +89,12 @@ export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPa
   }
 
   return (
-    <AuthShell title="Choose a new password">
+    <AuthShell title={copy.title}>
       <form className="auth-form card" onSubmit={updatePassword}>
         <PasswordField
           id="password"
-          label="New password"
-          placeholder="Minimum 6 characters"
+          label={copy.newPassword}
+          placeholder={copy.newPasswordPlaceholder}
           autoComplete="new-password"
           value={password}
           onChange={setPassword}
@@ -100,8 +104,8 @@ export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPa
 
         <PasswordField
           id="confirm_password"
-          label="Confirm password"
-          placeholder="Repeat password"
+          label={copy.confirmPassword}
+          placeholder={copy.confirmPasswordPlaceholder}
           autoComplete="new-password"
           value={confirmPassword}
           onChange={setConfirmPassword}
@@ -116,13 +120,13 @@ export function ResetPasswordForm({ sessionReady, initialError = null }: ResetPa
         />
 
         <button className="btn btn-primary" type="submit" disabled={!sessionReady || loading || !password || !confirmPassword}>
-          {loading ? 'Updating...' : 'Update password'}
+          {loading ? copy.updating : copy.updatePassword}
         </button>
       </form>
 
       <div className="auth-links">
-        <Link href="/forgot-password">Request new reset link</Link>
-        <Link href="/login">Back to sign in</Link>
+        <Link href="/forgot-password">{copy.requestNewLink}</Link>
+        <Link href="/login">{copy.backToSignIn}</Link>
       </div>
     </AuthShell>
   );

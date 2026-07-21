@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { formatCurrency } from '@/lib/finance-format';
 import type { ContractorPaymentStatus, JobLaborRecord } from '@/lib/finance-types';
+import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { getJobFinanceCopy } from '@/lib/i18n/job-finance-copy';
 import {
   formatLaborPaymentLabel,
   laborQuantityLabel,
@@ -21,10 +24,13 @@ type JobLaborSectionProps = {
   onChange?: () => void;
 };
 
-function paymentStatusLabel(status: ContractorPaymentStatus | null | undefined) {
-  if (status === 'paid') return 'Paid';
-  if (status === 'pending') return 'Pending';
-  return 'Unpaid';
+function paymentStatusLabel(
+  status: ContractorPaymentStatus | null | undefined,
+  labels: { paid: string; pending: string; unpaid: string }
+) {
+  if (status === 'paid') return labels.paid;
+  if (status === 'pending') return labels.pending;
+  return labels.unpaid;
 }
 
 function formatPaidDate(value: string | null | undefined) {
@@ -43,6 +49,14 @@ function rateLabel(basis: LaborPaymentBasis) {
 }
 
 export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
+  const { locale } = useTranslation();
+  const pageCopy = getDashboardFinanceCopy(locale).contractorPayPage;
+  const financeCopy = getJobFinanceCopy(locale);
+  const statusLabels = {
+    paid: financeCopy.statusPaid,
+    pending: pageCopy.pending,
+    unpaid: financeCopy.statusUnpaid
+  };
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
   const [currentProfit, setCurrentProfit] = useState(0);
@@ -284,8 +298,8 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   return (
     <section className="card finance-section">
       <div className="section-heading">
-        <h3>Contractor pay</h3>
-        <p className="muted">Track flat, hourly, or per-visit pay for this job.</p>
+        <h3>{pageCopy.title}</h3>
+        <p className="muted">{pageCopy.subtitle}</p>
       </div>
 
       {loading ? <p className="muted">{FEEDBACK.loading}</p> : null}
@@ -424,8 +438,8 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                         })}
                       </p>
                       <p className="muted" style={{ margin: '6px 0' }}>
-                        Payment: {paymentStatusLabel(paymentStatus)}
-                        {entry.paid_at ? ` · Paid ${formatPaidDate(entry.paid_at)}` : ''}
+                        {financeCopy.paymentStatus}: {paymentStatusLabel(paymentStatus, statusLabels)}
+                        {entry.paid_at ? ` · ${pageCopy.paid} ${formatPaidDate(entry.paid_at)}` : ''}
                       </p>
                       {entry.payment_method ? (
                         <p className="muted" style={{ margin: '6px 0' }}>
@@ -448,7 +462,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                             disabled={updatingPaymentId === entry.id}
                             onClick={() => void updatePaymentStatus(entry.id, 'paid')}
                           >
-                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Record payment'}
+                            {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.markPaid}
                           </button>
                         ) : (
                           <button
@@ -457,7 +471,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                             disabled={updatingPaymentId === entry.id}
                             onClick={() => void updatePaymentStatus(entry.id, 'unpaid')}
                           >
-                            {updatingPaymentId === entry.id ? FEEDBACK.loading : 'Mark unpaid'}
+                            {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.stillOwed}
                           </button>
                         )}
                         {paymentStatus === 'unpaid' ? (
@@ -467,7 +481,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                             disabled={updatingPaymentId === entry.id}
                             onClick={() => void updatePaymentStatus(entry.id, 'pending')}
                           >
-                            Mark pending
+                            {pageCopy.markPending}
                           </button>
                         ) : null}
                         <button

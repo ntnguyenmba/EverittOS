@@ -17,6 +17,7 @@ import { resolveClientApiUrl } from '@/lib/client-api-url';
 import { OnboardingSupportPromo } from '@/components/onboarding-support-promo';
 import { PasskeySetupPrompt } from '@/components/passkey-setup-prompt';
 import { useTranslation } from '@/components/locale-provider';
+import { getAuthFlowCopy } from '@/lib/i18n/auth-copy';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
 
@@ -56,7 +57,7 @@ function SignupForm() {
     const message = searchParams.get('error');
     if (!message) return '';
     const mapped = mapAuthError(searchParams.get('error_code') || decodeURIComponent(message));
-    return decodeURIComponent(message) || mapped.message;
+    return mapped.message;
   }, [searchParams]);
 
   const [error, setError] = useState(urlError);
@@ -67,7 +68,8 @@ function SignupForm() {
   const [acceptLegal, setAcceptLegal] = useState(false);
   const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState('');
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = getAuthFlowCopy(locale).signup;
   const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
@@ -84,19 +86,19 @@ function SignupForm() {
 
     if (!normalizedEmail || !password) {
       setLoading(false);
-      setError('Email and password are required.');
+      setError(copy.emailPasswordRequired);
       return;
     }
 
     if (password.length < 6) {
       setLoading(false);
-      setError('Password must be at least 6 characters.');
+      setError(copy.passwordTooShort);
       return;
     }
 
     if (password !== confirmPassword) {
       setLoading(false);
-      setError('Passwords do not match.');
+      setError(copy.passwordsDoNotMatch);
       return;
     }
 
@@ -110,7 +112,7 @@ function SignupForm() {
       const rateRes = await fetch('/api/auth/signup-rate-limit', { method: 'POST' });
       if (rateRes.status === 429) {
         setLoading(false);
-        setError('Too many signup attempts. Wait an hour and try again.');
+        setError(copy.tooManyAttempts);
         return;
       }
     } catch {
@@ -178,7 +180,7 @@ function SignupForm() {
   }
 
   return (
-    <AuthShell title="Create account" hideContinuingLegalNote>
+    <AuthShell title={copy.title} hideContinuingLegalNote>
       {selectedPlan !== 'free' ? (
         <>
           <p className="auth-plan-note">
@@ -192,37 +194,43 @@ function SignupForm() {
 
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
-          <label htmlFor="business_name">Business or display name (optional)</label>
-          <input id="business_name" className="input" placeholder="Leave blank for a personal workspace" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+          <label htmlFor="business_name">
+            {copy.businessName} ({copy.businessNameOptional})
+          </label>
+          <input id="business_name" className="input" placeholder={copy.businessNameOptional} value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         </div>
 
         <div className="auth-field">
-          <label htmlFor="signup_referral_source">How did you hear about us? (optional)</label>
+          <label htmlFor="signup_referral_source">
+            {copy.howDidYouHear} ({copy.businessNameOptional})
+          </label>
           <select id="signup_referral_source" className="input" value={referralSource} onChange={(e) => setReferralSource(e.target.value)}>
-            <option value="">Select one</option>
+            <option value="" />
             {referralCode ? <option value="Referral code">Referral code</option> : null}
             {REFERRAL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
         </div>
 
         <div className="auth-field">
-          <label htmlFor="signup_referral_detail">Referral details for credit or payout tracking (optional)</label>
-          <input id="signup_referral_detail" className="input" placeholder="Person, company, Facebook group, salesperson, or referral code" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
+          <label htmlFor="signup_referral_detail">
+            {copy.howDidYouHear} ({copy.businessNameOptional})
+          </label>
+          <input id="signup_referral_detail" className="input" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
         </div>
 
         <div className="auth-field">
-          <label htmlFor="email">Email</label>
-          <input id="email" className="input" placeholder="you@company.com" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <label htmlFor="email">{copy.email}</label>
+          <input id="email" className="input" placeholder={copy.emailPlaceholder} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
         <div className="auth-field">
-          <label htmlFor="password">Password</label>
-          <input id="password" className="input" placeholder="Minimum 6 characters" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <label htmlFor="password">{copy.password}</label>
+          <input id="password" className="input" placeholder={copy.passwordPlaceholder} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
 
         <div className="auth-field">
-          <label htmlFor="confirm_password">Confirm password</label>
-          <input id="confirm_password" className="input" placeholder="Repeat password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+          <label htmlFor="confirm_password">{copy.confirmPassword}</label>
+          <input id="confirm_password" className="input" placeholder={copy.passwordPlaceholder} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
         </div>
 
         <label className="auth-consent" htmlFor="signup_accept_legal">
@@ -232,10 +240,10 @@ function SignupForm() {
 
         <AuthMessages error={error} success={success} />
 
-        {signInRecommended ? <p className="auth-recovery-note"><Link href={loginHref}>Sign in with this email</Link></p> : null}
+        {signInRecommended ? <p className="auth-recovery-note"><Link href={loginHref}>{copy.signIn}</Link></p> : null}
         {errorCode === 'existing_unconfirmed' ? <p className="auth-recovery-note muted">Did not get the email? Try signing in. We send another confirmation link when needed.</p> : null}
 
-        <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Creating account...' : 'Create account'}</button>
+        <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? copy.creating : copy.createAccount}</button>
       </form>
 
       {showPasskeyPrompt && pendingRedirect ? (
@@ -245,7 +253,7 @@ function SignupForm() {
         </>
       ) : null}
 
-      <div className="auth-links"><Link href={loginHref}>Already have an account? Sign in</Link></div>
+      <div className="auth-links"><Link href={loginHref}>{copy.alreadyHaveAccount} {copy.signIn}</Link></div>
     </AuthShell>
   );
 }
