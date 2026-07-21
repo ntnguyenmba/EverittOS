@@ -40,7 +40,7 @@ test('normalizeContractorClassification defaults legacy values to contractor', (
 test('formatContractorCompensationLabel shows zero owner compensation', () => {
   assert.equal(
     formatContractorCompensationLabel({ classification: 'owner_operator', hourlyRate: 0 }),
-    '$0.00/hr · Owner'
+    '$0 / hour · Owner'
   );
 });
 
@@ -54,7 +54,14 @@ test('formatContractorCompensationLabel shows owner without entered compensation
 test('formatContractorCompensationLabel shows contractor hourly rate', () => {
   assert.equal(
     formatContractorCompensationLabel({ classification: 'contractor', hourlyRate: 25 }),
-    '$25.00/hr'
+    '$25 / hour'
+  );
+});
+
+test('formatContractorCompensationLabel preserves cents when needed', () => {
+  assert.equal(
+    formatContractorCompensationLabel({ classification: 'contractor', hourlyRate: 25.5 }),
+    '$25.50 / hour'
   );
 });
 
