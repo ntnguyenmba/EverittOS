@@ -19,8 +19,10 @@ Last verified on branch `main` after the financial dashboard and mobile subscrip
 
 1. `supabase/migrations/202609100001_store_billing_subscriptions.sql` (store entitlements)
 2. `supabase/migrations/202609110001_invoice_payments_ledger.sql` (payment ledger + backfill)
+3. `supabase/migrations/202607200001_job_payments_customer_photo_reports.sql` (direct job payments + customer photo reports)
+4. `supabase/migrations/202609120001_editable_invoice_payments.sql` (editable invoice ledger + reconcile triggers)
 
-Apply in Supabase before relying on period-accurate Paid to you from payment rows. The dashboard falls back to invoice summary fields if the ledger table is missing.
+Apply in Supabase before relying on period-accurate Paid to you, direct job payments, payment edit/delete, or customer report share links. The dashboard falls back to invoice summary fields if the invoice ledger table is missing.
 
 ## Environment variables
 

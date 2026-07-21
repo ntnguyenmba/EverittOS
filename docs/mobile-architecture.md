@@ -41,3 +41,12 @@ Auth callback path: `/auth/callback` (also listed in `lib/mobile-app-config.ts`)
 ## Shared web features in native shells
 
 Direct job payments, customer photo reports, and localized finance UI ship in the shared Next.js app. iOS and Android Capacitor builds pick them up automatically on the next shell sync against production. No separate Swift or Kotlin payment or report modules are required.
+
+## Native permissions
+
+| Platform | Permissions |
+|----------|-------------|
+| iOS | Camera + photo library usage strings in `ios/App/App/Info.plist` |
+| Android | `INTERNET`, `CAMERA`, `READ_MEDIA_IMAGES`, legacy `READ_EXTERNAL_STORAGE` (maxSdk 32) in `AndroidManifest.xml` |
+
+Associated domains / asset links still require the real Apple Team ID and release key SHA-256 before production universal links verify.

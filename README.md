@@ -97,12 +97,31 @@ Service role key is used only in server API routes (`lib/supabase-admin.ts`), ne
 
 ```bash
 npm install
+npm run typecheck
 npm run lint
+npm test
 npm run build
 npm run dev
 ```
 
 Open http://localhost:3000
+
+## Mobile (Capacitor)
+
+EverittOS ships as a shared Next.js web app wrapped by Capacitor for iOS and Android.
+
+```bash
+npm run mobile:validate-env
+npx cap sync
+npx cap doctor
+```
+
+- iOS: `npm run ios:open` then archive/sign in Xcode (requires macOS)
+- Android: `npm run android:open` then assemble/sign in Android Studio
+- App ID: `com.everittventures.everittos`
+- Details: `docs/mobile-architecture.md`, `docs/production-readiness.md`
+
+Apply Supabase migrations in filename order before using direct job payments, editable invoice payments, or customer photo report share links.
 
 ## Launch test checklist
 
