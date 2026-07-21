@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { OutboundComposer } from '@/components/outbound/outbound-composer';
@@ -16,6 +17,7 @@ type OutboundHubProps = {
   initialJobId?: string;
   initialCustomerId?: string;
   paymentFilter?: InvoicePaymentFilter;
+  focusOutstanding?: boolean;
   footer?: React.ReactNode;
 };
 
@@ -26,6 +28,7 @@ export function OutboundHub({
   initialJobId,
   initialCustomerId,
   paymentFilter = 'all',
+  focusOutstanding = false,
   footer
 }: OutboundHubProps) {
   const appFeedback = useAppFeedback();
@@ -131,6 +134,65 @@ export function OutboundHub({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const composer = canManage && schemaReady ? (
+    <OutboundComposer
+      docType={docType}
+      fields={autosave.fields}
+      saveState={autosave.saveState}
+      sending={autosave.sending}
+      showAmount={showAmount}
+      onFieldChange={autosave.updateField}
+      onSend={() => void handleSendFromComposer()}
+      onReset={autosave.resetComposer}
+    />
+  ) : null;
+
+  const history = (
+    <div className="card outbound-history-card">
+      <div className="outbound-history-head">
+        <h3>
+          {docType === 'invoice'
+            ? focusOutstanding
+              ? paymentFilter === 'overdue'
+                ? 'Overdue invoices'
+                : 'Who still owes you'
+              : 'Invoices'
+            : 'Sent history'}
+        </h3>
+        {docType === 'invoice' && paymentFilter !== 'all' ? (
+          <p className="muted" style={{ margin: '6px 0 0' }}>
+            {focusOutstanding
+              ? 'Each row below shows the customer, invoice, amount billed, amount paid, and remaining balance.'
+              : `Showing ${paymentFilter === 'history' ? 'payment history' : paymentFilter} invoices. Record payment here once and every dashboard metric updates from this.`}
+          </p>
+        ) : null}
+        {focusOutstanding ? (
+          <div className="inline-actions" style={{ marginTop: 12 }}>
+            <Link className="btn btn-sm" href="/jobs?status=completed">
+              Review uninvoiced jobs
+            </Link>
+            <Link className="btn btn-sm" href="/invoices">
+              Create an invoice
+            </Link>
+          </div>
+        ) : null}
+      </div>
+      <OutboundStatusTabs active={tab} onChange={setTab} />
+      <OutboundDocumentList
+        documents={documents}
+        tab={tab}
+        loading={loading}
+        canManage={canManage}
+        paymentFilter={docType === 'invoice' ? paymentFilter : 'all'}
+        onEdit={handleEdit}
+        onSend={(id) => void handleSendExisting(id)}
+        onRetry={(id) => void handleSendExisting(id)}
+        onDelete={(id) => void handleDelete(id)}
+        onPaymentRecorded={() => void loadDocuments()}
+      />
+    </div>
+  );
+
   return (
     <>
       {!schemaReady ? (
@@ -142,43 +204,8 @@ export function OutboundHub({
         </div>
       ) : null}
 
-      {canManage && schemaReady ? (
-        <OutboundComposer
-          docType={docType}
-          fields={autosave.fields}
-          saveState={autosave.saveState}
-          sending={autosave.sending}
-          showAmount={showAmount}
-          onFieldChange={autosave.updateField}
-          onSend={() => void handleSendFromComposer()}
-          onReset={autosave.resetComposer}
-        />
-      ) : null}
-
-      <div className="card outbound-history-card">
-        <div className="outbound-history-head">
-          <h3>{docType === 'invoice' ? 'Invoices' : 'Sent history'}</h3>
-          {docType === 'invoice' && paymentFilter !== 'all' ? (
-            <p className="muted" style={{ margin: '6px 0 0' }}>
-              Showing {paymentFilter === 'history' ? 'payment history' : paymentFilter} invoices. Record payment here once — every dashboard metric updates from this.
-            </p>
-          ) : null}
-        </div>
-        <OutboundStatusTabs active={tab} onChange={setTab} />
-        <OutboundDocumentList
-          documents={documents}
-          tab={tab}
-          loading={loading}
-          canManage={canManage}
-          paymentFilter={docType === 'invoice' ? paymentFilter : 'all'}
-          onEdit={handleEdit}
-          onSend={(id) => void handleSendExisting(id)}
-          onRetry={(id) => void handleSendExisting(id)}
-          onDelete={(id) => void handleDelete(id)}
-          onPaymentRecorded={() => void loadDocuments()}
-        />
-      </div>
-
+      {focusOutstanding ? history : composer}
+      {focusOutstanding ? composer : history}
       {footer}
     </>
   );
