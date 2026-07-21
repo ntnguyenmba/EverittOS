@@ -30,6 +30,19 @@ function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatLaborCalculation(entry: JobLaborRecord) {
+  const quantity = Number(entry.hours || 0);
+  const rate = Number(entry.hourly_cost || 0);
+  const total = Number(entry.total_cost || 0);
+
+  if (quantity === 1) {
+    return `Flat amount · ${formatCurrency(total)}`;
+  }
+
+  const quantityLabel = Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+  return `${quantityLabel} × ${formatCurrency(rate)} = ${formatCurrency(total)}`;
+}
+
 export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
@@ -79,7 +92,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
     const h = Number.parseFloat(hours);
     const rate = Number.parseFloat(hourlyCost || '0');
     if (!Number.isFinite(h) || h <= 0) {
-      appFeedback.error('Enter hours or visits.');
+      appFeedback.error('Enter a quantity, such as hours, visits, or 1 for a flat amount.');
       return;
     }
 
@@ -137,7 +150,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
     const h = Number.parseFloat(editHours);
     const rate = Number.parseFloat(editHourlyCost || '0');
     if (!Number.isFinite(h) || h <= 0) {
-      appFeedback.error('Enter hours or visits.');
+      appFeedback.error('Enter a quantity, such as hours, visits, or 1 for a flat amount.');
       return;
     }
 
@@ -260,13 +273,12 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const previewCost = Number.isFinite(previewHours) && Number.isFinite(previewRate) ? previewHours * previewRate : 0;
   const previewProfit = currentProfit - previewCost;
   const contractorTotals = useMemo(() => {
-    const totals = new Map<string, { name: string; total: number; hours: number }>();
+    const totals = new Map<string, { name: string; total: number }>();
     for (const row of entries) {
       const name = (row.worker_name || 'Contractor').trim() || 'Contractor';
       const key = name.toLowerCase();
-      const current = totals.get(key) || { name, total: 0, hours: 0 };
+      const current = totals.get(key) || { name, total: 0 };
       current.total += Number(row.total_cost || 0);
-      current.hours += Number(row.hours || 0);
       totals.set(key, current);
     }
     return Array.from(totals.values()).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -281,7 +293,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       {!loading && entries.length === 0 ? <p className="muted">No contractor pay recorded yet.</p> : null}
 
       {!loading && entries.length > 0 ? (
-        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
+        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 20 }}>
           <div className="finance-metric"><span className="finance-metric-label">Contractor pay owed</span><strong>{formatCurrency(unpaidLabor)}</strong></div>
           <div className="finance-metric"><span className="finance-metric-label">Pending</span><strong>{formatCurrency(pendingLabor)}</strong></div>
           <div className="finance-metric"><span className="finance-metric-label">Paid</span><strong>{formatCurrency(paidLabor)}</strong></div>
@@ -290,23 +302,18 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       ) : null}
 
       {!loading && contractorTotals.length > 0 ? (
-        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
+        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 24 }}>
           {contractorTotals.map((contractor) => (
             <div key={contractor.name.toLowerCase()} className="finance-metric">
               <span className="finance-metric-label">{contractor.name}</span>
               <strong>{formatCurrency(contractor.total)}</strong>
-              {contractor.hours > 0 ? (
-                <span className="muted">
-                  {contractor.hours} hour{contractor.hours === 1 ? '' : 's'}
-                </span>
-              ) : null}
             </div>
           ))}
         </div>
       ) : null}
 
       {!loading && entries.length > 0 ? (
-        <div className="finance-list">
+        <div className="finance-list" style={{ marginTop: 4 }}>
           <h4>Saved contractor pay</h4>
           {entries.map((entry) => {
             const isEditing = editingId === entry.id;
@@ -329,8 +336,9 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                     <input className="input" placeholder="Contractor name" value={editWorkerName} onChange={(e) => setEditWorkerName(e.target.value)} />
                     <div className="grid-2">
                       <div className="form-group">
-                        <label>Hours or visits</label>
+                        <label>Quantity</label>
                         <input className="input" type="number" min="0" step="0.25" value={editHours} onChange={(e) => setEditHours(e.target.value)} />
+                        <span className="muted" style={{ fontSize: 12 }}>Use 1 for a flat amount, or enter hours or visits.</span>
                       </div>
                       <div className="form-group">
                         <label>Rate or flat amount</label>
@@ -352,14 +360,14 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                   <>
                     <div>
                       <strong>{entry.worker_name || 'Contractor'}</strong>
-                      <p className="muted">{entry.hours} x {formatCurrency(entry.hourly_cost)} = {formatCurrency(entry.total_cost)}</p>
-                      <p className="muted">
+                      <p className="muted" style={{ margin: '6px 0' }}>{formatLaborCalculation(entry)}</p>
+                      <p className="muted" style={{ margin: '6px 0' }}>
                         Payment: {paymentStatusLabel(paymentStatus)}
                         {entry.paid_at ? ` · Paid ${formatPaidDate(entry.paid_at)}` : ''}
                       </p>
-                      {entry.payment_method ? <p className="muted">Method: {entry.payment_method}</p> : null}
-                      {entry.payment_reference ? <p className="muted">Reference: {entry.payment_reference}</p> : null}
-                      {entry.notes ? <p className="muted">{entry.notes}</p> : null}
+                      {entry.payment_method ? <p className="muted" style={{ margin: '6px 0' }}>Method: {entry.payment_method}</p> : null}
+                      {entry.payment_reference ? <p className="muted" style={{ margin: '6px 0' }}>Reference: {entry.payment_reference}</p> : null}
+                      {entry.notes ? <p className="muted" style={{ margin: '6px 0' }}>{entry.notes}</p> : null}
                     </div>
                     {canManage ? (
                       <div className="job-detail-actions">
@@ -389,7 +397,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       ) : null}
 
       {canManage ? (
-        <div className="finance-form-block">
+        <div className="finance-form-block" style={{ marginTop: 24 }}>
           <h4>Add contractor pay</h4>
           <label>Contractor or cleaner</label>
           {workers.length > 0 ? (
@@ -399,9 +407,10 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
             </select>
           ) : null}
           <input className="input" placeholder="Contractor or cleaner name" value={workerName} onChange={(e) => setWorkerName(e.target.value)} />
-          <label>Hours or visits</label>
+          <label>Quantity</label>
           <input className="input" type="number" min="0" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} />
-          <label>Hourly rate or flat amount</label>
+          <span className="muted" style={{ fontSize: 12 }}>Use 1 for a flat amount, or enter hours or visits.</span>
+          <label>Rate or flat amount</label>
           <input className="input" type="number" min="0" step="0.01" value={hourlyCost} onChange={(e) => setHourlyCost(e.target.value)} />
           <div className="finance-metric-grid financials-summary-grid">
             <div className="finance-metric"><span className="finance-metric-label">New contractor pay</span><strong>{formatCurrency(previewCost)}</strong></div>
