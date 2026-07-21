@@ -250,7 +250,13 @@ export async function fetchBusinessPerformance(
   const outstandingInvoices = dashboardMetrics.stillOwed;
   const expensesThisMonth = dashboardMetrics.otherExpensesThisMonth || 0;
   const estimatedProfitThisMonth = calculateEstimatedProfit({
-    customerInvoices: revenueThisMonth,
+    expectedRevenue:
+      dashboardMetrics.expectedRevenue ??
+      Number(
+        (
+          (dashboardMetrics.customerInvoices || 0) + (dashboardMetrics.uninvoicedCompletedWork || 0)
+        ).toFixed(2)
+      ),
     contractorPay: dashboardMetrics.contractorPayThisMonth || 0,
     otherExpenses: expensesThisMonth
   });

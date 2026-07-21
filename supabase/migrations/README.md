@@ -51,6 +51,7 @@ Run **once** in Supabase SQL Editor (entire file, top to bottom):
 
 - `202609130001_job_labor_payment_basis.sql` - contractor pay basis (`hourly` / `flat` / `visit`)
 - `202609140001_invoice_document_locale.sql` - freeze invoice language for customer-facing documents
+- `202609150001_customer_blank_pipeline_active.sql` - migrate blank customer `pipeline_stage` to `active`
 
 ## Incremental migrations (new projects only)
 

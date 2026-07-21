@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 import { countOrganizationJobs } from '@/lib/jobs-org-query';
-import { getJobOperationalDate } from '@/lib/job-operational-date';
+import {
+  getCompletedJobReportingDate,
+  getJobOperationalDate,
+  isActiveCustomerRecord,
+  isCompletedJobMissingCompletedAt,
+  type JobDateFields
+} from '@/lib/job-operational-date';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
@@ -20,8 +26,13 @@ export type DashboardRevenueMetrics = {
   paidToYou: number;
   /** Customer invoices created in the selected period (invoices only, no manual job revenue) */
   customerInvoices: number;
-  /** Uninvoiced completed work (manual job revenue) in the selected period */
+  /** Uninvoiced job expected revenue in the selected period (excludes jobs that already have an invoice) */
   uninvoicedCompletedWork: number;
+  /**
+   * Expected revenue = invoice totals created in the period + uninvoiced job expected revenue.
+   * Invoiced jobs are never double counted.
+   */
+  expectedRevenue: number;
   /**
    * @deprecated Prefer customerInvoices for invoice totals.
    * Previously mixed invoices + manual job revenue. Now equals customerInvoices only.
@@ -40,6 +51,10 @@ export type DashboardRevenueMetrics = {
   unpaidInvoiceTotal: number;
   jobsCompleted: number;
   jobsCompletedThisMonth: number;
+  /** Completed jobs in the period that lack completed_at (using legacy date fallback) */
+  completedJobsMissingCompletedAt: number;
+  /** Job ids for completed jobs missing completed_at (for correction links) */
+  completedJobsMissingCompletedAtIds: string[];
   activeCustomers: number;
   customerCount: number;
   upcomingJobs: number;
@@ -51,15 +66,16 @@ export type DashboardRevenueMetrics = {
   pendingContractorPay?: number;
   otherExpensesThisMonth?: number;
   expenseTotalThisMonth: number;
-  /** Estimated profit = customer invoices − contractor pay − other expenses */
+  /** Expected profit = expected revenue − contractor cost incurred − other expenses */
   netEstimateThisMonth: number;
   estimatedProfit: number;
-  /** Cash after expenses = paid to you − contractor cash paid − other expenses */
+  /** Cash after paid costs = payments received − contractor payments paid − expenses paid */
   netCashFlow: number;
   cashAfterExpenses: number;
+  /** Alias of cashAfterExpenses — the single cash metric shown on the dashboard */
+  cashAfterPaidCosts: number;
   /**
-   * Money Summary net cash = collected payments − expenses paid in the period.
-   * Does not subtract contractor pay (tracked separately).
+   * @deprecated Conflicting metric that excluded contractor payments. Always 0; use cashAfterPaidCosts.
    */
   moneySummaryNetCash: number;
   /** True when the organization has at least one invoice row (invoicing has been used). */
@@ -395,18 +411,60 @@ export function calculatePendingContractorPay(laborRows: LaborCostRow[]): number
   }, 0);
 }
 
-/** Estimated profit = customer invoices − contractor pay − other expenses. */
+export type JobExpectedRevenueRow = JobDateFields & {
+  id?: unknown;
+  revenue_amount?: unknown;
+};
+
+/**
+ * Uninvoiced expected revenue for jobs in the period.
+ * Jobs that already have an invoice are never included.
+ */
+export function calculateUninvoicedExpectedRevenue(
+  jobs: JobExpectedRevenueRow[],
+  invoicedJobIds: Set<string>,
+  start: string | null,
+  end: string | null
+): number {
+  return jobs.reduce((sum, job) => {
+    const jobId = String(job.id || '');
+    if (jobId && invoicedJobIds.has(jobId)) return sum;
+    const status = String(job.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'canceled') return sum;
+    const amount = num(job.revenue_amount);
+    if (amount <= 0) return sum;
+    const bookedDate = getJobOperationalDate(job);
+    return inRange(bookedDate, start, end) ? sum + amount : sum;
+  }, 0);
+}
+
+/** Expected revenue = invoice totals + uninvoiced job expected revenue (no double count). */
+export function calculateExpectedRevenue(
+  customerInvoices: number,
+  uninvoicedExpectedRevenue: number
+): number {
+  return Number((num(customerInvoices) + num(uninvoicedExpectedRevenue)).toFixed(2));
+}
+
+/**
+ * Expected profit = expected revenue − contractor cost incurred − other recorded expenses.
+ * Pass expectedRevenue, or customerInvoices + uninvoicedCompletedWork.
+ */
 export function calculateEstimatedProfit(input: {
-  customerInvoices: number;
+  expectedRevenue?: number;
+  customerInvoices?: number;
+  uninvoicedCompletedWork?: number;
   contractorPay: number;
   otherExpenses: number;
 }): number {
-  return Number(
-    (num(input.customerInvoices) - num(input.contractorPay) - num(input.otherExpenses)).toFixed(2)
-  );
+  const expected =
+    input.expectedRevenue !== undefined
+      ? num(input.expectedRevenue)
+      : num(input.customerInvoices) + num(input.uninvoicedCompletedWork);
+  return Number((expected - num(input.contractorPay) - num(input.otherExpenses)).toFixed(2));
 }
 
-/** Cash after expenses = paid to you − contractor cash paid − other cash expenses. */
+/** Cash after paid costs = payments received − contractor payments paid − expenses paid. */
 export function calculateNetCashFlow(input: {
   cashCollected: number;
   contractorCashPaid: number;
@@ -418,12 +476,79 @@ export function calculateNetCashFlow(input: {
 }
 
 export const calculateCashAfterExpenses = calculateNetCashFlow;
+export const calculateCashAfterPaidCosts = calculateNetCashFlow;
 
-/** Money Summary: collected client payments minus expenses paid in the same period. */
+/**
+ * @deprecated Use calculateCashAfterPaidCosts. This excluded contractor payments and conflicted with cash after paid costs.
+ */
 export function calculateMoneySummaryNetCash(collected: number, expensesPaid: number): number {
   return Number((num(collected) - num(expensesPaid)).toFixed(2));
 }
 
+export type PrimaryDashboardMetricKey =
+  | 'expectedRevenue'
+  | 'collected'
+  | 'outstanding'
+  | 'contractorCost'
+  | 'expectedProfit'
+  | 'cashAfterPaidCosts';
+
+export type PrimaryDashboardMetric = {
+  key: PrimaryDashboardMetricKey;
+  label: string;
+  value: number;
+  help: string;
+};
+
+/** Primary dashboard cards — one accurate set of money metrics, no duplicate Net cash. */
+export function buildPrimaryDashboardMetrics(input: {
+  expectedRevenue: number;
+  collected: number;
+  outstanding: number;
+  contractorCost: number;
+  expectedProfit: number;
+  cashAfterPaidCosts: number;
+  labels?: Partial<Record<PrimaryDashboardMetricKey, string>>;
+  helps?: Partial<Record<PrimaryDashboardMetricKey, string>>;
+}): PrimaryDashboardMetric[] {
+  const defaults: Record<PrimaryDashboardMetricKey, { label: string; help: string }> = {
+    expectedRevenue: {
+      label: 'Expected revenue',
+      help: 'Invoice totals created in this period plus expected amounts on jobs that do not have an invoice yet. A job is never counted twice.'
+    },
+    collected: {
+      label: 'Collected',
+      help: 'Client payments actually received in this period from invoices and direct job payments.'
+    },
+    outstanding: {
+      label: 'Outstanding',
+      help: 'Unpaid invoice balances plus unpaid expected amounts on jobs without an invoice.'
+    },
+    contractorCost: {
+      label: 'Contractor cost',
+      help: 'Contractor cost recorded for this period, whether already paid or still owed.'
+    },
+    expectedProfit: {
+      label: 'Expected profit',
+      help: 'Expected revenue minus contractor cost incurred minus other recorded expenses. This is not the same as cash in the bank.'
+    },
+    cashAfterPaidCosts: {
+      label: 'Cash after paid costs',
+      help: 'Payments actually received minus contractor payments actually paid minus expenses actually paid.'
+    }
+  };
+
+  return (Object.keys(defaults) as PrimaryDashboardMetricKey[]).map((key) => ({
+    key,
+    label: input.labels?.[key] || defaults[key].label,
+    value: Number(num(input[key]).toFixed(2)),
+    help: input.helps?.[key] || defaults[key].help
+  }));
+}
+
+/**
+ * @deprecated Money summary Net cash conflicted with Cash after paid costs. Use buildPrimaryDashboardMetrics.
+ */
 export type MoneySummaryMetric = {
   key: 'collected' | 'outstanding' | 'invoiced' | 'netCash';
   label: string;
@@ -431,7 +556,7 @@ export type MoneySummaryMetric = {
   help: string;
 };
 
-/** Build the Money Summary rows with period-aware labels and optional invoicing. */
+/** @deprecated Use buildPrimaryDashboardMetrics. */
 export function buildMoneySummaryMetrics(input: {
   rangeLabel: string;
   collected: number;
@@ -443,9 +568,7 @@ export function buildMoneySummaryMetrics(input: {
   const collected = Math.max(0, num(input.collected));
   const outstanding = Math.max(0, num(input.outstanding));
   const invoiced = Math.max(0, num(input.invoiced));
-  const netCash = calculateMoneySummaryNetCash(collected, input.expensesPaid);
   const period = input.rangeLabel.toLowerCase();
-
   const rows: MoneySummaryMetric[] = [
     {
       key: 'collected',
@@ -460,7 +583,6 @@ export function buildMoneySummaryMetrics(input: {
       help: 'Current unpaid invoice balances plus unpaid expected amounts on jobs that do not have an invoice.'
     }
   ];
-
   if (input.hasCreatedInvoices) {
     rows.push({
       key: 'invoiced',
@@ -469,23 +591,33 @@ export function buildMoneySummaryMetrics(input: {
       help: 'Total of non-cancelled invoices created during this period.'
     });
   }
-
-  rows.push({
-    key: 'netCash',
-    label: `Net cash ${period}`,
-    value: netCash,
-    help: 'Collected payments for this period minus expenses paid during this period.'
-  });
-
+  // Intentionally omit the old Net cash row — it excluded contractor payments.
   return rows;
 }
 
 export function calculateEstimatedProfitPercentage(
   estimatedProfit: number,
-  customerInvoices: number
+  expectedRevenue: number
 ): number | null {
-  if (customerInvoices <= 0) return null;
-  return Number(((estimatedProfit / customerInvoices) * 100).toFixed(1));
+  if (expectedRevenue <= 0) return null;
+  return Number(((estimatedProfit / expectedRevenue) * 100).toFixed(1));
+}
+
+export function countCompletedJobsMissingCompletedAt(
+  jobs: JobDateFields[],
+  start: string | null,
+  end: string | null,
+  range: DashboardDateRange = 'month'
+): { count: number; ids: string[] } {
+  const ids: string[] = [];
+  for (const job of jobs) {
+    if (!isCompletedJobMissingCompletedAt(job)) continue;
+    const reportingDate = getCompletedJobReportingDate(job);
+    if (range !== 'all_time' && !inRange(reportingDate, start, end)) continue;
+    const id = String(job.id || '');
+    if (id) ids.push(id);
+  }
+  return { count: ids.length, ids };
 }
 
 /**
@@ -512,6 +644,7 @@ function emptyMetrics(): DashboardRevenueMetrics {
     paidToYou: 0,
     customerInvoices: 0,
     uninvoicedCompletedWork: 0,
+    expectedRevenue: 0,
     bookedRevenue: 0,
     pendingIncoming: 0,
     stillOwed: 0,
@@ -524,6 +657,8 @@ function emptyMetrics(): DashboardRevenueMetrics {
     unpaidInvoiceTotal: 0,
     jobsCompleted: 0,
     jobsCompletedThisMonth: 0,
+    completedJobsMissingCompletedAt: 0,
+    completedJobsMissingCompletedAtIds: [],
     activeCustomers: 0,
     customerCount: 0,
     upcomingJobs: 0,
@@ -537,6 +672,7 @@ function emptyMetrics(): DashboardRevenueMetrics {
     estimatedProfit: 0,
     netCashFlow: 0,
     cashAfterExpenses: 0,
+    cashAfterPaidCosts: 0,
     moneySummaryNetCash: 0,
     hasCreatedInvoices: false,
     loadFailed: false,
@@ -606,10 +742,9 @@ export async function fetchDashboardRevenueMetrics(
       .eq('status', 'completed'),
     supabase
       .from('customers')
-      .select('id', { count: 'exact', head: true })
+      .select('id, record_type, pipeline_stage')
       .eq('organization_id', organizationId)
-      .eq('record_type', 'customer')
-      .eq('pipeline_stage', 'active'),
+      .eq('record_type', 'customer'),
     supabase
       .from('jobs')
       .select('id', { count: 'exact', head: true })
@@ -687,13 +822,11 @@ export async function fetchDashboardRevenueMetrics(
     }
   }
 
-  const uninvoicedCompletedWork = safeData(manualRevenueJobsRes, []).reduce((sum, job) => {
-    if (invoicedJobIds.has(String(job.id))) return sum;
-    const status = String(job.status || '').toLowerCase();
-    if (status === 'cancelled' || status === 'canceled') return sum;
-    const bookedDate = getJobOperationalDate(job);
-    return inRange(bookedDate, start, end) ? sum + num(job.revenue_amount) : sum;
-  }, 0);
+  const manualRevenueJobs = safeData(manualRevenueJobsRes, []) as JobExpectedRevenueRow[];
+  const uninvoicedCompletedWork = Number(
+    calculateUninvoicedExpectedRevenue(manualRevenueJobs, invoicedJobIds, start, end).toFixed(2)
+  );
+  const expectedRevenue = calculateExpectedRevenue(customerInvoices, uninvoicedCompletedWork);
 
   const averageDaysToPayment = paymentDurations.length
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
@@ -722,22 +855,29 @@ export async function fetchDashboardRevenueMetrics(
 
   const accruedCosts = contractorPay + otherExpenses;
   const estimatedProfit = calculateEstimatedProfit({
-    customerInvoices,
+    expectedRevenue,
     contractorPay,
     otherExpenses
   });
-  const cashAfterExpenses = calculateCashAfterExpenses({
+  const cashAfterPaidCosts = calculateCashAfterPaidCosts({
     cashCollected: paidToYou,
     contractorCashPaid: contractorPaymentsPaid,
     otherCashExpenses: otherExpenses
   });
-  const moneySummaryNetCash = calculateMoneySummaryNetCash(paidToYou, otherExpenses);
   const hasCreatedInvoices = invoices.length > 0;
 
-  const completedRows = safeData(completedJobsRes, []);
-  const completedInRange = completedRows.filter((row) =>
-    inRange(getJobOperationalDate(row), start, end)
-  ).length;
+  const completedRows = safeData(completedJobsRes, []) as Array<JobDateFields & { id?: unknown }>;
+  const completedInRange = completedRows.filter((row) => {
+    const reportingDate = getCompletedJobReportingDate(row) || getJobOperationalDate(row);
+    return range === 'all_time' || inRange(reportingDate, start, end);
+  });
+  const missingCompletedAt = countCompletedJobsMissingCompletedAt(completedRows, start, end, range);
+
+  const customerRows = customersRes.error
+    ? []
+    : ((customersRes.data || []) as Array<{ record_type?: string | null; pipeline_stage?: string | null }>);
+  const activeCustomerCount = customerRows.filter((row) => isActiveCustomerRecord(row)).length;
+
   const bookingCount = safeData(bookingsRes, []).filter((row) => inRange(row.starts_at, start, end)).length;
   const messageCount = safeData(messagesRes, []).filter((row) => inRange(row.created_at, start, end)).length;
   const reportCount = safeData(reportsRes, []).filter((row) => inRange(row.created_at, start, end)).length;
@@ -747,7 +887,8 @@ export async function fetchDashboardRevenueMetrics(
     cashCollected: Number(paidToYou.toFixed(2)),
     paidToYou: Number(paidToYou.toFixed(2)),
     customerInvoices: Number(customerInvoices.toFixed(2)),
-    uninvoicedCompletedWork: Number(uninvoicedCompletedWork.toFixed(2)),
+    uninvoicedCompletedWork,
+    expectedRevenue,
     // bookedRevenue now means customer invoices only (manual work is separate).
     bookedRevenue: Number(customerInvoices.toFixed(2)),
     pendingIncoming: Number(stillOwed.toFixed(2)),
@@ -760,9 +901,11 @@ export async function fetchDashboardRevenueMetrics(
     overdueInvoiceCount: late.count,
     unpaidInvoiceTotal: Number(stillOwed.toFixed(2)),
     jobsCompleted: completedRows.length,
-    jobsCompletedThisMonth: completedInRange,
-    activeCustomers: safeCount(customersRes),
-    customerCount: safeCount(customersRes),
+    jobsCompletedThisMonth: completedInRange.length,
+    completedJobsMissingCompletedAt: missingCompletedAt.count,
+    completedJobsMissingCompletedAtIds: missingCompletedAt.ids,
+    activeCustomers: activeCustomerCount,
+    customerCount: activeCustomerCount,
     upcomingJobs: safeCount(upcomingJobsRes),
     contractorPayThisMonth: Number(contractorPay.toFixed(2)),
     contractorPaymentsPaid: Number(contractorPaymentsPaid.toFixed(2)),
@@ -772,9 +915,10 @@ export async function fetchDashboardRevenueMetrics(
     expenseTotalThisMonth: Number(accruedCosts.toFixed(2)),
     netEstimateThisMonth: estimatedProfit,
     estimatedProfit,
-    netCashFlow: cashAfterExpenses,
-    cashAfterExpenses,
-    moneySummaryNetCash,
+    netCashFlow: cashAfterPaidCosts,
+    cashAfterExpenses: cashAfterPaidCosts,
+    cashAfterPaidCosts,
+    moneySummaryNetCash: 0,
     hasCreatedInvoices,
     loadFailed,
     paymentsMissingDates,

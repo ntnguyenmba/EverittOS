@@ -148,15 +148,25 @@ test('Late payments sum overdue unpaid balances', () => {
   assert.equal(late.count, 1);
 });
 
-test('Estimated profit uses customer invoices and recorded costs', () => {
+test('Estimated profit uses expected revenue and recorded costs', () => {
   const profit = calculateEstimatedProfit({
     customerInvoices: 1000,
+    uninvoicedCompletedWork: 0,
     contractorPay: 300,
     otherExpenses: 100
   });
   assert.equal(profit, 600);
   assert.equal(calculateEstimatedProfitPercentage(600, 1000), 60);
   assert.equal(calculateEstimatedProfitPercentage(600, 0), null);
+
+  assert.equal(
+    calculateEstimatedProfit({
+      expectedRevenue: 3400,
+      contractorPay: 3040,
+      otherExpenses: 0
+    }),
+    360
+  );
 });
 
 test('Cash after expenses uses paid cash only', () => {

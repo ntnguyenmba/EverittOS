@@ -4,17 +4,16 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import {
-  buildMoneySummaryMetrics,
+  buildPrimaryDashboardMetrics,
   calculateEstimatedProfitPercentage,
   fetchDashboardRevenueMetrics,
   formatCurrency,
-  inRange,
-  rangeBounds,
   type DashboardDateRange,
-  type DashboardRevenueMetrics
+  type DashboardRevenueMetrics,
+  type PrimaryDashboardMetricKey
 } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
-import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -31,26 +30,15 @@ type MetricItem = {
   warning?: string;
 };
 
-type OperationalCounts = {
-  jobs: number;
-  completedJobs: number;
-  activeCustomers: number;
-};
-
-type OperationalJobRow = {
-  status?: string | null;
-  start_date?: string | null;
-  scheduled_start?: string | null;
-  completed_at?: string | null;
-};
-
 const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
 
-const MONEY_SUMMARY_HREF: Record<string, string> = {
+const PRIMARY_HREF: Record<PrimaryDashboardMetricKey, string> = {
+  expectedRevenue: DASHBOARD_LINKS.estimatedProfit,
   collected: DASHBOARD_LINKS.paidToYou,
   outstanding: DASHBOARD_LINKS.stillOwed,
-  invoiced: DASHBOARD_LINKS.customerInvoices,
-  netCash: DASHBOARD_LINKS.cashAfterExpenses
+  contractorCost: DASHBOARD_LINKS.contractorPay,
+  expectedProfit: DASHBOARD_LINKS.estimatedProfit,
+  cashAfterPaidCosts: DASHBOARD_LINKS.cashAfterExpenses
 };
 
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
@@ -60,7 +48,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const [rangeMetrics, setRangeMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
   const [rangeError, setRangeError] = useState(false);
-  const [operationalCounts, setOperationalCounts] = useState<OperationalCounts | null>(null);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   useEffect(() => {
     if (range === 'month') {
@@ -111,73 +99,13 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     };
   }, [range]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadOperationalCounts() {
-      setOperationalCounts(null);
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const org = await ensureOrganizationForUser(user.id);
-      if (!org?.organizationId) return;
-
-      const [jobsResult, customersResult] = await Promise.all([
-        supabase
-          .from('jobs')
-          .select('status, start_date, scheduled_start, completed_at')
-          .eq('organization_id', org.organizationId)
-          .neq('status', 'cancelled')
-          .neq('status', 'canceled'),
-        supabase
-          .from('customers')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', org.organizationId)
-          .eq('record_type', 'customer')
-          .eq('pipeline_stage', 'active')
-      ]);
-
-      if (cancelled) return;
-
-      const { start, end } = rangeBounds(range);
-      const jobs = (jobsResult.data || []) as OperationalJobRow[];
-      let jobsInRange = 0;
-      let completedInRange = 0;
-
-      for (const job of jobs) {
-        const status = String(job.status || '').toLowerCase();
-        const completedDate = job.completed_at;
-        const operationalDate = status === 'completed'
-          ? completedDate
-          : job.start_date || job.scheduled_start;
-
-        if (range === 'all_time' || inRange(operationalDate, start, end)) {
-          jobsInRange += 1;
-        }
-        if (status === 'completed' && (range === 'all_time' || inRange(completedDate, start, end))) {
-          completedInRange += 1;
-        }
-      }
-
-      setOperationalCounts({
-        jobs: jobsResult.error ? 0 : jobsInRange,
-        completedJobs: jobsResult.error ? 0 : completedInRange,
-        activeCustomers: customersResult.error ? 0 : customersResult.count || 0
-      });
-    }
-
-    void loadOperationalCounts();
-    return () => {
-      cancelled = true;
-    };
-  }, [range]);
-
   const activeMetrics = range === 'month' ? metrics : rangeMetrics;
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
   const customerInvoices = activeMetrics.customerInvoices ?? activeMetrics.bookedRevenue ?? 0;
   const uninvoicedCompletedWork = activeMetrics.uninvoicedCompletedWork ?? 0;
+  const expectedRevenue =
+    activeMetrics.expectedRevenue ??
+    Number((customerInvoices + uninvoicedCompletedWork).toFixed(2));
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
   const latePayments = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const contractorPay = activeMetrics.contractorPayThisMonth || 0;
@@ -187,47 +115,45 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const estimatedProfit =
     activeMetrics.estimatedProfit ??
     activeMetrics.netEstimateThisMonth ??
-    Number((customerInvoices - contractorPay - otherExpenses).toFixed(2));
-  const profitPercentage = calculateEstimatedProfitPercentage(estimatedProfit, customerInvoices);
-  const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && customerInvoices > 0;
+    Number((expectedRevenue - contractorPay - otherExpenses).toFixed(2));
+  const cashAfterPaidCosts =
+    activeMetrics.cashAfterPaidCosts ??
+    activeMetrics.cashAfterExpenses ??
+    activeMetrics.netCashFlow ??
+    0;
+  const profitPercentage = calculateEstimatedProfitPercentage(estimatedProfit, expectedRevenue);
+  const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && expectedRevenue > 0;
   const rangeLabel = copy.ranges[range];
   const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
-  const displayedJobs = operationalCounts?.jobs ?? activeMetrics.totalJobs ?? 0;
-  const displayedCompletedJobs = operationalCounts?.completedJobs ?? activeMetrics.jobsCompletedThisMonth ?? 0;
-  const displayedActiveCustomers = operationalCounts?.activeCustomers ?? activeMetrics.activeCustomers ?? 0;
+  const missingCompletedAtCount = activeMetrics.completedJobsMissingCompletedAt ?? 0;
+  const missingCompletedAtIds = activeMetrics.completedJobsMissingCompletedAtIds ?? [];
 
-  const moneySummary = buildMoneySummaryMetrics({
-    rangeLabel,
+  const primaryMetrics = buildPrimaryDashboardMetrics({
+    expectedRevenue,
     collected: paidToYou,
     outstanding: stillOwed,
-    invoiced: customerInvoices,
-    expensesPaid: otherExpenses,
-    hasCreatedInvoices
-  }).map((row) => {
-    if (row.key === 'collected') {
-      return { ...row, label: `${copy.money.collected} ${rangeLabel.toLowerCase()}`, help: copy.money.collectedHelp };
+    contractorCost: contractorPay,
+    expectedProfit: estimatedProfit,
+    cashAfterPaidCosts,
+    labels: {
+      expectedRevenue: copy.money.expectedRevenue,
+      collected: copy.money.collected,
+      outstanding: copy.money.outstanding,
+      contractorCost: copy.money.contractorCost,
+      expectedProfit: copy.money.expectedProfit,
+      cashAfterPaidCosts: copy.money.cashAfterCosts
+    },
+    helps: {
+      expectedRevenue: copy.money.expectedRevenueHelp,
+      collected: copy.money.collectedHelp,
+      outstanding: copy.money.outstandingHelp,
+      contractorCost: copy.money.contractorCostHelp,
+      expectedProfit: copy.money.expectedProfitHelp,
+      cashAfterPaidCosts: copy.money.cashAfterCostsHelp
     }
-    if (row.key === 'outstanding') {
-      return { ...row, label: copy.money.outstanding, help: copy.money.outstandingHelp };
-    }
-    if (row.key === 'invoiced') {
-      return { ...row, label: `${copy.money.invoiced} ${rangeLabel.toLowerCase()}`, help: copy.money.invoicedHelp };
-    }
-    return { ...row, label: `${copy.money.netCash} ${rangeLabel.toLowerCase()}`, help: copy.money.netCashHelp };
   });
 
-  const comparisonBase = Math.max(
-    ...moneySummary.map((item) => Math.abs(item.value)),
-    1
-  );
-
-  const items: MetricItem[] = [
-    {
-      label: `${copy.money.collected} · ${rangeLabel}`,
-      value: formatCurrency(paidToYou),
-      href: DASHBOARD_LINKS.paidToYou,
-      help: copy.money.collectedHelp
-    },
+  const secondaryItems: MetricItem[] = [
     ...(hasCreatedInvoices
       ? [
           {
@@ -238,12 +164,16 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           } satisfies MetricItem
         ]
       : []),
-    {
-      label: copy.money.outstanding,
-      value: formatCurrency(stillOwed),
-      href: DASHBOARD_LINKS.stillOwed,
-      help: copy.money.outstandingHelp
-    },
+    ...(uninvoicedCompletedWork > 0
+      ? [
+          {
+            label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
+            value: formatCurrency(uninvoicedCompletedWork),
+            href: DASHBOARD_LINKS.completedJobs,
+            help: copy.money.uninvoicedWorkHelp
+          } satisfies MetricItem
+        ]
+      : []),
     {
       label: `${copy.money.latePayments} · ${copy.money.current}`,
       value: formatCurrency(latePayments),
@@ -274,12 +204,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           : copy.money.averageDaysHelp
     },
     {
-      label: `${copy.money.contractorPay} · ${rangeLabel}`,
-      value: formatCurrency(contractorPay),
-      href: DASHBOARD_LINKS.contractorPay,
-      help: copy.money.contractorPayHelp
-    },
-    {
       label: copy.money.contractorPayOwed,
       value: formatCurrency(unpaidContractorPay),
       href: DASHBOARD_LINKS.contractorPayOwed,
@@ -297,19 +221,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: DASHBOARD_LINKS.otherExpenses,
       help: copy.money.otherExpensesHelp
     },
-    {
-      label: `${copy.money.expectedProfit} · ${rangeLabel}`,
-      value: formatCurrency(estimatedProfit),
-      href: DASHBOARD_LINKS.estimatedProfit,
-      help: copy.money.expectedProfitHelp,
-      warning: costsMissing ? copy.money.costsMissing : undefined
-    },
-    {
-      label: `${copy.money.cashAfterCosts} · ${rangeLabel}`,
-      value: formatCurrency(activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? paidToYou - otherExpenses),
-      href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: copy.money.cashAfterCostsHelp
-    },
     ...(profitPercentage === null
       ? []
       : [
@@ -321,16 +232,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             warning: costsMissing ? copy.money.costsMissing : undefined
           } satisfies MetricItem
         ]),
-    ...(uninvoicedCompletedWork > 0
-      ? [
-          {
-            label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
-            value: formatCurrency(uninvoicedCompletedWork),
-            href: DASHBOARD_LINKS.completedJobs,
-            help: copy.money.uninvoicedWorkHelp
-          } satisfies MetricItem
-        ]
-      : []),
     ...(activeMetrics.paymentsMissingDates > 0
       ? [
           {
@@ -343,13 +244,13 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       : []),
     {
       label: `${copy.money.completedJobs} · ${rangeLabel}`,
-      value: String(displayedCompletedJobs),
+      value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
       href: DASHBOARD_LINKS.completedJobs,
       help: copy.money.completedJobsHelp
     },
     {
       label: `${copy.money.jobs} · ${rangeLabel}`,
-      value: String(displayedJobs),
+      value: String(activeMetrics.totalJobs ?? 0),
       href: DASHBOARD_LINKS.jobs,
       help: copy.money.jobsHelp
     },
@@ -359,8 +260,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       href: DASHBOARD_LINKS.upcomingJobs
     },
     {
-      label: t('dashboard.revenue.activeCustomers'),
-      value: String(displayedActiveCustomers),
+      label: copy.money.activeCustomers,
+      value: String(activeMetrics.activeCustomers ?? 0),
       href: DASHBOARD_LINKS.activeCustomers,
       help: copy.money.activeCustomersHelp
     },
@@ -430,75 +331,88 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       {!isLoading && !showLoadError ? (
         <>
-          <div className="settings-card money-summary-card" style={{ marginBottom: 18 }}>
-            <div className="job-financials-head money-summary-head">
-              <div>
-                <h3>{copy.overview.moneySummaryTitle}</h3>
-                <p className="muted">
-                  {copy.money.collectedHelp}
-                </p>
-              </div>
-            </div>
-            {costsMissing ? (
-              <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
-                {copy.money.costsMissing}
+          {missingCompletedAtCount > 0 ? (
+            <div
+              className="settings-card"
+              role="status"
+              style={{ marginBottom: 16, borderColor: 'var(--border-strong, #c4b5a0)' }}
+            >
+              <p style={{ margin: '0 0 8px', fontWeight: 600 }}>
+                {formatDashboardCopy(copy.overview.missingCompletedAtWarning, {
+                  count: missingCompletedAtCount
+                })}
               </p>
-            ) : null}
-            <div className="money-summary-list">
-              {moneySummary.map((item) => {
-                const width = Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
-                return (
-                  <Link
-                    key={item.key}
-                    href={MONEY_SUMMARY_HREF[item.key] || DASHBOARD_LINKS.paidToYou}
-                    className="money-summary-row"
-                    title={item.help}
-                    aria-label={`${item.label}: ${formatCurrency(item.value)}. ${item.help}`}
-                  >
-                    <div className="money-summary-row-head">
-                      <span className="money-summary-label">{item.label}</span>
-                      <strong className="money-summary-value">{formatCurrency(item.value)}</strong>
-                    </div>
-                    <p className="muted money-summary-help">{item.help}</p>
-                    <div className="money-summary-bar" aria-hidden="true">
-                      <div
-                        className={`money-summary-bar-fill${item.value < 0 ? ' is-negative' : ''}`}
-                        style={{
-                          minWidth: item.value === 0 ? 0 : 4,
-                          width: `${width}%`
-                        }}
-                      />
-                    </div>
-                  </Link>
-                );
-              })}
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {missingCompletedAtIds.slice(0, 8).map((jobId) => (
+                  <li key={jobId}>
+                    <Link href={`/jobs/${jobId}`}>{copy.overview.fixJob}</Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          ) : null}
+
+          {costsMissing ? (
+            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+              {copy.money.costsMissing}
+            </p>
+          ) : null}
 
           <div className="dashboard-revenue-grid">
-            {items.map((item) => (
+            {primaryMetrics.map((item) => (
               <Link
-                key={item.label}
-                href={item.href}
+                key={item.key}
+                href={PRIMARY_HREF[item.key]}
                 className="dashboard-revenue-metric"
                 title={item.help}
-                aria-label={item.help ? `${item.label}. ${item.help}` : item.label}
+                aria-label={`${item.label}. ${item.help}`}
               >
                 <span className="dashboard-revenue-metric-label">{item.label}</span>
-                <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-                {item.help ? (
-                  <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    {item.help}
-                  </span>
-                ) : null}
-                {item.warning ? (
-                  <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    {item.warning}
-                  </span>
-                ) : null}
+                <strong className="dashboard-revenue-metric-value">{formatCurrency(item.value)}</strong>
+                <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
+                  {item.help}
+                </span>
               </Link>
             ))}
           </div>
+
+          <div style={{ marginTop: 16 }}>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setShowMoreDetails((open) => !open)}
+              aria-expanded={showMoreDetails}
+            >
+              {showMoreDetails ? copy.overview.hideDetails : copy.overview.moreDetails}
+            </button>
+          </div>
+
+          {showMoreDetails ? (
+            <div className="dashboard-revenue-grid" style={{ marginTop: 16 }}>
+              {secondaryItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="dashboard-revenue-metric"
+                  title={item.help}
+                  aria-label={item.help ? `${item.label}. ${item.help}` : item.label}
+                >
+                  <span className="dashboard-revenue-metric-label">{item.label}</span>
+                  <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+                  {item.help ? (
+                    <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
+                      {item.help}
+                    </span>
+                  ) : null}
+                  {item.warning ? (
+                    <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
+                      {item.warning}
+                    </span>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </>
       ) : null}
     </section>

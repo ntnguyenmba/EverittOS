@@ -21,9 +21,15 @@ export type DashboardFinanceCopy = {
     subtitle: string;
     periodLabel: string;
     moneySummaryTitle: string;
+    moreDetails: string;
+    hideDetails: string;
     loadError: string;
+    missingCompletedAtWarning: string;
+    fixJob: string;
   };
   money: {
+    expectedRevenue: string;
+    expectedRevenueHelp: string;
     collected: string;
     collectedHelp: string;
     outstanding: string;
@@ -41,6 +47,8 @@ export type DashboardFinanceCopy = {
     averageDaysNone: string;
     averageDaysHelp: string;
     averageDaysHelpEmpty: string;
+    contractorCost: string;
+    contractorCostHelp: string;
     contractorPay: string;
     contractorPayHelp: string;
     contractorPayOwed: string;
@@ -64,6 +72,7 @@ export type DashboardFinanceCopy = {
     completedJobsHelp: string;
     jobs: string;
     jobsHelp: string;
+    activeCustomers: string;
     activeCustomersHelp: string;
     bookings: string;
     messages: string;
@@ -111,9 +120,9 @@ const en: DashboardFinanceCopy = {
     outstanding: 'Outstanding balance',
     late: 'Late payments',
     'unpaid-invoices': 'Unpaid invoices',
-    'net-cash': 'Collected cash after costs',
+    'net-cash': 'Cash after paid costs',
     'estimated-profit': 'Expected profit',
-    'contractor-pay': 'Contractor pay',
+    'contractor-pay': 'Contractor cost',
     'contractor-pay-owed': 'Contractor pay owed',
     'contractor-pay-pending': 'Contractor pay pending',
     expenses: 'Expenses',
@@ -130,18 +139,18 @@ const en: DashboardFinanceCopy = {
     late: 'Late = unpaid invoice balances past their due date.',
     'unpaid-invoices': 'Unpaid invoices = invoices with a remaining balance.',
     'net-cash':
-      'Collected cash after costs = customer payments received minus contractor payments marked paid minus expenses in the selected period.',
+      'Cash after paid costs = payments actually received minus contractor payments actually paid minus expenses actually paid.',
     'estimated-profit':
-      'Expected profit = invoiced revenue minus contractor costs incurred minus expenses in the selected period.',
-    'contractor-pay': 'Contractor pay = labor totals for the selected filter.',
+      'Expected profit = expected revenue minus contractor cost incurred minus other recorded expenses.',
+    'contractor-pay': 'Contractor cost = labor totals recorded for the selected period.',
     'contractor-pay-owed': 'Contractor pay owed = labor still marked unpaid.',
     'contractor-pay-pending': 'Contractor pay pending = labor marked pending.',
     expenses: 'Expenses = expense amounts with dates in the selected period.',
     'completed-jobs':
-      'Completed jobs counted by completion or work date, not by when the record was created.',
+      'Completed jobs counted by completed_at when present, or by start/scheduled date as a legacy fallback.',
     jobs: 'Jobs counted by operational work date in the selected period.',
     'active-customers':
-      'Active customers = customer records with stage Active. Leads and archived records are excluded.'
+      'Active customers = customer records with stage Active. Blank stage counts as active unless past, inactive, archived, or cancelled.'
   },
   details: {
     titleFallback: 'Metric details',
@@ -155,22 +164,30 @@ const en: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Business overview',
-    subtitle: 'See what clients paid, what is still owed, expenses, and expected profit.',
+    subtitle: 'Expected revenue, cash collected, costs, and profit for the selected period.',
     periodLabel: 'Dashboard period',
     moneySummaryTitle: 'Money summary',
-    loadError: 'Some financial totals could not be loaded. Refresh and try again.'
+    moreDetails: 'More details',
+    hideDetails: 'Hide details',
+    loadError: 'Some financial totals could not be loaded. Refresh and try again.',
+    missingCompletedAtWarning: '{count} completed jobs are missing completion dates',
+    fixJob: 'Fix job'
   },
   money: {
+    expectedRevenue: 'Expected revenue',
+    expectedRevenueHelp:
+      'Invoice totals created in this period plus expected amounts on jobs that do not have an invoice yet. A job is never counted twice.',
     collected: 'Collected',
     collectedHelp:
-      'Client payments received during this period from direct job payments and invoice payments. The same payment is never counted twice.',
-    outstanding: 'Outstanding balance',
+      'Client payments actually received in this period from invoices and direct job payments.',
+    outstanding: 'Outstanding',
     outstandingHelp:
-      'Current unpaid invoice balances plus unpaid expected amounts on jobs that do not have an invoice.',
+      'Unpaid invoice balances plus unpaid expected amounts on jobs without an invoice.',
     invoiced: 'Invoiced',
     invoicedHelp: 'Total of non-cancelled invoices created during this period.',
-    netCash: 'Net cash',
-    netCashHelp: 'Collected payments for this period minus expenses paid during this period.',
+    netCash: 'Cash after paid costs',
+    netCashHelp:
+      'Payments actually received minus contractor payments actually paid minus expenses actually paid.',
     latePayments: 'Late payments',
     latePaymentsHelp: 'Current unpaid invoice balances that are past their due dates.',
     lateInvoices: 'Late invoices',
@@ -182,9 +199,12 @@ const en: DashboardFinanceCopy = {
       'Average number of days from invoice date to recorded payment date for fully paid invoices in the selected period.',
     averageDaysHelpEmpty:
       'This appears after at least one invoice has an invoice date, is fully paid, and has a recorded payment date.',
-    contractorPay: 'Contractor pay',
+    contractorCost: 'Contractor cost',
+    contractorCostHelp:
+      'Contractor cost recorded for this period, whether already paid or still owed.',
+    contractorPay: 'Contractor cost',
     contractorPayHelp:
-      'Contractor pay recorded for work in the selected period, whether paid or still owed.',
+      'Contractor cost recorded for this period, whether already paid or still owed.',
     contractorPayOwed: 'Contractor pay owed',
     contractorPayOwedHelp: 'Contractor pay recorded but not yet marked paid or pending.',
     contractorPayPending: 'Contractor pay pending',
@@ -193,26 +213,28 @@ const en: DashboardFinanceCopy = {
     otherExpensesHelp: 'Non-contractor expenses dated in the selected period.',
     expectedProfit: 'Expected profit',
     expectedProfitHelp:
-      'Invoiced revenue minus contractor pay and other recorded expenses for this period. It is not the same as cash collected.',
-    cashAfterCosts: 'Collected cash after costs',
+      'Expected revenue minus contractor cost incurred minus other recorded expenses. This is not the same as cash in the bank.',
+    cashAfterCosts: 'Cash after paid costs',
     cashAfterCostsHelp:
-      'Client payments received minus contractor payments actually paid and other expenses paid during this period.',
+      'Payments actually received minus contractor payments actually paid minus expenses actually paid.',
     expectedProfitPct: 'Expected profit percentage',
-    expectedProfitPctHelp: 'Expected profit divided by the amount invoiced for this period.',
+    expectedProfitPctHelp: 'Expected profit divided by expected revenue for this period.',
     costsMissing: 'Only recorded costs are included.',
-    uninvoicedWork: 'Uninvoiced completed work',
+    uninvoicedWork: 'Uninvoiced expected revenue',
     uninvoicedWorkHelp:
-      'Completed job revenue that has not been invoiced. It is not included in Invoiced totals.',
+      'Expected job revenue that has not been invoiced. Included in Expected revenue, not in Invoiced.',
     paymentsMissingDates: 'Payments missing dates',
     paymentsMissingDatesHelp:
       'Invoices with a paid amount but no payment date. Add the payment date so period totals and payment speed are accurate.',
     completedJobs: 'Completed jobs',
-    completedJobsHelp: 'Jobs whose completion date falls in the selected period.',
+    completedJobsHelp:
+      'Jobs marked completed in the selected period. Uses completed_at, or start/scheduled date when completion date is missing.',
     jobs: 'Jobs',
     jobsHelp:
       'Jobs scheduled, started, or completed in the selected period. Record entry dates are not counted.',
+    activeCustomers: 'Active customers',
     activeCustomersHelp:
-      'Customers currently marked active. Leads, past customers, cancelled records, and archived records are kept but are not counted here.',
+      'Customers with stage Active. Blank stage counts as active. Leads, past, inactive, cancelled, and archived records are not counted.',
     bookings: 'Bookings',
     messages: 'Messages',
     reports: 'Reports',
@@ -261,9 +283,9 @@ const es: DashboardFinanceCopy = {
     outstanding: 'Saldo pendiente',
     late: 'Pagos atrasados',
     'unpaid-invoices': 'Facturas sin pagar',
-    'net-cash': 'Efectivo cobrado después de costos',
+    'net-cash': 'Efectivo después de costos pagados',
     'estimated-profit': 'Ganancia esperada',
-    'contractor-pay': 'Pago a contratistas',
+    'contractor-pay': 'Costo de contratistas',
     'contractor-pay-owed': 'Pago a contratistas adeudado',
     'contractor-pay-pending': 'Pago a contratistas pendiente',
     expenses: 'Gastos',
@@ -280,18 +302,18 @@ const es: DashboardFinanceCopy = {
     late: 'Atrasado = saldos de facturas sin pagar después de la fecha de vencimiento.',
     'unpaid-invoices': 'Facturas sin pagar = facturas con saldo restante.',
     'net-cash':
-      'Efectivo después de costos = pagos de clientes recibidos menos pagos a contratistas marcados como pagados menos gastos del período.',
+      'Efectivo después de costos pagados = pagos recibidos menos pagos a contratistas pagados menos gastos pagados.',
     'estimated-profit':
-      'Ganancia esperada = ingresos facturados menos costos de contratistas menos gastos del período.',
-    'contractor-pay': 'Pago a contratistas = totales de mano de obra del filtro seleccionado.',
+      'Ganancia esperada = ingresos esperados menos costo de contratistas menos otros gastos registrados.',
+    'contractor-pay': 'Costo de contratistas = totales de mano de obra registrados en el período.',
     'contractor-pay-owed': 'Adeudado = mano de obra aún marcada como no pagada.',
     'contractor-pay-pending': 'Pendiente = mano de obra marcada como pendiente.',
     expenses: 'Gastos = montos con fecha en el período seleccionado.',
     'completed-jobs':
-      'Trabajos completados contados por fecha de finalización o trabajo, no por creación del registro.',
+      'Trabajos completados contados por completed_at, o por fecha de inicio/programada como respaldo.',
     jobs: 'Trabajos contados por la fecha operativa en el período seleccionado.',
     'active-customers':
-      'Clientes activos = registros de cliente con etapa Activo. Los leads y archivados no se cuentan.'
+      'Clientes activos = registros con etapa Activo. Etapa en blanco cuenta como activo, salvo pasado, inactivo, archivado o cancelado.'
   },
   details: {
     titleFallback: 'Detalle de métrica',
@@ -305,23 +327,31 @@ const es: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Resumen del negocio',
-    subtitle: 'Vea lo que pagaron los clientes, lo pendiente, los gastos y la ganancia esperada.',
+    subtitle: 'Ingresos esperados, cobros, costos y ganancia del período seleccionado.',
     periodLabel: 'Período del panel',
     moneySummaryTitle: 'Resumen de dinero',
-    loadError: 'Algunos totales financieros no se pudieron cargar. Actualice e intente de nuevo.'
+    moreDetails: 'Más detalles',
+    hideDetails: 'Ocultar detalles',
+    loadError: 'Algunos totales financieros no se pudieron cargar. Actualice e intente de nuevo.',
+    missingCompletedAtWarning: '{count} trabajos completados no tienen fecha de finalización',
+    fixJob: 'Corregir trabajo'
   },
   money: {
     ...en.money,
+    expectedRevenue: 'Ingresos esperados',
+    expectedRevenueHelp:
+      'Totales de facturas creadas en este período más montos esperados de trabajos sin factura. Un trabajo nunca se cuenta dos veces.',
     collected: 'Cobrado',
     collectedHelp:
-      'Pagos de clientes recibidos en este período por pagos directos y de facturas. El mismo pago nunca se cuenta dos veces.',
-    outstanding: 'Saldo pendiente',
+      'Pagos de clientes realmente recibidos en este período por facturas y pagos directos.',
+    outstanding: 'Pendiente',
     outstandingHelp:
-      'Saldos actuales de facturas sin pagar más montos esperados de trabajos sin factura.',
+      'Saldos de facturas sin pagar más montos esperados de trabajos sin factura.',
     invoiced: 'Facturado',
     invoicedHelp: 'Total de facturas no canceladas creadas en este período.',
-    netCash: 'Efectivo neto',
-    netCashHelp: 'Pagos cobrados en este período menos gastos pagados en el mismo período.',
+    netCash: 'Efectivo después de costos pagados',
+    netCashHelp:
+      'Pagos recibidos menos pagos a contratistas pagados menos gastos pagados.',
     latePayments: 'Pagos atrasados',
     latePaymentsHelp: 'Saldos de facturas sin pagar que ya pasaron su fecha de vencimiento.',
     lateInvoices: 'Facturas atrasadas',
@@ -329,18 +359,30 @@ const es: DashboardFinanceCopy = {
     unpaidInvoicesHelp: 'Cantidad de facturas no canceladas con saldo restante.',
     averageDays: 'Tiempo promedio para cobrar',
     averageDaysNone: 'Aún no hay facturas pagadas por completo',
-    contractorPay: 'Pago a contratistas',
+    contractorCost: 'Costo de contratistas',
+    contractorCostHelp:
+      'Costo de contratistas registrado en este período, pagado o aún adeudado.',
+    contractorPay: 'Costo de contratistas',
+    contractorPayHelp:
+      'Costo de contratistas registrado en este período, pagado o aún adeudado.',
     contractorPayOwed: 'Pago a contratistas adeudado',
     contractorPayPending: 'Pago a contratistas pendiente',
     otherExpenses: 'Otros gastos',
     expectedProfit: 'Ganancia esperada',
-    cashAfterCosts: 'Efectivo cobrado después de costos',
+    expectedProfitHelp:
+      'Ingresos esperados menos costo de contratistas menos otros gastos registrados. No es lo mismo que el efectivo en banco.',
+    cashAfterCosts: 'Efectivo después de costos pagados',
+    cashAfterCostsHelp:
+      'Pagos recibidos menos pagos a contratistas pagados menos gastos pagados.',
     expectedProfitPct: 'Porcentaje de ganancia esperada',
     costsMissing: 'Solo se incluyen costos registrados.',
-    uninvoicedWork: 'Trabajo completado sin facturar',
+    uninvoicedWork: 'Ingresos esperados sin factura',
     paymentsMissingDates: 'Pagos sin fecha',
     completedJobs: 'Trabajos completados',
     jobs: 'Trabajos',
+    activeCustomers: 'Clientes activos',
+    activeCustomersHelp:
+      'Clientes con etapa Activo. Etapa en blanco cuenta como activo. Leads, pasados, inactivos, cancelados y archivados no se cuentan.',
     bookings: 'Reservas',
     messages: 'Mensajes',
     reports: 'Informes',
@@ -389,9 +431,9 @@ const vi: DashboardFinanceCopy = {
     outstanding: 'Số dư chưa thu',
     late: 'Thanh toán quá hạn',
     'unpaid-invoices': 'Hóa đơn chưa thanh toán',
-    'net-cash': 'Tiền mặt sau chi phí',
+    'net-cash': 'Tiền mặt sau chi phí đã trả',
     'estimated-profit': 'Lợi nhuận dự kiến',
-    'contractor-pay': 'Trả thầu phụ',
+    'contractor-pay': 'Chi phí thầu phụ',
     'contractor-pay-owed': 'Còn nợ thầu phụ',
     'contractor-pay-pending': 'Thầu phụ đang chờ',
     expenses: 'Chi phí',
@@ -408,18 +450,18 @@ const vi: DashboardFinanceCopy = {
     late: 'Quá hạn = số dư hóa đơn chưa trả sau ngày đến hạn.',
     'unpaid-invoices': 'Hóa đơn chưa thanh toán = hóa đơn còn số dư.',
     'net-cash':
-      'Tiền mặt sau chi phí = tiền khách đã trả trừ tiền thầu phụ đã trả trừ chi phí trong kỳ.',
+      'Tiền mặt sau chi phí đã trả = tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
     'estimated-profit':
-      'Lợi nhuận dự kiến = doanh thu đã xuất hóa đơn trừ chi phí thầu phụ trừ chi phí khác trong kỳ.',
-    'contractor-pay': 'Trả thầu phụ = tổng chi phí nhân công theo bộ lọc.',
+      'Lợi nhuận dự kiến = doanh thu dự kiến trừ chi phí thầu phụ trừ chi phí khác đã ghi nhận.',
+    'contractor-pay': 'Chi phí thầu phụ = tổng chi phí nhân công ghi nhận trong kỳ.',
     'contractor-pay-owed': 'Còn nợ = nhân công vẫn đánh dấu chưa trả.',
     'contractor-pay-pending': 'Đang chờ = nhân công đánh dấu đang chờ.',
     expenses: 'Chi phí = các khoản có ngày trong kỳ đã chọn.',
     'completed-jobs':
-      'Công việc hoàn thành tính theo ngày hoàn thành hoặc ngày làm việc, không theo ngày tạo bản ghi.',
+      'Công việc hoàn thành tính theo completed_at, hoặc ngày bắt đầu/lịch làm việc khi thiếu ngày hoàn thành.',
     jobs: 'Công việc tính theo ngày vận hành trong kỳ đã chọn.',
     'active-customers':
-      'Khách hàng đang hoạt động = bản ghi khách hàng ở giai đoạn Active. Lead và đã lưu trữ không được tính.'
+      'Khách hàng đang hoạt động = bản ghi ở giai đoạn Active. Giai đoạn trống được tính là active, trừ khi past, inactive, archived hoặc cancelled.'
   },
   details: {
     titleFallback: 'Chi tiết chỉ số',
@@ -433,34 +475,53 @@ const vi: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Tổng quan kinh doanh',
-    subtitle: 'Xem khách đã trả, còn nợ, chi phí và lợi nhuận dự kiến.',
+    subtitle: 'Doanh thu dự kiến, tiền đã thu, chi phí và lợi nhuận trong kỳ đã chọn.',
     periodLabel: 'Kỳ bảng điều khiển',
     moneySummaryTitle: 'Tóm tắt tiền',
-    loadError: 'Một số tổng tài chính không tải được. Hãy làm mới và thử lại.'
+    moreDetails: 'Chi tiết thêm',
+    hideDetails: 'Ẩn chi tiết',
+    loadError: 'Một số tổng tài chính không tải được. Hãy làm mới và thử lại.',
+    missingCompletedAtWarning: '{count} công việc hoàn thành đang thiếu ngày hoàn thành',
+    fixJob: 'Sửa công việc'
   },
   money: {
     ...en.money,
+    expectedRevenue: 'Doanh thu dự kiến',
+    expectedRevenueHelp:
+      'Tổng hóa đơn tạo trong kỳ cộng số tiền dự kiến của việc chưa có hóa đơn. Một công việc không được tính hai lần.',
     collected: 'Đã thu',
-    outstanding: 'Số dư chưa thu',
+    collectedHelp: 'Tiền khách thực nhận trong kỳ từ hóa đơn và thanh toán trực tiếp.',
+    outstanding: 'Còn nợ',
+    outstandingHelp: 'Số dư hóa đơn chưa trả cộng số tiền dự kiến của việc chưa có hóa đơn.',
     invoiced: 'Đã xuất hóa đơn',
-    netCash: 'Tiền mặt ròng',
+    netCash: 'Tiền mặt sau chi phí đã trả',
+    netCashHelp: 'Tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
     latePayments: 'Thanh toán quá hạn',
     lateInvoices: 'Hóa đơn quá hạn',
     unpaidInvoices: 'Hóa đơn chưa thanh toán',
     averageDays: 'Thời gian trung bình để thu tiền',
     averageDaysNone: 'Chưa có hóa đơn thanh toán đủ',
-    contractorPay: 'Trả thầu phụ',
+    contractorCost: 'Chi phí thầu phụ',
+    contractorCostHelp: 'Chi phí thầu phụ ghi nhận trong kỳ, dù đã trả hay còn nợ.',
+    contractorPay: 'Chi phí thầu phụ',
+    contractorPayHelp: 'Chi phí thầu phụ ghi nhận trong kỳ, dù đã trả hay còn nợ.',
     contractorPayOwed: 'Còn nợ thầu phụ',
     contractorPayPending: 'Thầu phụ đang chờ',
     otherExpenses: 'Chi phí khác',
     expectedProfit: 'Lợi nhuận dự kiến',
-    cashAfterCosts: 'Tiền mặt sau chi phí',
+    expectedProfitHelp:
+      'Doanh thu dự kiến trừ chi phí thầu phụ trừ chi phí khác đã ghi nhận. Không phải số tiền trong ngân hàng.',
+    cashAfterCosts: 'Tiền mặt sau chi phí đã trả',
+    cashAfterCostsHelp: 'Tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
     expectedProfitPct: 'Tỷ lệ lợi nhuận dự kiến',
     costsMissing: 'Chỉ gồm chi phí đã ghi nhận.',
-    uninvoicedWork: 'Việc hoàn thành chưa xuất hóa đơn',
+    uninvoicedWork: 'Doanh thu dự kiến chưa xuất hóa đơn',
     paymentsMissingDates: 'Thanh toán thiếu ngày',
     completedJobs: 'Công việc hoàn thành',
     jobs: 'Công việc',
+    activeCustomers: 'Khách hàng đang hoạt động',
+    activeCustomersHelp:
+      'Khách hàng ở giai đoạn Active. Giai đoạn trống được tính là active. Lead, past, inactive, cancelled và archived không được tính.',
     bookings: 'Đặt lịch',
     messages: 'Tin nhắn',
     reports: 'Báo cáo',

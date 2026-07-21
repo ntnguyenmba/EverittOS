@@ -4,6 +4,7 @@
  */
 
 export type JobDateFields = {
+  id?: string | null;
   status?: string | null;
   completed_at?: string | null;
   start_date?: string | null;
@@ -20,15 +21,39 @@ function asDateOnly(value: string | null | undefined): string | null {
   return trimmed.slice(0, 10);
 }
 
+export function isCompletedJobStatus(status: string | null | undefined): boolean {
+  return String(status || '').toLowerCase() === 'completed';
+}
+
+/** Completed jobs that need a completion date correction. */
+export function isCompletedJobMissingCompletedAt(job: JobDateFields): boolean {
+  return isCompletedJobStatus(job.status) && !asDateOnly(job.completed_at);
+}
+
+/**
+ * Reporting date for completed jobs.
+ * Prefer completed_at; fall back to start/scheduled dates so work is not silently dropped.
+ */
+export function getCompletedJobReportingDate(job: JobDateFields): string | null {
+  if (!isCompletedJobStatus(job.status)) return null;
+  return (
+    asDateOnly(job.completed_at) ||
+    asDateOnly(job.start_date) ||
+    asDateOnly(job.scheduled_start) ||
+    asDateOnly(job.visit_start) ||
+    asDateOnly(job.due_date) ||
+    asDateOnly(job.created_at) ||
+    null
+  );
+}
+
 /**
  * Returns YYYY-MM-DD for the date that should drive operational reports.
  * Order: completed_at (when completed) → start_date → scheduled_start → visit_start → due_date → created_at.
  */
 export function getJobOperationalDate(job: JobDateFields): string | null {
-  const status = String(job.status || '').toLowerCase();
-  if (status === 'completed') {
-    const completed = asDateOnly(job.completed_at);
-    if (completed) return completed;
+  if (isCompletedJobStatus(job.status)) {
+    return getCompletedJobReportingDate(job);
   }
 
   return (
@@ -44,4 +69,43 @@ export function getJobOperationalDate(job: JobDateFields): string | null {
 export function isCancelledJobStatus(status: string | null | undefined): boolean {
   const value = String(status || '').toLowerCase();
   return value === 'cancelled' || value === 'canceled';
+}
+
+/** Stages that must never count as active customers. */
+const NON_ACTIVE_CUSTOMER_STAGES = new Set([
+  'past',
+  'inactive',
+  'former',
+  'archived',
+  'cancelled',
+  'canceled',
+  'lead',
+  'open',
+  'contacted',
+  'qualified',
+  'quoted',
+  'won',
+  'lost',
+  'reopened'
+]);
+
+/**
+ * Active customers: record_type=customer and pipeline_stage=active.
+ * Blank/null stage is treated as active for legacy records.
+ * Past, inactive, archived, cancelled, and other non-active stages are excluded.
+ */
+export function isActiveCustomerStage(pipelineStage: string | null | undefined): boolean {
+  const stage = String(pipelineStage || '').trim().toLowerCase();
+  if (!stage) return true;
+  if (NON_ACTIVE_CUSTOMER_STAGES.has(stage)) return false;
+  return stage === 'active';
+}
+
+export function isActiveCustomerRecord(input: {
+  record_type?: string | null;
+  pipeline_stage?: string | null;
+}): boolean {
+  const recordType = String(input.record_type || 'customer').toLowerCase();
+  if (recordType !== 'customer') return false;
+  return isActiveCustomerStage(input.pipeline_stage);
 }
