@@ -20,6 +20,7 @@ type JobProfitabilityCardProps = {
 
 type PaymentFormState = {
   id?: string;
+  source?: 'job' | 'invoice';
   amount: string;
   paidDate: string;
   method: string;
@@ -31,9 +32,9 @@ function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatPaymentDate(value: string) {
+function formatPaymentDate(value: string, locale: string) {
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : value;
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString(locale) : value;
 }
 
 function dateInputValue(value: string) {
@@ -41,11 +42,11 @@ function dateInputValue(value: string) {
   return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : todayInputValue();
 }
 
-function paymentStatusLabel(status: JobPaymentStatus) {
-  if (status === 'unpaid') return 'Not paid';
-  if (status === 'partially_paid') return 'Partially paid';
-  if (status === 'paid') return 'Paid';
-  return 'Amount not set';
+function paymentStatusLabel(status: JobPaymentStatus, copy: ReturnType<typeof getJobFinanceCopy>) {
+  if (status === 'unpaid') return copy.statusUnpaid;
+  if (status === 'partially_paid') return copy.statusPartiallyPaid;
+  if (status === 'paid') return copy.statusPaid;
+  return copy.statusNoAmountSet;
 }
 
 function emptyPaymentForm(): PaymentFormState {
@@ -111,6 +112,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
   function openEditPayment(payment: JobPaymentHistoryEntry) {
     setPaymentForm({
       id: payment.id,
+      source: payment.source,
       amount: String(payment.amount),
       paidDate: dateInputValue(payment.paidAt),
       method: payment.paymentMethod || CLIENT_PAYMENT_METHODS[0],
@@ -159,8 +161,9 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
     setSavingPayment(true);
     const editing = Boolean(paymentForm.id);
+    const source = paymentForm.source || 'job';
     const endpoint = editing
-      ? `/api/jobs/${jobId}/payments/${paymentForm.id}`
+      ? `/api/jobs/${jobId}/payments/${paymentForm.id}?source=${source}`
       : `/api/jobs/${jobId}/payments`;
     const res = await fetch(endpoint, {
       method: editing ? 'PATCH' : 'POST',
@@ -170,7 +173,8 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
         paid_date: paymentForm.paidDate,
         payment_method: paymentForm.method,
         payment_reference: paymentForm.reference.trim() || null,
-        payment_notes: paymentForm.notes.trim() || null
+        payment_notes: paymentForm.notes.trim() || null,
+        source: editing ? source : undefined
       })
     });
     const json = await res.json().catch(() => ({}));
@@ -184,21 +188,23 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     setProfitability(json.profitability as JobProfitability);
     setShowPaymentForm(false);
     setPaymentForm(emptyPaymentForm());
-    appFeedback.success(editing ? 'Client payment updated.' : 'Client payment added.');
+    appFeedback.success(editing ? copy.paymentUpdated : copy.paymentSaved);
 
     if (!editing) {
-      const payments = (json.payments || []) as JobPaymentHistoryEntry[];
-      const newestDirectPayment = payments.find((payment) => payment.source === 'job');
-      if (newestDirectPayment) {
-        router.push(`/jobs/${jobId}/receipts/job/${newestDirectPayment.id}`);
+      const payments = (json.payments || (json.profitability as JobProfitability)?.payments || []) as JobPaymentHistoryEntry[];
+      const newest = payments[0];
+      if (newest) {
+        router.push(`/jobs/${jobId}/receipts/${newest.source}/${newest.id}`);
       }
     }
   }
 
-  async function removePayment(paymentId: string) {
+  async function removePayment(payment: JobPaymentHistoryEntry) {
     if (deletingId) return;
-    setDeletingId(paymentId);
-    const res = await fetch(`/api/jobs/${jobId}/payments/${paymentId}`, { method: 'DELETE' });
+    setDeletingId(payment.id);
+    const res = await fetch(`/api/jobs/${jobId}/payments/${payment.id}?source=${payment.source}`, {
+      method: 'DELETE'
+    });
     const json = await res.json().catch(() => ({}));
     setDeletingId(null);
     setConfirmDeleteId(null);
@@ -209,13 +215,13 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     }
 
     setProfitability(json.profitability as JobProfitability);
-    appFeedback.success('Client payment removed.');
+    appFeedback.success(copy.paymentDeleted);
   }
 
   if (loading) {
     return (
       <div className="card finance-card job-financials-card">
-        <h3>Payments & Profit</h3>
+        <h3>{copy.sectionTitle}</h3>
         <p className="loading-state">{copy.loading}</p>
       </div>
     );
@@ -228,49 +234,49 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     <div className="card finance-card job-financials-card">
       <div className="job-financials-head">
         <div>
-          <h3>Payments & Profit</h3>
-          <p className="muted">See what the client should pay, what they paid, expenses, and profit.</p>
+          <h3>{copy.sectionTitle}</h3>
+          <p className="muted">{copy.sectionCopy}</p>
         </div>
         {canManage ? (
           <div className="button-row job-financials-actions">
             <button type="button" className="btn btn-primary" onClick={openAddPayment}>
-              Add client payment
+              {copy.recordPayment}
             </button>
             <button type="button" className="btn" onClick={openCreateInvoice}>
-              Create invoice
+              {copy.createInvoice}
             </button>
           </div>
         ) : null}
       </div>
 
       <div className="job-financials-section profit-summary-section">
-        <h4>Client payment status</h4>
+        <h4>{copy.paymentStatus}</h4>
         <div className="finance-metric-grid financials-summary-grid">
           <div className="finance-metric featured">
-            <span className="finance-metric-label">Client payment status</span>
-            <strong>{paymentStatusLabel(p?.paymentStatus || 'no_amount_set')}</strong>
+            <span className="finance-metric-label">{copy.paymentStatus}</span>
+            <strong>{paymentStatusLabel(p?.paymentStatus || 'no_amount_set', copy)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Client should pay</span>
+            <span className="finance-metric-label">{copy.expectedRevenue}</span>
             <strong>{formatCurrency(p?.expectedAmount || 0)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Client paid</span>
+            <span className="finance-metric-label">{copy.collected}</span>
             <strong>{formatCurrency(p?.collectedAmount || 0)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Still owed</span>
+            <span className="finance-metric-label">{copy.outstanding}</span>
             <strong>{formatCurrency(p?.outstanding || 0)}</strong>
           </div>
         </div>
-        <p className="muted finance-note">Add a client payment even when the invoice was created outside EverittOS.</p>
+        <p className="muted finance-note">{copy.paymentHelper}</p>
       </div>
 
       {canManage ? (
         <div className="job-financials-section">
-          <h4>Expected job amount</h4>
+          <h4>{copy.expectedJobAmount}</h4>
           <div className="finance-form-block compact-finance-form">
-            <label htmlFor={`client-income-${jobId}`}>What should the client pay?</label>
+            <label htmlFor={`client-income-${jobId}`}>{copy.expectedJobAmount}</label>
             <input
               id={`client-income-${jobId}`}
               className="input"
@@ -282,7 +288,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
               value={revenueAmount}
               onChange={(event) => setRevenueAmount(event.target.value)}
             />
-            <label htmlFor={`client-income-notes-${jobId}`}>Notes (optional)</label>
+            <label htmlFor={`client-income-notes-${jobId}`}>{copy.paymentNotes}</label>
             <textarea
               id={`client-income-notes-${jobId}`}
               className="input"
@@ -290,78 +296,85 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
               value={revenueNotes}
               onChange={(event) => setRevenueNotes(event.target.value)}
             />
+            <p className="muted finance-note">{copy.saveExpectedAmountHelper}</p>
             <button type="button" className="btn" disabled={saving} onClick={() => void saveRevenue()}>
-              {saving ? FEEDBACK.loading : 'Save expected amount'}
+              {saving ? FEEDBACK.loading : copy.saveExpectedAmount}
             </button>
           </div>
         </div>
       ) : null}
 
       <div className="job-financials-section">
-        <h4>Expenses and profit</h4>
+        <h4>{copy.expensesAndProfit}</h4>
         <div className="finance-metric-grid financials-summary-grid">
           <div className="finance-metric">
-            <span className="finance-metric-label">Expenses</span>
+            <span className="finance-metric-label">{copy.expenses}</span>
             <strong>{formatCurrency(totalExpenses)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Expected profit</span>
+            <span className="finance-metric-label">{copy.expectedProfit}</span>
             <strong>{formatCurrency(p?.expectedProfit || 0)}</strong>
           </div>
           <div className="finance-metric featured">
-            <span className="finance-metric-label">Profit from money received</span>
+            <span className="finance-metric-label">{copy.collectedProfit}</span>
             <strong>{formatCurrency(p?.collectedProfit || 0)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Still owed</span>
+            <span className="finance-metric-label">{copy.balanceDue}</span>
             <strong>{formatCurrency(p?.outstanding || 0)}</strong>
           </div>
         </div>
       </div>
 
       <div className="job-financials-section">
-        <h4>Client payment history</h4>
+        <h4>{copy.paymentHistory}</h4>
         {!p?.payments?.length ? (
-          <p className="muted">No client payments added yet.</p>
+          <p className="muted">{copy.noPaymentsYet}</p>
         ) : (
           <ul className="payment-history-list">
             {p.payments.map((payment) => (
               <li key={`${payment.source}-${payment.id}`} className="payment-history-item">
                 <div className="payment-history-main">
                   <strong>{formatCurrency(payment.amount)}</strong>
-                  <span>{formatPaymentDate(payment.paidAt)}</span>
+                  <span>{formatPaymentDate(payment.paidAt, locale)}</span>
                   {payment.paymentMethod ? <span>{paymentMethodLabel(payment.paymentMethod, locale)}</span> : null}
                   {payment.paymentReference ? <span>{payment.paymentReference}</span> : null}
-                  <span className="muted">{payment.source === 'invoice' ? 'Paid through invoice' : 'Direct client payment'}</span>
+                  <span className="muted">
+                    {payment.source === 'invoice' ? copy.paymentViaInvoice : copy.paymentDirect}
+                  </span>
                 </div>
                 {payment.notes ? <p className="muted payment-history-notes">{payment.notes}</p> : null}
                 <div className="button-row">
                   <Link className="btn" href={`/jobs/${jobId}/receipts/${payment.source}/${payment.id}`}>
-                    View receipt
+                    {copy.viewReceipt}
                   </Link>
-                  {canManage && payment.source === 'job' ? (
+                  {canManage ? (
                     <button type="button" className="btn" onClick={() => openEditPayment(payment)}>
-                      Edit
+                      {copy.editPayment}
                     </button>
                   ) : null}
-                  {canManage && payment.source === 'job' ? (
-                    confirmDeleteId === payment.id ? (
+                  {canManage ? (
+                    confirmDeleteId === `${payment.source}-${payment.id}` ? (
                       <>
                         <button
                           type="button"
                           className="btn btn-primary"
                           disabled={deletingId === payment.id}
-                          onClick={() => void removePayment(payment.id)}
+                          onClick={() => void removePayment(payment)}
                         >
-                          {deletingId === payment.id ? FEEDBACK.loading : 'Confirm remove'}
+                          {deletingId === payment.id ? FEEDBACK.loading : copy.confirmRemove}
                         </button>
                         <button type="button" className="btn" onClick={() => setConfirmDeleteId(null)}>
-                          Cancel
+                          {copy.cancel}
                         </button>
                       </>
                     ) : (
-                      <button type="button" className="btn" onClick={() => setConfirmDeleteId(payment.id)}>
-                        Remove
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setConfirmDeleteId(`${payment.source}-${payment.id}`)}
+                      >
+                        {copy.deletePayment}
                       </button>
                     )
                   ) : null}
@@ -373,7 +386,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
       </div>
 
       {showPaymentForm && canManage ? (
-        <div className="modal-backdrop job-payment-modal-backdrop" role="presentation" onClick={() => setShowPaymentForm(false)}>
+        <div
+          className="modal-backdrop job-payment-modal-backdrop"
+          role="presentation"
+          onClick={() => setShowPaymentForm(false)}
+        >
           <div
             className="card job-payment-modal"
             role="dialog"
@@ -381,9 +398,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
             aria-labelledby={`client-payment-${jobId}`}
             onClick={(event) => event.stopPropagation()}
           >
-            <h4 id={`client-payment-${jobId}`}>{paymentForm.id ? 'Edit client payment' : 'Add client payment'}</h4>
+            <h4 id={`client-payment-${jobId}`}>
+              {paymentForm.id ? copy.editPayment : copy.recordPayment}
+            </h4>
             <div className="finance-form-block compact-finance-form">
-              <label htmlFor={`payment-amount-${jobId}`}>Amount</label>
+              <label htmlFor={`payment-amount-${jobId}`}>{copy.paymentAmount}</label>
               <input
                 id={`payment-amount-${jobId}`}
                 className="input"
@@ -391,10 +410,11 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 min="0"
                 step="0.01"
                 inputMode="decimal"
+                enterKeyHint="next"
                 value={paymentForm.amount}
                 onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))}
               />
-              <label htmlFor={`payment-date-${jobId}`}>Date paid</label>
+              <label htmlFor={`payment-date-${jobId}`}>{copy.paymentDate}</label>
               <input
                 id={`payment-date-${jobId}`}
                 className="input"
@@ -402,7 +422,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 value={paymentForm.paidDate}
                 onChange={(event) => setPaymentForm((current) => ({ ...current, paidDate: event.target.value }))}
               />
-              <label htmlFor={`payment-method-${jobId}`}>How did the client pay?</label>
+              <label htmlFor={`payment-method-${jobId}`}>{copy.paymentMethod}</label>
               <select
                 id={`payment-method-${jobId}`}
                 className="input"
@@ -415,14 +435,14 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                   </option>
                 ))}
               </select>
-              <label htmlFor={`payment-ref-${jobId}`}>Reference (optional)</label>
+              <label htmlFor={`payment-ref-${jobId}`}>{copy.paymentReference}</label>
               <input
                 id={`payment-ref-${jobId}`}
                 className="input"
                 value={paymentForm.reference}
                 onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))}
               />
-              <label htmlFor={`payment-notes-field-${jobId}`}>Notes (optional)</label>
+              <label htmlFor={`payment-notes-field-${jobId}`}>{copy.paymentNotes}</label>
               <textarea
                 id={`payment-notes-field-${jobId}`}
                 className="input"
@@ -431,11 +451,16 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
                 onChange={(event) => setPaymentForm((current) => ({ ...current, notes: event.target.value }))}
               />
               <div className="button-row">
-                <button type="button" className="btn btn-primary" disabled={savingPayment} onClick={() => void submitPayment()}>
-                  {savingPayment ? FEEDBACK.loading : paymentForm.id ? 'Save changes' : 'Add client payment'}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={savingPayment}
+                  onClick={() => void submitPayment()}
+                >
+                  {savingPayment ? FEEDBACK.loading : paymentForm.id ? copy.saveChanges : copy.recordPayment}
                 </button>
                 <button type="button" className="btn" onClick={() => setShowPaymentForm(false)}>
-                  Cancel
+                  {copy.cancel}
                 </button>
               </div>
             </div>

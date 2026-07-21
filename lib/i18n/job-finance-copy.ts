@@ -33,9 +33,15 @@ export type JobFinanceCopy = {
   paymentReference: string;
   paymentNotes: string;
   paymentSaved: string;
+  paymentUpdated: string;
   paymentDeleted: string;
   deletePaymentConfirm: string;
   deletePayment: string;
+  confirmRemove: string;
+  editPayment: string;
+  viewReceipt: string;
+  saveChanges: string;
+  expensesAndProfit: string;
   cancel: string;
   invalidAmount: string;
   unableToLoad: string;
@@ -101,9 +107,15 @@ const copy: Record<Locale, JobFinanceCopy> = {
     paymentReference: 'Reference (optional)',
     paymentNotes: 'Notes (optional)',
     paymentSaved: 'Payment recorded.',
+    paymentUpdated: 'Payment updated.',
     paymentDeleted: 'Payment removed.',
     deletePaymentConfirm: 'Remove this payment record?',
     deletePayment: 'Remove payment',
+    confirmRemove: 'Confirm remove',
+    editPayment: 'Edit',
+    viewReceipt: 'View receipt',
+    saveChanges: 'Save changes',
+    expensesAndProfit: 'Expenses and profit',
     cancel: 'Cancel',
     invalidAmount: 'Enter a positive payment amount.',
     unableToLoad: 'Unable to load job financials.',
@@ -167,9 +179,15 @@ const copy: Record<Locale, JobFinanceCopy> = {
     paymentReference: 'Referencia (opcional)',
     paymentNotes: 'Notas (opcional)',
     paymentSaved: 'Pago registrado.',
+    paymentUpdated: 'Pago actualizado.',
     paymentDeleted: 'Pago eliminado.',
     deletePaymentConfirm: '¿Eliminar este registro de pago?',
     deletePayment: 'Eliminar pago',
+    confirmRemove: 'Confirmar eliminación',
+    editPayment: 'Editar',
+    viewReceipt: 'Ver recibo',
+    saveChanges: 'Guardar cambios',
+    expensesAndProfit: 'Gastos y ganancia',
     cancel: 'Cancelar',
     invalidAmount: 'Ingrese un monto de pago positivo.',
     unableToLoad: 'No se pudieron cargar las finanzas del trabajo.',
@@ -233,9 +251,15 @@ const copy: Record<Locale, JobFinanceCopy> = {
     paymentReference: 'Mã tham chiếu (tùy chọn)',
     paymentNotes: 'Ghi chú (tùy chọn)',
     paymentSaved: 'Đã ghi nhận thanh toán.',
+    paymentUpdated: 'Đã cập nhật thanh toán.',
     paymentDeleted: 'Đã xóa thanh toán.',
     deletePaymentConfirm: 'Xóa bản ghi thanh toán này?',
     deletePayment: 'Xóa thanh toán',
+    confirmRemove: 'Xác nhận xóa',
+    editPayment: 'Sửa',
+    viewReceipt: 'Xem biên nhận',
+    saveChanges: 'Lưu thay đổi',
+    expensesAndProfit: 'Chi phí và lợi nhuận',
     cancel: 'Hủy',
     invalidAmount: 'Nhập số tiền thanh toán lớn hơn 0.',
     unableToLoad: 'Không thể tải dữ liệu tài chính của công việc.',
