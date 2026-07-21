@@ -1,33 +1,17 @@
 import { notFound } from 'next/navigation';
 import { ReceiptActions } from '@/components/receipt-actions';
+import { CUSTOMER_ADDRESS_FIELDS } from '@/lib/customer-record';
 import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
-import { formatCurrency } from '@/lib/finance-format';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { isValidUuid } from '@/lib/input-validation';
+import { buildPaymentReceiptView } from '@/lib/payment-receipt';
 
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ id: string; source: string; paymentId: string }>;
 };
-
-function formatDate(value: string) {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : value;
-}
-
-function textOrDash(value: string | null | undefined) {
-  return value?.trim() || 'Not provided';
-}
-
-function contactLink(type: 'email' | 'phone', value: string | null | undefined) {
-  const trimmed = value?.trim();
-  if (!trimmed) return 'Not provided';
-
-  const href = type === 'email' ? `mailto:${trimmed}` : `tel:${trimmed.replace(/[^+\d]/g, '')}`;
-  return <a href={href}>{trimmed}</a>;
-}
 
 export default async function PaymentReceiptPage({ params }: PageProps) {
   const { id: jobId, source, paymentId } = await params;
@@ -38,15 +22,23 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
   const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) notFound();
 
-  const [{ data: job }, history, profitability] = await Promise.all([
+  const customerSelect = `id, company_name, email, phone, ${CUSTOMER_ADDRESS_FIELDS}`;
+
+  const [{ data: job }, history, profitability, orgRes, settingsRes] = await Promise.all([
     ctx.supabase
       .from('jobs')
-      .select('id, title, address, customer_id, customers(name, email, phone, address)')
+      .select(`id, title, address, customer_name, phone, customer_id, customers(${customerSelect})`)
       .eq('id', jobId)
       .eq('organization_id', ctx.organizationId)
       .maybeSingle(),
     fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId),
-    fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId)
+    fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId),
+    ctx.supabase.from('organizations').select('name').eq('id', ctx.organizationId).maybeSingle(),
+    ctx.supabase
+      .from('organization_settings')
+      .select('company_phone, company_email, company_address, website')
+      .eq('organization_id', ctx.organizationId)
+      .maybeSingle()
   ]);
 
   if (!job) notFound();
@@ -55,55 +47,95 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
   if (!payment) notFound();
 
   const customerRelation = job.customers as
-    | { name?: string | null; email?: string | null; phone?: string | null; address?: string | null }
-    | { name?: string | null; email?: string | null; phone?: string | null; address?: string | null }[]
+    | Record<string, unknown>
+    | Record<string, unknown>[]
     | null;
-  const customer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
-  const receiptNumber = `RCPT-${payment.id.slice(0, 8).toUpperCase()}`;
+  const linkedCustomer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+
+  const receipt = buildPaymentReceiptView({
+    payment: {
+      id: payment.id,
+      amount: payment.amount,
+      paidAt: payment.paidAt,
+      paymentMethod: payment.paymentMethod,
+      paymentReference: payment.paymentReference,
+      notes: payment.notes,
+      source: payment.source
+    },
+    job: {
+      title: job.title,
+      customer_name: job.customer_name,
+      phone: job.phone,
+      address: job.address
+    },
+    linkedCustomer: linkedCustomer as {
+      company_name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      address_line1?: string | null;
+      address_line2?: string | null;
+      city?: string | null;
+      state?: string | null;
+      postal_code?: string | null;
+      country?: string | null;
+      service_address?: string | null;
+      property_address?: string | null;
+    } | null,
+    business: {
+      companyName: orgRes.data?.name || null,
+      phone: settingsRes.data?.company_phone || null,
+      email: settingsRes.data?.company_email || null,
+      website: settingsRes.data?.website || null,
+      address: settingsRes.data?.company_address || null
+    },
+    outstanding: profitability.outstanding || 0
+  });
 
   return (
-    <main className="page-shell receipt-page">
+    <main className="receipt-page">
       <ReceiptActions jobId={jobId} />
 
-      <article className="card receipt-card">
+      <article className="receipt-card">
         <header className="receipt-header">
-          <div>
-            <p className="eyebrow">Payment receipt</p>
-            <h1>{receiptNumber}</h1>
-            <p className="muted">Payment received on {formatDate(payment.paidAt)}</p>
-          </div>
-          <div className="receipt-total">
-            <span>Client paid</span>
-            <strong>{formatCurrency(payment.amount)}</strong>
-          </div>
+          {receipt.businessName ? <p className="receipt-business-name">{receipt.businessName}</p> : null}
+          {receipt.businessLines.length ? (
+            <p className="receipt-business-meta">{receipt.businessLines.join(' · ')}</p>
+          ) : null}
+          <p className="receipt-eyebrow">Payment receipt</p>
+          <h1 className="receipt-number">{receipt.receiptNumber}</h1>
+          <p className="receipt-paid-on">{receipt.paidOnLabel}</p>
         </header>
 
-        <section className="receipt-section">
-          <h2>Client</h2>
-          <dl className="receipt-details">
-            <div><dt>Name</dt><dd>{textOrDash(customer?.name)}</dd></div>
-            <div><dt>Email</dt><dd>{contactLink('email', customer?.email)}</dd></div>
-            <div><dt>Phone</dt><dd>{contactLink('phone', customer?.phone)}</dd></div>
-            <div><dt>Address</dt><dd>{textOrDash(customer?.address || job.address)}</dd></div>
-          </dl>
+        <section className="receipt-amount-block" aria-label={receipt.amountPaidLabel}>
+          <span className="receipt-amount-label">{receipt.amountPaidLabel}</span>
+          <strong className="receipt-amount-value">{receipt.amountPaidValue}</strong>
         </section>
 
         <section className="receipt-section">
-          <h2>Payment details</h2>
+          <h2>{receipt.customerHeading}</h2>
+          <div className="receipt-customer-lines">
+            {receipt.customerLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </section>
+
+        <section className="receipt-section">
+          <h2>Receipt details</h2>
           <dl className="receipt-details">
-            <div><dt>Job</dt><dd>{job.title || 'Service job'}</dd></div>
-            <div><dt>Payment date</dt><dd>{formatDate(payment.paidAt)}</dd></div>
-            <div><dt>Payment method</dt><dd>{textOrDash(payment.paymentMethod)}</dd></div>
-            <div><dt>Reference</dt><dd>{textOrDash(payment.paymentReference)}</dd></div>
-            <div><dt>Payment source</dt><dd>{payment.source === 'invoice' ? 'Invoice payment' : 'Direct job payment'}</dd></div>
-            <div><dt>Balance remaining</dt><dd>{formatCurrency(profitability.outstanding || 0)}</dd></div>
+            {receipt.receiptDetails.map((row) => (
+              <div key={row.label} className="receipt-detail-row">
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
           </dl>
-          {payment.notes ? <p className="receipt-notes"><strong>Notes:</strong> {payment.notes}</p> : null}
+          {receipt.paidInFull ? <p className="receipt-status-pill">Paid in full</p> : null}
         </section>
 
         <footer className="receipt-footer">
-          <p>Thank you for your payment.</p>
-          <p className="muted">Keep this receipt for your records.</p>
+          <p>{receipt.thankYou}</p>
+          <p>{receipt.keepCopy}</p>
         </footer>
       </article>
     </main>

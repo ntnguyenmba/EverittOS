@@ -34,6 +34,7 @@ import './job-mobile-fixes.css';
 import './job-visit-layout-override.css';
 import './form-alignment-fixes.css';
 import './mobile-safe-areas.css';
+import './receipt.css';
 
 const inter = Inter({
   subsets: ['latin'],

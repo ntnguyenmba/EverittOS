@@ -7,10 +7,10 @@ export function ReceiptActions({ jobId }: { jobId: string }) {
 
   return (
     <div className="receipt-actions no-print">
-      <button type="button" className="btn" onClick={() => router.push(`/jobs/${jobId}`)}>
+      <button type="button" className="btn receipt-action-btn" onClick={() => router.push(`/jobs/${jobId}`)}>
         Back to job
       </button>
-      <button type="button" className="btn btn-primary" onClick={() => window.print()}>
+      <button type="button" className="btn btn-primary receipt-action-btn" onClick={() => window.print()}>
         Print or save PDF
       </button>
     </div>
