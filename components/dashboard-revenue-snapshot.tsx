@@ -145,7 +145,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             label: `Invoiced · ${rangeLabel}`,
             value: formatCurrency(customerInvoices),
             href: DASHBOARD_LINKS.customerInvoices,
-            help: 'Invoice totals created during this period.'
+            help: 'Invoice totals created during this period. This is billed revenue, not necessarily money received.'
           } satisfies MetricItem
         ]
       : []),
@@ -176,10 +176,13 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: 'Average time to get paid',
       value:
         activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
-          ? 'Not enough data'
+          ? 'No fully paid invoices yet'
           : `${activeMetrics.averageDaysToPayment} days`,
       href: DASHBOARD_LINKS.paidToYou,
-      help: 'Average number of days from invoice date to recorded payment date for payments in the selected period.'
+      help:
+        activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
+          ? 'This appears after at least one invoice has an invoice date, is fully paid, and has a recorded payment date.'
+          : 'Average number of days from invoice date to recorded payment date for fully paid invoices in the selected period.'
     },
     {
       label: `Contractor pay · ${rangeLabel}`,
@@ -190,39 +193,42 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: 'Contractor pay owed',
       value: formatCurrency(unpaidContractorPay),
-      href: DASHBOARD_LINKS.contractorPayOwed
+      href: DASHBOARD_LINKS.contractorPayOwed,
+      help: 'Contractor pay recorded but not yet marked paid or pending.'
     },
     {
       label: 'Contractor pay pending',
       value: formatCurrency(pendingContractorPay),
-      href: DASHBOARD_LINKS.contractorPayPending
+      href: DASHBOARD_LINKS.contractorPayPending,
+      help: 'Contractor pay marked pending but not yet marked paid.'
     },
     {
       label: `Other expenses · ${rangeLabel}`,
       value: formatCurrency(otherExpenses),
-      href: DASHBOARD_LINKS.otherExpenses
+      href: DASHBOARD_LINKS.otherExpenses,
+      help: 'Non-contractor expenses dated in the selected period.'
     },
     {
-      label: `Estimated profit · ${rangeLabel}`,
+      label: `Expected profit · ${rangeLabel}`,
       value: formatCurrency(estimatedProfit),
       href: DASHBOARD_LINKS.estimatedProfit,
-      help: 'Amounts invoiced minus contractor pay and other recorded expenses for this period.',
+      help: 'Invoiced revenue minus contractor pay and other recorded expenses for this period. It is not the same as cash collected.',
       warning: costsMissing ? 'Only recorded costs are included.' : undefined
     },
     {
-      label: `Net cash · ${rangeLabel}`,
-      value: formatCurrency(activeMetrics.moneySummaryNetCash ?? paidToYou - otherExpenses),
+      label: `Collected cash after costs · ${rangeLabel}`,
+      value: formatCurrency(activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? paidToYou - otherExpenses),
       href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Collected payments for this period minus expenses paid during this period.'
+      help: 'Client payments received minus contractor payments actually paid and other expenses paid during this period.'
     },
     ...(profitPercentage === null
       ? []
       : [
           {
-            label: 'Estimated profit percentage',
+            label: 'Expected profit percentage',
             value: `${profitPercentage}%`,
             href: DASHBOARD_LINKS.estimatedProfit,
-            help: 'Estimated profit divided by the amount invoiced for this period.',
+            help: 'Expected profit divided by the amount invoiced for this period.',
             warning: costsMissing ? 'Only recorded costs are included.' : undefined
           } satisfies MetricItem
         ]),
@@ -242,19 +248,21 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             label: 'Payments missing dates',
             value: String(activeMetrics.paymentsMissingDates),
             href: DASHBOARD_LINKS.customerInvoices,
-            help: 'Invoices with a paid amount but no payment date. These are included in All time, or in a period only when the invoice was created in that period.'
+            help: 'Invoices with a paid amount but no payment date. Add the payment date so period totals and payment speed are accurate.'
           } satisfies MetricItem
         ]
       : []),
     {
       label: `Completed jobs · ${rangeLabel}`,
       value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
-      href: DASHBOARD_LINKS.completedJobs
+      href: DASHBOARD_LINKS.completedJobs,
+      help: 'Jobs whose completion date falls in the selected period.'
     },
     {
       label: `Jobs · ${rangeLabel}`,
       value: String(activeMetrics.totalJobs ?? 0),
-      href: DASHBOARD_LINKS.jobs
+      href: DASHBOARD_LINKS.jobs,
+      help: 'Jobs scheduled or started in the selected period. Record creation dates are not used when a job date exists.'
     },
     {
       label: t('dashboard.revenue.upcomingJobs'),
@@ -264,7 +272,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: t('dashboard.revenue.activeCustomers'),
       value: String(activeMetrics.activeCustomers ?? 0),
-      href: DASHBOARD_LINKS.activeCustomers
+      href: DASHBOARD_LINKS.activeCustomers,
+      help: 'Customers currently marked active. Leads, past customers, cancelled records, and archived records are kept but are not counted here.'
     },
     {
       label: `Bookings · ${rangeLabel}`,
@@ -292,7 +301,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         <div>
           <h2>Business overview</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            See what clients paid, what is still owed, expenses, and estimated profit.
+            See what clients paid, what is still owed, expenses, and expected profit.
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
@@ -338,7 +347,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
                 <h3>Money summary</h3>
                 <p className="muted">
                   Collected payments, outstanding balances
-                  {hasCreatedInvoices ? ', invoiced totals,' : ''} and net cash for {rangeLabel.toLowerCase()}.
+                  {hasCreatedInvoices ? ', invoiced totals,' : ''} and cash after costs for {rangeLabel.toLowerCase()}.
                 </p>
               </div>
             </div>
