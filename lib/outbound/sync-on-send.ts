@@ -136,26 +136,34 @@ export async function syncOutboundEntityOnSend(input: {
 
     if (amount <= 0) return;
 
-    const { data } = await supabase
-      .from('invoices')
-      .insert({
-        organization_id: organizationId,
-        job_id: document.job_id,
-        customer_id: document.customer_id,
-        user_id: userId,
-        amount,
-        amount_paid: 0,
-        balance_due: amount,
-        payment_status: 'unpaid',
-        status: 'sent',
-        description: document.body,
-        recipient_email: document.recipient_email,
-        sent_at: now,
-        delivery_status: 'sent',
-        invoice_date: invoiceDate
-      })
-      .select('id')
-      .single();
+    const { data: profile } = await supabase.from('profiles').select('locale').eq('id', userId).maybeSingle();
+    const documentLocale =
+      profile?.locale === 'es' || profile?.locale === 'vi' || profile?.locale === 'en' ? profile.locale : 'en';
+
+    const invoiceInsert: Record<string, unknown> = {
+      organization_id: organizationId,
+      job_id: document.job_id,
+      customer_id: document.customer_id,
+      user_id: userId,
+      amount,
+      amount_paid: 0,
+      balance_due: amount,
+      payment_status: 'unpaid',
+      status: 'sent',
+      description: document.body,
+      recipient_email: document.recipient_email,
+      sent_at: now,
+      delivery_status: 'sent',
+      invoice_date: invoiceDate,
+      document_locale: documentLocale
+    };
+
+    let insertResult = await supabase.from('invoices').insert(invoiceInsert).select('id').single();
+    if (insertResult.error && /document_locale/i.test(insertResult.error.message || '')) {
+      delete invoiceInsert.document_locale;
+      insertResult = await supabase.from('invoices').insert(invoiceInsert).select('id').single();
+    }
+    const { data } = insertResult;
 
     if (data?.id) {
       await supabase

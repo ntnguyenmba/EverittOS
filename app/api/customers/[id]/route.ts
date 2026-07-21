@@ -95,8 +95,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const nextType = body.record_type || existing.record_type || 'customer';
-  const action = body.record_type && body.record_type !== existing.record_type ? `${nextType}_converted` : `${nextType}_updated`;
+  const previousStage = existing.pipeline_stage || null;
+  const nextStage = body.pipeline_stage !== undefined ? body.pipeline_stage : previousStage;
+  const stageChanged = body.pipeline_stage !== undefined && body.pipeline_stage !== previousStage;
+  const typeChanged = Boolean(body.record_type && body.record_type !== existing.record_type);
+  const action = typeChanged
+    ? `${nextType}_converted`
+    : stageChanged
+      ? `${nextType}_stage_changed`
+      : `${nextType}_updated`;
   const title = customerDisplayName(existing);
+  const activityMessage = stageChanged
+    ? `${nextType === 'lead' ? 'Lead' : 'Customer'} status changed to ${String(nextStage || 'active')}: ${title}`
+    : `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${title}`;
 
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
@@ -104,7 +115,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     nextType,
     id,
     action,
-    `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${title}`
+    activityMessage
   );
 
   if (body.assigned_to && body.assigned_to !== existing.assigned_to) {

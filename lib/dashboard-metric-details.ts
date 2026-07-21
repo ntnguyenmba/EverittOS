@@ -18,6 +18,8 @@ import {
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { getJobOperationalDate, isCancelledJobStatus } from '@/lib/job-operational-date';
 import { formatCurrency } from '@/lib/finance-format';
+import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { normalizeLocale } from '@/lib/i18n/config';
 
 export type DashboardDetailMetric =
   | 'collected'
@@ -65,54 +67,33 @@ export type DashboardDetailResult = {
   sections: DashboardDetailSection[];
 };
 
-const RANGE_LABELS: Record<DashboardDateRange, string> = {
-  month: 'This month',
-  quarter: 'This quarter',
-  year: 'This year',
-  last_year: 'Last year',
-  all_time: 'All time'
-};
-
-const METRIC_TITLES: Record<DashboardDetailMetric, string> = {
-  collected: 'Collected',
-  invoiced: 'Invoiced',
-  outstanding: 'Outstanding balance',
-  late: 'Late payments',
-  'unpaid-invoices': 'Unpaid invoices',
-  'net-cash': 'Net cash',
-  'estimated-profit': 'Expected profit',
-  'contractor-pay': 'Contractor pay',
-  'contractor-pay-owed': 'Contractor pay owed',
-  'contractor-pay-pending': 'Contractor pay pending',
-  expenses: 'Expenses',
-  'completed-jobs': 'Completed jobs',
-  jobs: 'Jobs',
-  'active-customers': 'Active customers'
-};
-
 function money(value: number) {
   return formatCurrency(value);
 }
 
-function dateLabel(value: string | null | undefined) {
+function dateLabel(value: string | null | undefined, locale = 'en') {
   if (!value) return '';
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return String(value).slice(0, 10);
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 export function isDashboardDetailMetric(value: string | null | undefined): value is DashboardDetailMetric {
-  return Boolean(value && value in METRIC_TITLES);
+  const copy = getDashboardFinanceCopy('en');
+  return Boolean(value && value in copy.metricTitles);
 }
 
 export async function fetchDashboardMetricDetails(
   supabase: SupabaseClient,
   organizationId: string,
   metric: DashboardDetailMetric,
-  range: DashboardDateRange = 'month'
+  range: DashboardDateRange = 'month',
+  localeInput: string | null | undefined = 'en'
 ): Promise<DashboardDetailResult> {
+  const locale = normalizeLocale(localeInput);
+  const copy = getDashboardFinanceCopy(locale);
   const { start, end } = rangeBounds(range);
-  const rangeLabel = RANGE_LABELS[range];
+  const rangeLabel = copy.ranges[range];
   const today = new Date().toISOString().slice(0, 10);
 
   const empty = (
@@ -121,14 +102,14 @@ export async function fetchDashboardMetricDetails(
     totalOverride?: number
   ): DashboardDetailResult => ({
     metric,
-    title: METRIC_TITLES[metric],
+    title: copy.metricTitles[metric],
     range,
     rangeLabel,
     total:
       typeof totalOverride === 'number'
         ? totalOverride
         : sections.reduce((sum, section) => sum + section.total, 0),
-    formula,
+    formula: formula || copy.formulas[metric],
     sections
   });
 
@@ -323,7 +304,7 @@ export async function fetchDashboardMetricDetails(
         [
           {
             id: metric,
-            title: METRIC_TITLES[metric],
+            title: copy.metricTitles[metric],
             formula: metric === 'late' ? `Current late total ${money(late.amount)}` : 'Current unpaid balances',
             total: Number(total.toFixed(2)),
             totalLabel: money(total),
@@ -592,7 +573,7 @@ export async function fetchDashboardMetricDetails(
     return empty('Contractor pay = labor totals for the selected filter.', [
       {
         id: 'contractor-pay',
-        title: METRIC_TITLES[metric],
+        title: copy.metricTitles[metric],
         formula: statusFilter ? `Status = ${statusFilter}` : 'Labor recorded in period',
         total: Number(total.toFixed(2)),
         totalLabel: money(total),
@@ -636,7 +617,7 @@ export async function fetchDashboardMetricDetails(
       [
         {
           id: metric,
-          title: METRIC_TITLES[metric],
+          title: copy.metricTitles[metric],
           formula: 'Operational job date in selected period',
           total: rows.length,
           totalLabel: String(rows.length),

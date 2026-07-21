@@ -10,14 +10,9 @@ import type { DashboardDetailResult } from '@/lib/dashboard-metric-details';
 import { isDashboardDetailMetric } from '@/lib/dashboard-metric-details';
 import type { DashboardDateRange } from '@/lib/dashboard-metrics';
 import { formatCurrency } from '@/lib/finance-format';
+import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 
-const RANGES: Array<{ id: DashboardDateRange; label: string }> = [
-  { id: 'month', label: 'This month' },
-  { id: 'quarter', label: 'This quarter' },
-  { id: 'year', label: 'This year' },
-  { id: 'last_year', label: 'Last year' },
-  { id: 'all_time', label: 'All time' }
-];
+const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
 
 function formatTotal(details: DashboardDetailResult, metric: string) {
   if (metric === 'jobs' || metric === 'completed-jobs' || metric === 'active-customers') {
@@ -27,14 +22,15 @@ function formatTotal(details: DashboardDetailResult, metric: string) {
 }
 
 function DashboardMetricDetailsContent() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = getDashboardFinanceCopy(locale);
   const router = useRouter();
   const searchParams = useSearchParams();
   const metricParam = searchParams.get('metric');
   const rangeParam = (searchParams.get('range') || 'month') as DashboardDateRange;
 
   const metric = isDashboardDetailMetric(metricParam) ? metricParam : null;
-  const range = RANGES.some((item) => item.id === rangeParam) ? rangeParam : 'month';
+  const range = RANGE_IDS.includes(rangeParam) ? rangeParam : 'month';
 
   const [details, setDetails] = useState<DashboardDetailResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +50,7 @@ function DashboardMetricDetailsContent() {
   useEffect(() => {
     if (!metric) {
       setLoading(false);
-      setError('Unknown dashboard metric.');
+      setError(copy.details.unknownMetric);
       setDetails(null);
       return;
     }
@@ -65,12 +61,12 @@ function DashboardMetricDetailsContent() {
 
     void (async () => {
       const res = await fetch(
-        `/api/dashboard/details?metric=${encodeURIComponent(metric)}&range=${encodeURIComponent(range)}`
+        `/api/dashboard/details?metric=${encodeURIComponent(metric)}&range=${encodeURIComponent(range)}&locale=${encodeURIComponent(locale)}`
       );
       const json = await res.json().catch(() => ({}));
       if (cancelled) return;
       if (!res.ok) {
-        setError(json.error || 'Unable to load metric details.');
+        setError(json.error || copy.details.loadError);
         setDetails(null);
         setLoading(false);
         return;
@@ -82,16 +78,16 @@ function DashboardMetricDetailsContent() {
     return () => {
       cancelled = true;
     };
-  }, [metric, range]);
+  }, [metric, range, locale, copy.details.unknownMetric, copy.details.loadError]);
 
   return (
     <AppShell>
       <PageHeader
-        title={details?.title || 'Metric details'}
+        title={details?.title || copy.metricTitles[metric || 'collected'] || copy.details.titleFallback}
         subtitle={
           details
-            ? `${details.rangeLabel}. Exact total: ${formatTotal(details, metric || '')}`
-            : 'See the records behind each dashboard total.'
+            ? `${details.rangeLabel}. ${copy.details.exactTotal}: ${formatTotal(details, metric || '')}`
+            : copy.details.subtitle
         }
       />
 
@@ -99,22 +95,22 @@ function DashboardMetricDetailsContent() {
         <Link className="btn" href="/dashboard">
           {t('common.back')}
         </Link>
-        {RANGES.map((item) => (
+        {RANGE_IDS.map((id) => (
           <button
-            key={item.id}
+            key={id}
             type="button"
-            className={range === item.id ? 'btn btn-primary' : 'btn'}
-            onClick={() => setRange(item.id)}
-            aria-pressed={range === item.id}
+            className={range === id ? 'btn btn-primary' : 'btn'}
+            onClick={() => setRange(id)}
+            aria-pressed={range === id}
           >
-            {item.label}
+            {copy.ranges[id]}
           </button>
         ))}
       </div>
 
       {loading ? (
         <div className="card" role="status" aria-live="polite">
-          <p className="muted">{t('common.loading')}</p>
+          <p className="muted">{copy.details.loading}</p>
         </div>
       ) : null}
 
@@ -132,7 +128,7 @@ function DashboardMetricDetailsContent() {
               );
             }}
           >
-            Try again
+            {copy.details.tryAgain}
           </button>
         </div>
       ) : null}
@@ -144,7 +140,7 @@ function DashboardMetricDetailsContent() {
               {formatTotal(details, metric || '')}
             </p>
             <p className="muted" style={{ marginTop: 8 }}>
-              {details.formula}
+              {details.formula || (metric ? copy.formulas[metric] : '')}
             </p>
           </div>
 
@@ -162,7 +158,7 @@ function DashboardMetricDetailsContent() {
 
               {section.rows.length === 0 ? (
                 <p className="muted" style={{ marginTop: 16 }}>
-                  No records in this period.
+                  {copy.details.empty}
                 </p>
               ) : (
                 <ul className="finance-list" style={{ listStyle: 'none', padding: 0, marginTop: 16 }}>

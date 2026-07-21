@@ -28,6 +28,10 @@ import {
   type CustomerRecord
 } from '@/lib/customer-record';
 import { uploadCustomerLogo } from '@/lib/customer-logo';
+import {
+  customerStageLabel,
+  getCustomerLifecycleCopy
+} from '@/lib/i18n/customer-lifecycle-copy';
 import { monthStartIso } from '@/lib/date-filters';
 import { supabase } from '@/lib/supabase';
 import { RecordActions } from '@/components/record-actions';
@@ -77,8 +81,9 @@ function CustomersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const periodFilter = searchParams.get('period');
-  const stageFilter = searchParams.get('stage');
-  const { t } = useTranslation();
+  const stageFilter = searchParams.get('stage') || searchParams.get('status');
+  const { t, locale } = useTranslation();
+  const lifecycle = getCustomerLifecycleCopy(locale);
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
@@ -125,12 +130,14 @@ function CustomersPageContent() {
     if (periodFilter === 'month') {
       query = query.gte('created_at', monthStartIso());
     }
-    if (stageFilter === 'lead') {
-      query = query.in('pipeline_stage', ['lead', 'qualified', 'open', 'contacted', 'quoted']);
+    if (stageFilter === 'lead' || stageFilter === 'leads') {
+      query = query.or('record_type.eq.lead,pipeline_stage.in.(lead,qualified,open,contacted,quoted)');
     } else if (stageFilter === 'active') {
       query = query.eq('record_type', 'customer').eq('pipeline_stage', 'active');
-    } else if (stageFilter === 'past') {
+    } else if (stageFilter === 'past' || stageFilter === 'inactive' || stageFilter === 'former') {
       query = query.eq('record_type', 'customer').in('pipeline_stage', ['past', 'inactive', 'former']);
+    } else if (stageFilter === 'recurring') {
+      query = query.eq('record_type', 'customer').eq('pipeline_stage', 'recurring');
     } else if (stageFilter === 'archived') {
       query = query.eq('pipeline_stage', 'archived');
     }
@@ -332,6 +339,31 @@ function CustomersPageContent() {
           }
         />
 
+        <div className="job-detail-actions" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+          {(
+            [
+              { id: 'all', label: lifecycle.filters.all, href: '/customers' },
+              { id: 'active', label: lifecycle.filters.active, href: '/customers?stage=active' },
+              { id: 'past', label: lifecycle.filters.past, href: '/customers?stage=past' },
+              { id: 'leads', label: lifecycle.filters.leads, href: '/customers?stage=leads' },
+              { id: 'archived', label: lifecycle.filters.archived, href: '/customers?stage=archived' }
+            ] as const
+          ).map((filter) => {
+            const active =
+              filter.id === 'all'
+                ? !stageFilter
+                : stageFilter === filter.id ||
+                  (filter.id === 'leads' && (stageFilter === 'lead' || stageFilter === 'leads')) ||
+                  (filter.id === 'past' &&
+                    (stageFilter === 'past' || stageFilter === 'inactive' || stageFilter === 'former'));
+            return (
+              <Link key={filter.id} className={active ? 'btn btn-primary' : 'btn'} href={filter.href}>
+                {filter.label}
+              </Link>
+            );
+          })}
+        </div>
+
         {canManage && (
           <div className="card form" style={{ marginBottom: 18 }}>
             <h3>Add customer</h3>
@@ -370,7 +402,7 @@ function CustomersPageContent() {
                 <div>
                 <h3>{customerDisplayName(customer)}</h3>
                 <p className="muted">
-                  {(customer.pipeline_stage || 'lead').replace('_', ' ')}
+                  {customerStageLabel(customer.pipeline_stage || customer.record_type || 'active', locale)}
                   {customer.lead_source ? ` · ${customer.lead_source}` : ''}
                 </p>
                 <p><ContactLink type="phone" value={customer.phone} /></p>

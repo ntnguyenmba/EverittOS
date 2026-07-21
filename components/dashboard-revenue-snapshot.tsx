@@ -14,6 +14,7 @@ import {
   type DashboardRevenueMetrics
 } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
+import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -43,13 +44,7 @@ type OperationalJobRow = {
   completed_at?: string | null;
 };
 
-const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
-  { value: 'month', label: 'This month' },
-  { value: 'quarter', label: 'This quarter' },
-  { value: 'year', label: 'This year' },
-  { value: 'last_year', label: 'Last year' },
-  { value: 'all_time', label: 'All time' }
-];
+const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
 
 const MONEY_SUMMARY_HREF: Record<string, string> = {
   collected: DASHBOARD_LINKS.paidToYou,
@@ -59,7 +54,8 @@ const MONEY_SUMMARY_HREF: Record<string, string> = {
 };
 
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = getDashboardFinanceCopy(locale);
   const [range, setRange] = useState<DashboardDateRange>('month');
   const [rangeMetrics, setRangeMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
@@ -194,7 +190,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     Number((customerInvoices - contractorPay - otherExpenses).toFixed(2));
   const profitPercentage = calculateEstimatedProfitPercentage(estimatedProfit, customerInvoices);
   const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && customerInvoices > 0;
-  const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label || 'This month';
+  const rangeLabel = copy.ranges[range];
   const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
   const displayedJobs = operationalCounts?.jobs ?? activeMetrics.totalJobs ?? 0;
   const displayedCompletedJobs = operationalCounts?.completedJobs ?? activeMetrics.jobsCompletedThisMonth ?? 0;
@@ -207,6 +203,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     invoiced: customerInvoices,
     expensesPaid: otherExpenses,
     hasCreatedInvoices
+  }).map((row) => {
+    if (row.key === 'collected') {
+      return { ...row, label: `${copy.money.collected} ${rangeLabel.toLowerCase()}`, help: copy.money.collectedHelp };
+    }
+    if (row.key === 'outstanding') {
+      return { ...row, label: copy.money.outstanding, help: copy.money.outstandingHelp };
+    }
+    if (row.key === 'invoiced') {
+      return { ...row, label: `${copy.money.invoiced} ${rangeLabel.toLowerCase()}`, help: copy.money.invoicedHelp };
+    }
+    return { ...row, label: `${copy.money.netCash} ${rangeLabel.toLowerCase()}`, help: copy.money.netCashHelp };
   });
 
   const comparisonBase = Math.max(
@@ -216,135 +223,135 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
   const items: MetricItem[] = [
     {
-      label: `Collected · ${rangeLabel}`,
+      label: `${copy.money.collected} · ${rangeLabel}`,
       value: formatCurrency(paidToYou),
       href: DASHBOARD_LINKS.paidToYou,
-      help: 'Client payments received during this period from direct job payments and invoice payments.'
+      help: copy.money.collectedHelp
     },
     ...(hasCreatedInvoices
       ? [
           {
-            label: `Invoiced · ${rangeLabel}`,
+            label: `${copy.money.invoiced} · ${rangeLabel}`,
             value: formatCurrency(customerInvoices),
             href: DASHBOARD_LINKS.customerInvoices,
-            help: 'Invoice totals created during this period. This is billed revenue, not necessarily money received.'
+            help: copy.money.invoicedHelp
           } satisfies MetricItem
         ]
       : []),
     {
-      label: 'Outstanding balance',
+      label: copy.money.outstanding,
       value: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
-      help: 'Current unpaid invoice balances plus unpaid expected amounts on jobs without invoices.'
+      help: copy.money.outstandingHelp
     },
     {
-      label: 'Late payments · Current',
+      label: `${copy.money.latePayments} · ${copy.money.current}`,
       value: formatCurrency(latePayments),
       href: DASHBOARD_LINKS.latePayments,
-      help: 'Current unpaid invoice balances that are past their due dates.'
+      help: copy.money.latePaymentsHelp
     },
     {
-      label: 'Late invoices',
+      label: copy.money.lateInvoices,
       value: String(activeMetrics.overdueInvoiceCount ?? 0),
       href: DASHBOARD_LINKS.latePayments
     },
     {
-      label: 'Unpaid invoices',
+      label: copy.money.unpaidInvoices,
       value: String(activeMetrics.outstandingInvoiceCount ?? 0),
       href: DASHBOARD_LINKS.unpaidInvoices,
-      help: 'Count of non-cancelled invoices with a remaining balance.'
+      help: copy.money.unpaidInvoicesHelp
     },
     {
-      label: 'Average time to get paid',
+      label: copy.money.averageDays,
       value:
         activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
-          ? 'No fully paid invoices yet'
-          : `${activeMetrics.averageDaysToPayment} days`,
+          ? copy.money.averageDaysNone
+          : `${activeMetrics.averageDaysToPayment} ${copy.money.days}`,
       href: DASHBOARD_LINKS.paidToYou,
       help:
         activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
-          ? 'This appears after at least one invoice has an invoice date, is fully paid, and has a recorded payment date.'
-          : 'Average number of days from invoice date to recorded payment date for fully paid invoices in the selected period.'
+          ? copy.money.averageDaysHelpEmpty
+          : copy.money.averageDaysHelp
     },
     {
-      label: `Contractor pay · ${rangeLabel}`,
+      label: `${copy.money.contractorPay} · ${rangeLabel}`,
       value: formatCurrency(contractorPay),
       href: DASHBOARD_LINKS.contractorPay,
-      help: 'Contractor pay recorded for work in the selected period, whether paid or still owed.'
+      help: copy.money.contractorPayHelp
     },
     {
-      label: 'Contractor pay owed',
+      label: copy.money.contractorPayOwed,
       value: formatCurrency(unpaidContractorPay),
       href: DASHBOARD_LINKS.contractorPayOwed,
-      help: 'Contractor pay recorded but not yet marked paid or pending.'
+      help: copy.money.contractorPayOwedHelp
     },
     {
-      label: 'Contractor pay pending',
+      label: copy.money.contractorPayPending,
       value: formatCurrency(pendingContractorPay),
       href: DASHBOARD_LINKS.contractorPayPending,
-      help: 'Contractor pay marked pending but not yet marked paid.'
+      help: copy.money.contractorPayPendingHelp
     },
     {
-      label: `Other expenses · ${rangeLabel}`,
+      label: `${copy.money.otherExpenses} · ${rangeLabel}`,
       value: formatCurrency(otherExpenses),
       href: DASHBOARD_LINKS.otherExpenses,
-      help: 'Non-contractor expenses dated in the selected period.'
+      help: copy.money.otherExpensesHelp
     },
     {
-      label: `Expected profit · ${rangeLabel}`,
+      label: `${copy.money.expectedProfit} · ${rangeLabel}`,
       value: formatCurrency(estimatedProfit),
       href: DASHBOARD_LINKS.estimatedProfit,
-      help: 'Invoiced revenue minus contractor pay and other recorded expenses for this period. It is not the same as cash collected.',
-      warning: costsMissing ? 'Only recorded costs are included.' : undefined
+      help: copy.money.expectedProfitHelp,
+      warning: costsMissing ? copy.money.costsMissing : undefined
     },
     {
-      label: `Collected cash after costs · ${rangeLabel}`,
+      label: `${copy.money.cashAfterCosts} · ${rangeLabel}`,
       value: formatCurrency(activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? paidToYou - otherExpenses),
       href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Client payments received minus contractor payments actually paid and other expenses paid during this period.'
+      help: copy.money.cashAfterCostsHelp
     },
     ...(profitPercentage === null
       ? []
       : [
           {
-            label: 'Expected profit percentage',
+            label: copy.money.expectedProfitPct,
             value: `${profitPercentage}%`,
             href: DASHBOARD_LINKS.estimatedProfit,
-            help: 'Expected profit divided by the amount invoiced for this period.',
-            warning: costsMissing ? 'Only recorded costs are included.' : undefined
+            help: copy.money.expectedProfitPctHelp,
+            warning: costsMissing ? copy.money.costsMissing : undefined
           } satisfies MetricItem
         ]),
     ...(uninvoicedCompletedWork > 0
       ? [
           {
-            label: `Uninvoiced completed work · ${rangeLabel}`,
+            label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
             value: formatCurrency(uninvoicedCompletedWork),
             href: DASHBOARD_LINKS.completedJobs,
-            help: 'Completed job revenue that has not been invoiced. It is not included in Invoiced totals.'
+            help: copy.money.uninvoicedWorkHelp
           } satisfies MetricItem
         ]
       : []),
     ...(activeMetrics.paymentsMissingDates > 0
       ? [
           {
-            label: 'Payments missing dates',
+            label: copy.money.paymentsMissingDates,
             value: String(activeMetrics.paymentsMissingDates),
             href: DASHBOARD_LINKS.customerInvoices,
-            help: 'Invoices with a paid amount but no payment date. Add the payment date so period totals and payment speed are accurate.'
+            help: copy.money.paymentsMissingDatesHelp
           } satisfies MetricItem
         ]
       : []),
     {
-      label: `Completed jobs · ${rangeLabel}`,
+      label: `${copy.money.completedJobs} · ${rangeLabel}`,
       value: String(displayedCompletedJobs),
       href: DASHBOARD_LINKS.completedJobs,
-      help: 'Jobs whose completion date falls in the selected period.'
+      help: copy.money.completedJobsHelp
     },
     {
-      label: `Jobs · ${rangeLabel}`,
+      label: `${copy.money.jobs} · ${rangeLabel}`,
       value: String(displayedJobs),
       href: DASHBOARD_LINKS.jobs,
-      help: 'Jobs scheduled, started, or completed in the selected period. Record entry dates are not counted.'
+      help: copy.money.jobsHelp
     },
     {
       label: t('dashboard.revenue.upcomingJobs'),
@@ -355,20 +362,20 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: t('dashboard.revenue.activeCustomers'),
       value: String(displayedActiveCustomers),
       href: DASHBOARD_LINKS.activeCustomers,
-      help: 'Customers currently marked active. Leads, past customers, cancelled records, and archived records are kept but are not counted here.'
+      help: copy.money.activeCustomersHelp
     },
     {
-      label: `Bookings · ${rangeLabel}`,
+      label: `${copy.money.bookings} · ${rangeLabel}`,
       value: String(activeMetrics.bookingCountThisMonth ?? 0),
       href: DASHBOARD_LINKS.bookings
     },
     {
-      label: `Messages · ${rangeLabel}`,
+      label: `${copy.money.messages} · ${rangeLabel}`,
       value: String(activeMetrics.messageCount ?? 0),
       href: DASHBOARD_LINKS.messages
     },
     {
-      label: `Reports · ${rangeLabel}`,
+      label: `${copy.money.reports} · ${rangeLabel}`,
       value: String(activeMetrics.reportCount ?? 0),
       href: DASHBOARD_LINKS.reports
     }
@@ -378,17 +385,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const showLoadError = !isLoading && (rangeError || Boolean(activeMetrics.loadFailed));
 
   return (
-    <section className="card dashboard-today-card" aria-label="Business overview">
+    <section className="card dashboard-today-card" aria-label={copy.overview.title}>
       <div className="dashboard-section-head" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2>Business overview</h2>
+          <h2>{copy.overview.title}</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            See what clients paid, what is still owed, expenses, and expected profit.
+            {copy.overview.subtitle}
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
           <label className="sr-only" htmlFor="dashboard-date-range">
-            Dashboard period
+            {copy.overview.periodLabel}
           </label>
           <select
             id="dashboard-date-range"
@@ -397,9 +404,9 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             onChange={(event) => setRange(event.target.value as DashboardDateRange)}
             style={{ width: 'auto', minWidth: 150 }}
           >
-            {RANGE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {RANGE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {copy.ranges[id]}
               </option>
             ))}
           </select>
@@ -417,7 +424,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       {showLoadError ? (
         <p className="muted" role="alert" style={{ marginTop: 12 }}>
-          Unable to load money summary. Refresh and try again.
+          {copy.overview.loadError}
         </p>
       ) : null}
 
@@ -426,16 +433,15 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
           <div className="settings-card money-summary-card" style={{ marginBottom: 18 }}>
             <div className="job-financials-head money-summary-head">
               <div>
-                <h3>Money summary</h3>
+                <h3>{copy.overview.moneySummaryTitle}</h3>
                 <p className="muted">
-                  Collected payments, outstanding balances
-                  {hasCreatedInvoices ? ', invoiced totals,' : ''} and cash after costs for {rangeLabel.toLowerCase()}.
+                  {copy.money.collectedHelp}
                 </p>
               </div>
             </div>
             {costsMissing ? (
               <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
-                Only recorded costs are included.
+                {copy.money.costsMissing}
               </p>
             ) : null}
             <div className="money-summary-list">

@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const metricParam = url.searchParams.get('metric');
   const rangeParam = (url.searchParams.get('range') || 'month') as DashboardDateRange;
+  const localeParam = url.searchParams.get('locale');
 
   if (!isDashboardDetailMetric(metricParam)) {
     return NextResponse.json({ error: 'Unknown dashboard metric.' }, { status: 400 });
@@ -25,7 +26,13 @@ export async function GET(request: Request) {
   const range = RANGES.has(rangeParam) ? rangeParam : 'month';
 
   try {
-    const details = await fetchDashboardMetricDetails(ctx.supabase, ctx.organizationId, metricParam, range);
+    const details = await fetchDashboardMetricDetails(
+      ctx.supabase,
+      ctx.organizationId,
+      metricParam,
+      range,
+      localeParam
+    );
     return NextResponse.json({ details });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load metric details.';

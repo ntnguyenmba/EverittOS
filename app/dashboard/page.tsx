@@ -309,9 +309,9 @@ export default function DashboardPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, alignItems: 'stretch' }}>
               {crmCard('Open leads', crmMetrics.openLeads, '/leads?status=open', 'New, contacted, qualified, proposal, and reopened leads.', salesCardStyle)}
               {crmCard('Closed leads', crmMetrics.closedLeads, '/leads?status=closed', 'Won, closed lost, and cancelled leads.', salesCardStyle)}
-              {crmCard('Active customers', crmMetrics.activeCustomers, '/customers?status=active', 'Customers currently active in your workspace.', salesCardStyle)}
-              {crmCard('Recurring customers', crmMetrics.recurringCustomers, '/customers?status=recurring', 'Customers marked as recurring service accounts.', salesCardStyle)}
-              {crmCard('Inactive customers', crmMetrics.inactiveCustomers, '/customers?status=inactive', 'Inactive and former customers.', salesCardStyle)}
+              {crmCard('Active customers', crmMetrics.activeCustomers, '/customers?stage=active', 'Customers currently active in your workspace.', salesCardStyle)}
+              {crmCard('Recurring customers', crmMetrics.recurringCustomers, '/customers?stage=recurring', 'Customers marked as recurring service accounts.', salesCardStyle)}
+              {crmCard('Inactive customers', crmMetrics.inactiveCustomers, '/customers?stage=past', 'Inactive and former customers.', salesCardStyle)}
             </div>
           </section>
         ) : null}

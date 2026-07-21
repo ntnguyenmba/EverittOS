@@ -18,21 +18,21 @@ import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
+import {
+  customerStageLabel,
+  getCustomerLifecycleCopy
+} from '@/lib/i18n/customer-lifecycle-copy';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
 type PageProps = { params: Promise<{ id: string }> };
 
-const CUSTOMER_STAGES = [
-  { value: 'active', label: 'Active' },
-  { value: 'recurring', label: 'Recurring' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'former', label: 'Former customer' }
-];
+const CUSTOMER_STAGE_VALUES = ['active', 'past', 'recurring', 'inactive', 'former', 'archived'] as const;
 
 export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const lifecycle = getCustomerLifecycleCopy(locale);
   const { teamOptions, teamOptionsLoading } = useTeamOptions();
   const [customerId, setCustomerId] = useState('');
   const [orgId, setOrgId] = useState('');
@@ -240,6 +240,30 @@ export default function CustomerDetailPage({ params }: PageProps) {
     router.push(`/leads/${customerId}`);
   }
 
+  async function updateLifecycleStage(nextStage: 'active' | 'past' | 'archived') {
+    if (!canEdit || !customerId || savingCustomer) return;
+    setSavingCustomer(true);
+    const res = await fetch(`/api/customers/${customerId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        record_type: 'customer',
+        pipeline_stage: nextStage
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setSavingCustomer(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || lifecycle.messages.unableToUpdate);
+      return;
+    }
+    setPipelineStage(nextStage);
+    if (nextStage === 'past') appFeedback.success(lifecycle.messages.markedPast);
+    else if (nextStage === 'active') appFeedback.success(lifecycle.messages.markedActive);
+    else appFeedback.success(lifecycle.messages.restored);
+    void load();
+  }
+
   async function addProperty() {
     if (!propName.trim()) return;
     const res = await fetch(`/api/customers/${customerId}/properties`, {
@@ -272,7 +296,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
           <CustomerLogo logoPath={logoPath} alt={displayName} size={56} />
           <div>
             <h2>{displayName}</h2>
-            <p className="muted">{CUSTOMER_STAGES.find((stage) => stage.value === pipelineStage)?.label || pipelineStage}</p>
+            <p className="muted">{customerStageLabel(pipelineStage, locale)}</p>
           </div>
           <Link className="btn" href="/customers">
             Back
@@ -334,8 +358,8 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </select>
             <label>Status</label>
             <select className="input" value={pipelineStage} disabled={!canEdit} onChange={(e) => setPipelineStage(e.target.value)}>
-              {CUSTOMER_STAGES.map((stage) => (
-                <option key={stage.value} value={stage.value}>{stage.label}</option>
+              {CUSTOMER_STAGE_VALUES.map((stage) => (
+                <option key={stage} value={stage}>{customerStageLabel(stage, locale)}</option>
               ))}
             </select>
             <label>Notes</label>
@@ -353,10 +377,25 @@ export default function CustomerDetailPage({ params }: PageProps) {
                   />
                 </label>
                 {logoUploading ? <p className="loading-state" role="status">Uploading logo...</p> : null}
-                <div className="inline-actions">
+                <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
                   <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
                     {savingCustomer ? FEEDBACK.loading : 'Save'}
                   </button>
+                  {pipelineStage !== 'active' ? (
+                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>
+                      {lifecycle.actions.markActive}
+                    </button>
+                  ) : null}
+                  {pipelineStage !== 'past' ? (
+                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('past')}>
+                      {lifecycle.actions.markPast}
+                    </button>
+                  ) : null}
+                  {pipelineStage === 'archived' ? (
+                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>
+                      {lifecycle.actions.restore}
+                    </button>
+                  ) : null}
                   <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>
                     {movingToLead ? FEEDBACK.loading : 'Move back to lead'}
                   </button>
@@ -364,18 +403,18 @@ export default function CustomerDetailPage({ params }: PageProps) {
                     type="button"
                     className="btn btn-danger"
                     onClick={async () => {
-                      if (!window.confirm('Remove this customer?')) return;
+                      if (!window.confirm('Archive this customer? Their history stays available.')) return;
                       const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
                       const json = (await res.json().catch(() => ({}))) as { error?: string };
                       if (!res.ok) {
-                        appFeedback.error(json.error || 'Unable to remove customer.');
+                        appFeedback.error(json.error || 'Unable to archive customer.');
                         return;
                       }
                       appFeedback.deleted();
-                      router.push('/customers');
+                      router.push('/customers?stage=archived');
                     }}
                   >
-                    Remove customer
+                    {lifecycle.actions.archive}
                   </button>
                 </div>
               </>

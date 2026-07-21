@@ -5,9 +5,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -39,6 +41,8 @@ function paymentCountLabel(count: number) {
 }
 
 function ContractorPayContent() {
+  const { locale } = useTranslation();
+  const copy = getDashboardFinanceCopy(locale).contractorPayPage;
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedFilter = searchParams.get('status');
@@ -180,49 +184,67 @@ function ContractorPayContent() {
     const json = await res.json().catch(() => ({}));
     setUpdatingId(null);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to update contractor payment.');
+      setMessage(json.error || copy.updateError);
       return;
     }
-    setMessage(paymentStatus === 'paid' ? 'Contractor payment marked paid.' : `Contractor payment marked ${paymentStatus}.`);
+    setMessage(
+      paymentStatus === 'paid'
+        ? copy.markedPaid
+        : formatDashboardCopy(copy.markedStatus, { status: paymentStatus })
+    );
     await load();
   }
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title="Contractor Pay" subtitle="See who needs to be paid, which job the payment belongs to, and whether it is unpaid, pending, or paid." />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
-      {!canManage && !loading ? <div className="card">Only owners, admins, and managers can view contractor payments.</div> : null}
+      {!canManage && !loading ? <div className="card">{copy.permissionDenied}</div> : null}
 
       {canManage ? (
         <>
           <div className="dashboard-stats-grid" style={{ marginBottom: 18 }}>
             <button type="button" className={`card stat-card ${filter === 'unpaid' ? 'is-active' : ''}`} onClick={() => setFilter('unpaid')}>
-              <span className="stat-label">Still owed</span><strong className="stat-value">{money(totals.unpaid)}</strong><span className="muted">{paymentCountLabel(counts.unpaid)}</span>
+              <span className="stat-label">{copy.stillOwed}</span><strong className="stat-value">{money(totals.unpaid)}</strong><span className="muted">{paymentCountLabel(counts.unpaid)}</span>
             </button>
             <button type="button" className={`card stat-card ${filter === 'pending' ? 'is-active' : ''}`} onClick={() => setFilter('pending')}>
-              <span className="stat-label">Pending</span><strong className="stat-value">{money(totals.pending)}</strong><span className="muted">{paymentCountLabel(counts.pending)}</span>
+              <span className="stat-label">{copy.pending}</span><strong className="stat-value">{money(totals.pending)}</strong><span className="muted">{paymentCountLabel(counts.pending)}</span>
             </button>
             <button type="button" className={`card stat-card ${filter === 'paid' ? 'is-active' : ''}`} onClick={() => setFilter('paid')}>
-              <span className="stat-label">Paid</span><strong className="stat-value">{money(totals.paid)}</strong><span className="muted">{paymentCountLabel(counts.paid)}</span>
+              <span className="stat-label">{copy.paid}</span><strong className="stat-value">{money(totals.paid)}</strong><span className="muted">{paymentCountLabel(counts.paid)}</span>
             </button>
           </div>
 
           <div className="card">
             <div className="dashboard-section-head">
-              <div><h2>{filter === 'all' ? 'All contractor payments' : `${filter.charAt(0).toUpperCase()}${filter.slice(1)} contractor payments`}</h2><p className="muted">Changes here automatically update the dashboard totals.</p></div>
-              <div className="inline-actions"><button type="button" className="btn" onClick={() => setFilter('all')}>Show all</button><button type="button" className="btn" onClick={() => void load()} disabled={loading}>{loading ? 'Refreshing...' : 'Refresh'}</button></div>
+              <div>
+                <h2>
+                  {filter === 'all'
+                    ? copy.allPayments
+                    : formatDashboardCopy(copy.statusPayments, { status: filter })}
+                </h2>
+                <p className="muted">{copy.changesHint}</p>
+              </div>
+              <div className="inline-actions">
+                <button type="button" className="btn" onClick={() => setFilter('all')}>
+                  {copy.showAll}
+                </button>
+                <button type="button" className="btn" onClick={() => void load()} disabled={loading}>
+                  {loading ? copy.refreshing : copy.refresh}
+                </button>
+              </div>
             </div>
             {message ? <p className="auth-message">{message}</p> : null}
-            {loading ? <p className="loading-state">Loading contractor payments...</p> : null}
-            {!loading && visibleRows.length === 0 ? <p className="muted">No contractor payments match this status.</p> : null}
+            {loading ? <p className="loading-state">{copy.loading}</p> : null}
+            {!loading && visibleRows.length === 0 ? <p className="muted">{copy.empty}</p> : null}
             {visibleRows.map((row) => {
               const job = jobs[row.job_id];
               const status = String(row.payment_status || 'unpaid').toLowerCase();
               return (
                 <div key={row.id} className="list-row" style={{ alignItems: 'flex-start' }}>
                   <div>
-                    <strong>{row.worker_name || 'Unnamed contractor'} · {money(row.total_cost)}</strong>
-                    <p className="muted">{job?.title || 'Job'}{job?.customer_name ? ` · ${job.customer_name}` : ''}</p>
+                    <strong>{row.worker_name || copy.unnamed} · {money(row.total_cost)}</strong>
+                    <p className="muted">{job?.title || copy.jobFallback}{job?.customer_name ? ` · ${job.customer_name}` : ''}</p>
                     <p className="muted">
                       {formatLaborPaymentLabel({
                         paymentBasis: row.payment_basis,
@@ -232,13 +254,13 @@ function ContractorPayContent() {
                       })}{' '}
                       · {status}
                     </p>
-                    {row.paid_at ? <p className="muted">Paid {new Date(row.paid_at).toLocaleDateString()}</p> : null}
+                    {row.paid_at ? <p className="muted">{copy.paid} {new Date(row.paid_at).toLocaleDateString(locale)}</p> : null}
                   </div>
                   <div className="inline-actions">
-                    <Link className="btn btn-sm" href={`/jobs/${row.job_id}`}>Open job</Link>
-                    {status !== 'pending' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'pending')}>Mark pending</button> : null}
-                    {status !== 'paid' ? <button type="button" className="btn btn-primary btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'paid')}>Mark paid</button> : null}
-                    {status === 'paid' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'unpaid')}>Mark unpaid</button> : null}
+                    <Link className="btn btn-sm" href={`/jobs/${row.job_id}`}>{copy.openJob}</Link>
+                    {status !== 'pending' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'pending')}>{copy.markPending}</button> : null}
+                    {status !== 'paid' ? <button type="button" className="btn btn-primary btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'paid')}>{copy.markPaid}</button> : null}
+                    {status === 'paid' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'unpaid')}>{copy.stillOwed}</button> : null}
                   </div>
                 </div>
               );

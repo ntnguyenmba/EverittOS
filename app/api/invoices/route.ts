@@ -57,23 +57,37 @@ export async function POST(request: Request) {
   const status =
     amountPaid >= amount ? 'paid' : amountPaid > 0 ? 'partial' : String(body.status || 'sent').trim() || 'sent';
 
-  const { data, error } = await ctx.supabase
-    .from('invoices')
-    .insert({
-      organization_id: ctx.organizationId,
-      job_id: body.job_id || null,
-      customer_id: body.customer_id || null,
-      user_id: ctx.userId,
-      amount,
-      amount_paid: Math.min(amountPaid, amount),
-      status,
-      due_date: body.due_date || null,
-      invoice_date: body.invoice_date || new Date().toISOString().slice(0, 10),
-      description: body.description?.trim() || null,
-      notes: body.notes?.trim() || null
-    })
-    .select('*')
-    .single();
+  const { data: profile } = await ctx.supabase.from('profiles').select('locale').eq('id', ctx.userId).maybeSingle();
+  const documentLocale =
+    body.document_locale === 'es' || body.document_locale === 'vi' || body.document_locale === 'en'
+      ? body.document_locale
+      : profile?.locale === 'es' || profile?.locale === 'vi'
+        ? profile.locale
+        : 'en';
+
+  const insertPayload: Record<string, unknown> = {
+    organization_id: ctx.organizationId,
+    job_id: body.job_id || null,
+    customer_id: body.customer_id || null,
+    user_id: ctx.userId,
+    amount,
+    amount_paid: Math.min(amountPaid, amount),
+    status,
+    due_date: body.due_date || null,
+    invoice_date: body.invoice_date || new Date().toISOString().slice(0, 10),
+    description: body.description?.trim() || null,
+    notes: body.notes?.trim() || null,
+    document_locale: documentLocale
+  };
+
+  let result = await ctx.supabase.from('invoices').insert(insertPayload).select('*').single();
+
+  if (result.error && /document_locale/i.test(result.error.message || '')) {
+    delete insertPayload.document_locale;
+    result = await ctx.supabase.from('invoices').insert(insertPayload).select('*').single();
+  }
+
+  const { data, error } = result;
 
   if (error) {
     if (isMissingSchemaError(error)) {
