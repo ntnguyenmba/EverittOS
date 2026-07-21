@@ -4,6 +4,7 @@ import { CUSTOMER_ADDRESS_FIELDS } from '@/lib/customer-record';
 import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { getReceiptCopy } from '@/lib/i18n/receipt-copy';
 import { isValidUuid } from '@/lib/input-validation';
 import { buildPaymentReceiptView } from '@/lib/payment-receipt';
 
@@ -49,6 +50,8 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
 
   const customerRelation = job.customers as Record<string, unknown> | Record<string, unknown>[] | null;
   const linkedCustomer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+  const receiptLocale = profileRes.data?.locale || 'en';
+  const receiptCopy = getReceiptCopy(receiptLocale);
 
   const receipt = buildPaymentReceiptView({
     payment: {
@@ -87,7 +90,8 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
       address: settingsRes.data?.company_address || null
     },
     outstanding: profitability.outstanding || 0,
-    locale: profileRes.data?.locale || 'en-US'
+    locale: receiptLocale,
+    copy: receiptCopy
   });
 
   return (
@@ -105,7 +109,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
           {receipt.businessLines.length ? (
             <p className="receipt-business-meta">{receipt.businessLines.join(' · ')}</p>
           ) : null}
-          <p className="receipt-eyebrow">Payment receipt</p>
+          <p className="receipt-eyebrow">{receiptCopy.title}</p>
           <h1 className="receipt-number">{receipt.receiptNumber}</h1>
           <p className="receipt-paid-on">{receipt.paidOnLabel}</p>
         </header>
@@ -125,7 +129,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
         </section>
 
         <section className="receipt-section">
-          <h2>Receipt details</h2>
+          <h2>{receiptCopy.detailsHeading}</h2>
           <dl className="receipt-details">
             {receipt.receiptDetails.map((row) => (
               <div key={row.label} className="receipt-detail-row">
@@ -134,7 +138,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
               </div>
             ))}
           </dl>
-          {receipt.paidInFull ? <p className="receipt-status-pill">Paid in full</p> : null}
+          {receipt.paidInFull ? <p className="receipt-status-pill">{receiptCopy.paidInFull}</p> : null}
         </section>
 
         <footer className="receipt-footer">

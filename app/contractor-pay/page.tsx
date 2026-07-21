@@ -8,6 +8,7 @@ import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -18,6 +19,7 @@ type LaborRow = {
   hours: number | string | null;
   hourly_cost: number | string | null;
   total_cost: number | string | null;
+  payment_basis?: string | null;
   payment_status: string | null;
   paid_at: string | null;
   payment_method: string | null;
@@ -79,11 +81,41 @@ function ContractorPayContent() {
 
     const { data, error } = await supabase
       .from('job_labor')
-      .select('id, job_id, worker_name, hours, hourly_cost, total_cost, payment_status, paid_at, payment_method, payment_reference, created_at')
+      .select(
+        'id, job_id, worker_name, hours, hourly_cost, total_cost, payment_basis, payment_status, paid_at, payment_method, payment_reference, created_at'
+      )
       .eq('organization_id', org.organizationId)
       .order('created_at', { ascending: false });
 
     if (error) {
+      // Older databases may not have payment_basis yet.
+      if (/payment_basis/i.test(error.message || '')) {
+        const fallback = await supabase
+          .from('job_labor')
+          .select(
+            'id, job_id, worker_name, hours, hourly_cost, total_cost, payment_status, paid_at, payment_method, payment_reference, created_at'
+          )
+          .eq('organization_id', org.organizationId)
+          .order('created_at', { ascending: false });
+        if (fallback.error) {
+          setMessage(fallback.error.message);
+          setLoading(false);
+          return;
+        }
+        const laborRows = (fallback.data || []) as LaborRow[];
+        setRows(laborRows);
+        const jobIds = Array.from(new Set(laborRows.map((row) => row.job_id).filter(Boolean)));
+        if (jobIds.length) {
+          const { data: jobRows } = await supabase.from('jobs').select('id, title, customer_name').in('id', jobIds);
+          const map: Record<string, JobSummary> = {};
+          for (const job of (jobRows || []) as JobSummary[]) map[job.id] = job;
+          setJobs(map);
+        } else {
+          setJobs({});
+        }
+        setLoading(false);
+        return;
+      }
       setMessage(error.message);
       setLoading(false);
       return;
@@ -191,7 +223,15 @@ function ContractorPayContent() {
                   <div>
                     <strong>{row.worker_name || 'Unnamed contractor'} · {money(row.total_cost)}</strong>
                     <p className="muted">{job?.title || 'Job'}{job?.customer_name ? ` · ${job.customer_name}` : ''}</p>
-                    <p className="muted">{Number(row.hours || 0)} hours at {money(row.hourly_cost)} per hour · {status}</p>
+                    <p className="muted">
+                      {formatLaborPaymentLabel({
+                        paymentBasis: row.payment_basis,
+                        quantity: row.hours,
+                        rate: row.hourly_cost,
+                        total: row.total_cost
+                      })}{' '}
+                      · {status}
+                    </p>
                     {row.paid_at ? <p className="muted">Paid {new Date(row.paid_at).toLocaleDateString()}</p> : null}
                   </div>
                   <div className="inline-actions">
