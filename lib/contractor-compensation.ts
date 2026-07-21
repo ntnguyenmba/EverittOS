@@ -70,7 +70,15 @@ export function formatHourlyRateAmount(hourlyRate: number | null | undefined): s
   if (hourlyRate === null || hourlyRate === undefined || !Number.isFinite(Number(hourlyRate))) {
     return null;
   }
-  return `$${Number(hourlyRate).toFixed(2)}/hr`;
+
+  const amount = Number(hourlyRate).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: Number(hourlyRate) % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+
+  return `${amount} / hour`;
 }
 
 export function formatContractorCompensationLabel(input: {
