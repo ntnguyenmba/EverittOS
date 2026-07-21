@@ -13,4 +13,16 @@ const METRIC_DESTINATIONS: Record<string, string> = {
   'contractor-pay': '/contractor-pay?status=all',
   'contractor-pay-owed': '/contractor-pay?status=unpaid',
   'contractor-pay-pending': '/contractor-pay?status=pending',
- 
+  expenses: '/expenses'
+};
+
+export default async function DashboardMetricDetailsPage({
+  searchParams
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const rawMetric = params.metric;
+  const metric = Array.isArray(rawMetric) ? rawMetric[0] : rawMetric;
+  redirect((metric && METRIC_DESTINATIONS[metric]) || '/dashboard');
+}
