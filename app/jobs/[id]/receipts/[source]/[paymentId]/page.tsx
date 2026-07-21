@@ -46,10 +46,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
   const payment = history.payments.find((entry) => entry.id === paymentId && entry.source === source);
   if (!payment) notFound();
 
-  const customerRelation = job.customers as
-    | Record<string, unknown>
-    | Record<string, unknown>[]
-    | null;
+  const customerRelation = job.customers as Record<string, unknown> | Record<string, unknown>[] | null;
   const linkedCustomer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
 
   const receipt = buildPaymentReceiptView({
@@ -93,7 +90,12 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
 
   return (
     <main className="receipt-page">
-      <ReceiptActions jobId={jobId} />
+      <ReceiptActions
+        jobId={jobId}
+        source={source}
+        paymentId={paymentId}
+        receiptNumber={receipt.receiptNumber}
+      />
 
       <article className="receipt-card">
         <header className="receipt-header">
