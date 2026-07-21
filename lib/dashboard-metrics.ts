@@ -56,6 +56,15 @@ export type DashboardRevenueMetrics = {
   /** Cash after expenses = paid to you − contractor cash paid − other expenses */
   netCashFlow: number;
   cashAfterExpenses: number;
+  /**
+   * Money Summary net cash = collected payments − expenses paid in the period.
+   * Does not subtract contractor pay (tracked separately).
+   */
+  moneySummaryNetCash: number;
+  /** True when the organization has at least one invoice row (invoicing has been used). */
+  hasCreatedInvoices: boolean;
+  /** True when a required dashboard query failed (not empty data). */
+  loadFailed: boolean;
   /** Invoices with amount_paid > 0 but no payment date (diagnostic) */
   paymentsMissingDates: number;
   bookingCountThisMonth: number;
@@ -409,6 +418,67 @@ export function calculateNetCashFlow(input: {
 
 export const calculateCashAfterExpenses = calculateNetCashFlow;
 
+/** Money Summary: collected client payments minus expenses paid in the same period. */
+export function calculateMoneySummaryNetCash(collected: number, expensesPaid: number): number {
+  return Number((num(collected) - num(expensesPaid)).toFixed(2));
+}
+
+export type MoneySummaryMetric = {
+  key: 'collected' | 'outstanding' | 'invoiced' | 'netCash';
+  label: string;
+  value: number;
+  help: string;
+};
+
+/** Build the Money Summary rows with period-aware labels and optional invoicing. */
+export function buildMoneySummaryMetrics(input: {
+  rangeLabel: string;
+  collected: number;
+  outstanding: number;
+  invoiced: number;
+  expensesPaid: number;
+  hasCreatedInvoices: boolean;
+}): MoneySummaryMetric[] {
+  const collected = Math.max(0, num(input.collected));
+  const outstanding = Math.max(0, num(input.outstanding));
+  const invoiced = Math.max(0, num(input.invoiced));
+  const netCash = calculateMoneySummaryNetCash(collected, input.expensesPaid);
+  const period = input.rangeLabel.toLowerCase();
+
+  const rows: MoneySummaryMetric[] = [
+    {
+      key: 'collected',
+      label: `Collected ${period}`,
+      value: collected,
+      help: 'Client payments received during this period from direct job payments and invoice payments. The same payment is never counted twice.'
+    },
+    {
+      key: 'outstanding',
+      label: 'Outstanding balance',
+      value: outstanding,
+      help: 'Current unpaid invoice balances plus unpaid expected amounts on jobs that do not have an invoice.'
+    }
+  ];
+
+  if (input.hasCreatedInvoices) {
+    rows.push({
+      key: 'invoiced',
+      label: `Invoiced ${period}`,
+      value: invoiced,
+      help: 'Total of non-cancelled invoices created during this period.'
+    });
+  }
+
+  rows.push({
+    key: 'netCash',
+    label: `Net cash ${period}`,
+    value: netCash,
+    help: 'Collected payments for this period minus expenses paid during this period.'
+  });
+
+  return rows;
+}
+
 export function calculateEstimatedProfitPercentage(
   estimatedProfit: number,
   customerInvoices: number
@@ -466,6 +536,9 @@ function emptyMetrics(): DashboardRevenueMetrics {
     estimatedProfit: 0,
     netCashFlow: 0,
     cashAfterExpenses: 0,
+    moneySummaryNetCash: 0,
+    hasCreatedInvoices: false,
+    loadFailed: false,
     paymentsMissingDates: 0,
     bookingCountThisMonth: 0,
     messageCount: 0,
@@ -565,6 +638,9 @@ export async function fetchDashboardRevenueMetrics(
   // If invoice_payments table is missing (migration not applied), fall back gracefully.
   const paymentRows = paymentRowsRes.error ? [] : (safeData(paymentRowsRes, []) as InvoicePaymentRow[]);
   const jobPaymentRows = jobPaymentRowsRes.error ? [] : (safeData(jobPaymentRowsRes, []) as JobPaymentMetricRow[]);
+  const loadFailed = Boolean(
+    invoicesRes.error || expensesRes.error || manualRevenueJobsRes.error || laborRes.error
+  );
 
   const invoicedJobIds = new Set<string>();
   for (const inv of invoices) {
@@ -649,6 +725,8 @@ export async function fetchDashboardRevenueMetrics(
     contractorCashPaid: contractorPaymentsPaid,
     otherCashExpenses: otherExpenses
   });
+  const moneySummaryNetCash = calculateMoneySummaryNetCash(paidToYou, otherExpenses);
+  const hasCreatedInvoices = invoices.length > 0;
 
   const completedRows = safeData(completedJobsRes, []);
   const completedInRange = completedRows.filter((row) => inRange(row.completed_at, start, end)).length;
@@ -688,6 +766,9 @@ export async function fetchDashboardRevenueMetrics(
     estimatedProfit,
     netCashFlow: cashAfterExpenses,
     cashAfterExpenses,
+    moneySummaryNetCash,
+    hasCreatedInvoices,
+    loadFailed,
     paymentsMissingDates,
     bookingCountThisMonth: bookingCount,
     messageCount,

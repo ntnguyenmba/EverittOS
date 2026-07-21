@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import {
+  buildMoneySummaryMetrics,
   calculateEstimatedProfitPercentage,
   fetchDashboardRevenueMetrics,
   formatCurrency,
@@ -17,14 +18,6 @@ import { supabase } from '@/lib/supabase';
 type DashboardRevenueSnapshotProps = {
   metrics: DashboardRevenueMetrics;
   loading?: boolean;
-};
-
-type FinancialBreakdownItem = {
-  label: string;
-  value: number | null;
-  displayValue: string;
-  href: string;
-  help?: string;
 };
 
 type MetricItem = {
@@ -43,14 +36,25 @@ const RANGE_OPTIONS: { value: DashboardDateRange; label: string }[] = [
   { value: 'all_time', label: 'All time' }
 ];
 
+const MONEY_SUMMARY_HREF: Record<string, string> = {
+  collected: DASHBOARD_LINKS.paidToYou,
+  outstanding: DASHBOARD_LINKS.stillOwed,
+  invoiced: DASHBOARD_LINKS.customerInvoices,
+  netCash: DASHBOARD_LINKS.cashAfterExpenses
+};
+
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { t } = useTranslation();
   const [range, setRange] = useState<DashboardDateRange>('month');
   const [rangeMetrics, setRangeMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
+  const [rangeError, setRangeError] = useState(false);
 
   useEffect(() => {
-    if (range === 'month') setRangeMetrics(metrics);
+    if (range === 'month') {
+      setRangeMetrics(metrics);
+      setRangeError(Boolean(metrics.loadFailed));
+    }
   }, [metrics, range]);
 
   useEffect(() => {
@@ -59,21 +63,33 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
     async function loadRange() {
       setRangeLoading(true);
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      setRangeError(false);
+      try {
+        const {
+          data: { user }
+        } = await supabase.auth.getUser();
 
-      if (!user) {
-        if (!cancelled) setRangeLoading(false);
-        return;
-      }
+        if (!user) {
+          if (!cancelled) {
+            setRangeError(true);
+            setRangeLoading(false);
+          }
+          return;
+        }
 
-      const org = await ensureOrganizationForUser(user.id);
-      const next = await fetchDashboardRevenueMetrics(supabase, org?.organizationId || null, range);
+        const org = await ensureOrganizationForUser(user.id);
+        const next = await fetchDashboardRevenueMetrics(supabase, org?.organizationId || null, range);
 
-      if (!cancelled) {
-        setRangeMetrics(next);
-        setRangeLoading(false);
+        if (!cancelled) {
+          setRangeMetrics(next);
+          setRangeError(Boolean(next.loadFailed));
+          setRangeLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setRangeError(true);
+          setRangeLoading(false);
+        }
       }
     }
 
@@ -90,7 +106,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
   const latePayments = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const contractorPay = activeMetrics.contractorPayThisMonth || 0;
-  const contractorPaymentsPaid = activeMetrics.contractorPaymentsPaid || 0;
   const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
   const pendingContractorPay = activeMetrics.pendingContractorPay || 0;
   const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
@@ -98,73 +113,47 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     activeMetrics.estimatedProfit ??
     activeMetrics.netEstimateThisMonth ??
     Number((customerInvoices - contractorPay - otherExpenses).toFixed(2));
-  const cashAfterExpenses =
-    activeMetrics.cashAfterExpenses ??
-    activeMetrics.netCashFlow ??
-    Number((paidToYou - contractorPaymentsPaid - otherExpenses).toFixed(2));
   const profitPercentage = calculateEstimatedProfitPercentage(estimatedProfit, customerInvoices);
   const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && customerInvoices > 0;
+  const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label || 'This month';
+  const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
+
+  const moneySummary = buildMoneySummaryMetrics({
+    rangeLabel,
+    collected: paidToYou,
+    outstanding: stillOwed,
+    invoiced: customerInvoices,
+    expensesPaid: otherExpenses,
+    hasCreatedInvoices
+  });
+
   const comparisonBase = Math.max(
-    paidToYou,
-    customerInvoices,
-    stillOwed,
-    contractorPay,
-    otherExpenses,
-    Math.abs(cashAfterExpenses),
+    ...moneySummary.map((item) => Math.abs(item.value)),
     1
   );
-  const rangeLabel = RANGE_OPTIONS.find((option) => option.value === range)?.label || 'This month';
-  const stillOwedLabel = range === 'all_time' ? 'Still owed · All time' : 'Still owed · Current';
-
-  const financialBreakdown: FinancialBreakdownItem[] = [
-    {
-      label: `Client paid · ${rangeLabel}`,
-      value: paidToYou,
-      displayValue: formatCurrency(paidToYou),
-      href: DASHBOARD_LINKS.paidToYou,
-      help: 'Client payments recorded during this period, including direct job payments and invoice payments.'
-    },
-    {
-      label: `Billed to customers · ${rangeLabel}`,
-      value: customerInvoices,
-      displayValue: formatCurrency(customerInvoices),
-      href: DASHBOARD_LINKS.customerInvoices,
-      help: 'Total non-cancelled invoices created during this period. This can be $0 when invoicing is optional and client payments were added directly to jobs.'
-    },
-    {
-      label: stillOwedLabel,
-      value: stillOwed,
-      displayValue: formatCurrency(stillOwed),
-      href: DASHBOARD_LINKS.stillOwed,
-      help: 'Current unpaid balances across non-cancelled invoices and uninvoiced jobs with an expected amount.'
-    },
-    {
-      label: `Cash after expenses · ${rangeLabel}`,
-      value: cashAfterExpenses,
-      displayValue: formatCurrency(cashAfterExpenses),
-      href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Client payments received minus contractor payments and other recorded expenses paid during this period.'
-    }
-  ];
 
   const items: MetricItem[] = [
     {
-      label: `Client paid · ${rangeLabel}`,
+      label: `Collected · ${rangeLabel}`,
       value: formatCurrency(paidToYou),
       href: DASHBOARD_LINKS.paidToYou,
-      help: 'Client payments recorded during this period, including direct job payments and invoice payments.'
+      help: 'Client payments received during this period from direct job payments and invoice payments.'
     },
+    ...(hasCreatedInvoices
+      ? [
+          {
+            label: `Invoiced · ${rangeLabel}`,
+            value: formatCurrency(customerInvoices),
+            href: DASHBOARD_LINKS.customerInvoices,
+            help: 'Invoice totals created during this period.'
+          } satisfies MetricItem
+        ]
+      : []),
     {
-      label: `Billed to customers · ${rangeLabel}`,
-      value: formatCurrency(customerInvoices),
-      href: DASHBOARD_LINKS.customerInvoices,
-      help: 'Invoice totals created during this period. A $0 total is normal when you record client payments without creating invoices in EverittOS.'
-    },
-    {
-      label: stillOwedLabel,
+      label: 'Outstanding balance',
       value: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
-      help: 'Current unpaid balances across non-cancelled invoices and uninvoiced jobs with an expected amount.'
+      help: 'Current unpaid invoice balances plus unpaid expected amounts on jobs without invoices.'
     },
     {
       label: 'Late payments · Current',
@@ -174,7 +163,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: 'Late invoices',
-      value: String(activeMetrics.overdueInvoiceCount),
+      value: String(activeMetrics.overdueInvoiceCount ?? 0),
       href: DASHBOARD_LINKS.latePayments
     },
     {
@@ -194,7 +183,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: `Contractor pay · ${rangeLabel}`,
-      value: contractorPay > 0 ? formatCurrency(contractorPay) : 'Not entered',
+      value: formatCurrency(contractorPay),
       href: DASHBOARD_LINKS.contractorPay,
       help: 'Contractor pay recorded for work in the selected period, whether paid or still owed.'
     },
@@ -217,32 +206,33 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: `Estimated profit · ${rangeLabel}`,
       value: formatCurrency(estimatedProfit),
       href: DASHBOARD_LINKS.estimatedProfit,
-      help: 'Amounts billed to customers minus contractor pay and other recorded expenses for this period.',
+      help: 'Amounts invoiced minus contractor pay and other recorded expenses for this period.',
       warning: costsMissing ? 'Only recorded costs are included.' : undefined
     },
     {
-      label: `Cash after expenses · ${rangeLabel}`,
-      value: formatCurrency(cashAfterExpenses),
+      label: `Net cash · ${rangeLabel}`,
+      value: formatCurrency(activeMetrics.moneySummaryNetCash ?? paidToYou - otherExpenses),
       href: DASHBOARD_LINKS.cashAfterExpenses,
-      help: 'Client payments received minus contractor payments and other recorded expenses paid during this period.'
+      help: 'Collected payments for this period minus expenses paid during this period.'
     },
-    {
-      label: 'Estimated profit percentage',
-      value: profitPercentage === null ? 'Not available' : `${profitPercentage}% estimated profit`,
-      href: DASHBOARD_LINKS.estimatedProfit,
-      help:
-        profitPercentage === null
-          ? 'Estimated profit percentage needs an amount billed to customers greater than zero.'
-          : 'Estimated profit divided by the amount billed to customers for this period.',
-      warning: costsMissing ? 'Only recorded costs are included.' : undefined
-    },
+    ...(profitPercentage === null
+      ? []
+      : [
+          {
+            label: 'Estimated profit percentage',
+            value: `${profitPercentage}%`,
+            href: DASHBOARD_LINKS.estimatedProfit,
+            help: 'Estimated profit divided by the amount invoiced for this period.',
+            warning: costsMissing ? 'Only recorded costs are included.' : undefined
+          } satisfies MetricItem
+        ]),
     ...(uninvoicedCompletedWork > 0
       ? [
           {
             label: `Uninvoiced completed work · ${rangeLabel}`,
             value: formatCurrency(uninvoicedCompletedWork),
             href: DASHBOARD_LINKS.completedJobs,
-            help: 'Completed job revenue that has not been invoiced. It is not included in Billed to customers.'
+            help: 'Completed job revenue that has not been invoiced. It is not included in Invoiced totals.'
           } satisfies MetricItem
         ]
       : []),
@@ -258,42 +248,43 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       : []),
     {
       label: `Completed jobs · ${rangeLabel}`,
-      value: String(activeMetrics.jobsCompletedThisMonth),
+      value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
       href: DASHBOARD_LINKS.completedJobs
     },
     {
       label: `Jobs · ${rangeLabel}`,
-      value: String(activeMetrics.totalJobs),
+      value: String(activeMetrics.totalJobs ?? 0),
       href: DASHBOARD_LINKS.jobs
     },
     {
       label: t('dashboard.revenue.upcomingJobs'),
-      value: String(activeMetrics.upcomingJobs),
+      value: String(activeMetrics.upcomingJobs ?? 0),
       href: DASHBOARD_LINKS.upcomingJobs
     },
     {
       label: t('dashboard.revenue.activeCustomers'),
-      value: String(activeMetrics.activeCustomers),
+      value: String(activeMetrics.activeCustomers ?? 0),
       href: DASHBOARD_LINKS.activeCustomers
     },
     {
       label: `Bookings · ${rangeLabel}`,
-      value: String(activeMetrics.bookingCountThisMonth),
+      value: String(activeMetrics.bookingCountThisMonth ?? 0),
       href: DASHBOARD_LINKS.bookings
     },
     {
       label: `Messages · ${rangeLabel}`,
-      value: String(activeMetrics.messageCount),
+      value: String(activeMetrics.messageCount ?? 0),
       href: DASHBOARD_LINKS.messages
     },
     {
       label: `Reports · ${rangeLabel}`,
-      value: String(activeMetrics.reportCount),
+      value: String(activeMetrics.reportCount ?? 0),
       href: DASHBOARD_LINKS.reports
     }
   ];
 
   const isLoading = Boolean(loading || rangeLoading);
+  const showLoadError = !isLoading && (rangeError || Boolean(activeMetrics.loadFailed));
 
   return (
     <section className="card dashboard-today-card" aria-label="Business overview">
@@ -301,7 +292,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         <div>
           <h2>Business overview</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            See what clients paid, what you billed, what is still owed, expenses, and estimated profit.
+            See what clients paid, what is still owed, expenses, and estimated profit.
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
@@ -333,55 +324,50 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         </p>
       ) : null}
 
-      {!isLoading ? (
+      {showLoadError ? (
+        <p className="muted" role="alert" style={{ marginTop: 12 }}>
+          Unable to load money summary. Refresh and try again.
+        </p>
+      ) : null}
+
+      {!isLoading && !showLoadError ? (
         <>
-          <div className="settings-card" style={{ marginBottom: 18 }}>
-            <div className="job-financials-head">
+          <div className="settings-card money-summary-card" style={{ marginBottom: 18 }}>
+            <div className="job-financials-head money-summary-head">
               <div>
                 <h3>Money summary</h3>
                 <p className="muted">
-                  Client payments received, amounts billed, current unpaid balances, and cash after expenses.
+                  Collected payments, outstanding balances
+                  {hasCreatedInvoices ? ', invoiced totals,' : ''} and net cash for {rangeLabel.toLowerCase()}.
                 </p>
               </div>
-              <strong>
-                {profitPercentage === null ? 'Not available' : `${profitPercentage}% estimated profit`}
-              </strong>
             </div>
             {costsMissing ? (
               <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
                 Only recorded costs are included.
               </p>
             ) : null}
-            <div style={{ display: 'grid', gap: 14 }}>
-              {financialBreakdown.map((item) => {
-                const width =
-                  item.value === null
-                    ? 0
-                    : Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
+            <div className="money-summary-list">
+              {moneySummary.map((item) => {
+                const width = Math.max(0, Math.min(100, (Math.abs(item.value) / comparisonBase) * 100));
                 return (
-                  <Link key={item.label} href={item.href} style={{ color: 'inherit', textDecoration: 'none' }} title={item.help}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
-                      <span>{item.label}</span>
-                      <strong>{item.displayValue}</strong>
+                  <Link
+                    key={item.key}
+                    href={MONEY_SUMMARY_HREF[item.key] || DASHBOARD_LINKS.paidToYou}
+                    className="money-summary-row"
+                    title={item.help}
+                    aria-label={`${item.label}: ${formatCurrency(item.value)}. ${item.help}`}
+                  >
+                    <div className="money-summary-row-head">
+                      <span className="money-summary-label">{item.label}</span>
+                      <strong className="money-summary-value">{formatCurrency(item.value)}</strong>
                     </div>
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        background: 'var(--surface-subtle, rgba(127, 127, 127, 0.14))',
-                        borderRadius: 999,
-                        height: 10,
-                        overflow: 'hidden'
-                      }}
-                    >
+                    <p className="muted money-summary-help">{item.help}</p>
+                    <div className="money-summary-bar" aria-hidden="true">
                       <div
+                        className={`money-summary-bar-fill${item.value < 0 ? ' is-negative' : ''}`}
                         style={{
-                          background:
-                            item.value !== null && item.value < 0
-                              ? 'var(--danger, currentColor)'
-                              : 'var(--accent, currentColor)',
-                          borderRadius: 999,
-                          height: '100%',
-                          minWidth: item.value === null || item.value === 0 ? 0 : 4,
+                          minWidth: item.value === 0 ? 0 : 4,
                           width: `${width}%`
                         }}
                       />
