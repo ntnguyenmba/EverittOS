@@ -47,6 +47,11 @@ Run **once** in Supabase SQL Editor (entire file, top to bottom):
 
 - [`../production_bootstrap.sql`](../production_bootstrap.sql) — full idempotent upgrade from the original schema to current production requirements. See [`../../docs/PRODUCTION_SCHEMA_AUDIT.md`](../../docs/PRODUCTION_SCHEMA_AUDIT.md).
 
+## Recent finance / document locale migrations (apply if missing)
+
+- `202609130001_job_labor_payment_basis.sql` - contractor pay basis (`hourly` / `flat` / `visit`)
+- `202609140001_invoice_document_locale.sql` - freeze invoice language for customer-facing documents
+
 ## Incremental migrations (new projects only)
 
 1. `202605310001_platform_core.sql` - tables, triggers
