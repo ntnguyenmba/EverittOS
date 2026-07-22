@@ -159,10 +159,10 @@ export default function LeadsPage() {
               <strong className="stat-value">{metrics.newLeads30d}</strong>
               <span className="stat-label">New leads (30d)</span>
             </div>
-            <div className="card stat-card">
+            <Link href="/leads#open-leads" className="card stat-card" style={{ color: 'inherit', textDecoration: 'none' }} aria-label="View open leads">
               <span className="stat-label">Open pipeline</span>
               <strong className="stat-value">{metrics.openLeads}</strong>
-            </div>
+            </Link>
             <div className="card stat-card">
               <span className="stat-label">Conversion rate</span>
               <strong className="stat-value">{metrics.conversionRate}%</strong>
@@ -173,7 +173,7 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: 18 }}>
+          <div id="open-leads" className="card" style={{ marginTop: 18, scrollMarginTop: 24 }}>
             <div className="inline-actions" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
               <h3>{filter === 'archived' ? 'Archived leads' : 'Open leads'}</h3>
               <div className="inline-actions">
