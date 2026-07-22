@@ -7,7 +7,7 @@ import { SettingsShell } from '@/components/settings/settings-shell';
 import { WorkspaceDeleteSection } from '@/components/settings/workspace-delete-section';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageOrganizationSettings, isOwner, normalizeRole } from '@/lib/roles';
+import { isOwner, normalizeRole } from '@/lib/roles';
 import { useTranslation } from '@/components/locale-provider';
 import { onboardingDismissStorageKey } from '@/lib/onboarding/constants';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -110,11 +110,11 @@ export default function SettingsPage() {
           .eq('organization_id', org.organizationId)
           .maybeSingle();
         if (settings) {
-          setServiceType(settings.service_type || serviceType);
-          setBookingUrl(settings.booking_url || bookingUrl);
+          setServiceType(settings.service_type || '');
+          setBookingUrl(settings.booking_url || '');
           setWebsite(settings.website || '');
           setCompanyAddress(settings.company_address || '');
-          setPhone(settings.company_phone || phone);
+          setPhone(settings.company_phone || biz?.phone || '');
           setBusinessEmail(settings.company_email || user.email || '');
           setLegalBusinessName(settings.legal_business_name || '');
           setTeamDisplayName(settings.team_display_name || '');
@@ -136,7 +136,7 @@ export default function SettingsPage() {
       setLoading(false);
     }
 
-    load();
+    void load();
   }, [router]);
 
   async function saveProfile() {
@@ -206,132 +206,136 @@ export default function SettingsPage() {
 
   if (loading || planLoading) {
     return (
-      <SettingsShell plan={plan} role={role} title="Workspace settings">
-        <p className="loading-state" role="status">
-          Loading settings...
-        </p>
+      <SettingsShell plan={plan} role={role} title="Settings">
+        <p className="loading-state" role="status">Loading...</p>
       </SettingsShell>
     );
   }
 
   const effectivePlan = billingPlan ?? profilePlan ?? workspacePlan ?? organizationPlan ?? plan;
-  const hasActiveSubscription = subscriptionBlocksAccountDeletion(
-    effectivePlan,
-    workspaceSubscriptionStatus
-  );
-
+  const hasActiveSubscription = subscriptionBlocksAccountDeletion(effectivePlan, workspaceSubscriptionStatus);
   const canDeleteWorkspace = isOwner(role);
 
   return (
-    <SettingsShell
-      plan={plan}
-      role={role}
-      title="Workspace settings"
-      description="Business profile, branding, and workspace preferences for owners and admins."
-    >
-      <div className="settings-card form settings-form-grid">
-        <p className="muted">
-          Manage subscription on <Link href="/settings/billing">Plans & billing</Link> or personal details on{' '}
-          <Link href="/settings/account">Account</Link>.
-        </p>
-          <label htmlFor="org-name">Business name</label>
-          <input id="org-name" className="input" placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-          <label htmlFor="org-legal-name">Legal business name</label>
-          <input id="org-legal-name" className="input" placeholder="Legal business name" value={legalBusinessName} onChange={(e) => setLegalBusinessName(e.target.value)} />
-          <label htmlFor="org-team-display">Team display name</label>
-          <input id="org-team-display" className="input" placeholder="How your team appears in the app" value={teamDisplayName} onChange={(e) => setTeamDisplayName(e.target.value)} />
-          <label htmlFor="org-phone">Business phone</label>
-          <input id="org-phone" className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <label htmlFor="org-business-email">Business email</label>
-          <input id="org-business-email" className="input" type="email" placeholder="Business email" value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} />
+    <SettingsShell plan={plan} role={role} title="Settings">
+      <section className="settings-card form settings-form-grid">
+        <h3>Business</h3>
+        <label htmlFor="org-name">Business name</label>
+        <input id="org-name" className="input" value={businessName} onChange={(event) => setBusinessName(event.target.value)} />
+        <label htmlFor="org-phone">Phone</label>
+        <input id="org-phone" className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
+        <label htmlFor="org-business-email">Email</label>
+        <input id="org-business-email" className="input" type="email" value={businessEmail} onChange={(event) => setBusinessEmail(event.target.value)} />
+        <label htmlFor="org-address">Address</label>
+        <input id="org-address" className="input" value={companyAddress} onChange={(event) => setCompanyAddress(event.target.value)} />
+        <label htmlFor="org-service">Service</label>
+        <input id="org-service" className="input" value={serviceType} onChange={(event) => setServiceType(event.target.value)} />
+        <label htmlFor="org-timezone">Timezone</label>
+        <select id="org-timezone" className="input" value={timezone} onChange={(event) => setTimezone(event.target.value)}>
+          <option value="America/New_York">Eastern (US)</option>
+          <option value="America/Chicago">Central (US)</option>
+          <option value="America/Denver">Mountain (US)</option>
+          <option value="America/Los_Angeles">Pacific (US)</option>
+          <option value="UTC">UTC</option>
+        </select>
+        <button className="btn btn-primary" type="button" onClick={() => void saveProfile()} disabled={saving}>
+          {buttonLabel('Save', FEEDBACK.loading)}
+        </button>
+      </section>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Business details</strong></summary>
+        <div className="form settings-form-grid" style={{ marginTop: 16 }}>
+          <label htmlFor="org-legal-name">Legal name</label>
+          <input id="org-legal-name" className="input" value={legalBusinessName} onChange={(event) => setLegalBusinessName(event.target.value)} />
+          <label htmlFor="org-team-display">Team name</label>
+          <input id="org-team-display" className="input" value={teamDisplayName} onChange={(event) => setTeamDisplayName(event.target.value)} />
           <label htmlFor="org-website">Website</label>
-          <input id="org-website" className="input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-          <label htmlFor="org-address">Address</label>
-          <input id="org-address" className="input" placeholder="Business address" value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)} />
+          <input id="org-website" className="input" value={website} onChange={(event) => setWebsite(event.target.value)} />
+          <label htmlFor="org-booking">Booking link</label>
+          <input id="org-booking" className="input" value={bookingUrl} onChange={(event) => setBookingUrl(event.target.value)} />
           <label htmlFor="org-tax-id">Tax ID</label>
-          <input id="org-tax-id" className="input" placeholder="Tax ID (optional)" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+          <input id="org-tax-id" className="input" value={taxId} onChange={(event) => setTaxId(event.target.value)} />
           <label htmlFor="org-industry">Business type</label>
-          <input id="org-industry" className="input" placeholder="e.g. Landscaping, HVAC" value={industry} onChange={(e) => setIndustry(e.target.value)} />
-          <label htmlFor="org-team-size">Employee count</label>
-          <select id="org-team-size" className="input" value={teamSize} onChange={(e) => setTeamSize(e.target.value)}>
-            <option value="">Select…</option>
+          <input id="org-industry" className="input" value={industry} onChange={(event) => setIndustry(event.target.value)} />
+          <label htmlFor="org-team-size">Team size</label>
+          <select id="org-team-size" className="input" value={teamSize} onChange={(event) => setTeamSize(event.target.value)}>
+            <option value="">Select</option>
             <option value="1-5">1-5</option>
             <option value="6-15">6-15</option>
             <option value="16-50">16-50</option>
             <option value="51+">51+</option>
           </select>
-          <label htmlFor="org-timezone">Timezone</label>
-          <select id="org-timezone" className="input" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-            <option value="America/New_York">Eastern (US)</option>
-            <option value="America/Chicago">Central (US)</option>
-            <option value="America/Denver">Mountain (US)</option>
-            <option value="America/Los_Angeles">Pacific (US)</option>
-            <option value="UTC">UTC</option>
-          </select>
-          <label htmlFor="org-service">Service type</label>
-          <input id="org-service" className="input" placeholder="Service type" value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
-          <input
-            className="input"
-            placeholder="External booking URL"
-            value={bookingUrl}
-            onChange={(e) => setBookingUrl(e.target.value)}
-          />
-          <label htmlFor="org-invoice-footer">Invoice footer</label>
-          <textarea id="org-invoice-footer" className="input" rows={3} placeholder="Footer text for invoices" value={invoiceFooter} onChange={(e) => setInvoiceFooter(e.target.value)} />
-          <label htmlFor="org-default-message">Default customer message</label>
-          <textarea id="org-default-message" className="input" rows={3} placeholder="Default message for customer communications" value={defaultCustomerMessage} onChange={(e) => setDefaultCustomerMessage(e.target.value)} />
-          <label htmlFor="org-brand-primary">Brand primary color</label>
-          <input id="org-brand-primary" className="input" placeholder="#2f5f8f" value={brandPrimaryColor} onChange={(e) => setBrandPrimaryColor(e.target.value)} />
-          <label htmlFor="org-brand-accent">Brand accent color</label>
-          <input id="org-brand-accent" className="input" placeholder="#4A6354" value={brandAccentColor} onChange={(e) => setBrandAccentColor(e.target.value)} />
-          <label htmlFor="org-email">Your sign-in email</label>
-          <input id="org-email" className="input" placeholder="Email" value={email} disabled />
-          <h3>Logo</h3>
-          <input type="file" accept="image/*" aria-label="Upload organization logo" disabled={!orgId || logoUploading} onChange={(e) => uploadLogo(e.target.files?.[0] || null)} />
-          {logoUploading ? <p className="loading-state" role="status">Uploading logo…</p> : null}
-          <h3>Notification preferences</h3>
-          <label>
-            <input type="checkbox" checked={notifyAssignments} onChange={(e) => setNotifyAssignments(e.target.checked)} /> Assignments
-          </label>
-          <label>
-            <input type="checkbox" checked={notifyDueDates} onChange={(e) => setNotifyDueDates(e.target.checked)} /> Due dates
-          </label>
-          <label>
-            <input type="checkbox" checked={notifyCompletions} onChange={(e) => setNotifyCompletions(e.target.checked)} /> Completions
-          </label>
-          <label>
-            <input type="checkbox" checked={notifyReports} onChange={(e) => setNotifyReports(e.target.checked)} /> Reports
-          </label>
-          <button className="btn btn-primary" type="button" onClick={() => void saveProfile()} disabled={saving}>
-            {buttonLabel('Save settings', FEEDBACK.loading)}
-          </button>
-          <button className="btn" type="button" onClick={logout}>
-            Log out
-          </button>
-          <div className="settings-card" style={{ marginTop: 18 }}>
-            <h3>{t('language.title')}</h3>
-            <p className="muted">{t('language.note')}</p>
-            <LanguageSwitcher />
-          </div>
-          <div className="settings-card" style={{ marginTop: 18 }}>
-            <h3>{t('onboarding.settings.restart')}</h3>
-            <p className="muted">{t('onboarding.settings.restartDescription')}</p>
-            <button type="button" className="btn" onClick={() => void restartOnboarding()} disabled={restartBusy}>
-              {restartBusy ? FEEDBACK.loading : t('onboarding.settings.restart')}
-            </button>
-          </div>
-          <p style={{ marginTop: 16 }}>
-            <Link href="/onboarding">{t('onboarding.checklist.continue')}</Link>
-          </p>
-          <p style={{ marginTop: 16 }}>
-            <Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> ·{' '}
-            <Link href="/cookies">Cookies</Link> ·{' '}
-            <Link href="/disclaimer">Disclaimer</Link>
-          </p>
         </div>
+      </details>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Customer messages & invoices</strong></summary>
+        <div className="form settings-form-grid" style={{ marginTop: 16 }}>
+          <label htmlFor="org-default-message">Default message</label>
+          <textarea id="org-default-message" className="input" rows={3} value={defaultCustomerMessage} onChange={(event) => setDefaultCustomerMessage(event.target.value)} />
+          <label htmlFor="org-invoice-footer">Invoice footer</label>
+          <textarea id="org-invoice-footer" className="input" rows={3} value={invoiceFooter} onChange={(event) => setInvoiceFooter(event.target.value)} />
+        </div>
+      </details>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Branding</strong></summary>
+        <div className="form settings-form-grid" style={{ marginTop: 16 }}>
+          <label htmlFor="org-brand-primary">Main color</label>
+          <input id="org-brand-primary" className="input" placeholder="#2f5f8f" value={brandPrimaryColor} onChange={(event) => setBrandPrimaryColor(event.target.value)} />
+          <label htmlFor="org-brand-accent">Accent color</label>
+          <input id="org-brand-accent" className="input" placeholder="#4A6354" value={brandAccentColor} onChange={(event) => setBrandAccentColor(event.target.value)} />
+          <label>Logo</label>
+          <input type="file" accept="image/*" aria-label="Upload organization logo" disabled={!orgId || logoUploading} onChange={(event) => uploadLogo(event.target.files?.[0] || null)} />
+          {logoUploading ? <p className="loading-state">Uploading...</p> : null}
+        </div>
+      </details>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Notifications</strong></summary>
+        <div className="form" style={{ marginTop: 16 }}>
+          <label><input type="checkbox" checked={notifyAssignments} onChange={(event) => setNotifyAssignments(event.target.checked)} /> Job assignments</label>
+          <label><input type="checkbox" checked={notifyDueDates} onChange={(event) => setNotifyDueDates(event.target.checked)} /> Due dates</label>
+          <label><input type="checkbox" checked={notifyCompletions} onChange={(event) => setNotifyCompletions(event.target.checked)} /> Completed jobs</label>
+          <label><input type="checkbox" checked={notifyReports} onChange={(event) => setNotifyReports(event.target.checked)} /> Reports</label>
+        </div>
+      </details>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Language & setup</strong></summary>
+        <div style={{ marginTop: 16 }}>
+          <LanguageSwitcher />
+          <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+            <button type="button" className="btn" onClick={() => void restartOnboarding()} disabled={restartBusy}>
+              {restartBusy ? FEEDBACK.loading : 'Restart setup'}
+            </button>
+            <Link className="btn" href="/onboarding">Setup checklist</Link>
+          </div>
+        </div>
+      </details>
+
+      <section className="settings-card" style={{ marginTop: 18 }}>
+        <h3>Account</h3>
+        <p className="muted">Signed in as {email}</p>
+        <div className="button-row" style={{ flexWrap: 'wrap' }}>
+          <Link className="btn" href="/settings/account">Account details</Link>
+          <Link className="btn" href="/settings/billing">Plans & billing</Link>
+          <button className="btn" type="button" onClick={logout}>Log out</button>
+        </div>
+      </section>
+
+      <details className="settings-card" style={{ marginTop: 18 }}>
+        <summary><strong>Legal & advanced</strong></summary>
+        <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+          <Link className="btn" href="/terms">Terms</Link>
+          <Link className="btn" href="/privacy">Privacy</Link>
+          <Link className="btn" href="/cookies">Cookies</Link>
+          <Link className="btn" href="/disclaimer">Disclaimer</Link>
+        </div>
+      </details>
 
       <WorkspaceDeleteSection canManage={canDeleteWorkspace} />
-
       <AccountDeleteSection hasActiveSubscription={hasActiveSubscription} busy={saving} />
     </SettingsShell>
   );
