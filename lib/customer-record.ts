@@ -8,7 +8,7 @@ export const CUSTOMER_ADDRESS_FIELDS =
   'address_line1, address_line2, city, state, postal_code, country, service_address, property_address';
 
 export const CUSTOMER_LIST_SELECT =
-  `id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, deal_value, ${CUSTOMER_ADDRESS_FIELDS}`;
+  `id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, ${CUSTOMER_ADDRESS_FIELDS}`;
 
 export const CUSTOMER_SEARCH_SELECT = 'id, company_name, email';
 
@@ -32,7 +32,6 @@ export type CustomerRecord = {
   lead_source?: string | null;
   record_type?: string | null;
   assigned_to?: string | null;
-  deal_value?: number | null;
   logo_path?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
@@ -90,7 +89,6 @@ export type CustomerWriteInput = {
   pipeline_stage?: string;
   lead_source?: string;
   assigned_to?: string | null;
-  deal_value?: number | null;
 };
 
 export type CustomerUpdateInput = Partial<CustomerWriteInput>;
@@ -114,7 +112,6 @@ export function buildCustomerWritePayload(input: CustomerWriteInput): Record<str
     email: input.email?.trim() || null,
     notes: input.notes?.trim() || null,
     assigned_to: input.assigned_to?.trim() || null,
-    deal_value: input.deal_value ?? null,
     ...addressWriteFields(input.address),
     ...(input.record_type ? { record_type: input.record_type } : {}),
     ...(input.pipeline_stage ? { pipeline_stage: input.pipeline_stage } : {}),
@@ -134,7 +131,6 @@ export function buildCustomerUpdatePayload(input: CustomerUpdateInput): Record<s
   if (input.email !== undefined) payload.email = input.email?.trim() || null;
   if (input.notes !== undefined) payload.notes = input.notes?.trim() || null;
   if (input.assigned_to !== undefined) payload.assigned_to = input.assigned_to?.trim() || null;
-  if (input.deal_value !== undefined) payload.deal_value = input.deal_value;
   if (input.address !== undefined) {
     Object.assign(payload, addressWriteFields(input.address));
   }
