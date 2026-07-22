@@ -25,6 +25,8 @@ type LeadDetailFormProps = {
   onSaved?: () => void;
 };
 
+const EDITABLE_LEAD_STAGES = LEAD_PIPELINE_STAGES.filter((stage) => stage.value !== 'won');
+
 export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDetailFormProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
@@ -35,7 +37,7 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
   const [address, setAddress] = useState(initial.address);
   const [notes, setNotes] = useState(initial.notes);
   const [leadSource, setLeadSource] = useState(initial.leadSource);
-  const [pipelineStage, setPipelineStage] = useState(initial.pipelineStage);
+  const [pipelineStage, setPipelineStage] = useState(initial.pipelineStage === 'won' ? 'open' : initial.pipelineStage);
   const [assignedTo, setAssignedTo] = useState(initial.assignedTo);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -55,8 +57,20 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
     return true;
   }
 
+  function editableFields() {
+    return {
+      displayName: displayName.trim(),
+      phone,
+      email,
+      address,
+      notes,
+      assigned_to: assignedTo || null,
+      lead_source: leadSource
+    };
+  }
+
   async function saveLead() {
-    if (!canManage || saving) return;
+    if (!canManage || saving || converting) return;
     if (!displayName.trim()) {
       appFeedback.error('Name is required.');
       return;
@@ -64,13 +78,7 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
 
     setSaving(true);
     const ok = await patchLead({
-      displayName,
-      phone,
-      email,
-      address,
-      notes,
-      assigned_to: assignedTo || null,
-      lead_source: leadSource,
+      ...editableFields(),
       pipeline_stage: pipelineStage,
       record_type: 'lead'
     });
@@ -82,22 +90,42 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
   }
 
   async function convertToCustomer() {
-    if (!canManage || converting) return;
-    if (!window.confirm('Make this lead a customer?')) return;
+    if (!canManage || converting || saving) return;
+    if (!displayName.trim()) {
+      appFeedback.error('Name is required.');
+      return;
+    }
+    if (!window.confirm(`Make ${displayName.trim()} a customer?`)) return;
+
     setConverting(true);
-    const ok = await patchLead({ record_type: 'customer', pipeline_stage: 'active' }, 'Unable to convert lead.');
+    const ok = await patchLead(
+      {
+        ...editableFields(),
+        record_type: 'customer',
+        pipeline_stage: 'active'
+      },
+      'Unable to convert lead.'
+    );
     setConverting(false);
     if (!ok) return;
-    appFeedback.saved();
+
+    appFeedback.success('Lead converted to customer.');
     router.push(`/customers/${leadId}`);
+    router.refresh();
   }
 
   async function setLeadStage(nextStage: string) {
-    if (!canManage || converting) return;
+    if (!canManage || converting || saving) return;
+    if (nextStage === 'won') {
+      await convertToCustomer();
+      return;
+    }
+
     setConverting(true);
     const ok = await patchLead({ record_type: 'lead', pipeline_stage: nextStage }, 'Unable to update lead status.');
     setConverting(false);
     if (!ok) return;
+
     setPipelineStage(nextStage);
     appFeedback.saved();
     onSaved?.();
@@ -119,10 +147,12 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
 
     appFeedback.label('removed');
     router.push('/leads');
+    router.refresh();
   }
 
   const sourceLabel = LEAD_SOURCE_OPTIONS.find((option) => option.value === leadSource)?.label || leadSource;
-  const statusLabel = LEAD_PIPELINE_STAGES.find((stage) => stage.value === pipelineStage)?.label || pipelineStage;
+  const statusLabel = EDITABLE_LEAD_STAGES.find((stage) => stage.value === pipelineStage)?.label || pipelineStage;
+  const busy = saving || converting || removing;
 
   return (
     <div style={{ display: 'grid', gap: 18 }}>
@@ -137,8 +167,8 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
             </a>
           ) : null}
           {canManage ? (
-            <button type="button" className="btn btn-primary" disabled={converting} onClick={() => void convertToCustomer()}>
-              {converting ? FEEDBACK.loading : 'Make customer'}
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void convertToCustomer()}>
+              {converting ? FEEDBACK.loading : 'Convert to customer'}
             </button>
           ) : null}
         </div>
@@ -162,37 +192,38 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
         <summary><strong>{canManage ? 'Edit lead' : 'Lead details'}</strong></summary>
         <div className="form" style={{ marginTop: 16 }}>
           <label>Name</label>
-          <input className="input" value={displayName} disabled={!canManage} onChange={(e) => setDisplayName(e.target.value)} />
+          <input className="input" value={displayName} disabled={!canManage || busy} onChange={(e) => setDisplayName(e.target.value)} />
           <label>Phone</label>
-          <input className="input" type="tel" inputMode="tel" autoComplete="tel" value={phone} disabled={!canManage} onChange={(e) => setPhone(e.target.value)} />
+          <input className="input" type="tel" inputMode="tel" autoComplete="tel" value={phone} disabled={!canManage || busy} onChange={(e) => setPhone(e.target.value)} />
           <label>Email</label>
-          <input className="input" type="email" inputMode="email" autoComplete="email" value={email} disabled={!canManage} onChange={(e) => setEmail(e.target.value)} />
+          <input className="input" type="email" inputMode="email" autoComplete="email" value={email} disabled={!canManage || busy} onChange={(e) => setEmail(e.target.value)} />
           <label>Address</label>
-          <input className="input" autoComplete="street-address" value={address} disabled={!canManage} onChange={(e) => setAddress(e.target.value)} />
+          <input className="input" autoComplete="street-address" value={address} disabled={!canManage || busy} onChange={(e) => setAddress(e.target.value)} />
           <label>Assign to</label>
-          <select className="input" value={assignedTo} disabled={!canManage || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
+          <select className="input" value={assignedTo} disabled={!canManage || teamOptionsLoading || busy} onChange={(e) => setAssignedTo(e.target.value)}>
             <option value="">Unassigned</option>
             {teamOptions.map((member) => (
               <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
             ))}
           </select>
           <label>Source</label>
-          <select className="input" value={leadSource} disabled={!canManage} onChange={(e) => setLeadSource(e.target.value)}>
+          <select className="input" value={leadSource} disabled={!canManage || busy} onChange={(e) => setLeadSource(e.target.value)}>
             {LEAD_SOURCE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
           <label>Status</label>
-          <select className="input" value={pipelineStage} disabled={!canManage} onChange={(e) => setPipelineStage(e.target.value)}>
-            {LEAD_PIPELINE_STAGES.map((option) => (
+          <select className="input" value={pipelineStage} disabled={!canManage || busy} onChange={(e) => setPipelineStage(e.target.value)}>
+            {EDITABLE_LEAD_STAGES.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+          <p className="muted" style={{ marginTop: -8 }}>Use Convert to customer when the lead is won.</p>
           <label>Notes</label>
-          <textarea className="input" rows={3} value={notes} disabled={!canManage} onChange={(e) => setNotes(e.target.value)} />
+          <textarea className="input" rows={3} value={notes} disabled={!canManage || busy} onChange={(e) => setNotes(e.target.value)} />
           {canManage ? (
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveLead()}>
-              {saving ? FEEDBACK.loading : 'Save'}
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void saveLead()}>
+              {saving ? FEEDBACK.loading : 'Save changes'}
             </button>
           ) : null}
         </div>
@@ -200,19 +231,19 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
 
       {canManage ? (
         <details className="card">
-          <summary><strong>More</strong></summary>
+          <summary><strong>More actions</strong></summary>
           <div className="button-row" style={{ marginTop: 16, flexWrap: 'wrap' }}>
-            <button type="button" className="btn" disabled={converting} onClick={() => void setLeadStage('reopened')}>Reopen</button>
-            <button type="button" className="btn" disabled={converting} onClick={() => void setLeadStage('closed_lost')}>Mark lost</button>
-            <button type="button" className="btn" disabled={converting} onClick={() => void setLeadStage('cancelled')}>Cancel</button>
-            <button type="button" className="btn btn-danger" disabled={removing} onClick={() => void removeLead()}>
-              {removing ? FEEDBACK.loading : 'Remove'}
+            <button type="button" className="btn" disabled={busy} onClick={() => void setLeadStage('reopened')}>Reopen</button>
+            <button type="button" className="btn" disabled={busy} onClick={() => void setLeadStage('closed_lost')}>Close lost</button>
+            <button type="button" className="btn" disabled={busy} onClick={() => void setLeadStage('cancelled')}>Cancel</button>
+            <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void removeLead()}>
+              {removing ? FEEDBACK.loading : 'Remove lead'}
             </button>
           </div>
         </details>
       ) : null}
 
-      <Link className="btn" href="/leads">Back</Link>
+      <Link className="btn" href="/leads">Back to leads</Link>
     </div>
   );
 }
