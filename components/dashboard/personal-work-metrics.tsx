@@ -37,34 +37,22 @@ type LaborRow = {
 };
 
 type PersonalMetrics = {
-  totalJobs: number;
   activeJobs: number;
-  completedJobs: number;
   dueToday: number;
   overdueJobs: number;
-  photosUploaded: number;
-  reportsCreated: number;
-  recordedEarnings: number;
   paidEarnings: number;
   pendingPayout: number;
   earningsThisMonth: number;
-  jobRevenueAllTime: number;
   jobRevenueThisMonth: number;
 };
 
 const EMPTY_METRICS: PersonalMetrics = {
-  totalJobs: 0,
   activeJobs: 0,
-  completedJobs: 0,
   dueToday: 0,
   overdueJobs: 0,
-  photosUploaded: 0,
-  reportsCreated: 0,
-  recordedEarnings: 0,
   paidEarnings: 0,
   pendingPayout: 0,
   earningsThisMonth: 0,
-  jobRevenueAllTime: 0,
   jobRevenueThisMonth: 0
 };
 
@@ -95,7 +83,12 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
   const [loading, setLoading] = useState(true);
   const normalizedRole = role.trim().toLowerCase();
   const isManager = normalizedRole === 'manager';
-  const visible = isManager || normalizedRole === 'contractor' || normalizedRole === 'employee' || normalizedRole === 'staff' || normalizedRole === 'worker';
+  const visible =
+    isManager ||
+    normalizedRole === 'contractor' ||
+    normalizedRole === 'employee' ||
+    normalizedRole === 'staff' ||
+    normalizedRole === 'worker';
 
   useEffect(() => {
     if (!visible) {
@@ -127,10 +120,8 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
         .limit(10000);
       jobsQuery = organizationId ? jobsQuery.eq('organization_id', organizationId) : jobsQuery.eq('user_id', user.id);
 
-      const [jobsRes, photosRes, reportsRes, laborRes, assignmentRes] = await Promise.all([
+      const [jobsRes, laborRes, assignmentRes] = await Promise.all([
         jobsQuery,
-        supabase.from('job_photos').select('id', { count: 'exact', head: true }).or(`user_id.eq.${user.id},uploaded_by.eq.${user.id}`),
-        supabase.from('job_reports').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         workerIds.length > 0
           ? supabase.from('job_labor').select('total_cost, payment_status, created_at').in('worker_id', workerIds)
           : Promise.resolve({ data: [], error: null }),
@@ -152,12 +143,8 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
         const status = normalizeJobStatus(job.status);
         return status !== 'completed' && status !== 'cancelled';
       });
-      const completedJobs = jobs.filter((job) => normalizeJobStatus(job.status) === 'completed');
-      const dueToday = assignmentSummary.dueToday;
-      const overdueJobs = assignmentSummary.overdue;
 
       const laborRows = (laborRes.data || []) as LaborRow[];
-      const recordedEarnings = laborRows.reduce((sum, row) => sum + numberValue(row.total_cost), 0);
       const paidEarnings = laborRows.reduce((sum, row) => {
         const status = String(row.payment_status || 'unpaid').toLowerCase();
         return status === 'paid' ? sum + numberValue(row.total_cost) : sum;
@@ -169,8 +156,6 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       const earningsThisMonth = laborRows.reduce((sum, row) => {
         return rowDate(row.created_at) >= monthStart ? sum + numberValue(row.total_cost) : sum;
       }, 0);
-
-      const jobRevenueAllTime = jobs.reduce((sum, job) => sum + numberValue(job.revenue_amount), 0);
       const jobRevenueThisMonth = jobs.reduce((sum, job) => {
         const date = rowDate(job.completed_at || job.start_date || job.created_at);
         return date >= monthStart ? sum + numberValue(job.revenue_amount) : sum;
@@ -178,18 +163,12 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
 
       if (!cancelled) {
         setMetrics({
-          totalJobs: jobs.length,
           activeJobs: activeJobs.length,
-          completedJobs: completedJobs.length,
-          dueToday,
-          overdueJobs,
-          photosUploaded: photosRes.error ? 0 : photosRes.count || 0,
-          reportsCreated: reportsRes.error ? 0 : reportsRes.count || 0,
-          recordedEarnings,
+          dueToday: assignmentSummary.dueToday,
+          overdueJobs: assignmentSummary.overdue,
           paidEarnings,
           pendingPayout,
           earningsThisMonth,
-          jobRevenueAllTime,
           jobRevenueThisMonth
         });
         setLoading(false);
@@ -203,48 +182,29 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
   }, [visible]);
 
   const cards = useMemo(() => {
-    const workCards = [
-      { label: 'My active jobs', value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
-      { label: 'Due today', value: String(metrics.dueToday), href: '/schedule?mine=true' },
-      { label: 'My completed jobs, all time', value: String(metrics.completedJobs), href: '/jobs?mine=true&status=completed' },
-      { label: 'My overdue jobs', value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
-      { label: 'My photos uploaded', value: String(metrics.photosUploaded), href: '/photos?mine=true' },
-      { label: 'My reports', value: String(metrics.reportsCreated), href: '/reports?mine=true' }
-    ];
-
-    if (isManager) {
-      return [
-        ...workCards,
-        { label: 'Revenue from my jobs, this month', value: money(metrics.jobRevenueThisMonth), href: '/jobs?mine=true' },
-        { label: 'Revenue from my jobs, all time', value: money(metrics.jobRevenueAllTime), href: '/jobs?mine=true' }
-      ];
-    }
+    const moneyCard = isManager
+      ? { label: 'Money this month', value: money(metrics.jobRevenueThisMonth), href: '/jobs?mine=true' }
+      : { label: 'Pay this month', value: money(metrics.earningsThisMonth), href: '/my-work' };
 
     return [
-      ...workCards,
-      { label: 'My earnings, this month', value: money(metrics.earningsThisMonth), href: '/my-work' },
-      { label: 'My earnings paid', value: money(metrics.paidEarnings), href: '/my-work' },
-      { label: 'My pending payout', value: money(metrics.pendingPayout), href: '/my-work' },
-      { label: 'My earnings recorded, all time', value: money(metrics.recordedEarnings), href: '/my-work' }
+      { label: 'Active jobs', value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
+      { label: 'Jobs today', value: String(metrics.dueToday), href: '/schedule?mine=true' },
+      { label: 'Overdue', value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
+      moneyCard
     ];
   }, [isManager, metrics]);
 
   if (!visible) return null;
 
   return (
-    <section className="card" aria-label="My performance metrics">
+    <section className="card" aria-label="My work">
       <div className="dashboard-section-head">
-        <div>
-          <h2>My metrics</h2>
-          <p className="muted">
-            {isManager
-              ? 'Only jobs you created or manage are included. Shared access alone does not count as an assignment.'
-              : 'Only jobs assigned to you and contractor pay recorded for you are included. Shared access alone does not count as an assignment.'}
-          </p>
-        </div>
-        <Link href="/my-work" className="dashboard-section-link">Open my work</Link>
+        <h2>My work</h2>
+        <Link href="/my-work" className="dashboard-section-link">
+          View all
+        </Link>
       </div>
-      {loading ? <p className="loading-state">Loading your metrics...</p> : null}
+      {loading ? <p className="loading-state">Loading...</p> : null}
       {!loading ? (
         <div className="stats-grid">
           {cards.map((card) => (
@@ -254,6 +214,11 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
             </Link>
           ))}
         </div>
+      ) : null}
+      {!isManager && !loading && metrics.pendingPayout > 0 ? (
+        <p className="muted" style={{ marginTop: 12 }}>
+          Waiting for pay: {money(metrics.pendingPayout)} · Paid: {money(metrics.paidEarnings)}
+        </p>
       ) : null}
     </section>
   );
