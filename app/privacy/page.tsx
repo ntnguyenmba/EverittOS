@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           <li>Technical data: session cookies, device/browser metadata, and security logs.</li>
         </ul>
         <p>
-          EverittOS allows users to store and manage business information, including customer records, leads, jobs,
+          EverittOS allows users to store and manage business information, including customer records, requests, jobs,
           schedules, forms, documents, invoices, reviews, photos, notes, and other workspace content. Users are
           responsible for ensuring they have the appropriate rights and authorization to collect, store, manage, and use
           information uploaded to EverittOS.
