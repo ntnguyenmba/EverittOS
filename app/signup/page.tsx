@@ -21,18 +21,18 @@ import { getAuthFlowCopy } from '@/lib/i18n/auth-copy';
 
 const SIGNUP_API_PATH = '/api/auth/signup';
 
-const REFERRAL_OPTIONS = [
-  'Google Search',
-  'Facebook',
-  'Instagram',
-  'LinkedIn',
-  'YouTube',
-  'Reddit',
-  'Friend or colleague',
-  'Another cleaning company',
-  'Everitt Ventures',
-  'Other'
-];
+const REFERRAL_OPTION_KEYS = [
+  'googleSearch',
+  'facebook',
+  'instagram',
+  'linkedIn',
+  'youTube',
+  'reddit',
+  'friendOrColleague',
+  'anotherCleaningCompany',
+  'everittVentures',
+  'other'
+] as const;
 
 function signupRedirect(plan: EverittosPlan, next: string): string {
   if (plan !== 'free') {
@@ -51,7 +51,7 @@ function SignupForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [referralSource, setReferralSource] = useState(referralCode ? 'Referral code' : '');
+  const [referralSource, setReferralSource] = useState(referralCode ? 'referralCode' : '');
   const [referralDetail, setReferralDetail] = useState(referralCode);
   const urlError = useMemo(() => {
     const message = searchParams.get('error');
@@ -71,6 +71,16 @@ function SignupForm() {
   const { t, locale } = useTranslation();
   const copy = getAuthFlowCopy(locale).signup;
   const signupUrl = resolveClientApiUrl(SIGNUP_API_PATH);
+  const referralOptions = REFERRAL_OPTION_KEYS.map((key) => ({
+    key,
+    label: copy.referralOptions[key]
+  }));
+
+  function referralSourceLabel(value: string): string {
+    if (value === 'referralCode') return copy.referralCode;
+    const match = referralOptions.find((option) => option.key === value);
+    return match?.label || value;
+  }
 
   const loginHref = `/login?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
 
@@ -130,7 +140,7 @@ function SignupForm() {
           password,
           businessName: businessName.trim(),
           selectedPlan,
-          referralSource: referralSource.trim(),
+          referralSource: referralSourceLabel(referralSource.trim()),
           referralDetail: referralDetail.trim(),
           referralCode,
           next: redirectTarget.startsWith('http') ? next : redirectTarget
@@ -184,7 +194,7 @@ function SignupForm() {
       {selectedPlan !== 'free' ? (
         <>
           <p className="auth-plan-note">
-            You selected <strong>{planDisplayName(selectedPlan)}</strong>. After signup you can finish checkout for that plan.
+            {copy.planSelectedNote.replace('{plan}', planDisplayName(selectedPlan))}
           </p>
           <NoRefundDisclosure variant="card" className="auth-plan-refund-note" />
         </>
@@ -195,27 +205,49 @@ function SignupForm() {
       <form className="auth-form card" onSubmit={createAccount}>
         <div className="auth-field">
           <label htmlFor="business_name">
-            {copy.businessName} ({copy.businessNameOptional})
+            {copy.businessName} ({copy.optional})
           </label>
-          <input id="business_name" className="input" placeholder={copy.businessNameOptional} value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+          <input
+            id="business_name"
+            className="input"
+            placeholder={copy.businessNamePlaceholder}
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+          />
         </div>
 
         <div className="auth-field">
           <label htmlFor="signup_referral_source">
-            {copy.howDidYouHear} ({copy.businessNameOptional})
+            {copy.howDidYouHear} ({copy.optional})
           </label>
-          <select id="signup_referral_source" className="input" value={referralSource} onChange={(e) => setReferralSource(e.target.value)}>
-            <option value="" />
-            {referralCode ? <option value="Referral code">Referral code</option> : null}
-            {REFERRAL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          <select
+            id="signup_referral_source"
+            className="input"
+            value={referralSource}
+            onChange={(e) => setReferralSource(e.target.value)}
+          >
+            <option value="" disabled>
+              {copy.selectOne}
+            </option>
+            {referralCode ? <option value="referralCode">{copy.referralCode}</option> : null}
+            {referralOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="auth-field">
           <label htmlFor="signup_referral_detail">
-            {copy.howDidYouHear} ({copy.businessNameOptional})
+            {copy.referralDetails} ({copy.optional})
           </label>
-          <input id="signup_referral_detail" className="input" value={referralDetail} onChange={(e) => setReferralDetail(e.target.value)} />
+          <input
+            id="signup_referral_detail"
+            className="input"
+            value={referralDetail}
+            onChange={(e) => setReferralDetail(e.target.value)}
+          />
         </div>
 
         <div className="auth-field">
@@ -241,7 +273,9 @@ function SignupForm() {
         <AuthMessages error={error} success={success} />
 
         {signInRecommended ? <p className="auth-recovery-note"><Link href={loginHref}>{copy.signIn}</Link></p> : null}
-        {errorCode === 'existing_unconfirmed' ? <p className="auth-recovery-note muted">Did not get the email? Try signing in. We send another confirmation link when needed.</p> : null}
+        {errorCode === 'existing_unconfirmed' ? (
+          <p className="auth-recovery-note muted">{copy.existingUnconfirmed}</p>
+        ) : null}
 
         <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? copy.creating : copy.createAccount}</button>
       </form>

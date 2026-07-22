@@ -127,6 +127,9 @@ export type JobPaymentMetricRow = {
 export type JobRevenueRow = {
   id?: unknown;
   revenue_amount?: unknown;
+  status?: unknown;
+  title?: unknown;
+  customer_name?: unknown;
 };
 
 function formatLocalDateOnly(date: Date): string {
@@ -169,9 +172,43 @@ export function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function statusTokens(row: { payment_status?: unknown; status?: unknown }): string[] {
+  return [String(row.payment_status || '').toLowerCase(), String(row.status || '').toLowerCase()].filter(Boolean);
+}
+
+/** Invoice cancelled via payment_status or document status (either field). */
 export function isCancelledInvoice(row: { payment_status?: unknown; status?: unknown }): boolean {
-  const statusHint = String(row.payment_status || row.status || '').toLowerCase();
-  return statusHint === 'cancelled' || statusHint === 'canceled';
+  return statusTokens(row).some((value) => value === 'cancelled' || value === 'canceled');
+}
+
+const NON_COLLECTIBLE_INVOICE_STATUSES = new Set([
+  'cancelled',
+  'canceled',
+  'draft',
+  'void',
+  'voided',
+  'deleted',
+  'scheduled'
+]);
+
+/** Invoices that should never contribute to AR / expected revenue. */
+export function isNonCollectibleInvoice(row: { payment_status?: unknown; status?: unknown }): boolean {
+  return statusTokens(row).some((value) => NON_COLLECTIBLE_INVOICE_STATUSES.has(value));
+}
+
+export function isCollectibleInvoice(row: { payment_status?: unknown; status?: unknown }): boolean {
+  return !isNonCollectibleInvoice(row);
+}
+
+/** Job ids that already have an active collectible invoice (never double count). */
+export function collectibleInvoicedJobIds(invoices: InvoiceMetricRow[]): Set<string> {
+  const ids = new Set<string>();
+  for (const inv of invoices) {
+    if (!isCollectibleInvoice(inv)) continue;
+    const jobId = String(inv.job_id || '');
+    if (jobId) ids.add(jobId);
+  }
+  return ids;
 }
 
 export function invoiceDate(row: { invoice_date?: unknown; created_at?: unknown }): string {
@@ -201,19 +238,19 @@ function daysBetween(startValue: unknown, endValue: unknown): number | null {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000));
 }
 
-/** Customer invoices = non-cancelled invoice totals created in the selected period. */
+/** Customer invoices = collectible invoice totals created in the selected period. */
 export function calculateCustomerInvoices(
   invoices: InvoiceMetricRow[],
   start: string | null,
   end: string | null
 ): number {
   return invoices.reduce((sum, inv) => {
-    if (isCancelledInvoice(inv)) return sum;
+    if (!isCollectibleInvoice(inv)) return sum;
     return inRange(invoiceDate(inv), start, end) ? sum + num(inv.amount) : sum;
   }, 0);
 }
 
-/** Still owed on non-invoiced jobs with an expected amount set. */
+/** Still owed on eligible uninvoiced jobs with a positive expected amount. */
 export function calculateDirectJobOutstanding(
   jobs: JobRevenueRow[],
   invoicedJobIds: Set<string>,
@@ -223,6 +260,8 @@ export function calculateDirectJobOutstanding(
   for (const job of jobs) {
     const jobId = String(job.id || '');
     if (!jobId || invoicedJobIds.has(jobId)) continue;
+    const status = String(job.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'canceled') continue;
     const expected = num(job.revenue_amount);
     if (expected <= 0) continue;
     const collected = collectedByJobId.get(jobId) || 0;
@@ -241,15 +280,101 @@ export function sumJobPaymentsByJobId(rows: JobPaymentMetricRow[]): Map<string, 
   return map;
 }
 
-/** Still owed = current unpaid balances on non-cancelled invoices. */
+/** Still owed = unpaid balances on collectible invoices only. */
 export function calculateStillOwed(invoices: InvoiceMetricRow[]): number {
   return invoices.reduce((sum, inv) => {
-    if (isCancelledInvoice(inv)) return sum;
+    if (!isCollectibleInvoice(inv)) return sum;
     return sum + remainingBalance(inv.amount, inv.amount_paid);
   }, 0);
 }
 
-/** Late payments = current overdue unpaid balances. */
+export type OutstandingBreakdownRow = {
+  id: string;
+  sourceType: 'invoice' | 'job';
+  title: string;
+  customerName: string | null;
+  expectedOrInvoiced: number;
+  amountPaid: number;
+  amountOwed: number;
+  invoiceStatus: string | null;
+  dueDate: string | null;
+  href: string;
+};
+
+/**
+ * Single source of truth for Outstanding.
+ * Dashboard card total and drill-down rows must use this helper.
+ */
+export function calculateOutstandingBreakdown(input: {
+  invoices: InvoiceMetricRow[];
+  jobs: JobRevenueRow[];
+  jobPayments: JobPaymentMetricRow[];
+  jobLookup?: Map<string, { title?: unknown; customer_name?: unknown }>;
+}): { total: number; rows: OutstandingBreakdownRow[]; invoiceTotal: number; jobTotal: number } {
+  const invoicedJobIds = collectibleInvoicedJobIds(input.invoices);
+  const collectedByJob = sumJobPaymentsByJobId(input.jobPayments);
+  const rows: OutstandingBreakdownRow[] = [];
+
+  let invoiceTotal = 0;
+  for (const inv of input.invoices) {
+    if (!isCollectibleInvoice(inv)) continue;
+    const owed = remainingBalance(inv.amount, inv.amount_paid);
+    if (owed <= 0) continue;
+    invoiceTotal += owed;
+    const paid = cappedAmountPaid(inv.amount, inv.amount_paid);
+    const jobId = inv.job_id ? String(inv.job_id) : '';
+    const job = jobId && input.jobLookup ? input.jobLookup.get(jobId) : null;
+    rows.push({
+      id: String(inv.id || ''),
+      sourceType: 'invoice',
+      title: String(job?.title || job?.customer_name || 'Invoice'),
+      customerName: job?.customer_name ? String(job.customer_name) : null,
+      expectedOrInvoiced: Number(num(inv.amount).toFixed(2)),
+      amountPaid: Number(paid.toFixed(2)),
+      amountOwed: Number(owed.toFixed(2)),
+      invoiceStatus: String(inv.payment_status || inv.status || 'unpaid'),
+      dueDate: inv.due_date ? String(inv.due_date).slice(0, 10) : null,
+      href: jobId ? `/jobs/${jobId}` : '/invoices?payment=unpaid&focus=outstanding'
+    });
+  }
+
+  let jobTotal = 0;
+  for (const job of input.jobs) {
+    const jobId = String(job.id || '');
+    if (!jobId || invoicedJobIds.has(jobId)) continue;
+    const status = String(job.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'canceled') continue;
+    const expected = num(job.revenue_amount);
+    if (expected <= 0) continue;
+    const paid = collectedByJob.get(jobId) || 0;
+    const owed = Math.max(0, expected - paid);
+    if (owed <= 0) continue;
+    jobTotal += owed;
+    rows.push({
+      id: jobId,
+      sourceType: 'job',
+      title: String(job.title || job.customer_name || 'Job'),
+      customerName: job.customer_name ? String(job.customer_name) : null,
+      expectedOrInvoiced: Number(expected.toFixed(2)),
+      amountPaid: Number(paid.toFixed(2)),
+      amountOwed: Number(owed.toFixed(2)),
+      invoiceStatus: null,
+      dueDate: null,
+      href: `/jobs/${jobId}`
+    });
+  }
+
+  invoiceTotal = Number(invoiceTotal.toFixed(2));
+  jobTotal = Number(jobTotal.toFixed(2));
+  return {
+    total: Number((invoiceTotal + jobTotal).toFixed(2)),
+    rows,
+    invoiceTotal,
+    jobTotal
+  };
+}
+
+/** Late payments = current overdue unpaid balances on collectible invoices. */
 export function calculateLatePayments(invoices: InvoiceMetricRow[], today = todayIso()): {
   amount: number;
   count: number;
@@ -257,7 +382,7 @@ export function calculateLatePayments(invoices: InvoiceMetricRow[], today = toda
   let amount = 0;
   let count = 0;
   for (const inv of invoices) {
-    if (isCancelledInvoice(inv)) continue;
+    if (!isCollectibleInvoice(inv)) continue;
     const balance = remainingBalance(inv.amount, inv.amount_paid);
     if (balance <= 0) continue;
     const status = calculateInvoicePaymentStatus({
@@ -276,7 +401,7 @@ export function calculateLatePayments(invoices: InvoiceMetricRow[], today = toda
 
 export function countUnpaidInvoices(invoices: InvoiceMetricRow[]): number {
   return invoices.reduce((count, inv) => {
-    if (isCancelledInvoice(inv)) return count;
+    if (!isCollectibleInvoice(inv)) return count;
     return remainingBalance(inv.amount, inv.amount_paid) > 0 ? count + 1 : count;
   }, 0);
 }
@@ -294,11 +419,11 @@ export function calculatePaidToYou(input: {
   range: DashboardDateRange;
 }): { paidToYou: number; paymentsMissingDates: number } {
   const { invoices, paymentRows, jobPaymentRows = [], start, end, range } = input;
-  const cancelledInvoiceIds = new Set(
-    invoices.filter((inv) => isCancelledInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
+  const nonCollectibleInvoiceIds = new Set(
+    invoices.filter((inv) => !isCollectibleInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
   );
   const activeInvoiceIds = new Set(
-    invoices.filter((inv) => !isCancelledInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
+    invoices.filter((inv) => isCollectibleInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
   );
 
   let paidToYou = 0;
@@ -306,7 +431,7 @@ export function calculatePaidToYou(input: {
 
   for (const row of paymentRows) {
     const invoiceId = String(row.invoice_id || '');
-    if (invoiceId && cancelledInvoiceIds.has(invoiceId)) continue;
+    if (invoiceId && nonCollectibleInvoiceIds.has(invoiceId)) continue;
     if (invoiceId && activeInvoiceIds.size > 0 && !activeInvoiceIds.has(invoiceId)) {
       // Payment belongs to an invoice outside this org/result set.
       continue;
@@ -325,7 +450,7 @@ export function calculatePaidToYou(input: {
 
   // Legacy fallback for invoices that have amount_paid but no ledger payment rows.
   for (const inv of invoices) {
-    if (isCancelledInvoice(inv)) continue;
+    if (!isCollectibleInvoice(inv)) continue;
     const invoiceId = String(inv.id || '');
     if (invoiceId && invoicesWithLedger.has(invoiceId)) continue;
 
@@ -724,7 +849,9 @@ export async function fetchDashboardRevenueMetrics(
       .eq('organization_id', organizationId),
     supabase
       .from('jobs')
-      .select('id, revenue_amount, created_at, start_date, scheduled_start, completed_at, status')
+      .select(
+        'id, title, customer_name, revenue_amount, created_at, start_date, scheduled_start, completed_at, status'
+      )
       .eq('organization_id', organizationId)
       .not('revenue_amount', 'is', null),
     supabase
@@ -800,10 +927,13 @@ export async function fetchDashboardRevenueMetrics(
     invoicesRes.error || expensesRes.error || manualRevenueJobsRes.error || laborRes.error
   );
 
-  const invoicedJobIds = new Set<string>();
-  for (const inv of invoices) {
-    if (inv.job_id) invoicedJobIds.add(String(inv.job_id));
-  }
+  const revenueJobs = safeData(manualRevenueJobsRes, []) as JobRevenueRow[];
+  const invoicedJobIds = collectibleInvoicedJobIds(invoices);
+  const outstandingBreakdown = calculateOutstandingBreakdown({
+    invoices,
+    jobs: revenueJobs,
+    jobPayments: jobPaymentRows
+  });
 
   const customerInvoices = calculateCustomerInvoices(invoices, start, end);
   const { paidToYou, paymentsMissingDates } = calculatePaidToYou({
@@ -814,19 +944,13 @@ export async function fetchDashboardRevenueMetrics(
     end,
     range
   });
-  const invoiceStillOwed = calculateStillOwed(invoices);
-  const directJobOutstanding = calculateDirectJobOutstanding(
-    safeData(manualRevenueJobsRes, []) as JobRevenueRow[],
-    invoicedJobIds,
-    sumJobPaymentsByJobId(jobPaymentRows)
-  );
-  const stillOwed = Number((invoiceStillOwed + directJobOutstanding).toFixed(2));
+  const stillOwed = outstandingBreakdown.total;
   const late = calculateLatePayments(invoices, today);
   const outstandingInvoiceCount = countUnpaidInvoices(invoices);
 
   const paymentDurations: number[] = [];
   for (const inv of invoices) {
-    if (isCancelledInvoice(inv)) continue;
+    if (!isCollectibleInvoice(inv)) continue;
     const amount = num(inv.amount);
     const paid = cappedAmountPaid(inv.amount, inv.amount_paid);
     const paidDate = paymentDate(inv);

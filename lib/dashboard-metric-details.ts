@@ -4,12 +4,13 @@ import {
   calculateCashAfterPaidCosts,
   calculateEstimatedProfit,
   calculateExpectedRevenue,
+  calculateOutstandingBreakdown,
   calculatePaidToYou,
-  calculateStillOwed,
   calculateUninvoicedExpectedRevenue,
   cappedAmountPaid,
+  collectibleInvoicedJobIds,
   inRange,
-  isCancelledInvoice,
+  isCollectibleInvoice,
   num,
   rangeBounds,
   remainingBalance,
@@ -17,7 +18,8 @@ import {
   type InvoiceMetricRow,
   type InvoicePaymentRow,
   type JobExpectedRevenueRow,
-  type JobPaymentMetricRow
+  type JobPaymentMetricRow,
+  type JobRevenueRow
 } from '@/lib/dashboard-metrics';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import {
@@ -159,7 +161,7 @@ export async function fetchDashboardMetricDetails(
     for (const payment of invoicePayments) {
       if (range !== 'all_time' && !inRange(payment.paid_at, start, end)) continue;
       const invoice = invoiceMap.get(String(payment.invoice_id || ''));
-      if (invoice && isCancelledInvoice(invoice)) continue;
+      if (invoice && !isCollectibleInvoice(invoice)) continue;
       const job = invoice?.job_id ? jobs.get(String(invoice.job_id)) : null;
       invoiceRows.push({
         id: String(payment.id || `${payment.invoice_id}-${payment.paid_at}`),
@@ -237,19 +239,12 @@ export async function fetchDashboardMetricDetails(
     const invoices = (invoicesRes.data || []) as InvoiceMetricRow[];
     const jobs = new Map((jobsRes.data || []).map((job) => [String(job.id), job]));
     const jobPayments = (jobPaymentsRes.data || []) as JobPaymentMetricRow[];
-    const invoicedJobIds = new Set(invoices.map((inv) => String(inv.job_id || '')).filter(Boolean));
-    const collectedByJob = new Map<string, number>();
-    for (const payment of jobPayments) {
-      const jobId = String(payment.job_id || '');
-      if (!jobId) continue;
-      collectedByJob.set(jobId, Number(((collectedByJob.get(jobId) || 0) + num(payment.amount)).toFixed(2)));
-    }
 
     if (metric === 'invoiced') {
       const rows: DashboardDetailRow[] = [];
       let total = 0;
       for (const inv of invoices) {
-        if (isCancelledInvoice(inv)) continue;
+        if (!isCollectibleInvoice(inv)) continue;
         const booked = String(inv.invoice_date || inv.created_at || '').slice(0, 10);
         if (range !== 'all_time' && !inRange(booked, start, end)) continue;
         const amount = num(inv.amount);
@@ -283,7 +278,7 @@ export async function fetchDashboardMetricDetails(
       const rows: DashboardDetailRow[] = [];
       let total = 0;
       for (const inv of invoices) {
-        if (isCancelledInvoice(inv)) continue;
+        if (!isCollectibleInvoice(inv)) continue;
         const balance = remainingBalance(inv.amount, inv.amount_paid);
         if (balance <= 0) continue;
         if (metric === 'late') {
@@ -322,67 +317,51 @@ export async function fetchDashboardMetricDetails(
       );
     }
 
-    // outstanding
+    // outstanding — shared helper so card total always equals drill-down sum
+    const breakdown = calculateOutstandingBreakdown({
+      invoices,
+      jobs: (jobsRevenueRes.data || []) as JobRevenueRow[],
+      jobPayments,
+      jobLookup: jobs
+    });
     const invoiceRows: DashboardDetailRow[] = [];
-    let invoiceTotal = 0;
-    for (const inv of invoices) {
-      if (isCancelledInvoice(inv)) continue;
-      const balance = remainingBalance(inv.amount, inv.amount_paid);
-      if (balance <= 0) continue;
-      invoiceTotal += balance;
-      const job = inv.job_id ? jobs.get(String(inv.job_id)) : null;
-      invoiceRows.push({
-        id: String(inv.id),
-        title: job?.title || job?.customer_name || 'Invoice',
-        subtitle: `Invoice remaining ${money(balance)}`,
-        amount: balance,
-        amountLabel: money(balance),
-        href: '/invoices?payment=unpaid&focus=outstanding',
-        badge: 'Invoice'
-      });
-    }
-
     const jobRows: DashboardDetailRow[] = [];
-    let jobTotal = 0;
-    for (const job of jobsRevenueRes.data || []) {
-      if (isCancelledJobStatus(job.status)) continue;
-      const jobId = String(job.id);
-      if (invoicedJobIds.has(jobId)) continue;
-      const expected = num(job.revenue_amount);
-      if (expected <= 0) continue;
-      const collected = collectedByJob.get(jobId) || 0;
-      const balance = Math.max(0, expected - collected);
-      if (balance <= 0) continue;
-      jobTotal += balance;
-      jobRows.push({
-        id: jobId,
-        title: job.title || job.customer_name || 'Job',
-        subtitle: `Expected ${money(expected)} · Collected ${money(collected)}`,
-        amount: balance,
-        amountLabel: money(balance),
-        href: `/jobs/${jobId}`,
-        badge: 'Uninvoiced job'
-      });
+    for (const row of breakdown.rows) {
+      const detail: DashboardDetailRow = {
+        id: row.id,
+        title: row.customerName ? `${row.customerName} · ${row.title}` : row.title,
+        subtitle:
+          row.sourceType === 'invoice'
+            ? `Invoice · Expected/invoiced ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)}${
+                row.dueDate ? ` · Due ${dateLabel(row.dueDate)}` : ''
+              }${row.invoiceStatus ? ` · ${row.invoiceStatus}` : ''}`
+            : `No invoice · Expected ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)}`,
+        amount: row.amountOwed,
+        amountLabel: money(row.amountOwed),
+        href: row.href,
+        badge: row.sourceType === 'invoice' ? 'Invoice' : 'No invoice'
+      };
+      if (row.sourceType === 'invoice') invoiceRows.push(detail);
+      else jobRows.push(detail);
     }
 
-    const stillOwed = calculateStillOwed(invoices) + jobTotal;
     return empty(
-      'Outstanding = unpaid invoice balances + expected amounts on uninvoiced jobs minus direct payments.',
+      'Outstanding = money customers still owe: unpaid collectible invoice balances plus unpaid expected amounts on jobs without an invoice.',
       [
         {
           id: 'unpaid-invoices',
           title: 'Unpaid invoices',
-          formula: 'Invoice total minus payments',
-          total: Number(invoiceTotal.toFixed(2)),
-          totalLabel: money(invoiceTotal),
+          formula: `Exact total ${money(breakdown.total)} · Invoice share ${money(breakdown.invoiceTotal)}`,
+          total: breakdown.invoiceTotal,
+          totalLabel: money(breakdown.invoiceTotal),
           rows: invoiceRows
         },
         {
           id: 'uninvoiced-jobs',
           title: 'Uninvoiced job balances',
-          formula: 'Expected job amount minus direct payments',
-          total: Number(jobTotal.toFixed(2)),
-          totalLabel: money(jobTotal),
+          formula: `Job share ${money(breakdown.jobTotal)}`,
+          total: breakdown.jobTotal,
+          totalLabel: money(breakdown.jobTotal),
           rows: jobRows
         }
       ]
@@ -513,14 +492,12 @@ export async function fetchDashboardMetricDetails(
     const laborRows = (laborRes.data || []).filter((row) => range === 'all_time' || inRange(row.created_at, start, end));
     const contractorCost = laborRows.reduce((sum, row) => sum + num(row.total_cost), 0);
     const invoiced = invoices.reduce((sum, inv) => {
-      if (isCancelledInvoice(inv)) return sum;
+      if (!isCollectibleInvoice(inv)) return sum;
       return range === 'all_time' || inRange(inv.invoice_date || inv.created_at, start, end)
         ? sum + num(inv.amount)
         : sum;
     }, 0);
-    const invoicedJobIds = new Set(
-      invoices.map((inv) => String(inv.job_id || '')).filter(Boolean)
-    );
+    const invoicedJobIds = collectibleInvoicedJobIds(invoices);
     const uninvoiced = calculateUninvoicedExpectedRevenue(
       (manualJobsRes.data || []) as JobExpectedRevenueRow[],
       invoicedJobIds,

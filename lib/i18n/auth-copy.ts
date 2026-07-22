@@ -20,8 +20,24 @@ export type AuthFlowCopy = {
     passwordPlaceholder: string;
     confirmPassword: string;
     businessName: string;
-    businessNameOptional: string;
+    businessNamePlaceholder: string;
+    optional: string;
     howDidYouHear: string;
+    referralDetails: string;
+    referralCode: string;
+    selectOne: string;
+    referralOptions: {
+      googleSearch: string;
+      facebook: string;
+      instagram: string;
+      linkedIn: string;
+      youTube: string;
+      reddit: string;
+      friendOrColleague: string;
+      anotherCleaningCompany: string;
+      everittVentures: string;
+      other: string;
+    };
     creating: string;
     createAccount: string;
     alreadyHaveAccount: string;
@@ -30,6 +46,8 @@ export type AuthFlowCopy = {
     passwordTooShort: string;
     passwordsDoNotMatch: string;
     tooManyAttempts: string;
+    existingUnconfirmed: string;
+    planSelectedNote: string;
   };
   forgot: {
     title: string;
@@ -77,9 +95,25 @@ const en: AuthFlowCopy = {
     password: 'Password',
     passwordPlaceholder: 'Minimum 6 characters',
     confirmPassword: 'Confirm password',
-    businessName: 'Business name',
-    businessNameOptional: 'Optional',
+    businessName: 'Business or display name',
+    businessNamePlaceholder: 'Your business name',
+    optional: 'Optional',
     howDidYouHear: 'How did you hear about us?',
+    referralDetails: 'Referral details',
+    referralCode: 'Referral code',
+    selectOne: 'Select one',
+    referralOptions: {
+      googleSearch: 'Google Search',
+      facebook: 'Facebook',
+      instagram: 'Instagram',
+      linkedIn: 'LinkedIn',
+      youTube: 'YouTube',
+      reddit: 'Reddit',
+      friendOrColleague: 'Friend or colleague',
+      anotherCleaningCompany: 'Another cleaning company',
+      everittVentures: 'Everitt Ventures',
+      other: 'Other'
+    },
     creating: 'Creating account...',
     createAccount: 'Create account',
     alreadyHaveAccount: 'Already have an account?',
@@ -87,7 +121,10 @@ const en: AuthFlowCopy = {
     emailPasswordRequired: 'Email and password are required.',
     passwordTooShort: 'Password must be at least 6 characters.',
     passwordsDoNotMatch: 'Passwords do not match.',
-    tooManyAttempts: 'Too many signup attempts. Wait an hour and try again.'
+    tooManyAttempts: 'Too many signup attempts. Wait an hour and try again.',
+    existingUnconfirmed:
+      'Did not get the email? Try signing in. We send another confirmation link when needed.',
+    planSelectedNote: 'You selected {plan}. After signup you can finish checkout for that plan.'
   },
   forgot: {
     title: 'Reset password',
@@ -136,9 +173,25 @@ const es: AuthFlowCopy = {
     password: 'Contraseña',
     passwordPlaceholder: 'Mínimo 6 caracteres',
     confirmPassword: 'Confirmar contraseña',
-    businessName: 'Nombre del negocio',
-    businessNameOptional: 'Opcional',
+    businessName: 'Nombre comercial o de visualización',
+    businessNamePlaceholder: 'Nombre de su negocio',
+    optional: 'Opcional',
     howDidYouHear: '¿Cómo se enteró de nosotros?',
+    referralDetails: 'Detalles de referencia',
+    referralCode: 'Código de referencia',
+    selectOne: 'Seleccione uno',
+    referralOptions: {
+      googleSearch: 'Búsqueda de Google',
+      facebook: 'Facebook',
+      instagram: 'Instagram',
+      linkedIn: 'LinkedIn',
+      youTube: 'YouTube',
+      reddit: 'Reddit',
+      friendOrColleague: 'Amigo o colega',
+      anotherCleaningCompany: 'Otra empresa de limpieza',
+      everittVentures: 'Everitt Ventures',
+      other: 'Otro'
+    },
     creating: 'Creando cuenta...',
     createAccount: 'Crear cuenta',
     alreadyHaveAccount: '¿Ya tiene una cuenta?',
@@ -146,7 +199,10 @@ const es: AuthFlowCopy = {
     emailPasswordRequired: 'El correo y la contraseña son obligatorios.',
     passwordTooShort: 'La contraseña debe tener al menos 6 caracteres.',
     passwordsDoNotMatch: 'Las contraseñas no coinciden.',
-    tooManyAttempts: 'Demasiados intentos de registro. Espere una hora e intente de nuevo.'
+    tooManyAttempts: 'Demasiados intentos de registro. Espere una hora e intente de nuevo.',
+    existingUnconfirmed:
+      '¿No recibió el correo? Intente iniciar sesión. Enviamos otro enlace de confirmación cuando hace falta.',
+    planSelectedNote: 'Seleccionó {plan}. Después del registro puede completar el pago de ese plan.'
   },
   forgot: {
     title: 'Restablecer contraseña',
@@ -195,9 +251,25 @@ const vi: AuthFlowCopy = {
     password: 'Mật khẩu',
     passwordPlaceholder: 'Tối thiểu 6 ký tự',
     confirmPassword: 'Xác nhận mật khẩu',
-    businessName: 'Tên doanh nghiệp',
-    businessNameOptional: 'Không bắt buộc',
+    businessName: 'Tên doanh nghiệp hoặc tên hiển thị',
+    businessNamePlaceholder: 'Tên doanh nghiệp của bạn',
+    optional: 'Không bắt buộc',
     howDidYouHear: 'Bạn biết đến chúng tôi từ đâu?',
+    referralDetails: 'Chi tiết giới thiệu',
+    referralCode: 'Mã giới thiệu',
+    selectOne: 'Chọn một',
+    referralOptions: {
+      googleSearch: 'Tìm kiếm Google',
+      facebook: 'Facebook',
+      instagram: 'Instagram',
+      linkedIn: 'LinkedIn',
+      youTube: 'YouTube',
+      reddit: 'Reddit',
+      friendOrColleague: 'Bạn bè hoặc đồng nghiệp',
+      anotherCleaningCompany: 'Công ty vệ sinh khác',
+      everittVentures: 'Everitt Ventures',
+      other: 'Khác'
+    },
     creating: 'Đang tạo tài khoản...',
     createAccount: 'Tạo tài khoản',
     alreadyHaveAccount: 'Đã có tài khoản?',
@@ -205,7 +277,10 @@ const vi: AuthFlowCopy = {
     emailPasswordRequired: 'Cần có email và mật khẩu.',
     passwordTooShort: 'Mật khẩu phải có ít nhất 6 ký tự.',
     passwordsDoNotMatch: 'Mật khẩu không khớp.',
-    tooManyAttempts: 'Quá nhiều lần đăng ký. Hãy đợi một giờ rồi thử lại.'
+    tooManyAttempts: 'Quá nhiều lần đăng ký. Hãy đợi một giờ rồi thử lại.',
+    existingUnconfirmed:
+      'Không nhận được email? Hãy thử đăng nhập. Chúng tôi sẽ gửi lại liên kết xác nhận khi cần.',
+    planSelectedNote: 'Bạn đã chọn {plan}. Sau khi đăng ký bạn có thể hoàn tất thanh toán cho gói đó.'
   },
   forgot: {
     title: 'Đặt lại mật khẩu',

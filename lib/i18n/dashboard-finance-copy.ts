@@ -124,7 +124,7 @@ const en: DashboardFinanceCopy = {
   metricTitles: {
     collected: 'Collected',
     invoiced: 'Invoiced',
-    outstanding: 'Outstanding balance',
+    outstanding: 'Outstanding',
     late: 'Late payments',
     'unpaid-invoices': 'Unpaid invoices',
     'net-cash': 'Cash after paid costs',
@@ -140,9 +140,9 @@ const en: DashboardFinanceCopy = {
   formulas: {
     collected:
       'Collected = invoice payments + direct job payments in the selected period. The same payment is never counted twice.',
-    invoiced: 'Invoiced = non-cancelled invoice totals created in the selected period.',
+    invoiced: 'Invoiced = collectible invoice totals created in the selected period.',
     outstanding:
-      'Outstanding = unpaid invoice balances + expected amounts on uninvoiced jobs minus direct payments.',
+      'Outstanding = money customers still owe: unpaid collectible invoice balances plus unpaid expected amounts on jobs without an invoice.',
     late: 'Late = unpaid invoice balances past their due date.',
     'unpaid-invoices': 'Unpaid invoices = invoices with a remaining balance.',
     'net-cash':
@@ -188,8 +188,7 @@ const en: DashboardFinanceCopy = {
     collectedHelp:
       'Client payments actually received in this period from invoices and direct job payments.',
     outstanding: 'Outstanding',
-    outstandingHelp:
-      'Unpaid invoice balances plus unpaid expected amounts on jobs without an invoice.',
+    outstandingHelp: 'Money customers still owe you.',
     invoiced: 'Invoiced',
     invoicedHelp: 'Total of non-cancelled invoices created during this period.',
     netCash: 'Cash after paid costs',
@@ -207,20 +206,17 @@ const en: DashboardFinanceCopy = {
     averageDaysHelpEmpty:
       'This appears after at least one invoice has an invoice date, is fully paid, and has a recorded payment date.',
     contractorCost: 'Contractor cost',
-    contractorCostHelp:
-      'Contractor cost recorded for this period, whether already paid or still owed.',
+    contractorCostHelp: 'Total contractor labor recorded for this period.',
     contractorPay: 'Contractor cost',
-    contractorPayHelp:
-      'Contractor cost recorded for this period, whether already paid or still owed.',
+    contractorPayHelp: 'Total contractor labor recorded for this period.',
     contractorPayOwed: 'Contractor pay owed',
-    contractorPayOwedHelp: 'Contractor pay recorded but not yet marked paid or pending.',
+    contractorPayOwedHelp: 'Contractor labor not yet marked paid.',
     contractorPayPending: 'Contractor pay pending',
     contractorPayPendingHelp: 'Contractor pay marked pending but not yet marked paid.',
     otherExpenses: 'Other expenses',
     otherExpensesHelp: 'Non-contractor expenses dated in the selected period.',
     expectedProfit: 'Expected profit',
-    expectedProfitHelp:
-      'Expected revenue minus contractor cost incurred minus other recorded expenses. This is not the same as cash in the bank.',
+    expectedProfitHelp: 'Expected revenue minus contractor cost and other expenses.',
     cashAfterCosts: 'Cash after paid costs',
     cashAfterCostsHelp:
       'Payments actually received minus contractor payments actually paid minus expenses actually paid.',
@@ -294,7 +290,7 @@ const es: DashboardFinanceCopy = {
   metricTitles: {
     collected: 'Cobrado',
     invoiced: 'Facturado',
-    outstanding: 'Saldo pendiente',
+    outstanding: 'Pendiente',
     late: 'Pagos atrasados',
     'unpaid-invoices': 'Facturas sin pagar',
     'net-cash': 'Efectivo después de costos pagados',
@@ -359,8 +355,7 @@ const es: DashboardFinanceCopy = {
     collectedHelp:
       'Pagos de clientes realmente recibidos en este período por facturas y pagos directos.',
     outstanding: 'Pendiente',
-    outstandingHelp:
-      'Saldos de facturas sin pagar más montos esperados de trabajos sin factura.',
+    outstandingHelp: 'Dinero que los clientes aún le deben.',
     invoiced: 'Facturado',
     invoicedHelp: 'Total de facturas no canceladas creadas en este período.',
     netCash: 'Efectivo después de costos pagados',
@@ -374,17 +369,14 @@ const es: DashboardFinanceCopy = {
     averageDays: 'Tiempo promedio para cobrar',
     averageDaysNone: 'Aún no hay facturas pagadas por completo',
     contractorCost: 'Costo de contratistas',
-    contractorCostHelp:
-      'Costo de contratistas registrado en este período, pagado o aún adeudado.',
+    contractorCostHelp: 'Total de mano de obra de contratistas registrada en este período.',
     contractorPay: 'Costo de contratistas',
-    contractorPayHelp:
-      'Costo de contratistas registrado en este período, pagado o aún adeudado.',
+    contractorPayHelp: 'Total de mano de obra de contratistas registrada en este período.',
     contractorPayOwed: 'Pago a contratistas adeudado',
     contractorPayPending: 'Pago a contratistas pendiente',
     otherExpenses: 'Otros gastos',
     expectedProfit: 'Ganancia esperada',
-    expectedProfitHelp:
-      'Ingresos esperados menos costo de contratistas menos otros gastos registrados. No es lo mismo que el efectivo en banco.',
+    expectedProfitHelp: 'Ingresos esperados menos costo de contratistas y otros gastos.',
     cashAfterCosts: 'Efectivo después de costos pagados',
     cashAfterCostsHelp:
       'Pagos recibidos menos pagos a contratistas pagados menos gastos pagados.',
@@ -449,7 +441,7 @@ const vi: DashboardFinanceCopy = {
   metricTitles: {
     collected: 'Đã thu',
     invoiced: 'Đã xuất hóa đơn',
-    outstanding: 'Số dư chưa thu',
+    outstanding: 'Còn nợ',
     late: 'Thanh toán quá hạn',
     'unpaid-invoices': 'Hóa đơn chưa thanh toán',
     'net-cash': 'Tiền mặt sau chi phí đã trả',
@@ -513,7 +505,7 @@ const vi: DashboardFinanceCopy = {
     collected: 'Đã thu',
     collectedHelp: 'Tiền khách thực nhận trong kỳ từ hóa đơn và thanh toán trực tiếp.',
     outstanding: 'Còn nợ',
-    outstandingHelp: 'Số dư hóa đơn chưa trả cộng số tiền dự kiến của việc chưa có hóa đơn.',
+    outstandingHelp: 'Số tiền khách hàng vẫn còn nợ bạn.',
     invoiced: 'Đã xuất hóa đơn',
     netCash: 'Tiền mặt sau chi phí đã trả',
     netCashHelp: 'Tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
@@ -523,15 +515,14 @@ const vi: DashboardFinanceCopy = {
     averageDays: 'Thời gian trung bình để thu tiền',
     averageDaysNone: 'Chưa có hóa đơn thanh toán đủ',
     contractorCost: 'Chi phí thầu phụ',
-    contractorCostHelp: 'Chi phí thầu phụ ghi nhận trong kỳ, dù đã trả hay còn nợ.',
+    contractorCostHelp: 'Tổng chi phí nhân công thầu phụ ghi nhận trong kỳ này.',
     contractorPay: 'Chi phí thầu phụ',
-    contractorPayHelp: 'Chi phí thầu phụ ghi nhận trong kỳ, dù đã trả hay còn nợ.',
+    contractorPayHelp: 'Tổng chi phí nhân công thầu phụ ghi nhận trong kỳ này.',
     contractorPayOwed: 'Còn nợ thầu phụ',
     contractorPayPending: 'Thầu phụ đang chờ',
     otherExpenses: 'Chi phí khác',
     expectedProfit: 'Lợi nhuận dự kiến',
-    expectedProfitHelp:
-      'Doanh thu dự kiến trừ chi phí thầu phụ trừ chi phí khác đã ghi nhận. Không phải số tiền trong ngân hàng.',
+    expectedProfitHelp: 'Doanh thu dự kiến trừ chi phí thầu phụ và chi phí khác.',
     cashAfterCosts: 'Tiền mặt sau chi phí đã trả',
     cashAfterCostsHelp: 'Tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
     expectedProfitPct: 'Tỷ lệ lợi nhuận dự kiến',

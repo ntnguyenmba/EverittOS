@@ -4,6 +4,7 @@ import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
 import { parseMoneyInput } from '@/lib/finance-format';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
@@ -78,6 +79,15 @@ export async function POST(request: Request) {
   }
 
   const date = String(body.date || '').trim() || new Date().toISOString().slice(0, 10);
+
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  if (jobError) {
+    return NextResponse.json({ error: jobError }, { status: 400 });
+  }
+  const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+  if (customerError) {
+    return NextResponse.json({ error: customerError }, { status: 400 });
+  }
 
   const { data, error } = await ctx.supabase
     .from('expenses')

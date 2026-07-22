@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { enrichOutboundDocumentPayment } from '@/lib/outbound/invoice-payment';
 import { OUTBOUND_DOC_TYPES, type OutboundDocType, type OutboundStatus } from '@/lib/outbound/types';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import {
   isMissingSchemaError,
   SCHEMA_SETUP_HINT,
@@ -91,6 +92,15 @@ export async function POST(request: Request) {
         : null;
 
   const status = body.scheduled_at ? 'scheduled' : body.status || 'draft';
+
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  if (jobError) {
+    return NextResponse.json({ error: jobError }, { status: 400 });
+  }
+  const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+  if (customerError) {
+    return NextResponse.json({ error: customerError }, { status: 400 });
+  }
 
   const { data, error } = await ctx.supabase
     .from('outbound_documents')

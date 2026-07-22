@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { logActivityServer } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { parseMoneyInput } from '@/lib/finance-format';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import {
   isMissingSchemaError,
   SCHEMA_SETUP_HINT,
@@ -56,6 +57,15 @@ export async function POST(request: Request) {
   const amountPaid = parseMoneyInput(body.amount_paid ?? body.amountPaid ?? 0);
   const status =
     amountPaid >= amount ? 'paid' : amountPaid > 0 ? 'partial' : String(body.status || 'sent').trim() || 'sent';
+
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  if (jobError) {
+    return NextResponse.json({ error: jobError }, { status: 400 });
+  }
+  const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+  if (customerError) {
+    return NextResponse.json({ error: customerError }, { status: 400 });
+  }
 
   const { data: profile } = await ctx.supabase.from('profiles').select('locale').eq('id', ctx.userId).maybeSingle();
   const documentLocale =

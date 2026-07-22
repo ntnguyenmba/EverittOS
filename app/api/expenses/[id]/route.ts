@@ -5,6 +5,7 @@ import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
 import { parseMoneyInput } from '@/lib/finance-format';
 import { isValidUuid } from '@/lib/input-validation';
+import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -62,8 +63,20 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
   if (body.payment_method !== undefined) patch.payment_method = body.payment_method?.trim() || null;
   if (body.notes !== undefined) patch.notes = body.notes?.trim() || null;
-  if (body.job_id !== undefined) patch.job_id = body.job_id || null;
-  if (body.customer_id !== undefined) patch.customer_id = body.customer_id || null;
+  if (body.job_id !== undefined) {
+    const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+    if (jobError) {
+      return NextResponse.json({ error: jobError }, { status: 400 });
+    }
+    patch.job_id = body.job_id || null;
+  }
+  if (body.customer_id !== undefined) {
+    const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
+    if (customerError) {
+      return NextResponse.json({ error: customerError }, { status: 400 });
+    }
+    patch.customer_id = body.customer_id || null;
+  }
   if (body.worker_id !== undefined) patch.worker_id = body.worker_id || null;
 
   const { data, error } = await ctx.supabase
