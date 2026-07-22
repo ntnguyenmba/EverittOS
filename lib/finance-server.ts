@@ -150,6 +150,7 @@ type JobRow = {
   customer_id: string | null;
   customer_name: string | null;
   assigned_to: string | null;
+  revenue_amount: number | null;
 };
 
 type InvoiceRow = {
@@ -165,6 +166,7 @@ type InvoiceRow = {
 };
 
 type AssignmentRow = { job_id: string; worker_id: string };
+type DirectPaymentRow = { job_id: string; amount: number; paid_at: string };
 
 export async function fetchJobProfitability(
   supabase: SupabaseClient,
@@ -222,32 +224,42 @@ export async function fetchBusinessPerformance(
   sixMonthsAgo.setDate(1);
   const rangeStart = sixMonthsAgo.toISOString().slice(0, 10);
 
-  // Canonical month KPIs — same source as the dashboard Business overview.
+  // Canonical month KPIs: same source as the dashboard Business overview.
   const dashboardMetrics = await fetchDashboardRevenueMetrics(supabase, organizationId, 'month');
 
-  const [invoicesRes, expensesRes, jobsRes, laborRes, workersRes, customersRes, assignmentsRes] =
-    await Promise.all([
-      supabase
-        .from('invoices')
-        .select('id, job_id, customer_id, amount, amount_paid, invoice_date, created_at, payment_status, status')
-        .eq('organization_id', organizationId),
-      supabase
-        .from('expenses')
-        .select('category, amount, date, job_id')
-        .eq('organization_id', organizationId)
-        .gte('date', start)
-        .lte('date', end),
-      supabase
-        .from('jobs')
-        .select('id, title, customer_id, customer_name, assigned_to')
-        .eq('organization_id', organizationId),
-      supabase.from('job_labor').select('job_id, total_cost').eq('organization_id', organizationId),
-      supabase.from('workers').select('id, name').eq('organization_id', organizationId),
-      supabase.from('customers').select('id, company_name').eq('organization_id', organizationId),
-      supabase.from('job_assignments').select('job_id, worker_id').eq('organization_id', organizationId)
-    ]);
+  const [
+    invoicesRes,
+    expensesRes,
+    jobsRes,
+    laborRes,
+    workersRes,
+    customersRes,
+    assignmentsRes,
+    directPaymentsRes
+  ] = await Promise.all([
+    supabase
+      .from('invoices')
+      .select('id, job_id, customer_id, amount, amount_paid, invoice_date, created_at, payment_status, status')
+      .eq('organization_id', organizationId),
+    supabase
+      .from('expenses')
+      .select('category, amount, date, job_id')
+      .eq('organization_id', organizationId)
+      .gte('date', start)
+      .lte('date', end),
+    supabase
+      .from('jobs')
+      .select('id, title, customer_id, customer_name, assigned_to, revenue_amount')
+      .eq('organization_id', organizationId),
+    supabase.from('job_labor').select('job_id, total_cost').eq('organization_id', organizationId),
+    supabase.from('workers').select('id, name').eq('organization_id', organizationId),
+    supabase.from('customers').select('id, company_name').eq('organization_id', organizationId),
+    supabase.from('job_assignments').select('job_id, worker_id').eq('organization_id', organizationId),
+    supabase.from('job_payments').select('job_id, amount, paid_at').eq('organization_id', organizationId)
+  ]);
 
   const invoices = (invoicesRes.data || []) as InvoiceRow[];
+  const directPayments = (directPaymentsRes.data || []) as DirectPaymentRow[];
   const revenueThisMonth = dashboardMetrics.customerInvoices;
   const paymentsThisMonth = dashboardMetrics.paidToYou;
   const outstandingInvoices = dashboardMetrics.stillOwed;
@@ -256,9 +268,7 @@ export async function fetchBusinessPerformance(
     expectedRevenue:
       dashboardMetrics.expectedRevenue ??
       Number(
-        (
-          (dashboardMetrics.customerInvoices || 0) + (dashboardMetrics.uninvoicedCompletedWork || 0)
-        ).toFixed(2)
+        ((dashboardMetrics.customerInvoices || 0) + (dashboardMetrics.uninvoicedCompletedWork || 0)).toFixed(2)
       ),
     contractorPay: dashboardMetrics.contractorPayThisMonth || 0,
     otherExpenses: expensesThisMonth
@@ -268,6 +278,20 @@ export async function fetchBusinessPerformance(
   const jobMap = new Map(jobs.map((j) => [j.id, j]));
   const workerMap = new Map((workersRes.data || []).map((w) => [w.id, w.name as string]));
   const customerMap = new Map((customersRes.data || []).map((c) => [c.id, c.company_name as string]));
+  const invoicedJobIds = new Set(invoices.map((invoice) => invoice.job_id).filter(Boolean) as string[]);
+
+  const directRevenueByJob = new Map<string, number>();
+  const latestDirectPaymentDateByJob = new Map<string, string>();
+  for (const payment of directPayments) {
+    if (!payment.job_id || invoicedJobIds.has(payment.job_id)) continue;
+    directRevenueByJob.set(
+      payment.job_id,
+      Number(((directRevenueByJob.get(payment.job_id) || 0) + num(payment.amount)).toFixed(2))
+    );
+    const paidDate = String(payment.paid_at || '').slice(0, 10);
+    const current = latestDirectPaymentDateByJob.get(payment.job_id) || '';
+    if (paidDate > current) latestDirectPaymentDateByJob.set(payment.job_id, paidDate);
+  }
 
   const assignmentsByJob = new Map<string, string[]>();
   for (const row of (assignmentsRes.data || []) as AssignmentRow[]) {
@@ -281,35 +305,41 @@ export async function fetchBusinessPerformance(
   const monthRevenue = new Map<string, number>();
   const categoryExpenses = new Map<string, number>();
 
+  const addRevenueAttribution = (job: JobRow | undefined, revenue: number, date: string) => {
+    if (revenue <= 0) return;
+    const monthKey = date.slice(0, 7);
+    if (monthKey) monthRevenue.set(monthKey, (monthRevenue.get(monthKey) || 0) + revenue);
+    if (job?.customer_id) {
+      customerRevenue.set(job.customer_id, (customerRevenue.get(job.customer_id) || 0) + revenue);
+    }
+    const workerIds = job ? assignmentsByJob.get(job.id) || [] : [];
+    if (workerIds.length === 0 && job?.assigned_to) workerIds.push(job.assigned_to);
+    if (workerIds.length > 0) {
+      const share = revenue / workerIds.length;
+      for (const workerId of workerIds) {
+        workerRevenue.set(workerId, (workerRevenue.get(workerId) || 0) + share);
+      }
+    }
+  };
+
   for (const inv of invoices) {
     const statusHint = String(inv.payment_status || inv.status || '').toLowerCase();
     if (statusHint === 'cancelled' || statusHint === 'canceled') continue;
-
-    // Charts use booked invoice amount (customer invoices), not cash collected.
     const revenue = num(inv.amount);
-    const monthKey = (inv.invoice_date || inv.created_at || '').slice(0, 7);
-    if (monthKey) {
-      monthRevenue.set(monthKey, (monthRevenue.get(monthKey) || 0) + revenue);
+    const job = inv.job_id ? jobMap.get(inv.job_id) : undefined;
+    if (!job?.customer_id && inv.customer_id) {
+      customerRevenue.set(inv.customer_id, (customerRevenue.get(inv.customer_id) || 0) + revenue);
     }
+    addRevenueAttribution(job, revenue, inv.invoice_date || inv.created_at || '');
+  }
 
-    const customerId = inv.customer_id || (inv.job_id ? jobMap.get(inv.job_id)?.customer_id : null);
-    if (customerId) {
-      customerRevenue.set(customerId, (customerRevenue.get(customerId) || 0) + revenue);
-    }
-
-    if (inv.job_id) {
-      const job = jobMap.get(inv.job_id);
-      const workerIds = assignmentsByJob.get(inv.job_id) || [];
-      if (workerIds.length === 0 && job?.assigned_to) {
-        workerIds.push(job.assigned_to);
-      }
-      if (workerIds.length > 0) {
-        const share = revenue / workerIds.length;
-        for (const workerId of workerIds) {
-          workerRevenue.set(workerId, (workerRevenue.get(workerId) || 0) + share);
-        }
-      }
-    }
+  for (const job of jobs) {
+    if (invoicedJobIds.has(job.id)) continue;
+    const manualRevenue = num(job.revenue_amount);
+    const directRevenue = directRevenueByJob.get(job.id) || 0;
+    const revenue = manualRevenue > 0 ? manualRevenue : directRevenue;
+    const revenueDate = latestDirectPaymentDateByJob.get(job.id) || '';
+    addRevenueAttribution(job, revenue, revenueDate);
   }
 
   for (const row of expensesRes.data || []) {
@@ -337,15 +367,17 @@ export async function fetchBusinessPerformance(
   const profitByJob: BusinessPerformanceSummary['profitByJob'] = [];
 
   for (const job of jobs) {
-    const inv = invoices.find((i) => i.job_id === job.id);
-    const revenue = inv ? num(inv.amount) : 0;
+    const inv = invoices.find((invoice) => invoice.job_id === job.id);
+    const manualRevenue = num(job.revenue_amount);
+    const directRevenue = directRevenueByJob.get(job.id) || 0;
+    const revenue = inv ? num(inv.amount) : manualRevenue > 0 ? manualRevenue : directRevenue;
     const costs = (laborByJob.get(job.id) || 0) + (expenseByJob.get(job.id) || 0);
     const profit = revenue - costs;
     if (revenue > 0 || costs > 0) {
       profitByJob.push({ label: job.title, value: Number(profit.toFixed(2)), jobId: job.id });
     }
-    const invDate = inv?.invoice_date || inv?.created_at?.slice(0, 10);
-    if (invDate && invDate >= start && invDate <= end) {
+    const revenueDate = inv?.invoice_date || inv?.created_at?.slice(0, 10) || latestDirectPaymentDateByJob.get(job.id);
+    if (revenueDate && revenueDate >= start && revenueDate <= end) {
       if (!mostProfitableJob || profit > mostProfitableJob.profit) {
         mostProfitableJob = { id: job.id, title: job.title, profit: Number(profit.toFixed(2)) };
       }
