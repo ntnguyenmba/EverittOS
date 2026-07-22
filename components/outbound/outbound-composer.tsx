@@ -15,17 +15,24 @@ type OutboundComposerProps = {
 };
 
 function saveLabel(state: AutosaveState): string {
-  if (state === 'saving') return 'Saving…';
-  if (state === 'saved') return 'Saved automatically';
-  if (state === 'error') return 'Save issue — keep typing to retry';
+  if (state === 'saving') return 'Saving...';
+  if (state === 'saved') return 'Saved';
+  if (state === 'error') return 'Not saved. Keep typing to retry.';
   return 'Auto-save on';
 }
 
-function amountHelp(docType: OutboundDocType): string {
-  if (docType === 'invoice') return 'Required before sending an invoice. Payment status is tracked after the invoice is sent.';
-  if (docType === 'estimate') return 'Optional estimate total shown in the email.';
-  if (docType === 'proposal') return 'Optional proposal amount shown in the email.';
-  return '';
+function composerTitle(docType: OutboundDocType): string {
+  if (docType === 'estimate') return 'New estimate';
+  if (docType === 'proposal') return 'New proposal';
+  if (docType === 'invoice') return 'New invoice';
+  return 'New message';
+}
+
+function amountLabel(docType: OutboundDocType): string {
+  if (docType === 'estimate') return 'Estimate total';
+  if (docType === 'proposal') return 'Proposal total';
+  if (docType === 'invoice') return 'Amount due';
+  return 'Amount';
 }
 
 export function OutboundComposer({
@@ -38,16 +45,25 @@ export function OutboundComposer({
   onSend,
   onReset
 }: OutboundComposerProps) {
-  const amountNote = amountHelp(docType);
-
   return (
     <div className="card form outbound-composer">
       <div className="outbound-composer-head">
-        <h3>Compose</h3>
+        <h3>{composerTitle(docType)}</h3>
         <span className={`outbound-autosave-indicator outbound-autosave-${saveState}`}>{saveLabel(saveState)}</span>
       </div>
 
-      <label htmlFor={`${docType}-recipient-email`}>Recipient email</label>
+      <label htmlFor={`${docType}-recipient-name`}>Customer</label>
+      <input
+        id={`${docType}-recipient-name`}
+        className="input"
+        type="text"
+        autoComplete="name"
+        placeholder="Customer name"
+        value={fields.recipient_name}
+        onChange={(event) => onFieldChange('recipient_name', event.target.value)}
+      />
+
+      <label htmlFor={`${docType}-recipient-email`}>Email</label>
       <input
         id={`${docType}-recipient-email`}
         className="input"
@@ -55,76 +71,74 @@ export function OutboundComposer({
         autoComplete="email"
         placeholder="customer@example.com"
         value={fields.recipient_email}
-        onChange={(e) => onFieldChange('recipient_email', e.target.value)}
-      />
-
-      <label htmlFor={`${docType}-recipient-name`}>Recipient name (optional)</label>
-      <input
-        id={`${docType}-recipient-name`}
-        className="input"
-        type="text"
-        placeholder="Customer name"
-        value={fields.recipient_name}
-        onChange={(e) => onFieldChange('recipient_name', e.target.value)}
-      />
-
-      <label htmlFor={`${docType}-subject`}>Subject</label>
-      <input
-        id={`${docType}-subject`}
-        className="input"
-        type="text"
-        value={fields.subject}
-        onChange={(e) => onFieldChange('subject', e.target.value)}
-      />
-
-      <label htmlFor={`${docType}-body`}>Message</label>
-      <textarea
-        id={`${docType}-body`}
-        className="input"
-        rows={5}
-        value={fields.body}
-        onChange={(e) => onFieldChange('body', e.target.value)}
+        onChange={(event) => onFieldChange('recipient_email', event.target.value)}
       />
 
       {showAmount ? (
         <>
-          <label htmlFor={`${docType}-amount`}>{docType === 'invoice' ? 'Invoice amount' : 'Amount'}</label>
+          <label htmlFor={`${docType}-amount`}>{amountLabel(docType)}</label>
           <input
             id={`${docType}-amount`}
             className="input"
             type="number"
-            min="0.01"
+            min={docType === 'invoice' ? '0.01' : '0'}
             step="0.01"
+            inputMode="decimal"
             placeholder="0.00"
             value={fields.amount}
-            onChange={(e) => onFieldChange('amount', e.target.value)}
+            onChange={(event) => onFieldChange('amount', event.target.value)}
           />
-          {amountNote ? <p className="muted">{amountNote}</p> : null}
         </>
       ) : null}
 
-      <label htmlFor={`${docType}-schedule`}>Schedule send (optional)</label>
-      <input
-        id={`${docType}-schedule`}
+      <label htmlFor={`${docType}-body`}>Work and message</label>
+      <textarea
+        id={`${docType}-body`}
         className="input"
-        type="datetime-local"
-        value={fields.scheduled_at}
-        onChange={(e) => onFieldChange('scheduled_at', e.target.value)}
+        rows={6}
+        placeholder="Describe the work, price, and anything the customer needs to know."
+        value={fields.body}
+        onChange={(event) => onFieldChange('body', event.target.value)}
       />
 
+      <details>
+        <summary><strong>More</strong></summary>
+        <div className="form" style={{ marginTop: 14 }}>
+          <label htmlFor={`${docType}-subject`}>Email subject</label>
+          <input
+            id={`${docType}-subject`}
+            className="input"
+            type="text"
+            value={fields.subject}
+            onChange={(event) => onFieldChange('subject', event.target.value)}
+          />
+
+          <label htmlFor={`${docType}-schedule`}>Send later</label>
+          <input
+            id={`${docType}-schedule`}
+            className="input"
+            type="datetime-local"
+            value={fields.scheduled_at}
+            onChange={(event) => onFieldChange('scheduled_at', event.target.value)}
+          />
+        </div>
+      </details>
+
       <div className="outbound-composer-actions">
-        <button type="button" className="btn btn-primary" disabled={sending} onClick={() => void onSend()}>
-          {sending ? 'Sending…' : 'Send'}
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={sending || !fields.recipient_email.trim()}
+          onClick={() => void onSend()}
+        >
+          {sending ? 'Sending...' : fields.scheduled_at ? 'Schedule' : 'Send'}
         </button>
         {onReset ? (
           <button type="button" className="btn btn-sm outbound-secondary-action" disabled={sending} onClick={onReset}>
-            Clear
+            Start over
           </button>
         ) : null}
       </div>
-      <p className="muted outbound-composer-note">
-        Work saves automatically while you type. Send when you are ready — no manual save required.
-      </p>
     </div>
   );
 }
