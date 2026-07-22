@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
+import { PageHeader } from '@/components/page-header';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -17,11 +18,15 @@ import type { EverittForm, FormType } from '@/lib/os-types';
 const FORM_TYPES: { value: FormType; label: string }[] = [
   { value: 'contact', label: 'Contact' },
   { value: 'estimate', label: 'Estimate request' },
-  { value: 'lead_capture', label: 'Lead capture' },
-  { value: 'client_intake', label: 'Client intake' },
+  { value: 'lead_capture', label: 'Lead form' },
+  { value: 'client_intake', label: 'Customer intake' },
   { value: 'booking', label: 'Booking request' },
   { value: 'custom', label: 'Custom' }
 ];
+
+function formTypeLabel(value: FormType) {
+  return FORM_TYPES.find((type) => type.value === value)?.label || value.replaceAll('_', ' ');
+}
 
 export default function FormsPage() {
   const router = useRouter();
@@ -82,63 +87,75 @@ export default function FormsPage() {
   }
 
   async function deleteForm(id: string, formName: string) {
-    if (!window.confirm(`Delete form ${formName}?`)) return;
+    if (!window.confirm(`Remove ${formName}?`)) return;
     const res = await runResponse(() => fetch(`/api/forms/${id}`, { method: 'DELETE' }), 'deleted');
     if (res) void load();
   }
 
   return (
     <AppShell plan={plan} role={role}>
-      <header className="page-header">
-        <h1>Forms</h1>
-        <p className="page-subtitle">Public forms that create CRM leads, tasks, and notifications on submit.</p>
-      </header>
+      <PageHeader title="Forms" />
 
       {canManage ? (
-        <div className="card form" style={{ marginBottom: 18 }}>
-          <h3>New form</h3>
-          <input className="input" placeholder="Form name" value={name} onChange={(e) => setName(e.target.value)} />
-          <select className="input" value={formType} onChange={(e) => setFormType(e.target.value as FormType)}>
-            {FORM_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createForm()}>
-            {buttonLabel('Create form', FEEDBACK.loading)}
-          </button>
-        </div>
+        <details className="card" style={{ marginBottom: 18 }}>
+          <summary><strong>New form</strong></summary>
+          <div className="form" style={{ marginTop: 16 }}>
+            <label>Name</label>
+            <input className="input" placeholder="Example: Free quote" value={name} onChange={(event) => setName(event.target.value)} />
+            <label>Type</label>
+            <select className="input" value={formType} onChange={(event) => setFormType(event.target.value as FormType)}>
+              {FORM_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+            <button type="button" className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => void createForm()}>
+              {buttonLabel('Create', FEEDBACK.loading)}
+            </button>
+          </div>
+        </details>
       ) : null}
 
-      {loading ? <p>Loading forms…</p> : null}
+      {loading ? <div className="card"><p className="loading-state">Loading...</p></div> : null}
       {!loading && forms.length === 0 ? <LocalizedEmptyState emptyKey="forms" compact /> : null}
 
-      <div className="card-list">
-        {forms.map((form) => (
-          <div key={form.id} className="card">
-            <div className="card-link-head">
-              <Link href={`/forms/${form.id}`}>
-                <strong>{form.name}</strong>
-              </Link>
-              <span className={`status-pill ${form.active ? 'status-pill-success' : 'status-pill-muted'}`}>
-                {form.active ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-            <p className="muted">{form.form_type.replace('_', ' ')} · /f/{form.slug}</p>
-            {canManage ? (
-              <button
-                type="button"
-                className="btn btn-sm btn-danger"
-                disabled={busy}
-                onClick={() => void deleteForm(form.id, form.name)}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-        ))}
-      </div>
+      {!loading && forms.length > 0 ? (
+        <div style={{ display: 'grid', gap: 14 }}>
+          {forms.map((form) => (
+            <article key={form.id} className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ marginBottom: 6 }}>{form.name}</h3>
+                  <p className="muted" style={{ marginBottom: 0 }}>{formTypeLabel(form.form_type)}</p>
+                </div>
+                <span className={`status-pill ${form.active ? 'status-pill-success' : 'status-pill-muted'}`}>
+                  {form.active ? 'Active' : 'Off'}
+                </span>
+              </div>
+
+              <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+                <Link className="btn btn-primary" href={`/forms/${form.id}`}>Open</Link>
+                <a className="btn" href={`/f/${form.slug}`} target="_blank" rel="noreferrer">View public form</a>
+              </div>
+
+              {canManage ? (
+                <details style={{ marginTop: 14 }}>
+                  <summary><strong>More</strong></summary>
+                  <div className="button-row" style={{ marginTop: 12 }}>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      disabled={busy}
+                      onClick={() => void deleteForm(form.id, form.name)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </details>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
     </AppShell>
   );
 }
