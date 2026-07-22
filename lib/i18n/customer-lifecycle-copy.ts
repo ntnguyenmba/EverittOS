@@ -29,33 +29,35 @@ const en: CustomerLifecycleCopy = {
     all: 'All',
     active: 'Active',
     past: 'Past',
-    leads: 'Leads',
+    leads: 'Requests',
     archived: 'Archived'
   },
   stages: {
-    open: 'Open',
+    open: 'New',
     contacted: 'Contacted',
-    qualified: 'Qualified',
-    quoted: 'Quoted',
-    won: 'Won',
-    lost: 'Lost',
-    cancelled: 'Cancelled',
-    canceled: 'Cancelled',
+    qualified: 'Interested',
+    quoted: 'Quote sent',
+    proposal_sent: 'Quote sent',
+    negotiation: 'Following up',
+    won: 'Converted',
+    lost: 'Not booked',
+    cancelled: 'Archived',
+    canceled: 'Archived',
     archived: 'Archived',
     active: 'Active',
     past: 'Past',
     inactive: 'Inactive',
-    former: 'Former customer',
+    former: 'Past customer',
     recurring: 'Recurring',
     reopened: 'Reopened',
-    lead: 'Lead'
+    lead: 'Request'
   },
   actions: {
     markPast: 'Mark as past customer',
     markActive: 'Mark active',
     restore: 'Restore',
     archive: 'Archive',
-    convertToCustomer: 'Convert to customer'
+    convertToCustomer: 'Add as customer'
   },
   messages: {
     markedPast: 'Customer marked as past.',
@@ -70,33 +72,35 @@ const es: CustomerLifecycleCopy = {
     all: 'Todos',
     active: 'Activos',
     past: 'Anteriores',
-    leads: 'Leads',
+    leads: 'Solicitudes',
     archived: 'Archivados'
   },
   stages: {
-    open: 'Abierto',
-    contacted: 'Contactado',
-    qualified: 'Calificado',
-    quoted: 'Cotizado',
-    won: 'Ganado',
-    lost: 'Perdido',
-    cancelled: 'Cancelado',
-    canceled: 'Cancelado',
-    archived: 'Archivado',
+    open: 'Nueva',
+    contacted: 'Contactada',
+    qualified: 'Interesada',
+    quoted: 'Cotización enviada',
+    proposal_sent: 'Cotización enviada',
+    negotiation: 'En seguimiento',
+    won: 'Convertida',
+    lost: 'No reservada',
+    cancelled: 'Archivada',
+    canceled: 'Archivada',
+    archived: 'Archivada',
     active: 'Activo',
     past: 'Anterior',
     inactive: 'Inactivo',
     former: 'Cliente anterior',
     recurring: 'Recurrente',
-    reopened: 'Reabierto',
-    lead: 'Lead'
+    reopened: 'Reabierta',
+    lead: 'Solicitud'
   },
   actions: {
     markPast: 'Marcar como cliente anterior',
     markActive: 'Marcar activo',
     restore: 'Restaurar',
     archive: 'Archivar',
-    convertToCustomer: 'Convertir en cliente'
+    convertToCustomer: 'Agregar como cliente'
   },
   messages: {
     markedPast: 'Cliente marcado como anterior.',
@@ -111,18 +115,20 @@ const vi: CustomerLifecycleCopy = {
     all: 'Tất cả',
     active: 'Đang hoạt động',
     past: 'Trước đây',
-    leads: 'Lead',
+    leads: 'Yêu cầu',
     archived: 'Đã lưu trữ'
   },
   stages: {
-    open: 'Mở',
+    open: 'Mới',
     contacted: 'Đã liên hệ',
-    qualified: 'Đủ điều kiện',
-    quoted: 'Đã báo giá',
-    won: 'Thành công',
-    lost: 'Thất bại',
-    cancelled: 'Đã hủy',
-    canceled: 'Đã hủy',
+    qualified: 'Quan tâm',
+    quoted: 'Đã gửi báo giá',
+    proposal_sent: 'Đã gửi báo giá',
+    negotiation: 'Đang theo dõi',
+    won: 'Đã chuyển đổi',
+    lost: 'Không đặt dịch vụ',
+    cancelled: 'Đã lưu trữ',
+    canceled: 'Đã lưu trữ',
     archived: 'Đã lưu trữ',
     active: 'Đang hoạt động',
     past: 'Trước đây',
@@ -130,14 +136,14 @@ const vi: CustomerLifecycleCopy = {
     former: 'Khách hàng cũ',
     recurring: 'Định kỳ',
     reopened: 'Đã mở lại',
-    lead: 'Lead'
+    lead: 'Yêu cầu'
   },
   actions: {
     markPast: 'Đánh dấu khách hàng cũ',
     markActive: 'Đánh dấu đang hoạt động',
     restore: 'Khôi phục',
     archive: 'Lưu trữ',
-    convertToCustomer: 'Chuyển thành khách hàng'
+    convertToCustomer: 'Thêm làm khách hàng'
   },
   messages: {
     markedPast: 'Đã đánh dấu khách hàng cũ.',
