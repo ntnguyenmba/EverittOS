@@ -169,7 +169,7 @@ export function BillingPlansGrid({
   portalLoading = false,
   onNativePurchaseSuccess
 }: BillingPlansGridProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const normalizedCurrent = normalizePlan(currentPlan);
   const isFreeUser = normalizedCurrent === 'free';
   const billingVisibility = resolveBillingVisibility();
@@ -300,7 +300,7 @@ export function BillingPlansGrid({
                 !billingVisibility.allowCheckout &&
                 !billingVisibility.allowNativeStorePurchase ? (
                   <p className="billing-plan-current-label" style={currentStyle}>
-                    {nativeBillingNotice()}
+                    {nativeBillingNotice(locale)}
                   </p>
                 ) : null}
 
@@ -343,7 +343,7 @@ export function BillingPlansGrid({
 
       {billingVisibility.showWebBillingNotice ? (
         <p className="billing-native-notice" style={noteStyle}>
-          {nativeBillingNotice()}
+          {nativeBillingNotice(locale)}
         </p>
       ) : null}
 

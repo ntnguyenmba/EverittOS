@@ -306,9 +306,9 @@ export const messages: Messages = {
       email: 'Notificaciones por correo',
       operational: 'Alertas operativas (asignaciones, fechas, invitaciones)',
       push: 'Notificaciones push',
-      pushFuture: 'Próximamente en apps móviles.',
+      pushFuture: 'Aún no disponible en esta versión.',
       sms: 'Notificaciones SMS',
-      smsFuture: 'Próximamente donde esté disponible.',
+      smsFuture: 'Aún no disponible en esta versión.',
       save: 'Guardar notificaciones',
       saved: 'Configuración de notificaciones guardada.',
       saveError: 'No se pudo guardar la configuración.'
@@ -506,6 +506,20 @@ export const messages: Messages = {
     noUpcomingJobs: 'No hay trabajos próximos en las próximas dos semanas.',
     customersAndLeads: 'Clientes y prospectos',
     noCustomersOrLeads: 'Aún no hay clientes ni prospectos. Agrega el primero para comenzar.',
+    myWork: 'Mi trabajo',
+    myWorkSubtitle: 'Hoy, trabajos asignados, contacto con clientes y acciones de campo.',
+    crm: {
+      openLeads: 'Prospectos abiertos',
+      openLeadsHelp: 'Nuevos, contactados, calificados, propuesta y reabiertos.',
+      closedLeads: 'Prospectos cerrados',
+      closedLeadsHelp: 'Ganados, perdidos y cancelados.',
+      activeCustomers: 'Clientes activos',
+      activeCustomersHelp: 'Clientes actualmente activos en su espacio de trabajo.',
+      recurringCustomers: 'Clientes recurrentes',
+      recurringCustomersHelp: 'Clientes marcados como cuentas de servicio recurrente.',
+      inactiveCustomers: 'Clientes inactivos',
+      inactiveCustomersHelp: 'Clientes inactivos y anteriores.'
+    },
     businessActivity: 'Actividad comercial reciente',
     businessActivityEmpty:
       'Aún no hay actividad comercial. Crea tu primer cliente, prospecto o trabajo para comenzar.',
@@ -1056,7 +1070,9 @@ export const messages: Messages = {
       assignedEmail: 'Correo asignado',
       assignedEmailHint: 'Opcional. Quién debe recibir este trabajo. No se requiere registro en Personas.',
       createTitle: 'Crear trabajo',
-      createPermissionBlocked: 'No tiene acceso para crear trabajos en esta cuenta.'
+      createPermissionBlocked: 'No tiene acceso para crear trabajos en esta cuenta.',
+      restoreJob: 'Restaurar trabajo',
+      cancelJob: 'Cancelar trabajo'
     }
   }
 };

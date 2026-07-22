@@ -304,9 +304,9 @@ export const messages: Messages = {
       email: 'Thông báo email',
       operational: 'Cảnh báo vận hành (phân công, hạn, lời mời)',
       push: 'Thông báo đẩy',
-      pushFuture: 'Sắp có trên ứng dụng di động.',
+      pushFuture: 'Chưa khả dụng trong bản phát hành này.',
       sms: 'Thông báo SMS',
-      smsFuture: 'Sắp có khi được hỗ trợ.',
+      smsFuture: 'Chưa khả dụng trong bản phát hành này.',
       save: 'Lưu cài đặt thông báo',
       saved: 'Đã lưu cài đặt thông báo.',
       saveError: 'Không thể lưu cài đặt.'
@@ -504,6 +504,20 @@ export const messages: Messages = {
     noUpcomingJobs: 'Không có công việc nào trong hai tuần tới.',
     customersAndLeads: 'Khách hàng & tiềm năng',
     noCustomersOrLeads: 'Chưa có khách hàng hoặc tiềm năng. Thêm mục đầu tiên để bắt đầu.',
+    myWork: 'Công việc của tôi',
+    myWorkSubtitle: 'Hôm nay, việc được giao, liên hệ khách và thao tác hiện trường.',
+    crm: {
+      openLeads: 'Tiềm năng đang mở',
+      openLeadsHelp: 'Mới, đã liên hệ, đủ điều kiện, đề xuất và mở lại.',
+      closedLeads: 'Tiềm năng đã đóng',
+      closedLeadsHelp: 'Thắng, thua và đã hủy.',
+      activeCustomers: 'Khách hàng đang hoạt động',
+      activeCustomersHelp: 'Khách hàng hiện đang hoạt động trong không gian làm việc.',
+      recurringCustomers: 'Khách hàng định kỳ',
+      recurringCustomersHelp: 'Khách hàng được đánh dấu là tài khoản dịch vụ định kỳ.',
+      inactiveCustomers: 'Khách hàng không hoạt động',
+      inactiveCustomersHelp: 'Khách hàng không hoạt động và khách cũ.'
+    },
     businessActivity: 'Hoạt động kinh doanh gần đây',
     businessActivityEmpty:
       'Chưa có hoạt động kinh doanh. Tạo khách hàng, tiềm năng hoặc công việc đầu tiên để bắt đầu.',
@@ -1054,7 +1068,9 @@ export const messages: Messages = {
       assignedEmail: 'Email được phân công',
       assignedEmailHint: 'Tùy chọn. Ai sẽ nhận công việc này. Không cần hồ sơ trong Mọi người.',
       createTitle: 'Tạo công việc',
-      createPermissionBlocked: 'Bạn không có quyền tạo công việc trên tài khoản này.'
+      createPermissionBlocked: 'Bạn không có quyền tạo công việc trên tài khoản này.',
+      restoreJob: 'Khôi phục công việc',
+      cancelJob: 'Hủy công việc'
     }
   }
 };

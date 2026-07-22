@@ -17,8 +17,6 @@ export default function NotificationSettingsPage() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(false);
-  const [sms, setSms] = useState(false);
   const [operational, setOperational] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -40,8 +38,6 @@ export default function NotificationSettingsPage() {
       if (res.ok) {
         const json = await res.json();
         setEmail(json.email_notifications !== false);
-        setPush(Boolean(json.push_notifications));
-        setSms(Boolean(json.sms_notifications));
         setOperational(json.operational_notifications !== false);
       }
 
@@ -59,8 +55,9 @@ export default function NotificationSettingsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email_notifications: email,
-            push_notifications: push,
-            sms_notifications: sms,
+            // Push and SMS delivery are not active yet; keep stored prefs off.
+            push_notifications: false,
+            sms_notifications: false,
             operational_notifications: operational
           })
         }),
@@ -89,20 +86,12 @@ export default function NotificationSettingsPage() {
           <input type="checkbox" checked={operational} onChange={(e) => setOperational(e.target.checked)} />
           {t('settings.notifications.operational')}
         </label>
-        <label className="settings-toggle">
-          <input type="checkbox" checked={push} onChange={(e) => setPush(e.target.checked)} />
-          <span>
-            {t('settings.notifications.push')}
-            <span className="muted">{t('settings.notifications.pushFuture')}</span>
-          </span>
-        </label>
-        <label className="settings-toggle">
-          <input type="checkbox" checked={sms} onChange={(e) => setSms(e.target.checked)} />
-          <span>
-            {t('settings.notifications.sms')}
-            <span className="muted">{t('settings.notifications.smsFuture')}</span>
-          </span>
-        </label>
+        <p className="muted" style={{ marginTop: 12 }}>
+          {t('settings.notifications.push')}: {t('settings.notifications.pushFuture')}
+        </p>
+        <p className="muted">
+          {t('settings.notifications.sms')}: {t('settings.notifications.smsFuture')}
+        </p>
         <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
           {buttonLabel(t('settings.notifications.save'), FEEDBACK.loading)}
         </button>

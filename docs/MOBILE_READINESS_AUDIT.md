@@ -50,7 +50,9 @@ Repository: EverittOS (Next.js 15 + Supabase + Stripe)
 | App links intent filters | **Completed** | HTTPS + `everittos://` in `AndroidManifest.xml` |
 | `assetlinks.json` | **Prepared** | Placeholder SHA-256 fingerprint |
 | Network security (no cleartext prod) | **Completed** | `network_security_config.xml` |
-| Minimal permissions | **Completed** | `INTERNET` only; camera via Capacitor runtime prompts |
+| Minimal permissions | **Completed** | INTERNET, camera/media, Play Billing |
+| Privacy Manifest | **Completed** | `ios/App/App/PrivacyInfo.xcprivacy` |
+| Export compliance flag | **Completed** | `ITSAppUsesNonExemptEncryption=false` |
 | Release AAB signing | **External** | Requires Play Console + upload key |
 | Emulator / device testing | **Not performed** | No Android SDK in this environment |
 

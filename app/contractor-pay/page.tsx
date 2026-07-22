@@ -250,7 +250,8 @@ function ContractorPayContent() {
                         paymentBasis: row.payment_basis,
                         quantity: row.hours,
                         rate: row.hourly_cost,
-                        total: row.total_cost
+                        total: row.total_cost,
+                        locale
                       })}{' '}
                       · {status}
                     </p>

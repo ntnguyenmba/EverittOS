@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
+import { formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
 import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
@@ -40,6 +42,8 @@ function ExpensesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const copy = getExpensesPageCopy(locale);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [expenses, setExpenses] = useState<ExpenseView[]>([]);
@@ -258,29 +262,16 @@ function ExpensesContent() {
   }
 
   if (!hasAccess) {
+    const minPlanName = planDisplayName(FINANCIAL_TRACKING_MIN_PLAN);
     return (
       <AppShell plan={plan} role={role}>
-        <PageHeader title="Expenses" subtitle="Track business spending without full bookkeeping." />
+        <PageHeader title={copy.title} subtitle={copy.subtitle} />
         <div className="card plan-gate-card">
-          <h3>Expenses and job profit</h3>
-          <p className="muted">
-            {planDisplayName(FINANCIAL_TRACKING_MIN_PLAN)} and above unlock expense tracking, job profitability, and
-            business performance reports.
-          </p>
-          <Link className="btn btn-primary" href={billingUpgradeHref(FINANCIAL_TRACKING_MIN_PLAN, 'Expenses')}>
-            Upgrade to {planDisplayName(FINANCIAL_TRACKING_MIN_PLAN)}
+          <h3>{copy.gateTitle}</h3>
+          <p className="muted">{formatExpensesCopy(copy.gateBody, { plan: minPlanName })}</p>
+          <Link className="btn btn-primary" href={billingUpgradeHref(FINANCIAL_TRACKING_MIN_PLAN, copy.title)}>
+            {formatExpensesCopy(copy.upgrade, { plan: minPlanName })}
           </Link>
-        </div>
-        <div className="card finance-demo-card">
-          <p className="muted">Preview on Free plan (read-only sample)</p>
-          <div className="finance-list-card">
-            <strong>Supplies</strong>
-            <p className="muted">Home Depot · $84.50</p>
-          </div>
-          <div className="finance-list-card">
-            <strong>Fuel</strong>
-            <p className="muted">Shell · $62.00</p>
-          </div>
         </div>
       </AppShell>
     );
@@ -289,12 +280,12 @@ function ExpensesContent() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="Expenses"
-        subtitle="Track fuel, supplies, materials, and other costs. Link expenses to jobs for profit estimates."
+        title={copy.title}
+        subtitle={copy.subtitle}
         action={
           canManage ? (
             <button type="button" className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-              {showForm ? 'Close' : 'Add expense'}
+              {showForm ? copy.close : copy.addExpense}
             </button>
           ) : undefined
         }
@@ -302,9 +293,11 @@ function ExpensesContent() {
 
       <div className="finance-filter-bar">
         <button type="button" className="btn" onClick={() => setShowFilters((v) => !v)}>
-          {showFilters ? 'Hide filters' : 'Filters'}
+          {showFilters ? copy.hideFilters : copy.filters}
         </button>
-        <strong>Total: {formatCurrency(totalFiltered)}</strong>
+        <strong>
+          {copy.total}: {formatCurrency(totalFiltered)}
+        </strong>
       </div>
 
       {showFilters ? (

@@ -1,4 +1,5 @@
 import { getAppPlatform, isNativePlatform } from '@/lib/platform/detect';
+import { getNativeBillingCopy } from '@/lib/i18n/native-billing-copy';
 
 export type BillingSurface = 'web' | 'native';
 
@@ -83,21 +84,22 @@ export function resolveBillingVisibility(): BillingVisibility {
   };
 }
 
-export function nativeBillingNotice(): string {
+export function nativeBillingNotice(locale?: string | null): string {
+  const copy = getNativeBillingCopy(locale);
   const platform = getAppPlatform();
-  if (platform === 'ios') {
-    return 'Subscriptions are purchased through Apple. Prices shown are provided by the App Store.';
-  }
-  if (platform === 'android') {
-    return 'Subscriptions are purchased through Google Play. Prices shown are provided by Google Play.';
-  }
-  return 'Subscription changes are managed on the web for Stripe-billed accounts.';
+  if (platform === 'ios') return copy.appleNotice;
+  if (platform === 'android') return copy.googleNotice;
+  return copy.webNotice;
 }
 
-export function manageSubscriptionLabel(source: string | null | undefined): string {
+export function manageSubscriptionLabel(
+  source: string | null | undefined,
+  locale?: string | null
+): string {
+  const copy = getNativeBillingCopy(locale);
   const s = String(source || '').toLowerCase();
-  if (s === 'apple') return 'Manage Apple Subscription';
-  if (s === 'google') return 'Manage Google Play Subscription';
-  if (s === 'stripe') return 'Manage Stripe Billing';
-  return 'Manage Subscription';
+  if (s === 'apple') return copy.manageApple;
+  if (s === 'google') return copy.manageGoogle;
+  if (s === 'stripe') return copy.manageStripe;
+  return copy.manageGeneric;
 }

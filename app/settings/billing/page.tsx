@@ -28,7 +28,7 @@ import { supabase } from '@/lib/supabase';
 function BillingSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const upgradePlan = normalizePlan(searchParams.get('upgrade'));
 
   const accessNotice = useMemo(() => {
@@ -315,8 +315,8 @@ function BillingSettingsContent() {
       <SettingsShell
         plan={plan}
         role={role}
-        title="Plans & billing"
-        description="Subscribe with the App Store or Google Play. Paid features unlock after server verification."
+        title={t('billing.title')}
+        description={t('billing.description')}
       >
         <section className="settings-card" style={{ display: 'grid', gap: 16, padding: 24 }}>
           <div>
@@ -334,7 +334,7 @@ function BillingSettingsContent() {
             <span className="settings-row-value">{subscriptionInfo.ok ? 'Active' : 'Action needed'}</span>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            {nativeBillingNotice()}
+            {nativeBillingNotice(locale)}
           </p>
           <div className="settings-actions" style={{ marginTop: 0, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {billingVisibility.showRestorePurchases ? (
@@ -365,7 +365,7 @@ function BillingSettingsContent() {
                   });
                 }}
               >
-                {manageSubscriptionLabel(billingVisibility.platform === 'ios' ? 'apple' : 'google')}
+                {manageSubscriptionLabel(billingVisibility.platform === 'ios' ? 'apple' : 'google', locale)}
               </button>
             ) : null}
             <button
@@ -410,7 +410,7 @@ function BillingSettingsContent() {
   }
 
   return (
-    <SettingsShell plan={plan} role={role} title="Plans & billing" description="Manage your EverittOS plan and payment settings.">
+    <SettingsShell plan={plan} role={role} title={t('billing.title')} description={t('billing.description')}>
       <div style={{ display: 'grid', gap: 18 }}>
         {accessNotice && !canManageWorkspaceBilling ? (
           <AccessBlockedBanner title={accessNotice.title} message={accessNotice.message} details={accessNotice.details} />
@@ -497,7 +497,7 @@ function BillingSettingsContent() {
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
           {billingVisibility.showWebBillingNotice ? (
             <p className="auth-message" style={{ marginTop: 8 }}>
-              {nativeBillingNotice()}
+              {nativeBillingNotice(locale)}
             </p>
           ) : null}
         </section>

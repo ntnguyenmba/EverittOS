@@ -103,6 +103,13 @@ export type DashboardFinanceCopy = {
     markedStatus: string;
     unnamed: string;
     jobFallback: string;
+    contractorOrCleaner: string;
+    contractorNamePlaceholder: string;
+    paymentMethodLabel: string;
+    added: string;
+    updated: string;
+    removed: string;
+    duplicated: string;
   };
 };
 
@@ -264,7 +271,14 @@ const en: DashboardFinanceCopy = {
     markedPaid: 'Contractor payment marked paid.',
     markedStatus: 'Contractor payment marked {status}.',
     unnamed: 'Unnamed contractor',
-    jobFallback: 'Job'
+    jobFallback: 'Job',
+    contractorOrCleaner: 'Contractor or cleaner',
+    contractorNamePlaceholder: 'Contractor name',
+    paymentMethodLabel: 'Method',
+    added: 'Contractor pay added.',
+    updated: 'Contractor pay updated.',
+    removed: 'Contractor pay removed.',
+    duplicated: 'Contractor pay duplicated.'
   }
 };
 
@@ -412,7 +426,14 @@ const es: DashboardFinanceCopy = {
     markedPaid: 'Pago al contratista marcado como pagado.',
     markedStatus: 'Pago al contratista marcado como {status}.',
     unnamed: 'Contratista sin nombre',
-    jobFallback: 'Trabajo'
+    jobFallback: 'Trabajo',
+    contractorOrCleaner: 'Contratista o personal de limpieza',
+    contractorNamePlaceholder: 'Nombre del contratista',
+    paymentMethodLabel: 'Método',
+    added: 'Pago a contratista agregado.',
+    updated: 'Pago a contratista actualizado.',
+    removed: 'Pago a contratista eliminado.',
+    duplicated: 'Pago a contratista duplicado.'
   }
 };
 
@@ -550,7 +571,14 @@ const vi: DashboardFinanceCopy = {
     markedPaid: 'Đã đánh dấu khoản trả thầu phụ là đã trả.',
     markedStatus: 'Đã đánh dấu khoản trả thầu phụ là {status}.',
     unnamed: 'Thầu phụ chưa đặt tên',
-    jobFallback: 'Công việc'
+    jobFallback: 'Công việc',
+    contractorOrCleaner: 'Thầu phụ hoặc nhân viên',
+    contractorNamePlaceholder: 'Tên thầu phụ',
+    paymentMethodLabel: 'Phương thức',
+    added: 'Đã thêm khoản trả thầu phụ.',
+    updated: 'Đã cập nhật khoản trả thầu phụ.',
+    removed: 'Đã xóa khoản trả thầu phụ.',
+    duplicated: 'Đã nhân bản khoản trả thầu phụ.'
   }
 };
 

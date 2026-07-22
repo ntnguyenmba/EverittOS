@@ -11,6 +11,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { RoleDashboard } from '@/components/role-dashboard';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
+import { isActiveCustomerRecord } from '@/lib/job-operational-date';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
@@ -237,7 +238,7 @@ export default function DashboardPage() {
     const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');
     const openLeadCount = leadRows.filter((row) => OPEN_LEAD_STAGES.has(row.pipeline_stage || 'open')).length;
     const closedLeadCount = leadRows.filter((row) => CLOSED_LEAD_STAGES.has(row.pipeline_stage || '')).length;
-    const activeCustomerCount = customerRows.filter((row) => (row.pipeline_stage || 'active') === 'active').length;
+    const activeCustomerCount = customerRows.filter((row) => isActiveCustomerRecord(row)).length;
     const recurringCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'recurring').length;
     const inactiveCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'inactive' || row.pipeline_stage === 'former').length;
 
@@ -292,7 +293,7 @@ export default function DashboardPage() {
       </Suspense>
 
       <div className="today-page dashboard-home">
-        <PageHeader title={staffView ? 'My work' : t('dashboard.welcome')} subtitle={staffView ? 'Today, assigned jobs, customer contact, and field actions.' : t('dashboard.navSubtitle')} />
+        <PageHeader title={staffView ? t('dashboard.myWork') : t('dashboard.welcome')} subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')} />
 
         {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
@@ -307,15 +308,15 @@ export default function DashboardPage() {
               </div>
               <div className="inline-actions">
                 <Link className="btn btn-sm" href="/leads">{t('nav.leads')}</Link>
-                <Link className="btn btn-sm" href="/customers">Customers</Link>
+                <Link className="btn btn-sm" href="/customers">{t('nav.customers')}</Link>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, alignItems: 'stretch' }}>
-              {crmCard('Open leads', crmMetrics.openLeads, '/leads?status=open', 'New, contacted, qualified, proposal, and reopened leads.', salesCardStyle)}
-              {crmCard('Closed leads', crmMetrics.closedLeads, '/leads?status=closed', 'Won, closed lost, and cancelled leads.', salesCardStyle)}
-              {crmCard('Active customers', crmMetrics.activeCustomers, '/customers?stage=active', 'Customers currently active in your workspace.', salesCardStyle)}
-              {crmCard('Recurring customers', crmMetrics.recurringCustomers, '/customers?stage=recurring', 'Customers marked as recurring service accounts.', salesCardStyle)}
-              {crmCard('Inactive customers', crmMetrics.inactiveCustomers, '/customers?stage=past', 'Inactive and former customers.', salesCardStyle)}
+              {crmCard(t('dashboard.crm.openLeads'), crmMetrics.openLeads, '/leads?status=open', t('dashboard.crm.openLeadsHelp'), salesCardStyle)}
+              {crmCard(t('dashboard.crm.closedLeads'), crmMetrics.closedLeads, '/leads?status=closed', t('dashboard.crm.closedLeadsHelp'), salesCardStyle)}
+              {crmCard(t('dashboard.crm.activeCustomers'), crmMetrics.activeCustomers, '/customers?stage=active', t('dashboard.crm.activeCustomersHelp'), salesCardStyle)}
+              {crmCard(t('dashboard.crm.recurringCustomers'), crmMetrics.recurringCustomers, '/customers?stage=recurring', t('dashboard.crm.recurringCustomersHelp'), salesCardStyle)}
+              {crmCard(t('dashboard.crm.inactiveCustomers'), crmMetrics.inactiveCustomers, '/customers?stage=past', t('dashboard.crm.inactiveCustomersHelp'), salesCardStyle)}
             </div>
           </section>
         ) : null}

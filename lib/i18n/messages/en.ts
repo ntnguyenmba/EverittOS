@@ -304,9 +304,9 @@ export const messages: Messages = {
       email: 'Email notifications',
       operational: 'Operational alerts (assignments, due dates, invites)',
       push: 'Push notifications',
-      pushFuture: 'Coming soon for mobile apps.',
+      pushFuture: 'Not available yet in this release.',
       sms: 'SMS notifications',
-      smsFuture: 'Coming soon where supported.',
+      smsFuture: 'Not available yet in this release.',
       save: 'Save notification settings',
       saved: 'Notification settings saved.',
       saveError: 'Unable to save notification settings.'
@@ -504,6 +504,20 @@ export const messages: Messages = {
     noUpcomingJobs: 'No upcoming jobs in the next two weeks.',
     customersAndLeads: 'Customers & leads',
     noCustomersOrLeads: 'No customers or leads yet. Add your first customer or lead to get started.',
+    myWork: 'My work',
+    myWorkSubtitle: 'Today, assigned jobs, customer contact, and field actions.',
+    crm: {
+      openLeads: 'Open leads',
+      openLeadsHelp: 'New, contacted, qualified, proposal, and reopened leads.',
+      closedLeads: 'Closed leads',
+      closedLeadsHelp: 'Won, closed lost, and cancelled leads.',
+      activeCustomers: 'Active customers',
+      activeCustomersHelp: 'Customers currently active in your workspace.',
+      recurringCustomers: 'Recurring customers',
+      recurringCustomersHelp: 'Customers marked as recurring service accounts.',
+      inactiveCustomers: 'Inactive customers',
+      inactiveCustomersHelp: 'Inactive and former customers.'
+    },
     businessActivity: 'Recent business activity',
     businessActivityEmpty:
       'No business activity yet. Create your first customer, lead, or job to get started.',
@@ -1052,7 +1066,9 @@ export const messages: Messages = {
       assignedEmail: 'Assigned email',
       assignedEmailHint: 'Optional. Who should receive this job. No People record required.',
       createTitle: 'Create a job',
-      createPermissionBlocked: 'You do not have access to create jobs on this account.'
+      createPermissionBlocked: 'You do not have access to create jobs on this account.',
+      restoreJob: 'Restore job',
+      cancelJob: 'Cancel job'
     }
   }
 };

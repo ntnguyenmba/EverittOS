@@ -122,7 +122,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         worker_id: workerId || null,
-        worker_name: selected?.name || workerName.trim() || 'Contractor',
+        worker_name: selected?.name || workerName.trim() || pageCopy.unnamed,
         hours: quantity,
         hourly_cost: rate,
         payment_basis: paymentBasis,
@@ -137,7 +137,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       return;
     }
 
-    appFeedback.success('Contractor pay added.');
+    appFeedback.success(pageCopy.added);
     setWorkerId('');
     setWorkerName('');
     setPaymentBasis('hourly');
@@ -182,7 +182,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         worker_id: editWorkerId || null,
-        worker_name: selected?.name || editWorkerName.trim() || 'Contractor',
+        worker_name: selected?.name || editWorkerName.trim() || pageCopy.unnamed,
         hours: quantity,
         hourly_cost: rate,
         payment_basis: editPaymentBasis,
@@ -197,7 +197,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       return;
     }
 
-    appFeedback.success(json.migrationWarning || 'Contractor pay updated.');
+    appFeedback.success(json.migrationWarning || pageCopy.updated);
     setEditingId(null);
     await load();
     onChange?.();
@@ -213,7 +213,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       appFeedback.error(json.error || 'Unable to remove contractor pay.');
       return;
     }
-    appFeedback.success('Contractor pay removed.');
+    appFeedback.success(pageCopy.removed);
     await load();
     onChange?.();
   }
@@ -240,7 +240,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       appFeedback.error(json.error || 'Unable to duplicate contractor pay.');
       return;
     }
-    appFeedback.success('Contractor pay duplicated.');
+    appFeedback.success(pageCopy.duplicated);
     await load();
     onChange?.();
   }
@@ -286,14 +286,14 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const contractorTotals = useMemo(() => {
     const map = new Map<string, { name: string; total: number }>();
     for (const row of entries) {
-      const name = row.worker_name || 'Contractor';
+      const name = row.worker_name || pageCopy.unnamed;
       const key = name.toLowerCase();
       const current = map.get(key) || { name, total: 0 };
       current.total += Number(row.total_cost || 0);
       map.set(key, current);
     }
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [entries]);
+  }, [entries, pageCopy.unnamed]);
 
   return (
     <section className="card finance-section">
@@ -307,15 +307,15 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       {!loading && entries.length > 0 ? (
         <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
           <div className="finance-metric">
-            <span className="finance-metric-label">Unpaid</span>
+            <span className="finance-metric-label">{financeCopy.statusUnpaid}</span>
             <strong>{formatCurrency(unpaidLabor)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Pending</span>
+            <span className="finance-metric-label">{pageCopy.pending}</span>
             <strong>{formatCurrency(pendingLabor)}</strong>
           </div>
           <div className="finance-metric">
-            <span className="finance-metric-label">Paid</span>
+            <span className="finance-metric-label">{pageCopy.paid}</span>
             <strong>{formatCurrency(paidLabor)}</strong>
           </div>
           <div className="finance-metric featured">
@@ -351,7 +351,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
               <div key={entry.id} className="finance-list-card">
                 {isEditing ? (
                   <div className="finance-form-block compact-finance-form" style={{ width: '100%' }}>
-                    <label>Contractor or cleaner</label>
+                    <label>{pageCopy.contractorOrCleaner}</label>
                     {workers.length > 0 ? (
                       <select className="input" value={editWorkerId} onChange={(e) => setEditWorkerId(e.target.value)}>
                         <option value="">Manual name</option>
@@ -364,7 +364,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                     ) : null}
                     <input
                       className="input"
-                      placeholder="Contractor name"
+                      placeholder={pageCopy.contractorNamePlaceholder}
                       value={editWorkerName}
                       onChange={(e) => setEditWorkerName(e.target.value)}
                     />
@@ -381,7 +381,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                     <div className="grid-2">
                       {editPaymentBasis !== 'flat' ? (
                         <div className="form-group">
-                          <label>{laborQuantityLabel(editPaymentBasis)}</label>
+                          <label>{laborQuantityLabel(editPaymentBasis, locale)}</label>
                           <input
                             className="input"
                             type="number"
@@ -428,13 +428,14 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                 ) : (
                   <>
                     <div>
-                      <strong>{entry.worker_name || 'Contractor'}</strong>
+                      <strong>{entry.worker_name || pageCopy.unnamed}</strong>
                       <p className="muted" style={{ margin: '6px 0' }}>
                         {formatLaborPaymentLabel({
                           paymentBasis: entry.payment_basis,
                           quantity: entry.hours,
                           rate: entry.hourly_cost,
-                          total: entry.total_cost
+                          total: entry.total_cost,
+                          locale
                         })}
                       </p>
                       <p className="muted" style={{ margin: '6px 0' }}>
@@ -443,7 +444,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
                       </p>
                       {entry.payment_method ? (
                         <p className="muted" style={{ margin: '6px 0' }}>
-                          Method: {entry.payment_method}
+                          {pageCopy.paymentMethodLabel}: {entry.payment_method}
                         </p>
                       ) : null}
                       {entry.payment_reference ? (
@@ -521,7 +522,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       {canManage ? (
         <div className="finance-form-block compact-finance-form" style={{ marginTop: 20 }}>
           <h4>Add contractor pay</h4>
-          <label>Contractor or cleaner</label>
+          <label>{pageCopy.contractorOrCleaner}</label>
           {workers.length > 0 ? (
             <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
               <option value="">Manual name</option>
@@ -534,7 +535,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
           ) : null}
           <input
             className="input"
-            placeholder="Contractor name"
+            placeholder={pageCopy.contractorNamePlaceholder}
             value={workerName}
             onChange={(e) => setWorkerName(e.target.value)}
           />
@@ -551,7 +552,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
           <div className="grid-2">
             {paymentBasis !== 'flat' ? (
               <div className="form-group">
-                <label>{laborQuantityLabel(paymentBasis)}</label>
+                <label>{laborQuantityLabel(paymentBasis, locale)}</label>
                 <input
                   className="input"
                   type="number"

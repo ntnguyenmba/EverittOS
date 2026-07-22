@@ -6,4 +6,6 @@
 @import './dashboard-visual-balance.css';
 @import './dashboard-final-polish.css';
 @import './dashboard-mobile-balance.css';
+@import './dashboard-mobile-alignment.css';
+@import './dashboard-metric-responsive-fix.css';
 @import './dashboard-card-fit.css';

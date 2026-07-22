@@ -361,6 +361,20 @@ export type MessageTree = {
     noUpcomingJobs: string;
     customersAndLeads: string;
     noCustomersOrLeads: string;
+    myWork: string;
+    myWorkSubtitle: string;
+    crm: {
+      openLeads: string;
+      openLeadsHelp: string;
+      closedLeads: string;
+      closedLeadsHelp: string;
+      activeCustomers: string;
+      activeCustomersHelp: string;
+      recurringCustomers: string;
+      recurringCustomersHelp: string;
+      inactiveCustomers: string;
+      inactiveCustomersHelp: string;
+    };
     businessActivity: string;
     businessActivityEmpty: string;
     revenue: {
@@ -843,7 +857,7 @@ export type MessageTree = {
       connectFailed: string;
     };
     customers: { notFound: string };
-    jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string };
+    jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string };
   };
 };
 

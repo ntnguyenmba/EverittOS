@@ -105,7 +105,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav-drawer-head">
-          <strong>Menu</strong>
+          <strong>{t('nav.more')}</strong>
           <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
             {t('common.close')}
           </button>
