@@ -49,6 +49,7 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [updatingStageId, setUpdatingStageId] = useState<string | null>(null);
   const [filter, setFilter] = useState<LeadFilter>('active');
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -153,8 +154,36 @@ export default function LeadsPage() {
     });
   }
 
+  async function updateLeadStage(id: string, nextStage: string) {
+    if (!canManage || updatingStageId || removingId || reopeningId) return;
+    const previousLead = leads.find((lead) => lead.id === id);
+    if (!previousLead || normalizeLeadStage(previousLead.pipeline_stage) === nextStage) return;
+
+    setUpdatingStageId(id);
+    setLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, pipeline_stage: nextStage } : lead)));
+
+    const res = await fetch(`/api/customers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_type: 'lead', pipeline_stage: nextStage })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setUpdatingStageId(null);
+
+    if (!res.ok) {
+      setLeads((current) =>
+        current.map((lead) => (lead.id === id ? { ...lead, pipeline_stage: previousLead.pipeline_stage } : lead))
+      );
+      appFeedback.error(json.error || 'Unable to update lead stage.');
+      return;
+    }
+
+    appFeedback.success(`Lead moved to ${leadPipelineLabel(nextStage)}.`);
+    void load();
+  }
+
   async function archiveLead(id: string, name: string) {
-    if (removingId) return;
+    if (removingId || updatingStageId) return;
     if (!window.confirm(`Archive lead ${name}? You can reopen it later.`)) return;
     setRemovingId(id);
     const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
@@ -171,7 +200,7 @@ export default function LeadsPage() {
   }
 
   async function reopenLead(id: string) {
-    if (reopeningId) return;
+    if (reopeningId || updatingStageId) return;
     setReopeningId(id);
     const res = await fetch(`/api/customers/${id}`, {
       method: 'PATCH',
@@ -305,6 +334,9 @@ export default function LeadsPage() {
                 const stage = normalizeLeadStage(lead.pipeline_stage);
                 const isArchived = stage === 'cancelled';
                 const isClosedLost = stage === 'closed_lost';
+                const isOpen = OPEN_STAGES.includes(stage);
+                const busy = updatingStageId === lead.id || removingId === lead.id || reopeningId === lead.id;
+
                 return (
                   <div
                     key={lead.id}
@@ -313,12 +345,31 @@ export default function LeadsPage() {
                   >
                     <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
                     <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
-                    <span className="muted">{leadPipelineLabel(lead.pipeline_stage)}</span>
+                    {canManage && isOpen ? (
+                      <select
+                        className="input"
+                        aria-label={`Stage for ${customerDisplayName(lead)}`}
+                        value={stage}
+                        disabled={busy}
+                        onChange={(event) => void updateLeadStage(lead.id, event.target.value)}
+                        style={{ width: 'auto', minWidth: 150, paddingTop: 6, paddingBottom: 6 }}
+                      >
+                        {OPEN_STAGES.map((option) => (
+                          <option key={option} value={option}>
+                            {leadPipelineLabel(option)}
+                          </option>
+                        ))}
+                        <option value="closed_lost">Close lost</option>
+                      </select>
+                    ) : (
+                      <span className="muted">{leadPipelineLabel(lead.pipeline_stage)}</span>
+                    )}
+                    {updatingStageId === lead.id ? <span className="muted">{FEEDBACK.loading}</span> : null}
                     <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
                       Edit
                     </Link>
                     {canManage && (isArchived || isClosedLost) ? (
-                      <button type="button" className="btn btn-sm" disabled={reopeningId === lead.id} onClick={() => void reopenLead(lead.id)}>
+                      <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void reopenLead(lead.id)}>
                         {reopeningId === lead.id ? FEEDBACK.loading : 'Reopen'}
                       </button>
                     ) : null}
@@ -326,7 +377,7 @@ export default function LeadsPage() {
                       <button
                         type="button"
                         className="btn btn-sm btn-danger"
-                        disabled={removingId === lead.id}
+                        disabled={busy}
                         onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}
                       >
                         {removingId === lead.id ? FEEDBACK.loading : 'Archive'}
