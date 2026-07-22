@@ -90,6 +90,7 @@ export type CustomerWriteInput = {
   pipeline_stage?: string;
   lead_source?: string;
   assigned_to?: string | null;
+  deal_value?: number | null;
 };
 
 export type CustomerUpdateInput = Partial<CustomerWriteInput>;
@@ -113,6 +114,7 @@ export function buildCustomerWritePayload(input: CustomerWriteInput): Record<str
     email: input.email?.trim() || null,
     notes: input.notes?.trim() || null,
     assigned_to: input.assigned_to?.trim() || null,
+    deal_value: input.deal_value ?? null,
     ...addressWriteFields(input.address),
     ...(input.record_type ? { record_type: input.record_type } : {}),
     ...(input.pipeline_stage ? { pipeline_stage: input.pipeline_stage } : {}),
@@ -132,6 +134,7 @@ export function buildCustomerUpdatePayload(input: CustomerUpdateInput): Record<s
   if (input.email !== undefined) payload.email = input.email?.trim() || null;
   if (input.notes !== undefined) payload.notes = input.notes?.trim() || null;
   if (input.assigned_to !== undefined) payload.assigned_to = input.assigned_to?.trim() || null;
+  if (input.deal_value !== undefined) payload.deal_value = input.deal_value;
   if (input.address !== undefined) {
     Object.assign(payload, addressWriteFields(input.address));
   }
