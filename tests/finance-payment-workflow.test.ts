@@ -16,6 +16,7 @@ import {
   type InvoicePaymentRow,
   type LaborCostRow
 } from '@/lib/dashboard-metrics';
+import { computeJobProfitability } from '@/lib/finance-server';
 import {
   calculateBalanceDue,
   calculateInvoicePaymentStatus
@@ -26,6 +27,42 @@ import {
  * Simulates create invoice → partial pay → second pay → contractor pay → expense.
  */
 describe('canonical payment workflow metrics', () => {
+  it('uses a direct payment as expected revenue when no amount or invoice was entered', () => {
+    const result = computeJobProfitability({
+      invoiceTotal: 0,
+      manualRevenue: 0,
+      collectedAmount: 350,
+      laborCost: 200,
+      materialCost: 25,
+      otherExpenses: 10,
+      hasInvoice: false
+    });
+
+    assert.equal(result.expectedAmount, 350);
+    assert.equal(result.paymentStatus, 'paid');
+    assert.equal(result.outstanding, 0);
+    assert.equal(result.expectedProfit, 115);
+    assert.equal(result.collectedProfit, 115);
+  });
+
+  it('keeps a manually entered expected amount when it is higher than a partial payment', () => {
+    const result = computeJobProfitability({
+      invoiceTotal: 0,
+      manualRevenue: 500,
+      collectedAmount: 200,
+      laborCost: 100,
+      materialCost: 0,
+      otherExpenses: 0,
+      hasInvoice: false
+    });
+
+    assert.equal(result.expectedAmount, 500);
+    assert.equal(result.paymentStatus, 'partially_paid');
+    assert.equal(result.outstanding, 300);
+    assert.equal(result.expectedProfit, 400);
+    assert.equal(result.collectedProfit, 100);
+  });
+
   it('keeps Customer invoices = Paid + Still owed (all time) through partial payments', () => {
     const invoices: InvoiceMetricRow[] = [
       {
