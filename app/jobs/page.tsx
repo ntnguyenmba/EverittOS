@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
@@ -15,7 +14,6 @@ import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
-import { RecordActions } from '@/components/record-actions';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -30,6 +28,14 @@ type Job = {
   assigned_to?: string | null;
   photo_count?: number;
 };
+
+function actionLabel(status: string | null): string {
+  const value = String(status || 'new').toLowerCase();
+  if (value === 'completed' || value === 'complete') return 'Get paid';
+  if (value === 'in_progress' || value === 'in progress' || value === 'started') return 'Continue';
+  if (value === 'cancelled' || value === 'canceled') return 'View';
+  return 'Start';
+}
 
 function JobsList() {
   const router = useRouter();
@@ -89,8 +95,8 @@ function JobsList() {
 
       const orgIsDemo = await fetchOrganizationIsDemo(supabase, org?.organizationId);
       const rows = filterDemoSeedJobs(json.jobs || [], orgIsDemo);
-      const photoCounts = await fetchPhotoCountsByJobIds(rows.map((j) => j.id));
-      setJobs(rows.map((j) => ({ ...j, photo_count: photoCounts[j.id] || 0 })));
+      const photoCounts = await fetchPhotoCountsByJobIds(rows.map((job) => job.id));
+      setJobs(rows.map((job) => ({ ...job, photo_count: photoCounts[job.id] || 0 })));
       setLoading(false);
     }
 
@@ -110,6 +116,8 @@ function JobsList() {
     setJobs((rows) => rows.filter((row) => row.id !== job.id));
   }
 
+  const filtered = Boolean(assignedToFilter || statusFilter || createdFromFilter || assignmentFilter);
+
   return (
     <AppShell plan={plan} role={role}>
       <div className="jobs-list-page">
@@ -117,87 +125,88 @@ function JobsList() {
           title={t('nav.jobs')}
           action={
             <Link className="btn btn-primary" href="/jobs/new">
-              {t('empty.jobs.action')}
+              New job
             </Link>
           }
         />
-        {assignedToFilter || statusFilter || createdFromFilter || assignmentFilter === 'missing_completion_date' ? (
+
+        <div className="button-row" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
+          <Link href="/jobs" className="btn">All</Link>
+          <Link href="/jobs?period=today" className="btn">Today</Link>
+          <Link href="/jobs?status=active" className="btn">Active</Link>
+          <Link href="/jobs?status=completed" className="btn">Finished</Link>
+          {isManagerRole(role) ? <Link href="/jobs?filter=unassigned" className="btn">Needs worker</Link> : null}
+        </div>
+
+        {filtered ? (
           <p className="muted" style={{ marginBottom: 12 }}>
-            Filtered view. <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
-          </p>
-        ) : null}
-        {isManagerRole(role) ? (
-          <p className="muted" style={{ marginBottom: 12 }}>
-            {assignmentFilter === 'unassigned' ? (
-              <>
-                Showing jobs that need assignment.{' '}
-                <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
-              </>
-            ) : (
-              <>
-                <Link href="/jobs?filter=unassigned">{t('pages.jobs.needsAssignment')}</Link>
-              </>
-            )}
-          </p>
-        ) : null}
-        {isAdminRole(role) ? (
-          <p className="muted" style={{ marginBottom: 12 }}>
-            {assignmentFilter === 'missing_completion_date' ? (
-              <>
-                Showing completed jobs missing a completion date.{' '}
-                <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
-              </>
-            ) : (
-              <Link href="/jobs?filter=missing_completion_date">{t('pages.jobs.missingCompletionDate')}</Link>
-            )}
+            Filtered · <Link href="/jobs">Show all</Link>
           </p>
         ) : null}
 
-        <div className="card table-responsive-wrap jobs-mobile-table-wrap">
-          {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
-          {loading ? <p className="loading-state" role="status">{t('common.loading')}</p> : null}
-          {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
-          {!loading && jobs.length > 0 && (
-            <table className="table jobs-mobile-table">
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Customer</th>
-                  <th>Address</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job.id}>
-                    <td data-label="Job">
-                      <span className="jobs-mobile-value">
-                        {job.title}
-                        {job.photo_count ? (
-                          <span className="muted jobs-photo-count">
-                            {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
-                          </span>
-                        ) : null}
-                      </span>
-                    </td>
-                    <td data-label="Customer"><span className="jobs-mobile-value">{job.customer_name || 'Not set'}</span></td>
-                    <td data-label="Address"><span className="jobs-mobile-value">{job.address || 'Not set'}</span></td>
-                    <td data-label="Status"><span className="jobs-mobile-value"><StatusPill status={job.status} /></span></td>
-                    <td className="table-actions jobs-mobile-actions" data-label="Actions">
-                      <RecordActions
-                        viewHref={`/jobs/${job.id}`}
-                        viewLabel="Open"
-                        onRemove={() => void removeJob(job)}
-                        removing={removingId === job.id}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {isAdminRole(role) && assignmentFilter === 'missing_completion_date' ? (
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Finished jobs missing a finish date.
+          </p>
+        ) : null}
+
+        {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
+        {loading ? <p className="loading-state" role="status">Loading...</p> : null}
+        {!loading && jobs.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
+
+        {!loading && jobs.length > 0 ? (
+          <div style={{ display: 'grid', gap: 14 }}>
+            {jobs.map((job) => (
+              <article key={job.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ marginBottom: 6 }}>{job.title}</h3>
+                    <p style={{ margin: 0 }}>{job.customer_name || 'No customer'}</p>
+                    <p className="muted" style={{ marginTop: 4 }}>{job.address || 'No address'}</p>
+                  </div>
+                  <StatusPill status={job.status} />
+                </div>
+
+                {job.photo_count ? (
+                  <p className="muted" style={{ marginTop: 10, marginBottom: 0 }}>
+                    {job.photo_count} photo{job.photo_count === 1 ? '' : 's'}
+                  </p>
+                ) : null}
+
+                <div className="button-row" style={{ marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Link href={`/jobs/${job.id}`} className="btn btn-primary">
+                    {actionLabel(job.status)}
+                  </Link>
+                  {job.address ? (
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`}
+                      className="btn"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Maps
+                    </a>
+                  ) : null}
+                  {isManagerRole(role) ? (
+                    <details style={{ marginLeft: 'auto' }}>
+                      <summary className="btn">More</summary>
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          disabled={removingId === job.id}
+                          onClick={() => void removeJob(job)}
+                        >
+                          {removingId === job.id ? 'Removing...' : 'Remove'}
+                        </button>
+                      </div>
+                    </details>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );
