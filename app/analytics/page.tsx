@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -8,9 +9,11 @@ import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { useTranslation } from '@/components/locale-provider';
+import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canSeeOrgWideData } from '@/lib/permissions';
-import { normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { fetchDashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -30,12 +33,14 @@ function metricsHaveData(summary: AnalyticsSummary | null): boolean {
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const copy = getDashboardFinanceCopy(locale);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [missingCompletionCount, setMissingCompletionCount] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -60,6 +65,11 @@ export default function AnalyticsPage() {
         return;
       }
 
+      if (isAdminRole(r) && org?.organizationId) {
+        const metrics = await fetchDashboardRevenueMetrics(supabase, org.organizationId, 'all_time');
+        setMissingCompletionCount(metrics.completedJobsMissingCompletedAt || 0);
+      }
+
       if (limitsForPlan(p).advancedReporting) {
         const res = await fetch('/api/analytics/summary');
         const json = await res.json();
@@ -82,6 +92,13 @@ export default function AnalyticsPage() {
 
       {loading ? <p className="loading-state">{t('common.loading')}</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
+
+      {!loading && !error && isAdminRole(role) && missingCompletionCount > 0 ? (
+        <p className="muted" style={{ marginBottom: 16 }}>
+          {formatDashboardCopy(copy.overview.missingCompletedAtWarning, { count: missingCompletionCount })}{' '}
+          <Link href="/jobs?filter=missing_completion_date">{t('pages.jobs.missingCompletionDate')}</Link>
+        </p>
+      ) : null}
 
       {!loading && !error && limitsForPlan(plan).advancedReporting && summary && !hasData ? (
         <LocalizedEmptyState emptyKey="analytics" />

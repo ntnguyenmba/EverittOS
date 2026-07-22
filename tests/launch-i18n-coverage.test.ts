@@ -18,7 +18,6 @@ test('dashboard finance copy covers required metric titles in every locale', () 
     assert.equal(copy.money.expectedRevenue.length > 0, true);
     assert.equal(copy.money.cashAfterCosts.length > 0, true);
     assert.equal(copy.overview.moreDetails.length > 0, true);
-    assert.equal(copy.overview.missingCompletedAtWarning.includes('{count}'), true);
     assert.doesNotMatch(copy.details.empty, /dashboard\./);
     assert.doesNotMatch(copy.money.cashAfterCosts, /net cash/i);
   }

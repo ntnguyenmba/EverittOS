@@ -857,7 +857,7 @@ export type MessageTree = {
       connectFailed: string;
     };
     customers: { notFound: string };
-    jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string };
+    jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string; missingCompletionDate: string };
   };
 };
 

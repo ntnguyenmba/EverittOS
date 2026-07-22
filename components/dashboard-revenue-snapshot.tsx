@@ -13,7 +13,7 @@ import {
   type PrimaryDashboardMetricKey
 } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
-import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -125,9 +125,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && expectedRevenue > 0;
   const rangeLabel = copy.ranges[range];
   const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
-  const missingCompletedAtCount = activeMetrics.completedJobsMissingCompletedAt ?? 0;
-  const missingCompletedAtIds = activeMetrics.completedJobsMissingCompletedAtIds ?? [];
-
   const primaryMetrics = buildPrimaryDashboardMetrics({
     expectedRevenue,
     collected: paidToYou,
@@ -331,27 +328,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       {!isLoading && !showLoadError ? (
         <>
-          {missingCompletedAtCount > 0 ? (
-            <div
-              className="settings-card"
-              role="status"
-              style={{ marginBottom: 16, borderColor: 'var(--border-strong, #c4b5a0)' }}
-            >
-              <p style={{ margin: '0 0 8px', fontWeight: 600 }}>
-                {formatDashboardCopy(copy.overview.missingCompletedAtWarning, {
-                  count: missingCompletedAtCount
-                })}
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {missingCompletedAtIds.slice(0, 8).map((jobId) => (
-                  <li key={jobId}>
-                    <Link href={`/jobs/${jobId}`}>{copy.overview.fixJob}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
           {costsMissing ? (
             <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
               {copy.money.costsMissing}

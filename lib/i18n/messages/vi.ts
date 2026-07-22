@@ -1070,7 +1070,8 @@ export const messages: Messages = {
       createTitle: 'Tạo công việc',
       createPermissionBlocked: 'Bạn không có quyền tạo công việc trên tài khoản này.',
       restoreJob: 'Khôi phục công việc',
-      cancelJob: 'Hủy công việc'
+      cancelJob: 'Hủy công việc',
+      missingCompletionDate: 'Thiếu ngày hoàn thành'
     }
   }
 };

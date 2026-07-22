@@ -117,7 +117,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: readError } = await ctx.supabase
     .from('jobs')
-    .select('id, title')
+    .select('id, title, completed_at, status')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -153,6 +153,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (ALLOWED_FIELDS.has(key) || (ctx.canManage && INTERNAL_ONLY_FIELDS.has(key))) {
       payload[key] = value;
     }
+  }
+
+  // Never overwrite an existing completion timestamp from client payloads.
+  delete payload.completed_at;
+  if (String(payload.status || '').toLowerCase() === 'completed' && !existing.completed_at) {
+    payload.completed_at = new Date().toISOString();
   }
 
   const payloadKeys = Object.keys(payload);

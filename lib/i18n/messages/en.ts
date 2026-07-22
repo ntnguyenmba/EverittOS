@@ -1068,7 +1068,8 @@ export const messages: Messages = {
       createTitle: 'Create a job',
       createPermissionBlocked: 'You do not have access to create jobs on this account.',
       restoreJob: 'Restore job',
-      cancelJob: 'Cancel job'
+      cancelJob: 'Cancel job',
+      missingCompletionDate: 'Missing completion date'
     }
   }
 };

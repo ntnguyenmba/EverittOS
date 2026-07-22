@@ -8,7 +8,6 @@ import {
   calculateEstimatedProfit,
   calculateExpectedRevenue,
   calculateUninvoicedExpectedRevenue,
-  countCompletedJobsMissingCompletedAt,
   type JobExpectedRevenueRow,
   type LaborCostRow
 } from '@/lib/dashboard-metrics';
@@ -71,7 +70,7 @@ describe('Dashboard expected revenue and profit', () => {
     );
   });
 
-  it('flags completed jobs missing completed_at and still reports a date', () => {
+  it('uses fallback reporting dates for completed jobs missing completed_at', () => {
     const job = {
       id: 'job-legacy',
       status: 'completed',
@@ -82,15 +81,21 @@ describe('Dashboard expected revenue and profit', () => {
 
     assert.equal(isCompletedJobMissingCompletedAt(job), true);
     assert.equal(getCompletedJobReportingDate(job), '2026-07-08');
-
-    const missing = countCompletedJobsMissingCompletedAt(
-      [job, { id: 'job-ok', status: 'completed', completed_at: '2026-07-09' }],
-      '2026-07-01',
-      '2026-08-01',
-      'month'
+    assert.equal(
+      getCompletedJobReportingDate({
+        ...job,
+        latest_completed_visit_date: '2026-07-11'
+      }),
+      '2026-07-11'
     );
-    assert.equal(missing.count, 1);
-    assert.deepEqual(missing.ids, ['job-legacy']);
+    assert.equal(
+      getCompletedJobReportingDate({
+        status: 'completed',
+        completed_at: null,
+        created_at: '2026-07-01'
+      }),
+      null
+    );
   });
 
   it('separates contractor cost incurred from contractor cash paid', () => {

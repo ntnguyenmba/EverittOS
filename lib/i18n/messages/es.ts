@@ -1072,7 +1072,8 @@ export const messages: Messages = {
       createTitle: 'Crear trabajo',
       createPermissionBlocked: 'No tiene acceso para crear trabajos en esta cuenta.',
       restoreJob: 'Restaurar trabajo',
-      cancelJob: 'Cancelar trabajo'
+      cancelJob: 'Cancelar trabajo',
+      missingCompletionDate: 'Sin fecha de finalización'
     }
   }
 };

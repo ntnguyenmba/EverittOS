@@ -7,6 +7,8 @@ export type JobDateFields = {
   id?: string | null;
   status?: string | null;
   completed_at?: string | null;
+  /** Latest job_visits.visit_date for a completed job (safe fallback). */
+  latest_completed_visit_date?: string | null;
   start_date?: string | null;
   scheduled_start?: string | null;
   due_date?: string | null;
@@ -25,31 +27,47 @@ export function isCompletedJobStatus(status: string | null | undefined): boolean
   return String(status || '').toLowerCase() === 'completed';
 }
 
-/** Completed jobs that need a completion date correction. */
+/** Completed jobs that need a completion date correction (admin maintenance only). */
 export function isCompletedJobMissingCompletedAt(job: JobDateFields): boolean {
   return isCompletedJobStatus(job.status) && !asDateOnly(job.completed_at);
 }
 
 /**
- * Reporting date for completed jobs.
- * Prefer completed_at; fall back to start/scheduled dates so work is not silently dropped.
+ * Latest visit_date from visit rows (used as completed-job fallback).
+ */
+export function latestVisitDate(
+  visits: Array<{ visit_date?: string | null } | null | undefined>
+): string | null {
+  let latest: string | null = null;
+  for (const visit of visits) {
+    const date = asDateOnly(visit?.visit_date);
+    if (!date) continue;
+    if (!latest || date > latest) latest = date;
+  }
+  return latest;
+}
+
+/**
+ * Reporting date for completed jobs used in period totals.
+ * Prefer completed_at; otherwise latest completed visit, start_date, scheduled_start.
+ * Returns null when no safe operational date exists (exclude from date-based totals).
+ * Does not use created_at for completed-job period assignment.
  */
 export function getCompletedJobReportingDate(job: JobDateFields): string | null {
   if (!isCompletedJobStatus(job.status)) return null;
   return (
     asDateOnly(job.completed_at) ||
+    asDateOnly(job.latest_completed_visit_date) ||
     asDateOnly(job.start_date) ||
     asDateOnly(job.scheduled_start) ||
-    asDateOnly(job.visit_start) ||
-    asDateOnly(job.due_date) ||
-    asDateOnly(job.created_at) ||
     null
   );
 }
 
 /**
  * Returns YYYY-MM-DD for the date that should drive operational reports.
- * Order: completed_at (when completed) → start_date → scheduled_start → visit_start → due_date → created_at.
+ * Completed jobs: completed_at → latest visit → start_date → scheduled_start (else null).
+ * Other jobs: start/scheduled/visit/due, then created_at only when no operational date exists.
  */
 export function getJobOperationalDate(job: JobDateFields): string | null {
   if (isCompletedJobStatus(job.status)) {

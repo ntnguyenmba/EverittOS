@@ -604,16 +604,11 @@ export function calculateEstimatedProfitPercentage(
 }
 
 export function countCompletedJobsMissingCompletedAt(
-  jobs: JobDateFields[],
-  start: string | null,
-  end: string | null,
-  range: DashboardDateRange = 'month'
+  jobs: JobDateFields[]
 ): { count: number; ids: string[] } {
   const ids: string[] = [];
   for (const job of jobs) {
     if (!isCompletedJobMissingCompletedAt(job)) continue;
-    const reportingDate = getCompletedJobReportingDate(job);
-    if (range !== 'all_time' && !inRange(reportingDate, start, end)) continue;
     const id = String(job.id || '');
     if (id) ids.push(id);
   }
@@ -710,7 +705,8 @@ export async function fetchDashboardRevenueMetrics(
     bookingsRes,
     messagesRes,
     reportsRes,
-    totalJobsRes
+    totalJobsRes,
+    visitsRes
   ] = await Promise.all([
     supabase
       .from('invoices')
@@ -755,7 +751,7 @@ export async function fetchDashboardRevenueMetrics(
       .gte('scheduled_start', `${today}T00:00:00`),
     supabase
       .from('jobs')
-      .select('status, created_at, start_date, scheduled_start, completed_at, due_date')
+      .select('id, status, created_at, start_date, scheduled_start, completed_at, due_date')
       .eq('organization_id', organizationId)
       .neq('status', 'cancelled')
       .neq('status', 'canceled'),
@@ -768,12 +764,33 @@ export async function fetchDashboardRevenueMetrics(
       .not('status', 'in', `(${CANCELLED_BOOKING_STATUSES.join(',')})`),
     supabase.from('customer_messages').select('id, created_at').eq('organization_id', organizationId),
     supabase.from('job_reports').select('id, created_at').eq('organization_id', organizationId),
-    countOrganizationJobs(supabase, organizationId, { excludeStatuses: CANCELLED_JOB_STATUSES })
+    countOrganizationJobs(supabase, organizationId, { excludeStatuses: CANCELLED_JOB_STATUSES }),
+    supabase.from('job_visits').select('job_id, visit_date').eq('organization_id', organizationId)
   ]);
 
   const safeCount = (res: { count: number | null; error: unknown }) => (res.error ? 0 : res.count || 0);
   const safeData = <T,>(res: { data: T | null; error: unknown }, fallback: T): T =>
     res.error ? fallback : res.data || fallback;
+
+  const latestVisitByJobId = new Map<string, string>();
+  for (const visit of (visitsRes.error ? [] : safeData(visitsRes, [])) as Array<{
+    job_id?: unknown;
+    visit_date?: unknown;
+  }>) {
+    const jobId = String(visit.job_id || '');
+    const visitDate = String(visit.visit_date || '').slice(0, 10);
+    if (!jobId || !/^\d{4}-\d{2}-\d{2}$/.test(visitDate)) continue;
+    const current = latestVisitByJobId.get(jobId);
+    if (!current || visitDate > current) latestVisitByJobId.set(jobId, visitDate);
+  }
+
+  const withVisitFallback = <T extends { id?: unknown }>(
+    rows: T[]
+  ): Array<T & { latest_completed_visit_date: string | null }> =>
+    rows.map((row) => ({
+      ...row,
+      latest_completed_visit_date: latestVisitByJobId.get(String(row.id || '')) || null
+    }));
 
   const invoices = safeData(invoicesRes, []) as InvoiceMetricRow[];
   // If invoice_payments table is missing (migration not applied), fall back gracefully.
@@ -822,7 +839,9 @@ export async function fetchDashboardRevenueMetrics(
     }
   }
 
-  const manualRevenueJobs = safeData(manualRevenueJobsRes, []) as JobExpectedRevenueRow[];
+  const manualRevenueJobs = withVisitFallback(
+    safeData(manualRevenueJobsRes, []) as JobExpectedRevenueRow[]
+  );
   const uninvoicedCompletedWork = Number(
     calculateUninvoicedExpectedRevenue(manualRevenueJobs, invoicedJobIds, start, end).toFixed(2)
   );
@@ -832,9 +851,13 @@ export async function fetchDashboardRevenueMetrics(
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
     : null;
 
-  const rangeJobs = safeData(jobsRes, []).filter((job) =>
-    inRange(getJobOperationalDate(job), start, end)
-  );
+  const rangeJobs = withVisitFallback(
+    safeData(jobsRes, []) as Array<JobDateFields & { id?: string | null; status?: string | null }>
+  ).filter((job) => {
+    const operationalDate = getJobOperationalDate(job);
+    if (!operationalDate) return false;
+    return inRange(operationalDate, start, end);
+  });
   const jobsByStatus: Record<string, number> = {};
   for (const job of rangeJobs) {
     const status = (job.status as string) || 'new';
@@ -866,12 +889,15 @@ export async function fetchDashboardRevenueMetrics(
   });
   const hasCreatedInvoices = invoices.length > 0;
 
-  const completedRows = safeData(completedJobsRes, []) as Array<JobDateFields & { id?: unknown }>;
+  const completedRows = withVisitFallback(
+    safeData(completedJobsRes, []) as Array<JobDateFields & { id?: unknown }>
+  );
   const completedInRange = completedRows.filter((row) => {
-    const reportingDate = getCompletedJobReportingDate(row) || getJobOperationalDate(row);
+    const reportingDate = getCompletedJobReportingDate(row);
+    if (!reportingDate) return false;
     return range === 'all_time' || inRange(reportingDate, start, end);
   });
-  const missingCompletedAt = countCompletedJobsMissingCompletedAt(completedRows, start, end, range);
+  const missingCompletedAt = countCompletedJobsMissingCompletedAt(completedRows);
 
   const customerRows = customersRes.error
     ? []
@@ -903,6 +929,7 @@ export async function fetchDashboardRevenueMetrics(
     jobsCompleted: completedRows.length,
     jobsCompletedThisMonth: completedInRange.length,
     completedJobsMissingCompletedAt: missingCompletedAt.count,
+    // IDs are retained for admin maintenance tooling only; dashboard never renders repair links.
     completedJobsMissingCompletedAtIds: missingCompletedAt.ids,
     activeCustomers: activeCustomerCount,
     customerCount: activeCustomerCount,

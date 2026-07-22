@@ -10,7 +10,7 @@ import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
@@ -121,9 +121,9 @@ function JobsList() {
             </Link>
           }
         />
-        {assignedToFilter || statusFilter || createdFromFilter ? (
+        {assignedToFilter || statusFilter || createdFromFilter || assignmentFilter === 'missing_completion_date' ? (
           <p className="muted" style={{ marginBottom: 12 }}>
-            Filtered view. <Link href="/jobs">Show all jobs</Link>
+            Filtered view. <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
           </p>
         ) : null}
         {isManagerRole(role) ? (
@@ -131,12 +131,24 @@ function JobsList() {
             {assignmentFilter === 'unassigned' ? (
               <>
                 Showing jobs that need assignment.{' '}
-                <Link href="/jobs">Show all jobs</Link>
+                <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
               </>
             ) : (
               <>
-                <Link href="/jobs?filter=unassigned">Needs assignment</Link>
+                <Link href="/jobs?filter=unassigned">{t('pages.jobs.needsAssignment')}</Link>
               </>
+            )}
+          </p>
+        ) : null}
+        {isAdminRole(role) ? (
+          <p className="muted" style={{ marginBottom: 12 }}>
+            {assignmentFilter === 'missing_completion_date' ? (
+              <>
+                Showing completed jobs missing a completion date.{' '}
+                <Link href="/jobs">{t('pages.jobs.showAll')}</Link>
+              </>
+            ) : (
+              <Link href="/jobs?filter=missing_completion_date">{t('pages.jobs.missingCompletionDate')}</Link>
             )}
           </p>
         ) : null}

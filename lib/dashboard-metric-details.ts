@@ -23,8 +23,7 @@ import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import {
   getJobOperationalDate,
   isActiveCustomerRecord,
-  isCancelledJobStatus,
-  isCompletedJobMissingCompletedAt
+  isCancelledJobStatus
 } from '@/lib/job-operational-date';
 import { formatCurrency } from '@/lib/finance-format';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
@@ -664,16 +663,11 @@ export async function fetchDashboardMetricDetails(
           rows: rows.map((job) => ({
             id: String(job.id),
             title: job.title || 'Job',
-            subtitle: [
-              job.customer_name,
-              dateLabel(getJobOperationalDate(job) || undefined),
-              job.status,
-              isCompletedJobMissingCompletedAt(job) ? 'Missing completion date' : null
-            ]
+            subtitle: [job.customer_name, dateLabel(getJobOperationalDate(job) || undefined), job.status]
               .filter(Boolean)
               .join(' · '),
             href: `/jobs/${job.id}`,
-            badge: isCompletedJobMissingCompletedAt(job) ? 'Needs date' : String(job.status || 'job')
+            badge: String(job.status || 'job')
           }))
         }
       ]

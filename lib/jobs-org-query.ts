@@ -31,6 +31,7 @@ export type JobListFilters = {
   status?: string | null;
   completedSince?: string | null;
   unassignedOnly?: boolean;
+  missingCompletionDateOnly?: boolean;
   assignedTo?: string | null;
   createdFrom?: string | null;
 };
@@ -223,6 +224,13 @@ export async function listWorkspaceJobs(
   if (filters?.unassignedOnly) {
     rows = rows.filter(
       (job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.assigned_to && !job.assigned_email
+    );
+  }
+  if (filters?.missingCompletionDateOnly) {
+    rows = rows.filter(
+      (job) =>
+        String(job.status || '').toLowerCase() === 'completed' &&
+        !String(job.completed_at || '').trim()
     );
   }
 

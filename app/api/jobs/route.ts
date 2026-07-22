@@ -6,6 +6,7 @@ import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
+import { isAdminRole, normalizeRole } from '@/lib/roles';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -25,6 +26,12 @@ export async function GET(request: Request) {
   const assignmentFilter = url.searchParams.get('filter');
   const assignedTo = url.searchParams.get('assigned_to') || undefined;
   const createdFrom = url.searchParams.get('from') || undefined;
+  const missingCompletionDateOnly = assignmentFilter === 'missing_completion_date';
+
+  if (missingCompletionDateOnly && !isAdminRole(normalizeRole(ctx.workspace.role))) {
+    return NextResponse.json({ error: 'Only owners and admins can use this filter.' }, { status: 403 });
+  }
+
   const completedSince =
     period === 'week' && status === 'completed'
       ? new Date(Date.now() - 7 * 86400000).toISOString()
@@ -37,9 +44,10 @@ export async function GET(request: Request) {
     ctx.workspace.role,
     {
       customerId,
-      status,
+      status: missingCompletionDateOnly ? 'completed' : status,
       completedSince,
       unassignedOnly: assignmentFilter === 'unassigned',
+      missingCompletionDateOnly,
       assignedTo,
       createdFrom
     }
