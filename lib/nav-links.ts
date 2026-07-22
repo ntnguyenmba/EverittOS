@@ -19,10 +19,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
-  { label: 'Calendar', href: '/schedule' }
-];
-
-const BUSINESS_NAV: NavLinkDef[] = [
+  { label: 'Calendar', href: '/schedule' },
   { label: 'Money', href: '/invoices', flag: 'invoicesNav' },
   { label: 'Team', href: '/people' },
   { label: 'Business', href: '/analytics' }
@@ -36,7 +33,6 @@ function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
 
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
   { id: 'primary', items: filterFlagged(PRIMARY_NAV) },
-  { id: 'business', showSectionLabel: true, items: filterFlagged(BUSINESS_NAV) },
   { id: 'settings', items: SETTINGS_NAV }
 ];
 
