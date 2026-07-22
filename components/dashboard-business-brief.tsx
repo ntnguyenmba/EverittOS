@@ -131,24 +131,24 @@ export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBus
   const scheduleToday = counts.jobsToday + counts.bookingsToday;
   const hasUrgentWork = counts.overdueJobs > 0 || counts.unpaidInvoices > 0 || counts.leadsNeedingFollowUp > 0;
   const summary = loading
-    ? 'Checking today\'s priorities.'
+    ? 'Checking what needs attention today.'
     : hasUrgentWork
-      ? 'Start with open jobs, invoices, and lead follow-up.'
-      : 'No urgent job, invoice, or lead issues found right now.';
+      ? 'Start with overdue jobs, unpaid invoices, and open requests.'
+      : 'Nothing urgent needs attention right now.';
 
   const items = [
-    { label: 'Revenue this month', value: formatCurrency(metrics.revenueThisMonth), href: '/analytics' },
+    { label: 'Paid this month', value: formatCurrency(metrics.revenueThisMonth), href: '/analytics' },
     { label: 'Unpaid invoices', value: loading ? '...' : String(counts.unpaidInvoices), href: '/invoices' },
     { label: 'Overdue jobs', value: loading ? '...' : String(counts.overdueJobs), href: '/jobs' },
-    { label: 'Leads to follow up', value: loading ? '...' : String(counts.leadsNeedingFollowUp), href: '/leads' },
-    { label: 'Today\'s schedule', value: loading ? '...' : String(scheduleToday), href: '/schedule' }
+    { label: 'Requests to follow up', value: loading ? '...' : String(counts.leadsNeedingFollowUp), href: '/leads' },
+    { label: 'Scheduled today', value: loading ? '...' : String(scheduleToday), href: '/schedule' }
   ];
 
   return (
-    <section className="card dashboard-brief-card" aria-label="Today's business brief">
+    <section className="card dashboard-brief-card" aria-label="Today's overview">
       <div className="dashboard-brief-head">
         <div>
-          <p className="dashboard-eyebrow">Today&apos;s Business Brief</p>
+          <p className="dashboard-eyebrow">Today</p>
           <h2>{summary}</h2>
         </div>
         <Link href="/dashboard" className="dashboard-brief-ask">
