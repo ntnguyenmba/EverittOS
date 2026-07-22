@@ -15,27 +15,17 @@ export type NavSectionDef = {
 };
 
 const PRIMARY_NAV: NavLinkDef[] = [
-  { label: 'Overview', href: '/dashboard' },
-  { label: 'Jobs', href: '/jobs' },
-  { label: 'Schedule', href: '/schedule' },
+  { label: 'Home', href: '/dashboard' },
+  { label: 'Leads', href: '/leads', flag: 'leadsNav' },
   { label: 'Customers', href: '/customers' },
-  { label: 'People', href: '/people' },
-  { label: 'Analytics', href: '/analytics' }
-];
-
-const WORKSPACE_NAV: NavLinkDef[] = [
-  { label: 'Operations', href: '/operations' },
-  { label: 'Forms', href: '/forms', flag: 'formsNav' },
-  { label: 'Templates', href: '/templates', flag: 'templatesNav' },
-  { label: 'Routes', href: '/routes', flag: 'routesNav' }
+  { label: 'Jobs', href: '/jobs' },
+  { label: 'Calendar', href: '/schedule' }
 ];
 
 const BUSINESS_NAV: NavLinkDef[] = [
-  { label: 'Leads', href: '/leads', flag: 'leadsNav' },
-  { label: 'Bookings', href: '/bookings', flag: 'bookingsNav' },
-  { label: 'Estimates', href: '/estimates', flag: 'estimatesNav' },
-  { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'Expenses', href: '/expenses' }
+  { label: 'Money', href: '/invoices', flag: 'invoicesNav' },
+  { label: 'Team', href: '/people' },
+  { label: 'Business', href: '/analytics' }
 ];
 
 const SETTINGS_NAV: NavLinkDef[] = [{ label: 'Settings', href: '/settings' }];
@@ -45,8 +35,7 @@ function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
 }
 
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
-  { id: 'primary', items: PRIMARY_NAV },
-  { id: 'workspace', showSectionLabel: true, items: filterFlagged(WORKSPACE_NAV) },
+  { id: 'primary', items: filterFlagged(PRIMARY_NAV) },
   { id: 'business', showSectionLabel: true, items: filterFlagged(BUSINESS_NAV) },
   { id: 'settings', items: SETTINGS_NAV }
 ];
@@ -61,11 +50,14 @@ export const SECONDARY_APP_ROUTES = [
   '/workers',
   '/team',
   '/photos',
+  '/forms',
+  '/templates',
   '/workflows',
   '/notifications',
   '/proposals',
   '/estimates',
   '/invoices',
+  '/expenses',
   '/messages',
   '/projects',
   '/knowledge',
