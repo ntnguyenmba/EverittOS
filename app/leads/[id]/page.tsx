@@ -23,7 +23,7 @@ function bookingHrefForLead(lead: CustomerRecord) {
   if (lead.email) params.set('clientEmail', lead.email);
   if (lead.phone) params.set('clientPhone', lead.phone);
   if (lead.notes) params.set('notes', lead.notes);
-  params.set('service', 'Lead follow-up');
+  params.set('service', 'Request follow-up');
   return `/bookings?${params.toString()}`;
 }
 
@@ -73,7 +73,7 @@ export default function LeadDetailPage({ params }: PageProps) {
     setLoading(false);
 
     if (error || !data) {
-      appFeedback.error(error?.message || 'Lead not found.');
+      appFeedback.error(error?.message || 'Request not found.');
       return;
     }
 
@@ -89,7 +89,7 @@ export default function LeadDetailPage({ params }: PageProps) {
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <div className="card">Loading lead...</div>
+        <div className="card">Loading request...</div>
       </AppShell>
     );
   }
@@ -98,9 +98,9 @@ export default function LeadDetailPage({ params }: PageProps) {
     return (
       <AppShell plan={plan} role={role}>
         <div className="card">
-          Lead not found.{' '}
+          Request not found.{' '}
           <Link href="/leads" className="btn">
-            Back to leads
+            Back to requests
           </Link>
         </div>
       </AppShell>
@@ -121,7 +121,7 @@ export default function LeadDetailPage({ params }: PageProps) {
             Create booking
           </Link>
           <Link className="btn" href="/leads">
-            Back to leads
+            Back to requests
           </Link>
         </div>
       </header>
