@@ -53,18 +53,22 @@ export default function RoutesPage() {
         router.push('/login?next=/routes');
         return;
       }
+
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       const org = await fetchOrganizationContext(user.id);
       const workspaceRole = normalizeRole(org?.role || profile?.role);
       setPlan(normalizePlan(profile?.plan));
       setRole(workspaceRole);
+
       if (!isManagerRole(workspaceRole)) {
         router.push('/schedule');
         return;
       }
+
       setLoading(false);
       await load();
     }
+
     void init();
   }, [router, load]);
 
@@ -77,13 +81,15 @@ export default function RoutesPage() {
     });
     const json = await res.json();
     setOptimizing(false);
+
     if (!res.ok) {
       appFeedback.error(json.error || t('pages.routes.optimizeError'));
       return;
     }
+
     setSelectedRun(json.run);
     if (json.flaggedMissingAddress) {
-      appFeedback.error(`${json.flaggedMissingAddress} job(s) are missing addresses. ${json.note}`);
+      appFeedback.error(`${json.flaggedMissingAddress} job(s) need an address. ${json.note}`);
     }
     void load();
   }
@@ -102,66 +108,89 @@ export default function RoutesPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title={t('pages.routes.title')} subtitle={t('pages.routes.subtitle')} />
+      <PageHeader title={t('pages.routes.title')} />
 
       {canManage ? (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <input className="input" type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
-          <button type="button" className="btn btn-primary" style={{ marginTop: 8 }} disabled={optimizing} onClick={() => void optimize()}>
+        <section className="card" style={{ marginBottom: 16 }}>
+          <label className="field-label" htmlFor="route-date">
+            Date
+          </label>
+          <input
+            id="route-date"
+            className="input"
+            type="date"
+            value={serviceDate}
+            onChange={(event) => setServiceDate(event.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ marginTop: 10 }}
+            disabled={optimizing}
+            onClick={() => void optimize()}
+          >
             {optimizing ? t('pages.routes.building') : t('pages.routes.buildRoute')}
           </button>
-        </div>
+        </section>
       ) : null}
 
-      {loading ? <p className="muted">{t('pages.routes.loading')}</p> : null}
-      {!loading && runs.length === 0 ? <p className="muted">{t('pages.routes.empty')}</p> : null}
+      {loading ? <p className="loading-state">{t('pages.routes.loading')}</p> : null}
+
+      {!loading && runs.length === 0 ? (
+        <section className="card">
+          <h2>No routes yet</h2>
+          <p className="muted">Choose a date above to build a route.</p>
+        </section>
+      ) : null}
 
       {!loading && runs.length > 0 ? (
-        <div className="card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('pages.routes.colDate')}</th>
-                <th>{t('pages.routes.colStatus')}</th>
-                <th>{t('pages.routes.colStops')}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run) => (
-                <tr key={run.id}>
-                  <td>{run.service_date}</td>
-                  <td>{run.status}</td>
-                  <td>{(run.optimized_stops || []).length}</td>
-                  <td className="table-actions">
-                    <button type="button" className="btn btn-sm" onClick={() => setSelectedRun(run)}>
-                      {t('pages.routes.view')}
+        <section>
+          <h2 style={{ marginBottom: 10 }}>Saved routes</h2>
+          <div className="card-grid">
+            {runs.map((run) => (
+              <article key={run.id} className="card">
+                <strong>{run.service_date}</strong>
+                <p className="muted" style={{ margin: '6px 0' }}>
+                  {(run.optimized_stops || []).length} stops
+                </p>
+                <p style={{ margin: '0 0 12px' }}>{run.status}</p>
+                <div className="settings-actions">
+                  <button type="button" className="btn btn-sm" onClick={() => setSelectedRun(run)}>
+                    {t('pages.routes.view')}
+                  </button>
+                  {canManage && run.status !== 'applied' ? (
+                    <button type="button" className="btn btn-sm btn-primary" onClick={() => void applyRoute(run.id)}>
+                      {t('pages.routes.apply')}
                     </button>
-                    {canManage && run.status !== 'applied' ? (
-                      <button type="button" className="btn btn-sm btn-primary" onClick={() => void applyRoute(run.id)}>
-                        {t('pages.routes.apply')}
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {selectedRun ? (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h2>{t('pages.routes.stopsFor', { date: selectedRun.service_date })}</h2>
-          <ol>
+        <section className="card" style={{ marginTop: 16 }}>
+          <div className="settings-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0 }}>{t('pages.routes.stopsFor', { date: selectedRun.service_date })}</h2>
+            <button type="button" className="btn btn-sm" onClick={() => setSelectedRun(null)}>
+              Close
+            </button>
+          </div>
+          <ol style={{ paddingLeft: 22, marginBottom: 0 }}>
             {(selectedRun.optimized_stops || []).map((stop) => (
-              <li key={stop.job_id} style={{ marginBottom: 8 }}>
-                {stop.sort_order}. {stop.title} — {stop.address || t('pages.routes.missingAddress')}
-                {stop.missing_address ? <span className="muted"> ({t('pages.routes.addressNeeded')})</span> : null}
+              <li key={stop.job_id} style={{ marginBottom: 12 }}>
+                <strong>{stop.title}</strong>
+                <br />
+                <span className={stop.missing_address ? 'auth-message auth-message-error' : 'muted'}>
+                  {stop.address || t('pages.routes.missingAddress')}
+                  {stop.missing_address ? ` (${t('pages.routes.addressNeeded')})` : ''}
+                </span>
               </li>
             ))}
           </ol>
-        </div>
+        </section>
       ) : null}
     </AppShell>
   );
