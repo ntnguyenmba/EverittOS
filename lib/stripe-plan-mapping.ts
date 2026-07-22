@@ -1,7 +1,6 @@
 import type Stripe from 'stripe';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import {
-  planFromBillingAmount,
   planFromKnownStripePriceId,
   planFromKnownStripeProductId
 } from '@/lib/billing-config';
@@ -18,10 +17,6 @@ export function normalizeStripePlan(value: string | null | undefined): Everittos
   return null;
 }
 
-export function planFromAmount(amount: number | null | undefined): EverittosPlan | null {
-  return planFromBillingAmount(amount);
-}
-
 function productPlanMetadata(
   product: string | Stripe.Product | Stripe.DeletedProduct | null | undefined
 ): string | null {
@@ -36,6 +31,11 @@ function productPlanMetadata(
   );
 }
 
+/**
+ * Resolve an EverittOS plan only from identifiers or explicit metadata owned by
+ * EverittOS. Never infer a plan from price alone because the Stripe account is
+ * shared with other applications that may charge the same amount.
+ */
 export function planFromPrice(price: Stripe.Price | null | undefined): EverittosPlan | null {
   if (!price) return null;
 
@@ -49,8 +49,7 @@ export function planFromPrice(price: Stripe.Price | null | undefined): Everittos
     normalizeStripePlan(price.metadata?.plan_key) ||
     normalizeStripePlan(price.metadata?.planKey) ||
     normalizeStripePlan(price.metadata?.tier) ||
-    normalizeStripePlan(productPlanMetadata(price.product)) ||
-    planFromAmount(price.unit_amount)
+    normalizeStripePlan(productPlanMetadata(price.product))
   );
 }
 
@@ -88,9 +87,7 @@ export async function planFromSession(
     normalizeStripePlan(session.metadata?.plan_key) ||
     normalizeStripePlan(session.metadata?.tier) ||
     normalizeStripePlan(session.metadata?.selected_plan) ||
-    normalizeStripePlan(session.client_reference_id) ||
-    planFromAmount(session.amount_subtotal) ||
-    planFromAmount(session.amount_total);
+    normalizeStripePlan(session.client_reference_id);
   if (direct) return direct;
 
   try {
@@ -124,9 +121,7 @@ export function planFromCheckoutSession(
     normalizeStripePlan(session.metadata?.plan_key) ||
     normalizeStripePlan(session.metadata?.tier) ||
     normalizeStripePlan(session.metadata?.selected_plan) ||
-    normalizeStripePlan(session.client_reference_id) ||
-    planFromAmount(session.amount_subtotal) ||
-    planFromAmount(session.amount_total);
+    normalizeStripePlan(session.client_reference_id);
   if (direct) return direct;
 
   for (const item of lineItems || []) {
