@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 import { countOrganizationJobs } from '@/lib/jobs-org-query';
 import {
   getCompletedJobReportingDate,
