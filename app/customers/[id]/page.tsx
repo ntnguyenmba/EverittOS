@@ -18,10 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import {
-  customerStageLabel,
-  getCustomerLifecycleCopy
-} from '@/lib/i18n/customer-lifecycle-copy';
+import { customerStageLabel, getCustomerLifecycleCopy } from '@/lib/i18n/customer-lifecycle-copy';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
@@ -246,10 +243,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        record_type: 'customer',
-        pipeline_stage: nextStage
-      })
+      body: JSON.stringify({ record_type: 'customer', pipeline_stage: nextStage })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSavingCustomer(false);
@@ -285,187 +279,160 @@ export default function CustomerDetailPage({ params }: PageProps) {
   if (loading) {
     return (
       <AppShell plan={plan}>
-        <div className="card">Loading customer...</div>
+        <div className="card">Loading...</div>
       </AppShell>
     );
   }
 
   return (
     <AppShell plan={plan}>
-        <div className="page-head customer-card-row">
-          <CustomerLogo logoPath={logoPath} alt={displayName} size={56} />
-          <div>
-            <h2>{displayName}</h2>
-            <p className="muted">{customerStageLabel(pipelineStage, locale)}</p>
-          </div>
-          <Link className="btn" href="/customers">
-            Back
-          </Link>
+      <div className="page-head customer-card-row">
+        <CustomerLogo logoPath={logoPath} alt={displayName} size={56} />
+        <div>
+          <h2>{displayName}</h2>
+          <p className="muted">{customerStageLabel(pipelineStage, locale)}</p>
         </div>
+        <Link className="btn" href="/customers">
+          Back
+        </Link>
+      </div>
 
-        <div className="grid-2">
-          <div className="card form">
-            <h3>Edit customer</h3>
-            <label>Name</label>
-            <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
-            <label htmlFor="customer-phone">Phone</label>
-            {canEdit ? (
-              <input
-                id="customer-phone"
-                className="input"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            ) : (
-              <p>
-                <ContactLink type="phone" value={phone} />
-              </p>
-            )}
-            <label htmlFor="customer-email">Email</label>
-            {canEdit ? (
-              <input
-                id="customer-email"
-                className="input"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            ) : (
-              <p>
-                <ContactLink type="email" value={email} />
-              </p>
-            )}
-            <label htmlFor="customer-address">Address</label>
-            <input
-              id="customer-address"
-              className="input"
-              autoComplete="street-address"
-              value={address}
-              disabled={!canEdit}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-            <label>Assign to</label>
-            <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
-              <option value="">Unassigned</option>
-              {teamOptions.map((member) => (
-                <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
-              ))}
-            </select>
-            <label>Status</label>
-            <select className="input" value={pipelineStage} disabled={!canEdit} onChange={(e) => setPipelineStage(e.target.value)}>
-              {CUSTOMER_STAGE_VALUES.map((stage) => (
-                <option key={stage} value={stage}>{customerStageLabel(stage, locale)}</option>
-              ))}
-            </select>
-            <label>Notes</label>
-            <textarea className="input" rows={4} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} />
-            {canEdit && (
-              <>
-                <label className="auth-field">
-                  <span>Logo</span>
-                  <input
-                    className="input"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    disabled={logoUploading}
-                    onChange={(e) => void uploadLogo(e.target.files?.[0] || null)}
-                  />
-                </label>
-                {logoUploading ? <p className="loading-state" role="status">Uploading logo...</p> : null}
-                <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
-                  <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
-                    {savingCustomer ? FEEDBACK.loading : 'Save'}
-                  </button>
-                  {pipelineStage !== 'active' ? (
-                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>
-                      {lifecycle.actions.markActive}
-                    </button>
-                  ) : null}
-                  {pipelineStage !== 'past' ? (
-                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('past')}>
-                      {lifecycle.actions.markPast}
-                    </button>
-                  ) : null}
-                  {pipelineStage === 'archived' ? (
-                    <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>
-                      {lifecycle.actions.restore}
-                    </button>
-                  ) : null}
-                  <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>
-                    {movingToLead ? FEEDBACK.loading : 'Move back to lead'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={async () => {
-                      if (!window.confirm('Archive this customer? Their history stays available.')) return;
-                      const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
-                      const json = (await res.json().catch(() => ({}))) as { error?: string };
-                      if (!res.ok) {
-                        appFeedback.error(json.error || 'Unable to archive customer.');
-                        return;
-                      }
-                      appFeedback.deleted();
-                      router.push('/customers?stage=archived');
-                    }}
-                  >
-                    {lifecycle.actions.archive}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="button-row" style={{ flexWrap: 'wrap' }}>
+          {phone ? (
+            <a className="btn btn-primary" href={`tel:${phone}`}>
+              Call
+            </a>
+          ) : null}
+          {phone ? (
+            <a className="btn" href={`sms:${phone}`}>
+              Text
+            </a>
+          ) : null}
+          {address ? (
+            <a className="btn" href={`https://maps.google.com/?q=${encodeURIComponent(address)}`} target="_blank" rel="noreferrer">
+              Maps
+            </a>
+          ) : null}
+          {canEdit ? (
+            <Link className="btn" href={`/jobs/new?customerId=${customerId}`}>
+              New job
+            </Link>
+          ) : null}
+        </div>
+        <div style={{ marginTop: 14 }}>
+          {phone ? <p><ContactLink type="phone" value={phone} /></p> : null}
+          {email ? <p><ContactLink type="email" value={email} /></p> : null}
+          {address ? <p>{address}</p> : null}
+        </div>
+      </div>
 
-          <div className="card form">
-            <h3>Properties</h3>
-            {properties.length === 0 && <p>No properties yet.</p>}
-            {properties.map((p) => (
-              <p key={p.id}>
-                <strong>{p.name}</strong> · {p.address || 'No address'}
-              </p>
+      <details className="card" style={{ marginBottom: 18 }}>
+        <summary><strong>Customer details</strong></summary>
+        <div className="form" style={{ marginTop: 16 }}>
+          <label>Name</label>
+          <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
+          <label htmlFor="customer-phone">Phone</label>
+          <input id="customer-phone" className="input" type="tel" autoComplete="tel" inputMode="tel" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
+          <label htmlFor="customer-email">Email</label>
+          <input id="customer-email" className="input" type="email" autoComplete="email" inputMode="email" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="customer-address">Address</label>
+          <input id="customer-address" className="input" autoComplete="street-address" value={address} disabled={!canEdit} onChange={(e) => setAddress(e.target.value)} />
+          <label>Assign to</label>
+          <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
+            <option value="">Unassigned</option>
+            {teamOptions.map((member) => (
+              <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
             ))}
-            {canEdit && (
-              <>
-                <input className="input" placeholder="Property name" value={propName} onChange={(e) => setPropName(e.target.value)} />
-                <input className="input" placeholder="Address" value={propAddress} onChange={(e) => setPropAddress(e.target.value)} />
-                <button type="button" className="btn" onClick={addProperty}>
-                  Add property
-                </button>
-              </>
-            )}
-          </div>
+          </select>
+          <label>Status</label>
+          <select className="input" value={pipelineStage} disabled={!canEdit} onChange={(e) => setPipelineStage(e.target.value)}>
+            {CUSTOMER_STAGE_VALUES.map((stage) => (
+              <option key={stage} value={stage}>{customerStageLabel(stage, locale)}</option>
+            ))}
+          </select>
+          <label>Notes</label>
+          <textarea className="input" rows={3} value={notes} disabled={!canEdit} onChange={(e) => setNotes(e.target.value)} />
+          {canEdit ? (
+            <>
+              <label className="auth-field">
+                <span>Logo</span>
+                <input className="input" type="file" accept="image/png,image/jpeg,image/webp" disabled={logoUploading} onChange={(e) => void uploadLogo(e.target.files?.[0] || null)} />
+              </label>
+              {logoUploading ? <p className="loading-state" role="status">Uploading...</p> : null}
+              <button type="button" className="btn btn-primary" disabled={savingCustomer} onClick={() => void saveCustomer()}>
+                {savingCustomer ? FEEDBACK.loading : 'Save'}
+              </button>
+            </>
+          ) : null}
         </div>
+      </details>
 
-        {orgId ? <RecordSharingPanel organizationId={orgId} recordType="customer" recordId={customerId} canManage={canEdit} /> : null}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="dashboard-section-head">
+          <h3>Jobs</h3>
+          {canEdit ? <Link href={`/jobs/new?customerId=${customerId}`} className="dashboard-section-link">New job</Link> : null}
+        </div>
+        {jobs.length === 0 ? <p className="muted">No jobs yet.</p> : null}
+        {jobs.map((job) => (
+          <div key={job.id} className="list-row">
+            <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+            <span>{job.status}</span>
+          </div>
+        ))}
+      </div>
 
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Linked jobs</h3>
-          {jobs.length === 0 && <p>No jobs linked.</p>}
-          {jobs.map((j) => (
-            <div key={j.id} className="list-row">
-              <Link href={`/jobs/${j.id}`}>{j.title}</Link>
-              <span>{j.status}</span>
+      <details className="card" style={{ marginBottom: 18 }}>
+        <summary><strong>Properties</strong></summary>
+        <div style={{ marginTop: 16 }}>
+          {properties.length === 0 ? <p className="muted">No properties yet.</p> : null}
+          {properties.map((property) => (
+            <p key={property.id}><strong>{property.name}</strong> · {property.address || 'No address'}</p>
+          ))}
+          {canEdit ? (
+            <div className="form">
+              <input className="input" placeholder="Property name" value={propName} onChange={(e) => setPropName(e.target.value)} />
+              <input className="input" placeholder="Address" value={propAddress} onChange={(e) => setPropAddress(e.target.value)} />
+              <button type="button" className="btn" onClick={addProperty}>Add property</button>
+            </div>
+          ) : null}
+        </div>
+      </details>
+
+      {orgId ? (
+        <details className="card" style={{ marginBottom: 18 }}>
+          <summary><strong>Sharing</strong></summary>
+          <div style={{ marginTop: 16 }}>
+            <RecordSharingPanel organizationId={orgId} recordType="customer" recordId={customerId} canManage={canEdit} />
+          </div>
+        </details>
+      ) : null}
+
+      <details className="card" style={{ marginBottom: 18 }}>
+        <summary><strong>Reports</strong></summary>
+        <div style={{ marginTop: 16 }}>
+          {reports.length === 0 ? <p className="muted">No reports yet.</p> : null}
+          {reports.map((report) => (
+            <div key={report.id} className="list-row">
+              <Link href={`/jobs/${report.job_id}/report`}>{report.title}</Link>
             </div>
           ))}
         </div>
+      </details>
 
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Client portal access</h3>
+      <details className="card" style={{ marginBottom: 18 }}>
+        <summary><strong>Portal access</strong></summary>
+        <div style={{ marginTop: 16 }}>
           {!limitsForPlan(plan).clientPortal ? (
-            <p className="muted">Client portal requires Growth plan or higher.</p>
+            <p className="muted">Available on Growth and higher plans.</p>
           ) : portalAccess.length === 0 ? (
-            <p className="muted">No client portal access granted for this customer&apos;s jobs yet. Grant access from a job detail page.</p>
+            <p className="muted">No portal access yet.</p>
           ) : (
             portalAccess.map((row) => (
               <div key={`${row.job_id}-${row.client_user_id}`} className="list-row">
                 <div>
                   <strong>{row.profiles?.email || row.client_user_id}</strong>
-                  <p className="muted">Job: {jobs.find((j) => j.id === row.job_id)?.title || row.job_id}</p>
+                  <p className="muted">{jobs.find((job) => job.id === row.job_id)?.title || row.job_id}</p>
                 </div>
                 {canEdit ? (
                   <button
@@ -480,23 +447,43 @@ export default function CustomerDetailPage({ params }: PageProps) {
                       load();
                     }}
                   >
-                    Revoke
+                    Remove
                   </button>
                 ) : null}
               </div>
             ))
           )}
         </div>
+      </details>
 
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Linked reports</h3>
-          {reports.length === 0 && <p>No reports yet.</p>}
-          {reports.map((r) => (
-            <div key={r.id} className="list-row">
-              <Link href={`/jobs/${r.job_id}/report`}>{r.title}</Link>
-            </div>
-          ))}
-        </div>
+      {canEdit ? (
+        <details className="card">
+          <summary><strong>More</strong></summary>
+          <div className="button-row" style={{ marginTop: 16, flexWrap: 'wrap' }}>
+            {pipelineStage !== 'active' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.markActive}</button> : null}
+            {pipelineStage !== 'past' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('past')}>{lifecycle.actions.markPast}</button> : null}
+            {pipelineStage === 'archived' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.restore}</button> : null}
+            <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>{movingToLead ? FEEDBACK.loading : 'Move to leads'}</button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={async () => {
+                if (!window.confirm('Archive this customer?')) return;
+                const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
+                const json = (await res.json().catch(() => ({}))) as { error?: string };
+                if (!res.ok) {
+                  appFeedback.error(json.error || 'Unable to archive customer.');
+                  return;
+                }
+                appFeedback.deleted();
+                router.push('/customers?stage=archived');
+              }}
+            >
+              {lifecycle.actions.archive}
+            </button>
+          </div>
+        </details>
+      ) : null}
     </AppShell>
   );
 }
