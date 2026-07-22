@@ -10,8 +10,8 @@ test('invoice payment status rules', () => {
   assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 0 }), 'unpaid');
   assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 40 }), 'partially_paid');
   assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 100 }), 'paid');
-  assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 0, due_date: '2000-01-01' }), 'overdue');
-  assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 10, due_date: '2000-01-01' }), 'overdue');
+  assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 0, due_date: '2000-01-01' }), 'unpaid');
+  assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 10, due_date: '2000-01-01' }), 'partially_paid');
   assert.equal(calculateInvoicePaymentStatus({ amount: 100, amount_paid: 0, cancelled: true }), 'cancelled');
   assert.equal(calculateBalanceDue(500, 125), 375);
   assert.equal(calculateBalanceDue(100, 150), 0);

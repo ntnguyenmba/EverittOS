@@ -13,6 +13,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   calculateBalanceDue,
+  calculateInvoiceDocumentStatus,
   calculateInvoicePaymentStatus,
   type InvoicePaymentStatus
 } from '@/lib/outbound/invoice-payment';
@@ -102,12 +103,20 @@ function buildSummaryPatch(input: {
     due_date: input.dueDate,
     cancelled: false
   });
+  const documentStatus = calculateInvoiceDocumentStatus({
+    amount: input.invoiceAmount || nextPaid,
+    amount_paid: nextPaid,
+    due_date: input.dueDate,
+    payment_status: paymentStatus,
+    status: input.priorStatus
+  });
   const balanceDue = calculateBalanceDue(input.invoiceAmount || nextPaid, nextPaid);
 
   const patch: Record<string, unknown> = {
     amount_paid: nextPaid,
     balance_due: balanceDue,
     payment_status: paymentStatus,
+    status: documentStatus,
     last_payment_at: paidAtIso(input.paidDate),
     payment_method: input.paymentMethod?.trim() || input.priorMethod || null,
     payment_reference: input.paymentReference?.trim() || input.priorReference || null,
@@ -122,10 +131,8 @@ function buildSummaryPatch(input: {
 
   if (paymentStatus === 'paid') {
     patch.paid_at = paidAtIso(input.paidDate);
-    patch.status = 'paid';
-  } else if (paymentStatus === 'partially_paid' || paymentStatus === 'overdue') {
+  } else {
     patch.paid_at = null;
-    patch.status = paymentStatus === 'partially_paid' ? 'partial' : input.priorStatus || 'sent';
   }
 
   return { amountPaid: nextPaid, balanceDue, paymentStatus, paymentIncrement, patch };

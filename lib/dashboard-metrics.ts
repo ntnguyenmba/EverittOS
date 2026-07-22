@@ -304,28 +304,44 @@ export type OutstandingBreakdownRow = {
 /**
  * Single source of truth for Outstanding.
  * Dashboard card total and drill-down rows must use this helper.
+ *
+ * Prefer ledger payment totals when invoicePayments are provided so stale
+ * invoice.amount_paid cannot inflate Outstanding.
  */
 export function calculateOutstandingBreakdown(input: {
   invoices: InvoiceMetricRow[];
   jobs: JobRevenueRow[];
   jobPayments: JobPaymentMetricRow[];
+  invoicePayments?: InvoicePaymentRow[];
   jobLookup?: Map<string, { title?: unknown; customer_name?: unknown }>;
 }): { total: number; rows: OutstandingBreakdownRow[]; invoiceTotal: number; jobTotal: number } {
   const invoicedJobIds = collectibleInvoicedJobIds(input.invoices);
   const collectedByJob = sumJobPaymentsByJobId(input.jobPayments);
+  const paidByInvoice = new Map<string, number>();
+  const useLedger = Array.isArray(input.invoicePayments);
+  for (const row of input.invoicePayments || []) {
+    const invoiceId = String(row.invoice_id || '');
+    const amount = num(row.amount);
+    if (!invoiceId || amount <= 0) continue;
+    paidByInvoice.set(invoiceId, Number(((paidByInvoice.get(invoiceId) || 0) + amount).toFixed(2)));
+  }
   const rows: OutstandingBreakdownRow[] = [];
 
   let invoiceTotal = 0;
   for (const inv of input.invoices) {
     if (!isCollectibleInvoice(inv)) continue;
-    const owed = remainingBalance(inv.amount, inv.amount_paid);
+    const invoiceId = String(inv.id || '');
+    const paidRaw = useLedger
+      ? paidByInvoice.get(invoiceId) || 0
+      : num(inv.amount_paid);
+    const owed = remainingBalance(inv.amount, paidRaw);
     if (owed <= 0) continue;
     invoiceTotal += owed;
-    const paid = cappedAmountPaid(inv.amount, inv.amount_paid);
+    const paid = cappedAmountPaid(inv.amount, paidRaw);
     const jobId = inv.job_id ? String(inv.job_id) : '';
     const job = jobId && input.jobLookup ? input.jobLookup.get(jobId) : null;
     rows.push({
-      id: String(inv.id || ''),
+      id: invoiceId,
       sourceType: 'invoice',
       title: String(job?.title || job?.customer_name || 'Invoice'),
       customerName: job?.customer_name ? String(job.customer_name) : null,
@@ -334,7 +350,7 @@ export function calculateOutstandingBreakdown(input: {
       amountOwed: Number(owed.toFixed(2)),
       invoiceStatus: String(inv.payment_status || inv.status || 'unpaid'),
       dueDate: inv.due_date ? String(inv.due_date).slice(0, 10) : null,
-      href: jobId ? `/jobs/${jobId}` : '/invoices?payment=unpaid&focus=outstanding'
+      href: jobId ? `/jobs/${jobId}` : `/invoices?focus=${encodeURIComponent(invoiceId)}`
     });
   }
 
@@ -347,7 +363,7 @@ export function calculateOutstandingBreakdown(input: {
     const expected = num(job.revenue_amount);
     if (expected <= 0) continue;
     const paid = collectedByJob.get(jobId) || 0;
-    const owed = Math.max(0, expected - paid);
+    const owed = Math.max(0, Number((expected - paid).toFixed(2)));
     if (owed <= 0) continue;
     jobTotal += owed;
     rows.push({
@@ -385,13 +401,11 @@ export function calculateLatePayments(invoices: InvoiceMetricRow[], today = toda
     if (!isCollectibleInvoice(inv)) continue;
     const balance = remainingBalance(inv.amount, inv.amount_paid);
     if (balance <= 0) continue;
-    const status = calculateInvoicePaymentStatus({
-      amount: num(inv.amount),
-      amount_paid: cappedAmountPaid(inv.amount, inv.amount_paid),
-      due_date: inv.due_date as string | null,
-      payment_status: inv.payment_status as string | null
-    });
-    if (status === 'overdue' || (inv.due_date && String(inv.due_date).slice(0, 10) < today && balance > 0)) {
+    const due = inv.due_date ? String(inv.due_date).slice(0, 10) : '';
+    const documentStatus = String(inv.status || '').toLowerCase();
+    const isOverdue =
+      documentStatus === 'overdue' || (Boolean(due) && due < today && balance > 0);
+    if (isOverdue) {
       amount += balance;
       count += 1;
     }
@@ -932,7 +946,8 @@ export async function fetchDashboardRevenueMetrics(
   const outstandingBreakdown = calculateOutstandingBreakdown({
     invoices,
     jobs: revenueJobs,
-    jobPayments: jobPaymentRows
+    jobPayments: jobPaymentRows,
+    invoicePayments: paymentRows
   });
 
   const customerInvoices = calculateCustomerInvoices(invoices, start, end);

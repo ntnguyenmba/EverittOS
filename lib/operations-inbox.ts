@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
+import { calculateInvoiceDocumentStatus, calculateInvoicePaymentStatus } from '@/lib/outbound/invoice-payment';
 
 export type OperationsPriority = 'urgent' | 'high' | 'medium';
 export type OperationsItemType =
@@ -37,6 +37,7 @@ type InvoiceRow = {
   amount_paid: number | null;
   due_date: string | null;
   payment_status: string | null;
+  status: string | null;
   customer_name: string | null;
 };
 
@@ -77,7 +78,7 @@ export async function fetchOperationsInbox(
       .limit(1000),
     supabase
       .from('invoices')
-      .select('id, invoice_number, amount, amount_paid, due_date, payment_status, customer_name')
+      .select('id, invoice_number, amount, amount_paid, due_date, payment_status, status, customer_name')
       .eq('organization_id', organizationId)
       .limit(1000),
     supabase
@@ -155,10 +156,18 @@ export async function fetchOperationsInbox(
       amount,
       amount_paid: paid,
       due_date: invoice.due_date,
-      payment_status: invoice.payment_status
+      payment_status: invoice.payment_status,
+      status: invoice.status
+    });
+    const documentStatus = calculateInvoiceDocumentStatus({
+      amount,
+      amount_paid: paid,
+      due_date: invoice.due_date,
+      payment_status: paymentStatus,
+      status: invoice.status
     });
 
-    if (balance > 0 && paymentStatus === 'overdue') {
+    if (balance > 0 && documentStatus === 'overdue') {
       const label = invoice.invoice_number ? `Invoice ${invoice.invoice_number}` : 'Invoice';
       items.push({
         id: `overdue-invoice-${invoice.id}`,

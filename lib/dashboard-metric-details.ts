@@ -219,7 +219,7 @@ export async function fetchDashboardMetricDetails(
   }
 
   if (metric === 'invoiced' || metric === 'unpaid-invoices' || metric === 'late' || metric === 'outstanding') {
-    const [invoicesRes, jobsRes, jobPaymentsRes, jobsRevenueRes] = await Promise.all([
+    const [invoicesRes, jobsRes, jobPaymentsRes, jobsRevenueRes, invoicePaymentsRes] = await Promise.all([
       supabase
         .from('invoices')
         .select(
@@ -233,12 +233,19 @@ export async function fetchDashboardMetricDetails(
         .from('jobs')
         .select('id, title, customer_name, revenue_amount, status, completed_at, start_date, scheduled_start, created_at')
         .eq('organization_id', organizationId)
-        .not('revenue_amount', 'is', null)
+        .not('revenue_amount', 'is', null),
+      supabase
+        .from('invoice_payments')
+        .select('amount, paid_at, invoice_id')
+        .eq('organization_id', organizationId)
     ]);
 
     const invoices = (invoicesRes.data || []) as InvoiceMetricRow[];
     const jobs = new Map((jobsRes.data || []).map((job) => [String(job.id), job]));
     const jobPayments = (jobPaymentsRes.data || []) as JobPaymentMetricRow[];
+    const invoicePayments = invoicePaymentsRes.error
+      ? []
+      : ((invoicePaymentsRes.data || []) as InvoicePaymentRow[]);
 
     if (metric === 'invoiced') {
       const rows: DashboardDetailRow[] = [];
@@ -322,6 +329,7 @@ export async function fetchDashboardMetricDetails(
       invoices,
       jobs: (jobsRevenueRes.data || []) as JobRevenueRow[],
       jobPayments,
+      invoicePayments,
       jobLookup: jobs
     });
     const invoiceRows: DashboardDetailRow[] = [];
@@ -332,10 +340,10 @@ export async function fetchDashboardMetricDetails(
         title: row.customerName ? `${row.customerName} · ${row.title}` : row.title,
         subtitle:
           row.sourceType === 'invoice'
-            ? `Invoice · Expected/invoiced ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)}${
+            ? `Invoice · Expected/invoiced ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)} · Owed ${money(row.amountOwed)}${
                 row.dueDate ? ` · Due ${dateLabel(row.dueDate)}` : ''
               }${row.invoiceStatus ? ` · ${row.invoiceStatus}` : ''}`
-            : `No invoice · Expected ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)}`,
+            : `No invoice · Expected ${money(row.expectedOrInvoiced)} · Paid ${money(row.amountPaid)} · Owed ${money(row.amountOwed)}`,
         amount: row.amountOwed,
         amountLabel: money(row.amountOwed),
         href: row.href,

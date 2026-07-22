@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseMoneyInput } from '@/lib/finance-format';
 import {
   calculateBalanceDue,
+  calculateInvoiceDocumentStatus,
   calculateInvoicePaymentStatus,
   type InvoicePaymentStatus
 } from '@/lib/outbound/invoice-payment';
@@ -20,6 +21,15 @@ function paidAtIso(paidDate: string): string {
   return `${paidDate}T12:00:00.000Z`;
 }
 
+const NON_RECONCILABLE = new Set(['cancelled', 'canceled', 'void', 'voided', 'deleted']);
+
+function isNonReconciliable(paymentStatus: unknown, status: unknown): boolean {
+  return (
+    NON_RECONCILABLE.has(String(paymentStatus || '').toLowerCase()) ||
+    NON_RECONCILABLE.has(String(status || '').toLowerCase())
+  );
+}
+
 export async function reconcileInvoiceFromLedger(
   supabase: SupabaseClient,
   organizationId: string,
@@ -28,25 +38,33 @@ export async function reconcileInvoiceFromLedger(
   amountPaid: number;
   balanceDue: number;
   paymentStatus: InvoicePaymentStatus;
+  documentStatus: string;
   invoice: Record<string, unknown> | null;
 }> {
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('id, amount, due_date, status, payment_status, payment_method, payment_reference')
+    .select('id, amount, due_date, status, payment_status')
     .eq('id', invoiceId)
     .eq('organization_id', organizationId)
     .maybeSingle();
 
   if (!invoice) {
-    return { amountPaid: 0, balanceDue: 0, paymentStatus: 'unpaid', invoice: null };
-  }
-
-  const statusHint = String(invoice.payment_status || invoice.status || '').toLowerCase();
-  if (statusHint === 'cancelled' || statusHint === 'canceled') {
     return {
       amountPaid: 0,
-      balanceDue: calculateBalanceDue(invoice.amount, 0),
+      balanceDue: 0,
+      paymentStatus: 'unpaid',
+      documentStatus: 'sent',
+      invoice: null
+    };
+  }
+
+  if (isNonReconciliable(invoice.payment_status, invoice.status)) {
+    const amountPaid = Number(Math.max(0, Number((invoice as { amount_paid?: unknown }).amount_paid || 0)).toFixed(2));
+    return {
+      amountPaid,
+      balanceDue: calculateBalanceDue(invoice.amount, amountPaid),
       paymentStatus: 'cancelled',
+      documentStatus: String(invoice.status || 'cancelled'),
       invoice: invoice as Record<string, unknown>
     };
   }
@@ -56,37 +74,43 @@ export async function reconcileInvoiceFromLedger(
     .select('amount, paid_at, payment_method, payment_reference')
     .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
+    .gt('amount', 0)
     .order('paid_at', { ascending: false });
 
   const payments = rows || [];
   const amountPaid = Number(
     payments.reduce((sum, row) => sum + Math.max(0, Number(row.amount || 0)), 0).toFixed(2)
   );
-  const invoiceAmount = Math.max(0, Number(invoice.amount || 0));
+  const invoiceAmount = Number(Math.max(0, Number(invoice.amount || 0)).toFixed(2));
   const balanceDue = calculateBalanceDue(invoiceAmount, amountPaid);
   const paymentStatus = calculateInvoicePaymentStatus({
     amount: invoiceAmount,
     amount_paid: amountPaid,
-    due_date: (invoice.due_date as string | null) || null
+    due_date: (invoice.due_date as string | null) || null,
+    payment_status: invoice.payment_status as string | null,
+    status: invoice.status as string | null
   });
-  const lastPayment = payments[0];
+  const documentStatus = calculateInvoiceDocumentStatus({
+    amount: invoiceAmount,
+    amount_paid: amountPaid,
+    due_date: (invoice.due_date as string | null) || null,
+    payment_status: paymentStatus,
+    status: invoice.status as string | null
+  });
+  const lastPayment = payments[0] || null;
   const lastPaidAt = lastPayment?.paid_at ? String(lastPayment.paid_at) : null;
+  const hasPayments = payments.length > 0;
 
   const patch: Record<string, unknown> = {
     amount_paid: amountPaid,
     balance_due: balanceDue,
     payment_status: paymentStatus,
-    last_payment_at: lastPaidAt,
-    payment_method: lastPayment?.payment_method || invoice.payment_method || null,
-    payment_reference: lastPayment?.payment_reference || invoice.payment_reference || null,
-    updated_at: new Date().toISOString(),
-    status:
-      paymentStatus === 'paid'
-        ? 'paid'
-        : paymentStatus === 'partially_paid' || paymentStatus === 'overdue'
-          ? 'partial'
-          : 'sent',
-    paid_at: paymentStatus === 'paid' ? lastPaidAt : null
+    status: documentStatus,
+    last_payment_at: hasPayments ? lastPaidAt : null,
+    payment_method: hasPayments ? lastPayment?.payment_method || null : null,
+    payment_reference: hasPayments ? lastPayment?.payment_reference || null : null,
+    paid_at: paymentStatus === 'paid' ? lastPaidAt : null,
+    updated_at: new Date().toISOString()
   };
 
   const { data: updatedInvoice } = await supabase
@@ -102,12 +126,15 @@ export async function reconcileInvoiceFromLedger(
     .update(patch)
     .eq('organization_id', organizationId)
     .eq('doc_type', 'invoice')
-    .eq('source_entity_id', invoiceId);
+    .eq('source_entity_id', invoiceId)
+    .not('payment_status', 'in', '(cancelled,canceled,void,voided,deleted)')
+    .not('status', 'in', '(cancelled,canceled,void,voided,deleted)');
 
   return {
     amountPaid,
     balanceDue,
     paymentStatus,
+    documentStatus,
     invoice: (updatedInvoice as Record<string, unknown>) || null
   };
 }
@@ -123,9 +150,17 @@ export async function updateInvoicePayment(
     paymentMethod?: string | null;
     paymentReference?: string | null;
     paymentNotes?: string | null;
+    invoiceId?: string | null;
   }
 ): Promise<
-  | { ok: true; invoiceId: string; amountPaid: number; balanceDue: number; paymentStatus: InvoicePaymentStatus }
+  | {
+      ok: true;
+      invoiceId: string;
+      previousInvoiceId: string | null;
+      amountPaid: number;
+      balanceDue: number;
+      paymentStatus: InvoicePaymentStatus;
+    }
   | { ok: false; error: string; status: number }
 > {
   const { data: existing } = await supabase
@@ -151,6 +186,19 @@ export async function updateInvoicePayment(
     }
   }
 
+  const nextInvoiceId = input.invoiceId ? String(input.invoiceId) : String(existing.invoice_id);
+  if (nextInvoiceId !== String(existing.invoice_id)) {
+    const { data: targetInvoice } = await supabase
+      .from('invoices')
+      .select('id, organization_id')
+      .eq('id', nextInvoiceId)
+      .eq('organization_id', input.organizationId)
+      .maybeSingle();
+    if (!targetInvoice) {
+      return { ok: false, error: 'Target invoice not found in this organization.', status: 400 };
+    }
+  }
+
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.amount !== undefined) {
     const amount = parseMoneyInput(input.amount);
@@ -165,6 +213,7 @@ export async function updateInvoicePayment(
   if (input.paymentMethod !== undefined) update.payment_method = input.paymentMethod?.trim() || null;
   if (input.paymentReference !== undefined) update.payment_reference = input.paymentReference?.trim() || null;
   if (input.paymentNotes !== undefined) update.notes = input.paymentNotes?.trim() || null;
+  if (input.invoiceId !== undefined) update.invoice_id = nextInvoiceId;
 
   const { error } = await supabase
     .from('invoice_payments')
@@ -176,10 +225,15 @@ export async function updateInvoicePayment(
     return { ok: false, error: error.message || 'Unable to update payment.', status: 400 };
   }
 
-  const reconciled = await reconcileInvoiceFromLedger(supabase, input.organizationId, String(existing.invoice_id));
+  const reconciled = await reconcileInvoiceFromLedger(supabase, input.organizationId, nextInvoiceId);
+  if (nextInvoiceId !== String(existing.invoice_id)) {
+    await reconcileInvoiceFromLedger(supabase, input.organizationId, String(existing.invoice_id));
+  }
+
   return {
     ok: true,
-    invoiceId: String(existing.invoice_id),
+    invoiceId: nextInvoiceId,
+    previousInvoiceId: nextInvoiceId !== String(existing.invoice_id) ? String(existing.invoice_id) : null,
     amountPaid: reconciled.amountPaid,
     balanceDue: reconciled.balanceDue,
     paymentStatus: reconciled.paymentStatus
