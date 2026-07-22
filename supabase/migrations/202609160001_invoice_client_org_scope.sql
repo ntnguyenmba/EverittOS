@@ -18,3 +18,25 @@ create policy invoices_client_select on public.invoices
       )
     )
   );
+
+-- Align expense and job_labor writes with invoice management:
+-- only organization managers can mutate finance rows via the browser client.
+-- Selects remain available to org members for dashboard/reporting views.
+
+drop policy if exists expenses_org_write on public.expenses;
+create policy expenses_org_write on public.expenses
+  for all using (
+    organization_id is not null and public.can_manage_organization(organization_id)
+  )
+  with check (
+    organization_id is not null and public.can_manage_organization(organization_id)
+  );
+
+drop policy if exists job_labor_org_write on public.job_labor;
+create policy job_labor_org_write on public.job_labor
+  for all using (
+    organization_id is not null and public.can_manage_organization(organization_id)
+  )
+  with check (
+    organization_id is not null and public.can_manage_organization(organization_id)
+  );
