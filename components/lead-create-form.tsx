@@ -70,7 +70,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
     setSaving(false);
 
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save lead.');
+      appFeedback.error(json.error || 'Unable to save request.');
       return;
     }
 
@@ -85,15 +85,16 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
 
     if (json.customer?.id) {
       onCreated?.(json.customer.id);
-      setTimeout(() => router.push(`/leads/${json.customer!.id}`), 600);
+      const nextPath = redirectTo === '/leads' ? `/leads/${json.customer.id}` : redirectTo;
+      setTimeout(() => router.push(nextPath), 600);
     } else {
-      appFeedback.error('Lead saved but could not open the record. Refresh and try again.');
+      appFeedback.error('Request saved but could not be opened. Refresh and try again.');
     }
   }
 
   return (
     <div className="card form">
-      <h3 className="card-title-sm">New lead</h3>
+      <h3 className="card-title-sm">Request details</h3>
       <input className="input" placeholder="Name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -106,7 +107,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
         ))}
       </select>
       <label className="auth-field">
-        <span>Lead Source</span>
+        <span>How they found you</span>
         <select className="input" value={leadSource} onChange={(e) => setLeadSource(e.target.value)}>
           {LEAD_SOURCE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -117,7 +118,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
       </label>
       <textarea className="input" rows={4} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveLead()}>
-        {saving ? FEEDBACK.loading : 'Save lead'}
+        {saving ? FEEDBACK.loading : 'Save request'}
       </button>
     </div>
   );
