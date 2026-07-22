@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
@@ -24,12 +24,15 @@ type Job = {
   photo_count?: number;
 };
 
+type PhotoFilter = 'needs' | 'has' | 'all';
+
 export default function PhotosPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<PhotoFilter>('needs');
 
   useEffect(() => {
     async function load() {
@@ -72,73 +75,80 @@ export default function PhotosPage() {
     void load();
   }, [router]);
 
-  const jobsNeedingPhotos = jobs.filter((job) => (job.photo_count || 0) === 0);
-  const jobsWithPhotos = jobs.filter((job) => (job.photo_count || 0) > 0);
+  const jobsNeedingPhotos = useMemo(() => jobs.filter((job) => (job.photo_count || 0) === 0), [jobs]);
+  const jobsWithPhotos = useMemo(() => jobs.filter((job) => (job.photo_count || 0) > 0), [jobs]);
+  const visibleJobs = filter === 'needs' ? jobsNeedingPhotos : filter === 'has' ? jobsWithPhotos : jobs;
 
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="Before & after photos"
-        subtitle="Upload before photos, after photos, and progress photos from each job record."
+        title="Photos"
         action={
-          <Link className="btn btn-primary" href="/jobs/new">
-            Create job
+          <Link className="btn btn-primary" href="/jobs">
+            Choose job
           </Link>
         }
       />
 
-      <section className="card photos-hub-card">
-        <div className="photos-hub-grid">
-          <div>
-            <h3>Upload photos from a job</h3>
-            <p className="muted">
-              Choose a job below, then open its Before & After Photos section to upload from your phone camera or desktop.
-            </p>
-          </div>
-          <Link className="btn" href="/jobs">
-            View all jobs
-          </Link>
-        </div>
-      </section>
+      <div className="button-row" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
+        <button type="button" className={`btn ${filter === 'needs' ? 'btn-primary' : ''}`} onClick={() => setFilter('needs')}>
+          Needs photos ({jobsNeedingPhotos.length})
+        </button>
+        <button type="button" className={`btn ${filter === 'has' ? 'btn-primary' : ''}`} onClick={() => setFilter('has')}>
+          Has photos ({jobsWithPhotos.length})
+        </button>
+        <button type="button" className={`btn ${filter === 'all' ? 'btn-primary' : ''}`} onClick={() => setFilter('all')}>
+          All jobs
+        </button>
+      </div>
 
-      <section className="card photos-hub-card">
-        <h3>Needs before/after photos ({jobsNeedingPhotos.length})</h3>
-        {loading ? <p className="loading-state">Loading jobs...</p> : null}
-        {!loading && jobsNeedingPhotos.length === 0 ? <p className="muted">All current jobs have photos attached.</p> : null}
-        <div className="photos-job-list">
-          {jobsNeedingPhotos.map((job) => (
-            <Link key={job.id} className="photos-job-row" href={`/jobs/${job.id}#before-after-photos`}>
-              <span>
-                <strong>{job.title}</strong>
-                <small>{job.customer_name || job.address || 'No customer added'}</small>
-              </span>
-              <span className="photos-job-meta">
-                <StatusPill status={job.status} />
-                <span>Upload</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {loading ? <div className="card"><p className="loading-state">Loading...</p></div> : null}
 
-      <section className="card photos-hub-card">
-        <h3>Jobs with photos ({jobsWithPhotos.length})</h3>
-        {!loading && jobsWithPhotos.length === 0 ? <p className="muted">No uploaded job photos yet.</p> : null}
-        <div className="photos-job-list">
-          {jobsWithPhotos.map((job) => (
-            <Link key={job.id} className="photos-job-row" href={`/jobs/${job.id}#before-after-photos`}>
-              <span>
-                <strong>{job.title}</strong>
-                <small>{job.customer_name || job.address || 'No customer added'}</small>
-              </span>
-              <span className="photos-job-meta">
-                <StatusPill status={job.status} />
-                <span>{job.photo_count} photo{job.photo_count === 1 ? '' : 's'}</span>
-              </span>
-            </Link>
-          ))}
+      {!loading && visibleJobs.length === 0 ? (
+        <div className="card empty-action-card">
+          <h3>{filter === 'needs' ? 'All jobs have photos' : 'No photos yet'}</h3>
+          <p className="muted">
+            {filter === 'needs' ? 'Nothing needs attention.' : 'Choose a job to add before and after photos.'}
+          </p>
+          <Link className="btn btn-primary" href="/jobs">View jobs</Link>
         </div>
-      </section>
+      ) : null}
+
+      {!loading && visibleJobs.length > 0 ? (
+        <div style={{ display: 'grid', gap: 14 }}>
+          {visibleJobs.map((job) => {
+            const hasPhotos = (job.photo_count || 0) > 0;
+            return (
+              <article key={job.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                  <div>
+                    <h3 style={{ marginBottom: 6 }}>{job.title}</h3>
+                    <p style={{ marginBottom: 4 }}>{job.customer_name || 'No customer'}</p>
+                    {job.address ? <p className="muted" style={{ marginBottom: 0 }}>{job.address}</p> : null}
+                  </div>
+                  <StatusPill status={job.status} />
+                </div>
+
+                <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+                  {hasPhotos ? `${job.photo_count} photo${job.photo_count === 1 ? '' : 's'}` : 'No photos'}
+                </p>
+
+                <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+                  <Link className="btn btn-primary" href={`/jobs/${job.id}#before-after-photos`}>
+                    {hasPhotos ? 'View photos' : 'Add photos'}
+                  </Link>
+                  {job.address ? (
+                    <a className="btn" href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} target="_blank" rel="noreferrer">
+                      Maps
+                    </a>
+                  ) : null}
+                  <Link className="btn" href={`/jobs/${job.id}`}>Job</Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
     </AppShell>
   );
 }
