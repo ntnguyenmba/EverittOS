@@ -27,8 +27,7 @@ type AnalyticsSummary = {
 
 function metricsHaveData(summary: AnalyticsSummary | null): boolean {
   if (!summary) return false;
-  const all = [...summary.adoptionMetrics, ...summary.growthMetrics, ...summary.usageMetrics];
-  return all.some((m) => m.value > 0);
+  return [...summary.adoptionMetrics, ...summary.growthMetrics, ...summary.usageMetrics].some((metric) => metric.value > 0);
 }
 
 export default function AnalyticsPage() {
@@ -54,68 +53,72 @@ export default function AnalyticsPage() {
 
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       const org = await fetchOrganizationContext(user.id);
-      const p = normalizePlan(profile?.plan);
-      const r = normalizeRole(org?.role || profile?.role);
-      setPlan(p);
-      setRole(r);
+      const nextPlan = normalizePlan(profile?.plan);
+      const nextRole = normalizeRole(org?.role || profile?.role);
+      setPlan(nextPlan);
+      setRole(nextRole);
 
-      if (!canSeeOrgWideData(r)) {
+      if (!canSeeOrgWideData(nextRole)) {
         setLoading(false);
-        setError('Your role cannot access organization analytics.');
+        setError('You do not have access to business numbers.');
         return;
       }
 
-      if (isAdminRole(r) && org?.organizationId) {
+      if (isAdminRole(nextRole) && org?.organizationId) {
         const metrics = await fetchDashboardRevenueMetrics(supabase, org.organizationId, 'all_time');
         setMissingCompletionCount(metrics.completedJobsMissingCompletedAt || 0);
       }
 
-      if (limitsForPlan(p).advancedReporting) {
+      if (limitsForPlan(nextPlan).advancedReporting) {
         const res = await fetch('/api/analytics/summary');
         const json = await res.json();
-        if (!res.ok) {
-          setError(json.error || 'Unable to load analytics.');
-        } else {
-          setSummary(json);
-        }
+        if (!res.ok) setError(json.error || 'Unable to load analytics.');
+        else setSummary(json);
       }
       setLoading(false);
     }
-    load();
+
+    void load();
   }, [router]);
 
   const hasData = useMemo(() => metricsHaveData(summary), [summary]);
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title={t('ux.pageTitles.analytics')} subtitle={t('ux.helperAnalytics')} />
+      <PageHeader title="Business numbers" />
 
-      {loading ? <p className="loading-state">{t('common.loading')}</p> : null}
+      {loading ? <p className="loading-state">Loading...</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
 
       {!loading && !error && isAdminRole(role) && missingCompletionCount > 0 ? (
-        <p className="muted" style={{ marginBottom: 16 }}>
-          {formatDashboardCopy(copy.overview.missingCompletedAtWarning, { count: missingCompletionCount })}{' '}
-          <Link href="/jobs?filter=missing_completion_date">{t('pages.jobs.missingCompletionDate')}</Link>
-        </p>
+        <div className="card" style={{ marginBottom: 18 }}>
+          <strong>Some completed jobs need a completion date.</strong>
+          <p className="muted" style={{ margin: '6px 0 12px' }}>
+            {formatDashboardCopy(copy.overview.missingCompletedAtWarning, { count: missingCompletionCount })}
+          </p>
+          <Link className="btn btn-sm" href="/jobs?filter=missing_completion_date">
+            Fix jobs
+          </Link>
+        </div>
       ) : null}
+
+      {!error && canAccessFinancials(role, plan) ? <BusinessPerformanceSection /> : null}
 
       {!loading && !error && limitsForPlan(plan).advancedReporting && summary && !hasData ? (
-        <LocalizedEmptyState emptyKey="analytics" />
-      ) : null}
-
-      {!error && canAccessFinancials(role, plan) ? (
-        <div style={{ marginBottom: 28 }}>
-          <BusinessPerformanceSection />
+        <div style={{ marginTop: 18 }}>
+          <LocalizedEmptyState emptyKey="analytics" />
         </div>
       ) : null}
 
       {limitsForPlan(plan).advancedReporting && summary && hasData ? (
-        <div className="charts-grid">
-          <SimpleBarChart title={t('analytics.adoption')} points={summary.adoptionMetrics} />
-          <SimpleBarChart title={t('analytics.growth')} points={summary.growthMetrics} />
-          <SimpleBarChart title={t('analytics.usage')} points={summary.usageMetrics} />
-        </div>
+        <details className="card" style={{ marginTop: 18 }}>
+          <summary><strong>More reports</strong></summary>
+          <div className="charts-grid" style={{ marginTop: 18 }}>
+            <SimpleBarChart title={t('analytics.adoption')} points={summary.adoptionMetrics} />
+            <SimpleBarChart title={t('analytics.growth')} points={summary.growthMetrics} />
+            <SimpleBarChart title={t('analytics.usage')} points={summary.usageMetrics} />
+          </div>
+        </details>
       ) : null}
     </AppShell>
   );
