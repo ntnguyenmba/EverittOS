@@ -72,11 +72,14 @@ export function computeJobProfitability(input: {
   const materialCost = num(input.materialCost);
   const otherExpenses = num(input.otherExpenses);
   const totalExpenses = laborCost + materialCost + otherExpenses;
-  const expectedAmount = resolveExpectedJobAmount({
+  const configuredExpectedAmount = resolveExpectedJobAmount({
     manualRevenue,
     invoiceTotal,
     hasInvoice: input.hasInvoice
   });
+  // A recorded customer payment is confirmed revenue. When no invoice total or
+  // expected job amount was entered, use collected revenue rather than zero.
+  const expectedAmount = configuredExpectedAmount > 0 ? configuredExpectedAmount : collectedAmount;
   const outstanding =
     input.hasInvoice && invoiceTotal > 0
       ? remainingBalance(invoiceTotal, collectedAmount)
