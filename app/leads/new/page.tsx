@@ -34,11 +34,11 @@ export default function NewLeadPage() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader
-        title="New lead"
-        subtitle="Capture a new lead and track where it came from."
+        title="New request"
+        subtitle="Add someone who may book work."
         action={
           <Link className="btn" href="/leads">
-            Back to leads
+            Back to requests
           </Link>
         }
       />
