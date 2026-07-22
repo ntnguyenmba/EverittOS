@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Libre_Franklin } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
@@ -37,9 +37,9 @@ import './mobile-safe-areas.css';
 import './receipt.css';
 import './mobile-usability-fixes.css';
 
-const inter = Inter({
+const libreFranklin = Libre_Franklin({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-libre-franklin',
   display: 'swap'
 });
 
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const deployment = vercelDeploymentEnv();
 
   return (
-    <html lang="en" data-deployment={deployment} className={inter.variable}>
+    <html lang="en" data-deployment={deployment} className={libreFranklin.variable}>
       <body>
         <SupabaseRuntimeConfig />
         <PwaRegistration />
