@@ -103,19 +103,19 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
   const customerInvoices = activeMetrics.customerInvoices ?? activeMetrics.bookedRevenue ?? 0;
   const uninvoicedCompletedWork = activeMetrics.uninvoicedCompletedWork ?? 0;
-  const expectedRevenue =
+  const recordedExpectedRevenue =
     activeMetrics.expectedRevenue ??
     Number((customerInvoices + uninvoicedCompletedWork).toFixed(2));
+  // A recorded customer payment proves at least that much revenue. This prevents
+  // paid jobs with a blank expected amount from showing a false negative profit.
+  const expectedRevenue = Number(Math.max(recordedExpectedRevenue, paidToYou).toFixed(2));
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
   const latePayments = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const contractorPay = activeMetrics.contractorPayThisMonth || 0;
   const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
   const pendingContractorPay = activeMetrics.pendingContractorPay || 0;
   const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
-  const estimatedProfit =
-    activeMetrics.estimatedProfit ??
-    activeMetrics.netEstimateThisMonth ??
-    Number((expectedRevenue - contractorPay - otherExpenses).toFixed(2));
+  const estimatedProfit = Number((expectedRevenue - contractorPay - otherExpenses).toFixed(2));
   const cashAfterPaidCosts =
     activeMetrics.cashAfterPaidCosts ??
     activeMetrics.cashAfterExpenses ??
@@ -269,7 +269,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     },
     {
       label: `${copy.money.messages} · ${rangeLabel}`,
-      value: String(activeMetrics.messageCount ?? 0),
+      value: String(activeMetrics.messageCountThisMonth ?? activeMetrics.messageCount ?? 0),
       href: DASHBOARD_LINKS.messages
     },
     {
