@@ -6,8 +6,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PIPELINE_LEAD = ['lead', 'qualified', 'proposal_sent', 'negotiation'];
-const WON = ['won'];
+const OPEN_LEAD_STAGES = ['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened'];
 
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -48,21 +47,21 @@ export async function GET() {
   }
 
   const customers = customersRes.data || [];
-  const newLeads = customers.filter(
-    (c) =>
-      c.record_type === 'lead' &&
-      c.created_at &&
-      c.created_at >= since
-  ).length;
+  const leadRecords = customers.filter((c) => c.record_type === 'lead');
+  const newLeads = leadRecords.filter((c) => c.created_at && c.created_at >= since).length;
+  const openLeads = leadRecords.filter((c) => OPEN_LEAD_STAGES.includes(c.pipeline_stage || '')).length;
 
-  const openLeads = customers.filter((c) => PIPELINE_LEAD.includes(c.pipeline_stage || '')).length;
-  const wonCount = customers.filter((c) => WON.includes(c.pipeline_stage || '')).length;
-  const totalLeads = customers.filter((c) => c.record_type === 'lead').length;
-  const conversionRate = totalLeads > 0 ? Math.round((wonCount / totalLeads) * 100) : 0;
+  // Converted leads retain their lead source when their record type changes to customer.
+  const convertedLeads = customers.filter(
+    (c) => c.record_type === 'customer' && Boolean(c.lead_source)
+  ).length;
+  const totalTrackedLeads = leadRecords.length + convertedLeads;
+  const conversionRate = totalTrackedLeads > 0
+    ? Math.round((convertedLeads / totalTrackedLeads) * 100)
+    : 0;
 
   const bySource: Record<string, number> = {};
-  for (const c of customers) {
-    if (c.record_type !== 'lead') continue;
+  for (const c of leadRecords) {
     const src = c.lead_source || 'manual';
     bySource[src] = (bySource[src] || 0) + 1;
   }
