@@ -51,8 +51,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'EverittOS | Business Command Center',
-  description: 'Run customers, jobs, leads, schedules, billing, and daily business operations from one workspace.',
+  title: 'EverittOS | Run Your Service Business',
+  description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
