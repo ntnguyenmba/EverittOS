@@ -1,4 +1,4 @@
-/** Deep links from dashboard KPI cards to their supporting records. */
+/** Deep links from dashboard cards to the records behind each number. */
 export const DASHBOARD_LINKS = {
   completedWeek: '/jobs?status=completed&period=week',
   completedJobs: '/jobs?status=completed',
@@ -22,7 +22,8 @@ export const DASHBOARD_LINKS = {
   notifications: '/notifications',
   customers: '/customers',
   activeCustomers: '/dashboard/details?metric=active-customers',
-  customersLeads: '/customers?stage=lead',
+  requests: '/leads',
+  customersLeads: '/leads',
   people: '/people',
   workers: '/people',
   proposals: '/proposals',
