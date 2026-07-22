@@ -19,6 +19,8 @@ import { supabase } from '@/lib/supabase';
 type LeadMetrics = {
   newLeads30d: number;
   openLeads: number;
+  converted30d: number;
+  closedLost30d: number;
   conversionRate: number;
   formSubmissions30d: number;
   proposalsSent30d: number;
@@ -26,7 +28,14 @@ type LeadMetrics = {
   bySource: Record<string, number>;
 };
 
-type LeadFilter = 'active' | 'archived';
+type LeadFilter = 'active' | 'new30d' | 'closed_lost' | 'archived';
+
+const FILTER_TITLES: Record<LeadFilter, string> = {
+  active: 'Open leads',
+  new30d: 'New leads from the last 30 days',
+  closed_lost: 'Closed lost leads',
+  archived: 'Archived leads'
+};
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -94,11 +103,26 @@ export default function LeadsPage() {
   }, [load]);
 
   const visibleLeads = useMemo(() => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     return leads.filter((lead) => {
       const stage = normalizeLeadStage(lead.pipeline_stage);
-      return filter === 'archived' ? stage === 'cancelled' : stage !== 'cancelled';
+      if (filter === 'archived') return stage === 'cancelled';
+      if (filter === 'closed_lost') return stage === 'closed_lost';
+      if (filter === 'new30d') {
+        return Boolean(lead.created_at && new Date(lead.created_at) >= thirtyDaysAgo);
+      }
+      return ['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened'].includes(stage);
     });
   }, [filter, leads]);
+
+  function showLeadFilter(nextFilter: LeadFilter) {
+    setFilter(nextFilter);
+    window.requestAnimationFrame(() => {
+      document.getElementById('lead-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   async function archiveLead(id: string, name: string) {
     if (removingId) return;
@@ -155,14 +179,22 @@ export default function LeadsPage() {
       {metrics ? (
         <>
           <div className="dashboard-stats-grid">
-            <div className="card stat-card metric-stack">
+            <button type="button" className="card stat-card metric-stack" onClick={() => showLeadFilter('new30d')}>
               <strong className="stat-value">{metrics.newLeads30d}</strong>
               <span className="stat-label">New leads (30d)</span>
-            </div>
-            <Link href="/leads#open-leads" className="card stat-card" style={{ color: 'inherit', textDecoration: 'none' }} aria-label="View open leads">
+            </button>
+            <button type="button" className="card stat-card" onClick={() => showLeadFilter('active')}>
               <span className="stat-label">Open pipeline</span>
               <strong className="stat-value">{metrics.openLeads}</strong>
+            </button>
+            <Link href="/customers" className="card stat-card" style={{ color: 'inherit', textDecoration: 'none' }} aria-label="View customers converted from leads">
+              <span className="stat-label">Converted (30d)</span>
+              <strong className="stat-value">{metrics.converted30d}</strong>
             </Link>
+            <button type="button" className="card stat-card" onClick={() => showLeadFilter('closed_lost')}>
+              <span className="stat-label">Closed lost (30d)</span>
+              <strong className="stat-value">{metrics.closedLost30d}</strong>
+            </button>
             <div className="card stat-card">
               <span className="stat-label">Conversion rate</span>
               <strong className="stat-value">{metrics.conversionRate}%</strong>
@@ -173,16 +205,14 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          <div id="open-leads" className="card" style={{ marginTop: 18, scrollMarginTop: 24 }}>
+          <div id="lead-results" className="card" style={{ marginTop: 18, scrollMarginTop: 24 }}>
             <div className="inline-actions" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-              <h3>{filter === 'archived' ? 'Archived leads' : 'Open leads'}</h3>
+              <h3>{FILTER_TITLES[filter]}</h3>
               <div className="inline-actions">
-                <button type="button" className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : ''}`} onClick={() => setFilter('active')}>
-                  Active
-                </button>
-                <button type="button" className={`btn btn-sm ${filter === 'archived' ? 'btn-primary' : ''}`} onClick={() => setFilter('archived')}>
-                  Archived
-                </button>
+                <button type="button" className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : ''}`} onClick={() => setFilter('active')}>Open</button>
+                <button type="button" className={`btn btn-sm ${filter === 'new30d' ? 'btn-primary' : ''}`} onClick={() => setFilter('new30d')}>New 30d</button>
+                <button type="button" className={`btn btn-sm ${filter === 'closed_lost' ? 'btn-primary' : ''}`} onClick={() => setFilter('closed_lost')}>Closed lost</button>
+                <button type="button" className={`btn btn-sm ${filter === 'archived' ? 'btn-primary' : ''}`} onClick={() => setFilter('archived')}>Archived</button>
               </div>
             </div>
             {visibleLeads.length === 0 ? (
@@ -195,26 +225,14 @@ export default function LeadsPage() {
                     <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
                     <span className="muted">{leadSourceLabel(lead.lead_source)}</span>
                     <span className="muted">{leadPipelineLabel(lead.pipeline_stage)}</span>
-                    <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
-                      Edit
-                    </Link>
+                    <Link className="btn btn-sm" href={`/leads/${lead.id}`}>Edit</Link>
                     {canManage && isArchived ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={reopeningId === lead.id}
-                        onClick={() => void reopenLead(lead.id)}
-                      >
+                      <button type="button" className="btn btn-sm" disabled={reopeningId === lead.id} onClick={() => void reopenLead(lead.id)}>
                         {reopeningId === lead.id ? FEEDBACK.loading : 'Reopen'}
                       </button>
                     ) : null}
                     {canManage && !isArchived ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        disabled={removingId === lead.id}
-                        onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}
-                      >
+                      <button type="button" className="btn btn-sm btn-danger" disabled={removingId === lead.id} onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}>
                         {removingId === lead.id ? FEEDBACK.loading : 'Archive'}
                       </button>
                     ) : null}
