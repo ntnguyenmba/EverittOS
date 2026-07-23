@@ -127,7 +127,8 @@ export async function POST(request: Request) {
         ctx.workspace.organizationId,
         assignedUserId,
         assignedDisplayName,
-        ctx.workspace.ownerUserId || ctx.userId
+        ctx.workspace.ownerUserId || ctx.userId,
+        profile?.email
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to link this teammate to a worker record.';

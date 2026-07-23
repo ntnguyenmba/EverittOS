@@ -105,12 +105,41 @@ export async function workerIdForPerson(
 ): Promise<string | null> {
   const { data } = await supabase
     .from('workers')
-    .select('id')
+    .select('id, active')
     .eq('organization_id', organizationId)
     .eq('auth_user_id', userId)
-    .maybeSingle();
+    .order('created_at', { ascending: true })
+    .limit(20);
 
-  return data?.id ?? null;
+  const rows = data || [];
+  const active = rows.find((row) => row.active !== false);
+  return active?.id ?? rows[0]?.id ?? null;
+}
+
+async function workerIdForEmail(
+  supabase: SupabaseClient,
+  organizationId: string,
+  email: string | null | undefined
+): Promise<string | null> {
+  const normalized = String(email || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return null;
+
+  const { data } = await supabase
+    .from('workers')
+    .select('id, email, auth_user_id, active')
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: true })
+    .limit(50);
+
+  const match = (data || []).find((row) => {
+    const rowEmail = String(row.email || '')
+      .trim()
+      .toLowerCase();
+    return rowEmail === normalized && row.active !== false;
+  });
+  return match?.id ?? null;
 }
 
 export async function ensureWorkerForPerson(
@@ -118,10 +147,30 @@ export async function ensureWorkerForPerson(
   organizationId: string,
   userId: string,
   displayName: string,
-  ownerUserId?: string | null
+  ownerUserId?: string | null,
+  email?: string | null
 ): Promise<string> {
   const existing = await workerIdForPerson(supabase, organizationId, userId);
   if (existing) return existing;
+
+  const byEmail = await workerIdForEmail(supabase, organizationId, email);
+  if (byEmail) {
+    const { error: linkError } = await supabase
+      .from('workers')
+      .update({
+        auth_user_id: userId,
+        active: true,
+        email: email?.trim() || undefined,
+        name: displayName.trim() || undefined
+      })
+      .eq('id', byEmail)
+      .eq('organization_id', organizationId);
+
+    if (linkError) {
+      throw new Error(linkError.message || 'Unable to link existing crew record for this person.');
+    }
+    return byEmail;
+  }
 
   const { data, error } = await supabase
     .from('workers')
@@ -129,12 +178,19 @@ export async function ensureWorkerForPerson(
       organization_id: organizationId,
       user_id: ownerUserId || userId,
       auth_user_id: userId,
-      name: displayName.trim() || 'Team member'
+      email: email?.trim() || null,
+      name: displayName.trim() || 'Team member',
+      active: true
     })
     .select('id')
     .single();
 
   if (error || !data?.id) {
+    // Concurrent insert of same auth/email — reuse the winner.
+    const raced = await workerIdForPerson(supabase, organizationId, userId);
+    if (raced) return raced;
+    const racedEmail = await workerIdForEmail(supabase, organizationId, email);
+    if (racedEmail) return racedEmail;
     throw new Error(error?.message || 'Unable to link crew record for this person.');
   }
 
@@ -169,5 +225,5 @@ export async function assignedToForScheduleApi(
   if (person?.workerId) return person.workerId;
   if (person && person.userId === person.workerId) return person.workerId;
 
-  return ensureWorkerForPerson(supabase, organizationId, userId, displayName, ownerUserId);
+  return ensureWorkerForPerson(supabase, organizationId, userId, displayName, ownerUserId, null);
 }

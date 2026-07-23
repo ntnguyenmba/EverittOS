@@ -69,4 +69,27 @@ describe('team work migration safety', () => {
     assert.match(jobsApi, /listWorkspaceJobs/);
     assert.match(jobsOrgQuery, /organization_id/);
   });
+
+  it('repairs contractor worker identity and restores is_assigned_to_job on jobs RLS', () => {
+    const identityRepair = readMigration('202609190001_contractor_worker_identity_repair.sql');
+    assert.match(identityRepair, /create or replace function public\.is_assigned_to_job/);
+    assert.match(identityRepair, /w\.id = j\.assigned_to/);
+    assert.match(identityRepair, /public\.is_assigned_to_job\(id\)/);
+    assert.match(identityRepair, /repair_contractor_worker_identity/);
+    assert.match(identityRepair, /thuy@everittventures\.com/);
+    assert.match(identityRepair, /workers_org_email_active_unique/);
+    assert.match(identityRepair, /workers_org_auth_user_unique/);
+    assert.match(identityRepair, /data_repair_log/);
+
+    const laterMigrations = migrationFiles().filter((name) => name > '202609190001_contractor_worker_identity_repair.sql');
+    for (const name of laterMigrations) {
+      const sql = readMigration(name);
+      if (!sql.includes('jobs_team_work_read')) continue;
+      assert.match(
+        sql,
+        /is_assigned_to_job\(id\)/,
+        `${name} must not drop contractor assignment visibility from jobs_team_work_read`
+      );
+    }
+  });
 });

@@ -83,7 +83,8 @@ async function resolveAssignedWorkerId(
         ctx.workspace.organizationId,
         rawAssignedTo,
         displayName,
-        ctx.workspace.ownerUserId || ctx.userId
+        ctx.workspace.ownerUserId || ctx.userId,
+        profile?.email
       );
       return { ok: true, workerId, assignedUserId: rawAssignedTo };
     } catch (error) {
