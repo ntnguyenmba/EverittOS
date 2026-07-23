@@ -9,12 +9,12 @@ import { useTeamOptions } from '@/lib/team-options-client';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
-type LeadCreateFormProps = {
-  onCreated?: (leadId: string) => void;
+type RequestCreateFormProps = {
+  onCreated?: (requestId: string) => void;
   redirectTo?: string;
 };
 
-export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateFormProps) {
+export function RequestCreateForm({ onCreated, redirectTo = '/leads' }: RequestCreateFormProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
   const { teamOptions, teamOptionsLoading } = useTeamOptions();
@@ -24,10 +24,10 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
-  const [leadSource, setLeadSource] = useState('website');
+  const [requestSource, setRequestSource] = useState('website');
   const [saving, setSaving] = useState(false);
 
-  async function saveLead() {
+  async function saveRequest() {
     if (saving) return;
     if (!displayName.trim()) {
       appFeedback.error('Name is required.');
@@ -62,7 +62,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
         notes,
         assigned_to: assignedTo || null,
         pipeline_stage: 'open',
-        lead_source: leadSource,
+        lead_source: requestSource,
         record_type: 'lead'
       })
     });
@@ -81,7 +81,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
     setAddress('');
     setNotes('');
     setAssignedTo('');
-    setLeadSource('website');
+    setRequestSource('website');
 
     if (json.customer?.id) {
       onCreated?.(json.customer.id);
@@ -108,7 +108,7 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
       </select>
       <label className="auth-field">
         <span>How they found you</span>
-        <select className="input" value={leadSource} onChange={(e) => setLeadSource(e.target.value)}>
+        <select className="input" value={requestSource} onChange={(e) => setRequestSource(e.target.value)}>
           {LEAD_SOURCE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -117,9 +117,12 @@ export function LeadCreateForm({ onCreated, redirectTo = '/leads' }: LeadCreateF
         </select>
       </label>
       <textarea className="input" rows={4} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveLead()}>
+      <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRequest()}>
         {saving ? FEEDBACK.loading : 'Save request'}
       </button>
     </div>
   );
 }
+
+// Keep the old export temporarily so existing imports do not break.
+export const LeadCreateForm = RequestCreateForm;
