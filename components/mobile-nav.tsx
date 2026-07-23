@@ -11,7 +11,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { SidebarPlanCard } from '@/components/sidebar-plan-card';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageBilling } from '@/lib/roles';
+import { canManageBilling, canManageOrganizationSettings } from '@/lib/roles';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -93,6 +93,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   }
 
   const showBillingLink = normalized != null && canManageBilling(role);
+  const showIntegrationsLink = canManageOrganizationSettings(role);
   const showUpgrade =
     normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
 
@@ -105,7 +106,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav-drawer-head">
-          <strong>{t('nav.more')}</strong>
+          <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
           <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
             {t('common.close')}
           </button>
@@ -124,10 +125,27 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         </div>
 
         <div className="mobile-nav-drawer-footer">
+          <div className="app-nav" aria-label="Account navigation">
+            {showIntegrationsLink ? (
+              <Link className="nav-item mobile-nav-drawer-link" href="/settings/integrations" onClick={() => setOpen(false)}>
+                <span className="nav-item-label">Google Calendar</span>
+              </Link>
+            ) : null}
+            <Link className="nav-item mobile-nav-drawer-link" href="/settings/account" onClick={() => setOpen(false)}>
+              <span className="nav-item-label">Account settings</span>
+            </Link>
+            {showBillingLink ? (
+              <Link className="nav-item mobile-nav-drawer-link" href="/settings/billing" onClick={() => setOpen(false)}>
+                <span className="nav-item-label">Plans and pricing</span>
+              </Link>
+            ) : null}
+          </div>
+
           <SidebarPlanCard
             plan={normalized}
             showBillingLink={showBillingLink}
             showUpgrade={showUpgrade}
+            showViewPlans={showBillingLink && !showUpgrade && !hideUpgradeCta}
             onNavigate={() => setOpen(false)}
           />
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
@@ -150,12 +168,13 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           <button
             type="button"
             className="mobile-nav-menu-btn"
+            aria-label={open ? t('common.close') : 'Open menu'}
             aria-expanded={open}
             aria-controls="mobile-nav-panel"
             onClick={() => setOpen((value) => !value)}
           >
             <span className="mobile-nav-menu-icon" aria-hidden="true" />
-            <span className="sr-only">{open ? t('common.close') : t('nav.more')}</span>
+            <span className="sr-only">{open ? t('common.close') : 'Open menu'}</span>
           </button>
         </div>
       </div>
