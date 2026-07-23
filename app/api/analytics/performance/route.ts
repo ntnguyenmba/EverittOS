@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
-import { fetchBusinessPerformance } from '@/lib/finance-server-canonical';
+import { fetchBusinessPerformance } from '@/lib/finance-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -95,6 +95,7 @@ export type LaborCostRow = {
   created_at?: unknown;
   payment_status?: unknown;
   paid_at?: unknown;
+  job_id?: unknown;
 };
 
 export type InvoiceMetricRow = {
@@ -237,16 +238,44 @@ function daysBetween(startValue: unknown, endValue: unknown): number | null {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000));
 }
 
-/** Customer invoices = collectible invoice totals created in the selected period. */
+/** Customer invoices = collectible invoice totals in the selected period.
+ * When jobDates are provided, attribute invoices to the linked job operational date
+ * so creating an invoice later does not move an older job into a newer period.
+ */
 export function calculateCustomerInvoices(
   invoices: InvoiceMetricRow[],
   start: string | null,
-  end: string | null
+  end: string | null,
+  jobDates: Map<string, string> = new Map()
 ): number {
   return invoices.reduce((sum, inv) => {
     if (!isCollectibleInvoice(inv)) return sum;
-    return inRange(invoiceDate(inv), start, end) ? sum + num(inv.amount) : sum;
+    const jobId = String(inv.job_id || '');
+    const periodDate = jobId && jobDates.has(jobId) ? jobDates.get(jobId)! : invoiceDate(inv);
+    return inRange(periodDate, start, end) ? sum + num(inv.amount) : sum;
   }, 0);
+}
+
+export function buildJobOperationalDateMap(
+  jobs: Array<JobDateFields & { id?: unknown }>
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const job of jobs) {
+    const jobId = String(job.id || '');
+    if (!jobId) continue;
+    const date = getJobOperationalDate(job);
+    if (date) map.set(jobId, date);
+  }
+  return map;
+}
+
+export function dashboardInvoicePeriodDate(
+  invoice: InvoiceMetricRow,
+  jobDates: Map<string, string>
+): string {
+  const jobId = String(invoice.job_id || '');
+  if (jobId && jobDates.has(jobId)) return jobDates.get(jobId)!;
+  return invoiceDate(invoice);
 }
 
 /** Still owed on eligible uninvoiced jobs with a positive expected amount. */
@@ -504,15 +533,34 @@ export function calculatePaidToYou(input: {
   };
 }
 
-/** Accrued contractor labor cost recorded/incurred in the selected period. */
+/**
+ * Accrued contractor labor for jobs in the selected period.
+ * Prefer the job operational date over the labor row created_at.
+ * Legacy labor rows without a job (or without a usable job date) fall back to created_at.
+ */
 export function calculateContractorAccruedCost(
   laborRows: LaborCostRow[],
   start: string | null,
-  end: string | null
+  end: string | null,
+  jobDates: Map<string, string> = new Map()
 ): number {
-  return laborRows.reduce((sum, row) => {
-    return inRange(row.created_at, start, end) ? sum + num(row.total_cost) : sum;
-  }, 0);
+  return Number(
+    laborRows
+      .reduce((sum, row) => {
+        const jobId = String(row.job_id || '');
+        if (jobId) {
+          const jobDate = jobDates.get(jobId);
+          if (!jobDate) {
+            // Job exists but has no operational date — exclude from bounded periods.
+            return start === null && end === null ? sum + num(row.total_cost) : sum;
+          }
+          return inRange(jobDate, start, end) ? sum + num(row.total_cost) : sum;
+        }
+        // Legacy labor rows without a job use created_at as the only available period fallback.
+        return inRange(row.created_at, start, end) ? sum + num(row.total_cost) : sum;
+      }, 0)
+      .toFixed(2)
+  );
 }
 
 /**
@@ -869,7 +917,7 @@ export async function fetchDashboardRevenueMetrics(
       .not('revenue_amount', 'is', null),
     supabase
       .from('job_labor')
-      .select('total_cost, created_at, payment_status, paid_at')
+      .select('job_id, total_cost, created_at, payment_status, paid_at')
       .eq('organization_id', organizationId),
     supabase
       .from('jobs')
@@ -940,7 +988,16 @@ export async function fetchDashboardRevenueMetrics(
     invoicesRes.error || expensesRes.error || manualRevenueJobsRes.error || laborRes.error
   );
 
-  const revenueJobs = safeData(manualRevenueJobsRes, []) as JobRevenueRow[];
+  const revenueJobs = withVisitFallback(safeData(manualRevenueJobsRes, []) as JobRevenueRow[]);
+  const rangeJobsSource = withVisitFallback(
+    safeData(jobsRes, []) as Array<JobDateFields & { id?: string | null; status?: string | null }>
+  );
+  // Job operational dates for period attribution (invoices + contractor labor).
+  const jobDates = buildJobOperationalDateMap([
+    ...rangeJobsSource,
+    ...(revenueJobs as Array<JobDateFields & { id?: unknown }>)
+  ]);
+
   const invoicedJobIds = collectibleInvoicedJobIds(invoices);
   const outstandingBreakdown = calculateOutstandingBreakdown({
     invoices,
@@ -949,7 +1006,8 @@ export async function fetchDashboardRevenueMetrics(
     invoicePayments: paymentRows
   });
 
-  const customerInvoices = calculateCustomerInvoices(invoices, start, end);
+  // Job-based invoice totals: use linked job operational date when available.
+  const customerInvoices = calculateCustomerInvoices(invoices, start, end, jobDates);
   const { paidToYou, paymentsMissingDates } = calculatePaidToYou({
     invoices,
     paymentRows,
@@ -977,11 +1035,8 @@ export async function fetchDashboardRevenueMetrics(
     }
   }
 
-  const manualRevenueJobs = withVisitFallback(
-    safeData(manualRevenueJobsRes, []) as JobExpectedRevenueRow[]
-  );
   const uninvoicedCompletedWork = Number(
-    calculateUninvoicedExpectedRevenue(manualRevenueJobs, invoicedJobIds, start, end).toFixed(2)
+    calculateUninvoicedExpectedRevenue(revenueJobs as JobExpectedRevenueRow[], invoicedJobIds, start, end).toFixed(2)
   );
   const expectedRevenue = calculateExpectedRevenue(customerInvoices, uninvoicedCompletedWork);
 
@@ -989,9 +1044,7 @@ export async function fetchDashboardRevenueMetrics(
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
     : null;
 
-  const rangeJobs = withVisitFallback(
-    safeData(jobsRes, []) as Array<JobDateFields & { id?: string | null; status?: string | null }>
-  ).filter((job) => {
+  const rangeJobs = rangeJobsSource.filter((job) => {
     const operationalDate = getJobOperationalDate(job);
     if (!operationalDate) return false;
     return inRange(operationalDate, start, end);
@@ -1003,7 +1056,7 @@ export async function fetchDashboardRevenueMetrics(
   }
 
   const laborRows = safeData(laborRes, []) as LaborCostRow[];
-  const contractorPay = calculateContractorAccruedCost(laborRows, start, end);
+  const contractorPay = calculateContractorAccruedCost(laborRows, start, end, jobDates);
   const contractorPaymentsPaid = calculateContractorCashPaid(laborRows, start, end, range);
   const unpaidContractorPay = calculateUnpaidContractorPay(laborRows);
   const pendingContractorPay = calculatePendingContractorPay(laborRows);

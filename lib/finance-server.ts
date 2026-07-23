@@ -24,6 +24,20 @@ function num(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Expected job revenue never drops below quote, invoice, or confirmed payments.
+ * Prevents blank/low quotes from understating revenue after a direct payment.
+ */
+export function canonicalExpectedJobRevenue(input: {
+  quotedRevenue?: unknown;
+  invoiceTotal?: unknown;
+  confirmedPayments?: unknown;
+}): number {
+  return Number(
+    Math.max(0, num(input.quotedRevenue), num(input.invoiceTotal), num(input.confirmedPayments)).toFixed(2)
+  );
+}
+
 export function buildLaborRow(input: {
   hours?: unknown;
   hourlyCost?: unknown;
@@ -199,18 +213,41 @@ export async function fetchJobProfitability(
     ? num(invoice?.amount_paid)
     : await sumJobCollectedPayments(supabase, organizationId, jobId);
   const { payments } = await fetchJobPaymentHistory(supabase, organizationId, jobId);
-
-  return computeJobProfitability({
-    hasInvoice,
-    invoiceTotal: num(invoice?.amount),
-    manualRevenue: num(jobRes.data?.revenue_amount),
-    revenueNotes: (jobRes.data?.revenue_notes as string | null) || null,
-    collectedAmount,
-    laborCost: Number(laborCost.toFixed(2)),
-    materialCost,
-    otherExpenses,
-    payments
+  const invoiceTotal = num(invoice?.amount);
+  const manualRevenue = num(jobRes.data?.revenue_amount);
+  const expectedAmount = canonicalExpectedJobRevenue({
+    quotedRevenue: manualRevenue,
+    invoiceTotal,
+    confirmedPayments: collectedAmount
   });
+  const totalExpenses = Number((laborCost + materialCost + otherExpenses).toFixed(2));
+  const outstanding =
+    hasInvoice && invoiceTotal > 0
+      ? Math.max(0, expectedAmount - collectedAmount)
+      : calculateOutstandingBalance(expectedAmount, collectedAmount);
+  const expectedProfit = expectedAmount - totalExpenses;
+  const collectedProfit = collectedAmount - totalExpenses;
+
+  return {
+    ...computeJobProfitability({
+      hasInvoice,
+      invoiceTotal,
+      manualRevenue,
+      revenueNotes: (jobRes.data?.revenue_notes as string | null) || null,
+      collectedAmount,
+      laborCost: Number(laborCost.toFixed(2)),
+      materialCost,
+      otherExpenses,
+      payments
+    }),
+    expectedAmount,
+    outstanding: Number(outstanding.toFixed(2)),
+    paymentStatus: calculateJobPaymentStatus(expectedAmount, collectedAmount),
+    expectedProfit: Number(expectedProfit.toFixed(2)),
+    collectedProfit: Number(collectedProfit.toFixed(2)),
+    estimatedProfit: Number((collectedAmount > 0 ? collectedProfit : expectedProfit).toFixed(2)),
+    revenueBasis: collectedAmount > 0 ? collectedAmount : expectedAmount
+  };
 }
 
 export async function fetchBusinessPerformance(

@@ -281,7 +281,7 @@ test('finance cards use locale keys for Outstanding, Contractor cost, Expected p
   assert.equal(en.money.outstanding, 'Outstanding');
   assert.equal(en.money.outstandingHelp, 'Money customers still owe you.');
   assert.equal(en.money.contractorCost, 'Contractor cost');
-  assert.equal(en.money.contractorCostHelp, 'Total contractor labor recorded for this period.');
+  assert.equal(en.money.contractorCostHelp, 'Contractor labor for jobs in this period.');
   assert.equal(en.money.expectedProfit, 'Expected profit');
   assert.equal(en.money.expectedProfitHelp, 'Expected revenue minus contractor cost and other expenses.');
 });

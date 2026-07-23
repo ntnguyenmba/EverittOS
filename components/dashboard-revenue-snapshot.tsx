@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import {
   fetchDashboardRevenueMetrics,
+  formatCurrency,
   type DashboardDateRange,
   type DashboardRevenueMetrics
-} from '@/lib/dashboard-metrics-fixed';
-import { formatCurrency } from '@/lib/dashboard-metrics';
+} from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -112,7 +112,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       label: copy.money.contractorCost,
       value: formatCurrency(contractorPay),
       href: DASHBOARD_LINKS.contractorPay,
-      help: 'Contractor labor for jobs in this period.'
+      help: copy.money.contractorCostHelp
     },
     {
       label: copy.money.cashAfterCosts,
@@ -148,10 +148,10 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       help: copy.money.contractorPayOwedHelp
     },
     {
-      label: `${copy.money.contractorCost} paid · ${rangeLabel}`,
+      label: copy.money.contractorPayPaid,
       value: formatCurrency(contractorPaid),
       href: DASHBOARD_LINKS.contractorPay,
-      help: 'Contractor payments actually paid in this period.'
+      help: copy.money.contractorPayPaidHelp
     },
     {
       label: `${copy.money.latePayments} · ${copy.money.current}`,
@@ -182,7 +182,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         <div>
           <h2>{copy.overview.title}</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            Money received, money owed, and actual costs.
+            {copy.overview.subtitle}
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>

@@ -25,7 +25,7 @@ type LeadDetailFormProps = {
   onSaved?: () => void;
 };
 
-const EDITABLE_LEAD_STAGES = LEAD_PIPELINE_STAGES.filter((stage) => stage.value !== 'won');
+const EDITABLE_LEAD_STAGES = LEAD_PIPELINE_STAGES;
 
 const SIMPLE_STATUS_LABELS: Record<string, string> = {
   open: 'New',
@@ -48,7 +48,9 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
   const [address, setAddress] = useState(initial.address);
   const [notes, setNotes] = useState(initial.notes);
   const [leadSource, setLeadSource] = useState(initial.leadSource);
-  const [pipelineStage, setPipelineStage] = useState(initial.pipelineStage === 'won' ? 'open' : initial.pipelineStage);
+  const [pipelineStage, setPipelineStage] = useState(
+    initial.pipelineStage === 'won' ? 'open' : initial.pipelineStage
+  );
   const [assignedTo, setAssignedTo] = useState(initial.assignedTo);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);

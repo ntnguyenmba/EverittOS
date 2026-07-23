@@ -55,6 +55,8 @@ export type DashboardFinanceCopy = {
     contractorPayOwedHelp: string;
     contractorPayPending: string;
     contractorPayPendingHelp: string;
+    contractorPayPaid: string;
+    contractorPayPaidHelp: string;
     otherExpenses: string;
     otherExpensesHelp: string;
     expectedProfit: string;
@@ -171,7 +173,7 @@ const en: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Business overview',
-    subtitle: 'Expected revenue, cash collected, costs, and profit for the selected period.',
+    subtitle: 'Money received, money owed, and actual costs.',
     periodLabel: 'Dashboard period',
     moneySummaryTitle: 'Money summary',
     moreDetails: 'More details',
@@ -206,20 +208,21 @@ const en: DashboardFinanceCopy = {
     averageDaysHelpEmpty:
       'This appears after at least one invoice has an invoice date, is fully paid, and has a recorded payment date.',
     contractorCost: 'Contractor cost',
-    contractorCostHelp: 'Total contractor labor recorded for this period.',
+    contractorCostHelp: 'Contractor labor for jobs in this period.',
     contractorPay: 'Contractor cost',
-    contractorPayHelp: 'Total contractor labor recorded for this period.',
+    contractorPayHelp: 'Contractor labor for jobs in this period.',
     contractorPayOwed: 'Contractor pay owed',
     contractorPayOwedHelp: 'Contractor labor not yet marked paid.',
     contractorPayPending: 'Contractor pay pending',
     contractorPayPendingHelp: 'Contractor pay marked pending but not yet marked paid.',
+    contractorPayPaid: 'Contractor pay paid',
+    contractorPayPaidHelp: 'Contractor payments actually paid in this period.',
     otherExpenses: 'Other expenses',
-    otherExpensesHelp: 'Non-contractor expenses dated in the selected period.',
+    otherExpensesHelp: 'Expenses dated in the selected period.',
     expectedProfit: 'Expected profit',
     expectedProfitHelp: 'Expected revenue minus contractor cost and other expenses.',
     cashAfterCosts: 'Cash after paid costs',
-    cashAfterCostsHelp:
-      'Payments actually received minus contractor payments actually paid minus expenses actually paid.',
+    cashAfterCostsHelp: 'Payments received minus paid contractor costs and paid expenses.',
     expectedProfitPct: 'Expected profit percentage',
     expectedProfitPctHelp: 'Expected profit divided by expected revenue for this period.',
     costsMissing: 'Only recorded costs are included.',
@@ -337,7 +340,7 @@ const es: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Resumen del negocio',
-    subtitle: 'Ingresos esperados, cobros, costos y ganancia del período seleccionado.',
+    subtitle: 'Dinero recibido, dinero adeudado y costos reales.',
     periodLabel: 'Período del panel',
     moneySummaryTitle: 'Resumen de dinero',
     moreDetails: 'Más detalles',
@@ -369,17 +372,19 @@ const es: DashboardFinanceCopy = {
     averageDays: 'Tiempo promedio para cobrar',
     averageDaysNone: 'Aún no hay facturas pagadas por completo',
     contractorCost: 'Costo de contratistas',
-    contractorCostHelp: 'Total de mano de obra de contratistas registrada en este período.',
+    contractorCostHelp: 'Mano de obra de contratistas de trabajos en este período.',
     contractorPay: 'Costo de contratistas',
-    contractorPayHelp: 'Total de mano de obra de contratistas registrada en este período.',
+    contractorPayHelp: 'Mano de obra de contratistas de trabajos en este período.',
     contractorPayOwed: 'Pago a contratistas adeudado',
     contractorPayPending: 'Pago a contratistas pendiente',
+    contractorPayPaid: 'Pago a contratistas pagado',
+    contractorPayPaidHelp: 'Pagos a contratistas realmente hechos en este período.',
     otherExpenses: 'Otros gastos',
     expectedProfit: 'Ganancia esperada',
     expectedProfitHelp: 'Ingresos esperados menos costo de contratistas y otros gastos.',
     cashAfterCosts: 'Efectivo después de costos pagados',
     cashAfterCostsHelp:
-      'Pagos recibidos menos pagos a contratistas pagados menos gastos pagados.',
+      'Pagos recibidos menos costos de contratistas pagados y gastos pagados.',
     expectedProfitPct: 'Porcentaje de ganancia esperada',
     costsMissing: 'Solo se incluyen costos registrados.',
     uninvoicedWork: 'Ingresos esperados sin factura',
@@ -488,7 +493,7 @@ const vi: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Tổng quan kinh doanh',
-    subtitle: 'Doanh thu dự kiến, tiền đã thu, chi phí và lợi nhuận trong kỳ đã chọn.',
+    subtitle: 'Tiền đã thu, tiền còn nợ và chi phí thực tế.',
     periodLabel: 'Kỳ bảng điều khiển',
     moneySummaryTitle: 'Tóm tắt tiền',
     moreDetails: 'Chi tiết thêm',
@@ -515,16 +520,18 @@ const vi: DashboardFinanceCopy = {
     averageDays: 'Thời gian trung bình để thu tiền',
     averageDaysNone: 'Chưa có hóa đơn thanh toán đủ',
     contractorCost: 'Chi phí thầu phụ',
-    contractorCostHelp: 'Tổng chi phí nhân công thầu phụ ghi nhận trong kỳ này.',
+    contractorCostHelp: 'Chi phí nhân công thầu phụ của công việc trong kỳ này.',
     contractorPay: 'Chi phí thầu phụ',
-    contractorPayHelp: 'Tổng chi phí nhân công thầu phụ ghi nhận trong kỳ này.',
+    contractorPayHelp: 'Chi phí nhân công thầu phụ của công việc trong kỳ này.',
     contractorPayOwed: 'Còn nợ thầu phụ',
     contractorPayPending: 'Thầu phụ đang chờ',
+    contractorPayPaid: 'Đã trả thầu phụ',
+    contractorPayPaidHelp: 'Các khoản đã trả thầu phụ trong kỳ này.',
     otherExpenses: 'Chi phí khác',
     expectedProfit: 'Lợi nhuận dự kiến',
     expectedProfitHelp: 'Doanh thu dự kiến trừ chi phí thầu phụ và chi phí khác.',
     cashAfterCosts: 'Tiền mặt sau chi phí đã trả',
-    cashAfterCostsHelp: 'Tiền thực nhận trừ tiền thầu phụ đã trả trừ chi phí đã trả.',
+    cashAfterCostsHelp: 'Tiền đã thu trừ chi phí thầu phụ đã trả và chi phí đã trả.',
     expectedProfitPct: 'Tỷ lệ lợi nhuận dự kiến',
     costsMissing: 'Chỉ gồm chi phí đã ghi nhận.',
     uninvoicedWork: 'Doanh thu dự kiến chưa xuất hóa đơn',
