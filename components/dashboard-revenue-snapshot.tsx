@@ -4,14 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import {
-  buildPrimaryDashboardMetrics,
-  calculateEstimatedProfitPercentage,
   fetchDashboardRevenueMetrics,
-  formatCurrency,
   type DashboardDateRange,
-  type DashboardRevenueMetrics,
-  type PrimaryDashboardMetricKey
-} from '@/lib/dashboard-metrics';
+  type DashboardRevenueMetrics
+} from '@/lib/dashboard-metrics-fixed';
+import { formatCurrency } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -27,43 +24,26 @@ type MetricItem = {
   value: string;
   href: string;
   help?: string;
-  warning?: string;
 };
 
 const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
-
-const PRIMARY_HREF: Record<PrimaryDashboardMetricKey, string> = {
-  expectedRevenue: DASHBOARD_LINKS.estimatedProfit,
-  collected: DASHBOARD_LINKS.paidToYou,
-  outstanding: DASHBOARD_LINKS.stillOwed,
-  contractorCost: DASHBOARD_LINKS.contractorPay,
-  expectedProfit: DASHBOARD_LINKS.estimatedProfit,
-  cashAfterPaidCosts: DASHBOARD_LINKS.cashAfterExpenses
-};
 
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { t, locale } = useTranslation();
   const copy = getDashboardFinanceCopy(locale);
   const [range, setRange] = useState<DashboardDateRange>('month');
-  const [rangeMetrics, setRangeMetrics] = useState(metrics);
+  const [activeMetrics, setActiveMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
   const [rangeError, setRangeError] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   useEffect(() => {
-    if (range === 'month') {
-      setRangeMetrics(metrics);
-      setRangeError(Boolean(metrics.loadFailed));
-    }
-  }, [metrics, range]);
-
-  useEffect(() => {
-    if (range === 'month') return;
     let cancelled = false;
 
     async function loadRange() {
       setRangeLoading(true);
       setRangeError(false);
+
       try {
         const {
           data: { user }
@@ -81,7 +61,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         const next = await fetchDashboardRevenueMetrics(supabase, org?.organizationId || null, range);
 
         if (!cancelled) {
-          setRangeMetrics(next);
+          setActiveMetrics(next);
           setRangeError(Boolean(next.loadFailed));
           setRangeLoading(false);
         }
@@ -99,106 +79,67 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     };
   }, [range]);
 
-  const activeMetrics = range === 'month' ? metrics : rangeMetrics;
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
-  const customerInvoices = activeMetrics.customerInvoices ?? activeMetrics.bookedRevenue ?? 0;
-  const uninvoicedCompletedWork = activeMetrics.uninvoicedCompletedWork ?? 0;
-  const recordedExpectedRevenue =
-    activeMetrics.expectedRevenue ??
-    Number((customerInvoices + uninvoicedCompletedWork).toFixed(2));
-  // A recorded customer payment proves at least that much revenue. This prevents
-  // paid jobs with a blank expected amount from showing a false negative profit.
-  const expectedRevenue = Number(Math.max(recordedExpectedRevenue, paidToYou).toFixed(2));
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
-  const latePayments = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const contractorPay = activeMetrics.contractorPayThisMonth || 0;
-  const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
-  const pendingContractorPay = activeMetrics.pendingContractorPay || 0;
-  const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
-  const estimatedProfit = Number((expectedRevenue - contractorPay - otherExpenses).toFixed(2));
   const cashAfterPaidCosts =
     activeMetrics.cashAfterPaidCosts ??
     activeMetrics.cashAfterExpenses ??
     activeMetrics.netCashFlow ??
     0;
-  const profitPercentage = calculateEstimatedProfitPercentage(estimatedProfit, expectedRevenue);
-  const costsMissing = contractorPay <= 0 && otherExpenses <= 0 && expectedRevenue > 0;
+  const customerInvoices = activeMetrics.customerInvoices ?? activeMetrics.bookedRevenue ?? 0;
+  const uninvoicedWork = activeMetrics.uninvoicedCompletedWork ?? 0;
+  const otherExpenses = activeMetrics.otherExpensesThisMonth || 0;
+  const contractorPaid = activeMetrics.contractorPaymentsPaid || 0;
+  const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
+  const overdueAmount = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const rangeLabel = copy.ranges[range];
-  const hasCreatedInvoices = Boolean(activeMetrics.hasCreatedInvoices);
-  const primaryMetrics = buildPrimaryDashboardMetrics({
-    expectedRevenue,
-    collected: paidToYou,
-    outstanding: stillOwed,
-    contractorCost: contractorPay,
-    expectedProfit: estimatedProfit,
-    cashAfterPaidCosts,
-    labels: {
-      expectedRevenue: copy.money.expectedRevenue,
-      collected: copy.money.collected,
-      outstanding: copy.money.outstanding,
-      contractorCost: copy.money.contractorCost,
-      expectedProfit: copy.money.expectedProfit,
-      cashAfterPaidCosts: copy.money.cashAfterCosts
+
+  const primaryItems: MetricItem[] = [
+    {
+      label: copy.money.collected,
+      value: formatCurrency(paidToYou),
+      href: DASHBOARD_LINKS.paidToYou,
+      help: copy.money.collectedHelp
     },
-    helps: {
-      expectedRevenue: copy.money.expectedRevenueHelp,
-      collected: copy.money.collectedHelp,
-      outstanding: copy.money.outstandingHelp,
-      contractorCost: copy.money.contractorCostHelp,
-      expectedProfit: copy.money.expectedProfitHelp,
-      cashAfterPaidCosts: copy.money.cashAfterCostsHelp
+    {
+      label: copy.money.outstanding,
+      value: formatCurrency(stillOwed),
+      href: DASHBOARD_LINKS.stillOwed,
+      help: copy.money.outstandingHelp
+    },
+    {
+      label: copy.money.contractorCost,
+      value: formatCurrency(contractorPay),
+      href: DASHBOARD_LINKS.contractorPay,
+      help: 'Contractor labor for jobs in this period.'
+    },
+    {
+      label: copy.money.cashAfterCosts,
+      value: formatCurrency(cashAfterPaidCosts),
+      href: DASHBOARD_LINKS.cashAfterExpenses,
+      help: copy.money.cashAfterCostsHelp
     }
-  });
+  ];
 
   const secondaryItems: MetricItem[] = [
-    ...(hasCreatedInvoices
-      ? [
-          {
-            label: `${copy.money.invoiced} · ${rangeLabel}`,
-            value: formatCurrency(customerInvoices),
-            href: DASHBOARD_LINKS.customerInvoices,
-            help: copy.money.invoicedHelp
-          } satisfies MetricItem
-        ]
-      : []),
-    ...(uninvoicedCompletedWork > 0
-      ? [
-          {
-            label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
-            value: formatCurrency(uninvoicedCompletedWork),
-            href: DASHBOARD_LINKS.completedJobs,
-            help: copy.money.uninvoicedWorkHelp
-          } satisfies MetricItem
-        ]
-      : []),
     {
-      label: `${copy.money.latePayments} · ${copy.money.current}`,
-      value: formatCurrency(latePayments),
-      href: DASHBOARD_LINKS.latePayments,
-      help: copy.money.latePaymentsHelp
+      label: `${copy.money.invoiced} · ${rangeLabel}`,
+      value: formatCurrency(customerInvoices),
+      href: DASHBOARD_LINKS.customerInvoices,
+      help: copy.money.invoicedHelp
     },
     {
-      label: copy.money.lateInvoices,
-      value: String(activeMetrics.overdueInvoiceCount ?? 0),
-      href: DASHBOARD_LINKS.latePayments
+      label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
+      value: formatCurrency(uninvoicedWork),
+      href: DASHBOARD_LINKS.completedJobs,
+      help: copy.money.uninvoicedWorkHelp
     },
     {
-      label: copy.money.unpaidInvoices,
-      value: String(activeMetrics.outstandingInvoiceCount ?? 0),
-      href: DASHBOARD_LINKS.unpaidInvoices,
-      help: copy.money.unpaidInvoicesHelp
-    },
-    {
-      label: copy.money.averageDays,
-      value:
-        activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
-          ? copy.money.averageDaysNone
-          : `${activeMetrics.averageDaysToPayment} ${copy.money.days}`,
-      href: DASHBOARD_LINKS.paidToYou,
-      help:
-        activeMetrics.averageDaysToPayment === null || activeMetrics.averageDaysToPayment === undefined
-          ? copy.money.averageDaysHelpEmpty
-          : copy.money.averageDaysHelp
+      label: `${copy.money.otherExpenses} · ${rangeLabel}`,
+      value: formatCurrency(otherExpenses),
+      href: DASHBOARD_LINKS.otherExpenses,
+      help: copy.money.otherExpensesHelp
     },
     {
       label: copy.money.contractorPayOwed,
@@ -207,38 +148,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       help: copy.money.contractorPayOwedHelp
     },
     {
-      label: copy.money.contractorPayPending,
-      value: formatCurrency(pendingContractorPay),
-      href: DASHBOARD_LINKS.contractorPayPending,
-      help: copy.money.contractorPayPendingHelp
+      label: `${copy.money.contractorCost} paid · ${rangeLabel}`,
+      value: formatCurrency(contractorPaid),
+      href: DASHBOARD_LINKS.contractorPay,
+      help: 'Contractor payments actually paid in this period.'
     },
     {
-      label: `${copy.money.otherExpenses} · ${rangeLabel}`,
-      value: formatCurrency(otherExpenses),
-      href: DASHBOARD_LINKS.otherExpenses,
-      help: copy.money.otherExpensesHelp
+      label: `${copy.money.latePayments} · ${copy.money.current}`,
+      value: formatCurrency(overdueAmount),
+      href: DASHBOARD_LINKS.latePayments,
+      help: copy.money.latePaymentsHelp
     },
-    ...(profitPercentage === null
-      ? []
-      : [
-          {
-            label: copy.money.expectedProfitPct,
-            value: `${profitPercentage}%`,
-            href: DASHBOARD_LINKS.estimatedProfit,
-            help: copy.money.expectedProfitPctHelp,
-            warning: costsMissing ? copy.money.costsMissing : undefined
-          } satisfies MetricItem
-        ]),
-    ...(activeMetrics.paymentsMissingDates > 0
-      ? [
-          {
-            label: copy.money.paymentsMissingDates,
-            value: String(activeMetrics.paymentsMissingDates),
-            href: DASHBOARD_LINKS.customerInvoices,
-            help: copy.money.paymentsMissingDatesHelp
-          } satisfies MetricItem
-        ]
-      : []),
     {
       label: `${copy.money.completedJobs} · ${rangeLabel}`,
       value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
@@ -250,32 +170,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       value: String(activeMetrics.totalJobs ?? 0),
       href: DASHBOARD_LINKS.jobs,
       help: copy.money.jobsHelp
-    },
-    {
-      label: t('dashboard.revenue.upcomingJobs'),
-      value: String(activeMetrics.upcomingJobs ?? 0),
-      href: DASHBOARD_LINKS.upcomingJobs
-    },
-    {
-      label: copy.money.activeCustomers,
-      value: String(activeMetrics.activeCustomers ?? 0),
-      href: DASHBOARD_LINKS.activeCustomers,
-      help: copy.money.activeCustomersHelp
-    },
-    {
-      label: `${copy.money.bookings} · ${rangeLabel}`,
-      value: String(activeMetrics.bookingCountThisMonth ?? 0),
-      href: DASHBOARD_LINKS.bookings
-    },
-    {
-      label: `${copy.money.messages} · ${rangeLabel}`,
-      value: String(activeMetrics.messageCountThisMonth ?? activeMetrics.messageCount ?? 0),
-      href: DASHBOARD_LINKS.messages
-    },
-    {
-      label: `${copy.money.reports} · ${rangeLabel}`,
-      value: String(activeMetrics.reportCount ?? 0),
-      href: DASHBOARD_LINKS.reports
     }
   ];
 
@@ -288,7 +182,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         <div>
           <h2>{copy.overview.title}</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            {copy.overview.subtitle}
+            Money received, money owed, and actual costs.
           </p>
         </div>
         <div className="inline-actions" style={{ marginLeft: 'auto' }}>
@@ -328,23 +222,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       {!isLoading && !showLoadError ? (
         <>
-          {costsMissing ? (
-            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
-              {copy.money.costsMissing}
-            </p>
-          ) : null}
-
           <div className="dashboard-revenue-grid">
-            {primaryMetrics.map((item) => (
+            {primaryItems.map((item) => (
               <Link
-                key={item.key}
-                href={PRIMARY_HREF[item.key]}
+                key={item.label}
+                href={item.href}
                 className="dashboard-revenue-metric"
                 title={item.help}
                 aria-label={`${item.label}. ${item.help}`}
               >
                 <span className="dashboard-revenue-metric-label">{item.label}</span>
-                <strong className="dashboard-revenue-metric-value">{formatCurrency(item.value)}</strong>
+                <strong className="dashboard-revenue-metric-value">{item.value}</strong>
                 <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
                   {item.help}
                 </span>
@@ -356,8 +244,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             <button
               type="button"
               className="button secondary"
-              onClick={() => setShowMoreDetails((open) => !open)}
-              aria-expanded={showMoreDetails}
+              onClick={() => setShowMoreDetails((current) => !current)}
             >
               {showMoreDetails ? copy.overview.hideDetails : copy.overview.moreDetails}
             </button>
@@ -378,11 +265,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
                   {item.help ? (
                     <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
                       {item.help}
-                    </span>
-                  ) : null}
-                  {item.warning ? (
-                    <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                      {item.warning}
                     </span>
                   ) : null}
                 </Link>
