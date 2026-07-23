@@ -56,13 +56,16 @@ type LocalCopy = {
 
 const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
   en: {
-    sourceLabels: {},
-    actionLabels: {},
-    statusLabels: {},
-    metricLabels: {},
-    hints: {},
+    sourceLabels: { Leads: 'Requests' },
+    actionLabels: { 'Open Lead': 'Open request' },
+    statusLabels: { Lead: 'Request' },
+    metricLabels: { 'Leads to review': 'Requests to review' },
+    hints: {
+      'New leads will appear here when their pipeline stage is lead or qualified.': 'New requests will appear here when someone asks about booking work.',
+      'No urgent items found from jobs, invoices, or leads.': 'No urgent items found from jobs, invoices, or requests.'
+    },
     generic: {
-      askPrompt: 'Ask about customers, jobs, bookings, leads, invoices, or documents.',
+      askPrompt: 'Ask about customers, jobs, bookings, requests, invoices, or documents.',
       found: (count) => `Found ${count} record${count === 1 ? '' : 's'} across your workspace.`,
       noRecords: (query) => `No records found for "${query}".`,
       tryKeywords: (labels) => `Try keywords from: ${labels}.`,
@@ -74,15 +77,15 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       noWeekJobs: 'No jobs scheduled this week.',
       overdueJobs: (count) => `${count} overdue job${count === 1 ? '' : 's'} need attention.`,
       noOverdueJobs: 'No overdue jobs found.',
-      leadsFollowUp: (count) => `${count} lead${count === 1 ? '' : 's'} should be reviewed for follow-up.`,
-      noLeadsFollowUp: 'No open leads need follow-up right now.',
+      leadsFollowUp: (count) => `${count} request${count === 1 ? '' : 's'} need follow-up.`,
+      noLeadsFollowUp: 'No open requests need follow-up right now.',
       bestCustomersEmpty: 'No best-customer ranking yet because no paid invoice history was found.',
       bestCustomers: (count) => `${count} top customer${count === 1 ? '' : 's'} by paid invoice history.`,
-      businessBrief: (overdue, invoices, leads) => `Today's business brief: ${overdue} overdue job${overdue === 1 ? '' : 's'}, ${invoices} unpaid invoice${invoices === 1 ? '' : 's'}, and ${leads} lead${leads === 1 ? '' : 's'} to review.`,
+      businessBrief: (overdue, invoices, leads) => `Today: ${overdue} overdue job${overdue === 1 ? '' : 's'}, ${invoices} unpaid invoice${invoices === 1 ? '' : 's'}, and ${leads} request${leads === 1 ? '' : 's'} to review.`,
       unpaidInvoices: (count) => `${count} unpaid or outstanding invoice${count === 1 ? '' : 's'}.`,
       noUnpaidInvoices: 'No unpaid invoices found.',
-      leadsMonth: (count) => `${count} lead${count === 1 ? '' : 's'} added this month.`,
-      noLeadsMonth: 'No new leads recorded this month.',
+      leadsMonth: (count) => `${count} request${count === 1 ? '' : 's'} added this month.`,
+      noLeadsMonth: 'No new requests recorded this month.',
       reviews: (count) => `${count} recent review${count === 1 ? '' : 's'}.`,
       noReviews: 'No reviews found yet.',
       photos: (count) => `${count} job${count === 1 ? '' : 's'} with photos.`,
@@ -95,7 +98,7 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       topWorkerNone: 'No completed jobs with assigned workers this month.',
       topWorker: (name, count) => `${name} completed the most jobs this month (${count}).`,
       topTeamMember: (count) => `Top team member completed ${count} jobs this month.`,
-      revenueMonth: (amount) => `Revenue this month: ${amount}.`,
+      revenueMonth: (amount) => `Paid this month: ${amount}.`,
       expensesMonth: (amount, count) => `Expenses this month: ${amount} across ${count} recorded expense${count === 1 ? '' : 's'}.`,
       sopMatches: (count) => `${count} SOP, checklist, or document matches.`,
       onboardingDocs: (count) => `${count} onboarding-related document${count === 1 ? '' : 's'}.`,
@@ -108,30 +111,30 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
   },
   es: {
     sourceLabels: {
-      Customers: 'Clientes', Leads: 'Prospectos', Jobs: 'Trabajos', Schedule: 'Agenda', People: 'Personas', Reviews: 'Reseñas', Forms: 'Formularios', Templates: 'Plantillas', Documents: 'Documentos', SOPs: 'SOP', Notes: 'Notas', Invoices: 'Facturas', Expenses: 'Gastos', Revenue: 'Ingresos', Photos: 'Fotos', Activity: 'Actividad', Bookings: 'Reservas', Services: 'Servicios', 'Staff availability': 'Disponibilidad del personal', Calendar: 'Calendario', 'Staff assignments': 'Asignaciones del personal', Results: 'Resultados'
+      Customers: 'Clientes', Leads: 'Solicitudes', Jobs: 'Trabajos', Schedule: 'Agenda', People: 'Personas', Reviews: 'Reseñas', Forms: 'Formularios', Templates: 'Plantillas', Documents: 'Documentos', SOPs: 'SOP', Notes: 'Notas', Invoices: 'Facturas', Expenses: 'Gastos', Revenue: 'Pagos', Photos: 'Fotos', Activity: 'Actividad', Bookings: 'Reservas', Services: 'Servicios', 'Staff availability': 'Disponibilidad del personal', Calendar: 'Calendario', 'Staff assignments': 'Asignaciones del personal', Results: 'Resultados'
     },
     actionLabels: {
-      'Open Customer': 'Abrir cliente', 'Open Lead': 'Abrir prospecto', 'Open Job': 'Abrir trabajo', 'Open Schedule': 'Abrir agenda', 'Open People': 'Abrir personas', 'Open Review': 'Abrir reseña', 'Open Form': 'Abrir formulario', 'Open Template': 'Abrir plantilla', 'Open Document': 'Abrir documento', 'Open SOP': 'Abrir SOP', 'Open Note': 'Abrir nota', 'Open Invoice': 'Abrir factura', 'Open Expenses': 'Abrir gastos', 'View Revenue': 'Ver ingresos', 'Open Activity': 'Abrir actividad', 'Open Booking': 'Abrir reserva', 'Open Service': 'Abrir servicio', 'View Availability': 'Ver disponibilidad', 'Open Calendar': 'Abrir calendario', 'View Assignments': 'Ver asignaciones'
+      'Open Customer': 'Abrir cliente', 'Open Lead': 'Abrir solicitud', 'Open Job': 'Abrir trabajo', 'Open Schedule': 'Abrir agenda', 'Open People': 'Abrir personas', 'Open Review': 'Abrir reseña', 'Open Form': 'Abrir formulario', 'Open Template': 'Abrir plantilla', 'Open Document': 'Abrir documento', 'Open SOP': 'Abrir SOP', 'Open Note': 'Abrir nota', 'Open Invoice': 'Abrir factura', 'Open Expenses': 'Abrir gastos', 'View Revenue': 'Ver pagos', 'Open Activity': 'Abrir actividad', 'Open Booking': 'Abrir reserva', 'Open Service': 'Abrir servicio', 'View Availability': 'Ver disponibilidad', 'Open Calendar': 'Abrir calendario', 'View Assignments': 'Ver asignaciones'
     },
     statusLabels: {
-      Lead: 'Prospecto', Overdue: 'Atrasado', 'Top customer': 'Cliente principal', 'Outstanding balance': 'Saldo pendiente', 'No booking in 90 days': 'Sin reserva en 90 días', Active: 'Activo', Inactive: 'Inactivo', Available: 'Disponible', Scheduled: 'Programado', 'Calendar synced': 'Calendario sincronizado', 'Staff assignment': 'Asignación de personal'
+      Lead: 'Solicitud', Overdue: 'Atrasado', 'Top customer': 'Cliente principal', 'Outstanding balance': 'Saldo pendiente', 'No booking in 90 days': 'Sin reserva en 90 días', Active: 'Activo', Inactive: 'Inactivo', Available: 'Disponible', Scheduled: 'Programado', 'Calendar synced': 'Calendario sincronizado', 'Staff assignment': 'Asignación de personal'
     },
     metricLabels: {
-      'Overdue jobs': 'Trabajos atrasados', 'Unpaid invoices': 'Facturas sin pagar', 'Leads to review': 'Prospectos por revisar', 'Revenue this month': 'Ingresos de este mes', 'Outstanding invoices': 'Facturas pendientes', 'Jobs completed': 'Trabajos completados', 'Active customers': 'Clientes activos', 'Total expenses this month': 'Gastos totales de este mes'
+      'Overdue jobs': 'Trabajos atrasados', 'Unpaid invoices': 'Facturas sin pagar', 'Leads to review': 'Solicitudes por revisar', 'Revenue this month': 'Pagado este mes', 'Outstanding invoices': 'Facturas pendientes', 'Jobs completed': 'Trabajos completados', 'Active customers': 'Clientes activos', 'Total expenses this month': 'Gastos totales de este mes'
     },
     hints: {
       'Create a job or booking to build today’s schedule.': 'Cree un trabajo o una reserva para crear la agenda de hoy.',
       'Open these jobs and update the status, due date, or assignment.': 'Abra estos trabajos y actualice el estado, la fecha de vencimiento o la asignación.',
-      'New leads will appear here when their pipeline stage is lead or qualified.': 'Los prospectos nuevos aparecerán aquí cuando su etapa sea prospecto o calificado.',
+      'New leads will appear here when their pipeline stage is lead or qualified.': 'Las solicitudes nuevas aparecerán aquí cuando alguien pregunte por un servicio.',
       'Paid invoices will help EverittOS identify top customers.': 'Las facturas pagadas ayudan a EverittOS a identificar los mejores clientes.',
-      'No urgent items found from jobs, invoices, or leads.': 'No se encontraron asuntos urgentes en trabajos, facturas o prospectos.',
+      'No urgent items found from jobs, invoices, or leads.': 'No se encontraron asuntos urgentes en trabajos, facturas o solicitudes.',
       'Add jobs with start or due dates.': 'Agregue trabajos con fecha de inicio o vencimiento.',
       'Upload before-and-after photos on job pages.': 'Suba fotos de antes y después en las páginas de trabajo.',
-      'These customers may need a follow-up or reactivation campaign.': 'Estos clientes pueden necesitar seguimiento o una campaña de reactivación.',
-      'Assign workers to jobs and mark jobs completed to track performance.': 'Asigne personas a trabajos y marque trabajos completados para medir rendimiento.'
+      'These customers may need a follow-up or reactivation campaign.': 'Estos clientes pueden necesitar seguimiento.',
+      'Assign workers to jobs and mark jobs completed to track performance.': 'Asigne personas a trabajos y marque los trabajos completados.'
     },
     generic: {
-      askPrompt: 'Pregunte sobre clientes, trabajos, reservas, prospectos, facturas o documentos.',
+      askPrompt: 'Pregunte sobre clientes, trabajos, reservas, solicitudes, facturas o documentos.',
       found: (count) => `Se encontraron ${count} registro${count === 1 ? '' : 's'} en su espacio.`,
       noRecords: (query) => `No se encontraron registros para "${query}".`,
       tryKeywords: (labels) => `Pruebe palabras clave de: ${labels}.`,
@@ -143,15 +146,15 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       noWeekJobs: 'No hay trabajos programados esta semana.',
       overdueJobs: (count) => `${count} trabajo${count === 1 ? '' : 's'} atrasado${count === 1 ? '' : 's'} necesita${count === 1 ? '' : 'n'} atención.`,
       noOverdueJobs: 'No se encontraron trabajos atrasados.',
-      leadsFollowUp: (count) => `${count} prospecto${count === 1 ? '' : 's'} debe${count === 1 ? '' : 'n'} revisarse para seguimiento.`,
-      noLeadsFollowUp: 'No hay prospectos abiertos que necesiten seguimiento ahora.',
+      leadsFollowUp: (count) => `${count} solicitud${count === 1 ? '' : 'es'} necesita${count === 1 ? '' : 'n'} seguimiento.`,
+      noLeadsFollowUp: 'No hay solicitudes abiertas que necesiten seguimiento.',
       bestCustomersEmpty: 'Aún no hay ranking de mejores clientes porque no se encontró historial de facturas pagadas.',
       bestCustomers: (count) => `${count} cliente${count === 1 ? '' : 's'} principal${count === 1 ? '' : 'es'} por historial de facturas pagadas.`,
-      businessBrief: (overdue, invoices, leads) => `Resumen comercial de hoy: ${overdue} trabajo${overdue === 1 ? '' : 's'} atrasado${overdue === 1 ? '' : 's'}, ${invoices} factura${invoices === 1 ? '' : 's'} sin pagar y ${leads} prospecto${leads === 1 ? '' : 's'} por revisar.`,
+      businessBrief: (overdue, invoices, leads) => `Hoy: ${overdue} trabajo${overdue === 1 ? '' : 's'} atrasado${overdue === 1 ? '' : 's'}, ${invoices} factura${invoices === 1 ? '' : 's'} sin pagar y ${leads} solicitud${leads === 1 ? '' : 'es'} por revisar.`,
       unpaidInvoices: (count) => `${count} factura${count === 1 ? '' : 's'} sin pagar o pendiente${count === 1 ? '' : 's'}.`,
       noUnpaidInvoices: 'No se encontraron facturas sin pagar.',
-      leadsMonth: (count) => `${count} prospecto${count === 1 ? '' : 's'} agregado${count === 1 ? '' : 's'} este mes.`,
-      noLeadsMonth: 'No se registraron prospectos nuevos este mes.',
+      leadsMonth: (count) => `${count} solicitud${count === 1 ? '' : 'es'} agregada${count === 1 ? '' : 's'} este mes.`,
+      noLeadsMonth: 'No se registraron solicitudes nuevas este mes.',
       reviews: (count) => `${count} reseña${count === 1 ? '' : 's'} reciente${count === 1 ? '' : 's'}.`,
       noReviews: 'Aún no se encontraron reseñas.',
       photos: (count) => `${count} trabajo${count === 1 ? '' : 's'} con fotos.`,
@@ -164,7 +167,7 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       topWorkerNone: 'No hay trabajos completados con personas asignadas este mes.',
       topWorker: (name, count) => `${name} completó la mayor cantidad de trabajos este mes (${count}).`,
       topTeamMember: (count) => `El miembro principal del equipo completó ${count} trabajos este mes.`,
-      revenueMonth: (amount) => `Ingresos de este mes: ${amount}.`,
+      revenueMonth: (amount) => `Pagado este mes: ${amount}.`,
       expensesMonth: (amount, count) => `Gastos de este mes: ${amount} en ${count} gasto${count === 1 ? '' : 's'} registrado${count === 1 ? '' : 's'}.`,
       sopMatches: (count) => `${count} coincidencia${count === 1 ? '' : 's'} de SOP, lista o documento.`,
       onboardingDocs: (count) => `${count} documento${count === 1 ? '' : 's'} relacionado${count === 1 ? '' : 's'} con incorporación.`,
@@ -177,30 +180,30 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
   },
   vi: {
     sourceLabels: {
-      Customers: 'Khách hàng', Leads: 'Khách tiềm năng', Jobs: 'Công việc', Schedule: 'Lịch', People: 'Mọi người', Reviews: 'Đánh giá', Forms: 'Biểu mẫu', Templates: 'Mẫu', Documents: 'Tài liệu', SOPs: 'SOP', Notes: 'Ghi chú', Invoices: 'Hóa đơn', Expenses: 'Chi phí', Revenue: 'Doanh thu', Photos: 'Ảnh', Activity: 'Hoạt động', Bookings: 'Đặt lịch', Services: 'Dịch vụ', 'Staff availability': 'Lịch rảnh của nhân sự', Calendar: 'Lịch', 'Staff assignments': 'Phân công nhân sự', Results: 'Kết quả'
+      Customers: 'Khách hàng', Leads: 'Yêu cầu', Jobs: 'Công việc', Schedule: 'Lịch', People: 'Mọi người', Reviews: 'Đánh giá', Forms: 'Biểu mẫu', Templates: 'Mẫu', Documents: 'Tài liệu', SOPs: 'SOP', Notes: 'Ghi chú', Invoices: 'Hóa đơn', Expenses: 'Chi phí', Revenue: 'Thanh toán', Photos: 'Ảnh', Activity: 'Hoạt động', Bookings: 'Đặt lịch', Services: 'Dịch vụ', 'Staff availability': 'Lịch rảnh của nhân sự', Calendar: 'Lịch', 'Staff assignments': 'Phân công nhân sự', Results: 'Kết quả'
     },
     actionLabels: {
-      'Open Customer': 'Mở khách hàng', 'Open Lead': 'Mở khách tiềm năng', 'Open Job': 'Mở công việc', 'Open Schedule': 'Mở lịch', 'Open People': 'Mở nhân sự', 'Open Review': 'Mở đánh giá', 'Open Form': 'Mở biểu mẫu', 'Open Template': 'Mở mẫu', 'Open Document': 'Mở tài liệu', 'Open SOP': 'Mở SOP', 'Open Note': 'Mở ghi chú', 'Open Invoice': 'Mở hóa đơn', 'Open Expenses': 'Mở chi phí', 'View Revenue': 'Xem doanh thu', 'Open Activity': 'Mở hoạt động', 'Open Booking': 'Mở đặt lịch', 'Open Service': 'Mở dịch vụ', 'View Availability': 'Xem lịch rảnh', 'Open Calendar': 'Mở lịch', 'View Assignments': 'Xem phân công'
+      'Open Customer': 'Mở khách hàng', 'Open Lead': 'Mở yêu cầu', 'Open Job': 'Mở công việc', 'Open Schedule': 'Mở lịch', 'Open People': 'Mở nhân sự', 'Open Review': 'Mở đánh giá', 'Open Form': 'Mở biểu mẫu', 'Open Template': 'Mở mẫu', 'Open Document': 'Mở tài liệu', 'Open SOP': 'Mở SOP', 'Open Note': 'Mở ghi chú', 'Open Invoice': 'Mở hóa đơn', 'Open Expenses': 'Mở chi phí', 'View Revenue': 'Xem thanh toán', 'Open Activity': 'Mở hoạt động', 'Open Booking': 'Mở đặt lịch', 'Open Service': 'Mở dịch vụ', 'View Availability': 'Xem lịch rảnh', 'Open Calendar': 'Mở lịch', 'View Assignments': 'Xem phân công'
     },
     statusLabels: {
-      Lead: 'Khách tiềm năng', Overdue: 'Quá hạn', 'Top customer': 'Khách hàng hàng đầu', 'Outstanding balance': 'Số dư còn nợ', 'No booking in 90 days': 'Chưa đặt lịch trong 90 ngày', Active: 'Đang hoạt động', Inactive: 'Không hoạt động', Available: 'Sẵn sàng', Scheduled: 'Đã lên lịch', 'Calendar synced': 'Đã đồng bộ lịch', 'Staff assignment': 'Phân công nhân sự'
+      Lead: 'Yêu cầu', Overdue: 'Quá hạn', 'Top customer': 'Khách hàng hàng đầu', 'Outstanding balance': 'Số dư còn nợ', 'No booking in 90 days': 'Chưa đặt lịch trong 90 ngày', Active: 'Đang hoạt động', Inactive: 'Không hoạt động', Available: 'Sẵn sàng', Scheduled: 'Đã lên lịch', 'Calendar synced': 'Đã đồng bộ lịch', 'Staff assignment': 'Phân công nhân sự'
     },
     metricLabels: {
-      'Overdue jobs': 'Công việc quá hạn', 'Unpaid invoices': 'Hóa đơn chưa trả', 'Leads to review': 'Khách tiềm năng cần xem', 'Revenue this month': 'Doanh thu tháng này', 'Outstanding invoices': 'Hóa đơn còn nợ', 'Jobs completed': 'Công việc đã hoàn thành', 'Active customers': 'Khách hàng đang hoạt động', 'Total expenses this month': 'Tổng chi phí tháng này'
+      'Overdue jobs': 'Công việc quá hạn', 'Unpaid invoices': 'Hóa đơn chưa trả', 'Leads to review': 'Yêu cầu cần xem', 'Revenue this month': 'Đã nhận tháng này', 'Outstanding invoices': 'Hóa đơn còn nợ', 'Jobs completed': 'Công việc đã hoàn thành', 'Active customers': 'Khách hàng đang hoạt động', 'Total expenses this month': 'Tổng chi phí tháng này'
     },
     hints: {
       'Create a job or booking to build today’s schedule.': 'Tạo công việc hoặc lịch hẹn để có lịch hôm nay.',
       'Open these jobs and update the status, due date, or assignment.': 'Mở các công việc này và cập nhật trạng thái, hạn hoặc phân công.',
-      'New leads will appear here when their pipeline stage is lead or qualified.': 'Khách tiềm năng mới sẽ xuất hiện ở đây khi đang ở giai đoạn lead hoặc qualified.',
+      'New leads will appear here when their pipeline stage is lead or qualified.': 'Yêu cầu mới sẽ xuất hiện ở đây khi có người hỏi về dịch vụ.',
       'Paid invoices will help EverittOS identify top customers.': 'Hóa đơn đã trả sẽ giúp EverittOS nhận diện khách hàng tốt nhất.',
-      'No urgent items found from jobs, invoices, or leads.': 'Không tìm thấy việc khẩn cấp từ công việc, hóa đơn hoặc khách tiềm năng.',
+      'No urgent items found from jobs, invoices, or leads.': 'Không tìm thấy việc khẩn cấp từ công việc, hóa đơn hoặc yêu cầu.',
       'Add jobs with start or due dates.': 'Thêm công việc có ngày bắt đầu hoặc ngày đến hạn.',
       'Upload before-and-after photos on job pages.': 'Tải ảnh trước và sau lên trang công việc.',
-      'These customers may need a follow-up or reactivation campaign.': 'Những khách này có thể cần theo dõi hoặc chiến dịch kích hoạt lại.',
-      'Assign workers to jobs and mark jobs completed to track performance.': 'Phân công nhân sự và đánh dấu hoàn thành để theo dõi hiệu suất.'
+      'These customers may need a follow-up or reactivation campaign.': 'Những khách này có thể cần được liên hệ lại.',
+      'Assign workers to jobs and mark jobs completed to track performance.': 'Phân công nhân sự và đánh dấu công việc đã hoàn thành.'
     },
     generic: {
-      askPrompt: 'Hỏi về khách hàng, công việc, đặt lịch, khách tiềm năng, hóa đơn hoặc tài liệu.',
+      askPrompt: 'Hỏi về khách hàng, công việc, đặt lịch, yêu cầu, hóa đơn hoặc tài liệu.',
       found: (count) => `Tìm thấy ${count} bản ghi trong không gian làm việc.`,
       noRecords: (query) => `Không tìm thấy bản ghi cho "${query}".`,
       tryKeywords: (labels) => `Thử từ khóa từ: ${labels}.`,
@@ -212,15 +215,15 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       noWeekJobs: 'Tuần này chưa có công việc nào.',
       overdueJobs: (count) => `Có ${count} công việc quá hạn cần chú ý.`,
       noOverdueJobs: 'Không tìm thấy công việc quá hạn.',
-      leadsFollowUp: (count) => `Có ${count} khách tiềm năng cần xem để theo dõi.`,
-      noLeadsFollowUp: 'Hiện không có khách tiềm năng mở cần theo dõi.',
+      leadsFollowUp: (count) => `Có ${count} yêu cầu cần theo dõi.`,
+      noLeadsFollowUp: 'Hiện không có yêu cầu mở cần theo dõi.',
       bestCustomersEmpty: 'Chưa có xếp hạng khách hàng tốt nhất vì chưa có lịch sử hóa đơn đã trả.',
       bestCustomers: (count) => `${count} khách hàng hàng đầu theo lịch sử hóa đơn đã trả.`,
-      businessBrief: (overdue, invoices, leads) => `Tóm tắt hôm nay: ${overdue} công việc quá hạn, ${invoices} hóa đơn chưa trả và ${leads} khách tiềm năng cần xem.`,
+      businessBrief: (overdue, invoices, leads) => `Hôm nay: ${overdue} công việc quá hạn, ${invoices} hóa đơn chưa trả và ${leads} yêu cầu cần xem.`,
       unpaidInvoices: (count) => `${count} hóa đơn chưa trả hoặc còn nợ.`,
       noUnpaidInvoices: 'Không tìm thấy hóa đơn chưa trả.',
-      leadsMonth: (count) => `${count} khách tiềm năng được thêm trong tháng này.`,
-      noLeadsMonth: 'Tháng này chưa ghi nhận khách tiềm năng mới.',
+      leadsMonth: (count) => `${count} yêu cầu được thêm trong tháng này.`,
+      noLeadsMonth: 'Tháng này chưa ghi nhận yêu cầu mới.',
       reviews: (count) => `${count} đánh giá gần đây.`,
       noReviews: 'Chưa tìm thấy đánh giá.',
       photos: (count) => `${count} công việc có ảnh.`,
@@ -233,7 +236,7 @@ const LOCAL_COPY: Record<AskEverittLocale, LocalCopy> = {
       topWorkerNone: 'Tháng này chưa có công việc đã hoàn thành với nhân sự được phân công.',
       topWorker: (name, count) => `${name} hoàn thành nhiều công việc nhất tháng này (${count}).`,
       topTeamMember: (count) => `Thành viên nổi bật nhất đã hoàn thành ${count} công việc tháng này.`,
-      revenueMonth: (amount) => `Doanh thu tháng này: ${amount}.`,
+      revenueMonth: (amount) => `Đã nhận tháng này: ${amount}.`,
       expensesMonth: (amount, count) => `Chi phí tháng này: ${amount} trong ${count} khoản chi đã ghi nhận.`,
       sopMatches: (count) => `${count} kết quả SOP, checklist hoặc tài liệu.`,
       onboardingDocs: (count) => `${count} tài liệu liên quan đến onboarding.`,
@@ -275,20 +278,20 @@ function localizeSummary(summary: string, copy: LocalCopy): string {
   m = summary.match(/^(\d+) overdue jobs? need attention\.$/);
   if (m) return copy.generic.overdueJobs(Number(m[1]));
   if (summary === 'No overdue jobs found.') return copy.generic.noOverdueJobs;
-  m = summary.match(/^(\d+) leads? should be reviewed for follow-up\.$/);
+  m = summary.match(/^(\d+) (?:leads?|requests?) (?:should be reviewed for follow-up|need follow-up)\.$/);
   if (m) return copy.generic.leadsFollowUp(Number(m[1]));
-  if (summary === 'No open leads need follow-up right now.') return copy.generic.noLeadsFollowUp;
+  if (summary === 'No open leads need follow-up right now.' || summary === 'No open requests need follow-up right now.') return copy.generic.noLeadsFollowUp;
   if (summary === 'No best-customer ranking yet because no paid invoice history was found.') return copy.generic.bestCustomersEmpty;
   m = summary.match(/^(\d+) top customers? by paid invoice history\.$/);
   if (m) return copy.generic.bestCustomers(Number(m[1]));
-  m = summary.match(/^Today[’']s business brief: (\d+) overdue jobs?, (\d+) unpaid invoices?, and (\d+) leads? to review\.$/);
+  m = summary.match(/^(?:Today[’']s business brief|Today): (\d+) overdue jobs?, (\d+) unpaid invoices?, and (\d+) (?:leads?|requests?) to review\.$/);
   if (m) return copy.generic.businessBrief(Number(m[1]), Number(m[2]), Number(m[3]));
   m = summary.match(/^(\d+) unpaid or outstanding invoices?\.$/);
   if (m) return copy.generic.unpaidInvoices(Number(m[1]));
   if (summary === 'No unpaid invoices found.') return copy.generic.noUnpaidInvoices;
-  m = summary.match(/^(\d+) leads? added this month\.$/);
+  m = summary.match(/^(\d+) (?:leads?|requests?) added this month\.$/);
   if (m) return copy.generic.leadsMonth(Number(m[1]));
-  if (summary === 'No new leads recorded this month.') return copy.generic.noLeadsMonth;
+  if (summary === 'No new leads recorded this month.' || summary === 'No new requests recorded this month.') return copy.generic.noLeadsMonth;
   m = summary.match(/^(\d+) recent reviews?\.$/);
   if (m) return copy.generic.reviews(Number(m[1]));
   if (summary === 'No reviews found yet.') return copy.generic.noReviews;
@@ -308,7 +311,7 @@ function localizeSummary(summary: string, copy: LocalCopy): string {
   if (m) return copy.generic.topWorker(m[1], Number(m[2]));
   m = summary.match(/^Top team member completed (\d+) jobs this month\.$/);
   if (m) return copy.generic.topTeamMember(Number(m[1]));
-  m = summary.match(/^Revenue this month: (.+)\.$/);
+  m = summary.match(/^(?:Revenue|Paid) this month: (.+)\.$/);
   if (m) return copy.generic.revenueMonth(m[1]);
   m = summary.match(/^Expenses this month: (.+) across (\d+) recorded expenses?\.$/);
   if (m) return copy.generic.expensesMonth(m[1], Number(m[2]));
@@ -319,14 +322,13 @@ function localizeSummary(summary: string, copy: LocalCopy): string {
   if (summary === 'No onboarding documents found.') return copy.generic.noOnboardingDocs;
   m = summary.match(/^(\d+) recent activity updates?\.$/);
   if (m) return copy.generic.activity(Number(m[1]));
-  // Legacy English phrasing (pre plain-language cleanup)
   m = summary.match(/^(\d+) recent activity entries\.$/);
   if (m) return copy.generic.activity(Number(m[1]));
   if (summary === 'No activity logged yet.') return copy.generic.noActivity;
   if (summary === 'No customers with outstanding balances.') return copy.generic.noOutstandingBalances;
   m = summary.match(/^(\d+) customers? with outstanding balances\.$/);
   if (m) return copy.generic.customersOwe(Number(m[1]));
-  if (summary === LOCAL_COPY.en.generic.askPrompt) return copy.generic.askPrompt;
+  if (summary === 'Ask about customers, jobs, bookings, leads, invoices, or documents.' || summary === LOCAL_COPY.en.generic.askPrompt) return copy.generic.askPrompt;
   return summary;
 }
 
@@ -358,7 +360,6 @@ export function localizeAskEverittSearchResponse(
   payload: AskEverittSearchResponse,
   locale: AskEverittLocale
 ): AskEverittSearchResponse {
-  if (locale === 'en') return payload;
   const copy = localCopy(locale);
   const results = payload.results.map((record) => localizeRecord(record, copy));
   return {
