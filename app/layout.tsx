@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Libre_Franklin } from 'next/font/google';
+import { Manrope } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
@@ -37,7 +37,7 @@ import './mobile-safe-areas.css';
 import './receipt.css';
 import './mobile-usability-fixes.css';
 
-const libreFranklin = Libre_Franklin({
+const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap'
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const deployment = vercelDeploymentEnv();
 
   return (
-    <html lang="en" data-deployment={deployment} className={libreFranklin.variable}>
+    <html lang="en" data-deployment={deployment} className={manrope.variable}>
       <body>
         <SupabaseRuntimeConfig />
         <PwaRegistration />
