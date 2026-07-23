@@ -18,7 +18,7 @@ button,
 input,
 select,
 textarea {
-  font-family: var(--font-inter), Inter, system-ui, sans-serif !important;
+  font-family: var(--font-manrope), Manrope, system-ui, sans-serif !important;
 }
 
 .main,

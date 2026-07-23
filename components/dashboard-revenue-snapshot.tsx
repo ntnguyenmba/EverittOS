@@ -227,15 +227,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
               <Link
                 key={item.label}
                 href={item.href}
-                className="dashboard-revenue-metric"
+                className="dashboard-revenue-metric is-primary"
                 title={item.help}
                 aria-label={`${item.label}. ${item.help}`}
               >
                 <span className="dashboard-revenue-metric-label">{item.label}</span>
                 <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-                <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                  {item.help}
-                </span>
               </Link>
             ))}
           </div>
@@ -263,9 +260,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
                   <span className="dashboard-revenue-metric-label">{item.label}</span>
                   <strong className="dashboard-revenue-metric-value">{item.value}</strong>
                   {item.help ? (
-                    <span className="muted" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                      {item.help}
-                    </span>
+                    <span className="dashboard-revenue-metric-desc muted">{item.help}</span>
                   ) : null}
                 </Link>
               ))}

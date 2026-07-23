@@ -36,10 +36,12 @@ import './form-alignment-fixes.css';
 import './mobile-safe-areas.css';
 import './receipt.css';
 import './mobile-usability-fixes.css';
+import './everitt-modern-refresh.css';
 
 const manrope = Manrope({
-  subsets: ['latin'],
-  variable: '--font-inter',
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-manrope',
   display: 'swap'
 });
 
@@ -47,7 +49,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#24302B'
+  themeColor: '#24364A'
 };
 
 export const metadata: Metadata = {
@@ -77,7 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" data-deployment={deployment} className={manrope.variable}>
-      <body>
+      <body className={manrope.className}>
         <SupabaseRuntimeConfig />
         <PwaRegistration />
         <MobileDocumentFlags />

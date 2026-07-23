@@ -48,7 +48,7 @@
   --text-card-title: clamp(19px, 2vw, 22px);
   --text-section: clamp(23px, 2.5vw, 28px);
   --text-page-title: clamp(32px, 4.5vw, 44px);
-  --font-display: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
