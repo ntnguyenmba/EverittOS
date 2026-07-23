@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { quickbooksConfigured, quickbooksMissingCredentialsMessage } from '@/lib/quickbooks';
+import { QuickBooksApiError, exportInvoiceToQuickBooks } from '@/lib/quickbooks';
+import { quickbooksConfigured, quickbooksMissingCredentialsMessage } from '@/lib/quickbooks/config';
+import { writeQuickBooksSyncLog } from '@/lib/quickbooks/logging';
 import { isValidUuid } from '@/lib/input-validation';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
 
   const { data: invoice } = await ctx.supabase
     .from('invoices')
-    .select('id, amount, status, description')
+    .select('id')
     .eq('id', invoiceId)
     .eq('organization_id', ctx.organizationId)
     .maybeSingle();
@@ -32,46 +35,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 });
   }
 
-  const configured = quickbooksConfigured();
-  const { data: connection } = await ctx.supabase
-    .from('quickbooks_connections')
-    .select('status')
-    .eq('organization_id', ctx.organizationId)
-    .maybeSingle();
-
-  let status = 'queued';
-  let errorMessage: string | null = null;
-
-  if (!configured) {
-    status = 'failed';
-    errorMessage = quickbooksMissingCredentialsMessage();
-  } else if (!connection || connection.status !== 'connected') {
-    status = 'failed';
-    errorMessage = 'QuickBooks is not connected for this workspace.';
+  if (!quickbooksConfigured()) {
+    await writeQuickBooksSyncLog(ctx.supabase, {
+      organizationId: ctx.organizationId,
+      userId: ctx.userId,
+      entityType: 'invoice',
+      entityId: invoiceId,
+      action: 'export_invoice',
+      status: 'failed',
+      errorMessage: quickbooksMissingCredentialsMessage()
+    });
+    return NextResponse.json({ error: quickbooksMissingCredentialsMessage() }, { status: 503 });
   }
 
-  await ctx.supabase.from('quickbooks_sync_logs').insert({
-    organization_id: ctx.organizationId,
-    user_id: ctx.userId,
-    entity_type: 'invoice',
-    entity_id: invoiceId,
-    action: 'export_invoice',
-    direction: 'export',
-    status,
-    error_message: errorMessage
-  });
-
-  if (status === 'failed') {
-    return NextResponse.json({ error: errorMessage }, { status: status === 'failed' && !configured ? 503 : 400 });
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 503 });
   }
 
-  await ctx.supabase
-    .from('quickbooks_connections')
-    .update({ last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('organization_id', ctx.organizationId);
+  try {
+    const result = await exportInvoiceToQuickBooks({
+      admin,
+      organizationId: ctx.organizationId,
+      userId: ctx.userId,
+      invoiceId
+    });
 
-  return NextResponse.json({
-    ok: true,
-    message: 'Invoice export logged. Review sync history in Settings → Integrations. QuickBooks remains your accounting system of record.'
-  });
+    return NextResponse.json({
+      success: true,
+      created: result.created,
+      updated: result.updated,
+      externalId: result.externalId,
+      customerExternalId: result.customerExternalId,
+      message: result.created
+        ? 'Invoice created in QuickBooks.'
+        : 'Invoice updated in QuickBooks.'
+    });
+  } catch (error) {
+    if (error instanceof QuickBooksApiError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.parsed.userMessage,
+          reconnectRequired: error.parsed.reconnectRequired
+        },
+        { status: error.parsed.httpStatus >= 400 && error.parsed.httpStatus < 600 ? error.parsed.httpStatus : 400 }
+      );
+    }
+    return NextResponse.json({ success: false, error: 'Invoice export failed.' }, { status: 500 });
+  }
 }

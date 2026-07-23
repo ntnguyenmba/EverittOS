@@ -37,11 +37,14 @@ describe('quickbooks configuration', () => {
   it('is false without env credentials', () => {
     const id = process.env.QUICKBOOKS_CLIENT_ID;
     const secret = process.env.QUICKBOOKS_CLIENT_SECRET;
+    const state = process.env.QUICKBOOKS_STATE_SECRET;
     delete process.env.QUICKBOOKS_CLIENT_ID;
     delete process.env.QUICKBOOKS_CLIENT_SECRET;
+    delete process.env.QUICKBOOKS_STATE_SECRET;
     assert.equal(quickbooksConfigured(), false);
     process.env.QUICKBOOKS_CLIENT_ID = id;
     process.env.QUICKBOOKS_CLIENT_SECRET = secret;
+    process.env.QUICKBOOKS_STATE_SECRET = state;
   });
 });
 

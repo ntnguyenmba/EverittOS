@@ -1,35 +1,14 @@
 import { NextResponse } from 'next/server';
-import { quickbooksConfigured, quickbooksMissingCredentialsMessage } from '@/lib/quickbooks';
+import { QuickBooksApiError, syncCustomerToQuickBooks } from '@/lib/quickbooks';
+import { quickbooksConfigured, quickbooksMissingCredentialsMessage } from '@/lib/quickbooks/config';
+import { writeQuickBooksSyncLog } from '@/lib/quickbooks/logging';
 import { isValidUuid } from '@/lib/input-validation';
-import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isManagerRole } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
+import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-async function logSyncAttempt(input: {
-  supabase: Awaited<ReturnType<typeof import('@/lib/supabase-server').createServerSupabase>>;
-  organizationId: string;
-  userId: string;
-  entityType: string;
-  entityId: string | null;
-  action: string;
-  status: string;
-  errorMessage?: string;
-  externalId?: string;
-}) {
-  await input.supabase.from('quickbooks_sync_logs').insert({
-    organization_id: input.organizationId,
-    user_id: input.userId,
-    entity_type: input.entityType,
-    entity_id: input.entityId,
-    action: input.action,
-    direction: 'export',
-    status: input.status,
-    external_id: input.externalId || null,
-    error_message: input.errorMessage || null
-  });
-}
 
 export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession();
@@ -47,8 +26,7 @@ export async function POST(request: Request) {
   }
 
   if (!quickbooksConfigured()) {
-    await logSyncAttempt({
-      supabase: ctx.supabase,
+    await writeQuickBooksSyncLog(ctx.supabase, {
       organizationId: ctx.workspace.organizationId,
       userId: ctx.userId,
       entityType: 'customer',
@@ -60,29 +38,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: quickbooksMissingCredentialsMessage() }, { status: 503 });
   }
 
-  const { data: connection } = await ctx.supabase
-    .from('quickbooks_connections')
-    .select('status, realm_id')
-    .eq('organization_id', ctx.workspace.organizationId)
-    .maybeSingle();
-
-  if (!connection || connection.status !== 'connected') {
-    await logSyncAttempt({
-      supabase: ctx.supabase,
-      organizationId: ctx.workspace.organizationId,
-      userId: ctx.userId,
-      entityType: 'customer',
-      entityId: customerId,
-      action: 'sync_customer',
-      status: 'failed',
-      errorMessage: 'QuickBooks is not connected for this workspace.'
-    });
-    return NextResponse.json({ error: 'Connect QuickBooks before syncing customers.' }, { status: 400 });
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 503 });
   }
 
+  // Confirm the customer belongs to this organization using the user-scoped client first.
   const { data: customer } = await ctx.supabase
     .from('customers')
-    .select('id, company_name, email, phone')
+    .select('id')
     .eq('id', customerId)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -91,24 +55,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
   }
 
-  await logSyncAttempt({
-    supabase: ctx.supabase,
-    organizationId: ctx.workspace.organizationId,
-    userId: ctx.userId,
-    entityType: 'customer',
-    entityId: customerId,
-    action: 'sync_customer',
-    status: 'queued',
-    errorMessage: 'Customer sync is queued. Full QuickBooks API mapping will complete once credentials are verified.'
-  });
+  try {
+    const result = await syncCustomerToQuickBooks({
+      admin,
+      organizationId: ctx.workspace.organizationId,
+      userId: ctx.userId,
+      customerId
+    });
 
-  await ctx.supabase
-    .from('quickbooks_connections')
-    .update({ last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('organization_id', ctx.workspace.organizationId);
-
-  return NextResponse.json({
-    ok: true,
-    message: 'Customer sync logged. QuickBooks remains your accounting system of record.'
-  });
+    return NextResponse.json({
+      success: true,
+      created: result.created,
+      updated: result.updated,
+      externalId: result.externalId,
+      message: result.created
+        ? 'Customer created in QuickBooks.'
+        : 'Customer updated in QuickBooks.'
+    });
+  } catch (error) {
+    if (error instanceof QuickBooksApiError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.parsed.userMessage,
+          reconnectRequired: error.parsed.reconnectRequired
+        },
+        { status: error.parsed.httpStatus >= 400 && error.parsed.httpStatus < 600 ? error.parsed.httpStatus : 400 }
+      );
+    }
+    return NextResponse.json({ success: false, error: 'Customer sync failed.' }, { status: 500 });
+  }
 }

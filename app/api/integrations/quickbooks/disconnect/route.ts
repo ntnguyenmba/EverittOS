@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
+import { loadQuickBooksConnection, revokeQuickBooksToken } from '@/lib/quickbooks/client';
+import { writeQuickBooksSyncLog } from '@/lib/quickbooks/logging';
 import { canManageOrganizationSettings } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
 export const runtime = 'nodejs';
@@ -14,34 +17,60 @@ export async function POST() {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
-  const { error } = await ctx.supabase
-    .from('quickbooks_connections')
-    .upsert(
-      {
-        organization_id: ctx.workspace.organizationId,
-        provider: 'quickbooks',
-        status: 'disconnected',
-        access_token: null,
-        refresh_token: null,
-        realm_id: null,
-        token_expires_at: null,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'organization_id' }
-    );
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 503 });
+  }
+
+  const connection = await loadQuickBooksConnection(admin, ctx.workspace.organizationId);
+  let revokeOk = false;
+  let intuitTid: string | null = null;
+
+  const tokenToRevoke = connection?.refresh_token || connection?.access_token;
+  if (tokenToRevoke) {
+    try {
+      const revoked = await revokeQuickBooksToken(tokenToRevoke);
+      revokeOk = revoked.ok;
+      intuitTid = revoked.intuitTid;
+    } catch {
+      revokeOk = false;
+    }
+  }
+
+  const { error } = await admin.from('quickbooks_connections').upsert(
+    {
+      organization_id: ctx.workspace.organizationId,
+      provider: 'quickbooks',
+      status: 'disconnected',
+      access_token: null,
+      refresh_token: null,
+      realm_id: null,
+      token_expires_at: null,
+      refresh_token_expires_at: null,
+      company_name: null,
+      last_error: null,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'organization_id' }
+  );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  await ctx.supabase.from('quickbooks_sync_logs').insert({
-    organization_id: ctx.workspace.organizationId,
-    user_id: ctx.userId,
-    entity_type: 'connection',
+  await writeQuickBooksSyncLog(admin, {
+    organizationId: ctx.workspace.organizationId,
+    userId: ctx.userId,
+    entityType: 'connection',
     action: 'disconnect',
-    direction: 'export',
-    status: 'completed'
+    status: 'completed',
+    intuitTid,
+    errorMessage: tokenToRevoke && !revokeOk ? 'Local disconnect completed; Intuit revoke was unavailable.' : null
   });
 
-  return NextResponse.json({ ok: true, message: 'QuickBooks disconnected.' });
+  return NextResponse.json({
+    ok: true,
+    message: 'QuickBooks disconnected.',
+    revokedAtIntuit: revokeOk
+  });
 }

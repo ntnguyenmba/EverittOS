@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { quickbooksConfigured, quickbooksMissingCredentialsMessage, quickbooksOAuthAuthorizeUrl } from '@/lib/quickbooks';
+import {
+  createQuickBooksOAuthState,
+  quickbooksConfigured,
+  quickbooksMissingCredentialsMessage,
+  quickbooksOAuthAuthorizeUrl
+} from '@/lib/quickbooks';
 import { canManageOrganizationSettings } from '@/lib/roles';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -19,10 +24,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
   }
 
-  const state = Buffer.from(
-    JSON.stringify({ userId: ctx.userId, organizationId: ctx.workspace.organizationId, ts: Date.now() })
-  ).toString('base64url');
+  let state: string;
+  try {
+    state = createQuickBooksOAuthState(ctx.userId, ctx.workspace.organizationId);
+  } catch {
+    return NextResponse.json({ error: quickbooksMissingCredentialsMessage() }, { status: 503 });
+  }
 
-  const url = quickbooksOAuthAuthorizeUrl(state);
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(quickbooksOAuthAuthorizeUrl(state));
 }

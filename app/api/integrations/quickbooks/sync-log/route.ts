@@ -16,7 +16,9 @@ export async function GET() {
 
   const { data, error } = await ctx.supabase
     .from('quickbooks_sync_logs')
-    .select('id, entity_type, entity_id, action, direction, status, external_id, error_message, created_at')
+    .select(
+      'id, entity_type, entity_id, action, direction, status, external_id, error_message, intuit_tid, http_status, qb_error_code, fault_type, created_at'
+    )
     .eq('organization_id', ctx.workspace.organizationId)
     .order('created_at', { ascending: false })
     .limit(50);

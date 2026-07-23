@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import { appUrl } from '@/lib/app-url';
-import { quickbooksConfigured } from '@/lib/quickbooks';
+import {
+  exchangeAuthorizationCode,
+  fetchCompanyDisplayName,
+  persistConnectionTokens,
+  quickbooksConfigured,
+  verifyQuickBooksOAuthState
+} from '@/lib/quickbooks';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { writeQuickBooksSyncLog, logQuickBooksEvent } from '@/lib/quickbooks/logging';
+import { QuickBooksApiError, loadQuickBooksConnection } from '@/lib/quickbooks/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,69 +32,80 @@ export async function GET(request: Request) {
     return redirectWithError('missing_code');
   }
 
-  let parsed: { userId?: string; organizationId?: string };
-  try {
-    parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf8')) as {
-      userId?: string;
-      organizationId?: string;
-    };
-  } catch {
+  const parsed = verifyQuickBooksOAuthState(state);
+  if (!parsed?.organizationId || !parsed.userId) {
     return redirectWithError('invalid_state');
   }
-
-  if (!parsed.organizationId) {
-    return redirectWithError('invalid_state');
-  }
-
-  const clientId = process.env.QUICKBOOKS_CLIENT_ID!.trim();
-  const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET!.trim();
-  const redirectUri = (process.env.QUICKBOOKS_REDIRECT_URI || appUrl('/api/integrations/quickbooks/callback')).trim();
-
-  const tokenRes = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri
-    })
-  });
-
-  if (!tokenRes.ok) {
-    return redirectWithError('connect_failed');
-  }
-
-  const tokenJson = (await tokenRes.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-  };
 
   const admin = createAdminSupabase();
   if (!admin) {
     return redirectWithError('server_config');
   }
 
-  const expiresAt = tokenJson.expires_in
-    ? new Date(Date.now() + tokenJson.expires_in * 1000).toISOString()
-    : null;
-
-  await admin.from('quickbooks_connections').upsert(
-    {
-      organization_id: parsed.organizationId,
-      provider: 'quickbooks',
-      status: 'connected',
+  try {
+    const { tokens, intuitTid } = await exchangeAuthorizationCode(code);
+    await persistConnectionTokens(admin, parsed.organizationId, tokens, {
       realm_id: realmId,
-      access_token: tokenJson.access_token || null,
-      refresh_token: tokenJson.refresh_token || null,
-      token_expires_at: expiresAt,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: 'organization_id' }
-  );
+      status: 'connected',
+      last_error: null
+    });
 
-  return NextResponse.redirect(appUrl('/settings/integrations?quickbooks=connected'));
+    const connection = await loadQuickBooksConnection(admin, parsed.organizationId);
+    const companyName = connection
+      ? await fetchCompanyDisplayName(admin, parsed.organizationId, { connection })
+      : null;
+
+    if (companyName) {
+      await admin
+        .from('quickbooks_connections')
+        .update({ company_name: companyName, updated_at: new Date().toISOString() })
+        .eq('organization_id', parsed.organizationId);
+    }
+
+    await writeQuickBooksSyncLog(admin, {
+      organizationId: parsed.organizationId,
+      userId: parsed.userId,
+      entityType: 'connection',
+      action: 'connect',
+      status: 'completed',
+      externalId: realmId,
+      intuitTid,
+      httpStatus: 200
+    });
+
+    logQuickBooksEvent('oauth_connected', {
+      organizationId: parsed.organizationId,
+      realmId,
+      intuitTid,
+      hasCompanyName: Boolean(companyName)
+    });
+
+    return NextResponse.redirect(appUrl('/settings/integrations?quickbooks=connected'));
+  } catch (error) {
+    const message =
+      error instanceof QuickBooksApiError
+        ? error.parsed.userMessage
+        : 'QuickBooks connection failed.';
+    const intuitTid = error instanceof QuickBooksApiError ? error.parsed.intuitTid : null;
+
+    await writeQuickBooksSyncLog(admin, {
+      organizationId: parsed.organizationId,
+      userId: parsed.userId,
+      entityType: 'connection',
+      action: 'connect',
+      status: 'failed',
+      errorMessage: message,
+      intuitTid,
+      httpStatus: error instanceof QuickBooksApiError ? error.parsed.httpStatus : 500,
+      qbErrorCode: error instanceof QuickBooksApiError ? error.parsed.code || null : null
+    });
+
+    logQuickBooksEvent('oauth_connect_failed', {
+      organizationId: parsed.organizationId,
+      intuitTid,
+      reason: message
+    });
+
+    return redirectWithError('connect_failed');
+  }
 }

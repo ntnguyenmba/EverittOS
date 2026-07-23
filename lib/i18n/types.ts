@@ -849,8 +849,13 @@ export type MessageTree = {
       connected: string;
       notConnected: string;
       notConfigured: string;
+      needsReconnect: string;
+      company: string;
+      companyId: string;
       lastSync: string;
+      lastError: string;
       connect: string;
+      reconnect: string;
       disconnect: string;
       recentSyncLog: string;
       noSyncAttempts: string;
