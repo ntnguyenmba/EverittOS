@@ -38,7 +38,8 @@ const EMPTY_METRICS: ContractorDashboardMetrics = {
 };
 
 function logContractorError(code: ContractorLoadErrorCode, detail: string) {
-  if (process.env.NODE_ENV !== 'production') {
+  // Always log link failures — they are production data/identity bugs.
+  if (code === 'worker_not_linked' || process.env.NODE_ENV !== 'production') {
     console.error(`[contractor-dashboard] ${code}: ${detail}`);
   }
 }
@@ -94,7 +95,7 @@ export default function ContractorPortalPage() {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role, plan, email')
+      .select('role, plan, email, full_name, display_name')
       .eq('id', user.id)
       .maybeSingle();
     if (profileError) {
@@ -117,38 +118,77 @@ export default function ContractorPortalPage() {
     const lookupEmail = String(user.email || profile?.email || '')
       .trim()
       .toLowerCase();
+    const displayName = String(profile?.full_name || profile?.display_name || '')
+      .trim();
 
     const workerSelect = 'id, auth_user_id, email, active, organization_id, name';
-    const authWorkersQuery = organizationId
-      ? supabase.from('workers').select(workerSelect).eq('organization_id', organizationId).eq('auth_user_id', user.id)
-      : supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id);
-    const emailWorkersQuery =
-      lookupEmail && organizationId
-        ? supabase.from('workers').select(workerSelect).eq('organization_id', organizationId).ilike('email', lookupEmail)
-        : lookupEmail
-          ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
-          : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null });
 
-    const [authWorkersRes, emailWorkersRes] = await Promise.all([authWorkersQuery, emailWorkersQuery]);
-    if (authWorkersRes.error || emailWorkersRes.error) {
-      const message = authWorkersRes.error?.message || emailWorkersRes.error?.message || 'worker lookup failed';
+    // Broad lookup: do not require organization_id on the worker row.
+    // Historical rows often have null auth_user_id and/or null organization_id.
+    const queries = [
+      supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
+      lookupEmail
+        ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
+      organizationId
+        ? supabase.from('workers').select(workerSelect).eq('organization_id', organizationId)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null })
+    ] as const;
+
+    const [authWorkersRes, emailWorkersRes, orgWorkersRes] = await Promise.all(queries);
+    if (authWorkersRes.error || emailWorkersRes.error || orgWorkersRes.error) {
+      const message =
+        authWorkersRes.error?.message ||
+        emailWorkersRes.error?.message ||
+        orgWorkersRes.error?.message ||
+        'worker lookup failed';
       logContractorError('worker_lookup_failed', message);
       setErrors((current) => [...current, 'worker_lookup_failed']);
       setLoading(false);
       return;
     }
 
-    const workerMap = new Map<string, { id?: string | null; auth_user_id?: string | null; email?: string | null; active?: boolean | null }>();
-    for (const row of [...(authWorkersRes.data || []), ...(emailWorkersRes.data || [])]) {
+    const workerMap = new Map<
+      string,
+      {
+        id?: string | null;
+        auth_user_id?: string | null;
+        email?: string | null;
+        name?: string | null;
+        active?: boolean | null;
+        organization_id?: string | null;
+      }
+    >();
+    for (const row of [
+      ...(authWorkersRes.data || []),
+      ...(emailWorkersRes.data || []),
+      ...(orgWorkersRes.data || [])
+    ]) {
       workerMap.set(String(row.id), row);
     }
     const workerRows = Array.from(workerMap.values());
 
-    const identity = contractorIdentityFromWorkers(user.id, workerRows, lookupEmail);
+    const identity = contractorIdentityFromWorkers(user.id, workerRows, lookupEmail, displayName);
     const workerIds = identity.workerIds || [];
 
     if (!workerIds.length) {
-      logContractorError('worker_not_linked', 'No workers rows matched auth user / email');
+      logContractorError(
+        'worker_not_linked',
+        JSON.stringify({
+          organizationId,
+          lookupEmail,
+          displayName,
+          visibleWorkerCount: workerRows.length,
+          sample: workerRows.slice(0, 5).map((w) => ({
+            id: w.id,
+            auth_user_id: w.auth_user_id,
+            email: w.email,
+            organization_id: w.organization_id,
+            name: w.name,
+            active: w.active
+          }))
+        })
+      );
       setErrors(['worker_not_linked']);
       setMetrics(EMPTY_METRICS);
       setJobCards([]);
