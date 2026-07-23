@@ -39,7 +39,7 @@ import './mobile-usability-fixes.css';
 
 const libreFranklin = Libre_Franklin({
   subsets: ['latin'],
-  variable: '--font-libre-franklin',
+  variable: '--font-inter',
   display: 'swap'
 });
 
