@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { LeadCreateForm } from '@/components/lead-create-form';
+import { RequestCreateForm } from '@/components/lead-create-form';
 import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
@@ -42,7 +42,7 @@ export default function NewLeadPage() {
           </Link>
         }
       />
-      <LeadCreateForm />
+      <RequestCreateForm />
     </AppShell>
   );
 }
