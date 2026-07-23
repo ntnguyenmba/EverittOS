@@ -19,7 +19,7 @@ import { canAccessFinancials } from '@/lib/finance-access';
 import { isAdminRole, isClientRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
-import { buildAssignmentWorkerIdsByJob, isJobAssignedToWorker } from '@/lib/worker-assignment';
+import { isJobAssignedToWorker } from '@/lib/worker-assignment';
 
 type DashboardJobRow = {
   id: string;
@@ -229,15 +229,9 @@ export default function DashboardPage() {
     );
     const staffIdentity = { userId: user.id, workerIds: assignedWorkerIds };
 
-    const { data: assignmentRows } =
-      staffView && assignedWorkerIds.length > 0
-        ? await supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', assignedWorkerIds)
-        : { data: [] as Array<{ job_id?: string | null; worker_id?: string | null }> };
-    const assignmentWorkerIdsByJob = buildAssignmentWorkerIdsByJob(assignmentRows || []);
-
     const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
     const visibleJobs = staffView
-      ? normalizedJobs.filter((job) => isJobAssignedToWorker(job, staffIdentity, assignmentWorkerIdsByJob))
+      ? normalizedJobs.filter((job) => isJobAssignedToWorker(job, staffIdentity))
       : normalizedJobs;
     const rows = ((customersRes.data || []) as { id: string; record_type: string | null; pipeline_stage: string | null }[]);
     const leadRows = rows.filter((row) => row.record_type === 'lead');

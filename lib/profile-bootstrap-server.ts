@@ -229,7 +229,6 @@ async function resolveOrganizationId(
     .from('organizations')
     .select('id')
     .eq('owner_user_id', userId)
-    .is('deleted_at', null)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -499,66 +498,36 @@ export async function ensureUserWorkspace(
     }
 
     if (!orgId) {
-      // Re-check owned org before insert to reduce duplicate-workspace races
-      // when parallel bootstrap/setup requests run for the same user.
-      const { data: ownedAgain } = await admin
+      const { data: org, error: orgError } = await admin
         .from('organizations')
+        .insert({ name: businessName, owner_user_id: userId })
         .select('id')
-        .eq('owner_user_id', userId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .single();
 
-      if (ownedAgain?.id) {
-        orgId = ownedAgain.id;
-      } else {
-        const { data: org, error: orgError } = await admin
-          .from('organizations')
-          .insert({ name: businessName, owner_user_id: userId })
-          .select('id')
-          .single();
+      logBootstrapOperation({
+        step: 'create_organization',
+        table: 'organizations',
+        action: 'insert',
+        userId,
+        emailDomain,
+        ok: !orgError && Boolean(org?.id),
+        error: asSqlError(orgError),
+        meta: { businessName }
+      });
 
-        logBootstrapOperation({
-          step: 'create_organization',
-          table: 'organizations',
-          action: 'insert',
-          userId,
-          emailDomain,
-          ok: !orgError && Boolean(org?.id),
-          error: asSqlError(orgError),
-          meta: { businessName }
-        });
-
-        if (orgError || !org) {
-          // Another concurrent request may have created the org first.
-          const { data: racedOrg } = await admin
-            .from('organizations')
-            .select('id')
-            .eq('owner_user_id', userId)
-            .is('deleted_at', null)
-            .order('created_at', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          if (racedOrg?.id) {
-            orgId = racedOrg.id;
-          } else {
-            logAuthEvent('org_bootstrap_failed', { userId, reason: orgError?.message || 'no org row' });
-            return failure(
-              'org_create_failed',
-              'Your profile was created but workspace organization setup failed. Try signing in again.',
-              orgError?.message || 'Organization insert returned no row.',
-              existing ?? null,
-              Boolean(membership)
-            );
-          }
-        } else {
-          orgId = org.id;
-          created = true;
-          logAuthEvent('workspace_created', { userId, emailDomain, orgId });
-        }
+      if (orgError || !org) {
+        logAuthEvent('org_bootstrap_failed', { userId, reason: orgError?.message || 'no org row' });
+        return failure(
+          'org_create_failed',
+          'Your profile was created but workspace organization setup failed. Try signing in again.',
+          orgError?.message || 'Organization insert returned no row.',
+          existing ?? null,
+          Boolean(membership)
+        );
       }
+      orgId = org.id;
+      created = true;
+      logAuthEvent('workspace_created', { userId, emailDomain, orgId });
     }
 
     const memberRole = roleToDb(normalizeRole(membership?.role || role));

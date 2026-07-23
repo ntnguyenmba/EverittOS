@@ -168,21 +168,13 @@ export async function listWorkspaceJobs(
     if (managerView) {
       query = query.or(`organization_id.eq.${organizationId},and(organization_id.is.null,user_id.eq.${userId})`);
     } else {
-      const { data: assignmentRows } = currentUserWorkerIds.length
-        ? await supabase.from('job_assignments').select('job_id').in('worker_id', currentUserWorkerIds)
-        : { data: [] as Array<{ job_id: string }> };
-      const assignedJobIds = Array.from(
-        new Set((assignmentRows || []).map((row) => row.job_id as string).filter(Boolean))
+      query = query.or(
+        `and(organization_id.eq.${organizationId},user_id.eq.${userId}),${scopedAssignedToClause(
+          organizationId,
+          userId,
+          currentUserWorkerIds
+        )},and(organization_id.is.null,user_id.eq.${userId})`
       );
-      const clauses = [
-        `and(organization_id.eq.${organizationId},user_id.eq.${userId})`,
-        scopedAssignedToClause(organizationId, userId, currentUserWorkerIds),
-        `and(organization_id.is.null,user_id.eq.${userId})`
-      ];
-      if (assignedJobIds.length) {
-        clauses.push(`and(organization_id.eq.${organizationId},id.in.(${assignedJobIds.join(',')}))`);
-      }
-      query = query.or(clauses.join(','));
     }
   } else {
     query = query.eq('user_id', userId);

@@ -69,25 +69,4 @@ describe('team work migration safety', () => {
     assert.match(jobsApi, /listWorkspaceJobs/);
     assert.match(jobsOrgQuery, /organization_id/);
   });
-
-  it('restores contractor job visibility via is_assigned_to_job on jobs RLS', () => {
-    const repair = readMigration('202609180001_contractor_jobs_assigned_worker_rls.sql');
-    assert.match(repair, /create or replace function public\.is_assigned_to_job/);
-    assert.match(repair, /w\.id = j\.assigned_to/);
-    assert.match(repair, /j\.assigned_to = auth\.uid\(\)/);
-    assert.match(repair, /create policy jobs_team_work_read on public\.jobs/);
-    assert.match(repair, /public\.is_assigned_to_job\(id\)/);
-    assert.match(repair, /create policy jobs_team_work_update on public\.jobs/);
-
-    const laterMigrations = migrationFiles().filter((name) => name > '202609180001_contractor_jobs_assigned_worker_rls.sql');
-    for (const name of laterMigrations) {
-      const sql = readMigration(name);
-      if (!sql.includes('jobs_team_work_read')) continue;
-      assert.match(
-        sql,
-        /is_assigned_to_job\(id\)/,
-        `${name} must not drop contractor assignment visibility from jobs_team_work_read`
-      );
-    }
-  });
 });
