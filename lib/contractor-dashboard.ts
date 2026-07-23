@@ -117,24 +117,99 @@ export function uniqueWorkerIds(ids: Array<string | null | undefined>): string[]
   return Array.from(new Set(ids.map((id) => String(id || '').trim()).filter(Boolean)));
 }
 
+function normalizePersonName(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+export type ContractorWorkerCandidate = {
+  id?: string | null;
+  auth_user_id?: string | null;
+  email?: string | null;
+  name?: string | null;
+  active?: boolean | null;
+  organization_id?: string | null;
+};
+
+/**
+ * Resolve which workers.id values belong to the signed-in contractor.
+ * Never creates workers — only matches existing rows.
+ *
+ * Match order:
+ * 1. auth_user_id === userId
+ * 2. email (case-insensitive)
+ * 3. unique display-name match within the provided candidate set
+ */
 export function contractorIdentityFromWorkers(
   userId: string,
-  workers: Array<{ id?: string | null; auth_user_id?: string | null; email?: string | null; active?: boolean | null }>,
-  userEmail?: string | null
+  workers: ContractorWorkerCandidate[],
+  userEmail?: string | null,
+  displayName?: string | null
 ): WorkerIdentity {
   const email = String(userEmail || '')
     .trim()
     .toLowerCase();
-  const workerIds = uniqueWorkerIds(
-    workers
-      .filter((worker) => {
-        if (worker.auth_user_id && worker.auth_user_id === userId) return true;
-        if (email && String(worker.email || '').trim().toLowerCase() === email) return true;
-        return false;
-      })
-      .map((worker) => worker.id)
+  const name = normalizePersonName(displayName);
+
+  const byAuthOrEmail = workers.filter((worker) => {
+    if (worker.auth_user_id && worker.auth_user_id === userId) return true;
+    if (email && String(worker.email || '').trim().toLowerCase() === email) return true;
+    return false;
+  });
+
+  if (byAuthOrEmail.length) {
+    return { userId, workerIds: uniqueWorkerIds(byAuthOrEmail.map((worker) => worker.id)) };
+  }
+
+  if (name) {
+    const byName = workers.filter((worker) => normalizePersonName(worker.name) === name);
+    if (byName.length === 1) {
+      return { userId, workerIds: uniqueWorkerIds(byName.map((worker) => worker.id)) };
+    }
+  }
+
+  return { userId, workerIds: [] };
+}
+
+/** Explain why a worker set failed to link — for diagnostics/tests. */
+export function explainContractorWorkerLinkFailure(input: {
+  userId: string;
+  userEmail?: string | null;
+  displayName?: string | null;
+  workers: ContractorWorkerCandidate[];
+}): string {
+  const identity = contractorIdentityFromWorkers(
+    input.userId,
+    input.workers,
+    input.userEmail,
+    input.displayName
   );
-  return { userId, workerIds };
+  if ((identity.workerIds || []).length) return 'linked';
+
+  const email = String(input.userEmail || '')
+    .trim()
+    .toLowerCase();
+  const hasAuthMatch = input.workers.some((w) => w.auth_user_id === input.userId);
+  const hasEmailMatch = email
+    ? input.workers.some((w) => String(w.email || '').trim().toLowerCase() === email)
+    : false;
+  const name = normalizePersonName(input.displayName);
+  const nameMatches = name
+    ? input.workers.filter((w) => normalizePersonName(w.name) === name)
+    : [];
+
+  if (!input.workers.length) {
+    return 'no_visible_workers';
+  }
+  if (!hasAuthMatch && !hasEmailMatch && nameMatches.length === 0) {
+    return 'auth_user_id_null_and_email_name_mismatch';
+  }
+  if (nameMatches.length > 1) {
+    return 'ambiguous_name_match';
+  }
+  return 'unresolved';
 }
 
 export function filterLaborForWorkers(

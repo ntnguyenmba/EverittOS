@@ -86,7 +86,13 @@ describe('team work migration safety', () => {
     assert.match(laborSelf, /w\.auth_user_id = auth\.uid\(\)/);
     assert.match(laborSelf, /can_manage_org_work/);
 
-    const laterMigrations = migrationFiles().filter((name) => name > '202609200001_contractor_job_labor_self_select.sql');
+    const authRelink = readMigration('202609210001_contractor_worker_auth_relink.sql');
+    assert.match(authRelink, /Relink existing contractor workers/);
+    assert.match(authRelink, /workers_self_auth_select/);
+    assert.match(authRelink, /auth_user_id = r\.auth_user_id/);
+    assert.doesNotMatch(authRelink, /insert into public\.workers/i);
+
+    const laterMigrations = migrationFiles().filter((name) => name > '202609210001_contractor_worker_auth_relink.sql');
     for (const name of laterMigrations) {
       const sql = readMigration(name);
       if (!sql.includes('jobs_team_work_read')) continue;

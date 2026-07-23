@@ -7,6 +7,7 @@ import {
   CONTRACTOR_HOME_PATH,
   contractorDashboardLinkLoops,
   contractorIdentityFromWorkers,
+  explainContractorWorkerLinkFailure,
   filterLaborForWorkers
 } from '@/lib/contractor-dashboard';
 import { buildAssignmentWorkerIdsByJob } from '@/lib/worker-assignment';
@@ -164,5 +165,50 @@ describe('contractor dashboard', () => {
     assert.equal(contractorDashboardLinkLoops('/portal/contractor'), true);
     assert.equal(contractorDashboardLinkLoops('/dashboard'), true);
     assert.equal(contractorDashboardLinkLoops('/settings/account'), false);
+  });
+
+  it('links historical workers by unique name when auth_user_id and email are missing', () => {
+    const identity = contractorIdentityFromWorkers(
+      'auth-1',
+      [
+        {
+          id: 'worker-hist',
+          auth_user_id: null,
+          email: null,
+          name: 'Thuy Nguyen',
+          organization_id: 'org-1'
+        },
+        {
+          id: 'worker-other',
+          auth_user_id: null,
+          email: null,
+          name: 'Other Person',
+          organization_id: 'org-1'
+        }
+      ],
+      'thuy@everittventures.com',
+      'Thuy Nguyen'
+    );
+    assert.deepEqual(identity.workerIds, ['worker-hist']);
+  });
+
+  it('explains not-linked when no auth/email/name match exists', () => {
+    assert.equal(
+      explainContractorWorkerLinkFailure({
+        userId: 'auth-1',
+        userEmail: 'thuy@everittventures.com',
+        displayName: 'Thuy Nguyen',
+        workers: [{ id: 'w1', auth_user_id: null, email: null, name: 'Someone Else' }]
+      }),
+      'auth_user_id_null_and_email_name_mismatch'
+    );
+    assert.equal(
+      explainContractorWorkerLinkFailure({
+        userId: 'auth-1',
+        userEmail: 'thuy@everittventures.com',
+        workers: []
+      }),
+      'no_visible_workers'
+    );
   });
 });
