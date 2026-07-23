@@ -1,0 +1,17 @@
+.contractor-dash-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 20px;
+}
+
+.contractor-dash-header h1 {
+  margin: 0 0 6px;
+  font-size: clamp(26px, 3.5vw, 32px);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.contractor-job-card h3 {
+  color: var(--text);
+}

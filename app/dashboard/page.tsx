@@ -16,7 +16,7 @@ import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { isAdminRole, isClientRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isAdminRole, isClientRole, isContractorRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 import { buildAssignmentWorkerIdsByJob, isJobAssignedToWorker } from '@/lib/worker-assignment';
@@ -187,6 +187,11 @@ export default function DashboardPage() {
 
     if (isClientRole(userRole)) {
       router.push('/portal/client');
+      return;
+    }
+
+    if (isContractorRole(userRole)) {
+      router.push('/portal/contractor');
       return;
     }
 
