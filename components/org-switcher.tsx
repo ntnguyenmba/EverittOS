@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isFeatureEnabled } from '@/lib/feature-flags';
+import { normalizeOrgMemberships } from '@/lib/org-memberships';
 import type { OrgMembership } from '@/lib/os-types';
 
 export function OrgSwitcher() {
@@ -19,8 +20,9 @@ export function OrgSwitcher() {
       return;
     }
     const json = await res.json();
-    setMemberships(json.memberships || []);
-    setActiveId(json.activeOrganizationId || '');
+    const activeOrganizationId = json.activeOrganizationId || '';
+    setMemberships(normalizeOrgMemberships(json.memberships || [], activeOrganizationId));
+    setActiveId(activeOrganizationId);
     setLoading(false);
   }, []);
 
