@@ -1,0 +1,160 @@
+/* Global text contrast pass.
+   Keeps the current design and font, but makes all text easier to read. */
+
+:root {
+  --text: #1f2d3a;
+  --charcoal: #1f2d3a;
+  --text-secondary: #3f4f5f;
+  --muted: #4f5f6f;
+  --cool-grey: #4f5f6f;
+  --evr-charcoal: #1f2d3a;
+  --evr-muted: #3f4f5f;
+  --evr-taupe: #3f4f5f;
+}
+
+body,
+.main,
+.app-content,
+.dashboard-home,
+.settings-main,
+.card,
+.panel,
+.modal,
+dialog,
+.sidebar,
+.table,
+.auth-card,
+.billing-plans-grid,
+.schedule-board,
+.crm-shell {
+  color: var(--text) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+strong,
+.page-title,
+.dashboard-title,
+.card-title,
+.section-title,
+.metric-value,
+.stat-value,
+.dashboard-revenue-metric-value,
+.dashboard-stat-value,
+.dashboard-metric-card strong {
+  color: var(--text) !important;
+}
+
+p,
+li,
+td,
+.muted,
+.type-caption,
+.page-subtitle,
+.page-header p,
+.page-head p,
+.dashboard-header p,
+.card p,
+.stat p,
+.settings-row,
+.list-row,
+.dashboard-home p,
+.dashboard-home li,
+.dashboard-home .muted,
+.dashboard-revenue-metric-description,
+.dashboard-activity-subtitle,
+.dashboard-activity-detail,
+.helper-text,
+.form-help,
+.empty-state-copy,
+.empty-state-description {
+  color: var(--text-secondary) !important;
+}
+
+small,
+.stat-label,
+.settings-row-label,
+.dashboard-revenue-metric-label,
+.nav-section-label,
+.sidebar-plan-card,
+.sidebar-plan-card p,
+.sidebar-language-compact .language-switcher-select,
+.sidebar-logout,
+.badge,
+.status,
+.status-pill,
+.table th {
+  color: var(--muted) !important;
+}
+
+label,
+.form-label,
+.field-label,
+.auth-field label,
+.form label,
+.auth-field span,
+input,
+textarea,
+select {
+  color: var(--text) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6d7884 !important;
+  opacity: 1;
+}
+
+.nav-item,
+.sidebar a.nav-item,
+.sidebar a,
+.app-sidebar a,
+.mobile-nav-drawer-link.nav-item,
+.mobile-bottom-nav-item,
+.nav-links a {
+  color: #334352 !important;
+}
+
+.nav-item.active,
+.nav-item[aria-current='page'],
+.sidebar a.nav-item.active,
+.sidebar a[aria-current='page'],
+.app-sidebar a[aria-current='page'] {
+  color: #182530 !important;
+}
+
+button,
+.btn,
+a.btn,
+.button {
+  color: var(--text) !important;
+}
+
+.btn-primary,
+button.btn-primary,
+a.btn-primary,
+.button.primary,
+.surface-dark,
+.surface-dark h1,
+.surface-dark h2,
+.surface-dark h3,
+.surface-dark h4,
+.surface-dark strong {
+  color: #ffffff !important;
+}
+
+.surface-dark p,
+.surface-dark .muted,
+.surface-dark span {
+  color: #e8edf2 !important;
+}
+
+[aria-disabled='true'],
+:disabled,
+.disabled {
+  color: #707b86 !important;
+}
