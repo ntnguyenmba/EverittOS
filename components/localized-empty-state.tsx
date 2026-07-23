@@ -25,6 +25,7 @@ type LocalizedEmptyStateProps = {
   emptyKey: EmptyKey;
   compact?: boolean;
   icon?: 'default' | 'none';
+  onPrimaryClick?: () => void;
 };
 
 const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
@@ -41,13 +42,24 @@ const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
   analytics: '/dashboard'
 };
 
-export function LocalizedEmptyState({ emptyKey, compact, icon }: LocalizedEmptyStateProps) {
+export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
   const actionLabel = t(`empty.${emptyKey}.action`);
   const secondaryActionLabel = t(`empty.${emptyKey}.secondaryAction`);
   const actionHref = ACTION_HREFS[emptyKey];
-  const hasAction = actionHref && !actionLabel.startsWith('[');
+  const hasActionLabel = !actionLabel.startsWith('[');
+  const hasLinkedAction = actionHref && hasActionLabel;
   const hasSecondaryAction = emptyKey === 'leads' && !secondaryActionLabel.startsWith('[');
+
+  const primaryAction = onPrimaryClick && hasActionLabel ? (
+    <button type="button" className="btn btn-primary" onClick={onPrimaryClick}>
+      {actionLabel}
+    </button>
+  ) : hasLinkedAction ? (
+    <Link className="btn btn-primary" href={actionHref}>
+      {actionLabel}
+    </Link>
+  ) : undefined;
 
   return (
     <EmptyState
@@ -55,13 +67,7 @@ export function LocalizedEmptyState({ emptyKey, compact, icon }: LocalizedEmptyS
       description={t(`empty.${emptyKey}.description`)}
       compact={compact}
       icon={icon}
-      action={
-        hasAction ? (
-          <Link className="btn btn-primary" href={actionHref}>
-            {actionLabel}
-          </Link>
-        ) : undefined
-      }
+      action={primaryAction}
       secondaryAction={
         hasSecondaryAction ? (
           <Link className="btn" href="/forms">
