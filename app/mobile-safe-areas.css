@@ -1,10 +1,12 @@
-/* Safe-area support for installed PWA and Capacitor shells only. */
+/* Safe-area support for installed PWA and Capacitor shells only.
+   Never apply horizontal safe-area padding to body because the native/standalone
+   flags are added after hydration and would shift the entire app after first paint. */
 
 @supports (padding: env(safe-area-inset-top)) {
   html[data-native-app='true'] body,
   html[data-standalone='true'] body {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   html[data-native-app='true'] .app-shell-header,
@@ -12,6 +14,14 @@
   html[data-native-app='true'] .mobile-nav-top,
   html[data-standalone='true'] .mobile-nav-top {
     padding-top: env(safe-area-inset-top);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  html[data-native-app='true'] .dashboard-shell-mobile,
+  html[data-standalone='true'] .dashboard-shell-mobile {
+    padding-left: env(safe-area-inset-left) !important;
+    padding-right: env(safe-area-inset-right) !important;
   }
 
   html[data-native-app='true'] .mobile-bottom-nav,
