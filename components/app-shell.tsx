@@ -44,6 +44,69 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         </AppPageContent>
         <AppFooter />
       </main>
+
+      <style jsx global>{`
+        /* Touch devices such as iPad can report a desktop-sized pixel width.
+           Choose the tablet layout from CSS input capabilities at first paint,
+           before React hydration or native platform detection can change state. */
+        @media (pointer: coarse), (hover: none) {
+          .dashboard-shell {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+            grid-template-areas: 'mobile' 'main' !important;
+          }
+
+          .dashboard-shell > .sidebar {
+            display: none !important;
+            position: absolute !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          .dashboard-shell-mobile {
+            display: block !important;
+            position: sticky !important;
+            top: 0;
+            z-index: 42;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .dashboard-shell > .main,
+          .dashboard-shell .main {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            margin-left: 0 !important;
+            translate: none !important;
+            transform: none !important;
+          }
+
+          .dashboard-shell .app-page-content,
+          .dashboard-shell .today-page,
+          .dashboard-shell .dashboard-home {
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin-inline: 0 !important;
+            translate: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
