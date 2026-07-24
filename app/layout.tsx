@@ -40,6 +40,7 @@ import './everitt-modern-refresh.css';
 import './text-contrast.css';
 import './contractor-portal.css';
 import './native-tablet-release-polish.css';
+import './everitt-visual-system.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
@@ -52,7 +53,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#24364A'
+  themeColor: '#243F53'
 };
 
 export const metadata: Metadata = {
