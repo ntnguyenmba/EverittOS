@@ -28,8 +28,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const normalized =
-    workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
+  const normalized = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
   const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
   const [role, setRole] = useState<UserRole>(resolvedRole);
   const [unread, setUnread] = useState(0);
@@ -106,7 +105,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav-drawer-head">
-          <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
+          <BrandLogo href="/dashboard" size={30} showName className="mobile-nav-brand-logo" />
           <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
             {t('common.close')}
           </button>
@@ -162,7 +161,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   return (
     <header className={`mobile-nav${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
       <div className="mobile-nav-bar">
-        <BrandLogo href="/dashboard" size={26} showName className="mobile-nav-brand-logo" />
+        <BrandLogo href="/dashboard" size={28} showName className="mobile-nav-brand-logo" />
         <div className="mobile-nav-bar-actions">
           <LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" />
           <button
@@ -180,6 +179,187 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
       </div>
 
       {mounted && drawer ? createPortal(drawer, document.body) : null}
+
+      <style>{`
+        .mobile-nav {
+          border-bottom: 1px solid #b9c7d0;
+          background: rgba(247, 250, 251, 0.96);
+          box-shadow: 0 8px 24px rgba(24, 44, 59, 0.08);
+          backdrop-filter: blur(18px);
+        }
+
+        .mobile-nav-bar {
+          min-height: 68px;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
+        .mobile-nav-brand-logo {
+          color: #173044;
+        }
+
+        .mobile-nav-bar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .mobile-nav-language select,
+        .mobile-nav-language button {
+          min-height: 44px;
+          border: 1px solid #afbdc8;
+          border-radius: 10px;
+          background: #ffffff;
+          color: #243e51;
+          font-weight: 700;
+        }
+
+        .mobile-nav-menu-btn {
+          width: 46px;
+          height: 46px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #9eafbb;
+          border-radius: 12px;
+          background: #243f53;
+          color: #ffffff;
+          box-shadow: 0 7px 18px rgba(36, 63, 83, 0.2);
+        }
+
+        .mobile-nav-menu-btn:hover {
+          background: #1b3142;
+        }
+
+        .mobile-nav-overlay-portal {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          display: flex;
+          justify-content: flex-end;
+          background: rgba(15, 31, 42, 0.48);
+          backdrop-filter: blur(5px);
+        }
+
+        .mobile-nav-drawer {
+          width: min(390px, calc(100vw - 28px));
+          height: 100dvh;
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr) auto;
+          border-left: 1px solid rgba(255, 255, 255, 0.65);
+          background: #f6f9fa;
+          box-shadow: -24px 0 70px rgba(10, 28, 40, 0.24);
+          animation: everittDrawerIn 180ms ease-out;
+        }
+
+        .mobile-nav-drawer-head {
+          min-height: 76px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          border-bottom: 1px solid #c7d2da;
+          background: #ffffff;
+        }
+
+        .mobile-nav-close-btn {
+          min-height: 42px;
+          padding-inline: 15px;
+          border-color: #9eafbb;
+          background: #eef3f5;
+          color: #223b4d;
+          font-weight: 750;
+        }
+
+        .mobile-nav-panel {
+          overflow-y: auto;
+          padding: 16px 14px 24px;
+        }
+
+        .mobile-nav-drawer-link {
+          min-height: 50px;
+          margin: 4px 0;
+          padding: 12px 14px;
+          border: 1px solid transparent;
+          border-radius: 12px;
+          color: #30485a;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .mobile-nav-drawer-link:hover,
+        .mobile-nav-drawer-link[aria-current='page'] {
+          border-color: #bccad3;
+          background: #ffffff;
+          color: #1e3c50;
+          box-shadow: 0 5px 16px rgba(25, 47, 63, 0.08);
+        }
+
+        .mobile-nav-drawer-footer {
+          max-height: 46dvh;
+          overflow-y: auto;
+          padding: 18px;
+          border-top: 1px solid #c7d2da;
+          background: #e8eef2;
+        }
+
+        .mobile-nav-logout {
+          min-height: 48px;
+          border-color: #8fa2af;
+          background: #ffffff;
+          color: #243f53;
+          font-weight: 750;
+        }
+
+        body.mobile-nav-open {
+          overflow: hidden;
+        }
+
+        @keyframes everittDrawerIn {
+          from { transform: translateX(28px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (min-width: 720px) and (max-width: 1100px) {
+          .mobile-nav-bar {
+            min-height: 74px;
+            padding-inline: 24px;
+          }
+
+          .mobile-nav-drawer {
+            width: min(430px, 54vw);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .mobile-nav-language {
+            display: none;
+          }
+
+          .mobile-nav-bar {
+            min-height: 64px;
+            padding: 9px 12px;
+          }
+
+          .mobile-nav-drawer {
+            width: calc(100vw - 18px);
+          }
+
+          .mobile-nav-drawer-footer {
+            padding: 14px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mobile-nav-drawer {
+            animation: none;
+          }
+        }
+      `}</style>
     </header>
   );
 }
