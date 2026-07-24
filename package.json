@@ -12,12 +12,13 @@
     "i18n:audit": "tsx scripts/i18n-audit.ts",
     "mobile:icons": "node scripts/generate-mobile-icons.mjs",
     "mobile:validate-env": "tsx scripts/validate-mobile-env.ts",
-    "mobile:sync": "npm run mobile:icons && npx cap sync",
+    "mobile:validate-release": "tsx scripts/validate-mobile-release.ts",
+    "mobile:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync",
     "mobile:copy": "npx cap copy",
     "ios:open": "npx cap open ios",
     "android:open": "npx cap open android",
-    "ios:sync": "npm run mobile:icons && npx cap sync ios",
-    "android:sync": "npm run mobile:icons && npx cap sync android"
+    "ios:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync ios",
+    "android:sync": "npm run mobile:icons && npm run mobile:validate-release && npx cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
