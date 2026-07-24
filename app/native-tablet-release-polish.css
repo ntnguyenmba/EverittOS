@@ -125,7 +125,10 @@ body.mobile-nav-open {
 
 @media (max-width: 1180px) {
   .dashboard-shell {
+    display: block !important;
     grid-template-columns: minmax(0, 1fr) !important;
+    width: 100%;
+    min-width: 0;
   }
 
   .dashboard-shell > .sidebar {
@@ -134,14 +137,43 @@ body.mobile-nav-open {
 
   .dashboard-shell-mobile {
     display: block !important;
+    width: 100%;
   }
 
+  .dashboard-shell > .main,
   .main {
-    width: 100%;
+    width: 100% !important;
     min-width: 0;
+    margin: 0 !important;
     padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .app-page-content,
+  .page-content,
+  .dashboard-content,
+  body:has(.today-page) .app-page-content,
+  body:has(.today-page) .today-page,
+  .today-page,
+  .dashboard-home,
+  .app-authenticated-header {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .app-page-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .app-authenticated-header-search,
+  .app-authenticated-header-search-only {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
   }
 }
 
@@ -158,6 +190,7 @@ body.mobile-nav-open {
     padding-right: max(24px, env(safe-area-inset-right));
   }
 
+  .dashboard-shell > .main,
   .main {
     padding-left: max(28px, env(safe-area-inset-left));
     padding-right: max(28px, env(safe-area-inset-right));
@@ -166,8 +199,21 @@ body.mobile-nav-open {
   .app-page-content,
   .page-content,
   .dashboard-content {
-    width: min(100%, 1040px);
-    margin-inline: auto;
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+  }
+
+  .today-page,
+  .dashboard-home {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .dashboard-revenue-grid,
+  .quick-actions-grid,
+  .dashboard-quick-actions-grid {
+    width: 100%;
   }
 }
 
@@ -186,6 +232,7 @@ body.mobile-nav-open {
     font-size: 15px;
   }
 
+  .dashboard-shell > .main,
   .main {
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
