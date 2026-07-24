@@ -1,0 +1,128 @@
+/* Final responsive layout guard.
+   This file must remain the final global stylesheet import so authenticated pages
+   cannot inherit stale desktop offsets when the sidebar is replaced by mobile navigation. */
+
+.dashboard-shell,
+.dashboard-shell > .main,
+.app-page-content,
+.page-content,
+.dashboard-content,
+.today-page,
+.dashboard-home {
+  min-width: 0;
+}
+
+.main {
+  max-width: none;
+}
+
+.app-page-top-language {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-shell {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    grid-template-areas:
+      'mobile'
+      'main' !important;
+  }
+
+  .dashboard-shell > .sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+  }
+
+  .dashboard-shell-mobile {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell > .main,
+  .main {
+    display: block !important;
+    grid-area: main !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    transform: none !important;
+    padding-left: clamp(16px, 3vw, 30px) !important;
+    padding-right: clamp(16px, 3vw, 30px) !important;
+  }
+
+  .main > .app-page-top,
+  .main > .app-page-content,
+  .app-page-content,
+  .page-content,
+  .dashboard-content,
+  .app-authenticated-header,
+  .app-authenticated-header-search,
+  .app-authenticated-header-search-only,
+  body:has(.today-page) .app-page-content,
+  body:has(.today-page) .today-page,
+  .today-page,
+  .dashboard-home {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-inline: 0 !important;
+    transform: none !important;
+  }
+
+  .app-page-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .today-page,
+  .dashboard-home {
+    justify-self: stretch !important;
+    align-self: stretch !important;
+  }
+
+  .today-page > *,
+  .dashboard-home > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1181px) {
+  .dashboard-shell {
+    width: 100%;
+    max-width: none;
+  }
+
+  .dashboard-shell > .main {
+    width: 100%;
+    max-width: none;
+  }
+
+  .app-page-content,
+  .page-content,
+  .dashboard-content {
+    width: min(100%, 1240px);
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell > .main,
+  .main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
