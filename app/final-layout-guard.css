@@ -20,11 +20,28 @@
   display: none !important;
 }
 
-@media (max-width: 1180px) {
+/* Never animate structural layout properties. This prevents the page from visibly
+   sliding after hydration, workspace loading, or native-platform detection. */
+.dashboard-shell,
+.dashboard-shell > .main,
+.dashboard-shell-mobile,
+.sidebar,
+.app-page-content,
+.today-page,
+.dashboard-home {
+  transition-property: none !important;
+  animation-name: none !important;
+}
+
+/* The mobile/tablet header can become active well above classic phone widths.
+   Collapse the desktop sidebar at the same breakpoint so no 300px ghost column
+   remains after client hydration. */
+@media (max-width: 1440px) {
   .dashboard-shell {
     display: block !important;
     width: 100% !important;
     max-width: none !important;
+    min-width: 0 !important;
     margin: 0 !important;
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: auto minmax(0, 1fr) !important;
@@ -33,16 +50,27 @@
       'main' !important;
   }
 
-  .dashboard-shell > .sidebar {
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .sidebar {
     display: none !important;
+    position: absolute !important;
     width: 0 !important;
     min-width: 0 !important;
     max-width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .dashboard-shell-mobile {
     display: block !important;
+    position: sticky !important;
+    top: 0;
+    z-index: 42;
     width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -56,6 +84,8 @@
     min-width: 0 !important;
     margin: 0 !important;
     margin-left: 0 !important;
+    inset: auto !important;
+    translate: none !important;
     transform: none !important;
     padding-left: clamp(16px, 3vw, 30px) !important;
     padding-right: clamp(16px, 3vw, 30px) !important;
@@ -79,6 +109,8 @@
     margin-left: 0 !important;
     margin-right: 0 !important;
     margin-inline: 0 !important;
+    inset: auto !important;
+    translate: none !important;
     transform: none !important;
   }
 
@@ -100,7 +132,7 @@
   }
 }
 
-@media (min-width: 1181px) {
+@media (min-width: 1441px) {
   .dashboard-shell {
     width: 100%;
     max-width: none;
