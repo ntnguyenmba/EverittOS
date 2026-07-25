@@ -39,9 +39,9 @@ export function resetBrowserSupabase(): void {
 
 /** Lazy browser client. Reads runtime config injected in root layout when available. */
 export const supabase: BrowserClient = new Proxy({} as BrowserClient, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
     const client = getBrowserSupabase();
-    const value = Reflect.get(client, prop, receiver);
+    const value = Reflect.get(client, prop, client);
     if (typeof value === 'function') {
       return (value as (...args: unknown[]) => unknown).bind(client);
     }
