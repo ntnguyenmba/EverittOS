@@ -27,6 +27,7 @@ import {
 export const runtime = 'nodejs';
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
+type ReRootPlan = 'monthly' | 'yearly' | 'report' | 'free';
 
 async function customerEmail(
   stripe: Stripe,
@@ -52,6 +53,167 @@ function metadataWorkspaceId(metadata: Stripe.Metadata | null | undefined): stri
   return metadata?.workspace_id?.trim() || metadata?.organization_id?.trim() || null;
 }
 
+function isReRootMetadata(metadata: Stripe.Metadata | null | undefined): boolean {
+  return metadata?.app?.trim().toLowerCase() === 'reroot';
+}
+
+function normalizeReRootPlan(value: string | null | undefined): ReRootPlan | null {
+  const plan = value?.trim().toLowerCase();
+  if (plan === 'monthly' || plan === 'premium') return 'monthly';
+  if (plan === 'yearly' || plan === 'annual') return 'yearly';
+  if (plan === 'report' || plan === 'plan') return 'report';
+  if (plan === 'free') return 'free';
+  return null;
+}
+
+async function updateReRootProfile(
+  admin: AdminClient,
+  input: {
+    userId?: string | null;
+    email?: string | null;
+    plan: ReRootPlan;
+    eventId: string;
+    eventType: string;
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+  }
+): Promise<boolean> {
+  const userId = input.userId?.trim() || null;
+  const email = input.email?.trim().toLowerCase() || null;
+  const payload = { plan: input.plan };
+
+  let error: { message?: string } | null = null;
+  let matched = false;
+
+  if (userId) {
+    const result = await admin.from('profiles').update(payload).eq('id', userId).select('id').maybeSingle();
+    error = result.error;
+    matched = Boolean(result.data?.id);
+  }
+
+  if (!matched && email) {
+    const result = await admin
+      .from('profiles')
+      .update(payload)
+      .ilike('email', email)
+      .select('id')
+      .maybeSingle();
+    error = result.error;
+    matched = Boolean(result.data?.id);
+  }
+
+  if (error) {
+    logBillingSyncIssue('reroot_profile_update_failed', {
+      eventId: input.eventId,
+      eventType: input.eventType,
+      userId,
+      email,
+      plan: input.plan,
+      error: error.message || 'unknown'
+    });
+    throw new Error(error.message || 'ReRoot profile update failed');
+  }
+
+  if (!matched) {
+    logBillingSyncIssue('reroot_profile_not_found', {
+      eventId: input.eventId,
+      eventType: input.eventType,
+      userId,
+      email,
+      plan: input.plan
+    });
+  }
+
+  if (email) {
+    await recordBillingWebhookResult(admin, {
+      email,
+      stripeEventId: input.eventId,
+      eventType: input.eventType,
+      plan: input.plan,
+      success: matched,
+      reason: matched ? undefined : 'reroot_profile_not_found',
+      details: {
+        app: 'reroot',
+        user_id: userId,
+        customer_id: input.stripeCustomerId || null,
+        subscription_id: input.stripeSubscriptionId || null
+      }
+    });
+  }
+
+  logStripeBilling(matched ? 'webhook:reroot_synced' : 'webhook:reroot_profile_missing', {
+    eventId: input.eventId,
+    eventType: input.eventType,
+    userId,
+    email,
+    plan: input.plan,
+    stripeCustomerId: input.stripeCustomerId || null,
+    stripeSubscriptionId: input.stripeSubscriptionId || null
+  }, matched ? 'info' : 'warn');
+
+  return matched;
+}
+
+async function handleReRootCheckout(
+  stripe: Stripe,
+  admin: AdminClient,
+  session: Stripe.Checkout.Session,
+  eventId: string,
+  eventType: string
+): Promise<void> {
+  const plan = normalizeReRootPlan(session.metadata?.plan);
+  if (!plan || plan === 'free') {
+    throw new Error('Invalid ReRoot plan metadata');
+  }
+
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
+  const subscriptionId =
+    typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
+  const email =
+    session.metadata?.customer_email?.trim().toLowerCase() ||
+    session.metadata?.email?.trim().toLowerCase() ||
+    session.customer_details?.email?.trim().toLowerCase() ||
+    session.customer_email?.trim().toLowerCase() ||
+    (await customerEmail(stripe, session.customer));
+
+  await updateReRootProfile(admin, {
+    userId: metadataUserId(session.metadata),
+    email,
+    plan,
+    eventId,
+    eventType,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscriptionId
+  });
+}
+
+async function handleReRootSubscription(
+  stripe: Stripe,
+  admin: AdminClient,
+  sub: Stripe.Subscription,
+  eventId: string,
+  eventType: string
+): Promise<void> {
+  const metadataPlan = normalizeReRootPlan(sub.metadata?.plan);
+  const grantsAccess = subscriptionGrantsPaidAccess(sub);
+  const plan: ReRootPlan = grantsAccess ? metadataPlan || 'monthly' : 'free';
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
+  const email =
+    sub.metadata?.customer_email?.trim().toLowerCase() ||
+    sub.metadata?.email?.trim().toLowerCase() ||
+    (await customerEmail(stripe, sub.customer));
+
+  await updateReRootProfile(admin, {
+    userId: metadataUserId(sub.metadata),
+    email,
+    plan,
+    eventId,
+    eventType,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: sub.id
+  });
+}
+
 async function resolveCheckoutSessionIds(stripe: Stripe, session: Stripe.Checkout.Session) {
   let customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null;
   let subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id || null;
@@ -71,9 +233,7 @@ async function resolveCheckoutSessionIds(stripe: Stripe, session: Stripe.Checkou
   if (!isValidStripeCustomerId(customerId) && subId) {
     const sub = await stripe.subscriptions.retrieve(subId);
     const fromSub = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
-    if (isValidStripeCustomerId(fromSub)) {
-      customerId = fromSub;
-    }
+    if (isValidStripeCustomerId(fromSub)) customerId = fromSub;
   }
 
   return {
@@ -101,7 +261,6 @@ async function handleCheckoutCompleted(
     session.customer_email?.trim().toLowerCase() ||
     (await customerEmail(stripe, session.customer)) ||
     (customerId ? await customerEmail(stripe, customerId) : null);
-
   const plan = await planFromSession(stripe, session);
 
   logBillingPipeline('checkout_completed', {
@@ -221,8 +380,7 @@ async function handleSubscriptionEvent(
   const profileId = sub.metadata?.profile_id?.trim() || subscriptionUserId;
   const workspaceId = metadataWorkspaceId(sub.metadata);
   const ownerUserId = metadataOwnerUserId(sub.metadata);
-  const stripeCustomerId =
-    typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
+  const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null;
   const email =
     sub.metadata?.customer_email?.trim().toLowerCase() ||
     sub.metadata?.email?.trim().toLowerCase() ||
@@ -241,7 +399,7 @@ async function handleSubscriptionEvent(
 
   logBillingSync(eventType, {
     subscriptionId: sub.id,
-    customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id || null,
+    customerId: stripeCustomerId,
     workspaceId,
     subscriptionUserId,
     plan: planFromSubscription(sub),
@@ -249,11 +407,7 @@ async function handleSubscriptionEvent(
   });
 
   if (!email) {
-    logBillingSyncIssue('missing_email', {
-      subscriptionId: sub.id,
-      subscriptionUserId,
-      eventType
-    });
+    logBillingSyncIssue('missing_email', { subscriptionId: sub.id, subscriptionUserId, eventType });
     return;
   }
 
@@ -272,11 +426,7 @@ async function handleSubscriptionEvent(
     plan: planFromSubscription(sub),
     success: syncResult.ok,
     reason: syncResult.ok ? undefined : syncResult.error || 'subscription_sync_failed',
-    details: {
-      subscription_id: sub.id,
-      customer_id: stripeCustomerId,
-      writes: syncResult.writes
-    }
+    details: { subscription_id: sub.id, customer_id: stripeCustomerId, writes: syncResult.writes }
   });
 }
 
@@ -373,6 +523,11 @@ async function handleInvoiceEvent(
       expand: ['discount.coupon', 'discount.promotion_code', 'items.data.price.product']
     });
 
+    if (isReRootMetadata(sub.metadata)) {
+      await handleReRootSubscription(stripe, admin, sub, eventId, eventType);
+      return;
+    }
+
     if (!subscriptionGrantsPaidAccess(sub) && invoice.amount_paid === 0 && invoice.total === 0) {
       logBillingSyncIssue('zero_invoice_inactive_subscription', {
         subscriptionId: subId,
@@ -410,6 +565,14 @@ async function handleInvoiceEvent(
   }
 
   if (!succeeded) {
+    if (subId) {
+      const sub = await stripe.subscriptions.retrieve(subId);
+      if (isReRootMetadata(sub.metadata)) {
+        await handleReRootSubscription(stripe, admin, sub, eventId, eventType);
+        return;
+      }
+    }
+
     const profile = await resolveBillingProfile(admin, { email });
     if (profile) {
       await admin.from('profiles').update({ subscription_status: 'past_due' }).eq('id', profile.id);
@@ -417,7 +580,7 @@ async function handleInvoiceEvent(
     await admin
       .from('everittos_subscriptions')
       .update({ last_payment_status: 'past_due' })
-      .ilike('email', email.trim().toLowerCase());
+      .ilike('email', email);
     await recordBillingWebhookResult(admin, {
       email,
       stripeEventId: eventId,
@@ -482,25 +645,40 @@ export async function POST(request: Request) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-      case 'checkout.session.async_payment_succeeded':
-        logStripeBilling('webhook:checkout_completed', { eventId: event.id, eventType: event.type });
-        await handleCheckoutCompleted(stripe, admin, event.data.object as Stripe.Checkout.Session, event.id, event.type);
+      case 'checkout.session.async_payment_succeeded': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (isReRootMetadata(session.metadata)) {
+          logStripeBilling('webhook:reroot_checkout', { eventId: event.id, eventType: event.type });
+          await handleReRootCheckout(stripe, admin, session, event.id, event.type);
+        } else {
+          logStripeBilling('webhook:checkout_completed', { eventId: event.id, eventType: event.type });
+          await handleCheckoutCompleted(stripe, admin, session, event.id, event.type);
+        }
         break;
+      }
       case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        logStripeBilling('webhook:subscription_event', { eventId: event.id, eventType: event.type });
-        await handleSubscriptionEvent(
-          stripe,
-          admin,
-          event.data.object as Stripe.Subscription,
-          event.id,
-          event.type
-        );
+      case 'customer.subscription.updated': {
+        const sub = event.data.object as Stripe.Subscription;
+        if (isReRootMetadata(sub.metadata)) {
+          logStripeBilling('webhook:reroot_subscription', { eventId: event.id, eventType: event.type });
+          await handleReRootSubscription(stripe, admin, sub, event.id, event.type);
+        } else {
+          logStripeBilling('webhook:subscription_event', { eventId: event.id, eventType: event.type });
+          await handleSubscriptionEvent(stripe, admin, sub, event.id, event.type);
+        }
         break;
-      case 'customer.subscription.deleted':
-        logStripeBilling('webhook:subscription_deleted', { eventId: event.id });
-        await handleSubscriptionDeleted(stripe, admin, event.data.object as Stripe.Subscription, event.id);
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        if (isReRootMetadata(sub.metadata)) {
+          logStripeBilling('webhook:reroot_subscription_deleted', { eventId: event.id });
+          await handleReRootSubscription(stripe, admin, sub, event.id, event.type);
+        } else {
+          logStripeBilling('webhook:subscription_deleted', { eventId: event.id });
+          await handleSubscriptionDeleted(stripe, admin, sub, event.id);
+        }
         break;
+      }
       case 'invoice.paid':
       case 'invoice.payment_succeeded':
       case 'invoice.payment_failed':
@@ -532,6 +710,5 @@ export async function POST(request: Request) {
   }
 
   logStripeBilling('webhook:processed', { eventId: event.id, eventType: event.type });
-
   return NextResponse.json({ received: true });
 }
