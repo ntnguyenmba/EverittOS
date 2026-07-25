@@ -38,6 +38,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   useEffect(() => {
+    if (range === 'month') setActiveMetrics(metrics);
+  }, [metrics, range]);
+
+  useEffect(() => {
+    if (loading) return;
+
     let cancelled = false;
 
     async function loadRange() {
@@ -73,11 +79,11 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       }
     }
 
-    void loadRange();
+    if (range !== 'month') void loadRange();
     return () => {
       cancelled = true;
     };
-  }, [range]);
+  }, [range, loading]);
 
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
@@ -177,7 +183,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const showLoadError = !isLoading && (rangeError || Boolean(activeMetrics.loadFailed));
 
   return (
-    <section className="card dashboard-today-card" aria-label={copy.overview.title}>
+    <section
+      className="card dashboard-today-card"
+      aria-label={copy.overview.title}
+      aria-busy={isLoading}
+      style={{ minHeight: 300 }}
+    >
       <div className="dashboard-section-head" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h2>{copy.overview.title}</h2>
@@ -194,6 +205,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
             className="input"
             value={range}
             onChange={(event) => setRange(event.target.value as DashboardDateRange)}
+            disabled={rangeLoading}
             style={{ width: 'auto', minWidth: 150 }}
           >
             {RANGE_IDS.map((id) => (
@@ -208,65 +220,65 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
         </div>
       </div>
 
-      {isLoading ? (
-        <p className="loading-state" role="status">
-          {t('common.loading')}
-        </p>
-      ) : null}
+      <div style={{ minHeight: 24, marginTop: 8 }}>
+        {isLoading ? (
+          <p className="loading-state" role="status" style={{ margin: 0 }}>
+            {t('common.loading')}
+          </p>
+        ) : null}
+        {showLoadError ? (
+          <p className="muted" role="alert" style={{ margin: 0 }}>
+            {copy.overview.loadError}
+          </p>
+        ) : null}
+      </div>
 
-      {showLoadError ? (
-        <p className="muted" role="alert" style={{ marginTop: 12 }}>
-          {copy.overview.loadError}
-        </p>
-      ) : null}
+      <div className="dashboard-revenue-grid" style={{ opacity: isLoading ? 0.58 : 1 }}>
+        {primaryItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className="dashboard-revenue-metric is-primary"
+            title={item.help}
+            aria-label={`${item.label}. ${item.help}`}
+            style={{ minHeight: 118, pointerEvents: isLoading ? 'none' : 'auto' }}
+          >
+            <span className="dashboard-revenue-metric-label">{item.label}</span>
+            <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+          </Link>
+        ))}
+      </div>
 
-      {!isLoading && !showLoadError ? (
-        <>
-          <div className="dashboard-revenue-grid">
-            {primaryItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="dashboard-revenue-metric is-primary"
-                title={item.help}
-                aria-label={`${item.label}. ${item.help}`}
-              >
-                <span className="dashboard-revenue-metric-label">{item.label}</span>
-                <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-              </Link>
-            ))}
-          </div>
+      <div style={{ marginTop: 16, minHeight: 42 }}>
+        <button
+          type="button"
+          className="button secondary"
+          onClick={() => setShowMoreDetails((current) => !current)}
+          disabled={isLoading}
+        >
+          {showMoreDetails ? copy.overview.hideDetails : copy.overview.moreDetails}
+        </button>
+      </div>
 
-          <div style={{ marginTop: 16 }}>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => setShowMoreDetails((current) => !current)}
+      {showMoreDetails ? (
+        <div className="dashboard-revenue-grid" style={{ marginTop: 16, opacity: isLoading ? 0.58 : 1 }}>
+          {secondaryItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="dashboard-revenue-metric"
+              title={item.help}
+              aria-label={item.help ? `${item.label}. ${item.help}` : item.label}
+              style={{ minHeight: 150, pointerEvents: isLoading ? 'none' : 'auto' }}
             >
-              {showMoreDetails ? copy.overview.hideDetails : copy.overview.moreDetails}
-            </button>
-          </div>
-
-          {showMoreDetails ? (
-            <div className="dashboard-revenue-grid" style={{ marginTop: 16 }}>
-              {secondaryItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="dashboard-revenue-metric"
-                  title={item.help}
-                  aria-label={item.help ? `${item.label}. ${item.help}` : item.label}
-                >
-                  <span className="dashboard-revenue-metric-label">{item.label}</span>
-                  <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-                  {item.help ? (
-                    <span className="dashboard-revenue-metric-desc muted">{item.help}</span>
-                  ) : null}
-                </Link>
-              ))}
-            </div>
-          ) : null}
-        </>
+              <span className="dashboard-revenue-metric-label">{item.label}</span>
+              <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+              {item.help ? (
+                <span className="dashboard-revenue-metric-desc muted">{item.help}</span>
+              ) : null}
+            </Link>
+          ))}
+        </div>
       ) : null}
     </section>
   );
