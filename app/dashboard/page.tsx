@@ -14,7 +14,7 @@ import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/li
 import { isActiveCustomerRecord } from '@/lib/job-operational-date';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchUsageCounts } from '@/lib/everittos-usage';
+import { fetchUsageCounts, type UsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { isAdminRole, isClientRole, isContractorRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -71,6 +71,16 @@ const emptyCrmDashboardMetrics: CrmDashboardMetrics = {
   inactiveCustomers: 0
 };
 
+const emptyUsageCounts: UsageCounts = {
+  jobs: 0,
+  photos: 0,
+  customers: 0,
+  reports: 0,
+  workers: 0,
+  teamMembers: 0,
+  locations: 0
+};
+
 const emptyDashboardRevenueMetrics: DashboardRevenueMetrics = {
   revenueThisMonth: 0,
   cashCollected: 0,
@@ -120,6 +130,19 @@ const emptyDashboardRevenueMetrics: DashboardRevenueMetrics = {
 const OPEN_LEAD_STAGES = new Set(['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened', 'lead']);
 const CLOSED_LEAD_STAGES = new Set(['won', 'closed_lost', 'cancelled', 'lost']);
 
+async function safeLoad<T>(label: string, task: PromiseLike<T>, fallback: T): Promise<T> {
+  try {
+    return await task;
+  } catch (error) {
+    console.error(`[dashboard] ${label} failed`, error);
+    return fallback;
+  }
+}
+
+function logQueryError(label: string, result: { error?: unknown } | null | undefined): void {
+  if (result?.error) console.error(`[dashboard] ${label} query failed`, result.error);
+}
+
 function DashboardAccessNotice() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
@@ -165,47 +188,55 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
+    setLoadError(false);
 
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    try {
+      const authResult = await safeLoad('authentication', supabase.auth.getUser(), { data: { user: null }, error: null });
+      const user = authResult.data.user;
 
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+      if (!user) {
+        router.push('/login');
+        return;
+      }
 
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
-    const org = await ensureOrganizationForUser(user.id);
-    const userPlan = normalizePlan(profile?.plan);
-    const userRole = normalizeRole(org?.role || profile?.role);
-    setRole(userRole);
-    setPlan(userPlan);
+      const [profileRes, org] = await Promise.all([
+        safeLoad(
+          'profile',
+          supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
+          { data: null, error: null }
+        ),
+        safeLoad('organization', ensureOrganizationForUser(user.id), null)
+      ]);
 
-    if (isClientRole(userRole)) {
-      router.push('/portal/client');
-      return;
-    }
+      logQueryError('profile', profileRes);
 
-    if (isContractorRole(userRole)) {
-      router.push('/portal/contractor');
-      return;
-    }
+      const profile = profileRes.data;
+      const userPlan = normalizePlan(profile?.plan);
+      const userRole = normalizeRole(org?.role || profile?.role);
+      setRole(userRole);
+      setPlan(userPlan);
 
-    const organizationId = org?.organizationId || null;
-    const staffView = isStaffRole(userRole);
-    const canViewFinancials = canAccessFinancials(userRole, userPlan);
-    const customerScope = organizationId
-      ? supabase.from('customers').select('id, record_type, pipeline_stage').eq('organization_id', organizationId).limit(10000)
-      : supabase.from('customers').select('id, record_type, pipeline_stage').eq('user_id', user.id).limit(10000);
+      if (isClientRole(userRole)) {
+        router.push('/portal/client');
+        return;
+      }
 
-    const [metrics, usageCounts, jobsRes, activityRes, workersRes, customersRes] = await Promise.all([
-      canViewFinancials ? fetchDashboardRevenueMetrics(supabase, organizationId) : Promise.resolve(emptyDashboardRevenueMetrics),
-      fetchUsageCounts(user.id, organizationId),
-      organizationId
+      if (isContractorRole(userRole)) {
+        router.push('/portal/contractor');
+        return;
+      }
+
+      const organizationId = org?.organizationId || null;
+      const staffView = isStaffRole(userRole);
+      const canViewFinancials = canAccessFinancials(userRole, userPlan);
+      const customerScope = organizationId
+        ? supabase.from('customers').select('id, record_type, pipeline_stage').eq('organization_id', organizationId).limit(10000)
+        : supabase.from('customers').select('id, record_type, pipeline_stage').eq('user_id', user.id).limit(10000);
+      const jobsQuery = organizationId
         ? supabase
             .from('jobs')
             .select('id, title, status, due_date, start_date, scheduled_start, created_at, assigned_to, customer_name, phone, address')
@@ -217,64 +248,94 @@ export default function DashboardPage() {
             .select('id, title, status, due_date, start_date, scheduled_start, created_at, assigned_to, customer_name, phone, address')
             .eq('user_id', user.id)
             .order('scheduled_start', { ascending: true, nullsFirst: false })
-            .limit(500),
-      organizationId
+            .limit(500);
+      const activityQuery = organizationId
         ? supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId)
-        : supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-      organizationId
+        : supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+      const workersQuery = organizationId
         ? supabase.from('workers').select('id, auth_user_id').eq('organization_id', organizationId)
-        : Promise.resolve({ data: [] }),
-      customerScope
-    ]);
+        : Promise.resolve({ data: [], error: null });
 
-    const assignedWorkerIds = (
-      ((workersRes.data || []) as { id: string; auth_user_id?: string | null }[])
-        .filter((worker) => worker.auth_user_id === user.id)
-        .map((worker) => worker.id)
-    );
-    const staffIdentity = { userId: user.id, workerIds: assignedWorkerIds };
+      const [metrics, usageCounts, jobsRes, activityRes, workersRes, customersRes] = await Promise.all([
+        safeLoad(
+          'revenue metrics',
+          canViewFinancials ? fetchDashboardRevenueMetrics(supabase, organizationId) : Promise.resolve(emptyDashboardRevenueMetrics),
+          { ...emptyDashboardRevenueMetrics, loadFailed: canViewFinancials }
+        ),
+        safeLoad('usage counts', fetchUsageCounts(user.id, organizationId), emptyUsageCounts),
+        safeLoad('jobs', jobsQuery, { data: [], error: null }),
+        safeLoad('activity', activityQuery, { count: 0, error: null }),
+        safeLoad('workers', workersQuery, { data: [], error: null }),
+        safeLoad('customers', customerScope, { data: [], error: null })
+      ]);
 
-    const { data: assignmentRows } =
-      staffView && assignedWorkerIds.length > 0
-        ? await supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', assignedWorkerIds)
-        : { data: [] as Array<{ job_id?: string | null; worker_id?: string | null }> };
-    const assignmentWorkerIdsByJob = buildAssignmentWorkerIdsByJob(assignmentRows || []);
+      logQueryError('jobs', jobsRes);
+      logQueryError('activity', activityRes);
+      logQueryError('workers', workersRes);
+      logQueryError('customers', customersRes);
 
-    const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
-    const visibleJobs = staffView
-      ? normalizedJobs.filter((job) => isJobAssignedToWorker(job, staffIdentity, assignmentWorkerIdsByJob))
-      : normalizedJobs;
-    const rows = ((customersRes.data || []) as { id: string; record_type: string | null; pipeline_stage: string | null }[]);
-    const leadRows = rows.filter((row) => row.record_type === 'lead');
-    const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');
-    const openLeadCount = leadRows.filter((row) => OPEN_LEAD_STAGES.has(row.pipeline_stage || 'open')).length;
-    const closedLeadCount = leadRows.filter((row) => CLOSED_LEAD_STAGES.has(row.pipeline_stage || '')).length;
-    const activeCustomerCount = customerRows.filter((row) => isActiveCustomerRecord(row)).length;
-    const recurringCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'recurring').length;
-    const inactiveCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'inactive' || row.pipeline_stage === 'former').length;
+      const assignedWorkerIds = (
+        ((workersRes.data || []) as { id: string; auth_user_id?: string | null }[])
+          .filter((worker) => worker.auth_user_id === user.id)
+          .map((worker) => worker.id)
+      );
+      const staffIdentity = { userId: user.id, workerIds: assignedWorkerIds };
 
-    setRevenueMetrics(metrics);
-    setCrmMetrics(
-      staffView || customersRes.error
-        ? emptyCrmDashboardMetrics
-        : {
-            totalLeads: leadRows.length,
-            openLeads: openLeadCount,
-            closedLeads: closedLeadCount,
-            activeCustomers: activeCustomerCount,
-            recurringCustomers: recurringCustomerCount,
-            inactiveCustomers: inactiveCustomerCount
-          }
-    );
-    setManagerWorkspaceMetrics({
-      jobs: visibleJobs,
-      photoCount: usageCounts.photos,
-      reportCount: staffView ? 0 : usageCounts.reports,
-      activityCount: staffView ? 0 : activityRes.error ? 0 : activityRes.count || 0,
-      customerCount: staffView ? 0 : customerRows.length,
-      teamCount: staffView ? 0 : usageCounts.teamMembers
-    });
-    setLoading(false);
+      const assignmentResult = staffView && assignedWorkerIds.length > 0
+        ? await safeLoad(
+            'job assignments',
+            supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', assignedWorkerIds),
+            { data: [], error: null }
+          )
+        : { data: [] as Array<{ job_id?: string | null; worker_id?: string | null }>, error: null };
+      logQueryError('job assignments', assignmentResult);
+      const assignmentWorkerIdsByJob = buildAssignmentWorkerIdsByJob(assignmentResult.data || []);
+
+      const normalizedJobs = ((jobsRes.data || []) as DashboardJobRow[]).map(normalizeDashboardJob);
+      const visibleJobs = staffView
+        ? normalizedJobs.filter((job) => isJobAssignedToWorker(job, staffIdentity, assignmentWorkerIdsByJob))
+        : normalizedJobs;
+      const rows = ((customersRes.data || []) as { id: string; record_type: string | null; pipeline_stage: string | null }[]);
+      const leadRows = rows.filter((row) => row.record_type === 'lead');
+      const customerRows = rows.filter((row) => !row.record_type || row.record_type === 'customer');
+      const openLeadCount = leadRows.filter((row) => OPEN_LEAD_STAGES.has(row.pipeline_stage || 'open')).length;
+      const closedLeadCount = leadRows.filter((row) => CLOSED_LEAD_STAGES.has(row.pipeline_stage || '')).length;
+      const activeCustomerCount = customerRows.filter((row) => isActiveCustomerRecord(row)).length;
+      const recurringCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'recurring').length;
+      const inactiveCustomerCount = customerRows.filter((row) => row.pipeline_stage === 'inactive' || row.pipeline_stage === 'former').length;
+
+      setRevenueMetrics(metrics);
+      setCrmMetrics(
+        staffView || customersRes.error
+          ? emptyCrmDashboardMetrics
+          : {
+              totalLeads: leadRows.length,
+              openLeads: openLeadCount,
+              closedLeads: closedLeadCount,
+              activeCustomers: activeCustomerCount,
+              recurringCustomers: recurringCustomerCount,
+              inactiveCustomers: inactiveCustomerCount
+            }
+      );
+      setManagerWorkspaceMetrics({
+        jobs: visibleJobs,
+        photoCount: usageCounts.photos,
+        reportCount: staffView ? 0 : usageCounts.reports,
+        activityCount: staffView ? 0 : activityRes.error ? 0 : activityRes.count || 0,
+        customerCount: staffView ? 0 : customerRows.length,
+        teamCount: staffView ? 0 : usageCounts.teamMembers
+      });
+
+      const partialFailure = Boolean(
+        metrics.loadFailed || jobsRes.error || activityRes.error || workersRes.error || customersRes.error || assignmentResult.error
+      );
+      setLoadError(partialFailure);
+    } catch (error) {
+      console.error('[dashboard] unexpected load failure', error);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -305,6 +366,15 @@ export default function DashboardPage() {
 
       <div className="today-page dashboard-home">
         <PageHeader title={staffView ? t('dashboard.myWork') : t('dashboard.welcome')} subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')} />
+
+        {loadError ? (
+          <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <p style={{ margin: 0 }}>Some dashboard information could not load. The available sections are shown below.</p>
+            <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
+              {loading ? 'Loading...' : 'Retry'}
+            </button>
+          </section>
+        ) : null}
 
         {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
