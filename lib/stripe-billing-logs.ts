@@ -34,12 +34,17 @@ export type StripeBillingLogTag =
   | 'webhook:subscription_event'
   | 'webhook:subscription_deleted'
   | 'webhook:invoice_event'
+  | 'webhook:reroot_checkout'
+  | 'webhook:reroot_subscription'
+  | 'webhook:reroot_subscription_deleted'
+  | 'webhook:reroot_synced'
+  | 'webhook:reroot_profile_missing'
   | 'sync:completed'
   | 'sync:subscription_synced'
   | 'sync:plan_updated'
   | 'sync:issue';
 
-export type StripeBillingLogLevel = 'log' | 'warn' | 'error';
+export type StripeBillingLogLevel = 'log' | 'info' | 'warn' | 'error';
 
 export function logStripeBilling(
   tag: StripeBillingLogTag,
@@ -60,6 +65,10 @@ export function logStripeBilling(
   }
   if (level === 'error') {
     console.error(line);
+    return;
+  }
+  if (level === 'info') {
+    console.info(line);
     return;
   }
   console.log(line);
