@@ -108,19 +108,92 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
+            padding: 18px 24px 32px !important;
             translate: none !important;
             transform: none !important;
           }
 
-          .dashboard-shell .app-page-content,
+          .dashboard-shell .app-page-top {
+            min-height: 0 !important;
+            margin: 0 0 12px !important;
+            padding: 0 !important;
+          }
+
+          .dashboard-shell .app-page-top-actions {
+            margin-left: auto !important;
+          }
+
+          .dashboard-shell .app-page-top .btn,
+          .dashboard-shell .app-page-top button,
+          .dashboard-shell .app-page-top a {
+            min-height: 44px !important;
+            padding: 9px 14px !important;
+            border-radius: 12px !important;
+          }
+
+          .dashboard-shell .app-page-content {
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            gap: 18px !important;
+            translate: none !important;
+            transform: none !important;
+          }
+
+          .dashboard-shell .everitt-cmd-trigger {
+            width: 100% !important;
+            min-height: 54px !important;
+            margin: 0 !important;
+            padding: 12px 16px !important;
+            border-radius: 14px !important;
+          }
+
+          .dashboard-shell .everitt-cmd-trigger kbd {
+            font-size: 12px !important;
+            padding: 3px 7px !important;
+          }
+
           .dashboard-shell .today-page,
           .dashboard-shell .dashboard-home {
             width: 100% !important;
             max-width: none !important;
             min-width: 0 !important;
             margin-inline: 0 !important;
+            gap: 18px !important;
             translate: none !important;
             transform: none !important;
+          }
+
+          .dashboard-shell .page-head,
+          .dashboard-shell .page-header {
+            margin: 0 !important;
+          }
+
+          .dashboard-shell h1 {
+            margin-bottom: 8px !important;
+          }
+
+          .dashboard-shell .page-subtitle {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+          }
+
+          .dashboard-shell .btn,
+          .dashboard-shell .button {
+            min-height: 46px;
+            padding-block: 10px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .dashboard-shell-mobile .mobile-nav-bar {
+            padding-inline: 24px !important;
+          }
+
+          .dashboard-shell > .main,
+          .dashboard-shell .main {
+            padding-inline: 24px !important;
           }
         }
       `}</style>
