@@ -179,6 +179,25 @@ function crmCard(title: string, value: number, href: string, body: string, style
   );
 }
 
+function DashboardLoadingShell() {
+  return (
+    <div aria-label="Loading dashboard" aria-busy="true" style={{ display: 'grid', gap: 24 }}>
+      <section className="card" style={{ minHeight: 286 }}>
+        <div className="skeleton" style={{ width: 180, height: 20, borderRadius: 8 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginTop: 24 }}>
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="skeleton" style={{ minHeight: 150, borderRadius: 'var(--radius-lg)' }} />
+          ))}
+        </div>
+      </section>
+      <section className="card" style={{ minHeight: 330 }}>
+        <div className="skeleton" style={{ width: 220, height: 20, borderRadius: 8 }} />
+        <div className="skeleton" style={{ width: '100%', height: 240, borderRadius: 'var(--radius-lg)', marginTop: 24 }} />
+      </section>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -187,6 +206,7 @@ export default function DashboardPage() {
   const [crmMetrics, setCrmMetrics] = useState<CrmDashboardMetrics>(emptyCrmDashboardMetrics);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
+  const [accessResolved, setAccessResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -230,6 +250,8 @@ export default function DashboardPage() {
         router.push('/portal/contractor');
         return;
       }
+
+      setAccessResolved(true);
 
       const organizationId = org?.organizationId || null;
       const staffView = isStaffRole(userRole);
@@ -365,69 +387,73 @@ export default function DashboardPage() {
         <DashboardAccessNotice />
       </Suspense>
 
-      <div className="today-page dashboard-home">
-        <PageHeader title={staffView ? t('dashboard.myWork') : t('dashboard.welcome')} subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')} />
+      <div className="today-page dashboard-home" style={{ minHeight: '100vh' }}>
+        <PageHeader title={accessResolved && staffView ? t('dashboard.myWork') : t('dashboard.welcome')} subtitle={accessResolved && staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')} />
 
-        {loadError ? (
-          <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-            <p style={{ margin: 0 }}>Some dashboard information could not load. The available sections are shown below.</p>
-            <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
-              {loading ? 'Loading...' : 'Retry'}
-            </button>
-          </section>
-        ) : null}
+        {!accessResolved ? <DashboardLoadingShell /> : (
+          <>
+            {loadError ? (
+              <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                <p style={{ margin: 0 }}>Some dashboard information could not load. The available sections are shown below.</p>
+                <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
+                  {loading ? 'Loading...' : 'Retry'}
+                </button>
+              </section>
+            ) : null}
 
-        {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
+            {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenueMetrics} loading={loading} /> : null}
 
-        {operationsView ? (
-          <section className="card" aria-label={t('dashboard.customersAndLeads')}>
-            <div className="dashboard-section-head" style={{ alignItems: 'flex-start', gap: 18, marginBottom: 22 }}>
-              <div>
-                <h2>{t('dashboard.customersAndLeads')}</h2>
-                <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
-                  {t('dashboard.sidebar.crmSnapshot')}
-                </p>
-              </div>
-              <div className="inline-actions">
-                <Link className="btn btn-sm" href="/leads">{t('nav.leads')}</Link>
-                <Link className="btn btn-sm" href="/customers">{t('nav.customers')}</Link>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, alignItems: 'stretch' }}>
-              {crmCard(t('dashboard.crm.openLeads'), crmMetrics.openLeads, '/leads?status=open', t('dashboard.crm.openLeadsHelp'), salesCardStyle)}
-              {crmCard(t('dashboard.crm.closedLeads'), crmMetrics.closedLeads, '/leads?status=closed', t('dashboard.crm.closedLeadsHelp'), salesCardStyle)}
-              {crmCard(t('dashboard.crm.activeCustomers'), crmMetrics.activeCustomers, '/customers?stage=active', t('dashboard.crm.activeCustomersHelp'), salesCardStyle)}
-              {crmCard(t('dashboard.crm.recurringCustomers'), crmMetrics.recurringCustomers, '/customers?stage=recurring', t('dashboard.crm.recurringCustomersHelp'), salesCardStyle)}
-              {crmCard(t('dashboard.crm.inactiveCustomers'), crmMetrics.inactiveCustomers, '/customers?stage=past', t('dashboard.crm.inactiveCustomersHelp'), salesCardStyle)}
-            </div>
-          </section>
-        ) : null}
+            {operationsView ? (
+              <section className="card" aria-label={t('dashboard.customersAndLeads')}>
+                <div className="dashboard-section-head" style={{ alignItems: 'flex-start', gap: 18, marginBottom: 22 }}>
+                  <div>
+                    <h2>{t('dashboard.customersAndLeads')}</h2>
+                    <p className="page-subtitle" style={{ marginTop: 8, marginBottom: 0 }}>
+                      {t('dashboard.sidebar.crmSnapshot')}
+                    </p>
+                  </div>
+                  <div className="inline-actions">
+                    <Link className="btn btn-sm" href="/leads">{t('nav.leads')}</Link>
+                    <Link className="btn btn-sm" href="/customers">{t('nav.customers')}</Link>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+                  {crmCard(t('dashboard.crm.openLeads'), crmMetrics.openLeads, '/leads?status=open', t('dashboard.crm.openLeadsHelp'), salesCardStyle)}
+                  {crmCard(t('dashboard.crm.closedLeads'), crmMetrics.closedLeads, '/leads?status=closed', t('dashboard.crm.closedLeadsHelp'), salesCardStyle)}
+                  {crmCard(t('dashboard.crm.activeCustomers'), crmMetrics.activeCustomers, '/customers?stage=active', t('dashboard.crm.activeCustomersHelp'), salesCardStyle)}
+                  {crmCard(t('dashboard.crm.recurringCustomers'), crmMetrics.recurringCustomers, '/customers?stage=recurring', t('dashboard.crm.recurringCustomersHelp'), salesCardStyle)}
+                  {crmCard(t('dashboard.crm.inactiveCustomers'), crmMetrics.inactiveCustomers, '/customers?stage=past', t('dashboard.crm.inactiveCustomersHelp'), salesCardStyle)}
+                </div>
+              </section>
+            ) : null}
 
-        <TeamCommandCenter enabled={operationsView} />
+            <TeamCommandCenter enabled={operationsView} />
 
-        {!loading && !isAdminRole(role) ? (
-          <RoleDashboard
-            role={role}
-            jobs={managerWorkspaceMetrics.jobs}
-            photoCount={managerWorkspaceMetrics.photoCount}
-            reportCount={managerWorkspaceMetrics.reportCount}
-            activityCount={managerWorkspaceMetrics.activityCount}
-            customerCount={managerWorkspaceMetrics.customerCount}
-            teamCount={managerWorkspaceMetrics.teamCount}
-          />
-        ) : null}
+            {!isAdminRole(role) ? (
+              <RoleDashboard
+                role={role}
+                jobs={managerWorkspaceMetrics.jobs}
+                photoCount={managerWorkspaceMetrics.photoCount}
+                reportCount={managerWorkspaceMetrics.reportCount}
+                activityCount={managerWorkspaceMetrics.activityCount}
+                customerCount={managerWorkspaceMetrics.customerCount}
+                teamCount={managerWorkspaceMetrics.teamCount}
+              />
+            ) : null}
 
-        {!staffView ? (
-          <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
-            <div>
-              <h2>{t('supportTraining.dashboardTitle')}</h2>
-              <p>{t('supportTraining.dashboardBody')}</p>
-            </div>
-            <Link href="/support" className="dashboard-help-link">
-              {t('supportTraining.bookFreeCall')}
-            </Link>
-          </section>
-        ) : null}
+            {!staffView ? (
+              <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
+                <div>
+                  <h2>{t('supportTraining.dashboardTitle')}</h2>
+                  <p>{t('supportTraining.dashboardBody')}</p>
+                </div>
+                <Link href="/support" className="dashboard-help-link">
+                  {t('supportTraining.bookFreeCall')}
+                </Link>
+              </section>
+            ) : null}
+          </>
+        )}
       </div>
     </AppShell>
   );
