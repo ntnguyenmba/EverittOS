@@ -5,7 +5,7 @@ import {
   readRuntimeConfigFromDom
 } from '@/lib/supabase-config';
 
-type BrowserClient = any;
+type BrowserClient = ReturnType<typeof createBrowserClient>;
 
 function resolveBrowserConfig(): { url: string; anonKey: string } {
   const runtime = readRuntimeConfigFromDom();
@@ -28,7 +28,7 @@ export function getBrowserSupabase(): BrowserClient {
       auth: {
         experimental: { passkey: true }
       }
-    }) as BrowserClient;
+    });
   }
   return browserClient;
 }
