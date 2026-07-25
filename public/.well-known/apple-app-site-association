@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.everittventures.everittos",
+        "appID": "H95SEQ2ET8.com.everittventures.everittos",
         "paths": [
           "/dashboard",
           "/dashboard/*",
@@ -34,6 +34,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["TEAMID.com.everittventures.everittos"]
+    "apps": ["H95SEQ2ET8.com.everittventures.everittos"]
   }
 }
