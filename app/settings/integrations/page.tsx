@@ -6,8 +6,6 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
-import { useAsyncAction } from '@/hooks/use-async-action';
-import { FEEDBACK } from '@/lib/feedback-labels';
 import type { GoogleCalendarHealth } from '@/lib/google-calendar-health';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageOrganizationSettings, normalizeRole } from '@/lib/roles';
@@ -29,6 +27,8 @@ type CalendarStatus = {
   lastSyncError: string | null;
 };
 
+type ApiPayload = Record<string, unknown>;
+
 const CALLBACK_ERRORS: Record<string, string> = {
   not_configured: 'Google Calendar is not configured on the server.',
   google_denied: 'Google access was denied.',
@@ -41,13 +41,36 @@ const CALLBACK_ERRORS: Record<string, string> = {
   connect_failed: 'Google Calendar connection failed.'
 };
 
-const STATUS_FETCH_INIT: RequestInit = {
-  cache: 'no-store',
-  headers: {
-    'Cache-Control': 'no-cache',
-    Pragma: 'no-cache'
+const REQUEST_TIMEOUT_MS = 10000;
+
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, {
+      cache: 'no-store',
+      ...init,
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        ...(init?.headers || {})
+      },
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
   }
-};
+}
+
+async function readJson(response: Response): Promise<ApiPayload> {
+  return (await response.json().catch(() => ({}))) as ApiPayload;
+}
+
+function errorMessage(payload: ApiPayload, fallback: string): string {
+  const values = [payload.error, payload.message, payload.detail, payload.reason];
+  const found = values.find((value) => typeof value === 'string' && value.trim());
+  return typeof found === 'string' ? found : fallback;
+}
 
 function healthClass(health: GoogleCalendarHealth): string {
   switch (health) {
@@ -66,22 +89,48 @@ function IntegrationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const feedback = useAppFeedback();
-  const { busy, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('employee'));
   const [status, setStatus] = useState<CalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusError, setStatusError] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const loadStatus = useCallback(async () => {
-    const res = await fetch('/api/integrations/google-calendar/status', STATUS_FETCH_INIT);
-    if (res.status === 401) {
-      router.push('/login?next=/settings/integrations');
+    setLoading(true);
+    setStatusError('');
+
+    try {
+      const res = await fetchWithTimeout('/api/integrations/google-calendar/status');
+      if (res.status === 401) {
+        router.push('/login?next=/settings/integrations');
+        return null;
+      }
+
+      const json = await readJson(res);
+      if (!res.ok) {
+        setStatus(null);
+        setStatusError(errorMessage(json, `Google Calendar status failed (${res.status}).`));
+        return null;
+      }
+
+      const nextStatus = json as unknown as CalendarStatus;
+      setStatus(nextStatus);
+      return nextStatus;
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === 'AbortError';
+      setStatus(null);
+      setStatusError(
+        timedOut
+          ? 'Google Calendar status timed out. Please retry.'
+          : 'Could not load Google Calendar status. Please retry.'
+      );
       return null;
+    } finally {
+      setLoading(false);
     }
-    const json = (await res.json()) as CalendarStatus;
-    setStatus(json);
-    setLoading(false);
-    return json;
   }, [router]);
 
   useEffect(() => {
@@ -107,9 +156,7 @@ function IntegrationsContent() {
       const legacySuccess = searchParams.get('connected') === '1';
       const errKey = searchParams.get('error');
 
-      if (oauthSuccess || legacySuccess) {
-        feedback.connected();
-      }
+      if (oauthSuccess || legacySuccess) feedback.connected();
 
       if (errKey) {
         const detail = searchParams.get('detail');
@@ -125,49 +172,81 @@ function IntegrationsContent() {
     }
 
     void init();
-  }, [loadStatus, router, searchParams]);
+  }, [feedback, loadStatus, router, searchParams]);
 
   async function disconnect() {
-    setStatus((prev) =>
-      prev
-        ? {
-            ...prev,
-            connected: false,
-            health: 'not_connected',
-            healthLabel: 'Not Connected',
-            googleEmail: null,
-            syncEnabled: false,
-            tokenExpiresAt: null,
-            lastSyncAt: null,
-            lastSyncError: null
-          }
-        : prev
-    );
+    setDisconnecting(true);
+    setActionError('');
 
-    const res = await runResponse(
-      () => fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' }),
-      'disconnected'
-    );
-    await loadStatus();
-    if (!res) return;
+    try {
+      const res = await fetchWithTimeout('/api/integrations/google-calendar/disconnect', { method: 'POST' });
+      const json = await readJson(res);
+      if (!res.ok) {
+        const message = errorMessage(json, `Google Calendar disconnect failed (${res.status}).`);
+        setActionError(message);
+        feedback.error(message);
+        return;
+      }
+
+      feedback.disconnected();
+      await loadStatus();
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === 'AbortError';
+      const message = timedOut
+        ? 'Google Calendar disconnect timed out. Please try again.'
+        : 'Google Calendar disconnect failed. Please try again.';
+      setActionError(message);
+      feedback.error(message);
+    } finally {
+      setDisconnecting(false);
+    }
   }
 
   async function syncNow() {
-    const res = await runResponse(
-      () => fetch('/api/integrations/google-calendar/sync', { method: 'POST' }),
-      'syncComplete'
-    );
-    await loadStatus();
-    if (!res) return;
+    setSyncing(true);
+    setActionError('');
+
+    try {
+      const res = await fetchWithTimeout('/api/integrations/google-calendar/sync', { method: 'POST' });
+      const json = await readJson(res);
+      if (!res.ok) {
+        const message = errorMessage(json, `Google Calendar sync failed (${res.status}).`);
+        setActionError(message);
+        feedback.error(message);
+        await loadStatus();
+        return;
+      }
+
+      const synced = typeof json.synced === 'number' ? json.synced : null;
+      const failed = typeof json.failed === 'number' ? json.failed : null;
+      const summary = synced == null
+        ? 'Google Calendar sync completed.'
+        : `Google Calendar sync completed. ${synced} synced${failed ? `, ${failed} failed` : ''}.`;
+      feedback.success(summary);
+      await loadStatus();
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === 'AbortError';
+      const message = timedOut
+        ? 'Google Calendar sync timed out. Please try again.'
+        : 'Google Calendar sync request failed. Please try again.';
+      setActionError(message);
+      feedback.error(message);
+    } finally {
+      setSyncing(false);
+    }
   }
 
   const health = status?.health || 'not_connected';
   const showOperational = Boolean(status?.connected);
+  const busy = syncing || disconnecting;
 
   if (loading) {
     return (
       <SettingsShell plan={plan} role={role} title="Integrations" description="Connect external tools to EverittOS.">
-        <div className="settings-card">Loading integrations...</div>
+        <div className="settings-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>Loading integrations...</span>
+          <button type="button" className="btn btn-sm" onClick={() => void loadStatus()}>Retry</button>
+        </div>
       </SettingsShell>
     );
   }
@@ -191,59 +270,74 @@ function IntegrationsContent() {
           events. Updates on the schedule page sync automatically.
         </p>
 
-        <p style={{ marginTop: 12 }}>
-          Status:{' '}
-          <strong className={healthClass(health)}>
-            {!status?.configured ? 'Configuration missing' : status.healthLabel || 'Not Connected'}
-          </strong>
-          {status?.googleEmail ? ` (${status.googleEmail})` : ''}
-        </p>
-
-        {health === 'token_expired' ? (
-          <p className="muted">Access token expired. EverittOS will refresh automatically on the next sync.</p>
-        ) : null}
-
-        {health === 'reconnect_required' ? (
-          <p className="muted">Reconnect Google Calendar to restore sync.</p>
-        ) : null}
-
-        {!status?.configured ? (
-          <p className="muted" style={{ marginTop: 12 }}>
-            Google Calendar is not fully configured yet. Contact EverittOS support to finish setup.
-          </p>
-        ) : null}
-
-        {status?.configured ? (
+        {statusError ? (
+          <div style={{ marginTop: 12 }}>
+            <p className="auth-message auth-message-error" role="alert">{statusError}</p>
+            <button type="button" className="btn" onClick={() => void loadStatus()}>
+              Retry Google Calendar status
+            </button>
+          </div>
+        ) : (
           <>
-            {status.tokenExpiresAt ? (
-              <p className="muted">Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}</p>
-            ) : null}
-            {showOperational && status.lastSyncAt ? (
-              <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
-            ) : null}
-            {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
+            <p style={{ marginTop: 12 }}>
+              Status:{' '}
+              <strong className={healthClass(health)}>
+                {!status?.configured ? 'Configuration missing' : status.healthLabel || 'Not Connected'}
+              </strong>
+              {status?.googleEmail ? ` (${status.googleEmail})` : ''}
+            </p>
 
-            <div className="settings-actions" style={{ marginTop: 16 }}>
-              {!showOperational ? (
-                <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
-                  {health === 'reconnect_required' ? 'Reconnect Google Calendar' : 'Connect Google Calendar'}
-                </a>
-              ) : (
-                <>
-                  <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void syncNow()}>
-                    {buttonLabel('Sync now', FEEDBACK.loading)}
+            {health === 'token_expired' ? (
+              <p className="muted">Access token expired. EverittOS will refresh automatically on the next sync.</p>
+            ) : null}
+
+            {health === 'reconnect_required' ? (
+              <p className="muted">Reconnect Google Calendar to restore sync.</p>
+            ) : null}
+
+            {!status?.configured ? (
+              <p className="muted" style={{ marginTop: 12 }}>
+                Google Calendar is not fully configured yet. Contact EverittOS support to finish setup.
+              </p>
+            ) : null}
+
+            {status?.configured ? (
+              <>
+                {status.tokenExpiresAt ? (
+                  <p className="muted">Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}</p>
+                ) : null}
+                {showOperational && status.lastSyncAt ? (
+                  <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
+                ) : null}
+                {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
+                {actionError ? <p className="auth-message auth-message-error" role="alert">{actionError}</p> : null}
+
+                <div className="settings-actions" style={{ marginTop: 16 }}>
+                  {!showOperational ? (
+                    <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
+                      {health === 'reconnect_required' ? 'Reconnect Google Calendar' : 'Connect Google Calendar'}
+                    </a>
+                  ) : (
+                    <>
+                      <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void syncNow()}>
+                        {syncing ? 'Syncing...' : 'Sync now'}
+                      </button>
+                      <button type="button" className="btn" disabled={busy} onClick={() => void disconnect()}>
+                        {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="btn" disabled={busy} onClick={() => void loadStatus()}>
+                    Refresh status
                   </button>
-                  <button type="button" className="btn" disabled={busy} onClick={() => void disconnect()}>
-                    Disconnect
-                  </button>
-                </>
-              )}
-              <Link className="btn" href="/schedule">
-                Open schedule
-              </Link>
-            </div>
+                  <Link className="btn" href="/schedule">
+                    Open schedule
+                  </Link>
+                </div>
+              </>
+            ) : null}
           </>
-        ) : null}
+        )}
       </div>
 
       <div className="settings-card" style={{ marginTop: 20 }}>
