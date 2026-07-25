@@ -10,25 +10,52 @@ export type EnsureWorkspaceResult =
   | { ok: true; workspace: ClientWorkspace }
   | { ok: false; error: string; missingRecords?: string[]; code?: string };
 
+const WORKSPACE_LOOKUP_TIMEOUT_MS = 4500;
+const WORKSPACE_SETUP_TIMEOUT_MS = 6500;
+
+async function withTimeout<T>(task: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function loadOrganization(userId: string): Promise<ClientWorkspace | null> {
+  return withTimeout(fetchOrganizationContext(userId), WORKSPACE_LOOKUP_TIMEOUT_MS, null);
+}
+
 /**
  * Ensures the signed-in user has an organization workspace before data writes.
+ * Dashboard reads must never remain blocked while repair is running.
  */
 export async function ensureOrganizationForUser(userId: string): Promise<ClientWorkspace | null> {
-  let org = await fetchOrganizationContext(userId);
+  let org = await loadOrganization(userId);
   if (org?.organizationId) return org;
 
   try {
-    const res = await fetch('/api/auth/setup', { method: 'POST' });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), WORKSPACE_SETUP_TIMEOUT_MS);
+    const res = await fetch('/api/auth/setup', {
+      method: 'POST',
+      signal: controller.signal
+    }).finally(() => clearTimeout(timer));
+
     if (res.ok) {
-      org = await fetchOrganizationContext(userId);
+      org = await loadOrganization(userId);
       if (org?.organizationId) return org;
     }
   } catch {
-    /* setup may retry on next navigation */
+    /* Setup can retry on the next navigation without blocking this page. */
   }
 
-  org = await fetchOrganizationContext(userId);
-  return org;
+  return loadOrganization(userId);
 }
 
 /** Client helper before workspace-scoped saves — runs bootstrap repair when needed. */
@@ -39,7 +66,12 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
   }
 
   try {
-    const res = await fetch('/api/workspace/ensure', { method: 'POST' });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), WORKSPACE_SETUP_TIMEOUT_MS);
+    const res = await fetch('/api/workspace/ensure', {
+      method: 'POST',
+      signal: controller.signal
+    }).finally(() => clearTimeout(timer));
     const json = (await res.json().catch(() => ({}))) as {
       organizationId?: string;
       error?: string;
@@ -67,13 +99,13 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
     });
 
     if (res.ok && json.organizationId) {
-      org = await fetchOrganizationContext(userId);
+      org = await loadOrganization(userId);
       if (org?.organizationId) {
         return { ok: true, workspace: org };
       }
     }
 
-    org = await fetchOrganizationContext(userId);
+    org = await loadOrganization(userId);
     if (org?.organizationId) {
       return { ok: true, workspace: org };
     }
@@ -90,7 +122,7 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
       code: json.code
     };
   } catch {
-    org = await fetchOrganizationContext(userId);
+    org = await loadOrganization(userId);
     if (org?.organizationId) {
       return { ok: true, workspace: org };
     }
