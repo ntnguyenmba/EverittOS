@@ -1,12 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   buildTimeSupabaseAnonKey,
   buildTimeSupabaseUrl,
   readRuntimeConfigFromDom
 } from '@/lib/supabase-config';
 
-type BrowserClient = SupabaseClient<any>;
+type BrowserClient = any;
 
 function resolveBrowserConfig(): { url: string; anonKey: string } {
   const runtime = readRuntimeConfigFromDom();
