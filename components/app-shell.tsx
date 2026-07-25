@@ -122,28 +122,51 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding: 14px 24px 28px !important;
+            padding: 12px 24px 28px !important;
             translate: none !important;
             transform: none !important;
           }
 
           .dashboard-shell .app-page-top {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 10px !important;
             min-height: 0 !important;
             margin: 0 0 8px !important;
             padding: 0 !important;
           }
 
           .dashboard-shell .app-page-top-actions {
+            order: -1 !important;
+            margin: 0 !important;
+          }
+
+          .dashboard-shell .org-switcher {
             margin-left: auto !important;
           }
 
-          .dashboard-shell .app-page-top .btn,
-          .dashboard-shell .app-page-top button,
-          .dashboard-shell .app-page-top a {
-            min-height: 40px !important;
-            padding: 7px 12px !important;
-            border-radius: 11px !important;
+          .dashboard-shell .app-back-button {
+            min-height: 38px !important;
+            padding: 6px 10px !important;
+            border: 0 !important;
+            border-radius: 10px !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            color: var(--text-secondary) !important;
             font-size: 15px !important;
+            font-weight: 600 !important;
+          }
+
+          .dashboard-shell .app-back-button:hover,
+          .dashboard-shell .app-back-button:active {
+            background: var(--hover) !important;
+            color: var(--text) !important;
+          }
+
+          .dashboard-shell .app-back-arrow {
+            font-size: 18px !important;
+            line-height: 1 !important;
           }
 
           .dashboard-shell .app-page-content {
@@ -212,10 +235,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         }
 
         @media (max-width: 480px) {
-          .dashboard-shell-mobile .mobile-nav-bar {
-            padding-inline: 24px !important;
-          }
-
+          .dashboard-shell-mobile .mobile-nav-bar,
           .dashboard-shell > .main,
           .dashboard-shell .main {
             padding-inline: 24px !important;
