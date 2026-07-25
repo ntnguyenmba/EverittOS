@@ -26,6 +26,7 @@
   min-width: 0;
   margin: 0;
   display: grid;
+  align-content: start;
   gap: 24px;
 }
 
@@ -41,7 +42,24 @@
 }
 
 .dashboardRefresh :global(.today-page.dashboard-home > div[aria-label='Loading dashboard']) {
-  gap: 20px !important;
+  gap: 16px !important;
+}
+
+.dashboardRefresh :global(.today-page.dashboard-home > div[aria-label='Loading dashboard'] > section) {
+  min-height: 0 !important;
+  padding: 24px !important;
+  overflow: hidden;
+}
+
+.dashboardRefresh :global(.today-page.dashboard-home > div[aria-label='Loading dashboard'] > section:last-child) {
+  display: none;
+}
+
+.dashboardRefresh :global(.today-page.dashboard-home .skeleton) {
+  display: block;
+  background: linear-gradient(90deg, #e7edf4 25%, #f2f5f8 50%, #e7edf4 75%);
+  background-size: 200% 100%;
+  animation: dashboardSkeleton 1.4s ease-in-out infinite;
 }
 
 .dashboardRefresh :global(.today-page.dashboard-home .card),
@@ -56,6 +74,21 @@
 
 .dashboardRefresh :global(.dashboard-help-strip) {
   margin-top: 0;
+}
+
+@keyframes dashboardSkeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboardRefresh :global(.today-page.dashboard-home .skeleton) {
+    animation: none;
+  }
 }
 
 @media (max-width: 1100px) {
