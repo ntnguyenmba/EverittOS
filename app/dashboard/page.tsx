@@ -195,7 +195,8 @@ export default function DashboardPage() {
     setLoadError(false);
 
     try {
-      const authResult = await safeLoad('authentication', supabase.auth.getUser(), { data: { user: null }, error: null });
+      const authResult = await supabase.auth.getUser();
+      if (authResult.error) console.error('[dashboard] authentication failed', authResult.error);
       const user = authResult.data.user;
 
       if (!user) {
