@@ -46,9 +46,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       </main>
 
       <style jsx global>{`
-        /* Touch devices such as iPad can report a desktop-sized pixel width.
-           Choose the tablet layout from CSS input capabilities at first paint,
-           before React hydration or native platform detection can change state. */
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
             display: block !important;
@@ -85,19 +82,36 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
-            min-height: 68px !important;
-            padding: 10px 24px !important;
+            min-height: 62px !important;
+            padding: 8px 24px !important;
             box-sizing: border-box !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-brand-logo {
             margin: 0 !important;
             min-width: 0 !important;
+            gap: 8px !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-image {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 7px !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-name {
+            font-size: 19px !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.025em !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-menu-btn {
-            flex: 0 0 46px !important;
+            width: 44px !important;
+            height: 44px !important;
+            flex: 0 0 44px !important;
             margin: 0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(36, 63, 83, 0.14) !important;
           }
 
           .dashboard-shell > .main,
@@ -108,14 +122,14 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding: 18px 24px 32px !important;
+            padding: 14px 24px 28px !important;
             translate: none !important;
             transform: none !important;
           }
 
           .dashboard-shell .app-page-top {
             min-height: 0 !important;
-            margin: 0 0 12px !important;
+            margin: 0 0 8px !important;
             padding: 0 !important;
           }
 
@@ -126,9 +140,10 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell .app-page-top .btn,
           .dashboard-shell .app-page-top button,
           .dashboard-shell .app-page-top a {
-            min-height: 44px !important;
-            padding: 9px 14px !important;
-            border-radius: 12px !important;
+            min-height: 40px !important;
+            padding: 7px 12px !important;
+            border-radius: 11px !important;
+            font-size: 15px !important;
           }
 
           .dashboard-shell .app-page-content {
@@ -136,22 +151,23 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             max-width: none !important;
             min-width: 0 !important;
             margin: 0 !important;
-            gap: 18px !important;
+            gap: 14px !important;
             translate: none !important;
             transform: none !important;
           }
 
           .dashboard-shell .everitt-cmd-trigger {
             width: 100% !important;
-            min-height: 54px !important;
+            min-height: 50px !important;
             margin: 0 !important;
-            padding: 12px 16px !important;
-            border-radius: 14px !important;
+            padding: 10px 14px !important;
+            border-radius: 13px !important;
+            font-size: 15px !important;
           }
 
           .dashboard-shell .everitt-cmd-trigger kbd {
-            font-size: 12px !important;
-            padding: 3px 7px !important;
+            font-size: 11px !important;
+            padding: 2px 6px !important;
           }
 
           .dashboard-shell .today-page,
@@ -160,7 +176,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             max-width: none !important;
             min-width: 0 !important;
             margin-inline: 0 !important;
-            gap: 18px !important;
+            gap: 14px !important;
             translate: none !important;
             transform: none !important;
           }
@@ -171,18 +187,27 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           }
 
           .dashboard-shell h1 {
-            margin-bottom: 8px !important;
+            margin-bottom: 6px !important;
+            font-weight: 650 !important;
+            line-height: 1.12 !important;
           }
 
           .dashboard-shell .page-subtitle {
             margin-top: 0 !important;
             margin-bottom: 0 !important;
+            line-height: 1.45 !important;
+          }
+
+          .dashboard-shell .card,
+          .dashboard-shell .panel,
+          .dashboard-shell .stat {
+            padding: 18px !important;
           }
 
           .dashboard-shell .btn,
           .dashboard-shell .button {
-            min-height: 46px;
-            padding-block: 10px;
+            min-height: 44px !important;
+            padding-block: 9px !important;
           }
         }
 
