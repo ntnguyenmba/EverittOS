@@ -8,6 +8,7 @@ import { useTranslation } from '@/components/locale-provider';
 type QuickBooksStatus = {
   configured: boolean;
   canConnect: boolean;
+  databaseReady?: boolean;
   connection?: {
     status?: string;
     realm_id?: string | null;
@@ -25,6 +26,7 @@ type QuickBooksStatus = {
     created_at: string;
   }>;
   setupMessage?: string | null;
+  warning?: string | null;
   needsReconnect?: boolean;
 };
 
@@ -36,6 +38,7 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): P
   try {
     return await fetch(input, {
       ...init,
+      credentials: 'same-origin',
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache',
@@ -58,10 +61,12 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const mounted = useRef(true);
+  const loadingRef = useRef(false);
   const [status, setStatus] = useState<QuickBooksStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [unauthorized, setUnauthorized] = useState(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -71,9 +76,11 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   }, []);
 
   const load = useCallback(async () => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setLoadError('');
+    setUnauthorized(false);
 
     try {
       const res = await fetchWithTimeout(`/api/integrations/quickbooks/status?t=${Date.now()}`);
@@ -81,8 +88,13 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       if (!mounted.current) return;
 
       if (!res.ok) {
-        const message = typeof json.error === 'string' ? json.error : t('pages.quickbooks.loadError');
-        setLoadError(message);
+        if (res.status === 401) {
+          setUnauthorized(true);
+          setLoadError('Your login session expired. Sign in again, then return here to connect QuickBooks.');
+        } else {
+          const message = typeof json.error === 'string' ? json.error : t('pages.quickbooks.loadError');
+          setLoadError(message);
+        }
         setStatus(null);
         return;
       }
@@ -90,9 +102,11 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       setStatus({
         configured: Boolean(json.configured),
         canConnect: Boolean(json.canConnect),
+        databaseReady: json.databaseReady !== false,
         connection: (json.connection || { status: 'disconnected' }) as QuickBooksStatus['connection'],
         recentLogs: Array.isArray(json.recentLogs) ? (json.recentLogs as QuickBooksStatus['recentLogs']) : [],
         setupMessage: typeof json.setupMessage === 'string' ? json.setupMessage : null,
+        warning: typeof json.warning === 'string' ? json.warning : null,
         needsReconnect: Boolean(json.needsReconnect)
       });
     } catch (error) {
@@ -101,15 +115,14 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       setLoadError(timedOut ? 'QuickBooks status timed out. Tap Check status to try again.' : t('pages.quickbooks.loadError'));
       setStatus(null);
     } finally {
+      loadingRef.current = false;
       if (mounted.current) setLoading(false);
     }
-  }, [loading, t]);
+  }, [t]);
 
   useEffect(() => {
     void load();
-    // Load once on mount. Manual refreshes use the persistent Check status button.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     const qb = searchParams.get('quickbooks');
@@ -119,7 +132,8 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     }
     if (qb === 'error') {
       const reason = searchParams.get('reason') || 'connect_failed';
-      appFeedback.error(t('pages.quickbooks.connectFailed', { reason }));
+      const detail = searchParams.get('detail');
+      appFeedback.error(detail || t('pages.quickbooks.connectFailed', { reason }));
     }
   }, [searchParams, appFeedback, t, load]);
 
@@ -150,18 +164,21 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   const configured = Boolean(status?.configured);
   const statusText = loading
     ? 'Checking status...'
-    : loadError
-      ? 'Status unavailable'
-      : connected
-        ? t('pages.quickbooks.connected')
-        : needsReconnect
-          ? t('pages.quickbooks.needsReconnect')
-          : configured
-            ? t('pages.quickbooks.notConnected')
-            : status
-              ? t('pages.quickbooks.notConfigured')
-              : 'Not checked';
+    : unauthorized
+      ? 'Sign in required'
+      : loadError
+        ? 'Status unavailable'
+        : connected
+          ? t('pages.quickbooks.connected')
+          : needsReconnect
+            ? t('pages.quickbooks.needsReconnect')
+            : configured
+              ? t('pages.quickbooks.notConnected')
+              : status
+                ? t('pages.quickbooks.notConfigured')
+                : 'Not checked';
   const recentLogs = status?.recentLogs || [];
+  const showConnect = canManage && !connected;
 
   return (
     <div>
@@ -170,17 +187,22 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       </p>
 
       {loadError ? <p className="auth-message auth-message-error" role="alert">{loadError}</p> : null}
+      {status?.setupMessage ? <p className="auth-message auth-message-error" role="alert">{status.setupMessage}</p> : null}
 
       <div className="settings-actions" style={{ marginTop: 12 }}>
-        <button type="button" className="btn btn-primary" disabled={loading || busy} onClick={() => void load()}>
-          {loading ? 'Checking...' : 'Check status'}
-        </button>
-
-        {canManage && configured && (!connected || needsReconnect) ? (
-          <a className="btn" href="/api/integrations/quickbooks/connect">
+        {unauthorized ? (
+          <a className="btn btn-primary" href="/login?next=/settings/integrations">
+            Sign in again
+          </a>
+        ) : showConnect ? (
+          <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">
             {needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}
           </a>
         ) : null}
+
+        <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>
+          {loading ? 'Checking...' : 'Check status'}
+        </button>
 
         {canManage && (connected || needsReconnect) ? (
           <button type="button" className="btn" disabled={busy || loading} onClick={() => void disconnect()}>
@@ -197,11 +219,6 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       {status?.connection?.realm_id ? (
         <p className="muted">
           {t('pages.quickbooks.companyId')}: {status.connection.realm_id}
-        </p>
-      ) : null}
-      {status && !configured ? (
-        <p className="muted" style={{ marginTop: 12 }}>
-          {status.setupMessage || 'QuickBooks server credentials are not configured yet.'}
         </p>
       ) : null}
       {status?.connection?.last_sync_at ? (
