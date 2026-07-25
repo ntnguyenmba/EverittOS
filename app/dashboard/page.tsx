@@ -6,66 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
-import { TeamCommandCenter } from '@/components/dashboard/team-command-center';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
-import { RoleDashboard } from '@/components/role-dashboard';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { isAdminRole, isClientRole, isContractorRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
-
-type DashboardJobRow = {
-  id: string;
-  title: string;
-  status: string | null;
-  due_date: string | null;
-  start_date: string | null;
-  scheduled_start?: string | null;
-  created_at?: string | null;
-  assigned_to?: string | null;
-  customer_name?: string | null;
-  phone?: string | null;
-  address?: string | null;
-};
-
-type WorkspaceMetrics = {
-  jobs: DashboardJobRow[];
-  photoCount: number;
-  reportCount: number;
-  activityCount: number;
-  customerCount: number;
-  teamCount: number;
-};
-
-type CrmMetrics = {
-  openLeads: number;
-  closedLeads: number;
-  activeCustomers: number;
-  recurringCustomers: number;
-  inactiveCustomers: number;
-};
-
-const emptyWorkspace: WorkspaceMetrics = {
-  jobs: [],
-  photoCount: 0,
-  reportCount: 0,
-  activityCount: 0,
-  customerCount: 0,
-  teamCount: 0
-};
-
-const emptyCrm: CrmMetrics = {
-  openLeads: 0,
-  closedLeads: 0,
-  activeCustomers: 0,
-  recurringCustomers: 0,
-  inactiveCustomers: 0
-};
 
 const emptyRevenue = {
   revenueThisMonth: 0,
@@ -113,11 +63,9 @@ const emptyRevenue = {
   totalJobs: 0
 } satisfies DashboardRevenueMetrics;
 
-const OPEN_LEADS = new Set(['open', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'reopened', 'lead']);
-const CLOSED_LEADS = new Set(['won', 'closed_lost', 'cancelled', 'lost']);
-const QUERY_TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 7000;
 
-async function withTimeout<T>(task: PromiseLike<T>, fallback: T, timeoutMs = QUERY_TIMEOUT_MS): Promise<T> {
+async function withTimeout<T>(task: PromiseLike<T>, fallback: T, timeoutMs = TIMEOUT_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
@@ -139,20 +87,11 @@ function DashboardAccessNotice() {
   return <AccessBlockedBanner title={mapped.title} message={mapped.message} details={params.get('detail') || mapped.details} />;
 }
 
-function normalizeJob(job: DashboardJobRow): DashboardJobRow {
-  const scheduled = job.scheduled_start?.slice(0, 10) || null;
-  return {
-    ...job,
-    due_date: job.due_date || scheduled,
-    start_date: job.start_date || scheduled || job.created_at?.slice(0, 10) || null
-  };
-}
-
-function CrmCard({ title, value, href }: { title: string; value: number; href: string }) {
+function OverviewCard({ label, value, href }: { label: string; value: number; href: string }) {
   return (
-    <Link className="stat" href={href} style={{ minHeight: 120, padding: 20 }}>
-      <span className="stat-label">{title}</span>
-      <strong className="stat-value" style={{ marginTop: 16 }}>{value}</strong>
+    <Link href={href} className="stat-card" style={{ minHeight: 112, textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <span>{label}</span>
+      <strong>{value}</strong>
     </Link>
   );
 }
@@ -162,12 +101,11 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
-  const [authChecked, setAuthChecked] = useState(false);
+  const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [workspace, setWorkspace] = useState<WorkspaceMetrics>(emptyWorkspace);
-  const [crm, setCrm] = useState<CrmMetrics>(emptyCrm);
+  const [counts, setCounts] = useState({ jobs: 0, customers: 0, photos: 0, reports: 0, team: 0, activeJobs: 0, completedJobs: 0, openLeads: 0 });
 
   async function loadDashboard() {
     setLoading(true);
@@ -185,7 +123,7 @@ export default function DashboardPage() {
       return;
     }
 
-    setAuthChecked(true);
+    setReady(true);
 
     const [profileResult, organization] = await Promise.all([
       withTimeout(
@@ -211,27 +149,10 @@ export default function DashboardPage() {
     }
 
     const organizationId = organization?.organizationId || null;
-    const byOrganization = Boolean(organizationId);
+    const scopeColumn = organizationId ? 'organization_id' : 'user_id';
+    const scopeValue = organizationId || user.id;
 
-    const jobsQuery = supabase
-      .from('jobs')
-      .select('id, title, status, due_date, start_date, scheduled_start, created_at, assigned_to, customer_name, phone, address')
-      .eq(byOrganization ? 'organization_id' : 'user_id', byOrganization ? organizationId! : user.id)
-      .order('scheduled_start', { ascending: true, nullsFirst: false })
-      .limit(500);
-
-    const customersQuery = supabase
-      .from('customers')
-      .select('id, record_type, pipeline_stage')
-      .eq(byOrganization ? 'organization_id' : 'user_id', byOrganization ? organizationId! : user.id)
-      .limit(10000);
-
-    const activityQuery = supabase
-      .from('activity_logs')
-      .select('id', { count: 'exact', head: true })
-      .eq(byOrganization ? 'organization_id' : 'user_id', byOrganization ? organizationId! : user.id);
-
-    const [nextRevenue, usage, jobsResult, customersResult, activityResult] = await Promise.all([
+    const [nextRevenue, usage, jobsResult, customersResult] = await Promise.all([
       canAccessFinancials(nextRole, nextPlan)
         ? withTimeout(fetchDashboardRevenueMetrics(supabase, organizationId), { ...emptyRevenue, loadFailed: true })
         : Promise.resolve(emptyRevenue),
@@ -244,36 +165,32 @@ export default function DashboardPage() {
         teamMembers: 0,
         locations: 0
       }),
-      withTimeout(jobsQuery, { data: [], error: new Error('Jobs timed out') }),
-      withTimeout(customersQuery, { data: [], error: new Error('Customers timed out') }),
-      withTimeout(activityQuery, { count: 0, error: new Error('Activity timed out') })
+      withTimeout(
+        supabase.from('jobs').select('id, status').eq(scopeColumn, scopeValue).limit(5000),
+        { data: [], error: new Error('Jobs timed out') }
+      ),
+      withTimeout(
+        supabase.from('customers').select('id, record_type, pipeline_stage').eq(scopeColumn, scopeValue).limit(10000),
+        { data: [], error: new Error('Customers timed out') }
+      )
     ]);
 
-    const jobs = ((jobsResult.data || []) as DashboardJobRow[]).map(normalizeJob);
-    const rows = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
-    const leads = rows.filter((row) => row.record_type === 'lead');
-    const customers = rows.filter((row) => !row.record_type || row.record_type === 'customer');
+    const jobs = (jobsResult.data || []) as Array<{ status: string | null }>;
+    const customers = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
 
     setRevenue(nextRevenue);
-    setWorkspace({
-      jobs,
-      photoCount: usage.photos,
-      reportCount: usage.reports,
-      activityCount: activityResult.count || 0,
-      customerCount: customers.length,
-      teamCount: usage.teamMembers
-    });
-    setCrm({
-      openLeads: leads.filter((row) => OPEN_LEADS.has(row.pipeline_stage || 'open')).length,
-      closedLeads: leads.filter((row) => CLOSED_LEADS.has(row.pipeline_stage || '')).length,
-      activeCustomers: customers.filter((row) => !['inactive', 'former'].includes(row.pipeline_stage || '')).length,
-      recurringCustomers: customers.filter((row) => row.pipeline_stage === 'recurring').length,
-      inactiveCustomers: customers.filter((row) => ['inactive', 'former'].includes(row.pipeline_stage || '')).length
+    setCounts({
+      jobs: usage.jobs,
+      customers: usage.customers,
+      photos: usage.photos,
+      reports: usage.reports,
+      team: usage.teamMembers,
+      activeJobs: jobs.filter((job) => !['completed', 'cancelled'].includes(job.status || '')).length,
+      completedJobs: jobs.filter((job) => job.status === 'completed').length,
+      openLeads: customers.filter((row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')).length
     });
 
-    setLoadError(Boolean(
-      profileResult.error || jobsResult.error || customersResult.error || activityResult.error || nextRevenue.loadFailed
-    ));
+    setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
     setLoading(false);
   }
 
@@ -282,7 +199,6 @@ export default function DashboardPage() {
   }, []);
 
   const staffView = isStaffRole(role);
-  const operationsView = isManagerRole(role);
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -294,7 +210,7 @@ export default function DashboardPage() {
           subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')}
         />
 
-        {!authChecked ? (
+        {!ready ? (
           <section className="card" aria-busy="true" style={{ padding: 24 }}>
             <p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p>
           </section>
@@ -302,62 +218,50 @@ export default function DashboardPage() {
           <>
             {loadError ? (
               <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <p style={{ margin: 0 }}>Some information could not load. The available dashboard sections are shown.</p>
+                <p style={{ margin: 0 }}>Some information could not load. The available dashboard information is shown below.</p>
                 <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
                   {loading ? 'Loading...' : 'Retry'}
                 </button>
               </section>
             ) : null}
 
-            {canAccessFinancials(role, plan) ? (
-              <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
-            ) : null}
+            {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
 
-            {operationsView ? (
-              <section className="card" aria-label={t('dashboard.customersAndLeads')}>
-                <div className="dashboard-section-head">
-                  <div>
-                    <h2>{t('dashboard.customersAndLeads')}</h2>
-                    <p className="page-subtitle">{t('dashboard.sidebar.crmSnapshot')}</p>
-                  </div>
-                  <div className="inline-actions">
-                    <Link className="btn btn-sm" href="/leads">{t('nav.leads')}</Link>
-                    <Link className="btn btn-sm" href="/customers">{t('nav.customers')}</Link>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16 }}>
-                  <CrmCard title={t('dashboard.crm.openLeads')} value={crm.openLeads} href="/leads?status=open" />
-                  <CrmCard title={t('dashboard.crm.closedLeads')} value={crm.closedLeads} href="/leads?status=closed" />
-                  <CrmCard title={t('dashboard.crm.activeCustomers')} value={crm.activeCustomers} href="/customers?stage=active" />
-                  <CrmCard title={t('dashboard.crm.recurringCustomers')} value={crm.recurringCustomers} href="/customers?stage=recurring" />
-                  <CrmCard title={t('dashboard.crm.inactiveCustomers')} value={crm.inactiveCustomers} href="/customers?stage=past" />
-                </div>
-              </section>
-            ) : null}
-
-            <TeamCommandCenter enabled={operationsView} />
-
-            {!isAdminRole(role) ? (
-              <RoleDashboard
-                role={role}
-                jobs={workspace.jobs}
-                photoCount={workspace.photoCount}
-                reportCount={workspace.reportCount}
-                activityCount={workspace.activityCount}
-                customerCount={workspace.customerCount}
-                teamCount={workspace.teamCount}
-              />
-            ) : null}
-
-            {!staffView ? (
-              <section className="dashboard-help-strip" aria-label={t('dashboard.helpAriaLabel')}>
+            <section className="card" aria-label="Operations overview" style={{ minHeight: 0 }}>
+              <div className="dashboard-section-head">
                 <div>
-                  <h2>{t('supportTraining.dashboardTitle')}</h2>
-                  <p>{t('supportTraining.dashboardBody')}</p>
+                  <h2>Operations overview</h2>
+                  <p className="page-subtitle" style={{ marginBottom: 0 }}>Your current jobs, customers, leads, photos, reports, and team.</p>
                 </div>
-                <Link href="/support" className="dashboard-help-link">{t('supportTraining.bookFreeCall')}</Link>
-              </section>
-            ) : null}
+              </div>
+
+              <div className="stats-grid">
+                <OverviewCard label="Active jobs" value={counts.activeJobs} href="/jobs?status=active" />
+                <OverviewCard label="Completed jobs" value={counts.completedJobs} href="/jobs?status=completed" />
+                <OverviewCard label="Open leads" value={counts.openLeads} href="/leads?status=open" />
+                <OverviewCard label="Customers" value={counts.customers} href="/customers" />
+                <OverviewCard label="Photos" value={counts.photos} href="/photos" />
+                <OverviewCard label="Reports" value={counts.reports} href="/reports" />
+                <OverviewCard label="Team members" value={counts.team} href="/people" />
+                <OverviewCard label="All jobs" value={counts.jobs} href="/jobs" />
+              </div>
+            </section>
+
+            <section className="card" style={{ minHeight: 0 }}>
+              <div className="dashboard-section-head">
+                <div>
+                  <h2>Quick actions</h2>
+                  <p className="page-subtitle" style={{ marginBottom: 0 }}>Go directly to the work you need.</p>
+                </div>
+              </div>
+              <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+                <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+                <Link className="btn" href="/customers/new">Add customer</Link>
+                <Link className="btn" href="/leads/new">Add lead</Link>
+                <Link className="btn" href="/schedule">Open schedule</Link>
+                <Link className="btn" href="/invoices">Open invoices</Link>
+              </div>
+            </section>
           </>
         )}
       </div>
