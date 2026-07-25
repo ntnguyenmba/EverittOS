@@ -237,7 +237,8 @@ function IntegrationsContent() {
   }
 
   const health = status?.health || 'not_connected';
-  const showOperational = Boolean(status?.connected);
+  const reconnectRecommended = health === 'reconnect_required' || (health === 'token_expired' && Boolean(status?.lastSyncError));
+  const showOperational = Boolean(status?.connected) && !reconnectRecommended;
   const busy = syncing || disconnecting;
 
   if (loading) {
@@ -282,17 +283,17 @@ function IntegrationsContent() {
             <p style={{ marginTop: 12 }}>
               Status:{' '}
               <strong className={healthClass(health)}>
-                {!status?.configured ? 'Configuration missing' : status.healthLabel || 'Not Connected'}
+                {!status?.configured ? 'Configuration missing' : reconnectRecommended ? 'Reconnect Required' : status.healthLabel || 'Not Connected'}
               </strong>
               {status?.googleEmail ? ` (${status.googleEmail})` : ''}
             </p>
 
-            {health === 'token_expired' ? (
-              <p className="muted">Access token expired. EverittOS will refresh automatically on the next sync.</p>
+            {health === 'token_expired' && !reconnectRecommended ? (
+              <p className="muted">Access token expired. Use Sync now to refresh it.</p>
             ) : null}
 
-            {health === 'reconnect_required' ? (
-              <p className="muted">Reconnect Google Calendar to restore sync.</p>
+            {reconnectRecommended ? (
+              <p className="muted">The saved Google connection could not refresh. Reconnect Google Calendar to restore sync.</p>
             ) : null}
 
             {!status?.configured ? (
@@ -306,7 +307,7 @@ function IntegrationsContent() {
                 {status.tokenExpiresAt ? (
                   <p className="muted">Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}</p>
                 ) : null}
-                {showOperational && status.lastSyncAt ? (
+                {status.lastSyncAt ? (
                   <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
                 ) : null}
                 {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
@@ -315,7 +316,7 @@ function IntegrationsContent() {
                 <div className="settings-actions" style={{ marginTop: 16 }}>
                   {!showOperational ? (
                     <a className="btn btn-primary" href="/api/integrations/google-calendar/connect">
-                      {health === 'reconnect_required' ? 'Reconnect Google Calendar' : 'Connect Google Calendar'}
+                      {reconnectRecommended ? 'Reconnect Google Calendar' : 'Connect Google Calendar'}
                     </a>
                   ) : (
                     <>
