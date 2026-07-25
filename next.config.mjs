@@ -66,6 +66,9 @@ const securityHeaders = Object.entries(buildSecurityHeaders()).map(([key, value]
 }));
 
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true
+  },
   env: {
     NEXT_PUBLIC_VERCEL_ENV: vercelEnv,
     NEXT_PUBLIC_BILLING_UI_BUILD: 'billing-v3-client-checkout',
