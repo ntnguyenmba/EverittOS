@@ -83,6 +83,23 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             padding: 0 !important;
           }
 
+          .dashboard-shell-mobile .mobile-nav-bar {
+            width: 100% !important;
+            min-height: 68px !important;
+            padding: 10px 24px !important;
+            box-sizing: border-box !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo {
+            margin: 0 !important;
+            min-width: 0 !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-menu-btn {
+            flex: 0 0 46px !important;
+            margin: 0 !important;
+          }
+
           .dashboard-shell > .main,
           .dashboard-shell .main {
             display: block !important;
