@@ -10,6 +10,8 @@ Field operations app for Everitt Ventures. Next.js 15, Supabase Auth, Postgres, 
 
 If production does not match GitHub, confirm the hosting project deploys from `main` with `NEXT_PUBLIC_APP_URL=https://app.everittventures.com`.
 
+The July 24, 2026 dashboard build correction is included on `main`; this documentation update intentionally triggers a fresh production deployment from the corrected source.
+
 ## Environment
 
 Copy `.env.example` to `.env.local` for local development.
