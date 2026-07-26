@@ -8,25 +8,13 @@ import { useTranslation } from '@/components/locale-provider';
 type QuickBooksStatus = {
   configured: boolean;
   canConnect: boolean;
-  databaseReady?: boolean;
   connection?: {
     status?: string;
-    realm_id?: string | null;
     company_name?: string | null;
     last_sync_at?: string | null;
     last_error?: string | null;
     needsReconnect?: boolean;
   };
-  recentLogs?: Array<{
-    id: string;
-    entity_type: string;
-    action: string;
-    status: string;
-    error_message?: string | null;
-    created_at: string;
-  }>;
-  setupMessage?: string | null;
-  warning?: string | null;
   needsReconnect?: boolean;
 };
 
@@ -54,6 +42,24 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): P
 
 async function readJson(response: Response): Promise<Record<string, unknown>> {
   return (await response.json().catch(() => ({}))) as Record<string, unknown>;
+}
+
+function formatRelativeTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'recently';
+
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+  if (minutes < 2) return 'just now';
+  if (minutes < 60) return `${minutes} minutes ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }) {
@@ -90,10 +96,9 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       if (!res.ok) {
         if (res.status === 401) {
           setUnauthorized(true);
-          setLoadError('Your login session expired. Sign in again, then return here to connect QuickBooks.');
+          setLoadError('Your session expired. Sign in again to manage QuickBooks.');
         } else {
-          const message = typeof json.error === 'string' ? json.error : t('pages.quickbooks.loadError');
-          setLoadError(message);
+          setLoadError('QuickBooks status is temporarily unavailable.');
         }
         setStatus(null);
         return;
@@ -102,23 +107,19 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       setStatus({
         configured: Boolean(json.configured),
         canConnect: Boolean(json.canConnect),
-        databaseReady: json.databaseReady !== false,
         connection: (json.connection || { status: 'disconnected' }) as QuickBooksStatus['connection'],
-        recentLogs: Array.isArray(json.recentLogs) ? (json.recentLogs as QuickBooksStatus['recentLogs']) : [],
-        setupMessage: typeof json.setupMessage === 'string' ? json.setupMessage : null,
-        warning: typeof json.warning === 'string' ? json.warning : null,
         needsReconnect: Boolean(json.needsReconnect)
       });
     } catch (error) {
       if (!mounted.current) return;
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      setLoadError(timedOut ? 'QuickBooks status timed out. Tap Check status to try again.' : t('pages.quickbooks.loadError'));
+      setLoadError(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks status is temporarily unavailable.');
       setStatus(null);
     } finally {
       loadingRef.current = false;
       if (mounted.current) setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -131,27 +132,24 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       void load();
     }
     if (qb === 'error') {
-      const reason = searchParams.get('reason') || 'connect_failed';
-      const detail = searchParams.get('detail');
-      appFeedback.error(detail || t('pages.quickbooks.connectFailed', { reason }));
+      appFeedback.error('QuickBooks could not be connected. Please try again.');
     }
-  }, [searchParams, appFeedback, t, load]);
+  }, [searchParams, appFeedback, load]);
 
   async function disconnect() {
     if (busy) return;
     setBusy(true);
     try {
       const res = await fetchWithTimeout('/api/integrations/quickbooks/disconnect', { method: 'POST' });
-      const json = await readJson(res);
       if (!res.ok) {
-        appFeedback.error(typeof json.error === 'string' ? json.error : t('pages.quickbooks.loadError'));
+        appFeedback.error('QuickBooks could not be disconnected. Please try again.');
         return;
       }
       appFeedback.disconnected();
       await load();
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      appFeedback.error(timedOut ? 'QuickBooks disconnect timed out. Please try again.' : t('pages.quickbooks.loadError'));
+      appFeedback.error(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks could not be disconnected. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -163,11 +161,11 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   );
   const configured = Boolean(status?.configured);
   const statusText = loading
-    ? 'Checking status...'
+    ? 'Checking...'
     : unauthorized
       ? 'Sign in required'
       : loadError
-        ? 'Status unavailable'
+        ? 'Unavailable'
         : connected
           ? t('pages.quickbooks.connected')
           : needsReconnect
@@ -186,9 +184,8 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       </p>
 
       {loadError ? <p className="auth-message auth-message-error" role="alert">{loadError}</p> : null}
-      {status?.setupMessage ? <p className="auth-message auth-message-error" role="alert">{status.setupMessage}</p> : null}
       {needsReconnect && !loadError ? (
-        <p className="muted">Reconnect QuickBooks to resume syncing.</p>
+        <p className="muted">Reconnect QuickBooks to resume customer and invoice updates.</p>
       ) : null}
 
       <div className="settings-actions" style={{ marginTop: 12 }}>
@@ -203,7 +200,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         ) : null}
 
         <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>
-          {loading ? 'Checking...' : 'Refresh status'}
+          {loading ? 'Checking...' : 'Check connection'}
         </button>
 
         {canManage && (connected || needsReconnect) ? (
@@ -215,24 +212,24 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       {status?.connection?.company_name ? (
         <p className="muted" style={{ marginTop: 12 }}>
-          Connected company: {status.connection.company_name}
+          Connected to {status.connection.company_name}.
         </p>
       ) : null}
       {status?.connection?.last_sync_at ? (
         <p className="muted">
-          Last synced: {new Date(status.connection.last_sync_at).toLocaleString()}
+          Last updated {formatRelativeTime(status.connection.last_sync_at)}.
         </p>
       ) : null}
       {status?.connection?.last_error && needsReconnect ? (
         <p className="auth-message auth-message-error" role="alert">
-          QuickBooks needs attention. Refresh the status or reconnect to continue.
+          QuickBooks needs attention. Reconnect to continue.
         </p>
       ) : null}
 
       <div style={{ marginTop: 16 }}>
-        <h4 style={{ marginBottom: 6 }}>Where this appears</h4>
+        <h4 style={{ marginBottom: 6 }}>What stays updated</h4>
         <p className="muted" style={{ margin: 0 }}>
-          QuickBooks connection and sync status appear on customers, invoices, and financial records that are eligible to sync.
+          Eligible customers and invoices can be sent to QuickBooks while EverittOS remains your operations workspace.
         </p>
       </div>
     </div>
