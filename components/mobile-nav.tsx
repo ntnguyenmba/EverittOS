@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -8,10 +7,8 @@ import { AppNavItems } from '@/components/app-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
-import { SidebarPlanCard } from '@/components/sidebar-plan-card';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
-import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageBilling, canManageOrganizationSettings } from '@/lib/roles';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -22,7 +19,6 @@ type MobileNavProps = {
 
 export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const pathname = usePathname() || '/';
-  const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const router = useRouter();
   const { t } = useTranslation();
   const workspacePlan = useWorkspacePlanOptional();
@@ -91,11 +87,6 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
     await performClientLogout(router);
   }
 
-  const showBillingLink = normalized != null && canManageBilling(role);
-  const showIntegrationsLink = canManageOrganizationSettings(role);
-  const showUpgrade =
-    normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
-
   const drawer = open ? (
     <div className="mobile-nav-overlay mobile-nav-overlay-portal" role="presentation" onClick={() => setOpen(false)}>
       <nav
@@ -124,29 +115,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         </div>
 
         <div className="mobile-nav-drawer-footer">
-          <div className="app-nav" aria-label="Account navigation">
-            {showIntegrationsLink ? (
-              <Link className="nav-item mobile-nav-drawer-link" href="/settings/integrations" onClick={() => setOpen(false)}>
-                <span className="nav-item-label">Google Calendar</span>
-              </Link>
-            ) : null}
-            <Link className="nav-item mobile-nav-drawer-link" href="/settings/account" onClick={() => setOpen(false)}>
-              <span className="nav-item-label">Account settings</span>
-            </Link>
-            {showBillingLink ? (
-              <Link className="nav-item mobile-nav-drawer-link" href="/settings/billing" onClick={() => setOpen(false)}>
-                <span className="nav-item-label">Plans and pricing</span>
-              </Link>
-            ) : null}
-          </div>
-
-          <SidebarPlanCard
-            plan={normalized}
-            showBillingLink={showBillingLink}
-            showUpgrade={showUpgrade}
-            showViewPlans={showBillingLink && !showUpgrade && !hideUpgradeCta}
-            onNavigate={() => setOpen(false)}
-          />
+          <p className="mobile-nav-settings-note">Account, billing, Google Calendar, and QuickBooks are managed inside Settings.</p>
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
           {!isClientRole(role) ? (
             <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
@@ -301,11 +270,18 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         }
 
         .mobile-nav-drawer-footer {
-          max-height: 46dvh;
-          overflow-y: auto;
-          padding: 18px;
+          display: grid;
+          gap: 12px;
+          padding: 16px 18px max(18px, env(safe-area-inset-bottom));
           border-top: 1px solid #c7d2da;
           background: #e8eef2;
+        }
+
+        .mobile-nav-settings-note {
+          margin: 0;
+          color: #526979;
+          font-size: 13px;
+          line-height: 1.45;
         }
 
         .mobile-nav-logout {
@@ -351,7 +327,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           }
 
           .mobile-nav-drawer-footer {
-            padding: 14px;
+            padding-inline: 14px;
           }
         }
 
