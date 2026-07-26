@@ -15,14 +15,14 @@ export type NavSectionDef = {
 };
 
 const PRIMARY_NAV: NavLinkDef[] = [
-  { label: 'Home', href: '/dashboard' },
+  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Requests', href: '/leads', flag: 'leadsNav' },
-  { label: 'Customers', href: '/customers' },
+  { label: 'Schedule', href: '/schedule' },
   { label: 'Jobs', href: '/jobs' },
-  { label: 'Calendar', href: '/schedule' },
-  { label: 'Money', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'Team', href: '/people' },
-  { label: 'Business', href: '/analytics' }
+  { label: 'Customers', href: '/customers' },
+  { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
+  { label: 'People', href: '/people' },
+  { label: 'Analytics', href: '/analytics' }
 ];
 
 const SETTINGS_NAV: NavLinkDef[] = [{ label: 'Settings', href: '/settings' }];
