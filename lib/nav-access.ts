@@ -19,21 +19,11 @@ export type SettingsNavLink = {
 };
 
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
-  { href: '/settings', label: 'Workspace' },
-  { href: '/settings/people', label: 'People' },
-  { href: '/settings/referrals', label: 'Referrals' },
-  { href: '/settings/branding', label: 'Branding' },
-  { href: '/settings/integrations', label: 'Integrations' },
+  { href: '/settings', label: 'General' },
   { href: '/settings/account', label: 'Account' },
-  { href: '/settings/billing', label: 'Plans & billing' },
-  { href: '/settings/ai-usage', label: 'AI Usage' },
-  { href: '/settings/security', label: 'Security' },
-  { href: '/settings/privacy', label: 'Privacy' },
-  { href: '/settings/notifications', label: 'Notifications' },
-  { href: '/settings/support', label: 'Support & Training' },
-  { href: '/settings/api', label: 'API' },
-  { href: '/settings/ai-memory', label: 'AI Memory' },
-  { href: '/settings/departments', label: 'Departments' }
+  { href: '/settings/people', label: 'Team' },
+  { href: '/settings/integrations', label: 'Integrations' },
+  { href: '/settings/billing', label: 'Billing' }
 ];
 
 export type NavItemResolution = {
@@ -248,20 +238,13 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   const normalizedPlan = normalizePlan(plan);
 
   if (isClientRole(role)) {
-    return SETTINGS_NAV_LINKS.filter((link) =>
-      ['/settings/account', '/settings/security', '/settings/privacy', '/settings/notifications', '/settings/support'].includes(
-        link.href
-      )
-    );
+    return SETTINGS_NAV_LINKS.filter((link) => link.href === '/settings/account');
   }
 
   return SETTINGS_NAV_LINKS.filter((link) => {
     if (link.href === '/settings/billing' && !canManageBilling(role)) return false;
-    if (link.href === '/settings/ai-usage' && !canManageBilling(role)) return false;
-    if (link.href === '/settings/referrals' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
     if ((link.href === '/settings/people' || link.href === '/settings/team') && !canViewTeam(role)) return false;
-    if (link.href === '/settings/branding' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
     if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
