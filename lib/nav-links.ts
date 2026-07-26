@@ -6,7 +6,7 @@ export type NavLinkDef = {
   flag?: FeatureFlag;
 };
 
-export type NavSectionId = 'primary' | 'workspace' | 'business' | 'settings';
+export type NavSectionId = 'primary' | 'settings';
 
 export type NavSectionDef = {
   id: NavSectionId;
