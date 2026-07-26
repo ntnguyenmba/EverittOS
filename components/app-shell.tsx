@@ -83,7 +83,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
             min-height: 62px !important;
-            padding: 8px clamp(32px, 4vw, 56px) !important;
+            padding: 8px max(24px, env(safe-area-inset-right)) 8px max(24px, env(safe-area-inset-left)) !important;
             box-sizing: border-box !important;
           }
 
@@ -122,7 +122,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding: 12px clamp(32px, 4vw, 56px) 28px !important;
+            padding: 12px 24px 28px !important;
             translate: none !important;
             transform: none !important;
           }
@@ -158,17 +158,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             font-weight: 600 !important;
           }
 
-          .dashboard-shell .app-back-button:hover,
-          .dashboard-shell .app-back-button:active {
-            background: var(--hover) !important;
-            color: var(--text) !important;
-          }
-
-          .dashboard-shell .app-back-arrow {
-            font-size: 18px !important;
-            line-height: 1 !important;
-          }
-
           .dashboard-shell .app-page-content {
             width: 100% !important;
             max-width: none !important;
@@ -188,11 +177,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             font-size: 15px !important;
           }
 
-          .dashboard-shell .everitt-cmd-trigger kbd {
-            font-size: 11px !important;
-            padding: 2px 6px !important;
-          }
-
           .dashboard-shell .today-page,
           .dashboard-shell .dashboard-home {
             width: 100% !important;
@@ -203,42 +187,13 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             translate: none !important;
             transform: none !important;
           }
-
-          .dashboard-shell .page-head,
-          .dashboard-shell .page-header {
-            margin: 0 !important;
-          }
-
-          .dashboard-shell h1 {
-            margin-bottom: 6px !important;
-            font-weight: 650 !important;
-            line-height: 1.12 !important;
-          }
-
-          .dashboard-shell .page-subtitle {
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-            line-height: 1.45 !important;
-          }
-
-          .dashboard-shell .card,
-          .dashboard-shell .panel,
-          .dashboard-shell .stat {
-            padding: 18px !important;
-          }
-
-          .dashboard-shell .btn,
-          .dashboard-shell .button {
-            min-height: 44px !important;
-            padding-block: 9px !important;
-          }
         }
 
         @media (max-width: 480px) {
           .dashboard-shell-mobile .mobile-nav-bar,
           .dashboard-shell > .main,
           .dashboard-shell .main {
-            padding-inline: 20px !important;
+            padding-inline: max(20px, env(safe-area-inset-left)) !important;
           }
         }
       `}</style>
