@@ -5,30 +5,38 @@ import { usePathname } from 'next/navigation';
 import { recordAppNavigation } from '@/lib/app-navigation-stack';
 import { supabase } from '@/lib/supabase';
 
-const ACTIVITY_STORAGE_KEY = 'everittos.last-activity-heartbeat';
+const ACTIVITY_STORAGE_PREFIX = 'everittos.last-activity-heartbeat';
 const ACTIVITY_INTERVAL_MS = 5 * 60 * 1000;
 
 async function recordUserActivity() {
-  const now = Date.now();
-
-  try {
-    const previous = Number(window.localStorage.getItem(ACTIVITY_STORAGE_KEY) || 0);
-    if (now - previous < ACTIVITY_INTERVAL_MS) return;
-    window.localStorage.setItem(ACTIVITY_STORAGE_KEY, String(now));
-  } catch {
-    // Continue without local throttling when storage is unavailable.
-  }
-
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
   if (!user) return;
 
-  await supabase
+  const now = Date.now();
+  const storageKey = `${ACTIVITY_STORAGE_PREFIX}:${user.id}`;
+
+  try {
+    const previous = Number(window.localStorage.getItem(storageKey) || 0);
+    if (now - previous < ACTIVITY_INTERVAL_MS) return;
+  } catch {
+    // Continue without local throttling when storage is unavailable.
+  }
+
+  const { error } = await supabase
     .from('profiles')
     .update({ updated_at: new Date(now).toISOString() })
     .eq('id', user.id);
+
+  if (!error) {
+    try {
+      window.localStorage.setItem(storageKey, String(now));
+    } catch {
+      // The database update succeeded, so storage failure can be ignored.
+    }
+  }
 }
 
 /** Tracks authenticated navigation and keeps the user's last-active time current. */
