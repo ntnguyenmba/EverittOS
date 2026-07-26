@@ -1,4 +1,3 @@
-import { canManageDepartments } from '@/lib/departments';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { hasTeamManagement, normalizePlan, planShortBadgeName, type EverittosPlan } from '@/lib/everittos-plans';
 import { meetsMinimumPlan, minimumPlanForPath, planRank } from '@/lib/plan-access';
@@ -243,8 +242,6 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
 }
 
 export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): SettingsNavLink[] {
-  const normalizedPlan = normalizePlan(plan);
-
   if (isClientRole(role)) {
     return SETTINGS_NAV_LINKS.filter((link) => link.href === '/settings/account');
   }
@@ -254,9 +251,6 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
     if (link.href === '/settings' && !canManageOrganizationSettings(role)) return false;
     if ((link.href === '/settings/people' || link.href === '/settings/team') && !canViewTeam(role)) return false;
     if (link.href === '/settings/integrations' && !canManageOrganizationSettings(role)) return false;
-    if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
-    if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
-    if (link.href === '/settings/ai-memory' && !limitsForPlan(normalizedPlan).aiAccess) return false;
     return true;
   });
 }
