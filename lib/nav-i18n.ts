@@ -37,13 +37,7 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
 };
 
 const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
-  '/settings': 'workspace',
-  '/settings/people': 'team',
-  '/settings/team': 'team',
   '/settings/branding': 'branding',
-  '/settings/integrations': 'integrations',
-  '/settings/account': 'account',
-  '/settings/billing': 'billing',
   '/settings/ai-usage': 'aiUsage',
   '/settings/security': 'security',
   '/settings/privacy': 'privacy',
