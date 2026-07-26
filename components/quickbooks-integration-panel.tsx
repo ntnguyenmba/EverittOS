@@ -177,7 +177,6 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
               : status
                 ? t('pages.quickbooks.notConfigured')
                 : 'Not checked';
-  const recentLogs = status?.recentLogs || [];
   const showConnect = canManage && !connected;
 
   return (
@@ -188,6 +187,9 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       {loadError ? <p className="auth-message auth-message-error" role="alert">{loadError}</p> : null}
       {status?.setupMessage ? <p className="auth-message auth-message-error" role="alert">{status.setupMessage}</p> : null}
+      {needsReconnect && !loadError ? (
+        <p className="muted">Reconnect QuickBooks to resume syncing.</p>
+      ) : null}
 
       <div className="settings-actions" style={{ marginTop: 12 }}>
         {unauthorized ? (
@@ -201,7 +203,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         ) : null}
 
         <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>
-          {loading ? 'Checking...' : 'Check status'}
+          {loading ? 'Checking...' : 'Refresh status'}
         </button>
 
         {canManage && (connected || needsReconnect) ? (
@@ -213,42 +215,26 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       {status?.connection?.company_name ? (
         <p className="muted" style={{ marginTop: 12 }}>
-          {t('pages.quickbooks.company')}: {status.connection.company_name}
-        </p>
-      ) : null}
-      {status?.connection?.realm_id ? (
-        <p className="muted">
-          {t('pages.quickbooks.companyId')}: {status.connection.realm_id}
+          Connected company: {status.connection.company_name}
         </p>
       ) : null}
       {status?.connection?.last_sync_at ? (
         <p className="muted">
-          {t('pages.quickbooks.lastSync')}: {new Date(status.connection.last_sync_at).toLocaleString()}
+          Last synced: {new Date(status.connection.last_sync_at).toLocaleString()}
         </p>
       ) : null}
-      {status?.connection?.last_error ? (
+      {status?.connection?.last_error && needsReconnect ? (
         <p className="auth-message auth-message-error" role="alert">
-          {t('pages.quickbooks.lastError')}: {status.connection.last_error}
+          QuickBooks needs attention. Refresh the status or reconnect to continue.
         </p>
       ) : null}
 
-      {recentLogs.length ? (
-        <div style={{ marginTop: 16 }}>
-          <h4>{t('pages.quickbooks.recentSyncLog')}</h4>
-          <ul>
-            {recentLogs.map((log) => (
-              <li key={log.id} className="muted">
-                {log.action} · {log.entity_type} · {log.status}
-                {log.error_message ? ` — ${log.error_message}` : ''}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : status && !loading ? (
-        <p className="muted" style={{ marginTop: 12 }}>
-          {t('pages.quickbooks.noSyncAttempts')}
+      <div style={{ marginTop: 16 }}>
+        <h4 style={{ marginBottom: 6 }}>Where this appears</h4>
+        <p className="muted" style={{ margin: 0 }}>
+          QuickBooks connection and sync status appear on customers, invoices, and financial records that are eligible to sync.
         </p>
-      ) : null}
+      </div>
     </div>
   );
 }
