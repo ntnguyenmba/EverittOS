@@ -53,7 +53,7 @@ export function CustomerReportSharePanel({ jobId, canManage }: CustomerReportSha
     setBusy(false);
 
     if (!res.ok) {
-      appFeedback.error(json.error || copy.reportNotAvailable);
+      appFeedback.error(copy.reportNotAvailable);
       return;
     }
 
@@ -66,9 +66,7 @@ export function CustomerReportSharePanel({ jobId, canManage }: CustomerReportSha
 
     setShareUrl(json.share?.shareUrl || null);
     setRevoked(false);
-    if (action === 'regenerate') {
-      appFeedback.success(copy.shareLinkCopied);
-    }
+    appFeedback.success(action === 'regenerate' ? 'A new customer link is ready.' : 'Customer report link created.');
   }
 
   async function copyLink() {
@@ -87,13 +85,13 @@ export function CustomerReportSharePanel({ jobId, canManage }: CustomerReportSha
   }
 
   if (loading) {
-    return <p className="loading-state">{copy.loading}</p>;
+    return <p className="loading-state">Loading customer report...</p>;
   }
 
   return (
     <div className="customer-report-share-panel">
-      <p className="muted">{copy.customerReportShareHelper}</p>
-      <p className="muted">{copy.photoVisibilityHelper}</p>
+      <p className="muted">Create a private link for the customer to view approved photos and completion details.</p>
+      <p className="muted">Only photos marked for the customer report are included.</p>
 
       {canManage ? (
         <div className="finance-form-block compact-finance-form">
@@ -125,7 +123,7 @@ export function CustomerReportSharePanel({ jobId, canManage }: CustomerReportSha
             {canManage ? (
               <>
                 <button type="button" className="btn" disabled={busy} onClick={() => void postAction('regenerate')}>
-                  {busy ? FEEDBACK.loading : copy.regenerateLink}
+                  {busy ? FEEDBACK.loading : 'Create new link'}
                 </button>
                 <button type="button" className="btn" disabled={busy} onClick={() => void postAction('revoke')}>
                   {copy.revokeLink}
@@ -135,10 +133,10 @@ export function CustomerReportSharePanel({ jobId, canManage }: CustomerReportSha
           </>
         ) : canManage ? (
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void postAction('share')}>
-            {busy ? FEEDBACK.loading : copy.copyShareLink}
+            {busy ? FEEDBACK.loading : 'Create customer link'}
           </button>
         ) : (
-          <p className="muted">{copy.reportNotAvailable}</p>
+          <p className="muted">A customer report has not been shared yet.</p>
         )}
       </div>
     </div>
