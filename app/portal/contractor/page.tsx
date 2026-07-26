@@ -341,7 +341,7 @@ export default function ContractorPortalPage() {
             Contractor workspace
           </p>
           <h1>My dashboard</h1>
-          <p className="muted">Your assigned jobs and contractor pay. Organization-wide revenue is hidden.</p>
+          <p className="muted">Your assigned jobs and pay.</p>
         </div>
       </header>
 
@@ -380,7 +380,7 @@ export default function ContractorPortalPage() {
             </div>
           ) : null}
 
-          <section className="card" aria-label="Contractor metrics" style={{ marginBottom: 16 }}>
+          <section className="card" aria-label="Contractor overview" style={{ marginBottom: 16 }}>
             <h2 style={{ fontSize: 18, marginBottom: 12 }}>Overview</h2>
             <div className="stats-grid">
               <div className="stat-card">
@@ -392,19 +392,11 @@ export default function ContractorPortalPage() {
                 <strong>{metrics.upcomingJobs}</strong>
               </div>
               <div className="stat-card">
-                <span>Completed jobs</span>
-                <strong>{metrics.completedJobs}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Total contractor earnings</span>
-                <strong>{formatContractorMoney(metrics.totalEarnings)}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Paid to contractor</span>
+                <span>Paid</span>
                 <strong>{formatContractorMoney(metrics.paidEarnings)}</strong>
               </div>
               <div className="stat-card">
-                <span>Still owed to contractor</span>
+                <span>Still owed</span>
                 <strong>{formatContractorMoney(metrics.owedEarnings)}</strong>
               </div>
             </div>
@@ -414,7 +406,7 @@ export default function ContractorPortalPage() {
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>My jobs</h2>
               <Link href={`${CONTRACTOR_HOME_PATH}#earnings`} className="dashboard-section-link">
-                View earnings
+                View pay
               </Link>
             </div>
 
@@ -432,10 +424,10 @@ export default function ContractorPortalPage() {
                   {job.paymentStatus !== 'none' ? ` · ${job.paymentStatus}` : null}
                 </p>
                 <div className="inline-actions" style={{ marginTop: 10 }}>
-                  <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'in_progress')}>
+                  <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
                     Start
                   </button>
-                  <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'completed')}>
+                  <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
                     Mark complete
                   </button>
                   <Link className="btn" href={`/jobs/${job.id}`}>
@@ -451,14 +443,14 @@ export default function ContractorPortalPage() {
             ))}
           </section>
 
-          <section id="earnings" className="card" aria-label="Contractor payment history">
+          <section id="earnings" className="card" aria-label="Contractor pay">
             <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>Payment history</h2>
+              <h2 style={{ fontSize: 18 }}>My pay</h2>
               <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">
                 Profile
               </Link>
             </div>
-            {emptyEarnings ? <p className="muted">No contractor pay records yet.</p> : null}
+            {emptyEarnings ? <p className="muted">No pay records yet.</p> : null}
             {history.length ? (
               <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 12 }}>
                 <table className="table data-table">
