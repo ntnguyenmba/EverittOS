@@ -61,7 +61,7 @@ export function resolveBillingPlanCardUi(input: {
   if (!billingCheckoutTargetAvailable(target)) {
     return {
       kind: 'unavailable',
-      label: 'Billing setup missing for this plan',
+      label: 'This plan is not available right now',
       reason: 'invalid_plan'
     };
   }
@@ -71,13 +71,13 @@ export function resolveBillingPlanCardUi(input: {
   const label = isFreeUser ? checkoutLabel : hasActiveSubscription ? 'Upgrade' : checkoutLabel;
 
   if (hasActiveSubscription && portalAvailable) {
-    return { kind: 'portal', label: 'Change plan in billing portal' };
+    return { kind: 'portal', label: 'Change plan' };
   }
 
   if (!checkoutAvailable) {
     return {
       kind: 'unavailable',
-      label: 'Checkout unavailable',
+      label: 'Purchasing is temporarily unavailable',
       reason: 'missing_stripe_price_id'
     };
   }
@@ -92,16 +92,16 @@ export function resolveBillingPlanCardUi(input: {
 
 export function billingPlanCardHint(ui: BillingPlanCardUi): string | null {
   if (ui.kind === 'portal') {
-    return 'Plan changes are managed in the Stripe billing portal.';
+    return 'Review or change your subscription securely in the billing portal.';
   }
   if (ui.kind === 'checkout') {
-    return 'Promo codes can be entered securely inside Stripe Checkout. Subscriptions renew monthly until canceled.';
+    return 'Promo codes can be entered during checkout. Subscriptions renew monthly until canceled.';
   }
   if (ui.kind === 'downgrade_contact') {
-    return 'To move back to Free, contact support or cancel in the billing portal.';
+    return 'Contact support or use the billing portal to move back to the Free plan.';
   }
   if (ui.kind === 'unavailable') {
-    return 'This plan is missing a Stripe price ID in server configuration.';
+    return 'This option is temporarily unavailable. Please try again later or contact support.';
   }
   return null;
 }
