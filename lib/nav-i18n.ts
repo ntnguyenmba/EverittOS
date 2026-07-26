@@ -36,18 +36,6 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/portal/contractor': 'contractorPortal'
 };
 
-const SETTINGS_HREF_KEYS: Record<string, keyof Messages['settingsNav']> = {
-  '/settings/branding': 'branding',
-  '/settings/ai-usage': 'aiUsage',
-  '/settings/security': 'security',
-  '/settings/privacy': 'privacy',
-  '/settings/notifications': 'notifications',
-  '/settings/support': 'supportTraining',
-  '/settings/api': 'api',
-  '/settings/ai-memory': 'aiMemory',
-  '/settings/departments': 'departments'
-};
-
 const NAV_SECTION_KEYS: Record<string, keyof Messages['nav']> = {
   tools: 'sectionTools',
   insights: 'sectionInsights'
@@ -61,9 +49,4 @@ export function navLabel(href: string, t: (key: string) => string, fallback: str
 export function navSectionLabel(sectionId: string, t: (key: string) => string): string | null {
   const key = NAV_SECTION_KEYS[sectionId];
   return key ? t(`nav.${key}`) : null;
-}
-
-export function settingsNavLabel(href: string, t: (key: string) => string, fallback: string): string {
-  const key = SETTINGS_HREF_KEYS[href];
-  return key ? t(`settingsNav.${key}`) : fallback;
 }
