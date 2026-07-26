@@ -28,11 +28,31 @@ async function readPayload(url: string): Promise<Record<string, unknown>> {
       signal: controller.signal
     });
     const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!response.ok) throw new Error(typeof payload.error === 'string' ? payload.error : 'Status unavailable');
+    if (!response.ok) throw new Error('Status unavailable');
     return payload;
   } finally {
     clearTimeout(timer);
   }
+}
+
+function formatRecentTime(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const elapsed = Date.now() - date.getTime();
+  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+  if (minutes < 2) return 'just now';
+  if (minutes < 60) return `${minutes} minutes ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function IntegrationCard({ name, state, href }: { name: string; state: IntegrationState; href: string }) {
@@ -98,20 +118,19 @@ export function DashboardIntegrationOverview() {
         const connected = Boolean(payload.connected);
         const health = typeof payload.health === 'string' ? payload.health : '';
         const attention = health === 'reconnect_required' || health === 'token_expired' || Boolean(payload.lastSyncError);
-        const email = typeof payload.googleEmail === 'string' ? payload.googleEmail : null;
-        const lastSync = typeof payload.lastSyncAt === 'string' ? new Date(payload.lastSyncAt).toLocaleString() : null;
+        const lastSync = formatRecentTime(payload.lastSyncAt);
         setGoogle({
           connected,
           attention,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
-            ? 'Reconnect or review the latest sync error.'
+            ? 'Reconnect Google Calendar to resume automatic updates.'
             : connected
-              ? `${email || 'Google Calendar'}${lastSync ? ` · Last sync ${lastSync}` : ''}`
-              : 'Send scheduled EverittOS jobs to Google Calendar.'
+              ? lastSync ? `Last synced ${lastSync}.` : 'Scheduled jobs are connected to Google Calendar.'
+              : 'Connect Google Calendar to keep scheduled jobs updated automatically.'
         });
       } else {
-        setGoogle({ label: 'Unavailable', detail: 'Could not load Google Calendar status.', connected: false, attention: true });
+        setGoogle({ label: 'Unavailable', detail: 'Google Calendar status is temporarily unavailable.', connected: false, attention: true });
       }
 
       if (quickBooksResult.status === 'fulfilled') {
@@ -119,20 +138,19 @@ export function DashboardIntegrationOverview() {
         const connection = (payload.connection || {}) as Record<string, unknown>;
         const connected = connection.status === 'connected';
         const attention = Boolean(payload.needsReconnect || connection.needsReconnect || connection.status === 'error' || connection.last_error);
-        const company = typeof connection.company_name === 'string' ? connection.company_name : null;
-        const lastSync = typeof connection.last_sync_at === 'string' ? new Date(connection.last_sync_at).toLocaleString() : null;
+        const lastSync = formatRecentTime(connection.last_sync_at);
         setQuickBooks({
           connected,
           attention,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
-            ? 'Reconnect or review the latest QuickBooks sync error.'
+            ? 'Reconnect QuickBooks to resume syncing.'
             : connected
-              ? `${company || 'QuickBooks'}${lastSync ? ` · Last sync ${lastSync}` : ''}`
-              : 'Sync customers, invoices, and payments with QuickBooks.'
+              ? lastSync ? `Last synced ${lastSync}.` : 'QuickBooks is connected and ready.'
+              : 'Connect QuickBooks to sync eligible customers and invoices.'
         });
       } else {
-        setQuickBooks({ label: 'Unavailable', detail: 'Could not load QuickBooks status.', connected: false, attention: true });
+        setQuickBooks({ label: 'Unavailable', detail: 'QuickBooks status is temporarily unavailable.', connected: false, attention: true });
       }
     }
 
@@ -147,7 +165,7 @@ export function DashboardIntegrationOverview() {
       <div className="dashboard-section-head">
         <div>
           <h2>Integrations</h2>
-          <p className="page-subtitle" style={{ marginBottom: 0 }}>Connection health and the latest sync information.</p>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>See which connected tools are working and when they last updated.</p>
         </div>
         <Link className="btn btn-sm" href="/settings/integrations">Manage integrations</Link>
       </div>
