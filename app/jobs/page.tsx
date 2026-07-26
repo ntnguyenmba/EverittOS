@@ -29,14 +29,6 @@ type Job = {
   photo_count?: number;
 };
 
-function actionLabel(status: string | null): string {
-  const value = String(status || 'new').toLowerCase();
-  if (value === 'completed' || value === 'complete') return 'Get paid';
-  if (value === 'in_progress' || value === 'in progress' || value === 'started') return 'Continue';
-  if (value === 'cancelled' || value === 'canceled') return 'View';
-  return 'Start';
-}
-
 function JobsList() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -160,7 +152,11 @@ function JobsList() {
               <article key={job.id} className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ minWidth: 0 }}>
-                    <h3 style={{ marginBottom: 6 }}>{job.title}</h3>
+                    <h3 style={{ marginBottom: 6 }}>
+                      <Link href={`/jobs/${job.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {job.title}
+                      </Link>
+                    </h3>
                     <p style={{ margin: 0 }}>{job.customer_name || 'No customer'}</p>
                     <p className="muted" style={{ marginTop: 4 }}>{job.address || 'No address'}</p>
                   </div>
@@ -174,8 +170,8 @@ function JobsList() {
                 ) : null}
 
                 <div className="button-row" style={{ marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Link href={`/jobs/${job.id}`} className="btn btn-primary">
-                    {actionLabel(job.status)}
+                  <Link href={`/jobs/${job.id}`} className="btn btn-primary" aria-label={`Open job ${job.title}`}>
+                    Open job
                   </Link>
                   {job.address ? (
                     <a
