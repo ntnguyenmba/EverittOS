@@ -1,0 +1,58 @@
+name: Fix outstanding ledger fallback
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-outstanding-ledger-fallback.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch dashboard outstanding calculation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/dashboard-metrics.ts')
+          text = path.read_text()
+          old = """  const paidByInvoice = new Map<string, number>();
+  const useLedger = Array.isArray(input.invoicePayments);
+  for (const row of input.invoicePayments || []) {
+"""
+          new = """  const paidByInvoice = new Map<string, number>();
+  for (const row of input.invoicePayments || []) {
+"""
+          if old not in text:
+              raise SystemExit('Expected useLedger block was not found')
+          text = text.replace(old, new, 1)
+
+          old = """    const paidRaw = useLedger
+      ? paidByInvoice.get(invoiceId) || 0
+      : num(inv.amount_paid);
+"""
+          new = """    const hasLedgerPayments = paidByInvoice.has(invoiceId);
+    const paidRaw = hasLedgerPayments
+      ? paidByInvoice.get(invoiceId) || 0
+      : num(inv.amount_paid);
+"""
+          if old not in text:
+              raise SystemExit('Expected paidRaw block was not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Remove one-time workflow
+        run: rm .github/workflows/fix-outstanding-ledger-fallback.yml
+      - name: Commit fix to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/dashboard-metrics.ts .github/workflows/fix-outstanding-ledger-fallback.yml
+          git commit -m "Fix legacy invoice payments in outstanding totals"
+          git push origin main
