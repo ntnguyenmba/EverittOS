@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
-import { navLabel, navSectionLabel } from '@/lib/nav-i18n';
+import { navLabel } from '@/lib/nav-i18n';
 import {
   billingUpgradeHref,
   isNavLinkActive,
@@ -168,18 +168,11 @@ export function AppNavItems({
 
         if (!visibleItems.length) return null;
 
-        const sectionLabel = section.showSectionLabel ? navSectionLabel(section.id, t) : null;
-
         return (
           <div
             key={section.id}
-            className={`nav-section${index > 0 ? ' nav-section-spaced' : ''}${sectionLabel ? ' nav-section-labeled' : ''}`}
+            className={`nav-section${index > 0 ? ' nav-section-spaced' : ''}`}
           >
-            {sectionLabel ? (
-              <p className="nav-section-label" role="presentation">
-                {sectionLabel}
-              </p>
-            ) : null}
             {visibleItems.map(({ label, href, resolution }) => (
               <NavLinkRow
                 key={href}
