@@ -48,8 +48,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       <style jsx global>{`
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
-            --mobile-gutter-left: max(28px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(28px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(36px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(36px, env(safe-area-inset-right));
             display: block !important;
             width: 100% !important;
             max-width: none !important;
@@ -84,10 +84,10 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
-            min-height: 64px !important;
-            padding-top: 9px !important;
+            min-height: 68px !important;
+            padding-top: 10px !important;
             padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 9px !important;
+            padding-bottom: 10px !important;
             padding-left: var(--mobile-gutter-left) !important;
             box-sizing: border-box !important;
           }
@@ -95,12 +95,12 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell-mobile .mobile-nav-brand-logo {
             margin: 0 !important;
             min-width: 0 !important;
-            gap: 8px !important;
+            gap: 9px !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-image {
-            width: 24px !important;
-            height: 24px !important;
+            width: 26px !important;
+            height: 26px !important;
             border-radius: 7px !important;
           }
 
@@ -132,9 +132,9 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding-top: 12px !important;
+            padding-top: 14px !important;
             padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 28px !important;
+            padding-bottom: 32px !important;
             padding-left: var(--mobile-gutter-left) !important;
             translate: none !important;
             transform: none !important;
@@ -205,8 +205,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         @media (min-width: 720px) and (max-width: 1100px) and (pointer: coarse),
           (min-width: 720px) and (max-width: 1100px) and (hover: none) {
           .dashboard-shell {
-            --mobile-gutter-left: max(40px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(40px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(48px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(48px, env(safe-area-inset-right));
           }
         }
       `}</style>
