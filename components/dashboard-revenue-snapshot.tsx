@@ -24,6 +24,8 @@ type MetricItem = {
   value: string;
   href: string;
   help?: string;
+  rawValue?: number;
+  hideWhenZero?: boolean;
 };
 
 const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
@@ -98,6 +100,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const contractorPaid = activeMetrics.contractorPaymentsPaid || 0;
   const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
   const overdueAmount = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
+  const completedJobs = activeMetrics.jobsCompletedThisMonth ?? 0;
+  const totalJobs = activeMetrics.totalJobs ?? 0;
   const rangeLabel = copy.ranges[range];
   const isEnglish = locale === 'en';
 
@@ -132,47 +136,62 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     {
       label: `${copy.money.invoiced} · ${rangeLabel}`,
       value: formatCurrency(customerInvoices),
+      rawValue: customerInvoices,
+      hideWhenZero: true,
       href: DASHBOARD_LINKS.customerInvoices,
       help: copy.money.invoicedHelp
     },
     {
       label: `${isEnglish ? 'Unbilled Revenue' : copy.money.uninvoicedWork} · ${rangeLabel}`,
       value: formatCurrency(uninvoicedWork),
+      rawValue: uninvoicedWork,
+      hideWhenZero: true,
       href: DASHBOARD_LINKS.completedJobs,
       help: copy.money.uninvoicedWorkHelp
     },
     {
       label: isEnglish ? 'Contractors Owed' : copy.money.contractorPayOwed,
       value: formatCurrency(unpaidContractorPay),
+      rawValue: unpaidContractorPay,
+      hideWhenZero: true,
       href: DASHBOARD_LINKS.contractorPayOwed,
       help: copy.money.contractorPayOwedHelp
     },
     {
       label: `${copy.money.otherExpenses} · ${rangeLabel}`,
       value: formatCurrency(otherExpenses),
+      rawValue: otherExpenses,
+      hideWhenZero: true,
       href: DASHBOARD_LINKS.otherExpenses,
       help: copy.money.otherExpensesHelp
     },
     {
       label: `${copy.money.completedJobs} · ${rangeLabel}`,
-      value: String(activeMetrics.jobsCompletedThisMonth ?? 0),
+      value: String(completedJobs),
+      rawValue: completedJobs,
       href: DASHBOARD_LINKS.completedJobs,
       help: copy.money.completedJobsHelp
     },
     {
       label: `${copy.money.jobs} · ${rangeLabel}`,
-      value: String(activeMetrics.totalJobs ?? 0),
+      value: String(totalJobs),
+      rawValue: totalJobs,
       href: DASHBOARD_LINKS.jobs,
       help: copy.money.jobsHelp
     },
     {
       label: `${copy.money.latePayments} · ${copy.money.current}`,
       value: formatCurrency(overdueAmount),
+      rawValue: overdueAmount,
+      hideWhenZero: true,
       href: DASHBOARD_LINKS.latePayments,
       help: copy.money.latePaymentsHelp
     }
   ];
 
+  const visibleSecondaryItems = secondaryItems.filter(
+    (item) => !item.hideWhenZero || Math.abs(item.rawValue ?? 0) > 0.005
+  );
   const isLoading = Boolean(loading || rangeLoading);
   const showLoadError = !isLoading && (rangeError || Boolean(activeMetrics.loadFailed));
 
@@ -256,7 +275,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       {showMoreDetails ? (
         <div className="dashboard-revenue-grid" style={{ marginTop: 16, opacity: isLoading ? 0.58 : 1 }}>
-          {secondaryItems.map((item) => (
+          {visibleSecondaryItems.map((item) => (
             <Link
               key={item.label}
               href={item.href}
