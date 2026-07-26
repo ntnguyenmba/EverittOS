@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
+import { DashboardIntegrationOverview } from '@/components/dashboard-integration-overview';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
@@ -13,7 +14,7 @@ import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { isClientRole, isContractorRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { canManageOrganizationSettings, isClientRole, isContractorRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -226,6 +227,7 @@ export default function DashboardPage() {
             ) : null}
 
             {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
+            {canManageOrganizationSettings(role) ? <DashboardIntegrationOverview /> : null}
 
             <section className="card" aria-label="Operations overview" style={{ minHeight: 0 }}>
               <div className="dashboard-section-head">
