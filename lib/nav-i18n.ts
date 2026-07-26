@@ -36,17 +36,7 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/portal/contractor': 'contractorPortal'
 };
 
-const NAV_SECTION_KEYS: Record<string, keyof Messages['nav']> = {
-  tools: 'sectionTools',
-  insights: 'sectionInsights'
-};
-
 export function navLabel(href: string, t: (key: string) => string, fallback: string): string {
   const key = NAV_HREF_KEYS[href];
   return key ? t(`nav.${key}`) : fallback;
-}
-
-export function navSectionLabel(sectionId: string, t: (key: string) => string): string | null {
-  const key = NAV_SECTION_KEYS[sectionId];
-  return key ? t(`nav.${key}`) : null;
 }
