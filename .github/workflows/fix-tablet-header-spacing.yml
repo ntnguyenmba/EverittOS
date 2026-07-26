@@ -1,0 +1,22 @@
+name: Fix tablet header spacing
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-tablet-header-spacing.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Align tablet header with page content
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib
