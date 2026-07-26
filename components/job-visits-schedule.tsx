@@ -144,26 +144,26 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId: props.jobId, visits: cleanVisits })
     });
-    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    await res.json().catch(() => ({}));
     setSaving(false);
 
     if (!res.ok) {
-      feedback.error(json.error || 'Unable to save visits.');
+      feedback.error('The schedule could not be saved. Please try again.');
       return;
     }
 
-    feedback.success(json.message || 'Visits saved.');
+    feedback.success('Schedule saved. Connected calendars will update automatically.');
     props.onSaved?.();
   }
 
-  if (loading) return <p className="loading-state">Loading visits...</p>;
+  if (loading) return <p className="loading-state">Loading schedule...</p>;
 
   return (
     <div className="job-visits form">
       <div className="job-visits-head">
         <div className="job-visits-title">
-          <h3>Visits</h3>
-          <p className="muted">Choose month, day, and year directly. No long calendar scrolling.</p>
+          <h3>Schedule</h3>
+          <p className="muted">Set each visit date and time. Connected calendars update automatically after saving.</p>
         </div>
         {props.canManage ? (
           <button className="btn job-visits-add" type="button" onClick={addVisit}>+ Add visit</button>
@@ -205,7 +205,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
       {props.canManage ? (
         <button className="btn btn-primary job-visits-save" type="button" onClick={saveVisits} disabled={saving}>
-          {saving ? 'Saving...' : 'Save visits'}
+          {saving ? 'Saving...' : 'Save schedule'}
         </button>
       ) : null}
     </div>
