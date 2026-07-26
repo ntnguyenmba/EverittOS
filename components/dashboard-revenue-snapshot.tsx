@@ -87,7 +87,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
   const paidToYou = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? activeMetrics.revenueThisMonth ?? 0;
   const stillOwed = activeMetrics.stillOwed ?? activeMetrics.pendingIncoming ?? activeMetrics.outstandingInvoices ?? 0;
-  const contractorPay = activeMetrics.contractorPayThisMonth || 0;
   const cashAfterPaidCosts =
     activeMetrics.cashAfterPaidCosts ??
     activeMetrics.cashAfterExpenses ??
@@ -100,6 +99,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const unpaidContractorPay = activeMetrics.unpaidContractorPay || 0;
   const overdueAmount = activeMetrics.latePayments ?? activeMetrics.overdueAmount ?? 0;
   const rangeLabel = copy.ranges[range];
+  const isEnglish = locale === 'en';
 
   const primaryItems: MetricItem[] = [
     {
@@ -109,19 +109,19 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       help: copy.money.collectedHelp
     },
     {
-      label: copy.money.outstanding,
+      label: isEnglish ? 'Still Owed' : copy.money.outstanding,
       value: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
       help: copy.money.outstandingHelp
     },
     {
-      label: copy.money.contractorCost,
-      value: formatCurrency(contractorPay),
+      label: isEnglish ? 'Paid to Contractors' : copy.money.contractorPayPaid,
+      value: formatCurrency(contractorPaid),
       href: DASHBOARD_LINKS.contractorPay,
-      help: copy.money.contractorCostHelp
+      help: copy.money.contractorPayPaidHelp
     },
     {
-      label: copy.money.cashAfterCosts,
+      label: isEnglish ? 'Cash Available' : copy.money.cashAfterCosts,
       value: formatCurrency(cashAfterPaidCosts),
       href: DASHBOARD_LINKS.cashAfterExpenses,
       help: copy.money.cashAfterCostsHelp
@@ -136,34 +136,22 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       help: copy.money.invoicedHelp
     },
     {
-      label: `${copy.money.uninvoicedWork} · ${rangeLabel}`,
+      label: `${isEnglish ? 'Unbilled Revenue' : copy.money.uninvoicedWork} · ${rangeLabel}`,
       value: formatCurrency(uninvoicedWork),
       href: DASHBOARD_LINKS.completedJobs,
       help: copy.money.uninvoicedWorkHelp
+    },
+    {
+      label: isEnglish ? 'Contractors Owed' : copy.money.contractorPayOwed,
+      value: formatCurrency(unpaidContractorPay),
+      href: DASHBOARD_LINKS.contractorPayOwed,
+      help: copy.money.contractorPayOwedHelp
     },
     {
       label: `${copy.money.otherExpenses} · ${rangeLabel}`,
       value: formatCurrency(otherExpenses),
       href: DASHBOARD_LINKS.otherExpenses,
       help: copy.money.otherExpensesHelp
-    },
-    {
-      label: copy.money.contractorPayOwed,
-      value: formatCurrency(unpaidContractorPay),
-      href: DASHBOARD_LINKS.contractorPayOwed,
-      help: copy.money.contractorPayOwedHelp
-    },
-    {
-      label: copy.money.contractorPayPaid,
-      value: formatCurrency(contractorPaid),
-      href: DASHBOARD_LINKS.contractorPay,
-      help: copy.money.contractorPayPaidHelp
-    },
-    {
-      label: `${copy.money.latePayments} · ${copy.money.current}`,
-      value: formatCurrency(overdueAmount),
-      href: DASHBOARD_LINKS.latePayments,
-      help: copy.money.latePaymentsHelp
     },
     {
       label: `${copy.money.completedJobs} · ${rangeLabel}`,
@@ -176,6 +164,12 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       value: String(activeMetrics.totalJobs ?? 0),
       href: DASHBOARD_LINKS.jobs,
       help: copy.money.jobsHelp
+    },
+    {
+      label: `${copy.money.latePayments} · ${copy.money.current}`,
+      value: formatCurrency(overdueAmount),
+      href: DASHBOARD_LINKS.latePayments,
+      help: copy.money.latePaymentsHelp
     }
   ];
 
