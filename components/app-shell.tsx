@@ -48,6 +48,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       <style jsx global>{`
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
+            --mobile-gutter-left: max(28px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(28px, env(safe-area-inset-right));
             display: block !important;
             width: 100% !important;
             max-width: none !important;
@@ -82,8 +84,11 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
-            min-height: 62px !important;
-            padding: 8px max(24px, env(safe-area-inset-right)) 8px max(24px, env(safe-area-inset-left)) !important;
+            min-height: 64px !important;
+            padding-top: 9px !important;
+            padding-right: var(--mobile-gutter-right) !important;
+            padding-bottom: 9px !important;
+            padding-left: var(--mobile-gutter-left) !important;
             box-sizing: border-box !important;
           }
 
@@ -105,6 +110,11 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             letter-spacing: -0.025em !important;
           }
 
+          .dashboard-shell-mobile .mobile-nav-bar-actions {
+            margin: 0 !important;
+            flex: 0 0 auto !important;
+          }
+
           .dashboard-shell-mobile .mobile-nav-menu-btn {
             width: 44px !important;
             height: 44px !important;
@@ -122,7 +132,10 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding: 12px 24px 28px !important;
+            padding-top: 12px !important;
+            padding-right: var(--mobile-gutter-right) !important;
+            padding-bottom: 28px !important;
+            padding-left: var(--mobile-gutter-left) !important;
             translate: none !important;
             transform: none !important;
           }
@@ -189,11 +202,11 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           }
         }
 
-        @media (max-width: 480px) {
-          .dashboard-shell-mobile .mobile-nav-bar,
-          .dashboard-shell > .main,
-          .dashboard-shell .main {
-            padding-inline: max(20px, env(safe-area-inset-left)) !important;
+        @media (min-width: 720px) and (max-width: 1100px) and (pointer: coarse),
+          (min-width: 720px) and (max-width: 1100px) and (hover: none) {
+          .dashboard-shell {
+            --mobile-gutter-left: max(40px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(40px, env(safe-area-inset-right));
           }
         }
       `}</style>
