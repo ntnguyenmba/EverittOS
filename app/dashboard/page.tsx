@@ -229,7 +229,11 @@ export default function DashboardPage() {
             {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
             {canManageOrganizationSettings(role) ? <DashboardIntegrationOverview /> : null}
 
-            <section className="card" aria-label="Operations overview" style={{ minHeight: 0 }}>
+            <section
+              className="card"
+              aria-label="Operations overview"
+              style={{ minHeight: 0, height: 'auto', overflow: 'visible' }}
+            >
               <div className="dashboard-section-head">
                 <div>
                   <h2>Operations overview</h2>
@@ -237,7 +241,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="stats-grid">
+              <div
+                className="stats-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 14,
+                  width: '100%',
+                  height: 'auto',
+                  overflow: 'visible',
+                  alignItems: 'stretch'
+                }}
+              >
                 <OverviewCard label="Active jobs" value={counts.activeJobs} href="/jobs?status=active" />
                 <OverviewCard label="Completed jobs" value={counts.completedJobs} href="/jobs?status=completed" />
                 <OverviewCard label="Open leads" value={counts.openLeads} href="/leads?status=open" />
