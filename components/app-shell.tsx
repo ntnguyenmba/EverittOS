@@ -83,7 +83,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
             min-height: 62px !important;
-            padding: 8px 24px !important;
+            padding: 8px clamp(32px, 4vw, 56px) !important;
             box-sizing: border-box !important;
           }
 
@@ -122,7 +122,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding: 12px 24px 28px !important;
+            padding: 12px clamp(32px, 4vw, 56px) 28px !important;
             translate: none !important;
             transform: none !important;
           }
@@ -238,7 +238,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell-mobile .mobile-nav-bar,
           .dashboard-shell > .main,
           .dashboard-shell .main {
-            padding-inline: 24px !important;
+            padding-inline: 20px !important;
           }
         }
       `}</style>
