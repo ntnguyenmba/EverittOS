@@ -10,7 +10,6 @@ export type NavSectionId = 'primary' | 'settings';
 
 export type NavSectionDef = {
   id: NavSectionId;
-  showSectionLabel?: boolean;
   items: NavLinkDef[];
 };
 
