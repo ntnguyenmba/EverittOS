@@ -30,15 +30,15 @@ type CalendarStatus = {
 type ApiPayload = Record<string, unknown>;
 
 const CALLBACK_ERRORS: Record<string, string> = {
-  not_configured: 'Google Calendar is not configured on the server.',
-  google_denied: 'Google access was denied.',
-  missing_code: 'Google did not return an authorization code.',
-  invalid_state: 'The OAuth session expired. Try connecting again.',
-  session_mismatch: 'Your EverittOS session changed during Google sign-in. Try again.',
-  permission_denied: 'You do not have permission to connect Google Calendar for this workspace.',
-  server_config: 'Server configuration is incomplete.',
-  missing_refresh_token: 'Google did not return a refresh token. Disconnect the app in your Google Account and try again.',
-  connect_failed: 'Google Calendar connection failed.'
+  not_configured: 'Google Calendar is not available yet. Please contact support.',
+  google_denied: 'Google Calendar access was not approved.',
+  missing_code: 'Google Calendar could not be connected. Please try again.',
+  invalid_state: 'Your connection request expired. Please try again.',
+  session_mismatch: 'Your session changed during sign-in. Please try again.',
+  permission_denied: 'Only workspace owners and admins can connect Google Calendar.',
+  server_config: 'Google Calendar is not available yet. Please contact support.',
+  missing_refresh_token: 'Google Calendar needs to be reconnected.',
+  connect_failed: 'Google Calendar could not be connected. Please try again.'
 };
 
 const REQUEST_TIMEOUT_MS = 10000;
@@ -64,12 +64,6 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): P
 
 async function readJson(response: Response): Promise<ApiPayload> {
   return (await response.json().catch(() => ({}))) as ApiPayload;
-}
-
-function errorMessage(payload: ApiPayload, fallback: string): string {
-  const values = [payload.error, payload.message, payload.detail, payload.reason];
-  const found = values.find((value) => typeof value === 'string' && value.trim());
-  return typeof found === 'string' ? found : fallback;
 }
 
 function healthClass(health: GoogleCalendarHealth): string {
@@ -112,7 +106,7 @@ function IntegrationsContent() {
       const json = await readJson(res);
       if (!res.ok) {
         setStatus(null);
-        setStatusError(errorMessage(json, `Google Calendar status failed (${res.status}).`));
+        setStatusError('Google Calendar status is unavailable right now. Please try again.');
         return null;
       }
 
@@ -124,8 +118,8 @@ function IntegrationsContent() {
       setStatus(null);
       setStatusError(
         timedOut
-          ? 'Google Calendar status timed out. Please retry.'
-          : 'Could not load Google Calendar status. Please retry.'
+          ? 'Google Calendar took too long to respond. Please try again.'
+          : 'Google Calendar status is unavailable right now. Please try again.'
       );
       return null;
     } finally {
@@ -159,9 +153,7 @@ function IntegrationsContent() {
       if (oauthSuccess || legacySuccess) feedback.connected();
 
       if (errKey) {
-        const detail = searchParams.get('detail');
-        const base = CALLBACK_ERRORS[errKey] || 'Google Calendar connection failed.';
-        feedback.error(detail ? `${base} ${detail}` : base);
+        feedback.error(CALLBACK_ERRORS[errKey] || 'Google Calendar could not be connected. Please try again.');
       }
 
       await loadStatus();
@@ -180,9 +172,9 @@ function IntegrationsContent() {
 
     try {
       const res = await fetchWithTimeout('/api/integrations/google-calendar/disconnect', { method: 'POST' });
-      const json = await readJson(res);
+      await readJson(res);
       if (!res.ok) {
-        const message = errorMessage(json, `Google Calendar disconnect failed (${res.status}).`);
+        const message = 'Google Calendar could not be disconnected. Please try again.';
         setActionError(message);
         feedback.error(message);
         return;
@@ -193,8 +185,8 @@ function IntegrationsContent() {
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
       const message = timedOut
-        ? 'Google Calendar disconnect timed out. Please try again.'
-        : 'Google Calendar disconnect failed. Please try again.';
+        ? 'Google Calendar took too long to respond. Please try again.'
+        : 'Google Calendar could not be disconnected. Please try again.';
       setActionError(message);
       feedback.error(message);
     } finally {
@@ -210,7 +202,7 @@ function IntegrationsContent() {
       const res = await fetchWithTimeout('/api/integrations/google-calendar/sync', { method: 'POST' });
       const json = await readJson(res);
       if (!res.ok) {
-        const message = errorMessage(json, `Google Calendar sync failed (${res.status}).`);
+        const message = 'Google Calendar could not sync. Refresh the status or reconnect and try again.';
         setActionError(message);
         feedback.error(message);
         await loadStatus();
@@ -221,14 +213,14 @@ function IntegrationsContent() {
       const failed = typeof json.failed === 'number' ? json.failed : null;
       const summary = synced == null
         ? 'Google Calendar sync completed.'
-        : `Google Calendar sync completed. ${synced} synced${failed ? `, ${failed} failed` : ''}.`;
+        : `Google Calendar sync completed. ${synced} synced${failed ? `, ${failed} need attention` : ''}.`;
       feedback.success(summary);
       await loadStatus();
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
       const message = timedOut
-        ? 'Google Calendar sync timed out. Please try again.'
-        : 'Google Calendar sync request failed. Please try again.';
+        ? 'Google Calendar took too long to respond. Please try again.'
+        : 'Google Calendar could not sync. Please try again.';
       setActionError(message);
       feedback.error(message);
     } finally {
@@ -240,6 +232,13 @@ function IntegrationsContent() {
   const reconnectRecommended = health === 'reconnect_required' || (health === 'token_expired' && Boolean(status?.lastSyncError));
   const showOperational = Boolean(status?.connected) && !reconnectRecommended;
   const busy = syncing || disconnecting;
+  const displayStatus = !status?.configured
+    ? 'Unavailable'
+    : reconnectRecommended
+      ? 'Needs attention'
+      : showOperational
+        ? 'Connected'
+        : 'Not connected';
 
   if (loading) {
     return (
@@ -267,50 +266,49 @@ function IntegrationsContent() {
       <div className="settings-card">
         <h3>Google Calendar</h3>
         <p className="muted">
-          Push scheduled jobs from EverittOS to Google Calendar. Jobs with a schedule or due date sync as calendar
-          events. Updates on the schedule page sync automatically.
+          Keep scheduled jobs in sync with Google Calendar. Changes made in the EverittOS schedule update the matching calendar event automatically.
         </p>
 
         {statusError ? (
           <div style={{ marginTop: 12 }}>
             <p className="auth-message auth-message-error" role="alert">{statusError}</p>
             <button type="button" className="btn" onClick={() => void loadStatus()}>
-              Retry Google Calendar status
+              Try again
             </button>
           </div>
         ) : (
           <>
             <p style={{ marginTop: 12 }}>
               Status:{' '}
-              <strong className={healthClass(health)}>
-                {!status?.configured ? 'Configuration missing' : reconnectRecommended ? 'Reconnect Required' : status.healthLabel || 'Not Connected'}
-              </strong>
-              {status?.googleEmail ? ` (${status.googleEmail})` : ''}
+              <strong className={healthClass(health)}>{displayStatus}</strong>
             </p>
 
+            {status?.googleEmail && showOperational ? (
+              <p className="muted">Connected account: {status.googleEmail}</p>
+            ) : null}
+
             {health === 'token_expired' && !reconnectRecommended ? (
-              <p className="muted">Access token expired. Use Sync now to refresh it.</p>
+              <p className="muted">Sync is paused. Select Sync now to restore the connection.</p>
             ) : null}
 
             {reconnectRecommended ? (
-              <p className="muted">The saved Google connection could not refresh. Reconnect Google Calendar to restore sync.</p>
+              <p className="muted">Reconnect Google Calendar to resume automatic updates.</p>
             ) : null}
 
             {!status?.configured ? (
               <p className="muted" style={{ marginTop: 12 }}>
-                Google Calendar is not fully configured yet. Contact EverittOS support to finish setup.
+                Google Calendar is not available for this workspace yet. Contact EverittOS support for help.
               </p>
             ) : null}
 
             {status?.configured ? (
               <>
-                {status.tokenExpiresAt ? (
-                  <p className="muted">Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}</p>
-                ) : null}
                 {status.lastSyncAt ? (
-                  <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p>
+                  <p className="muted">Last synced: {new Date(status.lastSyncAt).toLocaleString()}</p>
                 ) : null}
-                {status.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
+                {status.lastSyncError && reconnectRecommended ? (
+                  <p className="auth-message auth-message-error">Google Calendar needs attention. Reconnect it to continue syncing.</p>
+                ) : null}
                 {actionError ? <p className="auth-message auth-message-error" role="alert">{actionError}</p> : null}
 
                 <div className="settings-actions" style={{ marginTop: 16 }}>
@@ -329,11 +327,18 @@ function IntegrationsContent() {
                     </>
                   )}
                   <button type="button" className="btn" disabled={busy} onClick={() => void loadStatus()}>
-                    Refresh status
+                    Refresh
                   </button>
                   <Link className="btn" href="/schedule">
                     Open schedule
                   </Link>
+                </div>
+
+                <div style={{ marginTop: 18 }}>
+                  <h4 style={{ marginBottom: 6 }}>Where this appears</h4>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Calendar status appears on scheduled jobs, the schedule, and the dashboard integration overview.
+                  </p>
                 </div>
               </>
             ) : null}
@@ -344,8 +349,7 @@ function IntegrationsContent() {
       <div className="settings-card" style={{ marginTop: 20 }}>
         <h3>QuickBooks</h3>
         <p className="muted">
-          EverittOS syncs operational data only. QuickBooks remains your accounting system of record. You control
-          connect, disconnect, and export actions.
+          Connect QuickBooks to keep eligible customers, invoices, and financial records aligned with your accounting workflow.
         </p>
         <QuickBooksIntegrationPanel canManage={canManageOrganizationSettings(role)} />
       </div>
