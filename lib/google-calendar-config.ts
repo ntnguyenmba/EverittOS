@@ -8,13 +8,18 @@ export const GOOGLE_CALENDAR_SCOPES = [
 /** Production OAuth callback registered in Google Cloud Console. */
 export const GOOGLE_CALENDAR_CALLBACK_PATH = '/api/integrations/google-calendar/callback';
 
-/** Canonical redirect URI shown when server OAuth credentials are missing. */
+/** Canonical redirect URI registered in Google Cloud Console for production. */
 export const GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI =
   'https://app.everittventures.com/api/integrations/google-calendar/callback';
 
 export function googleCalendarRedirectUri(): string {
   const explicit = (process.env.GOOGLE_CALENDAR_REDIRECT_URI || '').trim();
   if (explicit) return explicit;
+
+  // Never let a Vercel preview hostname become the production OAuth redirect.
+  // Google requires an exact URI match, so production always uses the canonical app domain.
+  if (process.env.NODE_ENV === 'production') return GOOGLE_CALENDAR_PRODUCTION_REDIRECT_URI;
+
   return appUrl(GOOGLE_CALENDAR_CALLBACK_PATH);
 }
 
