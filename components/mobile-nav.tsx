@@ -190,11 +190,12 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
 
         .mobile-nav-bar {
           min-height: 68px;
-          padding: 10px 16px;
+          padding: 10px 28px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 14px;
+          box-sizing: border-box;
         }
 
         .mobile-nav-brand-logo {
@@ -327,7 +328,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         @media (min-width: 720px) and (max-width: 1100px) {
           .mobile-nav-bar {
             min-height: 74px;
-            padding-inline: 24px;
+            padding-inline: 44px;
           }
 
           .mobile-nav-drawer {
@@ -342,7 +343,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
 
           .mobile-nav-bar {
             min-height: 64px;
-            padding: 9px 12px;
+            padding: 9px 20px;
           }
 
           .mobile-nav-drawer {
