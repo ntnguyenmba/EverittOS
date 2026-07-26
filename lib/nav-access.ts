@@ -230,6 +230,14 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
       path.startsWith('/workers/')
     );
   }
+  if (target === '/settings/people' || target === '/settings/team') {
+    return (
+      path === '/settings/people' ||
+      path.startsWith('/settings/people/') ||
+      path === '/settings/team' ||
+      path.startsWith('/settings/team/')
+    );
+  }
 
   return path === target || path.startsWith(`${target}/`);
 }
