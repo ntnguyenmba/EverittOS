@@ -38,7 +38,6 @@ const EMPTY_METRICS: ContractorDashboardMetrics = {
 };
 
 function logContractorError(code: ContractorLoadErrorCode, detail: string) {
-  // Always log link failures — they are production data/identity bugs.
   if (code === 'worker_not_linked' || process.env.NODE_ENV !== 'production') {
     console.error(`[contractor-dashboard] ${code}: ${detail}`);
   }
@@ -64,6 +63,10 @@ function errorMessage(code: ContractorLoadErrorCode): string {
   }
 }
 
+function normalizedJobStatus(status: string) {
+  return String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
 export default function ContractorPortalPage() {
   const router = useRouter();
   const [plan, setPlan] = useState(normalizePlan('free'));
@@ -75,8 +78,28 @@ export default function ContractorPortalPage() {
   const [jobCards, setJobCards] = useState<ContractorJobCardModel[]>([]);
   const [history, setHistory] = useState<ContractorPaymentHistoryRow[]>([]);
   const [signingOut, setSigningOut] = useState(false);
+  const [openJobId, setOpenJobId] = useState<string | null>(null);
 
   const navItems = useMemo(() => contractorNavItems(), []);
+
+  const groupedJobs = useMemo(() => {
+    const active: ContractorJobCardModel[] = [];
+    const upcoming: ContractorJobCardModel[] = [];
+    const completed: ContractorJobCardModel[] = [];
+
+    for (const job of jobCards) {
+      const status = normalizedJobStatus(job.status);
+      if (status === 'completed' || status === 'complete' || status === 'done') {
+        completed.push(job);
+      } else if (status === 'in_progress' || status === 'started') {
+        active.push(job);
+      } else {
+        upcoming.push(job);
+      }
+    }
+
+    return { active, upcoming, completed };
+  }, [jobCards]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,13 +141,9 @@ export default function ContractorPortalPage() {
     const lookupEmail = String(user.email || profile?.email || '')
       .trim()
       .toLowerCase();
-    const displayName = String(profile?.full_name || profile?.display_name || '')
-      .trim();
-
+    const displayName = String(profile?.full_name || profile?.display_name || '').trim();
     const workerSelect = 'id, auth_user_id, email, active, organization_id, name';
 
-    // Broad lookup: do not require organization_id on the worker row.
-    // Historical rows often have null auth_user_id and/or null organization_id.
     const queries = [
       supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
       lookupEmail
@@ -166,28 +185,15 @@ export default function ContractorPortalPage() {
     ]) {
       workerMap.set(String(row.id), row);
     }
-    const workerRows = Array.from(workerMap.values());
 
+    const workerRows = Array.from(workerMap.values());
     const identity = contractorIdentityFromWorkers(user.id, workerRows, lookupEmail, displayName);
     const workerIds = identity.workerIds || [];
 
     if (!workerIds.length) {
       logContractorError(
         'worker_not_linked',
-        JSON.stringify({
-          organizationId,
-          lookupEmail,
-          displayName,
-          visibleWorkerCount: workerRows.length,
-          sample: workerRows.slice(0, 5).map((w) => ({
-            id: w.id,
-            auth_user_id: w.auth_user_id,
-            email: w.email,
-            organization_id: w.organization_id,
-            name: w.name,
-            active: w.active
-          }))
-        })
+        JSON.stringify({ organizationId, lookupEmail, displayName, visibleWorkerCount: workerRows.length })
       );
       setErrors(['worker_not_linked']);
       setMetrics(EMPTY_METRICS);
@@ -197,21 +203,20 @@ export default function ContractorPortalPage() {
       return;
     }
 
+    const jobSelect =
+      'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at';
+
     const [assignmentRes, directJobsRes, laborRes] = await Promise.all([
       supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', workerIds),
       organizationId
         ? supabase
             .from('jobs')
-            .select(
-              'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at'
-            )
+            .select(jobSelect)
             .eq('organization_id', organizationId)
             .or(`assigned_to.in.(${workerIds.join(',')}),assigned_to.eq.${user.id}`)
         : supabase
             .from('jobs')
-            .select(
-              'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at'
-            )
+            .select(jobSelect)
             .or(`assigned_to.in.(${workerIds.join(',')}),assigned_to.eq.${user.id}`),
       supabase
         .from('job_labor')
@@ -225,14 +230,16 @@ export default function ContractorPortalPage() {
       nextErrors.push('assignment_query_failed');
     }
     if (directJobsRes.error) {
-      const code =
-        /permission|rls|policy/i.test(directJobsRes.error.message) ? 'access_blocked' : 'jobs_query_failed';
+      const code = /permission|rls|policy/i.test(directJobsRes.error.message)
+        ? 'access_blocked'
+        : 'jobs_query_failed';
       logContractorError(code, directJobsRes.error.message);
       nextErrors.push(code);
     }
     if (laborRes.error) {
-      const code =
-        /permission|rls|policy/i.test(laborRes.error.message) ? 'access_blocked' : 'earnings_query_failed';
+      const code = /permission|rls|policy/i.test(laborRes.error.message)
+        ? 'access_blocked'
+        : 'earnings_query_failed';
       logContractorError(code, laborRes.error.message);
       nextErrors.push(code);
       if (code === 'earnings_query_failed') nextErrors.push('payment_query_failed');
@@ -251,9 +258,7 @@ export default function ContractorPortalPage() {
     if (assignmentJobIds.length) {
       const { data: assignedJobs, error: assignedJobsError } = await supabase
         .from('jobs')
-        .select(
-          'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at'
-        )
+        .select(jobSelect)
         .in('id', assignmentJobIds);
       if (assignedJobsError) {
         logContractorError('jobs_query_failed', assignedJobsError.message);
@@ -267,37 +272,31 @@ export default function ContractorPortalPage() {
     for (const job of [...assignmentJobs, ...((directJobsRes.data || []) as ContractorJobRow[])]) {
       mergedJobs.set(job.id, job);
     }
-    const laborRows = (laborRes.data || []) as ContractorLaborRow[];
 
-    // Extra job rows referenced by labor but missing from assignment queries
+    const laborRows = (laborRes.data || []) as ContractorLaborRow[];
     const missingJobIds = Array.from(
-      new Set(
-        laborRows
-          .map((row) => String(row.job_id || ''))
-          .filter((id) => id && !mergedJobs.has(id))
-      )
+      new Set(laborRows.map((row) => String(row.job_id || '')).filter((id) => id && !mergedJobs.has(id)))
     );
+
     if (missingJobIds.length) {
       const { data: laborJobs, error: laborJobsError } = await supabase
         .from('jobs')
-        .select(
-          'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at'
-        )
+        .select(jobSelect)
         .in('id', missingJobIds);
       if (laborJobsError) {
         logContractorError('jobs_query_failed', laborJobsError.message);
         nextErrors.push('jobs_query_failed');
       } else {
-        for (const job of (laborJobs || []) as ContractorJobRow[]) {
-          mergedJobs.set(job.id, job);
-        }
+        for (const job of (laborJobs || []) as ContractorJobRow[]) mergedJobs.set(job.id, job);
       }
     }
 
     const jobsForView = Array.from(mergedJobs.values());
     const jobsById = new Map(jobsForView.map((job) => [job.id, job]));
 
-    setMetrics(computeContractorDashboardMetrics(jobsForView, laborRows, identity, undefined, assignmentWorkerIdsByJob));
+    setMetrics(
+      computeContractorDashboardMetrics(jobsForView, laborRows, identity, undefined, assignmentWorkerIdsByJob)
+    );
     setJobCards(buildContractorJobCards(jobsForView, laborRows, identity, assignmentWorkerIdsByJob));
     setHistory(buildContractorPaymentHistory(laborRows, jobsById, workerIds));
     setErrors(Array.from(new Set(nextErrors)));
@@ -312,7 +311,9 @@ export default function ContractorPortalPage() {
     const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
     if (error) {
       logContractorError('jobs_query_failed', error.message);
-      setErrors((current) => Array.from(new Set<ContractorLoadErrorCode>([...current, 'jobs_query_failed'])));
+      setErrors((current) =>
+        Array.from(new Set<ContractorLoadErrorCode>([...current, 'jobs_query_failed']))
+      );
       return;
     }
     await load();
@@ -329,6 +330,82 @@ export default function ContractorPortalPage() {
     }
   }
 
+  function renderJobCard(job: ContractorJobCardModel) {
+    const expanded = openJobId === job.id;
+    const status = normalizedJobStatus(job.status);
+    const completed = status === 'completed' || status === 'complete' || status === 'done';
+
+    return (
+      <article
+        key={job.id}
+        className="contractor-job-card"
+        style={{ marginTop: 12, border: '1px solid var(--line)', borderRadius: 14, overflow: 'hidden' }}
+      >
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`contractor-job-${job.id}`}
+          onClick={() => setOpenJobId(expanded ? null : job.id)}
+          style={{
+            width: '100%',
+            border: 0,
+            background: 'transparent',
+            color: 'inherit',
+            padding: 16,
+            textAlign: 'left',
+            cursor: 'pointer'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ fontSize: 17, margin: 0 }}>{job.title}</h3>
+              <p className="muted" style={{ margin: '5px 0 0' }}>
+                {job.customerName} · {job.date || 'Date not set'}
+              </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>{job.address}</p>
+            </div>
+            <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>
+              {expanded ? '−' : '+'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            <span className="badge">{job.status}</span>
+            <span className="badge">
+              Pay: {job.paymentStatus === 'none' ? 'Not set' : formatContractorMoney(job.payAmount)}
+            </span>
+          </div>
+        </button>
+
+        {expanded ? (
+          <div id={`contractor-job-${job.id}`} style={{ padding: '0 16px 16px', borderTop: '1px solid var(--line)' }}>
+            <div className="inline-actions" style={{ marginTop: 14 }}>
+              {!completed && status !== 'in_progress' ? (
+                <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
+                  Start job
+                </button>
+              ) : null}
+              {!completed ? (
+                <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
+                  Mark complete
+                </button>
+              ) : null}
+              <Link className="btn" href={`/jobs/${job.id}`}>
+                Open details
+              </Link>
+            </div>
+
+            {photoUploadAllowed(plan) && userId ? (
+              <div style={{ marginTop: 14 }}>
+                <h4 style={{ fontSize: 15, marginBottom: 8 }}>Job photos</h4>
+                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={false} />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   const hasDataError = errors.length > 0;
   const emptyJobs = !loading && !hasDataError && jobCards.length === 0 && !errors.includes('worker_not_linked');
   const emptyEarnings = !loading && !hasDataError && history.length === 0 && !errors.includes('worker_not_linked');
@@ -337,9 +414,7 @@ export default function ContractorPortalPage() {
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
       <header id="overview" className="contractor-dash-header">
         <div>
-          <p className="muted" style={{ marginBottom: 4 }}>
-            Contractor workspace
-          </p>
+          <p className="muted" style={{ marginBottom: 4 }}>Contractor workspace</p>
           <h1>My dashboard</h1>
           <p className="muted">Your assigned jobs and pay.</p>
         </div>
@@ -347,9 +422,7 @@ export default function ContractorPortalPage() {
 
       <nav className="contractor-dash-nav" aria-label="Contractor">
         {navItems.map((item) => (
-          <Link key={item.id} href={item.href} className="btn">
-            {item.label}
-          </Link>
+          <Link key={item.id} href={item.href} className="btn">{item.label}</Link>
         ))}
         <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut}>
           {signingOut ? 'Signing out…' : 'Sign out'}
@@ -365,117 +438,71 @@ export default function ContractorPortalPage() {
             <div className="card" role="alert" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
               <h2 style={{ fontSize: 17 }}>Could not load everything</h2>
               <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-                {errors.map((code) => (
-                  <li key={code}>{errorMessage(code)}</li>
-                ))}
+                {errors.map((code) => <li key={code}>{errorMessage(code)}</li>)}
               </ul>
               {process.env.NODE_ENV !== 'production' ? (
-                <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-                  Dev detail codes: {errors.join(', ')}
-                </p>
+                <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>Dev detail codes: {errors.join(', ')}</p>
               ) : null}
-              <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>
-                Try again
-              </button>
+              <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>Try again</button>
             </div>
           ) : null}
 
           <section className="card" aria-label="Contractor overview" style={{ marginBottom: 16 }}>
             <h2 style={{ fontSize: 18, marginBottom: 12 }}>Overview</h2>
             <div className="stats-grid">
-              <div className="stat-card">
-                <span>Assigned jobs</span>
-                <strong>{metrics.assignedJobs}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Upcoming jobs</span>
-                <strong>{metrics.upcomingJobs}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Paid</span>
-                <strong>{formatContractorMoney(metrics.paidEarnings)}</strong>
-              </div>
-              <div className="stat-card">
-                <span>Still owed</span>
-                <strong>{formatContractorMoney(metrics.owedEarnings)}</strong>
-              </div>
+              <div className="stat-card"><span>Assigned jobs</span><strong>{metrics.assignedJobs}</strong></div>
+              <div className="stat-card"><span>Upcoming jobs</span><strong>{metrics.upcomingJobs}</strong></div>
+              <div className="stat-card"><span>Paid</span><strong>{formatContractorMoney(metrics.paidEarnings)}</strong></div>
+              <div className="stat-card"><span>Still owed</span><strong>{formatContractorMoney(metrics.owedEarnings)}</strong></div>
             </div>
           </section>
 
           <section id="jobs" className="card" aria-label="Assigned jobs" style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>My jobs</h2>
-              <Link href={`${CONTRACTOR_HOME_PATH}#earnings`} className="dashboard-section-link">
-                View pay
-              </Link>
+              <Link href={`${CONTRACTOR_HOME_PATH}#earnings`} className="dashboard-section-link">View pay</Link>
             </div>
 
             {emptyJobs ? <p className="muted">No assigned jobs yet.</p> : null}
 
-            {jobCards.map((job) => (
-              <article key={job.id} className="contractor-job-card" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-                <h3 style={{ fontSize: 17, marginBottom: 8 }}>{job.title}</h3>
-                <p>Customer: {job.customerName}</p>
-                <p>Date: {job.date || 'Not set'}</p>
-                <p>Address: {job.address}</p>
-                <p>Status: {job.status}</p>
-                <p>
-                  Contractor pay: {job.paymentStatus === 'none' ? 'Not set' : formatContractorMoney(job.payAmount)}
-                  {job.paymentStatus !== 'none' ? ` · ${job.paymentStatus}` : null}
-                </p>
-                <div className="inline-actions" style={{ marginTop: 10 }}>
-                  <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
-                    Start
-                  </button>
-                  <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
-                    Mark complete
-                  </button>
-                  <Link className="btn" href={`/jobs/${job.id}`}>
-                    Open job
-                  </Link>
-                </div>
-                {photoUploadAllowed(plan) && userId ? (
-                  <div style={{ marginTop: 12 }}>
-                    <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={false} />
-                  </div>
-                ) : null}
-              </article>
-            ))}
+            {groupedJobs.active.length ? (
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ fontSize: 15 }}>Active ({groupedJobs.active.length})</h3>
+                {groupedJobs.active.map(renderJobCard)}
+              </div>
+            ) : null}
+
+            {groupedJobs.upcoming.length ? (
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ fontSize: 15 }}>Upcoming ({groupedJobs.upcoming.length})</h3>
+                {groupedJobs.upcoming.map(renderJobCard)}
+              </div>
+            ) : null}
+
+            {groupedJobs.completed.length ? (
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ fontSize: 15 }}>Completed ({groupedJobs.completed.length})</h3>
+                {groupedJobs.completed.map(renderJobCard)}
+              </div>
+            ) : null}
           </section>
 
           <section id="earnings" className="card" aria-label="Contractor pay">
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>My pay</h2>
-              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">
-                Profile
-              </Link>
+              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">Profile</Link>
             </div>
             {emptyEarnings ? <p className="muted">No pay records yet.</p> : null}
             {history.length ? (
               <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 12 }}>
                 <table className="table data-table">
                   <thead>
-                    <tr>
-                      <th>Job</th>
-                      <th>Customer</th>
-                      <th>Work date</th>
-                      <th>Earned</th>
-                      <th>Paid</th>
-                      <th>Outstanding</th>
-                      <th>Status</th>
-                      <th>Paid date</th>
-                    </tr>
+                    <tr><th>Job</th><th>Customer</th><th>Work date</th><th>Earned</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Paid date</th></tr>
                   </thead>
                   <tbody>
                     {history.map((row) => (
                       <tr key={row.laborId}>
-                        <td>
-                          {row.jobId ? (
-                            <Link href={`/jobs/${row.jobId}`}>{row.jobTitle}</Link>
-                          ) : (
-                            row.jobTitle
-                          )}
-                        </td>
+                        <td>{row.jobId ? <Link href={`/jobs/${row.jobId}`}>{row.jobTitle}</Link> : row.jobTitle}</td>
                         <td>{row.customerName}</td>
                         <td>{row.workDate || '—'}</td>
                         <td>{formatContractorMoney(row.amountEarned)}</td>
