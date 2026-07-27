@@ -48,11 +48,21 @@ type ProfileRow = {
 
 type ContractorPayMode = 'hourly' | 'flat';
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function memberLabel(member: MemberRow, profile?: ProfileRow) {
-  const name = profile?.full_name?.trim();
-  const email = profile?.email?.trim();
-  if (name && email) return `${name} (${email})`;
-  return name || email || member.user_id;
+  const name = profile?.full_name?.trim() || '';
+  const email = profile?.email?.trim() || '';
+  if (name && !isUuid(name) && name.toLowerCase() !== email.toLowerCase()) return name;
+  if (email) return email;
+  return 'Team member';
+}
+
+function roleLabel(value: string) {
+  const normalized = normalizeRole(value);
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1).replaceAll('_', ' ');
 }
 
 function newVisit(): VisitDraft {
@@ -423,7 +433,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           <label htmlFor="assigned-to">Assign to</label>
           <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
             <option value="">Unassigned</option>
-            {teamMembers.map((member) => <option key={member.userId} value={member.userId}>{member.label} · {member.role}</option>)}
+            {teamMembers.map((member) => <option key={member.userId} value={member.userId}>{member.label} · {roleLabel(member.role)}</option>)}
           </select>
           <label>Job notes</label>
           <textarea className="input" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
