@@ -26,6 +26,8 @@ import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } fro
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
+import { contractorIdentityFromWorkers } from '@/lib/contractor-dashboard';
+import { workerIdentityAliases } from '@/lib/worker-assignment';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { getJobDetailCopy } from '@/lib/i18n/job-detail-copy';
@@ -146,7 +148,11 @@ export default function JobDetailPage({ params }: PageProps) {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, role, email, full_name, display_name')
+      .eq('id', user.id)
+      .maybeSingle();
     const org = await fetchOrganizationContext(user.id);
     const role = normalizeRole(org?.role || profile?.role);
     const userPlan = normalizePlan(profile?.plan);
@@ -163,8 +169,9 @@ export default function JobDetailPage({ params }: PageProps) {
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
       supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId)
     ]);
+    const typedAssignments = (assignmentRows || []) as Assignment[];
     setChecklist(checklistRows || []);
-    setAssignments((assignmentRows || []) as Assignment[]);
+    setAssignments(typedAssignments);
 
     if (limitsForPlan(userPlan).crewAssignment) {
       let workersQuery = supabase.from('workers').select('id, name').eq('active', true).order('name');
@@ -182,7 +189,51 @@ export default function JobDetailPage({ params }: PageProps) {
       appFeedback.error(msg);
       return;
     }
-    if (!canAccessWorkspaceRecord(data, user.id, org?.organizationId, role, data.assigned_to)) {
+
+    const lookupEmail = String(user.email || profile?.email || '').trim().toLowerCase();
+    const displayName = String(profile?.full_name || profile?.display_name || '').trim();
+    const workerSelect = 'id, auth_user_id, email, active, organization_id, name';
+    const [authWorkersRes, emailWorkersRes, orgWorkersRes] = await Promise.all([
+      supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
+      lookupEmail
+        ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
+      org?.organizationId
+        ? supabase.from('workers').select(workerSelect).eq('organization_id', org.organizationId)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null })
+    ]);
+    const workerMap = new Map<string, Record<string, unknown>>();
+    for (const row of [
+      ...(authWorkersRes.data || []),
+      ...(emailWorkersRes.data || []),
+      ...(orgWorkersRes.data || [])
+    ]) {
+      workerMap.set(String(row.id), row);
+    }
+    const identity = contractorIdentityFromWorkers(
+      user.id,
+      Array.from(workerMap.values()),
+      lookupEmail,
+      displayName
+    );
+    const identityAliases = workerIdentityAliases(identity);
+    const assignedThroughJobAssignments = typedAssignments.some((assignment) =>
+      identityAliases.has(String(assignment.worker_id || ''))
+    );
+    const hasDirectWorkspaceAccess = canAccessWorkspaceRecord(
+      data,
+      user.id,
+      org?.organizationId,
+      role,
+      data.assigned_to,
+      identity.workerIds || []
+    );
+    const hasAdditionalAssignmentAccess =
+      Boolean(org?.organizationId) &&
+      data.organization_id === org?.organizationId &&
+      assignedThroughJobAssignments;
+
+    if (!hasDirectWorkspaceAccess && !hasAdditionalAssignmentAccess) {
       const msg = t('pages.jobs.notFound');
       setLoadError(msg);
       appFeedback.error(msg);
