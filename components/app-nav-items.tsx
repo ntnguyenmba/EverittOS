@@ -109,7 +109,7 @@ export function AppNavItems({
     portalLinks.push({ label: 'Contractor portal', href: '/portal/contractor' });
   }
 
-  if (isClientRole(normalizedRole)) {
+  if (isClientRole(normalizedRole) || isContractorRole(normalizedRole)) {
     return (
       <nav className="app-nav" aria-label="App navigation">
         {portalLinks.map(({ label, href }) => {
