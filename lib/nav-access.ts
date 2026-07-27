@@ -32,7 +32,10 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/account', label: 'Account' },
   { href: '/settings/people', label: 'Team' },
   { href: '/settings/integrations', label: 'Integrations' },
-  { href: '/settings/billing', label: 'Billing' }
+  { href: '/settings/billing', label: 'Billing' },
+  { href: '/settings/security', label: 'Security' },
+  { href: '/settings/notifications', label: 'Notifications' },
+  { href: '/settings/privacy', label: 'Privacy' }
 ];
 
 const PORTAL_SETTINGS_LINKS: SettingsNavLink[] = [
@@ -322,6 +325,19 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 
   if (isClientRole(role) || isContractorRole(role)) {
     return PORTAL_SETTINGS_LINKS.filter((link) => canAccessSettingsPathByRole(role, link.href));
+  }
+
+  // Managers and staff get personal settings only (plus team view for managers).
+  if (role === 'manager' || role === 'employee' || role === 'viewer') {
+    return SETTINGS_NAV_LINKS.filter((link) => {
+      if (link.href === '/settings/people' || link.href === '/settings/team') return canViewTeam(role);
+      return (
+        link.href === '/settings/account' ||
+        link.href === '/settings/security' ||
+        link.href === '/settings/notifications' ||
+        link.href === '/settings/privacy'
+      );
+    });
   }
 
   return SETTINGS_NAV_LINKS.filter((link) => {

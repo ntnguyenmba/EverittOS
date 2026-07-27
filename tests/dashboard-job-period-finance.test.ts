@@ -79,11 +79,11 @@ test('invoice payment is not double counted with direct job payments', () => {
     }
   ];
   const invoicePayments: InvoicePaymentRow[] = [{ invoice_id: 'inv-1', amount: 800, paid_at: '2026-07-05' }];
-  // Same cash must not also appear as a direct job payment.
+  // Same cash must not also appear as a direct job payment — even if a legacy job_payment row exists.
   const collected = calculatePaidToYou({
     invoices,
     paymentRows: invoicePayments,
-    jobPaymentRows: [],
+    jobPaymentRows: [{ job_id: 'job-1', amount: 800, paid_at: '2026-07-05' }],
     start: '2026-07-01',
     end: '2026-08-01',
     range: 'month'

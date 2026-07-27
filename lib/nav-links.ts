@@ -6,33 +6,62 @@ export type NavLinkDef = {
   flag?: FeatureFlag;
 };
 
-export type NavSectionId = 'primary' | 'settings';
+export type NavSectionId =
+  | 'operations'
+  | 'customers'
+  | 'financial'
+  | 'team'
+  | 'business'
+  | 'settings';
 
 export type NavSectionDef = {
   id: NavSectionId;
+  label: string;
   items: NavLinkDef[];
 };
 
-const PRIMARY_NAV: NavLinkDef[] = [
+const OPERATIONS_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Requests', href: '/leads', flag: 'leadsNav' },
-  { label: 'Schedule', href: '/schedule' },
   { label: 'Jobs', href: '/jobs' },
+  { label: 'Schedule', href: '/schedule' }
+];
+
+const CUSTOMERS_NAV: NavLinkDef[] = [
   { label: 'Customers', href: '/customers' },
+  { label: 'Leads', href: '/leads', flag: 'leadsNav' },
+  { label: 'Reviews', href: '/reviews' }
+];
+
+const FINANCIAL_NAV: NavLinkDef[] = [
   { label: 'Invoices', href: '/invoices', flag: 'invoicesNav' },
-  { label: 'People', href: '/people' },
+  { label: 'Expenses', href: '/expenses' }
+];
+
+const TEAM_NAV: NavLinkDef[] = [{ label: 'People', href: '/people' }];
+
+const BUSINESS_NAV: NavLinkDef[] = [
+  { label: 'Reports', href: '/reports' },
   { label: 'Analytics', href: '/analytics' }
 ];
 
-const SETTINGS_NAV: NavLinkDef[] = [{ label: 'Settings', href: '/settings' }];
+const SETTINGS_NAV: NavLinkDef[] = [
+  { label: 'Account', href: '/settings/account' },
+  { label: 'Integrations', href: '/settings/integrations' },
+  { label: 'Billing', href: '/settings/billing' },
+  { label: 'Settings', href: '/settings' }
+];
 
 function filterFlagged(items: NavLinkDef[]): NavLinkDef[] {
   return items.filter((item) => !item.flag || isFeatureEnabled(item.flag));
 }
 
 export const APP_NAV_SECTIONS: NavSectionDef[] = [
-  { id: 'primary', items: filterFlagged(PRIMARY_NAV) },
-  { id: 'settings', items: SETTINGS_NAV }
+  { id: 'operations', label: 'Operations', items: filterFlagged(OPERATIONS_NAV) },
+  { id: 'customers', label: 'Customers', items: filterFlagged(CUSTOMERS_NAV) },
+  { id: 'financial', label: 'Financial', items: filterFlagged(FINANCIAL_NAV) },
+  { id: 'team', label: 'Team', items: filterFlagged(TEAM_NAV) },
+  { id: 'business', label: 'Business', items: filterFlagged(BUSINESS_NAV) },
+  { id: 'settings', label: 'Settings', items: filterFlagged(SETTINGS_NAV) }
 ];
 
 export const APP_NAV_LINKS = APP_NAV_SECTIONS.flatMap((section) => section.items);
@@ -62,6 +91,7 @@ export const SECONDARY_APP_ROUTES = [
   '/bookings',
   '/inventory',
   '/routes',
+  '/reports',
   '/portal/client',
   '/portal/contractor'
 ] as const;

@@ -60,12 +60,13 @@ type CustomerRow = {
   phone: string | null;
 };
 
-type PortalTab = 'dashboard' | 'jobs' | 'schedule' | 'invoices' | 'profile';
+type PortalTab = 'dashboard' | 'jobs' | 'schedule' | 'reports' | 'invoices' | 'profile';
 
 const TAB_LABELS: Record<PortalTab, string> = {
   dashboard: 'Overview',
-  jobs: 'My jobs',
+  jobs: 'Appointments',
   schedule: 'Schedule',
+  reports: 'Reports & photos',
   invoices: 'Invoices',
   profile: 'Account'
 };
@@ -86,6 +87,7 @@ function ClientPortalContent() {
   const initialTab: PortalTab =
     requestedTab === 'jobs' ||
     requestedTab === 'schedule' ||
+    requestedTab === 'reports' ||
     requestedTab === 'invoices' ||
     requestedTab === 'profile' ||
     requestedTab === 'dashboard'
@@ -119,6 +121,7 @@ function ClientPortalContent() {
     if (
       requestedTab === 'jobs' ||
       requestedTab === 'schedule' ||
+      requestedTab === 'reports' ||
       requestedTab === 'invoices' ||
       requestedTab === 'profile' ||
       requestedTab === 'dashboard'
@@ -266,7 +269,7 @@ function ClientPortalContent() {
         </header>
 
         <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label="Portal sections">
-          {(['dashboard', 'jobs', 'schedule', 'invoices'] as PortalTab[]).map((key) => (
+          {(['dashboard', 'jobs', 'schedule', 'reports', 'invoices'] as PortalTab[]).map((key) => (
             <button
               key={key}
               type="button"
@@ -374,6 +377,51 @@ function ClientPortalContent() {
                   </Link>
                 </div>
               </div>
+            )}
+
+            {tab === 'reports' && (
+              <>
+                <div className="card">
+                  <h3>Shared reports</h3>
+                  {reports.filter((r) => r.share_token && !r.share_revoked_at).length === 0 ? (
+                    <p className="muted">No reports have been shared with you.</p>
+                  ) : (
+                    reports
+                      .filter((r) => r.share_token && !r.share_revoked_at)
+                      .map((r) => (
+                        <div key={r.id} className="list-row">
+                          <div>
+                            <strong>{r.title}</strong>
+                            <p className="muted">{jobMap.get(r.job_id)?.title || 'Appointment report'}</p>
+                          </div>
+                          <Link className="btn btn-primary" href={`/report/${r.share_token}`}>
+                            Open report
+                          </Link>
+                        </div>
+                      ))
+                  )}
+                </div>
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3>Photos</h3>
+                  {jobs.length === 0 ? (
+                    <p className="muted">No appointments yet.</p>
+                  ) : (
+                    jobs.map((job) => (
+                      <div key={`photos-${job.id}`} style={{ marginTop: 12 }}>
+                        <strong>{job.title}</strong>
+                        <div style={{ marginTop: 8 }}>
+                          <PhotoGallery
+                            jobId={job.id}
+                            refreshKey={0}
+                            canView={photoAccessByJob[job.id] !== false}
+                            customerOnly
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
 
             {tab === 'invoices' && (

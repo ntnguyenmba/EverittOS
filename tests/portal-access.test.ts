@@ -17,7 +17,7 @@ describe('portal navigation menus', () => {
 
   it('customer menu stays limited to portal sections', () => {
     const labels = clientNavItems().map((item) => item.label);
-    assert.deepEqual(labels, ['Overview', 'My jobs', 'Schedule', 'Invoices', 'Account']);
+    assert.deepEqual(labels, ['Overview', 'Appointments', 'Schedule', 'Reports', 'Invoices', 'Account']);
     assert.equal(CLIENT_SETTINGS_PATH, '/portal/client/settings');
     assert.equal(
       clientNavItems().some((item) => /team|analytics|expense|quickbooks/i.test(item.label)),

@@ -105,6 +105,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const rangeLabel = copy.ranges[range];
   const isEnglish = locale === 'en';
 
+  const expectedProfit = activeMetrics.estimatedProfit ?? activeMetrics.netEstimateThisMonth ?? 0;
+
   const primaryItems: MetricItem[] = [
     {
       label: copy.money.collected,
@@ -113,22 +115,22 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       help: copy.money.collectedHelp
     },
     {
-      label: isEnglish ? 'Still Owed' : copy.money.outstanding,
+      label: isEnglish ? 'Outstanding' : copy.money.outstanding,
       value: formatCurrency(stillOwed),
       href: DASHBOARD_LINKS.stillOwed,
       help: copy.money.outstandingHelp
-    },
-    {
-      label: isEnglish ? 'Paid to Contractors' : copy.money.contractorPayPaid,
-      value: formatCurrency(contractorPaid),
-      href: DASHBOARD_LINKS.contractorPay,
-      help: copy.money.contractorPayPaidHelp
     },
     {
       label: isEnglish ? 'Cash Available' : copy.money.cashAfterCosts,
       value: formatCurrency(cashAfterPaidCosts),
       href: DASHBOARD_LINKS.cashAfterExpenses,
       help: copy.money.cashAfterCostsHelp
+    },
+    {
+      label: isEnglish ? 'Expected Profit' : copy.money.expectedProfit,
+      value: formatCurrency(expectedProfit),
+      href: DASHBOARD_LINKS.estimatedProfit,
+      help: copy.money.expectedProfitHelp
     }
   ];
 
@@ -148,6 +150,14 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       hideWhenZero: true,
       href: DASHBOARD_LINKS.completedJobs,
       help: copy.money.uninvoicedWorkHelp
+    },
+    {
+      label: isEnglish ? 'Paid to Contractors' : copy.money.contractorPayPaid,
+      value: formatCurrency(contractorPaid),
+      rawValue: contractorPaid,
+      hideWhenZero: true,
+      href: DASHBOARD_LINKS.contractorPay,
+      help: copy.money.contractorPayPaidHelp
     },
     {
       label: isEnglish ? 'Contractors Owed' : copy.money.contractorPayOwed,

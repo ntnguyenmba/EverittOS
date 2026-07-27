@@ -17,6 +17,11 @@ const initialState: IntegrationState = {
   attention: false
 };
 
+type DashboardIntegrationOverviewProps = {
+  /** When true, hide healthy connected integrations and only surface issues. */
+  attentionOnly?: boolean;
+};
+
 async function readPayload(url: string): Promise<Record<string, unknown>> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 7000);
@@ -64,14 +69,14 @@ function IntegrationCard({ name, state, href }: { name: string; state: Integrati
       href={href}
       className="card"
       style={{
-        minHeight: 150,
+        minHeight: 120,
         minWidth: 0,
-        padding: 18,
+        padding: 16,
         textDecoration: 'none',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        gap: 14,
+        gap: 12,
         overflow: 'hidden',
         borderColor: state.attention ? '#fdba74' : undefined
       }}
@@ -97,16 +102,19 @@ function IntegrationCard({ name, state, href }: { name: string; state: Integrati
             {state.label}
           </span>
         </div>
-        <p className="muted" style={{ margin: '10px 0 0', overflowWrap: 'anywhere' }}>{state.detail}</p>
+        <p className="muted" style={{ margin: '10px 0 0', overflowWrap: 'anywhere' }}>
+          {state.detail}
+        </p>
       </div>
-      <span style={{ color: 'var(--accent, #274c63)', fontWeight: 700, overflowWrap: 'anywhere' }}>Manage →</span>
+      <span style={{ color: 'var(--accent, #274c63)', fontWeight: 700 }}>Open Settings →</span>
     </Link>
   );
 }
 
-export function DashboardIntegrationOverview() {
+export function DashboardIntegrationOverview({ attentionOnly = false }: DashboardIntegrationOverviewProps) {
   const [google, setGoogle] = useState<IntegrationState>(initialState);
   const [quickBooks, setQuickBooks] = useState<IntegrationState>(initialState);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -123,41 +131,63 @@ export function DashboardIntegrationOverview() {
         const payload = googleResult.value;
         const connected = Boolean(payload.connected);
         const health = typeof payload.health === 'string' ? payload.health : '';
-        const attention = health === 'reconnect_required' || health === 'token_expired' || Boolean(payload.lastSyncError);
+        const attention =
+          health === 'reconnect_required' || health === 'token_expired' || Boolean(payload.lastSyncError);
         const lastSync = formatRecentTime(payload.lastSyncAt);
         setGoogle({
           connected,
-          attention,
+          attention: attention || !connected,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
             ? 'Reconnect to resume automatic updates.'
             : connected
-              ? lastSync ? `Last synced ${lastSync}.` : 'Ready to sync scheduled jobs.'
-              : 'Connect to sync scheduled jobs automatically.'
+              ? lastSync
+                ? `Last synced ${lastSync}.`
+                : 'Ready to sync scheduled jobs.'
+              : 'Connect in Settings → Integrations.'
         });
       } else {
-        setGoogle({ label: 'Unavailable', detail: 'Status is temporarily unavailable.', connected: false, attention: true });
+        setGoogle({
+          label: 'Unavailable',
+          detail: 'Status is temporarily unavailable.',
+          connected: false,
+          attention: true
+        });
       }
 
       if (quickBooksResult.status === 'fulfilled') {
         const payload = quickBooksResult.value;
         const connection = (payload.connection || {}) as Record<string, unknown>;
         const connected = connection.status === 'connected';
-        const attention = Boolean(payload.needsReconnect || connection.needsReconnect || connection.status === 'error' || connection.last_error);
+        const attention = Boolean(
+          payload.needsReconnect ||
+            connection.needsReconnect ||
+            connection.status === 'error' ||
+            connection.last_error
+        );
         const lastSync = formatRecentTime(connection.last_sync_at);
         setQuickBooks({
           connected,
-          attention,
+          attention: attention || !connected,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
             ? 'Reconnect to resume syncing.'
             : connected
-              ? lastSync ? `Last synced ${lastSync}.` : 'Ready to sync customers and invoices.'
-              : 'Connect to sync eligible customers and invoices.'
+              ? lastSync
+                ? `Last synced ${lastSync}.`
+                : 'Ready to sync customers and invoices.'
+              : 'Connect in Settings → Integrations.'
         });
       } else {
-        setQuickBooks({ label: 'Unavailable', detail: 'Status is temporarily unavailable.', connected: false, attention: true });
+        setQuickBooks({
+          label: 'Unavailable',
+          detail: 'Status is temporarily unavailable.',
+          connected: false,
+          attention: true
+        });
       }
+
+      setLoaded(true);
     }
 
     void load();
@@ -166,14 +196,37 @@ export function DashboardIntegrationOverview() {
     };
   }, []);
 
+  const cards = [
+    { name: 'Google Calendar', state: google },
+    { name: 'QuickBooks', state: quickBooks }
+  ].filter((card) => {
+    if (!attentionOnly) return true;
+    if (!loaded) return false;
+    return card.state.attention || !card.state.connected;
+  });
+
+  if (attentionOnly && loaded && cards.length === 0) {
+    return null;
+  }
+
+  if (attentionOnly && !loaded) {
+    return null;
+  }
+
   return (
-    <section aria-label="Integration status" style={{ minHeight: 0 }}>
+    <section aria-label="Integration attention" style={{ minHeight: 0 }}>
       <div className="dashboard-section-head">
         <div>
-          <h2>Integrations</h2>
-          <p className="page-subtitle" style={{ marginBottom: 0 }}>Connection status and latest sync activity.</p>
+          <h2>{attentionOnly ? 'Needs attention' : 'Integrations'}</h2>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>
+            {attentionOnly
+              ? 'Disconnected or failed integrations. Healthy connections stay in Settings.'
+              : 'Connection status and latest sync activity.'}
+          </p>
         </div>
-        <Link className="btn btn-sm" href="/settings/integrations">Manage integrations</Link>
+        <Link className="btn btn-sm" href="/settings/integrations">
+          Manage integrations
+        </Link>
       </div>
       <div
         className="stats-grid"
@@ -182,8 +235,9 @@ export function DashboardIntegrationOverview() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))'
         }}
       >
-        <IntegrationCard name="Google Calendar" state={google} href="/settings/integrations" />
-        <IntegrationCard name="QuickBooks" state={quickBooks} href="/settings/integrations" />
+        {cards.map((card) => (
+          <IntegrationCard key={card.name} name={card.name} state={card.state} href="/settings/integrations" />
+        ))}
       </div>
     </section>
   );

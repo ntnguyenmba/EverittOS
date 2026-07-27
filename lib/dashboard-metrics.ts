@@ -517,7 +517,12 @@ export function calculatePaidToYou(input: {
     }
   }
 
+  // Direct job payments count only for jobs that do not already have a collectible invoice.
+  // This prevents counting the same customer money twice when a job later gets invoiced.
+  const invoicedJobIds = collectibleInvoicedJobIds(invoices);
   for (const row of jobPaymentRows) {
+    const jobId = String(row.job_id || '');
+    if (jobId && invoicedJobIds.has(jobId)) continue;
     if (range === 'all_time') {
       paidToYou += num(row.amount);
       continue;

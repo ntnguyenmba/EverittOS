@@ -14,7 +14,18 @@ import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { canManageOrganizationSettings, isClientRole, isContractorRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { canAccessNavHref } from '@/lib/nav-access';
+import {
+  canManageOrganizationSettings,
+  canViewTeam,
+  isAdminRole,
+  isClientRole,
+  isContractorRole,
+  isManagerRole,
+  isStaffRole,
+  normalizeRole,
+  type UserRole
+} from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -90,12 +101,30 @@ function DashboardAccessNotice() {
 
 function OverviewCard({ label, value, href }: { label: string; value: number; href: string }) {
   return (
-    <Link href={href} className="stat-card" style={{ minHeight: 112, textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    <Link
+      href={href}
+      className="stat-card"
+      style={{
+        minHeight: 104,
+        textDecoration: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
       <span>{label}</span>
       <strong>{value}</strong>
     </Link>
   );
 }
+
+type OpsCounts = {
+  activeJobs: number;
+  todayJobs: number;
+  openLeads: number;
+  teamWorkingToday: number;
+  customers: number;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -106,7 +135,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [counts, setCounts] = useState({ jobs: 0, customers: 0, photos: 0, reports: 0, team: 0, activeJobs: 0, completedJobs: 0, openLeads: 0 });
+  const [ops, setOps] = useState<OpsCounts>({
+    activeJobs: 0,
+    todayJobs: 0,
+    openLeads: 0,
+    teamWorkingToday: 0,
+    customers: 0
+  });
 
   async function loadDashboard() {
     setLoading(true);
@@ -153,6 +188,7 @@ export default function DashboardPage() {
     const organizationId = organization?.organizationId || null;
     const scopeColumn = organizationId ? 'organization_id' : 'user_id';
     const scopeValue = organizationId || user.id;
+    const today = new Date().toISOString().slice(0, 10);
 
     const [nextRevenue, usage, jobsResult, customersResult] = await Promise.all([
       canAccessFinancials(nextRole, nextPlan)
@@ -168,7 +204,11 @@ export default function DashboardPage() {
         locations: 0
       }),
       withTimeout(
-        supabase.from('jobs').select('id, status').eq(scopeColumn, scopeValue).limit(5000),
+        supabase
+          .from('jobs')
+          .select('id, status, start_date, due_date, scheduled_start, assigned_to')
+          .eq(scopeColumn, scopeValue)
+          .limit(5000),
         { data: [], error: new Error('Jobs timed out') }
       ),
       withTimeout(
@@ -177,35 +217,42 @@ export default function DashboardPage() {
       )
     ]);
 
-    const jobs = (jobsResult.data || []) as Array<{ status: string | null }>;
-    const customers = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
-    const reconciledExpectedRevenue = Number(
-      Math.max(nextRevenue.expectedRevenue, nextRevenue.paidToYou + nextRevenue.stillOwed).toFixed(2)
-    );
-    const reconciledExpectedProfit = Number(
-      (
-        reconciledExpectedRevenue -
-        (nextRevenue.contractorPayThisMonth || 0) -
-        (nextRevenue.otherExpensesThisMonth || 0)
-      ).toFixed(2)
-    );
-    const reconciledRevenue: DashboardRevenueMetrics = {
-      ...nextRevenue,
-      expectedRevenue: reconciledExpectedRevenue,
-      estimatedProfit: reconciledExpectedProfit,
-      netEstimateThisMonth: reconciledExpectedProfit
-    };
+    const jobs = (jobsResult.data || []) as Array<{
+      status: string | null;
+      start_date?: string | null;
+      due_date?: string | null;
+      scheduled_start?: string | null;
+      assigned_to?: string | null;
+    }>;
+    const customers = (customersResult.data || []) as Array<{
+      record_type: string | null;
+      pipeline_stage: string | null;
+    }>;
 
-    setRevenue(reconciledRevenue);
-    setCounts({
-      jobs: usage.jobs,
-      customers: usage.customers,
-      photos: usage.photos,
-      reports: usage.reports,
-      team: usage.teamMembers,
-      activeJobs: jobs.filter((job) => !['completed', 'cancelled'].includes(job.status || '')).length,
-      completedJobs: jobs.filter((job) => job.status === 'completed').length,
-      openLeads: customers.filter((row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')).length
+    const activeJobs = jobs.filter((job) => !['completed', 'cancelled'].includes(job.status || ''));
+    const todayJobs = activeJobs.filter((job) => {
+      const date =
+        (job.scheduled_start || '').slice(0, 10) ||
+        (job.start_date || '').slice(0, 10) ||
+        (job.due_date || '').slice(0, 10);
+      return date === today;
+    });
+    const teamWorkingToday = new Set(
+      todayJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)
+    ).size;
+
+    // Trust metric helpers — do not recompute expected revenue from mixed period/outstanding totals.
+    setRevenue(nextRevenue);
+    setOps({
+      activeJobs: activeJobs.length,
+      todayJobs: todayJobs.length,
+      openLeads: customers.filter(
+        (row) =>
+          row.record_type === 'lead' &&
+          !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
+      ).length,
+      teamWorkingToday,
+      customers: usage.customers
     });
 
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
@@ -220,86 +267,157 @@ export default function DashboardPage() {
     return (
       <main className="today-page dashboard-home" aria-busy="true">
         <section className="card" style={{ padding: 24 }}>
-          <p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p>
+          <p className="loading-state" style={{ margin: 0 }}>
+            {t('common.loading')}
+          </p>
         </section>
       </main>
     );
   }
 
   const staffView = isStaffRole(role);
+  const ownerView = isAdminRole(role);
+  const managerView = isManagerRole(role) && !ownerView;
+  const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan);
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
-      <Suspense><DashboardAccessNotice /></Suspense>
+      <Suspense>
+        <DashboardAccessNotice />
+      </Suspense>
 
       <div className="today-page dashboard-home">
         <PageHeader
-          title={staffView ? t('dashboard.myWork') : t('dashboard.welcome')}
-          subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')}
+          title={
+            staffView
+              ? t('dashboard.myWork')
+              : managerView
+                ? 'Operations today'
+                : t('dashboard.welcome')
+          }
+          subtitle={
+            staffView
+              ? t('dashboard.myWorkSubtitle')
+              : managerView
+                ? 'Today’s jobs, schedule, customers, and team activity.'
+                : 'Cash, work, and what needs attention.'
+          }
         />
 
         {loadError ? (
-          <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-            <p style={{ margin: 0 }}>Some information could not load. The available dashboard information is shown below.</p>
+          <section
+            className="card"
+            role="status"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
+          >
+            <p style={{ margin: 0 }}>Some information could not load. Available dashboard numbers are shown below.</p>
             <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
               {loading ? 'Loading...' : 'Retry'}
             </button>
           </section>
         ) : null}
 
-        {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
-        {canManageOrganizationSettings(role) ? <DashboardIntegrationOverview /> : null}
+        {ownerView && canAccessFinancials(role, plan) ? (
+          <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
+        ) : null}
 
-        <section
-          className="card"
-          aria-label="Operations overview"
-          style={{ minHeight: 0, height: 'auto', overflow: 'visible' }}
-        >
-          <div className="dashboard-section-head">
-            <div>
-              <h2>Operations overview</h2>
-              <p className="page-subtitle" style={{ marginBottom: 0 }}>Your current jobs, customers, leads, photos, reports, and team.</p>
+        {ownerView && canManageOrganizationSettings(role) ? (
+          <DashboardIntegrationOverview attentionOnly />
+        ) : null}
+
+        {!staffView ? (
+          <section className="card" aria-label={managerView ? 'Manager overview' : 'Work overview'} style={{ minHeight: 0 }}>
+            <div className="dashboard-section-head">
+              <div>
+                <h2>{managerView ? 'Today’s work' : 'Work overview'}</h2>
+                <p className="page-subtitle" style={{ marginBottom: 0 }}>
+                  {managerView
+                    ? 'Operational snapshot for the day ahead.'
+                    : 'Active work and today’s schedule.'}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div
-            className="stats-grid"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: 14,
-              width: '100%',
-              height: 'auto',
-              overflow: 'visible',
-              alignItems: 'stretch'
-            }}
-          >
-            <OverviewCard label="Active jobs" value={counts.activeJobs} href="/jobs?status=active" />
-            <OverviewCard label="Completed jobs" value={counts.completedJobs} href="/jobs?status=completed" />
-            <OverviewCard label="Open leads" value={counts.openLeads} href="/leads?status=open" />
-            <OverviewCard label="Customers" value={counts.customers} href="/customers" />
-            <OverviewCard label="Photos" value={counts.photos} href="/photos" />
-            <OverviewCard label="Reports" value={counts.reports} href="/reports" />
-            <OverviewCard label="Team members" value={counts.team} href="/people" />
-            <OverviewCard label="All jobs" value={counts.jobs} href="/jobs" />
-          </div>
-        </section>
-
-        <section className="card" style={{ minHeight: 0 }}>
-          <div className="dashboard-section-head">
-            <div>
-              <h2>Quick actions</h2>
-              <p className="page-subtitle" style={{ marginBottom: 0 }}>Go directly to the work you need.</p>
+            <div
+              className="stats-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 14,
+                width: '100%'
+              }}
+            >
+              {canLink('/jobs') ? (
+                <OverviewCard label="Active Jobs" value={ops.activeJobs} href="/jobs?status=active" />
+              ) : null}
+              {canLink('/schedule') ? (
+                <OverviewCard label="Today's Schedule" value={ops.todayJobs} href="/schedule" />
+              ) : null}
+              {canLink('/leads') ? (
+                <OverviewCard label="Open Leads" value={ops.openLeads} href="/leads?status=open" />
+              ) : null}
+              {canViewTeam(role) && canLink('/people') ? (
+                <OverviewCard label="Team Working Today" value={ops.teamWorkingToday} href="/people" />
+              ) : null}
+              {managerView && canLink('/customers') ? (
+                <OverviewCard label="Customers" value={ops.customers} href="/customers" />
+              ) : null}
             </div>
-          </div>
-          <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-            <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
-            <Link className="btn" href="/customers/new">Add customer</Link>
-            <Link className="btn" href="/leads/new">Add lead</Link>
-            <Link className="btn" href="/schedule">Open schedule</Link>
-            <Link className="btn" href="/invoices">Open invoices</Link>
-          </div>
-        </section>
+
+            {ops.activeJobs === 0 && ops.todayJobs === 0 ? (
+              <p className="muted" style={{ marginTop: 16 }}>
+                {managerView
+                  ? 'No active jobs yet. Create a job or open the schedule to get the day started.'
+                  : 'No active jobs yet. Create a job to start tracking work.'}
+              </p>
+            ) : null}
+          </section>
+        ) : (
+          <section className="card" aria-label="My work">
+            <div className="dashboard-section-head">
+              <div>
+                <h2>My work</h2>
+                <p className="page-subtitle" style={{ marginBottom: 0 }}>Your assigned jobs and today’s schedule.</p>
+              </div>
+            </div>
+            <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
+              <Link className="btn btn-primary" href="/jobs?mine=true">
+                My jobs
+              </Link>
+              <Link className="btn" href="/schedule">
+                Schedule
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {(ownerView || managerView) && !staffView ? (
+          <section className="card" style={{ minHeight: 0 }}>
+            <div className="dashboard-section-head">
+              <div>
+                <h2>Quick actions</h2>
+                <p className="page-subtitle" style={{ marginBottom: 0 }}>Common next steps.</p>
+              </div>
+            </div>
+            <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+              {canLink('/jobs') ? (
+                <Link className="btn btn-primary" href="/jobs/new">
+                  New Job
+                </Link>
+              ) : null}
+              {canLink('/customers') ? (
+                <Link className="btn" href="/customers/new">
+                  New Customer
+                </Link>
+              ) : null}
+              {canLink('/schedule') ? (
+                <Link className="btn" href="/schedule">
+                  Schedule
+                </Link>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
       </div>
     </AppShell>
   );

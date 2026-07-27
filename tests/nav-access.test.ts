@@ -95,7 +95,9 @@ describe('settings links by role', () => {
 
     const managerLinks = settingsLinksForRole('manager', 'business');
     assert.equal(managerLinks.some((link) => link.href === '/settings/billing'), false);
+    assert.equal(managerLinks.some((link) => link.href === '/settings/integrations'), false);
     assert.ok(managerLinks.some((link) => link.href === '/settings/account'));
+    assert.ok(managerLinks.some((link) => link.href === '/settings/notifications'));
   });
 });
 

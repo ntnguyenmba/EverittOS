@@ -175,6 +175,7 @@ export function AppNavItems({
             key={section.id}
             className={`nav-section${index > 0 ? ' nav-section-spaced' : ''}`}
           >
+            <p className="nav-section-label">{section.label}</p>
             {visibleItems.map(({ label, href, resolution }) => (
               <NavLinkRow
                 key={href}
