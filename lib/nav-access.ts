@@ -10,6 +10,7 @@ import {
   canManageOrganizationSettings,
   canViewTeam,
   isClientRole,
+  isContractorRole,
   type UserRole
 } from '@/lib/roles';
 
@@ -38,11 +39,15 @@ function navPath(href: string): string {
 
 /** Role-only gate: should this item appear in navigation at all? */
 export function canShowNavHref(role: UserRole, href: string): boolean {
+  const path = navPath(href);
+
   if (isClientRole(role)) {
-    return href === '/portal/client';
+    return path === '/portal/client';
   }
 
-  const path = navPath(href);
+  if (isContractorRole(role)) {
+    return path === '/portal/contractor';
+  }
 
   switch (path) {
     case '/dashboard':
@@ -71,6 +76,7 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/inventory':
     case '/routes':
     case '/workflows':
+    case '/invoices':
       return canSeeOrgWideData(role);
     case '/people':
     case '/team':
@@ -82,9 +88,9 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/settings':
       return canManageOrganizationSettings(role);
     case '/portal/contractor':
-      return role === 'contractor';
+      return false;
     case '/portal/client':
-      return isClientRole(role);
+      return false;
     default:
       if (path.startsWith('/jobs/')) return hasPermission(role, 'view_assigned_jobs');
       if (path.startsWith('/settings/')) return canAccessSettingsPathByRole(role, path);
@@ -93,14 +99,8 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
 }
 
 function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
-  if (isClientRole(role)) {
-    return (
-      path.startsWith('/settings/account') ||
-      path.startsWith('/settings/security') ||
-      path.startsWith('/settings/privacy') ||
-      path.startsWith('/settings/notifications') ||
-      path.startsWith('/settings/support')
-    );
+  if (isClientRole(role) || isContractorRole(role)) {
+    return false;
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
   if (path.startsWith('/settings/ai-usage')) return canManageBilling(role);
@@ -245,8 +245,8 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
 export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): SettingsNavLink[] {
   const normalizedPlan = normalizePlan(plan);
 
-  if (isClientRole(role)) {
-    return SETTINGS_NAV_LINKS.filter((link) => link.href === '/settings/account');
+  if (isClientRole(role) || isContractorRole(role)) {
+    return [];
   }
 
   return SETTINGS_NAV_LINKS.filter((link) => {
