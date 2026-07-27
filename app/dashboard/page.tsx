@@ -124,8 +124,6 @@ export default function DashboardPage() {
       return;
     }
 
-    setReady(true);
-
     const [profileResult, organization] = await Promise.all([
       withTimeout(
         supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
@@ -137,8 +135,6 @@ export default function DashboardPage() {
 
     const nextPlan = normalizePlan(profileResult.data?.plan);
     const nextRole = normalizeRole(organization?.role || profileResult.data?.role);
-    setPlan(nextPlan);
-    setRole(nextRole);
 
     if (isClientRole(nextRole)) {
       router.replace('/portal/client');
@@ -148,6 +144,10 @@ export default function DashboardPage() {
       router.replace('/portal/contractor');
       return;
     }
+
+    setPlan(nextPlan);
+    setRole(nextRole);
+    setReady(true);
 
     const organizationId = organization?.organizationId || null;
     const scopeColumn = organizationId ? 'organization_id' : 'user_id';
@@ -215,6 +215,16 @@ export default function DashboardPage() {
     void loadDashboard();
   }, []);
 
+  if (!ready) {
+    return (
+      <main className="today-page dashboard-home" aria-busy="true">
+        <section className="card" style={{ padding: 24 }}>
+          <p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p>
+        </section>
+      </main>
+    );
+  }
+
   const staffView = isStaffRole(role);
 
   return (
@@ -227,76 +237,68 @@ export default function DashboardPage() {
           subtitle={staffView ? t('dashboard.myWorkSubtitle') : t('dashboard.navSubtitle')}
         />
 
-        {!ready ? (
-          <section className="card" aria-busy="true" style={{ padding: 24 }}>
-            <p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p>
+        {loadError ? (
+          <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <p style={{ margin: 0 }}>Some information could not load. The available dashboard information is shown below.</p>
+            <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
+              {loading ? 'Loading...' : 'Retry'}
+            </button>
           </section>
-        ) : (
-          <>
-            {loadError ? (
-              <section className="card" role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <p style={{ margin: 0 }}>Some information could not load. The available dashboard information is shown below.</p>
-                <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
-                  {loading ? 'Loading...' : 'Retry'}
-                </button>
-              </section>
-            ) : null}
+        ) : null}
 
-            {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
-            {canManageOrganizationSettings(role) ? <DashboardIntegrationOverview /> : null}
+        {canAccessFinancials(role, plan) ? <DashboardRevenueSnapshot metrics={revenue} loading={loading} /> : null}
+        {canManageOrganizationSettings(role) ? <DashboardIntegrationOverview /> : null}
 
-            <section
-              className="card"
-              aria-label="Operations overview"
-              style={{ minHeight: 0, height: 'auto', overflow: 'visible' }}
-            >
-              <div className="dashboard-section-head">
-                <div>
-                  <h2>Operations overview</h2>
-                  <p className="page-subtitle" style={{ marginBottom: 0 }}>Your current jobs, customers, leads, photos, reports, and team.</p>
-                </div>
-              </div>
+        <section
+          className="card"
+          aria-label="Operations overview"
+          style={{ minHeight: 0, height: 'auto', overflow: 'visible' }}
+        >
+          <div className="dashboard-section-head">
+            <div>
+              <h2>Operations overview</h2>
+              <p className="page-subtitle" style={{ marginBottom: 0 }}>Your current jobs, customers, leads, photos, reports, and team.</p>
+            </div>
+          </div>
 
-              <div
-                className="stats-grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                  gap: 14,
-                  width: '100%',
-                  height: 'auto',
-                  overflow: 'visible',
-                  alignItems: 'stretch'
-                }}
-              >
-                <OverviewCard label="Active jobs" value={counts.activeJobs} href="/jobs?status=active" />
-                <OverviewCard label="Completed jobs" value={counts.completedJobs} href="/jobs?status=completed" />
-                <OverviewCard label="Open leads" value={counts.openLeads} href="/leads?status=open" />
-                <OverviewCard label="Customers" value={counts.customers} href="/customers" />
-                <OverviewCard label="Photos" value={counts.photos} href="/photos" />
-                <OverviewCard label="Reports" value={counts.reports} href="/reports" />
-                <OverviewCard label="Team members" value={counts.team} href="/people" />
-                <OverviewCard label="All jobs" value={counts.jobs} href="/jobs" />
-              </div>
-            </section>
+          <div
+            className="stats-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 14,
+              width: '100%',
+              height: 'auto',
+              overflow: 'visible',
+              alignItems: 'stretch'
+            }}
+          >
+            <OverviewCard label="Active jobs" value={counts.activeJobs} href="/jobs?status=active" />
+            <OverviewCard label="Completed jobs" value={counts.completedJobs} href="/jobs?status=completed" />
+            <OverviewCard label="Open leads" value={counts.openLeads} href="/leads?status=open" />
+            <OverviewCard label="Customers" value={counts.customers} href="/customers" />
+            <OverviewCard label="Photos" value={counts.photos} href="/photos" />
+            <OverviewCard label="Reports" value={counts.reports} href="/reports" />
+            <OverviewCard label="Team members" value={counts.team} href="/people" />
+            <OverviewCard label="All jobs" value={counts.jobs} href="/jobs" />
+          </div>
+        </section>
 
-            <section className="card" style={{ minHeight: 0 }}>
-              <div className="dashboard-section-head">
-                <div>
-                  <h2>Quick actions</h2>
-                  <p className="page-subtitle" style={{ marginBottom: 0 }}>Go directly to the work you need.</p>
-                </div>
-              </div>
-              <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-                <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
-                <Link className="btn" href="/customers/new">Add customer</Link>
-                <Link className="btn" href="/leads/new">Add lead</Link>
-                <Link className="btn" href="/schedule">Open schedule</Link>
-                <Link className="btn" href="/invoices">Open invoices</Link>
-              </div>
-            </section>
-          </>
-        )}
+        <section className="card" style={{ minHeight: 0 }}>
+          <div className="dashboard-section-head">
+            <div>
+              <h2>Quick actions</h2>
+              <p className="page-subtitle" style={{ marginBottom: 0 }}>Go directly to the work you need.</p>
+            </div>
+          </div>
+          <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+            <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+            <Link className="btn" href="/customers/new">Add customer</Link>
+            <Link className="btn" href="/leads/new">Add lead</Link>
+            <Link className="btn" href="/schedule">Open schedule</Link>
+            <Link className="btn" href="/invoices">Open invoices</Link>
+          </div>
+        </section>
       </div>
     </AppShell>
   );
