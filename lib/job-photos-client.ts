@@ -42,16 +42,28 @@ export async function attachSignedUrls(
   );
 }
 
-async function selectJobPhotos(supabase: SupabaseClient, jobId: string) {
-  const full = await supabase
+async function selectJobPhotos(supabase: SupabaseClient, jobId: string, customerOnly = false) {
+  let fullQuery = supabase
     .from('job_photos')
     .select(JOB_PHOTO_SELECT)
-    .eq('job_id', jobId)
-    .order('created_at', { ascending: false });
+    .eq('job_id', jobId);
+
+  if (customerOnly) {
+    fullQuery = fullQuery.eq('customer_visible', true);
+  }
+
+  const full = await fullQuery.order('created_at', { ascending: false });
 
   if (!full.error) return full;
 
   if (isMissingSchemaError(full.error)) {
+    if (customerOnly) {
+      return {
+        data: [],
+        error: new Error('Customer photo visibility is not configured yet.')
+      };
+    }
+
     return supabase
       .from('job_photos')
       .select(JOB_PHOTO_SELECT_MINIMAL)
@@ -64,9 +76,10 @@ async function selectJobPhotos(supabase: SupabaseClient, jobId: string) {
 
 export async function fetchJobPhotosWithUrls(
   supabase: SupabaseClient,
-  jobId: string
+  jobId: string,
+  options?: { customerOnly?: boolean }
 ): Promise<{ photos: JobPhotoView[]; error: string | null }> {
-  const { data, error } = await selectJobPhotos(supabase, jobId);
+  const { data, error } = await selectJobPhotos(supabase, jobId, options?.customerOnly === true);
 
   if (error) {
     return { photos: [], error: error.message };
