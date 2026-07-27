@@ -17,6 +17,8 @@ type PhotoGalleryProps = {
   showMetadata?: boolean;
   /** When false, show a message instead of photos (client portal sharing). */
   canView?: boolean;
+  /** Only load photos explicitly marked for customer visibility. */
+  customerOnly?: boolean;
 };
 
 function formatPhotoWhen(value: string | null) {
@@ -29,7 +31,8 @@ export function PhotoGallery({
   refreshKey = 0,
   showComparison = true,
   showMetadata = true,
-  canView = true
+  canView = true,
+  customerOnly = false
 }: PhotoGalleryProps) {
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +48,9 @@ export function PhotoGallery({
     async function load() {
       setLoading(true);
       setError('');
-      const { photos: loaded, error: fetchError } = await fetchJobPhotosWithUrls(supabase, jobId);
+      const { photos: loaded, error: fetchError } = await fetchJobPhotosWithUrls(supabase, jobId, {
+        customerOnly
+      });
       if (fetchError) {
         setError(fetchError);
         setLoading(false);
@@ -56,7 +61,7 @@ export function PhotoGallery({
     }
 
     void load();
-  }, [jobId, refreshKey, canView]);
+  }, [jobId, refreshKey, canView, customerOnly]);
 
   if (!canView) {
     return <p className="muted">Photos are not shared for this job.</p>;
