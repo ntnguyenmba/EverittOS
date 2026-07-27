@@ -178,8 +178,24 @@ export default function DashboardPage() {
 
     const jobs = (jobsResult.data || []) as Array<{ status: string | null }>;
     const customers = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
+    const reconciledExpectedRevenue = Number(
+      Math.max(nextRevenue.expectedRevenue, nextRevenue.paidToYou + nextRevenue.stillOwed).toFixed(2)
+    );
+    const reconciledExpectedProfit = Number(
+      (
+        reconciledExpectedRevenue -
+        (nextRevenue.contractorPayThisMonth || 0) -
+        (nextRevenue.otherExpensesThisMonth || 0)
+      ).toFixed(2)
+    );
+    const reconciledRevenue: DashboardRevenueMetrics = {
+      ...nextRevenue,
+      expectedRevenue: reconciledExpectedRevenue,
+      estimatedProfit: reconciledExpectedProfit,
+      netEstimateThisMonth: reconciledExpectedProfit
+    };
 
-    setRevenue(nextRevenue);
+    setRevenue(reconciledRevenue);
     setCounts({
       jobs: usage.jobs,
       customers: usage.customers,
