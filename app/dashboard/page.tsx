@@ -112,7 +112,7 @@ export default function DashboardPage() {
     setLoading(true);
     setLoadError(false);
 
-    const auth = await withTimeout(
+    const auth = await withTimeout<{ data: { user: { id: string } | null }; error: Error | null }>(
       supabase.auth.getUser(),
       { data: { user: null }, error: new Error('Authentication timed out') },
       5000
@@ -124,8 +124,9 @@ export default function DashboardPage() {
       return;
     }
 
+    type ProfileRow = { plan?: string | null; role?: string | null };
     const [profileResult, organization] = await Promise.all([
-      withTimeout(
+      withTimeout<{ data: ProfileRow | null; error: Error | null }>(
         supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(),
         { data: null, error: new Error('Profile timed out') },
         3500

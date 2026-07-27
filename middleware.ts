@@ -7,7 +7,15 @@ import { meetsMinimumPlan, minimumPlanForPath } from '@/lib/plan-access';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { canAccessNavHref, canAccessSettingsPath } from '@/lib/nav-access';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
-import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
+import {
+  CLIENT_PORTAL_HOME,
+  CONTRACTOR_PORTAL_HOME,
+  isClientAllowedPath,
+  isContractorAllowedPath,
+  isPortalPersonalSettingsPath
+} from '@/lib/portal-access';
+import { defaultPathForRole } from '@/lib/role-routes';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
@@ -30,9 +38,11 @@ const AUTH_PREFIXES = [
   '/people',
   '/settings',
   '/customers',
+  '/crm',
   '/schedule',
   '/onboarding',
   '/team',
+  '/teams',
   '/activity',
   '/analytics',
   '/notifications',
@@ -54,7 +64,15 @@ const AUTH_PREFIXES = [
   '/knowledge',
   '/automations',
   '/clients',
-  '/proposals'
+  '/proposals',
+  '/inventory',
+  '/routes',
+  '/messages',
+  '/estimates',
+  '/my-work',
+  '/contractor-pay',
+  '/staffing',
+  '/operations'
 ];
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
@@ -109,8 +127,15 @@ function redirectWithCookies(url: URL, source: NextResponse) {
   return redirect;
 }
 
-function roleBlockedRedirect(request: NextRequest, source: NextResponse, _pathname?: string, _detail?: string) {
-  return redirectWithCookies(new URL('/dashboard', request.url), source);
+function roleBlockedRedirect(
+  request: NextRequest,
+  source: NextResponse,
+  role?: string | null,
+  _pathname?: string,
+  _detail?: string
+) {
+  const destination = defaultPathForRole(role, '/dashboard');
+  return redirectWithCookies(new URL(destination, request.url), source);
 }
 
 async function resolveOnboardingState(
@@ -243,7 +268,12 @@ export async function middleware(request: NextRequest) {
 
   if (isAccountDeleted(profile?.deleted_at)) {
     const withinRecovery = profile?.deletion_scheduled_at && new Date(profile.deletion_scheduled_at) > new Date();
-    const recoveryPath = pathname.startsWith('/settings/account') || pathname.startsWith('/api/account/restore') || pathname.startsWith('/api/account/profile');
+    const recoveryPath =
+      isPortalPersonalSettingsPath(pathname) ||
+      pathname.startsWith('/portal/contractor/settings') ||
+      pathname.startsWith('/portal/client/settings') ||
+      pathname.startsWith('/api/account/restore') ||
+      pathname.startsWith('/api/account/profile');
     if (!withinRecovery || !recoveryPath) {
       await supabase.auth.signOut();
       const login = new URL('/login', request.url);
@@ -288,21 +318,27 @@ export async function middleware(request: NextRequest) {
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
   if (isClientRole(role)) {
-    if (!pathname.startsWith('/portal/client')) {
-      return redirectWithCookies(new URL('/portal/client', request.url), supabaseResponse);
+    if (!isClientAllowedPath(pathname)) {
+      return redirectWithCookies(new URL(CLIENT_PORTAL_HOME, request.url), supabaseResponse);
     }
     return supabaseResponse;
   }
 
   if (isContractorRole(role)) {
-    if (!pathname.startsWith('/portal/contractor')) {
-      return redirectWithCookies(new URL('/portal/contractor', request.url), supabaseResponse);
+    if (!isContractorAllowedPath(pathname)) {
+      return redirectWithCookies(new URL(CONTRACTOR_PORTAL_HOME, request.url), supabaseResponse);
     }
     return supabaseResponse;
   }
 
   if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) {
-    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Platform admin access is limited to authorized Everitt Ventures operators.');
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      role,
+      pathname,
+      'Platform admin access is limited to authorized Everitt Ventures operators.'
+    );
   }
 
   if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
@@ -316,31 +352,28 @@ export async function middleware(request: NextRequest) {
 
   for (const rule of ROLE_BLOCKED_PREFIXES) {
     if ((pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) && !hasPermission(role, rule.permission)) {
-      return roleBlockedRedirect(request, supabaseResponse, pathname, `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`);
+      return roleBlockedRedirect(
+        request,
+        supabaseResponse,
+        role,
+        pathname,
+        `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`
+      );
     }
   }
 
-  if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers') || pathname.startsWith('/people'))) {
-    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Your role only includes assigned work, not full customer or people lists.');
-  }
-
-  if (!canSeeOrgWideData(role) && (pathname.startsWith('/activity') || pathname.startsWith('/workflows'))) {
-    return roleBlockedRedirect(request, supabaseResponse, pathname, 'Your role cannot access organization-wide activity or workflow settings.');
-  }
-
   if (pathname.startsWith('/settings') && !canAccessSettingsPath(role, pathname, userPlan)) {
-    const detail = pathname.startsWith('/settings/billing')
-      ? 'Billing is limited to workspace owners and admins.'
-      : pathname === '/settings' || pathname.startsWith('/settings?')
-        ? 'Workspace settings are limited to workspace owners and admins.'
-        : `Your role (${role}) cannot access ${pathname}.`;
-    return roleBlockedRedirect(request, supabaseResponse, pathname, detail);
+    const fallback = canAccessSettingsPath(role, '/settings/account', userPlan)
+      ? '/settings/account'
+      : defaultPathForRole(role, '/dashboard');
+    return redirectWithCookies(new URL(fallback, request.url), supabaseResponse);
   }
 
   const mainNavPaths = [
     '/dashboard',
     '/jobs',
     '/customers',
+    '/crm',
     '/projects',
     '/schedule',
     '/knowledge',
@@ -355,6 +388,7 @@ export async function middleware(request: NextRequest) {
     '/workers',
     '/people',
     '/team',
+    '/teams',
     '/activity',
     '/analytics',
     '/workflows',
@@ -363,11 +397,25 @@ export async function middleware(request: NextRequest) {
     '/invoices',
     '/photos',
     '/reports',
-    '/expenses'
+    '/expenses',
+    '/inventory',
+    '/routes',
+    '/messages',
+    '/estimates',
+    '/my-work',
+    '/contractor-pay',
+    '/staffing',
+    '/operations'
   ];
   const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
-    return roleBlockedRedirect(request, supabaseResponse, pathname, `Your role (${role}) cannot access ${matchedNav}.`);
+    return roleBlockedRedirect(
+      request,
+      supabaseResponse,
+      role,
+      pathname,
+      `Your role (${role}) cannot access ${matchedNav}.`
+    );
   }
 
   const requiredPlan = minimumPlanForPath(pathname);
@@ -410,6 +458,7 @@ export const config = {
     '/schedule/:path*',
     '/onboarding/:path*',
     '/team/:path*',
+    '/teams/:path*',
     '/activity/:path*',
     '/analytics/:path*',
     '/notifications/:path*',
@@ -427,6 +476,14 @@ export const config = {
     '/photos/:path*',
     '/reports/:path*',
     '/expenses/:path*',
+    '/inventory/:path*',
+    '/routes/:path*',
+    '/messages/:path*',
+    '/estimates/:path*',
+    '/my-work/:path*',
+    '/contractor-pay/:path*',
+    '/staffing/:path*',
+    '/operations/:path*',
     '/book/:path*',
     '/f/:path*',
     '/login',

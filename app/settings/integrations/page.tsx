@@ -200,6 +200,10 @@ function IntegrationsContent() {
       <div className="settings-card">
         <h3>Google Calendar</h3>
         <p className="muted">Keep scheduled jobs and visit times aligned with Google Calendar.</p>
+        <p className="muted">
+          Calendar events are provided for convenience. Confirm appointment details in EverittOS because external
+          calendar updates may be delayed or affected by provider settings.
+        </p>
 
         {statusError ? (
           <div style={{ marginTop: 12 }}>
@@ -247,6 +251,11 @@ function IntegrationsContent() {
       <div className="settings-card" style={{ marginTop: 20 }}>
         <h3>QuickBooks</h3>
         <p className="muted">Connect eligible customers and invoices to QuickBooks while EverittOS manages daily operations.</p>
+        <p className="muted">
+          QuickBooks synchronization transfers supported records between EverittOS and the connected QuickBooks
+          company. Users are responsible for reviewing accounting classifications, taxes, balances, and reconciliation
+          in QuickBooks. Intuit does not endorse EverittOS.
+        </p>
         <QuickBooksIntegrationPanel canManage={canManageOrganizationSettings(role)} />
       </div>
     </SettingsShell>

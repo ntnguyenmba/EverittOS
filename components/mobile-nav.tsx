@@ -9,7 +9,8 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { dashboardPathForRole } from '@/lib/dashboard-nav';
+import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type MobileNavProps = {
@@ -96,7 +97,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mobile-nav-drawer-head">
-          <BrandLogo href="/dashboard" size={30} showName className="mobile-nav-brand-logo" />
+          <BrandLogo href={dashboardPathForRole(role)} size={30} showName className="mobile-nav-brand-logo" />
           <button type="button" className="btn btn-sm mobile-nav-close-btn" onClick={() => setOpen(false)}>
             {t('common.close')}
           </button>
@@ -107,7 +108,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
             <AppNavItems
               plan={normalized}
               role={role}
-              unread={unread}
+              unread={isClientRole(role) || isContractorRole(role) ? 0 : unread}
               linkClassName="mobile-nav-drawer-link"
               onNavigate={() => setOpen(false)}
             />
@@ -115,7 +116,11 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         </div>
 
         <div className="mobile-nav-drawer-footer">
-          <p className="mobile-nav-settings-note">Account, billing, Google Calendar, and QuickBooks are managed inside Settings.</p>
+          <p className="mobile-nav-settings-note">
+            {isClientRole(role) || isContractorRole(role)
+              ? 'Account, notifications, and legal links are available in Account settings.'
+              : 'Account, billing, Google Calendar, and QuickBooks are managed inside Settings.'}
+          </p>
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
           {!isClientRole(role) ? (
             <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>

@@ -17,7 +17,7 @@ import {
 } from '@/lib/worker-assignment';
 
 export const CONTRACTOR_HOME_PATH = '/portal/contractor';
-export const CONTRACTOR_SETTINGS_PATH = '/settings/account';
+export const CONTRACTOR_SETTINGS_PATH = '/portal/contractor/settings';
 
 export type ContractorLaborRow = {
   id?: string | null;
@@ -102,8 +102,10 @@ export function contractorNavItems(): Array<{ id: string; label: string; href: s
   return [
     { id: 'overview', label: 'Overview', href: `${CONTRACTOR_HOME_PATH}#overview` },
     { id: 'jobs', label: 'My jobs', href: `${CONTRACTOR_HOME_PATH}#jobs` },
+    { id: 'schedule', label: 'Schedule', href: `${CONTRACTOR_HOME_PATH}#schedule` },
     { id: 'earnings', label: 'Earnings', href: `${CONTRACTOR_HOME_PATH}#earnings` },
-    { id: 'profile', label: 'Profile', href: CONTRACTOR_SETTINGS_PATH }
+    { id: 'notifications', label: 'Notifications', href: `${CONTRACTOR_HOME_PATH}#notifications` },
+    { id: 'account', label: 'Account', href: CONTRACTOR_SETTINGS_PATH }
   ];
 }
 

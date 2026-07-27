@@ -56,6 +56,23 @@ export async function GET() {
 
     const canConnect = canManageOrganizationSettings(ctx.workspace.role);
     const configured = quickbooksConfigured();
+
+    if (!canConnect) {
+      return NextResponse.json(
+        {
+          configured,
+          connected: false,
+          canConnect: false,
+          databaseReady: true,
+          connection: null,
+          recentLogs: [],
+          warnings: [],
+          message: 'QuickBooks is managed by workspace owners and admins.'
+        },
+        { headers: NO_CACHE_HEADERS }
+      );
+    }
+
     const admin = createAdminSupabase();
 
     let connectionSafe: {

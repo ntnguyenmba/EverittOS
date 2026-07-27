@@ -9,7 +9,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { Sidebar } from '@/components/sidebar';
 import { UnsavedChangesGuard } from '@/components/unsaved-changes-guard';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
-import { isClientRole, normalizeRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import type { UserRole } from '@/lib/roles';
 
@@ -26,7 +26,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
   const resolvedRole = workspacePlan?.role ?? normalizeRole(role);
   const normalizedRole = normalizeRole(resolvedRole);
-  const showAi = !isClientRole(normalizedRole);
+  const showAi = !isClientRole(normalizedRole) && !isContractorRole(normalizedRole);
 
   return (
     <div className={className ? `dashboard-shell ${className}` : 'dashboard-shell'}>

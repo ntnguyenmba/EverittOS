@@ -3,49 +3,35 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SettingsShell } from '@/components/settings/settings-shell';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { useTranslation } from '@/components/locale-provider';
-import { normalizeStripeStatus, subscriptionStatusMessage } from '@/lib/stripe-subscription';
-import { normalizePlan, planDisplayName } from '@/lib/everittos-plans';
-import { canManageBilling, isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
-import { roleDisplayName } from '@/lib/role-routes';
-import { normalizeAccountStatus } from '@/lib/account-status';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
+import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 const DEFAULT_NOTIFICATIONS = {
   marketingEmails: false,
-  productUpdates: true,
+  productUpdates: false,
   operationalNotifications: true,
   emailNotifications: true,
   pushNotifications: false,
   smsNotifications: false
 };
 
-export default function AccountSettingsPage() {
+type PortalAccountSettingsProps = {
+  variant: 'contractor' | 'client';
+  homeHref: string;
+  legalLinks: Array<{ href: string; label: string }>;
+};
+
+export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalAccountSettingsProps) {
   const router = useRouter();
-  const { t } = useTranslation();
   const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
     successMessage: 'Account settings saved.'
   });
   const [saveMessage, setSaveMessage] = useState('');
-  const {
-    profilePlan,
-    billingPlan,
-    organizationPlan,
-    plan: workspacePlan,
-    role: workspaceRole,
-    subscriptionStatus: workspaceSubscriptionStatus,
-    loading: planLoading
-  } = useWorkspacePlan();
-  const plan = billingPlan ?? profilePlan ?? workspacePlan ?? organizationPlan;
-  const role = workspaceRole ?? normalizeRole('owner');
-  const subscriptionStatus = workspaceSubscriptionStatus || 'free';
-
+  const [role, setRole] = useState<UserRole>(variant === 'client' ? 'client' : 'contractor');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -53,9 +39,9 @@ export default function AccountSettingsPage() {
   const [newEmail, setNewEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [accountStatus, setAccountStatus] = useState('active');
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [loading, setLoading] = useState(true);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -63,7 +49,25 @@ export default function AccountSettingsPage() {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login?next=/settings/account');
+        router.push(`/login?next=${encodeURIComponent(homeHref)}`);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, plan, subscription_status, email, full_name, display_name, phone')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const normalizedRole = normalizeRole(profile?.role);
+      setRole(normalizedRole);
+
+      if (variant === 'contractor' && !isContractorRole(normalizedRole)) {
+        router.replace(homeHref);
+        return;
+      }
+      if (variant === 'client' && !isClientRole(normalizedRole)) {
+        router.replace(homeHref);
         return;
       }
 
@@ -72,25 +76,25 @@ export default function AccountSettingsPage() {
       if (res.ok) {
         setFirstName(json.firstName || '');
         setLastName(json.lastName || '');
-        setDisplayName(json.displayName || '');
-        setEmail(json.email || user.email || '');
-        setPhone(json.phone || '');
-        setNotifications(json.notifications || DEFAULT_NOTIFICATIONS);
+        setDisplayName(json.displayName || profile?.display_name || profile?.full_name || '');
+        setEmail(json.email || profile?.email || user.email || '');
+        setPhone(json.phone || profile?.phone || '');
+        setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(json.notifications || {}) });
       } else {
-        setEmail(user.email || '');
+        setEmail(profile?.email || user.email || '');
+        setDisplayName(profile?.display_name || profile?.full_name || '');
+        setPhone(profile?.phone || '');
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('account_status')
-        .eq('id', user.id)
-        .maybeSingle();
-      setAccountStatus(normalizeAccountStatus(profile?.account_status));
+      const status = String(profile?.subscription_status || '').toLowerCase();
+      setHasActiveSubscription(
+        Boolean(profile?.plan && profile.plan !== 'free' && ['active', 'trialing', 'past_due', 'unpaid'].includes(status))
+      );
       setLoading(false);
     }
 
     void load();
-  }, [router]);
+  }, [homeHref, router, variant]);
 
   async function saveProfile() {
     const ok = await runResponse(() =>
@@ -113,25 +117,15 @@ export default function AccountSettingsPage() {
     setNewEmail('');
   }
 
-  if (loading || planLoading || !plan) {
-    return (
-      <SettingsShell plan={plan || 'free'} role={role} title={t('settingsNav.account')}>
-        <p>{t('common.loading')}</p>
-      </SettingsShell>
-    );
+  if (loading) {
+    return <div className="card">Loading account settings…</div>;
   }
 
-  const canBilling = canManageBilling(role);
-  const activeSubscriptionStatuses = new Set(['active', 'trialing', 'past_due', 'unpaid', 'paused', 'incomplete']);
-  const hasActiveSubscription =
-    normalizePlan(plan) !== 'free' && activeSubscriptionStatuses.has(normalizeStripeStatus(subscriptionStatus));
-  const isPortalMember = isClientRole(role) || isContractorRole(role);
-
   return (
-    <SettingsShell plan={plan} role={role} title={t('settingsNav.account')} description={t('settings.account.description')}>
+    <div className="portal-account-settings">
       <div className="settings-card form settings-form-grid">
         <h3>Profile</h3>
-        <p className="muted">Update how your name and contact details appear across EverittOS.</p>
+        <p className="muted">Update the contact details used for job and account notifications.</p>
         <label className="settings-field">
           <span>First name</span>
           <input className="input" value={firstName} onChange={(event) => setFirstName(event.target.value)} />
@@ -181,7 +175,12 @@ export default function AccountSettingsPage() {
       </div>
 
       <div className="settings-card form settings-form-grid">
-        <h3>Notification preferences</h3>
+        <h3>Notifications</h3>
+        <p className="muted">
+          {variant === 'contractor'
+            ? 'Choose which contractor updates you want by email.'
+            : 'Choose which appointment and invoice updates you want by email.'}
+        </p>
         <label>
           <input
             type="checkbox"
@@ -198,7 +197,7 @@ export default function AccountSettingsPage() {
               setNotifications((current) => ({ ...current, operationalNotifications: event.target.checked }))
             }
           />{' '}
-          Operational updates
+          {variant === 'contractor' ? 'Job and payment updates' : 'Appointment and invoice updates'}
         </label>
         <label>
           <input
@@ -208,94 +207,43 @@ export default function AccountSettingsPage() {
           />{' '}
           Product updates
         </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={notifications.marketingEmails}
-            onChange={(event) => setNotifications((current) => ({ ...current, marketingEmails: event.target.checked }))}
-          />{' '}
-          Marketing emails
-        </label>
       </div>
 
       <div className="settings-card">
-        <h3>{t('settings.account.languageTitle')}</h3>
-        <p className="muted">{t('settings.account.languageNote')}</p>
+        <h3>Language</h3>
         <LanguageSwitcher />
       </div>
 
       <div className="settings-card">
-        <h3>{t('settings.account.profile')}</h3>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('settings.account.role')}</span>
-          <span className="settings-row-value">{roleDisplayName(role)}</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('billing.currentPlan')}</span>
-          <span className="settings-row-value">{planDisplayName(plan)}</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('billing.status')}</span>
-          <span className="settings-row-value">{subscriptionStatus}</span>
-        </div>
-        <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
-        <div className="settings-row">
-          <span className="settings-row-label">{t('settings.account.accountStatus')}</span>
-          <span className="settings-row-value">
-            {accountStatus === 'active' ? t('settings.account.active') : t('settings.account.disabled')}
-          </span>
-        </div>
-        <div className="settings-actions">
-          {canBilling ? (
-            <Link href="/settings/billing" className="btn">
-              {t('settings.account.manageBilling')}
+        <h3>Legal</h3>
+        <p className="muted">Review the policies that apply to your portal access.</p>
+        <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+          {legalLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="btn">
+              {link.label}
             </Link>
-          ) : null}
-          <Link href="/settings/security" className="btn">
-            {t('settingsNav.security')}
-          </Link>
-          {canBilling ? (
-            <Link href="/settings" className="btn">
-              {t('settings.account.workspaceSettings')}
-            </Link>
-          ) : null}
+          ))}
         </div>
       </div>
 
       <div className="settings-card">
-        <h3>Legal</h3>
-        <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <Link href="/privacy" className="btn">
-            Privacy Policy
-          </Link>
-          <Link href="/terms" className="btn">
-            Terms of Service
-          </Link>
-          <Link href="/disclaimer" className="btn">
-            General Disclaimer
-          </Link>
-          {isContractorRole(role) ? (
-            <Link href="/disclaimer/contractor" className="btn">
-              Contractor Disclaimer
-            </Link>
-          ) : null}
-          {isClientRole(role) ? (
-            <Link href="/disclaimer/customer" className="btn">
-              Customer Portal Disclaimer
-            </Link>
-          ) : null}
-        </div>
+        <h3>Calendar</h3>
+        <p className="muted">
+          {variant === 'contractor'
+            ? 'Use Add to Calendar on an assigned job for a one-time calendar event. Organization-wide Google Calendar and QuickBooks connections are managed by the workspace owner.'
+            : 'Use Add to Calendar on your appointments for Google, Outlook, or Apple Calendar. This portal does not include organization integrations.'}
+        </p>
       </div>
 
       <AccountDeleteSection
         hasActiveSubscription={hasActiveSubscription}
         role={role}
         retentionNote={
-          isPortalMember
-            ? 'Deleting your login removes portal access and personal profile details. Organization-owned job, invoice, payment, and audit records remain with the service provider when required.'
-            : undefined
+          variant === 'contractor'
+            ? 'Deleting your login removes your access and personal profile details. Organization job history, customer records, and payment records stay with the hiring organization.'
+            : 'Deleting your login removes your portal access and personal profile details. Invoices, payments, completed jobs, and other service records stay with your service provider when required.'
         }
       />
-    </SettingsShell>
+    </div>
   );
 }

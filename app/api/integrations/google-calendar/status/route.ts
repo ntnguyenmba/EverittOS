@@ -71,7 +71,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    const canManage = canManageOrganizationSettings(normalizeRole(org.role));
+    const role = normalizeRole(org.role);
+    const canManage = canManageOrganizationSettings(role);
+    if (!canManage) {
+      return NextResponse.json(
+        {
+          configured: googleCalendarConfigured(),
+          connected: false,
+          health: 'not_connected' as const,
+          healthLabel: 'Not available',
+          canManage: false,
+          provider: 'google_calendar',
+          setupMessage: 'Organization Google Calendar is managed by workspace owners and admins.'
+        },
+        { headers: NO_CACHE_HEADERS }
+      );
+    }
 
     if (!googleCalendarConfigured()) {
       return NextResponse.json(

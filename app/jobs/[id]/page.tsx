@@ -437,7 +437,7 @@ export default function JobDetailPage({ params }: PageProps) {
             </div>
           </>
         ) : null}
-        <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} />
+        {canManage ? <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} /> : null}
         <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
         {canManage ? (
           <div className="card" style={{ marginTop: 18 }}>
