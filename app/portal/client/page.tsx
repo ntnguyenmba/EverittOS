@@ -37,6 +37,14 @@ type ClientInvoice = {
   created_at: string | null;
 };
 
+type ClientReport = {
+  id: string;
+  title: string;
+  job_id: string;
+  share_token: string | null;
+  share_revoked_at: string | null;
+};
+
 type TimelineRow = {
   id: string;
   job_id: string;
@@ -70,7 +78,7 @@ function ClientPortalContent() {
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
-  const [reports, setReports] = useState<{ id: string; title: string; job_id: string }[]>([]);
+  const [reports, setReports] = useState<ClientReport[]>([]);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -160,7 +168,10 @@ function ClientPortalContent() {
       }
 
       const [{ data: reportRows }, { data: timelineRows }] = await Promise.all([
-        supabase.from('job_reports').select('id, title, job_id').in('job_id', jobIds),
+        supabase
+          .from('job_reports')
+          .select('id, title, job_id, share_token, share_revoked_at')
+          .in('job_id', jobIds),
         supabase
           .from('job_timeline')
           .select('id, job_id, message, event_type, created_at')
@@ -169,7 +180,7 @@ function ClientPortalContent() {
           .limit(50)
       ]);
 
-      setReports(reportRows || []);
+      setReports((reportRows || []) as ClientReport[]);
       setTimeline((timelineRows || []) as TimelineRow[]);
 
       const { data: invoiceRows, error: invoiceError } = await supabase
@@ -311,12 +322,13 @@ function ClientPortalContent() {
                         jobId={job.id}
                         refreshKey={0}
                         canView={photoAccessByJob[job.id] !== false}
+                        customerOnly
                       />
                     ) : null}
                     {reports
-                      .filter((r) => r.job_id === job.id)
+                      .filter((r) => r.job_id === job.id && r.share_token && !r.share_revoked_at)
                       .map((r) => (
-                        <Link key={r.id} className="btn btn-primary" href={`/jobs/${job.id}/report`} style={{ marginTop: 8 }}>
+                        <Link key={r.id} className="btn btn-primary" href={`/report/${r.share_token}`} style={{ marginTop: 8 }}>
                           View report: {r.title}
                         </Link>
                       ))}
