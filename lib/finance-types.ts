@@ -124,9 +124,9 @@ export type BusinessPerformanceSummary = {
   paymentsThisMonth: number;
   outstandingInvoices: number;
   expensesThisMonth: number;
-  contractorPaymentsThisMonth: number;
-  totalPaidCostsThisMonth: number;
-  cashAfterPaidCosts: number;
+  contractorPaymentsThisMonth?: number;
+  totalPaidCostsThisMonth?: number;
+  cashAfterPaidCosts?: number;
   estimatedProfitThisMonth: number;
   topCustomer: { name: string; revenue: number } | null;
   topWorker: { name: string; revenue: number } | null;
