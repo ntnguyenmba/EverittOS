@@ -8,7 +8,7 @@ import { normalizePlan } from '@/lib/everittos-plans';
 import { canAccessNavHref, canAccessSettingsPath } from '@/lib/nav-access';
 import { isPlatformAdminEmail } from '@/lib/platform-admin';
 import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
-import { isClientRole, normalizeRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
 import {
@@ -45,7 +45,16 @@ const AUTH_PREFIXES = [
   '/reviews',
   '/leads',
   '/services',
-  '/bookings'
+  '/bookings',
+  '/invoices',
+  '/photos',
+  '/reports',
+  '/expenses',
+  '/projects',
+  '/knowledge',
+  '/automations',
+  '/clients',
+  '/proposals'
 ];
 
 const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
@@ -278,6 +287,20 @@ export async function middleware(request: NextRequest) {
   const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
+  if (isClientRole(role)) {
+    if (!pathname.startsWith('/portal/client')) {
+      return redirectWithCookies(new URL('/portal/client', request.url), supabaseResponse);
+    }
+    return supabaseResponse;
+  }
+
+  if (isContractorRole(role)) {
+    if (!pathname.startsWith('/portal/contractor')) {
+      return redirectWithCookies(new URL('/portal/contractor', request.url), supabaseResponse);
+    }
+    return supabaseResponse;
+  }
+
   if (pathname.startsWith('/admin') && !isPlatformAdminEmail(user.email)) {
     return roleBlockedRedirect(request, supabaseResponse, pathname, 'Platform admin access is limited to authorized Everitt Ventures operators.');
   }
@@ -295,11 +318,6 @@ export async function middleware(request: NextRequest) {
     if ((pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) && !hasPermission(role, rule.permission)) {
       return roleBlockedRedirect(request, supabaseResponse, pathname, `Your role (${role}) cannot access ${pathname}. Contact your workspace owner or admin if you need access.`);
     }
-  }
-
-  if (isClientRole(role)) {
-    const allowedClient = pathname.startsWith('/portal/client') || pathname.startsWith('/settings/account') || pathname.startsWith('/settings/security');
-    if (!allowedClient) return redirectWithCookies(new URL('/portal/client', request.url), supabaseResponse);
   }
 
   if (!canSeeOrgWideData(role) && (pathname.startsWith('/customers') || pathname.startsWith('/workers') || pathname.startsWith('/people'))) {
@@ -341,7 +359,11 @@ export async function middleware(request: NextRequest) {
     '/analytics',
     '/workflows',
     '/notifications',
-    '/proposals'
+    '/proposals',
+    '/invoices',
+    '/photos',
+    '/reports',
+    '/expenses'
   ];
   const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
@@ -401,6 +423,10 @@ export const config = {
     '/leads/:path*',
     '/services/:path*',
     '/bookings/:path*',
+    '/invoices/:path*',
+    '/photos/:path*',
+    '/reports/:path*',
+    '/expenses/:path*',
     '/book/:path*',
     '/f/:path*',
     '/login',
