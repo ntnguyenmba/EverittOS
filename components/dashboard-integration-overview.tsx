@@ -65,35 +65,41 @@ function IntegrationCard({ name, state, href }: { name: string; state: Integrati
       className="card"
       style={{
         minHeight: 150,
+        minWidth: 0,
         padding: 18,
         textDecoration: 'none',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         gap: 14,
+        overflow: 'hidden',
         borderColor: state.attention ? '#fdba74' : undefined
       }}
     >
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-          <h3 style={{ margin: 0 }}>{name}</h3>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start', minWidth: 0 }}>
+          <h3 style={{ margin: 0, overflowWrap: 'anywhere' }}>{name}</h3>
           <span
             style={{
+              display: 'inline-flex',
+              maxWidth: '100%',
               padding: '5px 9px',
               borderRadius: 999,
               background,
               color: tone,
               fontSize: 12,
+              lineHeight: 1.25,
               fontWeight: 750,
-              whiteSpace: 'nowrap'
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere'
             }}
           >
             {state.label}
           </span>
         </div>
-        <p className="muted" style={{ margin: '10px 0 0' }}>{state.detail}</p>
+        <p className="muted" style={{ margin: '10px 0 0', overflowWrap: 'anywhere' }}>{state.detail}</p>
       </div>
-      <span style={{ color: 'var(--accent, #274c63)', fontWeight: 700 }}>Manage integration →</span>
+      <span style={{ color: 'var(--accent, #274c63)', fontWeight: 700, overflowWrap: 'anywhere' }}>Manage →</span>
     </Link>
   );
 }
@@ -124,13 +130,13 @@ export function DashboardIntegrationOverview() {
           attention,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
-            ? 'Reconnect Google Calendar to resume automatic updates.'
+            ? 'Reconnect to resume automatic updates.'
             : connected
-              ? lastSync ? `Last synced ${lastSync}.` : 'Scheduled jobs are connected to Google Calendar.'
-              : 'Connect Google Calendar to keep scheduled jobs updated automatically.'
+              ? lastSync ? `Last synced ${lastSync}.` : 'Ready to sync scheduled jobs.'
+              : 'Connect to sync scheduled jobs automatically.'
         });
       } else {
-        setGoogle({ label: 'Unavailable', detail: 'Google Calendar status is temporarily unavailable.', connected: false, attention: true });
+        setGoogle({ label: 'Unavailable', detail: 'Status is temporarily unavailable.', connected: false, attention: true });
       }
 
       if (quickBooksResult.status === 'fulfilled') {
@@ -144,13 +150,13 @@ export function DashboardIntegrationOverview() {
           attention,
           label: attention ? 'Needs attention' : connected ? 'Connected' : 'Not connected',
           detail: attention
-            ? 'Reconnect QuickBooks to resume syncing.'
+            ? 'Reconnect to resume syncing.'
             : connected
-              ? lastSync ? `Last synced ${lastSync}.` : 'QuickBooks is connected and ready.'
-              : 'Connect QuickBooks to sync eligible customers and invoices.'
+              ? lastSync ? `Last synced ${lastSync}.` : 'Ready to sync customers and invoices.'
+              : 'Connect to sync eligible customers and invoices.'
         });
       } else {
-        setQuickBooks({ label: 'Unavailable', detail: 'QuickBooks status is temporarily unavailable.', connected: false, attention: true });
+        setQuickBooks({ label: 'Unavailable', detail: 'Status is temporarily unavailable.', connected: false, attention: true });
       }
     }
 
@@ -165,11 +171,17 @@ export function DashboardIntegrationOverview() {
       <div className="dashboard-section-head">
         <div>
           <h2>Integrations</h2>
-          <p className="page-subtitle" style={{ marginBottom: 0 }}>See which connected tools are working and when they last updated.</p>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>Connection status and latest sync activity.</p>
         </div>
         <Link className="btn btn-sm" href="/settings/integrations">Manage integrations</Link>
       </div>
-      <div className="stats-grid" style={{ marginTop: 14 }}>
+      <div
+        className="stats-grid"
+        style={{
+          marginTop: 14,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))'
+        }}
+      >
         <IntegrationCard name="Google Calendar" state={google} href="/settings/integrations" />
         <IntegrationCard name="QuickBooks" state={quickBooks} href="/settings/integrations" />
       </div>
