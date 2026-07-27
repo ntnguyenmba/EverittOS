@@ -6,8 +6,16 @@ import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import type { AppNavHref } from '@/lib/nav-links';
 import { APP_NAV_LINKS } from '@/lib/nav-links';
 import {
+  CLIENT_PORTAL_HOME,
+  CLIENT_PORTAL_SETTINGS,
+  CONTRACTOR_PORTAL_HOME,
+  CONTRACTOR_PORTAL_SETTINGS,
+  isPortalPersonalSettingsPath
+} from '@/lib/portal-access';
+import {
   canManageBilling,
   canManageOrganizationSettings,
+  canRecordInvoicePayments,
   canViewTeam,
   isClientRole,
   isContractorRole,
@@ -27,6 +35,13 @@ export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
   { href: '/settings/billing', label: 'Billing' }
 ];
 
+const PORTAL_SETTINGS_LINKS: SettingsNavLink[] = [
+  { href: '/settings/account', label: 'Account' },
+  { href: '/settings/security', label: 'Security' },
+  { href: '/settings/notifications', label: 'Notifications' },
+  { href: '/settings/privacy', label: 'Privacy' }
+];
+
 export type NavItemResolution = {
   visible: boolean;
   accessible: boolean;
@@ -37,16 +52,48 @@ function navPath(href: string): string {
   return href.split('?')[0];
 }
 
+function isManagerOperationalModule(path: string): boolean {
+  switch (path) {
+    case '/customers':
+    case '/projects':
+    case '/forms':
+    case '/templates':
+    case '/reviews':
+    case '/services':
+    case '/bookings':
+    case '/leads':
+    case '/photos':
+    case '/reports':
+    case '/inventory':
+    case '/routes':
+    case '/workflows':
+      return true;
+    default:
+      return false;
+  }
+}
+
 /** Role-only gate: should this item appear in navigation at all? */
 export function canShowNavHref(role: UserRole, href: string): boolean {
   const path = navPath(href);
 
   if (isClientRole(role)) {
-    return path === '/portal/client';
+    return (
+      path === CLIENT_PORTAL_HOME ||
+      path === CLIENT_PORTAL_SETTINGS ||
+      path.startsWith(`${CLIENT_PORTAL_HOME}/`) ||
+      isPortalPersonalSettingsPath(path)
+    );
   }
 
   if (isContractorRole(role)) {
-    return path === '/portal/contractor';
+    return (
+      path === CONTRACTOR_PORTAL_HOME ||
+      path === CONTRACTOR_PORTAL_SETTINGS ||
+      path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) ||
+      path.startsWith('/jobs/') ||
+      isPortalPersonalSettingsPath(path)
+    );
   }
 
   switch (path) {
@@ -59,25 +106,31 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
       return hasPermission(role, 'view_schedules');
     case '/customers':
     case '/projects':
-    case '/knowledge':
-    case '/proposals':
-    case '/automations':
-    case '/clients':
     case '/forms':
     case '/templates':
     case '/reviews':
     case '/services':
     case '/bookings':
     case '/leads':
-    case '/workers':
-    case '/activity':
-    case '/analytics':
-    case '/expenses':
+    case '/photos':
+    case '/reports':
     case '/inventory':
     case '/routes':
     case '/workflows':
-    case '/invoices':
+      return canSeeOrgWideData(role) || role === 'manager';
+    case '/knowledge':
+    case '/proposals':
+    case '/automations':
+    case '/clients':
+    case '/workers':
+    case '/activity':
       return canSeeOrgWideData(role);
+    case '/analytics':
+    case '/expenses':
+    case '/contractor-pay':
+      return canSeeOrgWideData(role);
+    case '/invoices':
+      return canSeeOrgWideData(role) || canRecordInvoicePayments(role);
     case '/people':
     case '/team':
     case '/settings/people':
@@ -94,13 +147,14 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     default:
       if (path.startsWith('/jobs/')) return hasPermission(role, 'view_assigned_jobs');
       if (path.startsWith('/settings/')) return canAccessSettingsPathByRole(role, path);
-      return true;
+      if (isManagerOperationalModule(path)) return canSeeOrgWideData(role) || role === 'manager';
+      return canSeeOrgWideData(role) || role === 'manager' || role === 'employee' || role === 'viewer';
   }
 }
 
 function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
   if (isClientRole(role) || isContractorRole(role)) {
-    return false;
+    return isPortalPersonalSettingsPath(path);
   }
   if (path.startsWith('/settings/billing')) return canManageBilling(role);
   if (path.startsWith('/settings/ai-usage')) return canManageBilling(role);
@@ -112,10 +166,17 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
   if (path === '/settings' || path.startsWith('/settings?')) {
     return canManageOrganizationSettings(role);
   }
-  if (path.startsWith('/settings/account') || path.startsWith('/settings/security')) return true;
+  if (
+    path.startsWith('/settings/account') ||
+    path.startsWith('/settings/security') ||
+    path.startsWith('/settings/notifications') ||
+    path.startsWith('/settings/privacy')
+  ) {
+    return true;
+  }
   if (path.startsWith('/settings/departments')) return canManageOrganizationSettings(role);
   if (path.startsWith('/settings/api')) return canManageOrganizationSettings(role);
-  return true;
+  return false;
 }
 
 /** Minimum plan tier required for a nav route (null = included on Free). */
@@ -172,6 +233,20 @@ function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan 
 export function resolveNavItem(role: UserRole, plan: EverittosPlan, href: string): NavItemResolution {
   if (!canShowNavHref(role, href)) {
     return { visible: false, accessible: false };
+  }
+
+  const path = navPath(href);
+
+  // Portal role holders always reach their own portal/settings; plan gates apply to org owners inviting portals.
+  if (
+    (isClientRole(role) && (path === CLIENT_PORTAL_HOME || path.startsWith(`${CLIENT_PORTAL_HOME}/`) || isPortalPersonalSettingsPath(path))) ||
+    (isContractorRole(role) &&
+      (path === CONTRACTOR_PORTAL_HOME ||
+        path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) ||
+        path.startsWith('/jobs/') ||
+        isPortalPersonalSettingsPath(path)))
+  ) {
+    return { visible: true, accessible: true };
   }
 
   const normalized = normalizePlan(plan);
@@ -246,7 +321,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
   const normalizedPlan = normalizePlan(plan);
 
   if (isClientRole(role) || isContractorRole(role)) {
-    return [];
+    return PORTAL_SETTINGS_LINKS.filter((link) => canAccessSettingsPathByRole(role, link.href));
   }
 
   return SETTINGS_NAV_LINKS.filter((link) => {
@@ -257,7 +332,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
     if (link.href === '/settings/departments' && !canManageDepartments(role, normalizedPlan)) return false;
     if (link.href === '/settings/api' && !limitsForPlan(normalizedPlan).apiAccess) return false;
     if (link.href === '/settings/ai-memory' && !limitsForPlan(normalizedPlan).aiAccess) return false;
-    return true;
+    return canAccessSettingsPathByRole(role, link.href);
   });
 }
 

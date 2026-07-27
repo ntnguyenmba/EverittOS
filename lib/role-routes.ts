@@ -1,5 +1,6 @@
-import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { safeNextPath } from '@/lib/app-url';
+import { isClientAllowedPath, isContractorAllowedPath } from '@/lib/portal-access';
+import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 
 /** Default landing path after sign-in based on member role. */
 export function defaultPathForRole(roleInput: string | null | undefined, next?: string | null): string {
@@ -7,13 +8,13 @@ export function defaultPathForRole(roleInput: string | null | undefined, next?: 
   const role = normalizeRole(roleInput);
 
   if (isClientRole(role)) {
-    if (nextPath.startsWith('/portal/client')) return nextPath;
+    if (isClientAllowedPath(nextPath)) return nextPath;
     return '/portal/client';
   }
 
   if (isContractorRole(role)) {
-    if (nextPath.startsWith('/portal/contractor')) return nextPath;
-    if (nextPath === '/dashboard') return '/portal/contractor';
+    if (isContractorAllowedPath(nextPath)) return nextPath;
+    return '/portal/contractor';
   }
 
   return nextPath;

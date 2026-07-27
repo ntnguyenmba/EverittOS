@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { GoToDashboardLink } from '@/components/go-to-dashboard-link';
 import { AuthenticatedSection } from '@/components/authenticated-section';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
+import { CLIENT_SETTINGS_PATH, clientNavItems } from '@/lib/client-portal';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
@@ -60,7 +60,15 @@ type CustomerRow = {
   phone: string | null;
 };
 
-type PortalTab = 'dashboard' | 'jobs' | 'invoices' | 'profile';
+type PortalTab = 'dashboard' | 'jobs' | 'schedule' | 'invoices' | 'profile';
+
+const TAB_LABELS: Record<PortalTab, string> = {
+  dashboard: 'Overview',
+  jobs: 'My jobs',
+  schedule: 'Schedule',
+  invoices: 'Invoices',
+  profile: 'Account'
+};
 
 export default function ClientPortalPage() {
   return (
@@ -74,7 +82,16 @@ function ClientPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const portalToken = searchParams.get('token');
-  const [tab, setTab] = useState<PortalTab>('dashboard');
+  const requestedTab = searchParams.get('tab');
+  const initialTab: PortalTab =
+    requestedTab === 'jobs' ||
+    requestedTab === 'schedule' ||
+    requestedTab === 'invoices' ||
+    requestedTab === 'profile' ||
+    requestedTab === 'dashboard'
+      ? requestedTab
+      : 'dashboard';
+  const [tab, setTab] = useState<PortalTab>(initialTab);
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
@@ -85,8 +102,30 @@ function ClientPortalContent() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [photoAccessByJob, setPhotoAccessByJob] = useState<Record<string, boolean>>({});
+  const [signingOut, setSigningOut] = useState(false);
 
   const jobMap = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
+  const upcomingJobs = useMemo(
+    () =>
+      jobs
+        .filter((job) => job.status !== 'completed' && job.status !== 'cancelled')
+        .slice()
+        .sort((a, b) => String(a.due_date || '').localeCompare(String(b.due_date || ''))),
+    [jobs]
+  );
+  const navItems = useMemo(() => clientNavItems(), []);
+
+  useEffect(() => {
+    if (
+      requestedTab === 'jobs' ||
+      requestedTab === 'schedule' ||
+      requestedTab === 'invoices' ||
+      requestedTab === 'profile' ||
+      requestedTab === 'dashboard'
+    ) {
+      setTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   useEffect(() => {
     async function load() {
@@ -198,6 +237,17 @@ function ClientPortalContent() {
     load();
   }, [router, portalToken]);
 
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await fetch('/api/auth/sign-out', { method: 'POST', keepalive: true });
+      await supabase.auth.signOut();
+    } finally {
+      router.push('/login');
+      setSigningOut(false);
+    }
+  }
+
   if (loading) {
     return (
       <AuthenticatedSection role="client">
@@ -211,9 +261,29 @@ function ClientPortalContent() {
   return (
     <AuthenticatedSection role="client">
         <header style={{ marginBottom: 20 }}>
-          <h2>Client portal</h2>
+          <h2>Customer portal</h2>
           <p className="muted">Your jobs, invoices, photos, and activity. Only data shared with your account is visible.</p>
         </header>
+
+        <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label="Portal sections">
+          {(['dashboard', 'jobs', 'schedule', 'invoices'] as PortalTab[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={tab === key ? 'btn btn-primary' : 'btn'}
+              onClick={() => setTab(key)}
+              aria-current={tab === key ? 'page' : undefined}
+            >
+              {TAB_LABELS[key]}
+            </button>
+          ))}
+          <Link href={CLIENT_SETTINGS_PATH} className="btn">
+            Account
+          </Link>
+          <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut}>
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </nav>
 
         {message && (
           <div className="card" role="alert">
@@ -223,38 +293,57 @@ function ClientPortalContent() {
 
         {!message && (
           <>
-            <nav className="inline-actions" style={{ marginBottom: 16 }} aria-label="Portal sections">
-              {(['dashboard', 'jobs', 'invoices', 'profile'] as PortalTab[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={tab === key ? 'btn btn-primary' : 'btn'}
-                  onClick={() => setTab(key)}
-                  aria-current={tab === key ? 'page' : undefined}
-                >
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </button>
-              ))}
-            </nav>
-
             {tab === 'dashboard' && (
-              <div className="card-grid">
-                <div className="card">
-                  <h3>Active jobs</h3>
-                  <p>{jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled').length}</p>
+              <>
+                <div className="card-grid">
+                  <div className="card">
+                    <h3>Upcoming appointments</h3>
+                    <p>{upcomingJobs.length}</p>
+                  </div>
+                  <div className="card">
+                    <h3>Shared reports</h3>
+                    <p>{reports.filter((r) => r.share_token && !r.share_revoked_at).length}</p>
+                  </div>
+                  <div className="card">
+                    <h3>Open invoices</h3>
+                    <p>{invoices.filter((inv) => inv.status !== 'paid' && inv.status !== 'void').length}</p>
+                  </div>
+                  <div className="card">
+                    <h3>Recent activity</h3>
+                    <p>{timeline.length} events</p>
+                  </div>
                 </div>
-                <div className="card">
-                  <h3>Reports</h3>
-                  <p>{reports.length}</p>
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3>Quick links</h3>
+                  <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                    {navItems.map((item) => (
+                      <Link key={item.id} href={item.href} className="btn">
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                <div className="card">
-                  <h3>Invoices</h3>
-                  <p>{invoices.length}</p>
-                </div>
-                <div className="card">
-                  <h3>Recent activity</h3>
-                  <p>{timeline.length} events</p>
-                </div>
+              </>
+            )}
+
+            {tab === 'schedule' && (
+              <div className="card">
+                <h3>Schedule</h3>
+                {upcomingJobs.length === 0 ? (
+                  <p className="muted">No upcoming appointments.</p>
+                ) : (
+                  upcomingJobs.map((job) => (
+                    <div key={job.id} className="list-row">
+                      <div>
+                        <strong>{job.title}</strong>
+                        <p className="muted">{job.due_date || 'Date not set'} · {job.status || 'scheduled'}</p>
+                      </div>
+                      <button type="button" className="btn" onClick={() => setTab('jobs')}>
+                        View details
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -267,7 +356,7 @@ function ClientPortalContent() {
                 <p>Business: {profile?.business_name || 'Not set'}</p>
                 {customers.length > 0 && (
                   <>
-                    <h4 style={{ marginTop: 16 }}>Customer records</h4>
+                    <h4 style={{ marginTop: 16 }}>Linked customer records</h4>
                     {customers.map((c) => (
                       <div key={c.id} className="list-row">
                         <strong>{customerDisplayName(c)}</strong>
@@ -276,13 +365,21 @@ function ClientPortalContent() {
                     ))}
                   </>
                 )}
+                <div className="button-row" style={{ marginTop: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <Link href={CLIENT_SETTINGS_PATH} className="btn btn-primary">
+                    Edit account settings
+                  </Link>
+                  <Link href="/disclaimer/customer" className="btn">
+                    Customer portal disclaimer
+                  </Link>
+                </div>
               </div>
             )}
 
             {tab === 'invoices' && (
               <div className="card">
-                <h3>Invoices</h3>
-                {invoices.length === 0 && <p className="muted">No invoices shared with your account yet.</p>}
+                <h3>Invoices and payments</h3>
+                {invoices.length === 0 && <p className="muted">You do not have any open invoices.</p>}
                 {invoices.map((inv) => (
                   <div key={inv.id} className="list-row">
                     <div>
@@ -302,7 +399,7 @@ function ClientPortalContent() {
 
             {tab === 'jobs' && (
               <>
-                {jobs.length === 0 && <div className="card">No jobs shared with your account yet.</div>}
+                {jobs.length === 0 && <div className="card">No upcoming appointments.</div>}
                 {jobs.map((job) => (
                   <article key={job.id} className="card" style={{ marginTop: 16 }}>
                     <h3>{job.title}</h3>
@@ -332,6 +429,11 @@ function ClientPortalContent() {
                           View report: {r.title}
                         </Link>
                       ))}
+                    {reports.filter((r) => r.job_id === job.id && r.share_token && !r.share_revoked_at).length === 0 ? (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        No reports have been shared with you for this job.
+                      </p>
+                    ) : null}
                   </article>
                 ))}
 
@@ -351,12 +453,26 @@ function ClientPortalContent() {
                 )}
               </>
             )}
+
+            <section className="card" style={{ marginTop: 20 }} aria-label="Legal">
+              <h3>Legal</h3>
+              <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <Link className="btn" href="/privacy">
+                  Privacy Policy
+                </Link>
+                <Link className="btn" href="/terms">
+                  Terms of Service
+                </Link>
+                <Link className="btn" href="/disclaimer/customer">
+                  Customer Portal Disclaimer
+                </Link>
+                <Link className="btn" href={CLIENT_SETTINGS_PATH}>
+                  Account settings
+                </Link>
+              </div>
+            </section>
           </>
         )}
-
-        <GoToDashboardLink role="client" className="btn" style={{ marginTop: 24 }}>
-          Back to dashboard
-        </GoToDashboardLink>
     </AuthenticatedSection>
   );
 }

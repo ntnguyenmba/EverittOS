@@ -9,6 +9,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { SidebarPlanCard } from '@/components/sidebar-plan-card';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isPaidEverittosPlan, normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { dashboardPathForRole } from '@/lib/dashboard-nav';
 import { canManageBilling } from '@/lib/roles';
 import { canAccessNavHref } from '@/lib/nav-access';
 import { isClientRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -70,7 +71,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   return (
     <aside className="sidebar" aria-label="App navigation">
       <div className="sidebar-brand">
-        <BrandLogo href="/dashboard" size={28} showName />
+        <BrandLogo href={dashboardPathForRole(role)} size={28} showName />
       </div>
 
       <div className="sidebar-nav">

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
+import { canAccessNavHref } from '@/lib/nav-access';
+import { normalizePlan } from '@/lib/everittos-plans';
 import { isAdminRole, isClientRole, isContractorRole, isStaffRole, type UserRole } from '@/lib/roles';
 
 type JobRow = {
@@ -46,6 +48,7 @@ type RoleDashboardProps = {
   teamCount?: number;
   teamMembers?: TeamMemberSummary[];
   recentActivity?: ActivitySummary[];
+  plan?: string | null;
 };
 
 function FieldWorkerDashboard({
@@ -194,13 +197,17 @@ export function RoleDashboard({
   customerCount = 0,
   teamCount = 0,
   teamMembers = [],
-  recentActivity = []
+  recentActivity = [],
+  plan
 }: RoleDashboardProps) {
   const { t } = useTranslation();
+  const normalizedPlan = normalizePlan(plan);
 
   if (isStaffRole(role)) {
     return <FieldWorkerDashboard jobs={jobs} photoCount={photoCount} t={t} />;
   }
+
+  const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], normalizedPlan);
 
   const today = new Date().toISOString().slice(0, 10);
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
@@ -263,7 +270,7 @@ export function RoleDashboard({
           }
         ]
       : [])
-  ];
+  ].filter((card) => canLink(card.href));
 
   return (
     <div className="role-dashboard">
@@ -290,7 +297,7 @@ export function RoleDashboard({
         ))}
       </div>
 
-      {canViewTeamCommandCenter ? (
+      {canViewTeamCommandCenter && canLink('/people') ? (
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
             <div>
@@ -358,7 +365,7 @@ export function RoleDashboard({
         ))}
       </div>
 
-      {canViewTeamCommandCenter ? (
+      {canViewTeamCommandCenter && canLink('/people') ? (
         <section className="card" style={{ marginTop: 16 }}>
           <div className="dashboard-section-head">
             <h4>{t('dashboard.role.recentTeamActivity')}</h4>
@@ -383,18 +390,26 @@ export function RoleDashboard({
         <section className="card" style={{ marginTop: 16 }}>
           <h4>{t('dashboard.role.quickOwnerActions')}</h4>
           <div className="button-row">
-            <Link href="/jobs/new" className="btn btn-primary">
-              {t('dashboard.role.assignJob')}
-            </Link>
-            <Link href="/messages" className="btn">
-              {t('dashboard.role.quickActions.messageTeam')}
-            </Link>
-            <Link href="/schedule" className="btn">
-              {t('dashboard.role.quickActions.viewSchedule')}
-            </Link>
-            <Link href="/reports" className="btn">
-              {t('dashboard.role.quickActions.reviewReports')}
-            </Link>
+            {canLink('/jobs') ? (
+              <Link href="/jobs/new" className="btn btn-primary">
+                {t('dashboard.role.assignJob')}
+              </Link>
+            ) : null}
+            {canLink('/messages') ? (
+              <Link href="/messages" className="btn">
+                {t('dashboard.role.quickActions.messageTeam')}
+              </Link>
+            ) : null}
+            {canLink('/schedule') ? (
+              <Link href="/schedule" className="btn">
+                {t('dashboard.role.quickActions.viewSchedule')}
+              </Link>
+            ) : null}
+            {canLink('/reports') ? (
+              <Link href="/reports" className="btn">
+                {t('dashboard.role.quickActions.reviewReports')}
+              </Link>
+            ) : null}
           </div>
         </section>
       ) : null}

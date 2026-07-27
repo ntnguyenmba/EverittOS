@@ -9,7 +9,7 @@ import {
   resolveNavItem
 } from '@/lib/nav-access';
 import { APP_NAV_SECTIONS } from '@/lib/nav-links';
-import { limitsForPlan } from '@/lib/everittos-limits';
+import { CLIENT_PORTAL_HOME, CLIENT_PORTAL_SETTINGS, CONTRACTOR_PORTAL_HOME, CONTRACTOR_PORTAL_SETTINGS } from '@/lib/portal-access';
 import { normalizePlan, planShortBadgeName, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 
@@ -102,11 +102,13 @@ export function AppNavItems({
   const normalizedRole = normalizeRole(role);
 
   const portalLinks: { label: string; href: string }[] = [];
-  if (isClientRole(normalizedRole) && limitsForPlan(normalized).clientPortal) {
-    portalLinks.push({ label: 'Client portal', href: '/portal/client' });
+  if (isClientRole(normalizedRole)) {
+    portalLinks.push({ label: 'Overview', href: CLIENT_PORTAL_HOME });
+    portalLinks.push({ label: 'Account', href: CLIENT_PORTAL_SETTINGS });
   }
-  if (isContractorRole(normalizedRole) && limitsForPlan(normalized).contractorPortal) {
-    portalLinks.push({ label: 'Contractor portal', href: '/portal/contractor' });
+  if (isContractorRole(normalizedRole)) {
+    portalLinks.push({ label: 'Overview', href: CONTRACTOR_PORTAL_HOME });
+    portalLinks.push({ label: 'Account', href: CONTRACTOR_PORTAL_SETTINGS });
   }
 
   if (isClientRole(normalizedRole) || isContractorRole(normalizedRole)) {
@@ -119,7 +121,7 @@ export function AppNavItems({
             <NavLinkRow
               key={href}
               href={href}
-              label={navLabel(href, t, label)}
+              label={label}
               accessible={resolution.accessible}
               requiredPlan={resolution.requiredPlan}
               pathname={pathname}

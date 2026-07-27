@@ -23,6 +23,12 @@ import {
   type ContractorLoadErrorCode,
   type ContractorPaymentHistoryRow
 } from '@/lib/contractor-dashboard';
+import {
+  contractorJobCalendarEvent,
+  downloadCalendarIcs,
+  googleCalendarEventUrl,
+  outlookCalendarEventUrl
+} from '@/lib/calendar-links';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -79,6 +85,9 @@ export default function ContractorPortalPage() {
   const [history, setHistory] = useState<ContractorPaymentHistoryRow[]>([]);
   const [signingOut, setSigningOut] = useState(false);
   const [openJobId, setOpenJobId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; title: string | null; body: string | null; created_at: string | null; read_at: string | null }>
+  >([]);
 
   const navItems = useMemo(() => contractorNavItems(), []);
 
@@ -299,6 +308,15 @@ export default function ContractorPortalPage() {
     );
     setJobCards(buildContractorJobCards(jobsForView, laborRows, identity, assignmentWorkerIdsByJob));
     setHistory(buildContractorPaymentHistory(laborRows, jobsById, workerIds));
+
+    const { data: notificationRows } = await supabase
+      .from('notifications')
+      .select('id, title, body, created_at, read_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(12);
+    setNotifications(notificationRows || []);
+
     setErrors(Array.from(new Set(nextErrors)));
     setLoading(false);
   }, [router]);
@@ -373,12 +391,15 @@ export default function ContractorPortalPage() {
             <span className="badge">
               Pay: {job.paymentStatus === 'none' ? 'Not set' : formatContractorMoney(job.payAmount)}
             </span>
+            {job.paymentStatus !== 'none' ? (
+              <span className="badge">Payment: {job.paymentStatus}</span>
+            ) : null}
           </div>
         </button>
 
         {expanded ? (
           <div id={`contractor-job-${job.id}`} style={{ padding: '0 16px 16px', borderTop: '1px solid var(--line)' }}>
-            <div className="inline-actions" style={{ marginTop: 14 }}>
+            <div className="inline-actions" style={{ marginTop: 14, flexWrap: 'wrap' }}>
               {!completed && status !== 'in_progress' ? (
                 <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
                   Start job
@@ -392,6 +413,23 @@ export default function ContractorPortalPage() {
               <Link className="btn" href={`/jobs/${job.id}`}>
                 Open details
               </Link>
+              {(() => {
+                const event = contractorJobCalendarEvent(job);
+                if (!event) return null;
+                return (
+                  <>
+                    <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
+                      Google Calendar
+                    </a>
+                    <a className="btn" href={outlookCalendarEventUrl(event)} target="_blank" rel="noreferrer">
+                      Outlook
+                    </a>
+                    <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
+                      Apple / ICS
+                    </button>
+                  </>
+                );
+              })()}
             </div>
 
             {photoUploadAllowed(plan) && userId ? (
@@ -457,13 +495,43 @@ export default function ContractorPortalPage() {
             </div>
           </section>
 
+          <section id="schedule" className="card" aria-label="Contractor schedule" style={{ marginBottom: 16 }}>
+            <div className="dashboard-section-head">
+              <h2 style={{ fontSize: 18 }}>Schedule</h2>
+              <Link href={`${CONTRACTOR_HOME_PATH}#jobs`} className="dashboard-section-link">
+                My jobs
+              </Link>
+            </div>
+            {groupedJobs.upcoming.length === 0 && groupedJobs.active.length === 0 ? (
+              <p className="muted">Your upcoming assigned jobs will appear here.</p>
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                {[...groupedJobs.active, ...groupedJobs.upcoming]
+                  .slice()
+                  .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+                  .slice(0, 8)
+                  .map((job) => (
+                    <div key={`schedule-${job.id}`} className="list-row">
+                      <div>
+                        <strong>{job.title}</strong>
+                        <p className="muted">
+                          {job.date || 'Date not set'} · {job.address || job.customerName}
+                        </p>
+                      </div>
+                      <span className="badge">{job.status}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </section>
+
           <section id="jobs" className="card" aria-label="Assigned jobs" style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>My jobs</h2>
               <Link href={`${CONTRACTOR_HOME_PATH}#earnings`} className="dashboard-section-link">View pay</Link>
             </div>
 
-            {emptyJobs ? <p className="muted">No assigned jobs yet.</p> : null}
+            {emptyJobs ? <p className="muted">No jobs assigned yet.</p> : null}
 
             {groupedJobs.active.length ? (
               <div style={{ marginTop: 16 }}>
@@ -487,12 +555,12 @@ export default function ContractorPortalPage() {
             ) : null}
           </section>
 
-          <section id="earnings" className="card" aria-label="Contractor pay">
+          <section id="earnings" className="card" aria-label="Contractor pay" style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>My pay</h2>
-              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">Profile</Link>
+              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">Account</Link>
             </div>
-            {emptyEarnings ? <p className="muted">No pay records yet.</p> : null}
+            {emptyEarnings ? <p className="muted">No payment history yet.</p> : null}
             {history.length ? (
               <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 12 }}>
                 <table className="table data-table">
@@ -516,6 +584,50 @@ export default function ContractorPortalPage() {
                 </table>
               </div>
             ) : null}
+          </section>
+
+          <section id="notifications" className="card" aria-label="Contractor notifications" style={{ marginBottom: 16 }}>
+            <div className="dashboard-section-head">
+              <h2 style={{ fontSize: 18 }}>Notifications</h2>
+              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">
+                Preferences
+              </Link>
+            </div>
+            {notifications.length === 0 ? (
+              <p className="muted">No notifications yet.</p>
+            ) : (
+              notifications.map((item) => (
+                <div key={item.id} className="list-row">
+                  <div>
+                    <strong>{item.title || 'Update'}</strong>
+                    {item.body ? <p className="muted">{item.body}</p> : null}
+                  </div>
+                  <span className="muted">
+                    {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
+                    {item.read_at ? '' : ' · unread'}
+                  </span>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className="card" aria-label="Legal">
+            <h2 style={{ fontSize: 18 }}>Legal</h2>
+            <p className="muted">Policies that apply to contractor portal access.</p>
+            <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+              <Link className="btn" href="/privacy">
+                Privacy Policy
+              </Link>
+              <Link className="btn" href="/terms">
+                Terms of Service
+              </Link>
+              <Link className="btn" href="/disclaimer/contractor">
+                Contractor Disclaimer
+              </Link>
+              <Link className="btn" href={CONTRACTOR_SETTINGS_PATH}>
+                Account settings
+              </Link>
+            </div>
           </section>
         </>
       ) : null}
