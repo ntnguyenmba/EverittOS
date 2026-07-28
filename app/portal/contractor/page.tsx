@@ -30,6 +30,7 @@ import {
   outlookCalendarEventUrl
 } from '@/lib/calendar-links';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
+import { localToday } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { buildAssignmentWorkerIdsByJob } from '@/lib/worker-assignment';
@@ -445,16 +446,17 @@ export default function ContractorPortalPage() {
   }
 
   const hasDataError = errors.length > 0;
-  const emptyJobs = !loading && !hasDataError && jobCards.length === 0 && !errors.includes('worker_not_linked');
   const emptyEarnings = !loading && !hasDataError && history.length === 0 && !errors.includes('worker_not_linked');
+
+  const today = localToday();
+  const todaysJobs = [...groupedJobs.active, ...groupedJobs.upcoming].filter((job) => String(job.date || '').slice(0, 10) === today);
+  const upcomingOnly = groupedJobs.upcoming.filter((job) => String(job.date || '').slice(0, 10) !== today);
 
   return (
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
       <header id="overview" className="contractor-dash-header">
         <div>
-          <p className="muted" style={{ marginBottom: 4 }}>Contractor workspace</p>
-          <h1>My dashboard</h1>
-          <p className="muted">Your assigned jobs and pay.</p>
+          <h1>Today</h1>
         </div>
       </header>
 
@@ -467,7 +469,7 @@ export default function ContractorPortalPage() {
         </button>
       </nav>
 
-      {loading ? <div className="card">Loading your contractor dashboard…</div> : null}
+      {loading ? <div className="card">Loading…</div> : null}
       {gateMessage ? <div className="card">{gateMessage}</div> : null}
 
       {!loading && !gateMessage ? (
@@ -478,87 +480,41 @@ export default function ContractorPortalPage() {
               <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
                 {errors.map((code) => <li key={code}>{errorMessage(code)}</li>)}
               </ul>
-              {process.env.NODE_ENV !== 'production' ? (
-                <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>Dev detail codes: {errors.join(', ')}</p>
-              ) : null}
               <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>Try again</button>
             </div>
           ) : null}
 
-          <section className="card" aria-label="Contractor overview" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, marginBottom: 12 }}>Overview</h2>
-            <div className="stats-grid">
-              <div className="stat-card"><span>Assigned jobs</span><strong>{metrics.assignedJobs}</strong></div>
-              <div className="stat-card"><span>Upcoming jobs</span><strong>{metrics.upcomingJobs}</strong></div>
-              <div className="stat-card"><span>Paid</span><strong>{formatContractorMoney(metrics.paidEarnings)}</strong></div>
-              <div className="stat-card"><span>Still owed</span><strong>{formatContractorMoney(metrics.owedEarnings)}</strong></div>
-            </div>
-          </section>
-
-          <section id="schedule" className="card" aria-label="Contractor schedule" style={{ marginBottom: 16 }}>
-            <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>Schedule</h2>
-              <Link href={`${CONTRACTOR_HOME_PATH}#jobs`} className="dashboard-section-link">
-                My jobs
-              </Link>
-            </div>
-            {groupedJobs.upcoming.length === 0 && groupedJobs.active.length === 0 ? (
-              <p className="muted">Your upcoming assigned jobs will appear here.</p>
+          <section id="jobs" className="card" aria-label="Today's jobs" style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>Today&apos;s Jobs</h2>
+            {todaysJobs.length === 0 && groupedJobs.active.length === 0 ? (
+              <p className="muted" style={{ marginTop: 12 }}>Nothing scheduled for today.</p>
             ) : (
               <div style={{ marginTop: 8 }}>
-                {[...groupedJobs.active, ...groupedJobs.upcoming]
-                  .slice()
-                  .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
-                  .slice(0, 8)
-                  .map((job) => (
-                    <div key={`schedule-${job.id}`} className="list-row">
-                      <div>
-                        <strong>{job.title}</strong>
-                        <p className="muted">
-                          {job.date || 'Date not set'} · {job.address || job.customerName}
-                        </p>
-                      </div>
-                      <span className="badge">{job.status}</span>
-                    </div>
-                  ))}
+                {(todaysJobs.length ? todaysJobs : groupedJobs.active).map(renderJobCard)}
               </div>
             )}
           </section>
 
-          <section id="jobs" className="card" aria-label="Assigned jobs" style={{ marginBottom: 16 }}>
-            <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>My jobs</h2>
-              <Link href={`${CONTRACTOR_HOME_PATH}#earnings`} className="dashboard-section-link">View pay</Link>
-            </div>
-
-            {emptyJobs ? <p className="muted">No jobs assigned yet.</p> : null}
-
-            {groupedJobs.active.length ? (
-              <div style={{ marginTop: 16 }}>
-                <h3 style={{ fontSize: 15 }}>Active ({groupedJobs.active.length})</h3>
-                {groupedJobs.active.map(renderJobCard)}
+          <section id="schedule" className="card" aria-label="Upcoming jobs" style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>Upcoming Jobs</h2>
+            {upcomingOnly.length === 0 ? (
+              <p className="muted" style={{ marginTop: 12 }}>No upcoming jobs.</p>
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                {upcomingOnly
+                  .slice()
+                  .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+                  .map(renderJobCard)}
               </div>
-            ) : null}
-
-            {groupedJobs.upcoming.length ? (
-              <div style={{ marginTop: 20 }}>
-                <h3 style={{ fontSize: 15 }}>Upcoming ({groupedJobs.upcoming.length})</h3>
-                {groupedJobs.upcoming.map(renderJobCard)}
-              </div>
-            ) : null}
-
-            {groupedJobs.completed.length ? (
-              <div style={{ marginTop: 20 }}>
-                <h3 style={{ fontSize: 15 }}>Completed ({groupedJobs.completed.length})</h3>
-                {groupedJobs.completed.map(renderJobCard)}
-              </div>
-            ) : null}
+            )}
           </section>
 
-          <section id="earnings" className="card" aria-label="Contractor pay" style={{ marginBottom: 16 }}>
+          <section id="earnings" className="card" aria-label="Earnings" style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>My pay</h2>
-              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">Account</Link>
+              <h2 style={{ fontSize: 18 }}>Earnings</h2>
+              <span className="muted">
+                Paid {formatContractorMoney(metrics.paidEarnings)} · Owed {formatContractorMoney(metrics.owedEarnings)}
+              </span>
             </div>
             {emptyEarnings ? <p className="muted">No payment history yet.</p> : null}
             {history.length ? (

@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
+import { DashboardBusinessActivity } from '@/components/dashboard-business-activity';
 import { DashboardIntegrationOverview } from '@/components/dashboard-integration-overview';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
+import { filterBusinessActivity, type ActivityLogRow } from '@/lib/business-activity';
 import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchUsageCounts } from '@/lib/everittos-usage';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { canAccessNavHref } from '@/lib/nav-access';
 import {
@@ -104,31 +105,24 @@ function DashboardAccessNotice() {
   return <AccessBlockedBanner title={mapped.title} message={mapped.message} details={params.get('detail') || mapped.details} />;
 }
 
-function OverviewCard({ label, value, href }: { label: string; value: number; href: string }) {
+function SimpleStat({ label, value, href }: { label: string; value: number; href: string }) {
   return (
     <Link
       href={href}
-      className="stat-card"
-      style={{
-        minHeight: 104,
-        textDecoration: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}
+      className="dashboard-revenue-metric is-primary"
+      style={{ minHeight: 120, textDecoration: 'none' }}
     >
-      <span>{label}</span>
-      <strong>{value}</strong>
+      <span className="dashboard-revenue-metric-label">{label}</span>
+      <strong className="dashboard-revenue-metric-value">{value}</strong>
     </Link>
   );
 }
 
 type OpsCounts = {
-  activeJobs: number;
   todayJobs: number;
+  needsAttention: number;
   openLeads: number;
   teamWorkingToday: number;
-  customers: number;
 };
 
 export default function DashboardPage() {
@@ -140,12 +134,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
+  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
   const [ops, setOps] = useState<OpsCounts>({
-    activeJobs: 0,
     todayJobs: 0,
+    needsAttention: 0,
     openLeads: 0,
-    teamWorkingToday: 0,
-    customers: 0
+    teamWorkingToday: 0
   });
 
   async function loadDashboard() {
@@ -194,20 +188,12 @@ export default function DashboardPage() {
     const scopeColumn = organizationId ? 'organization_id' : 'user_id';
     const scopeValue = organizationId || user.id;
     const today = formatLocalDate(new Date());
+    const ownerFinance = canAccessFinancials(nextRole, nextPlan);
 
-    const [nextRevenue, usage, jobsResult, customersResult] = await Promise.all([
-      canAccessFinancials(nextRole, nextPlan)
+    const [nextRevenue, jobsResult, customersResult, activityResult] = await Promise.all([
+      ownerFinance
         ? withTimeout(fetchDashboardRevenueMetrics(supabase, organizationId), { ...emptyRevenue, loadFailed: true })
         : Promise.resolve(emptyRevenue),
-      withTimeout(fetchUsageCounts(user.id, organizationId), {
-        jobs: 0,
-        photos: 0,
-        customers: 0,
-        reports: 0,
-        workers: 0,
-        teamMembers: 0,
-        locations: 0
-      }),
       withTimeout(
         supabase
           .from('jobs')
@@ -219,7 +205,18 @@ export default function DashboardPage() {
       withTimeout(
         supabase.from('customers').select('id, record_type, pipeline_stage').eq(scopeColumn, scopeValue).limit(10000),
         { data: [], error: new Error('Customers timed out') }
-      )
+      ),
+      organizationId
+        ? withTimeout(
+            supabase
+              .from('activity_logs')
+              .select('id, action, message, entity_type, entity_id, created_at')
+              .eq('organization_id', organizationId)
+              .order('created_at', { ascending: false })
+              .limit(20),
+            { data: [], error: null }
+          )
+        : Promise.resolve({ data: [], error: null })
     ]);
 
     const jobs = (jobsResult.data || []) as Array<{
@@ -234,7 +231,7 @@ export default function DashboardPage() {
       pipeline_stage: string | null;
     }>;
 
-    const activeJobs = jobs.filter((job) => !['completed', 'cancelled'].includes(job.status || ''));
+    const activeJobs = jobs.filter((job) => !['completed', 'cancelled', 'canceled'].includes(job.status || ''));
     const todayJobs = activeJobs.filter((job) => {
       const date =
         (job.scheduled_start || '').slice(0, 10) ||
@@ -242,23 +239,27 @@ export default function DashboardPage() {
         (job.due_date || '').slice(0, 10);
       return date === today;
     });
+    const needsAttention = activeJobs.filter((job) => {
+      const status = String(job.status || '').toLowerCase();
+      const due = (job.due_date || '').slice(0, 10);
+      return !job.assigned_to || status === 'new' || (due && due < today);
+    }).length;
     const teamWorkingToday = new Set(
       todayJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)
     ).size;
 
-    // Trust metric helpers — do not recompute expected revenue from mixed period/outstanding totals.
     setRevenue(nextRevenue);
     setOps({
-      activeJobs: activeJobs.length,
       todayJobs: todayJobs.length,
+      needsAttention,
       openLeads: customers.filter(
         (row) =>
           row.record_type === 'lead' &&
           !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
       ).length,
-      teamWorkingToday,
-      customers: usage.customers
+      teamWorkingToday
     });
+    setActivity(filterBusinessActivity((activityResult.data || []) as ActivityLogRow[]).slice(0, 8));
 
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
     setLoading(false);
@@ -271,7 +272,7 @@ export default function DashboardPage() {
   if (!ready) {
     return (
       <main className="today-page dashboard-home" aria-busy="true">
-        <section className="card" style={{ padding: 24 }}>
+        <section style={{ padding: 24 }}>
           <p className="loading-state" style={{ margin: 0 }}>
             {t('common.loading')}
           </p>
@@ -284,6 +285,7 @@ export default function DashboardPage() {
   const ownerView = isAdminRole(role);
   const managerView = isManagerRole(role) && !ownerView;
   const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan);
+  const showFinance = ownerView && canAccessFinancials(role, plan);
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -297,96 +299,59 @@ export default function DashboardPage() {
             staffView
               ? t('dashboard.myWork')
               : managerView
-                ? 'Operations today'
+                ? "Today's work"
                 : t('dashboard.welcome')
-          }
-          subtitle={
-            staffView
-              ? t('dashboard.myWorkSubtitle')
-              : managerView
-                ? 'Today’s jobs, schedule, customers, and team activity.'
-                : 'Cash, work, and what needs attention.'
           }
         />
 
         {loadError ? (
           <section
-            className="card"
             role="status"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}
           >
-            <p style={{ margin: 0 }}>Some information could not load. Available dashboard numbers are shown below.</p>
+            <p className="muted" style={{ margin: 0 }}>
+              Some information could not load.
+            </p>
             <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
               {loading ? 'Loading...' : 'Retry'}
             </button>
           </section>
         ) : null}
 
-        {ownerView && canAccessFinancials(role, plan) ? (
-          <Suspense fallback={<section className="card dashboard-today-card" style={{ minHeight: 300 }} aria-busy="true" />}>
-            <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
+        {showFinance ? (
+          <Suspense fallback={<div style={{ minHeight: 140 }} aria-busy="true" />}>
+            <DashboardRevenueSnapshot metrics={revenue} todayJobs={ops.todayJobs} loading={loading} />
           </Suspense>
         ) : null}
 
-        {ownerView && canManageOrganizationSettings(role) ? (
-          <DashboardIntegrationOverview attentionOnly />
-        ) : null}
-
-        {!staffView ? (
-          <section className="card" aria-label={managerView ? 'Manager overview' : 'Work overview'} style={{ minHeight: 0 }}>
-            <div className="dashboard-section-head">
-              <div>
-                <h2>{managerView ? 'Today’s work' : 'Work overview'}</h2>
-                <p className="page-subtitle" style={{ marginBottom: 0 }}>
-                  {managerView
-                    ? 'Operational snapshot for the day ahead.'
-                    : 'Active work and today’s schedule.'}
-                </p>
-              </div>
-            </div>
-
-            <div
-              className="stats-grid"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: 14,
-                width: '100%'
-              }}
-            >
-              {canLink('/jobs') ? (
-                <OverviewCard label="Active Jobs" value={ops.activeJobs} href="/jobs?status=active" />
-              ) : null}
+        {managerView ? (
+          <section aria-label="Today" style={{ marginTop: showFinance ? 24 : 0 }}>
+            <div className="dashboard-revenue-grid">
               {canLink('/schedule') ? (
-                <OverviewCard label="Today's Schedule" value={ops.todayJobs} href="/schedule" />
-              ) : null}
-              {canLink('/leads') ? (
-                <OverviewCard label="Open Leads" value={ops.openLeads} href="/leads?status=open" />
+                <SimpleStat label="Today's Jobs" value={ops.todayJobs} href="/schedule" />
               ) : null}
               {canViewTeam(role) && canLink('/people') ? (
-                <OverviewCard label="Team Working Today" value={ops.teamWorkingToday} href="/people" />
+                <SimpleStat label="Team Working Today" value={ops.teamWorkingToday} href="/people" />
               ) : null}
-              {managerView && canLink('/customers') ? (
-                <OverviewCard label="Customers" value={ops.customers} href="/customers" />
+              {canLink('/jobs') ? (
+                <SimpleStat label="Jobs Needing Attention" value={ops.needsAttention} href="/jobs?status=active" />
+              ) : null}
+              {canLink('/leads') ? (
+                <SimpleStat label="Open Leads" value={ops.openLeads} href="/leads?status=open" />
               ) : null}
             </div>
-
-            {ops.activeJobs === 0 && ops.todayJobs === 0 ? (
-              <p className="muted" style={{ marginTop: 16 }}>
-                {managerView
-                  ? 'No active jobs yet. Create a job or open the schedule to get the day started.'
-                  : 'No active jobs yet. Create a job to start tracking work.'}
-              </p>
+            {canLink('/schedule') ? (
+              <div style={{ marginTop: 16 }}>
+                <Link className="btn" href="/schedule">
+                  Schedule
+                </Link>
+              </div>
             ) : null}
           </section>
-        ) : (
-          <section className="card" aria-label="My work">
-            <div className="dashboard-section-head">
-              <div>
-                <h2>My work</h2>
-                <p className="page-subtitle" style={{ marginBottom: 0 }}>Your assigned jobs and today’s schedule.</p>
-              </div>
-            </div>
+        ) : null}
+
+        {staffView ? (
+          <section aria-label="My work" style={{ marginTop: 8 }}>
             <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
               <Link className="btn btn-primary" href="/jobs?mine=true">
                 My jobs
@@ -396,34 +361,33 @@ export default function DashboardPage() {
               </Link>
             </div>
           </section>
-        )}
+        ) : null}
+
+        {ownerView && canManageOrganizationSettings(role) ? (
+          <div style={{ marginTop: 24 }}>
+            <DashboardIntegrationOverview attentionOnly />
+          </div>
+        ) : null}
 
         {(ownerView || managerView) && !staffView ? (
-          <section className="card" style={{ minHeight: 0 }}>
-            <div className="dashboard-section-head">
-              <div>
-                <h2>Quick actions</h2>
-                <p className="page-subtitle" style={{ marginBottom: 0 }}>Common next steps.</p>
-              </div>
-            </div>
-            <div className="inline-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-              {canLink('/jobs') ? (
-                <Link className="btn btn-primary" href="/jobs/new">
-                  New Job
-                </Link>
-              ) : null}
-              {canLink('/customers') ? (
-                <Link className="btn" href="/customers/new">
-                  New Customer
-                </Link>
-              ) : null}
-              {canLink('/schedule') ? (
-                <Link className="btn" href="/schedule">
-                  Schedule
-                </Link>
-              ) : null}
-            </div>
-          </section>
+          <div style={{ marginTop: 28 }}>
+            <DashboardBusinessActivity items={activity} loading={loading} />
+          </div>
+        ) : null}
+
+        {(ownerView || managerView) && !staffView ? (
+          <div className="inline-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+            {canLink('/jobs') ? (
+              <Link className="btn btn-primary" href="/jobs/new">
+                New Job
+              </Link>
+            ) : null}
+            {canLink('/customers') ? (
+              <Link className="btn" href="/customers/new">
+                New Customer
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </AppShell>

@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
-import { CLIENT_SETTINGS_PATH, clientNavItems } from '@/lib/client-portal';
+import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
@@ -115,8 +115,6 @@ function ClientPortalContent() {
         .sort((a, b) => String(a.due_date || '').localeCompare(String(b.due_date || ''))),
     [jobs]
   );
-  const navItems = useMemo(() => clientNavItems(), []);
-
   useEffect(() => {
     if (
       requestedTab === 'jobs' ||
@@ -264,8 +262,7 @@ function ClientPortalContent() {
   return (
     <AuthenticatedSection role="client">
         <header style={{ marginBottom: 20 }}>
-          <h2>Customer portal</h2>
-          <p className="muted">Your jobs, invoices, photos, and activity. Only data shared with your account is visible.</p>
+          <h2>Your service</h2>
         </header>
 
         <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label="Portal sections">
@@ -298,33 +295,72 @@ function ClientPortalContent() {
           <>
             {tab === 'dashboard' && (
               <>
-                <div className="card-grid">
-                  <div className="card">
-                    <h3>Upcoming appointments</h3>
-                    <p>{upcomingJobs.length}</p>
-                  </div>
-                  <div className="card">
-                    <h3>Shared reports</h3>
-                    <p>{reports.filter((r) => r.share_token && !r.share_revoked_at).length}</p>
-                  </div>
-                  <div className="card">
-                    <h3>Open invoices</h3>
-                    <p>{invoices.filter((inv) => inv.status !== 'paid' && inv.status !== 'void').length}</p>
-                  </div>
-                  <div className="card">
-                    <h3>Recent activity</h3>
-                    <p>{timeline.length} events</p>
-                  </div>
+                <div className="card">
+                  <h3>Upcoming Appointment</h3>
+                  {upcomingJobs[0] ? (
+                    <div className="list-row">
+                      <div>
+                        <strong>{upcomingJobs[0].title}</strong>
+                        <p className="muted">
+                          {upcomingJobs[0].due_date || 'Date not set'} · {upcomingJobs[0].status || 'scheduled'}
+                        </p>
+                      </div>
+                      <button type="button" className="btn" onClick={() => setTab('jobs')}>
+                        View
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="muted">No upcoming appointments.</p>
+                  )}
                 </div>
+
                 <div className="card" style={{ marginTop: 16 }}>
-                  <h3>Quick links</h3>
-                  <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
-                    {navItems.map((item) => (
-                      <Link key={item.id} href={item.href} className="btn">
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
+                  <h3>Job Status</h3>
+                  {jobs.length === 0 ? (
+                    <p className="muted">No jobs shared yet.</p>
+                  ) : (
+                    jobs.slice(0, 4).map((job) => (
+                      <div key={job.id} className="list-row">
+                        <div>
+                          <strong>{job.title}</strong>
+                          <p className="muted">{job.status || 'scheduled'}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3>Invoices & Payments</h3>
+                  {invoices.length === 0 ? (
+                    <p className="muted">No invoices yet.</p>
+                  ) : (
+                    invoices.slice(0, 4).map((inv) => (
+                      <div key={inv.id} className="list-row">
+                        <div>
+                          <strong>{jobMap.get(String(inv.job_id || ''))?.title || 'Invoice'}</strong>
+                          <p className="muted">
+                            {inv.status || 'open'}
+                            {inv.amount != null ? ` · $${Number(inv.amount).toFixed(2)}` : ''}
+                          </p>
+                        </div>
+                        <button type="button" className="btn" onClick={() => setTab('invoices')}>
+                          Open
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="card" style={{ marginTop: 16 }}>
+                  <h3>Reports & Photos</h3>
+                  {reports.filter((r) => r.share_token && !r.share_revoked_at).length === 0 ? (
+                    <p className="muted">No shared reports yet.</p>
+                  ) : (
+                    <button type="button" className="btn" onClick={() => setTab('reports')}>
+                      View reports & photos
+                    </button>
+                  )}
                 </div>
               </>
             )}

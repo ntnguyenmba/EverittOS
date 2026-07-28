@@ -214,8 +214,21 @@ a.btn {
 
 .dashboard-revenue-metric-value,
 .stat-value {
-  font-size: clamp(30px, 2.4vw, 38px) !important;
+  font-size: clamp(32px, 3vw, 42px) !important;
   line-height: 1 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.dashboard-revenue-metric-label {
+  font-size: 13px !important;
+  letter-spacing: 0.01em !important;
+  opacity: 0.78;
+}
+
+.dashboard-home .dashboard-revenue-metric {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: var(--surface-muted, #f5f7f9) !important;
 }
 
 .dashboard-today-row,

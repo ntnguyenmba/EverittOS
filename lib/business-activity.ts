@@ -17,8 +17,8 @@ const NON_BUSINESS_ACTIONS = new Set(['org_switched', 'subscription_changed', 'u
 const AUTH_ENTITY_TYPES = new Set(['auth', 'session']);
 
 const DASHBOARD_ACTIVITY_TITLES: Record<string, string> = {
-  lead_created: 'New lead added',
-  customer_created: 'Customer created',
+  lead_created: 'Lead created',
+  customer_created: 'Customer added',
   job_created: 'Job created',
   job_updated: 'Job updated',
   job_deleted: 'Job deleted',
@@ -26,10 +26,10 @@ const DASHBOARD_ACTIVITY_TITLES: Record<string, string> = {
   worker_assigned: 'Worker assigned',
   worker_created: 'Team member added',
   worker_updated: 'Team member updated',
-  status_changed: 'Job status updated',
-  schedule_changed: 'Appointment scheduled',
-  invoice_created: 'Invoice sent',
-  invoice_paid: 'Payment received',
+  status_changed: 'Job updated',
+  schedule_changed: 'Job scheduled',
+  invoice_created: 'Invoice created',
+  invoice_paid: 'Invoice paid',
   review_submitted: 'Review received',
   review_request_created: 'Review requested',
   proposal_sent: 'Proposal sent',
@@ -71,7 +71,7 @@ function activityTitle(row: ActivityLogRow): string {
 
   if (row.action === 'status_changed' && lower.includes('completed')) return 'Job completed';
   if (row.action === 'lead_created' || (row.action === 'customer_created' && lower.includes('lead'))) {
-    return 'New lead added';
+    return 'Lead created';
   }
   return DASHBOARD_ACTIVITY_TITLES[row.action] || ACTIVITY_EVENT_LABELS[row.action] || row.action.replace(/_/g, ' ');
 }
