@@ -62,19 +62,19 @@ const EARNINGS_COPY: Record<'en' | 'es' | 'vi', EarningsCopy> = {
   en: {
     completedWork: 'jobs completed',
     keepGoing: 'Every completed job builds your work history and opens the door to more assignments.',
-    paymentRecordsPending: 'Payment details will appear here when the company records contractor pay for a job.',
+    paymentRecordsPending: 'No earnings available yet.',
     paidToYou: 'Paid to you'
   },
   es: {
     completedWork: 'trabajos completados',
     keepGoing: 'Cada trabajo completado fortalece tu historial y abre la puerta a más asignaciones.',
-    paymentRecordsPending: 'Los detalles de pago aparecerán aquí cuando la empresa registre el pago del contratista.',
+    paymentRecordsPending: 'Aún no hay ganancias disponibles.',
     paidToYou: 'Pagado a ti'
   },
   vi: {
     completedWork: 'công việc đã hoàn thành',
     keepGoing: 'Mỗi công việc hoàn thành sẽ xây dựng lịch sử làm việc và giúp bạn nhận thêm công việc mới.',
-    paymentRecordsPending: 'Chi tiết thanh toán sẽ xuất hiện khi công ty ghi nhận khoản trả cho nhà thầu.',
+    paymentRecordsPending: 'Chưa có thu nhập để hiển thị.',
     paidToYou: 'Đã trả cho bạn'
   }
 };
