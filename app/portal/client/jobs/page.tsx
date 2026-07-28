@@ -39,7 +39,7 @@ export default function ClientPortalJobsPage() {
       }
 
       const { data: access } = await supabase.from('job_client_access').select('job_id').eq('client_user_id', user.id);
-      const jobIds = (access || []).map((row) => String(row.job_id)).filter(Boolean);
+      const jobIds = ((access || []) as Array<{ job_id: string }>).map((row) => String(row.job_id)).filter(Boolean);
 
       if (jobIds.length === 1) {
         router.replace(clientPortalJobsPath(jobIds[0]));

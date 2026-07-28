@@ -18,7 +18,7 @@ function AcceptInviteForm() {
   const [status, setStatus] = useState<AcceptStatus>('checking');
   const [loading, setLoading] = useState(false);
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
-  const [inviteRole, setInviteRole] = useState<string | null>(null);
+  const [inviteRole, setInviteRole] = useState<ReturnType<typeof normalizeRole> | null>(null);
   const signInHref = token ? `/login?next=${encodeURIComponent(`/team/accept?token=${token}`)}` : '/login';
 
   const accept = useCallback(async () => {
@@ -98,20 +98,24 @@ function AcceptInviteForm() {
     void accept();
   }, [accept]);
 
-  const isPortalInvite = isClientRole(inviteRole) || isContractorRole(inviteRole);
-  const ctaLabel = isClientRole(inviteRole)
-    ? 'Open shared job'
-    : isContractorRole(inviteRole)
-      ? 'Open contractor portal'
-      : 'Continue';
+  const isClientInvite = inviteRole != null && isClientRole(inviteRole);
+  const isContractorInvite = inviteRole != null && isContractorRole(inviteRole);
+  const isPortalInvite = isClientInvite || isContractorInvite;
+  const ctaLabel = isClientInvite ? 'Open shared job' : isContractorInvite ? 'Open contractor portal' : 'Continue';
 
   return (
     <AuthenticatedSection>
       <div className="card form">
         <p className="eyebrow">{isPortalInvite ? 'EverittOS shared access' : 'EverittOS team access'}</p>
-        <h2>{isClientRole(inviteRole) ? 'Accept shared job invitation' : isContractorRole(inviteRole) ? 'Accept contractor invitation' : 'Accept team invitation'}</h2>
+        <h2>
+          {isClientInvite
+            ? 'Accept shared job invitation'
+            : isContractorInvite
+              ? 'Accept contractor invitation'
+              : 'Accept team invitation'}
+        </h2>
         <p>
-          {isClientRole(inviteRole)
+          {isClientInvite
             ? 'This page connects your signed-in account so you can view the shared job. Use the same email address that received the invitation.'
             : 'This page connects your signed-in account to the business workspace. Use the same email address that received the invitation.'}
         </p>

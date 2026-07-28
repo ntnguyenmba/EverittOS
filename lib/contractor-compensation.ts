@@ -107,18 +107,14 @@ export function formatContractorCompensationLabel(input: {
     if (rateLabel) {
       return `${rateLabel} · Owner`;
     }
-    return 'Owner';
-  }
-
-  if (classification === 'client') {
-    return contractorClassificationLabel('client');
+    return 'Owner · Compensation not entered';
   }
 
   if (rateLabel) {
     return rateLabel;
   }
 
-  return 'Independent contractor';
+  return 'Rate not entered';
 }
 
 export function laborCostFromHourlyRate(hourlyRate: number | null | undefined, hours: number): number {
