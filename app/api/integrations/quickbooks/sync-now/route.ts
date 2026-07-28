@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchCompanyDisplayName, loadQuickBooksConnection } from '@/lib/quickbooks';
+import { ensureValidAccessToken } from '@/lib/quickbooks/client';
 import { syncQuickBooksExpenses } from '@/lib/quickbooks/expenses';
 import { writeQuickBooksSyncLog, logQuickBooksEvent } from '@/lib/quickbooks/logging';
 import { canManageOrganizationSettings } from '@/lib/roles';
@@ -26,7 +27,7 @@ export async function POST() {
   }
 
   const connection = await loadQuickBooksConnection(admin, ctx.workspace.organizationId);
-  if (!connection || connection.status !== 'connected') {
+  if (!connection || !['connected', 'error'].includes(connection.status)) {
     return NextResponse.json(
       { error: 'QuickBooks is not connected. Connect your company before syncing.', status: 'disconnected' },
       { status: 409 }
@@ -34,16 +35,22 @@ export async function POST() {
   }
 
   try {
+    // Refresh once before starting concurrent Accounting API calls. QuickBooks rotates
+    // refresh tokens, so allowing each request to refresh independently can invalidate
+    // sibling requests and make Sync Now appear successful while importing nothing.
+    const validated = await ensureValidAccessToken(admin, connection);
+    const activeConnection = validated.connection;
+
     const [companyName, expenseSync] = await Promise.all([
-      fetchCompanyDisplayName(admin, ctx.workspace.organizationId, { connection }),
-      syncQuickBooksExpenses(admin, ctx.workspace.organizationId, ctx.userId, connection)
+      fetchCompanyDisplayName(admin, ctx.workspace.organizationId, { connection: activeConnection }),
+      syncQuickBooksExpenses(admin, ctx.workspace.organizationId, ctx.userId, activeConnection)
     ]);
 
     const now = new Date().toISOString();
     await admin
       .from('quickbooks_connections')
       .update({
-        company_name: companyName || connection.company_name,
+        company_name: companyName || activeConnection.company_name,
         last_sync_at: now,
         last_error: null,
         status: 'connected',
@@ -58,7 +65,7 @@ export async function POST() {
         entityType: 'connection',
         action: 'sync',
         status: 'completed',
-        externalId: connection.realm_id,
+        externalId: activeConnection.realm_id,
         httpStatus: 200
       }),
       writeQuickBooksSyncLog(admin, {
@@ -67,15 +74,15 @@ export async function POST() {
         entityType: 'expense',
         action: 'import',
         status: 'completed',
-        externalId: connection.realm_id,
+        externalId: activeConnection.realm_id,
         httpStatus: 200
       })
     ]);
 
     logQuickBooksEvent('sync_now_completed', {
       organizationId: ctx.workspace.organizationId,
-      realmId: connection.realm_id,
-      companyName: companyName || connection.company_name,
+      realmId: activeConnection.realm_id,
+      companyName: companyName || activeConnection.company_name,
       expensesImported: expenseSync.imported,
       expensesUpdated: expenseSync.updated,
       expensesSkipped: expenseSync.skipped,
@@ -83,18 +90,25 @@ export async function POST() {
       billsFound: expenseSync.bills
     });
 
+    const recordsFound = expenseSync.purchases + expenseSync.bills;
+    const message = recordsFound === 0
+      ? 'QuickBooks sync completed, but no posted purchases or bills were found.'
+      : `QuickBooks synced. ${expenseSync.imported} expenses imported, ${expenseSync.updated} updated, and ${expenseSync.skipped} skipped.`;
+
     return NextResponse.json({
       ok: true,
       status: 'synced',
-      companyName: companyName || connection.company_name,
+      companyName: companyName || activeConnection.company_name,
+      realmId: activeConnection.realm_id,
       lastSyncAt: now,
+      recordsFound,
       expenses: expenseSync,
-      message: `QuickBooks synced. ${expenseSync.imported} expenses imported and ${expenseSync.updated} updated.`,
+      message,
       supported: {
         customers: 'Export from customer or invoice workflows (one-way to QuickBooks)',
         invoices: 'Export from invoice workflows (one-way to QuickBooks)',
-        payments: 'Not synced yet',
-        expenses: 'Purchases and bills import from QuickBooks into EverittOS'
+        payments: 'QuickBooks payments reconcile exported EverittOS invoices',
+        expenses: 'Posted purchases and bills import from QuickBooks into EverittOS'
       }
     });
   } catch (error) {
