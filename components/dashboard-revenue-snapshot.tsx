@@ -83,11 +83,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   const cashAfterPaidCosts =
     activeMetrics.cashAfterPaidCosts ?? activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? 0;
   const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
-  const contractorsAwaitingPayment =
-    range === 'all_time'
-      ? activeMetrics.unpaidContractorPay ?? 0
-      : activeMetrics.periodUnpaidContractorPay ?? 0;
-  const contractorCost = activeMetrics.contractorPayThisMonth ?? contractorPaid + contractorsAwaitingPayment;
+  const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
   const recordedExpectedRevenue = activeMetrics.expectedRevenue ?? 0;
   const expectedRevenue =
     range === 'all_time'
@@ -125,12 +121,6 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
       value: formatCurrency(contractorPaid),
       href: DASHBOARD_LINKS.contractorPay,
       description: 'Contractor payments actually marked paid in this period.'
-    },
-    {
-      label: 'Contractor pay awaiting payment',
-      value: formatCurrency(contractorsAwaitingPayment),
-      href: DASHBOARD_LINKS.contractorPayOwed,
-      description: range === 'all_time' ? 'All unpaid contractor labor.' : 'Unpaid contractor labor tied to this period.'
     },
     {
       label: 'Total contractor cost',
