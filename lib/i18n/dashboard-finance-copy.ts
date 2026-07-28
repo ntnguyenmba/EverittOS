@@ -173,7 +173,7 @@ const en: DashboardFinanceCopy = {
   },
   overview: {
     title: 'Business overview',
-    subtitle: 'Money received, money owed, and actual costs.',
+    subtitle: 'Period metrics for the selected range. Lifetime balances are listed separately.',
     periodLabel: 'Dashboard period',
     moneySummaryTitle: 'Money summary',
     moreDetails: 'More details',
@@ -190,7 +190,8 @@ const en: DashboardFinanceCopy = {
     collectedHelp:
       'Client payments actually received in this period from invoices and direct job payments.',
     outstanding: 'Outstanding',
-    outstandingHelp: 'Money customers still owe you.',
+    outstandingHelp:
+      'Unpaid balances for invoices and unbilled jobs attributed to the selected period.',
     invoiced: 'Invoiced',
     invoicedHelp: 'Total of non-cancelled invoices created during this period.',
     netCash: 'Cash after paid costs',
@@ -212,7 +213,7 @@ const en: DashboardFinanceCopy = {
     contractorPay: 'Contractor cost',
     contractorPayHelp: 'Contractor labor for jobs in this period.',
     contractorPayOwed: 'Contractor pay owed',
-    contractorPayOwedHelp: 'Contractor labor not yet marked paid.',
+    contractorPayOwedHelp: 'Unpaid contractor labor for jobs attributed to the selected period.',
     contractorPayPending: 'Contractor pay pending',
     contractorPayPendingHelp: 'Contractor pay marked pending but not yet marked paid.',
     contractorPayPaid: 'Contractor pay paid',
@@ -220,9 +221,10 @@ const en: DashboardFinanceCopy = {
     otherExpenses: 'Other expenses',
     otherExpensesHelp: 'Expenses dated in the selected period.',
     expectedProfit: 'Expected profit',
-    expectedProfitHelp: 'Expected revenue minus contractor cost and other expenses.',
-    cashAfterCosts: 'Cash after paid costs',
-    cashAfterCostsHelp: 'Payments received minus paid contractor costs and paid expenses.',
+    expectedProfitHelp:
+      'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses.',
+    cashAfterCosts: 'Cash available',
+    cashAfterCostsHelp: 'Collected minus contractor payments paid minus business expenses in this period.',
     expectedProfitPct: 'Expected profit percentage',
     expectedProfitPctHelp: 'Expected profit divided by expected revenue for this period.',
     costsMissing: 'Only recorded costs are included.',

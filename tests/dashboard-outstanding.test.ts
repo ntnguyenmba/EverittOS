@@ -279,11 +279,17 @@ test('signup referral has visible Select one and separate field labels', () => {
 test('finance cards use locale keys for Outstanding, Contractor cost, Expected profit', () => {
   const en = getDashboardFinanceCopy('en');
   assert.equal(en.money.outstanding, 'Outstanding');
-  assert.equal(en.money.outstandingHelp, 'Money customers still owe you.');
+  assert.equal(
+    en.money.outstandingHelp,
+    'Unpaid balances for invoices and unbilled jobs attributed to the selected period.'
+  );
   assert.equal(en.money.contractorCost, 'Contractor cost');
   assert.equal(en.money.contractorCostHelp, 'Contractor labor for jobs in this period.');
   assert.equal(en.money.expectedProfit, 'Expected profit');
-  assert.equal(en.money.expectedProfitHelp, 'Expected revenue minus contractor cost and other expenses.');
+  assert.equal(
+    en.money.expectedProfitHelp,
+    'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses.'
+  );
 });
 
 test('calculateDirectJobOutstanding excludes cancelled and collectible-invoiced jobs', () => {

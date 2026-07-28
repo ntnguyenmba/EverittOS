@@ -37,10 +37,18 @@ export type DashboardRevenueMetrics = {
    * Previously mixed invoices + manual job revenue. Now equals customerInvoices only.
    */
   bookedRevenue: number;
-  /** Still owed — current unpaid balances across all non-cancelled invoices */
+  /**
+   * Still owed / lifetime outstanding — current unpaid balances across all open
+   * collectible invoices and uninvoiced jobs (not period-filtered).
+   */
   pendingIncoming: number;
   stillOwed: number;
-  /** Late payments — current overdue unpaid balances */
+  /**
+   * Outstanding attributed to the selected dashboard period
+   * (invoice/job operational date in range, remaining balance > 0).
+   */
+  periodOutstanding: number;
+  /** Late payments — current overdue unpaid balances (lifetime/current) */
   overdueAmount: number;
   latePayments: number;
   averageDaysToPayment: number | null;
@@ -61,8 +69,15 @@ export type DashboardRevenueMetrics = {
   contractorPayThisMonth?: number;
   /** Contractor payments actually paid in the selected period */
   contractorPaymentsPaid?: number;
+  /** Unpaid contractor labor for jobs attributed to the selected period */
+  periodUnpaidContractorPay?: number;
+  /** All unpaid contractor labor (lifetime / current balance) */
   unpaidContractorPay?: number;
   pendingContractorPay?: number;
+  /** Invoice ledger payments in the selected period (subset of Collected) */
+  invoicePaymentsInPeriod?: number;
+  /** Direct job payments in the selected period (subset of Collected; excludes invoiced jobs) */
+  directJobPaymentsInPeriod?: number;
   otherExpensesThisMonth?: number;
   expenseTotalThisMonth: number;
   /** Expected profit = expected revenue − contractor cost incurred − other expenses */
@@ -88,6 +103,31 @@ export type DashboardRevenueMetrics = {
   reportCount: number;
   jobsByStatus: Record<string, number>;
   totalJobs: number;
+  /** Developer finance debug breakdown for the selected period */
+  financeDebug?: FinanceDebugBreakdown;
+};
+
+export type FinanceDebugBreakdown = {
+  range: DashboardDateRange;
+  start: string | null;
+  end: string | null;
+  invoiceRevenue: number;
+  directJobPayments: number;
+  invoicePayments: number;
+  collected: number;
+  outstandingInvoices: number;
+  periodOutstanding: number;
+  lifetimeOutstanding: number;
+  unbilledRevenue: number;
+  contractorLaborPaid: number;
+  contractorLaborUnpaidPeriod: number;
+  contractorLaborUnpaidLifetime: number;
+  contractorLaborAccrued: number;
+  businessExpenses: number;
+  expectedRevenue: number;
+  expectedProfit: number;
+  cashAvailable: number;
+  expectedProfitFormula: string;
 };
 
 export type LaborCostRow = {
@@ -418,6 +458,60 @@ export function calculateOutstandingBreakdown(input: {
   };
 }
 
+/**
+ * Outstanding balances for work attributed to the selected period only.
+ * Uses the linked job operational date when present, otherwise the invoice date.
+ */
+export function calculatePeriodOutstanding(input: {
+  invoices: InvoiceMetricRow[];
+  jobs: JobRevenueRow[];
+  jobPayments: JobPaymentMetricRow[];
+  invoicePayments?: InvoicePaymentRow[];
+  start: string | null;
+  end: string | null;
+  jobDates?: Map<string, string>;
+}): { total: number; invoiceTotal: number; jobTotal: number } {
+  const { start, end } = input;
+  const jobDates = input.jobDates || new Map<string, string>();
+  const breakdown = calculateOutstandingBreakdown(input);
+
+  // All-time period uses the full current outstanding balance.
+  if (start === null && end === null) {
+    return {
+      total: breakdown.total,
+      invoiceTotal: breakdown.invoiceTotal,
+      jobTotal: breakdown.jobTotal
+    };
+  }
+
+  let invoiceTotal = 0;
+  let jobTotal = 0;
+  for (const row of breakdown.rows) {
+    if (row.sourceType === 'invoice') {
+      const inv = input.invoices.find((item) => String(item.id || '') === row.id);
+      if (!inv) continue;
+      const jobId = inv.job_id ? String(inv.job_id) : '';
+      const attributed = (jobId && jobDates.get(jobId)) || invoiceDate(inv);
+      if (!inRange(attributed, start, end)) continue;
+      invoiceTotal += row.amountOwed;
+      continue;
+    }
+    const job = input.jobs.find((item) => String(item.id || '') === row.id);
+    if (!job) continue;
+    const attributed = jobDates.get(row.id) || getJobOperationalDate(job as JobDateFields);
+    if (!inRange(attributed, start, end)) continue;
+    jobTotal += row.amountOwed;
+  }
+
+  invoiceTotal = Number(invoiceTotal.toFixed(2));
+  jobTotal = Number(jobTotal.toFixed(2));
+  return {
+    total: Number((invoiceTotal + jobTotal).toFixed(2)),
+    invoiceTotal,
+    jobTotal
+  };
+}
+
 /** Late payments = current overdue unpaid balances on collectible invoices. */
 export function calculateLatePayments(invoices: InvoiceMetricRow[], today = todayIso()): {
   amount: number;
@@ -459,7 +553,12 @@ export function calculatePaidToYou(input: {
   start: string | null;
   end: string | null;
   range: DashboardDateRange;
-}): { paidToYou: number; paymentsMissingDates: number } {
+}): {
+  paidToYou: number;
+  invoicePayments: number;
+  directJobPayments: number;
+  paymentsMissingDates: number;
+} {
   const { invoices, paymentRows, jobPaymentRows = [], start, end, range } = input;
   const nonCollectibleInvoiceIds = new Set(
     invoices.filter((inv) => !isCollectibleInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
@@ -468,7 +567,7 @@ export function calculatePaidToYou(input: {
     invoices.filter((inv) => isCollectibleInvoice(inv)).map((inv) => String(inv.id || '')).filter(Boolean)
   );
 
-  let paidToYou = 0;
+  let invoicePayments = 0;
   const invoicesWithLedger = new Set<string>();
 
   for (const row of paymentRows) {
@@ -480,11 +579,11 @@ export function calculatePaidToYou(input: {
     }
     if (invoiceId) invoicesWithLedger.add(invoiceId);
     if (range === 'all_time') {
-      paidToYou += num(row.amount);
+      invoicePayments += num(row.amount);
       continue;
     }
     if (inRange(row.paid_at, start, end)) {
-      paidToYou += num(row.amount);
+      invoicePayments += num(row.amount);
     }
   }
 
@@ -505,35 +604,39 @@ export function calculatePaidToYou(input: {
       // Undated payments: include in all_time only. For bounded periods, include only when
       // the invoice itself was created in the period (documented legacy fallback).
       if (range === 'all_time') {
-        paidToYou += paid;
+        invoicePayments += paid;
       } else if (inRange(invoiceDate(inv), start, end)) {
-        paidToYou += paid;
+        invoicePayments += paid;
       }
       continue;
     }
 
     if (range === 'all_time' || inRange(paidDate, start, end)) {
-      paidToYou += paid;
+      invoicePayments += paid;
     }
   }
 
   // Direct job payments count only for jobs that do not already have a collectible invoice.
   // This prevents counting the same customer money twice when a job later gets invoiced.
+  let directJobPayments = 0;
   const invoicedJobIds = collectibleInvoicedJobIds(invoices);
   for (const row of jobPaymentRows) {
     const jobId = String(row.job_id || '');
     if (jobId && invoicedJobIds.has(jobId)) continue;
     if (range === 'all_time') {
-      paidToYou += num(row.amount);
+      directJobPayments += num(row.amount);
       continue;
     }
     if (inRange(row.paid_at, start, end)) {
-      paidToYou += num(row.amount);
+      directJobPayments += num(row.amount);
     }
   }
 
+  const paidToYou = Number((invoicePayments + directJobPayments).toFixed(2));
   return {
-    paidToYou: Number(paidToYou.toFixed(2)),
+    paidToYou,
+    invoicePayments: Number(invoicePayments.toFixed(2)),
+    directJobPayments: Number(directJobPayments.toFixed(2)),
     paymentsMissingDates
   };
 }
@@ -588,11 +691,87 @@ export function calculateContractorCashPaid(
   }, 0);
 }
 
+/** Lifetime / current unpaid contractor labor (not period-filtered). */
 export function calculateUnpaidContractorPay(laborRows: LaborCostRow[]): number {
   return laborRows.reduce((sum, row) => {
     const status = String(row.payment_status || 'unpaid').toLowerCase();
     return status === 'unpaid' ? sum + num(row.total_cost) : sum;
   }, 0);
+}
+
+/**
+ * Unpaid contractor labor for jobs attributed to the selected period.
+ * Same date attribution rules as accrued contractor cost.
+ */
+export function calculatePeriodUnpaidContractorPay(
+  laborRows: LaborCostRow[],
+  start: string | null,
+  end: string | null,
+  jobDates: Map<string, string> = new Map()
+): number {
+  return Number(
+    laborRows
+      .reduce((sum, row) => {
+        const status = String(row.payment_status || 'unpaid').toLowerCase();
+        if (status !== 'unpaid') return sum;
+        const jobId = String(row.job_id || '');
+        if (jobId) {
+          const jobDate = jobDates.get(jobId);
+          if (!jobDate) {
+            return start === null && end === null ? sum + num(row.total_cost) : sum;
+          }
+          return inRange(jobDate, start, end) ? sum + num(row.total_cost) : sum;
+        }
+        return inRange(row.created_at, start, end) ? sum + num(row.total_cost) : sum;
+      }, 0)
+      .toFixed(2)
+  );
+}
+
+export const EXPECTED_PROFIT_FORMULA =
+  'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses';
+
+export function buildFinanceDebugBreakdown(input: {
+  range: DashboardDateRange;
+  start: string | null;
+  end: string | null;
+  invoiceRevenue: number;
+  invoicePayments: number;
+  directJobPayments: number;
+  periodOutstanding: number;
+  lifetimeOutstanding: number;
+  unbilledRevenue: number;
+  contractorLaborPaid: number;
+  contractorLaborUnpaidPeriod: number;
+  contractorLaborUnpaidLifetime: number;
+  contractorLaborAccrued: number;
+  businessExpenses: number;
+  expectedRevenue: number;
+  expectedProfit: number;
+  cashAvailable: number;
+}): FinanceDebugBreakdown {
+  return {
+    range: input.range,
+    start: input.start,
+    end: input.end,
+    invoiceRevenue: Number(num(input.invoiceRevenue).toFixed(2)),
+    directJobPayments: Number(num(input.directJobPayments).toFixed(2)),
+    invoicePayments: Number(num(input.invoicePayments).toFixed(2)),
+    collected: Number((num(input.invoicePayments) + num(input.directJobPayments)).toFixed(2)),
+    outstandingInvoices: Number(num(input.periodOutstanding).toFixed(2)),
+    periodOutstanding: Number(num(input.periodOutstanding).toFixed(2)),
+    lifetimeOutstanding: Number(num(input.lifetimeOutstanding).toFixed(2)),
+    unbilledRevenue: Number(num(input.unbilledRevenue).toFixed(2)),
+    contractorLaborPaid: Number(num(input.contractorLaborPaid).toFixed(2)),
+    contractorLaborUnpaidPeriod: Number(num(input.contractorLaborUnpaidPeriod).toFixed(2)),
+    contractorLaborUnpaidLifetime: Number(num(input.contractorLaborUnpaidLifetime).toFixed(2)),
+    contractorLaborAccrued: Number(num(input.contractorLaborAccrued).toFixed(2)),
+    businessExpenses: Number(num(input.businessExpenses).toFixed(2)),
+    expectedRevenue: Number(num(input.expectedRevenue).toFixed(2)),
+    expectedProfit: Number(num(input.expectedProfit).toFixed(2)),
+    cashAvailable: Number(num(input.cashAvailable).toFixed(2)),
+    expectedProfitFormula: EXPECTED_PROFIT_FORMULA
+  };
 }
 
 export function calculatePendingContractorPay(laborRows: LaborCostRow[]): number {
@@ -834,6 +1013,7 @@ function emptyMetrics(): DashboardRevenueMetrics {
     bookedRevenue: 0,
     pendingIncoming: 0,
     stillOwed: 0,
+    periodOutstanding: 0,
     overdueAmount: 0,
     latePayments: 0,
     averageDaysToPayment: null,
@@ -850,8 +1030,11 @@ function emptyMetrics(): DashboardRevenueMetrics {
     upcomingJobs: 0,
     contractorPayThisMonth: 0,
     contractorPaymentsPaid: 0,
+    periodUnpaidContractorPay: 0,
     unpaidContractorPay: 0,
     pendingContractorPay: 0,
+    invoicePaymentsInPeriod: 0,
+    directJobPaymentsInPeriod: 0,
     otherExpensesThisMonth: 0,
     expenseTotalThisMonth: 0,
     netEstimateThisMonth: 0,
@@ -1010,10 +1193,19 @@ export async function fetchDashboardRevenueMetrics(
     jobPayments: jobPaymentRows,
     invoicePayments: paymentRows
   });
+  const periodOutstandingBreakdown = calculatePeriodOutstanding({
+    invoices,
+    jobs: revenueJobs,
+    jobPayments: jobPaymentRows,
+    invoicePayments: paymentRows,
+    start,
+    end,
+    jobDates
+  });
 
   // Job-based invoice totals: use linked job operational date when available.
   const customerInvoices = calculateCustomerInvoices(invoices, start, end, jobDates);
-  const { paidToYou, paymentsMissingDates } = calculatePaidToYou({
+  const { paidToYou, invoicePayments, directJobPayments, paymentsMissingDates } = calculatePaidToYou({
     invoices,
     paymentRows,
     jobPaymentRows,
@@ -1022,6 +1214,7 @@ export async function fetchDashboardRevenueMetrics(
     range
   });
   const stillOwed = outstandingBreakdown.total;
+  const periodOutstanding = periodOutstandingBreakdown.total;
   const late = calculateLatePayments(invoices, today);
   const outstandingInvoiceCount = countUnpaidInvoices(invoices);
 
@@ -1063,6 +1256,7 @@ export async function fetchDashboardRevenueMetrics(
   const laborRows = safeData(laborRes, []) as LaborCostRow[];
   const contractorPay = calculateContractorAccruedCost(laborRows, start, end, jobDates);
   const contractorPaymentsPaid = calculateContractorCashPaid(laborRows, start, end, range);
+  const periodUnpaidContractorPay = calculatePeriodUnpaidContractorPay(laborRows, start, end, jobDates);
   const unpaidContractorPay = calculateUnpaidContractorPay(laborRows);
   const pendingContractorPay = calculatePendingContractorPay(laborRows);
 
@@ -1082,6 +1276,25 @@ export async function fetchDashboardRevenueMetrics(
     cashCollected: paidToYou,
     contractorCashPaid: contractorPaymentsPaid,
     otherCashExpenses: otherExpenses
+  });
+  const financeDebug = buildFinanceDebugBreakdown({
+    range,
+    start,
+    end,
+    invoiceRevenue: customerInvoices,
+    invoicePayments,
+    directJobPayments,
+    periodOutstanding,
+    lifetimeOutstanding: stillOwed,
+    unbilledRevenue: uninvoicedCompletedWork,
+    contractorLaborPaid: contractorPaymentsPaid,
+    contractorLaborUnpaidPeriod: periodUnpaidContractorPay,
+    contractorLaborUnpaidLifetime: unpaidContractorPay,
+    contractorLaborAccrued: contractorPay,
+    businessExpenses: otherExpenses,
+    expectedRevenue,
+    expectedProfit: estimatedProfit,
+    cashAvailable: cashAfterPaidCosts
   });
   const hasCreatedInvoices = invoices.length > 0;
 
@@ -1115,6 +1328,7 @@ export async function fetchDashboardRevenueMetrics(
     bookedRevenue: Number(customerInvoices.toFixed(2)),
     pendingIncoming: Number(stillOwed.toFixed(2)),
     stillOwed: Number(stillOwed.toFixed(2)),
+    periodOutstanding: Number(periodOutstanding.toFixed(2)),
     overdueAmount: Number(late.amount.toFixed(2)),
     latePayments: Number(late.amount.toFixed(2)),
     averageDaysToPayment: averageDaysToPayment === null ? null : Number(averageDaysToPayment.toFixed(1)),
@@ -1132,8 +1346,11 @@ export async function fetchDashboardRevenueMetrics(
     upcomingJobs: safeCount(upcomingJobsRes),
     contractorPayThisMonth: Number(contractorPay.toFixed(2)),
     contractorPaymentsPaid: Number(contractorPaymentsPaid.toFixed(2)),
+    periodUnpaidContractorPay: Number(periodUnpaidContractorPay.toFixed(2)),
     unpaidContractorPay: Number(unpaidContractorPay.toFixed(2)),
     pendingContractorPay: Number(pendingContractorPay.toFixed(2)),
+    invoicePaymentsInPeriod: Number(invoicePayments.toFixed(2)),
+    directJobPaymentsInPeriod: Number(directJobPayments.toFixed(2)),
     otherExpensesThisMonth: Number(otherExpenses.toFixed(2)),
     expenseTotalThisMonth: Number(accruedCosts.toFixed(2)),
     netEstimateThisMonth: estimatedProfit,
@@ -1149,7 +1366,8 @@ export async function fetchDashboardRevenueMetrics(
     messageCount,
     reportCount,
     jobsByStatus,
-    totalJobs: range === 'all_time' ? (totalJobsRes.error ? rangeJobs.length : totalJobsRes.count) : rangeJobs.length
+    totalJobs: range === 'all_time' ? (totalJobsRes.error ? rangeJobs.length : totalJobsRes.count) : rangeJobs.length,
+    financeDebug
   };
 }
 

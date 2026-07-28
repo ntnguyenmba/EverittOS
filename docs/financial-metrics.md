@@ -51,15 +51,23 @@ sum(max(amount - min(amount_paid, amount), 0))
 for all non-cancelled invoices
 ```
 
-### Estimated profit
+### Expected profit
 
 ```text
-Customer invoices
-- contractor pay recorded in the period
-- other expenses dated in the period
+Expected Profit
+= Expected Revenue − Contractor Cost (accrued) − Business Expenses
+
+Expected Revenue
+= Invoice Revenue + Unbilled Revenue
 ```
 
-Tooltip: Customer invoices minus contractor pay and other recorded expenses for this period.
+Where:
+- Invoice Revenue = collectible invoice totals attributed to the selected period
+- Unbilled Revenue = expected job revenue without an invoice in the selected period
+- Contractor Cost (accrued) = job_labor for jobs in the period (paid or unpaid)
+- Business Expenses = expenses dated in the period
+
+This is an accrual profit estimate, not cash in the bank. Cash Available uses payments received minus contractor payments paid minus expenses.
 
 ### Cash after expenses
 

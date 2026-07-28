@@ -40,6 +40,7 @@ const emptyRevenue = {
   bookedRevenue: 0,
   pendingIncoming: 0,
   stillOwed: 0,
+  periodOutstanding: 0,
   overdueAmount: 0,
   latePayments: 0,
   averageDaysToPayment: null,
@@ -56,8 +57,11 @@ const emptyRevenue = {
   upcomingJobs: 0,
   contractorPayThisMonth: 0,
   contractorPaymentsPaid: 0,
+  periodUnpaidContractorPay: 0,
   unpaidContractorPay: 0,
   pendingContractorPay: 0,
+  invoicePaymentsInPeriod: 0,
+  directJobPaymentsInPeriod: 0,
   otherExpensesThisMonth: 0,
   expenseTotalThisMonth: 0,
   netEstimateThisMonth: 0,
@@ -319,7 +323,9 @@ export default function DashboardPage() {
         ) : null}
 
         {ownerView && canAccessFinancials(role, plan) ? (
-          <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
+          <Suspense fallback={<section className="card dashboard-today-card" style={{ minHeight: 300 }} aria-busy="true" />}>
+            <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
+          </Suspense>
         ) : null}
 
         {ownerView && canManageOrganizationSettings(role) ? (
