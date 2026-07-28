@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { SessionIdleWarning } from '@/components/session-idle-warning';
+import { pingActivityHeartbeat } from '@/lib/activity-heartbeat';
 import { clearTabSessionId, readTabSessionId, storeTabSessionId } from '@/lib/session-client';
 import {
   isSessionExemptPath,
@@ -69,6 +70,8 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
     } catch {
       /* network blip; server middleware still tracks activity on navigation */
     }
+    // Throttled last-seen heartbeat on significant authenticated activity.
+    void pingActivityHeartbeat();
   }, []);
 
   const scheduleIdleTimers = useCallback(() => {

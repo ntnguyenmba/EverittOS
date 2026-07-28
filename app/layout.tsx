@@ -7,6 +7,7 @@ import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSync } from '@/components/locale-sync';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
+import { ActivityHeartbeat } from '@/components/activity-heartbeat';
 import { SessionGuard } from '@/components/session-guard';
 import { WorkspaceBootstrap } from '@/components/workspace-bootstrap';
 import { WorkspacePlanProvider } from '@/components/workspace-plan-provider';
@@ -97,6 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastProvider>
             <LocaleSync />
             <SessionGuard>
+              <ActivityHeartbeat />
               <WorkspacePlanProvider>
                 <WorkspaceBootstrap />
                 <SkipToMain />

@@ -353,6 +353,17 @@ export async function POST(request: Request) {
           userId: user.id
         }),
         SIDE_EFFECT_TIMEOUT_MS
+      ),
+      withTimeout(
+        (async () => {
+          const { error: rpcError } = await supabase.rpc('touch_profile_last_seen');
+          if (!rpcError) return;
+          await supabase
+            .from('profiles')
+            .update({ last_seen_at: new Date().toISOString() })
+            .eq('id', user.id);
+        })(),
+        SIDE_EFFECT_TIMEOUT_MS
       )
     ]);
 

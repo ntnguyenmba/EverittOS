@@ -17,6 +17,8 @@ export type ProfileRow = {
   email?: string | null;
   deleted_at?: string | null;
   deletion_scheduled_at?: string | null;
+  updated_at?: string | null;
+  last_seen_at?: string | null;
 };
 
 export function isMissingColumnError(message: string): boolean {

@@ -168,6 +168,10 @@ export type Profile = {
   reroot_report_access?: boolean | null;
   reroot_premium_until?: string | null;
   created_at?: string | null;
+  /** Profile edit timestamp when present; not used for Last Active. */
+  updated_at?: string | null;
+  /** Authenticated app activity heartbeat (source of truth for Last Active). */
+  last_seen_at?: string | null;
 };
 
 /** Matches public.template_library */

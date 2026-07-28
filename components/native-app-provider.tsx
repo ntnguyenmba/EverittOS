@@ -9,6 +9,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { dispatchAndroidBackPress, registerAndroidBackHandler } from '@/lib/platform/android-back';
 import { deepLinkToAppPath } from '@/lib/platform/deep-links';
 import { classifyNavigationTarget, handleNavigationClick } from '@/lib/platform';
+import { pingActivityHeartbeat } from '@/lib/activity-heartbeat';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { supabase } from '@/lib/supabase';
 
@@ -27,6 +28,7 @@ async function refreshSessionAfterResume(): Promise<void> {
     }
 
     window.dispatchEvent(new Event('everittos:workspace-plan-refresh'));
+    void pingActivityHeartbeat({ force: true });
   } catch {
     // Network may still be unavailable immediately after resume.
   }

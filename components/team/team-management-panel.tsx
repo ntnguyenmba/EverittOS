@@ -7,6 +7,7 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { normalizePlan, hasTeamManagement, type EverittosPlan } from '@/lib/everittos-plans';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { formatLastSeenAt } from '@/lib/last-seen';
 import { canManageTeam, canModifyTeamMember, canViewTeam, isOwner, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -16,6 +17,7 @@ interface Profile {
   email: string | null;
   full_name: string | null;
   updated_at: string | null;
+  last_seen_at: string | null;
 }
 
 interface ProfileRow extends Profile {
@@ -97,7 +99,8 @@ function parseProfileRow(record: object): ProfileRow | null {
     id: record.id,
     email: 'email' in record ? nullableString(record.email) : null,
     full_name: 'full_name' in record ? nullableString(record.full_name) : null,
-    updated_at: 'updated_at' in record ? nullableString(record.updated_at) : null
+    updated_at: 'updated_at' in record ? nullableString(record.updated_at) : null,
+    last_seen_at: 'last_seen_at' in record ? nullableString(record.last_seen_at) : null
   };
 }
 
@@ -105,7 +108,8 @@ function toProfile(row: ProfileRow): Profile {
   return {
     email: row.email,
     full_name: row.full_name,
-    updated_at: row.updated_at
+    updated_at: row.updated_at,
+    last_seen_at: row.last_seen_at
   };
 }
 
@@ -172,7 +176,7 @@ function memberDisplayName(member: Member) {
 }
 
 function memberLastActive(member: Member) {
-  return member.profiles?.updated_at ? formatDate(member.profiles.updated_at) : 'Never';
+  return formatLastSeenAt(member.profiles?.last_seen_at);
 }
 
 function readAccordionState(): AccordionState {
@@ -334,7 +338,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
 
     const ids = rows.map((row) => row.user_id);
     const profileRows = ids.length
-      ? (await supabase.from('profiles').select('id, email, full_name, updated_at').in('id', ids)).data
+      ? (await supabase.from('profiles').select('id, email, full_name, updated_at, last_seen_at').in('id', ids)).data
       : [];
 
     const profileMap = buildProfileMap(profileRows ?? []);
