@@ -52,7 +52,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
     setLoading(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load contractors.');
+      setMessage(json.error || 'Unable to load team members.');
       setContractors([]);
       return;
     }
@@ -94,12 +94,12 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
     setSaving(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to add contractor.');
+      setMessage(json.error || 'Unable to add team member.');
       return;
     }
 
     setForm(EMPTY_CONTRACTOR);
-    setMessage('Contractor added.');
+    setMessage('Team member added.');
     void loadContractors();
   }
 
@@ -112,7 +112,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      setMessage(json.error || 'Unable to update contractor.');
+      setMessage(json.error || 'Unable to update team member.');
       return;
     }
     void loadContractors();
@@ -120,11 +120,11 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section style={{ marginTop: 24 }}>
-      <h2>Contractors</h2>
+      <h2>Team members</h2>
 
       {canManage ? (
         <details className="card" style={{ marginBottom: 12 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Add contractor</summary>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Add team member</summary>
           <div className="form" style={{ marginTop: 16 }}>
             <div className="grid-2">
               <label>
@@ -172,7 +172,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
       {message ? <p className="muted">{message}</p> : null}
       {loading ? <p className="loading-state">Loading...</p> : null}
-      {!loading && contractors.length === 0 ? <p className="muted">No contractors yet.</p> : null}
+      {!loading && contractors.length === 0 ? <p className="muted">No team members yet.</p> : null}
 
       {contractors.length > 0 ? (
         <div style={{ display: 'grid', gap: 10 }}>
