@@ -441,7 +441,7 @@ export default function ContractorPortalPage() {
             {photoUploadAllowed(plan) && userId ? (
               <div style={{ marginTop: 14 }}>
                 <h4 style={{ fontSize: 15, marginBottom: 8 }}>Job photos</h4>
-                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={false} />
+                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={completed} />
               </div>
             ) : null}
           </div>
@@ -456,6 +456,9 @@ export default function ContractorPortalPage() {
   const today = localToday();
   const todaysJobs = [...groupedJobs.active, ...groupedJobs.upcoming].filter((job) => String(job.date || '').slice(0, 10) === today);
   const upcomingOnly = groupedJobs.upcoming.filter((job) => String(job.date || '').slice(0, 10) !== today);
+  const completedJobs = groupedJobs.completed
+    .slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   return (
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
@@ -514,6 +517,20 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
+          <section id="past-jobs" className="card" aria-label="Past jobs" style={{ marginBottom: 16 }}>
+            <div className="dashboard-section-head">
+              <h2 style={{ fontSize: 18 }}>Past Jobs</h2>
+              <span className="muted">{metrics.completedJobs} completed</span>
+            </div>
+            {completedJobs.length === 0 ? (
+              <p className="muted">No completed jobs yet.</p>
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                {completedJobs.map(renderJobCard)}
+              </div>
+            )}
+          </section>
+
           <section id="earnings" className="card" aria-label="Earnings" style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
               <h2 style={{ fontSize: 18 }}>Earnings</h2>
@@ -531,7 +548,7 @@ export default function ContractorPortalPage() {
                   <tbody>
                     {history.map((row) => (
                       <tr key={row.laborId}>
-                        <td>{row.jobId ? <Link href={`/jobs/${row.jobId}`}>{row.jobTitle}</Link> : row.jobTitle}</td>
+                        <td>{row.jobId ? <Link href={contractorJobDetailPath(row.jobId)}>{row.jobTitle}</Link> : row.jobTitle}</td>
                         <td>{row.customerName}</td>
                         <td>{row.workDate || '—'}</td>
                         <td>{formatContractorMoney(row.amountEarned)}</td>
