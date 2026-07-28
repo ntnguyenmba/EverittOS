@@ -108,12 +108,12 @@ export function AppNavItems({
 
   if (isClientRole(normalizedRole)) {
     const links = [
-      { label: 'Dashboard', href: CLIENT_PORTAL_HOME },
-      { label: 'Appointments', href: `${CLIENT_PORTAL_HOME}?tab=jobs` },
-      { label: 'Settings', href: CLIENT_PORTAL_SETTINGS }
+      { label: t('portal.common.overview'), href: CLIENT_PORTAL_HOME },
+      { label: t('portal.common.appointments'), href: `${CLIENT_PORTAL_HOME}?tab=jobs` },
+      { label: t('portal.common.account'), href: CLIENT_PORTAL_SETTINGS }
     ];
     return (
-      <nav className="app-nav" aria-label="App navigation">
+      <nav className="app-nav" aria-label={t('portal.common.sections')}>
         {links.map(({ label, href }) => (
           <NavLinkRow
             key={href}
@@ -132,14 +132,14 @@ export function AppNavItems({
 
   if (isContractorRole(normalizedRole)) {
     const links = [
-      { label: 'Dashboard', href: CONTRACTOR_PORTAL_HOME },
-      { label: 'Jobs', href: `${CONTRACTOR_PORTAL_HOME}#jobs` },
-      { label: 'Schedule', href: `${CONTRACTOR_PORTAL_HOME}#schedule` },
-      { label: 'Earnings', href: `${CONTRACTOR_PORTAL_HOME}#earnings` },
-      { label: 'Settings', href: CONTRACTOR_PORTAL_SETTINGS }
+      { label: t('portal.contractor.nav.dashboard'), href: CONTRACTOR_PORTAL_HOME },
+      { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#jobs` },
+      { label: t('portal.contractor.nav.schedule'), href: `${CONTRACTOR_PORTAL_HOME}#schedule` },
+      { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#earnings` },
+      { label: t('portal.contractor.nav.settings'), href: CONTRACTOR_PORTAL_SETTINGS }
     ];
     return (
-      <nav className="app-nav" aria-label="App navigation">
+      <nav className="app-nav" aria-label={t('portal.common.sections')}>
         {links.map(({ label, href }) => (
           <NavLinkRow
             key={href}
