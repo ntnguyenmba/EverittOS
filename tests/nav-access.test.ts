@@ -38,13 +38,13 @@ describe('navigation visibility by role', () => {
     assert.equal(canAccessNavHref('owner', '/dashboard', 'business'), true);
   });
 
-  it('manager sees operational routes but not billing or integrations', () => {
+  it('manager sees operational routes but not billing or payments', () => {
     assert.equal(canShowNavHref('manager', '/dashboard'), true);
     assert.equal(canShowNavHref('manager', '/jobs'), true);
     assert.equal(canShowNavHref('manager', '/customers'), true);
     assert.equal(canShowNavHref('manager', '/leads'), true);
     assert.equal(canShowNavHref('manager', '/people'), true);
-    assert.equal(canShowNavHref('manager', '/invoices'), true);
+    assert.equal(canShowNavHref('manager', '/invoices'), false);
     assert.equal(canShowNavHref('manager', '/settings/billing'), false);
     assert.equal(canShowNavHref('manager', '/settings/integrations'), false);
     assert.equal(canShowNavHref('manager', '/analytics'), false);
@@ -91,13 +91,44 @@ describe('settings links by role', () => {
 
     const ownerLinks = settingsLinksForRole('owner', 'business');
     assert.ok(ownerLinks.some((link) => link.href === '/settings/billing'));
-    assert.ok(ownerLinks.some((link) => link.href === '/settings/integrations'));
+    assert.equal(ownerLinks.some((link) => link.href === '/settings/integrations'), false);
+    assert.ok(ownerLinks.some((link) => link.href === '/settings/account'));
+    assert.ok(ownerLinks.some((link) => link.href === '/settings'));
 
     const managerLinks = settingsLinksForRole('manager', 'business');
     assert.equal(managerLinks.some((link) => link.href === '/settings/billing'), false);
     assert.equal(managerLinks.some((link) => link.href === '/settings/integrations'), false);
     assert.ok(managerLinks.some((link) => link.href === '/settings/account'));
     assert.ok(managerLinks.some((link) => link.href === '/settings/notifications'));
+  });
+
+  it('owner primary nav is slim and includes Payments', () => {
+    const items = appNavItemsForRole('owner', 'business');
+    const hrefs = items.map((item) => item.href);
+    assert.deepEqual(hrefs, [
+      '/dashboard',
+      '/jobs',
+      '/schedule',
+      '/customers',
+      '/invoices',
+      '/people',
+      '/reports',
+      '/settings'
+    ]);
+  });
+
+  it('manager primary nav excludes Payments', () => {
+    const items = appNavItemsForRole('manager', 'business');
+    const hrefs = items.map((item) => item.href);
+    assert.deepEqual(hrefs, [
+      '/dashboard',
+      '/jobs',
+      '/schedule',
+      '/customers',
+      '/people',
+      '/reports',
+      '/settings'
+    ]);
   });
 });
 

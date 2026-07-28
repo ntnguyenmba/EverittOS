@@ -22,11 +22,12 @@ import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { fetchUsageCounts, reportLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { hasPermission } from '@/lib/permissions';
-import { canViewInternalNotes, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { canViewInternalNotes, isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { contractorIdentityFromWorkers } from '@/lib/contractor-dashboard';
+import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import { workerIdentityAliases } from '@/lib/worker-assignment';
 import { formatSupabaseError } from '@/lib/action-messages';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -155,6 +156,10 @@ export default function JobDetailPage({ params }: PageProps) {
       .maybeSingle();
     const org = await fetchOrganizationContext(user.id);
     const role = normalizeRole(org?.role || profile?.role);
+    if (isContractorRole(role)) {
+      router.replace(contractorJobDetailPath(jobId));
+      return;
+    }
     const userPlan = normalizePlan(profile?.plan);
     const canReadInternalNotes = canViewInternalNotes(role);
     setUserRole(role);

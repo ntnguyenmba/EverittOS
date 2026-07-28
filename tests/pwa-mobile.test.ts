@@ -26,9 +26,9 @@ test('service worker avoids caching private API routes', () => {
   assert.doesNotMatch(sw, /cache\.put\(request, response\.clone\(\)\)[\s\S]*\/api\//);
 });
 
-test('apple-app-site-association uses placeholder team ID', () => {
+test('apple-app-site-association uses configured Apple Team ID', () => {
   const aasa = readFileSync('public/.well-known/apple-app-site-association', 'utf8');
-  assert.match(aasa, /TEAMID\.com\.everittventures\.everittos/);
+  assert.match(aasa, /H95SEQ2ET8\.com\.everittventures\.everittos/);
   assert.doesNotMatch(aasa, /\.json/);
 });
 

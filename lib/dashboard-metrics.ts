@@ -11,7 +11,7 @@ import {
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
 
-export type DashboardDateRange = 'month' | 'quarter' | 'year' | 'last_year' | 'all_time';
+export type DashboardDateRange = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'last_year' | 'all_time';
 
 /**
  * Dashboard financial metrics.
@@ -186,6 +186,18 @@ function todayIso(): string {
 export function rangeBounds(range: DashboardDateRange, now = new Date()): { start: string | null; end: string | null } {
   const year = now.getFullYear();
   if (range === 'all_time') return { start: null, end: null };
+  if (range === 'today') {
+    const start = formatLocalDateOnly(now);
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return { start, end: formatLocalDateOnly(endDate) };
+  }
+  if (range === 'week') {
+    const day = now.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+    const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 7);
+    return { start: formatLocalDateOnly(startDate), end: formatLocalDateOnly(endDate) };
+  }
   if (range === 'last_year') return { start: `${year - 1}-01-01`, end: `${year}-01-01` };
   if (range === 'year') return { start: `${year}-01-01`, end: `${year + 1}-01-01` };
   if (range === 'quarter') {

@@ -117,6 +117,8 @@ export type DashboardFinanceCopy = {
 
 const en: DashboardFinanceCopy = {
   ranges: {
+    today: 'Today',
+    week: 'This week',
     month: 'This month',
     quarter: 'This quarter',
     year: 'This year',
@@ -286,6 +288,8 @@ const en: DashboardFinanceCopy = {
 const es: DashboardFinanceCopy = {
   ...en,
   ranges: {
+    today: 'Hoy',
+    week: 'Esta semana',
     month: 'Este mes',
     quarter: 'Este trimestre',
     year: 'Este año',
@@ -439,6 +443,8 @@ const es: DashboardFinanceCopy = {
 const vi: DashboardFinanceCopy = {
   ...en,
   ranges: {
+    today: 'Hôm nay',
+    week: 'Tuần này',
     month: 'Tháng này',
     quarter: 'Quý này',
     year: 'Năm nay',

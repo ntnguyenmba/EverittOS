@@ -7,7 +7,7 @@ import { clientNavItems, CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 describe('portal navigation menus', () => {
   it('contractor menu stays limited to portal sections', () => {
     const labels = contractorNavItems().map((item) => item.label);
-    assert.deepEqual(labels, ['Overview', 'My jobs', 'Schedule', 'Earnings', 'Notifications', 'Account']);
+    assert.deepEqual(labels, ['Dashboard', 'Jobs', 'Schedule', 'Earnings', 'Settings']);
     assert.equal(CONTRACTOR_SETTINGS_PATH, '/portal/contractor/settings');
     assert.equal(
       contractorNavItems().some((item) => /invoice|customer|billing|analytics/i.test(item.label)),
@@ -17,7 +17,7 @@ describe('portal navigation menus', () => {
 
   it('customer menu stays limited to portal sections', () => {
     const labels = clientNavItems().map((item) => item.label);
-    assert.deepEqual(labels, ['Overview', 'Appointments', 'Schedule', 'Reports', 'Invoices', 'Account']);
+    assert.deepEqual(labels, ['Dashboard', 'Appointments', 'Invoices', 'Settings']);
     assert.equal(CLIENT_SETTINGS_PATH, '/portal/client/settings');
     assert.equal(
       clientNavItems().some((item) => /team|analytics|expense|quickbooks/i.test(item.label)),

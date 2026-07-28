@@ -14,32 +14,32 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function integrationsRedirect(params: Record<string, string>) {
-  const url = new URL(appUrl('/settings/integrations'));
+function scheduleRedirect(params: Record<string, string>) {
+  const url = new URL(appUrl('/schedule'));
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   return NextResponse.redirect(url.toString());
 }
 
 export async function GET(request: Request) {
   if (!googleCalendarConfigured()) {
-    return integrationsRedirect({ error: 'not_configured' });
+    return scheduleRedirect({ error: 'not_configured' });
   }
 
   const url = new URL(request.url);
   const error = url.searchParams.get('error');
   if (error) {
-    return integrationsRedirect({ error: 'google_denied' });
+    return scheduleRedirect({ error: 'google_denied' });
   }
 
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   if (!code || !state) {
-    return integrationsRedirect({ error: 'missing_code' });
+    return scheduleRedirect({ error: 'missing_code' });
   }
 
   const statePayload = verifyGoogleOAuthState(state);
   if (!statePayload) {
-    return integrationsRedirect({ error: 'invalid_state' });
+    return scheduleRedirect({ error: 'invalid_state' });
   }
 
   const supabase = await createServerSupabase();
@@ -48,12 +48,12 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user || user.id !== statePayload.userId) {
-    return integrationsRedirect({ error: 'session_mismatch' });
+    return scheduleRedirect({ error: 'session_mismatch' });
   }
 
   const org = await fetchOrganizationContextForRequest(supabase, user.id);
   if (!org || !canManageOrganizationSettings(normalizeRole(org.role))) {
-    return integrationsRedirect({ error: 'permission_denied' });
+    return scheduleRedirect({ error: 'permission_denied' });
   }
 
   if (org.organizationId !== statePayload.organizationId) {
@@ -64,12 +64,12 @@ export async function GET(request: Request) {
       phase: 'org_mismatch',
       reason: `state=${statePayload.organizationId}`
     });
-    return integrationsRedirect({ error: 'permission_denied', detail: 'Workspace changed during sign-in. Try again.' });
+    return scheduleRedirect({ error: 'permission_denied', detail: 'Workspace changed during sign-in. Try again.' });
   }
 
   const admin = createAdminSupabase();
   if (!admin) {
-    return integrationsRedirect({ error: 'server_config' });
+    return scheduleRedirect({ error: 'server_config' });
   }
 
   try {
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
     const refreshToken = tokens.refresh_token || existing?.refresh_token;
     if (!refreshToken) {
-      return integrationsRedirect({ error: 'missing_refresh_token' });
+      return scheduleRedirect({ error: 'missing_refresh_token' });
     }
 
     const googleEmail = await fetchGoogleUserEmail(tokens.access_token);
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       );
 
       if (retryError) {
-        return integrationsRedirect({ error: 'connect_failed', detail: retryError.message.slice(0, 180) });
+        return scheduleRedirect({ error: 'connect_failed', detail: retryError.message.slice(0, 180) });
       }
     }
 
@@ -142,7 +142,7 @@ export async function GET(request: Request) {
     });
 
     if (!active) {
-      return integrationsRedirect({ error: 'connect_failed', detail: 'Connection was not saved.' });
+      return scheduleRedirect({ error: 'connect_failed', detail: 'Connection was not saved.' });
     }
 
     const { data: settings } = await admin
@@ -157,7 +157,7 @@ export async function GET(request: Request) {
       settings?.timezone || 'America/New_York'
     );
 
-    return integrationsRedirect({ googleCalendar: 'connected' });
+    return scheduleRedirect({ googleCalendar: 'connected' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Google Calendar connection failed.';
     logAuthEvent('google_calendar_callback', {
@@ -169,6 +169,6 @@ export async function GET(request: Request) {
       phase: 'exception',
       reason: message.slice(0, 180)
     });
-    return integrationsRedirect({ error: 'connect_failed', detail: message.slice(0, 180) });
+    return scheduleRedirect({ error: 'connect_failed', detail: message.slice(0, 180) });
   }
 }

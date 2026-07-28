@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function redirectWithError(code: string) {
-  return NextResponse.redirect(appUrl(`/settings/integrations?quickbooks=error&reason=${code}`));
+  return NextResponse.redirect(appUrl(`/invoices?quickbooks=error&reason=${code}`));
 }
 
 export async function GET(request: Request) {
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
       hasCompanyName: Boolean(companyName)
     });
 
-    return NextResponse.redirect(appUrl('/settings/integrations?quickbooks=connected'));
+    return NextResponse.redirect(appUrl('/invoices?quickbooks=connected'));
   } catch (error) {
     const message =
       error instanceof QuickBooksApiError

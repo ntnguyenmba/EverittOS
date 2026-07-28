@@ -27,8 +27,8 @@ test('customer lifecycle stage labels translate and fall back cleanly', () => {
   assert.equal(customerStageLabel('active', 'en'), 'Active');
   assert.equal(customerStageLabel('past', 'es'), 'Anterior');
   assert.equal(customerStageLabel('archived', 'vi'), 'Đã lưu trữ');
-  assert.equal(getCustomerLifecycleCopy('es').filters.leads, 'Solicitudes');
-  assert.equal(getCustomerLifecycleCopy('en').filters.leads, 'Requests');
+  assert.equal(getCustomerLifecycleCopy('es').filters.leads, 'Prospectos');
+  assert.equal(getCustomerLifecycleCopy('en').filters.leads, 'Leads');
   assert.equal(normalizeLocale('pt'), 'en');
 });
 

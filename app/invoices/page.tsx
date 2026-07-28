@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
+import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { RecurringInvoicesPanel } from '@/components/recurring-invoices-panel';
 import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -67,6 +69,22 @@ function InvoicesPageContent() {
       />
 
       {!focusOutstanding ? <RecurringInvoicesPanel canManage={canManage} /> : null}
+
+      {canManage ? (
+        <details style={{ marginTop: 24 }}>
+          <summary>
+            <strong>Payment connections</strong>
+          </summary>
+          <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+            <div className="card">
+              <Link className="btn" href="/settings/billing">
+                Subscription
+              </Link>
+            </div>
+            <QuickBooksIntegrationPanel canManage={canManage} />
+          </div>
+        </details>
+      ) : null}
     </AppShell>
   );
 }

@@ -63,6 +63,8 @@ function SchedulePageContent() {
         .from('jobs')
         .select('id, title, customer_name, status, start_date, due_date, scheduled_start, scheduled_end, assigned_to')
         .not('status', 'eq', 'cancelled')
+        .not('status', 'eq', 'canceled')
+        .not('status', 'eq', 'completed')
         .order('due_date', { ascending: true, nullsFirst: false }),
       user.id,
       org?.organizationId,
@@ -187,7 +189,6 @@ function SchedulePageContent() {
     <AppShell plan={plan} role={role}>
       <PageHeader
         title={t('ux.pageTitles.schedule')}
-        subtitle={t('ux.helperSchedule')}
         action={
           <Link className="btn btn-primary" href="/schedule/new">
             Schedule work
@@ -204,7 +205,6 @@ function SchedulePageContent() {
       {!loading && !error && visibleJobs.length === 0 && (
         <div className="card empty-action-card" style={{ marginTop: 18 }}>
           <h3>Nothing scheduled</h3>
-          <p className="muted">Create a job first, then schedule it here so it appears on the calendar.</p>
           <div className="settings-actions">
             <Link className="btn btn-primary" href="/jobs/new">
               Create job
@@ -226,6 +226,19 @@ function SchedulePageContent() {
           />
         </div>
       )}
+
+      <details style={{ marginTop: 24 }}>
+        <summary>
+          <strong>Calendar connections</strong>
+        </summary>
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <a className="btn" href="/api/integrations/google-calendar/connect">
+              Google Calendar
+            </a>
+          </div>
+        </div>
+      </details>
     </AppShell>
   );
 }

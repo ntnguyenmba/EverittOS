@@ -116,11 +116,6 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         </div>
 
         <div className="mobile-nav-drawer-footer">
-          <p className="mobile-nav-settings-note">
-            {isClientRole(role) || isContractorRole(role)
-              ? 'Account, notifications, and legal links are available in Account settings.'
-              : 'Account, billing, Google Calendar, and QuickBooks are managed inside Settings.'}
-          </p>
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
           {!isClientRole(role) ? (
             <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>

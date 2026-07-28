@@ -611,7 +611,7 @@ export function OnboardingWizard() {
             {!calendarStatus.configured ? (
               <>
                 <p className="muted">{t('onboarding.calendarNotConfigured')}</p>
-                <Link className="btn" href="/settings/integrations">
+                <Link className="btn" href="/schedule">
                   {t('onboarding.openIntegrations')}
                 </Link>
               </>

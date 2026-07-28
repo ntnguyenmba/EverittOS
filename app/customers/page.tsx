@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { ContactLink } from '@/components/contact-link';
 import { CustomerLogo } from '@/components/customer-logo';
@@ -99,6 +98,16 @@ function CustomersPageContent() {
   const [role, setRole] = useState(normalizeRole('owner'));
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!exportMenuRef.current?.contains(event.target as Node)) setExportOpen(false);
+    }
+    window.addEventListener('mousedown', onPointerDown);
+    return () => window.removeEventListener('mousedown', onPointerDown);
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -132,14 +141,15 @@ function CustomersPageContent() {
     }
     if (stageFilter === 'lead' || stageFilter === 'leads') {
       query = query.or('record_type.eq.lead,pipeline_stage.in.(lead,qualified,open,contacted,quoted)');
+    } else if (stageFilter === 'archived') {
+      query = query.eq('pipeline_stage', 'archived');
     } else if (stageFilter === 'active') {
       query = query.eq('record_type', 'customer').eq('pipeline_stage', 'active');
     } else if (stageFilter === 'past' || stageFilter === 'inactive' || stageFilter === 'former') {
       query = query.eq('record_type', 'customer').in('pipeline_stage', ['past', 'inactive', 'former']);
-    } else if (stageFilter === 'recurring') {
-      query = query.eq('record_type', 'customer').eq('pipeline_stage', 'recurring');
-    } else if (stageFilter === 'archived') {
-      query = query.eq('pipeline_stage', 'archived');
+    } else {
+      // Customers tab (default): non-lead, non-archived customers.
+      query = query.eq('record_type', 'customer').neq('pipeline_stage', 'archived');
     }
 
     const [{ data, error }, orgIsDemo] = await Promise.all([
@@ -323,13 +333,59 @@ function CustomersPageContent() {
           title={t('nav.crm')}
           subtitle={t('ux.pageTitles.customers')}
           action={
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn" type="button" onClick={exportPdf} disabled={loading || customers.length === 0}>
-                Export PDF
-              </button>
-              <button className="btn" type="button" onClick={exportExcel} disabled={loading || customers.length === 0}>
-                Export Excel
-              </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div ref={exportMenuRef} style={{ position: 'relative' }}>
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={loading || customers.length === 0}
+                  aria-expanded={exportOpen}
+                  onClick={() => setExportOpen((current) => !current)}
+                >
+                  Export
+                </button>
+                {exportOpen ? (
+                  <div
+                    role="menu"
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 'calc(100% + 6px)',
+                      minWidth: 140,
+                      background: 'var(--surface, #fff)',
+                      border: '1px solid var(--line, #d9dedc)',
+                      borderRadius: 10,
+                      padding: 6,
+                      zIndex: 20,
+                      display: 'grid',
+                      gap: 4
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ justifyContent: 'flex-start' }}
+                      onClick={() => {
+                        setExportOpen(false);
+                        exportPdf();
+                      }}
+                    >
+                      PDF
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ justifyContent: 'flex-start' }}
+                      onClick={() => {
+                        setExportOpen(false);
+                        exportExcel();
+                      }}
+                    >
+                      Excel
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               {canManage ? (
                 <Link className="btn btn-primary" href="/customers/new">
                   Add customer
@@ -342,20 +398,16 @@ function CustomersPageContent() {
         <div className="job-detail-actions" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           {(
             [
-              { id: 'all', label: lifecycle.filters.all, href: '/customers' },
-              { id: 'active', label: lifecycle.filters.active, href: '/customers?stage=active' },
-              { id: 'past', label: lifecycle.filters.past, href: '/customers?stage=past' },
+              { id: 'customers', label: lifecycle.filters.customers, href: '/customers' },
               { id: 'leads', label: lifecycle.filters.leads, href: '/customers?stage=leads' },
               { id: 'archived', label: lifecycle.filters.archived, href: '/customers?stage=archived' }
             ] as const
           ).map((filter) => {
             const active =
-              filter.id === 'all'
-                ? !stageFilter
+              filter.id === 'customers'
+                ? !stageFilter || stageFilter === 'customers'
                 : stageFilter === filter.id ||
-                  (filter.id === 'leads' && (stageFilter === 'lead' || stageFilter === 'leads')) ||
-                  (filter.id === 'past' &&
-                    (stageFilter === 'past' || stageFilter === 'inactive' || stageFilter === 'former'));
+                  (filter.id === 'leads' && (stageFilter === 'lead' || stageFilter === 'leads'));
             return (
               <Link key={filter.id} className={active ? 'btn btn-primary' : 'btn'} href={filter.href}>
                 {filter.label}

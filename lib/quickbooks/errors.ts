@@ -68,7 +68,7 @@ export function parseQuickBooksError(input: {
 
   let userMessage = 'QuickBooks could not complete this request. Try again in a moment.';
   if (code === 'invalid_grant' || reconnectRequired) {
-    userMessage = 'QuickBooks access expired. Disconnect and connect again in Settings → Integrations.';
+    userMessage = 'QuickBooks access expired. Disconnect and connect again in Payments.';
   } else if (input.httpStatus === 429) {
     userMessage = 'QuickBooks is rate limiting requests. Wait a minute and try again.';
   } else if (input.httpStatus >= 500) {

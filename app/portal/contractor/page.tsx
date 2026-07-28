@@ -23,6 +23,7 @@ import {
   type ContractorLoadErrorCode,
   type ContractorPaymentHistoryRow
 } from '@/lib/contractor-dashboard';
+import { contractorJobDetailPath, isLegacyContractorShareNotification } from '@/lib/contractor-job-access';
 import {
   contractorJobCalendarEvent,
   downloadCalendarIcs,
@@ -316,7 +317,11 @@ export default function ContractorPortalPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(12);
-    setNotifications(notificationRows || []);
+    setNotifications(
+      (notificationRows || []).filter(
+        (item: { title?: string | null; body?: string | null }) => !isLegacyContractorShareNotification(item)
+      )
+    );
 
     setErrors(Array.from(new Set(nextErrors)));
     setLoading(false);
@@ -411,7 +416,7 @@ export default function ContractorPortalPage() {
                   Mark complete
                 </button>
               ) : null}
-              <Link className="btn" href={`/jobs/${job.id}`}>
+              <Link className="btn" href={contractorJobDetailPath(job.id)}>
                 Open details
               </Link>
               {(() => {

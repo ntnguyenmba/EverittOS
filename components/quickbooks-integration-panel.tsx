@@ -190,7 +190,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       <div className="settings-actions" style={{ marginTop: 12 }}>
         {unauthorized ? (
-          <a className="btn btn-primary" href="/login?next=/settings/integrations">
+          <a className="btn btn-primary" href="/login?next=/invoices">
             Sign in again
           </a>
         ) : showConnect ? (

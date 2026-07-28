@@ -4,12 +4,17 @@ import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { navLabel } from '@/lib/nav-i18n';
 import {
+  appNavItemsForRole,
   billingUpgradeHref,
   isNavLinkActive,
   resolveNavItem
 } from '@/lib/nav-access';
-import { APP_NAV_SECTIONS } from '@/lib/nav-links';
-import { CLIENT_PORTAL_HOME, CLIENT_PORTAL_SETTINGS, CONTRACTOR_PORTAL_HOME, CONTRACTOR_PORTAL_SETTINGS } from '@/lib/portal-access';
+import {
+  CLIENT_PORTAL_HOME,
+  CLIENT_PORTAL_SETTINGS,
+  CONTRACTOR_PORTAL_HOME,
+  CONTRACTOR_PORTAL_SETTINGS
+} from '@/lib/portal-access';
 import { normalizePlan, planShortBadgeName, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 
@@ -101,97 +106,74 @@ export function AppNavItems({
   const normalized = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
 
-  const portalLinks: { label: string; href: string }[] = [];
   if (isClientRole(normalizedRole)) {
-    portalLinks.push({ label: 'Overview', href: CLIENT_PORTAL_HOME });
-    portalLinks.push({ label: 'Account', href: CLIENT_PORTAL_SETTINGS });
-  }
-  if (isContractorRole(normalizedRole)) {
-    portalLinks.push({ label: 'Overview', href: CONTRACTOR_PORTAL_HOME });
-    portalLinks.push({ label: 'Account', href: CONTRACTOR_PORTAL_SETTINGS });
-  }
-
-  if (isClientRole(normalizedRole) || isContractorRole(normalizedRole)) {
+    const links = [
+      { label: 'Dashboard', href: CLIENT_PORTAL_HOME },
+      { label: 'Appointments', href: `${CLIENT_PORTAL_HOME}?tab=jobs` },
+      { label: 'Invoices', href: `${CLIENT_PORTAL_HOME}?tab=invoices` },
+      { label: 'Settings', href: CLIENT_PORTAL_SETTINGS }
+    ];
     return (
       <nav className="app-nav" aria-label="App navigation">
-        {portalLinks.map(({ label, href }) => {
-          const resolution = resolveNavItem(normalizedRole, normalized, href);
-          if (!resolution.visible) return null;
-          return (
-            <NavLinkRow
-              key={href}
-              href={href}
-              label={label}
-              accessible={resolution.accessible}
-              requiredPlan={resolution.requiredPlan}
-              pathname={pathname}
-              linkClassName={linkClassName}
-              lockedClassName={lockedClassName}
-              onNavigate={onNavigate}
-            />
-          );
-        })}
-      </nav>
-    );
-  }
-
-  return (
-    <nav className="app-nav" aria-label="App navigation">
-      {portalLinks.map(({ label, href }) => {
-        const resolution = resolveNavItem(normalizedRole, normalized, href);
-        if (!resolution.visible) return null;
-        return (
+        {links.map(({ label, href }) => (
           <NavLinkRow
             key={href}
             href={href}
-            label={navLabel(href, t, label)}
-            accessible={resolution.accessible}
-            requiredPlan={resolution.requiredPlan}
+            label={label}
+            accessible
             pathname={pathname}
             linkClassName={linkClassName}
             lockedClassName={lockedClassName}
             onNavigate={onNavigate}
           />
-        );
-      })}
+        ))}
+      </nav>
+    );
+  }
 
-      {APP_NAV_SECTIONS.map((section, index) => {
-        const visibleItems = section.items
-          .map((item) => {
-            const resolution = resolveNavItem(normalizedRole, normalized, item.href);
-            if (!resolution.visible) return null;
-            return { ...item, resolution };
-          })
-          .filter(Boolean) as Array<{
-          label: string;
-          href: string;
-          resolution: ReturnType<typeof resolveNavItem>;
-        }>;
+  if (isContractorRole(normalizedRole)) {
+    const links = [
+      { label: 'Dashboard', href: CONTRACTOR_PORTAL_HOME },
+      { label: 'Jobs', href: `${CONTRACTOR_PORTAL_HOME}#jobs` },
+      { label: 'Schedule', href: `${CONTRACTOR_PORTAL_HOME}#schedule` },
+      { label: 'Earnings', href: `${CONTRACTOR_PORTAL_HOME}#earnings` },
+      { label: 'Settings', href: CONTRACTOR_PORTAL_SETTINGS }
+    ];
+    return (
+      <nav className="app-nav" aria-label="App navigation">
+        {links.map(({ label, href }) => (
+          <NavLinkRow
+            key={href}
+            href={href}
+            label={label}
+            accessible={resolveNavItem(normalizedRole, normalized, href.split('#')[0]).accessible}
+            pathname={pathname}
+            linkClassName={linkClassName}
+            lockedClassName={lockedClassName}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </nav>
+    );
+  }
 
-        if (!visibleItems.length) return null;
+  const items = appNavItemsForRole(normalizedRole, normalized);
 
-        return (
-          <div
-            key={section.id}
-            className={`nav-section${index > 0 ? ' nav-section-spaced' : ''}`}
-          >
-            <p className="nav-section-label">{section.label}</p>
-            {visibleItems.map(({ label, href, resolution }) => (
-              <NavLinkRow
-                key={href}
-                href={href}
-                label={navLabel(href, t, label)}
-                accessible={resolution.accessible}
-                requiredPlan={resolution.requiredPlan}
-                pathname={pathname}
-                linkClassName={linkClassName}
-                lockedClassName={lockedClassName}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
-        );
-      })}
+  return (
+    <nav className="app-nav" aria-label="App navigation">
+      {items.map(({ label, href, resolution }) => (
+        <NavLinkRow
+          key={href}
+          href={href}
+          label={navLabel(href, t, label)}
+          accessible={resolution.accessible}
+          requiredPlan={resolution.requiredPlan}
+          pathname={pathname}
+          linkClassName={linkClassName}
+          lockedClassName={lockedClassName}
+          onNavigate={onNavigate}
+        />
+      ))}
 
       {unread > 0 ? (
         <a

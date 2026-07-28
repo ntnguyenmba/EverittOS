@@ -326,7 +326,7 @@ export async function ensureValidAccessToken(
   if (!accessTokenNeedsRefresh(connection)) {
     if (!connection.access_token) {
       throw new QuickBooksApiError({
-        userMessage: 'QuickBooks access expired. Disconnect and connect again in Settings → Integrations.',
+        userMessage: 'QuickBooks access expired. Disconnect and connect again in Payments.',
         httpStatus: 401,
         intuitTid: null,
         reconnectRequired: true,
@@ -344,7 +344,7 @@ export async function ensureValidAccessToken(
       'Refresh token missing. Reconnect QuickBooks.'
     );
     throw new QuickBooksApiError({
-      userMessage: 'QuickBooks access expired. Disconnect and connect again in Settings → Integrations.',
+      userMessage: 'QuickBooks access expired. Disconnect and connect again in Payments.',
       httpStatus: 401,
       intuitTid: null,
       reconnectRequired: true,

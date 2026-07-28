@@ -3,7 +3,12 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { StatusPill } from '@/components/status-pill';
-import { formatLocalDate, formatScheduleTimeRange, localDateFromIso } from '@/lib/schedule-times';
+import {
+  isActiveScheduleJob,
+  partitionScheduleJobs,
+  scheduleJobDateKey
+} from '@/lib/schedule-classification';
+import { formatLocalDate, formatScheduleTimeRange } from '@/lib/schedule-times';
 
 export type ScheduleJob = {
   id: string;
@@ -34,16 +39,12 @@ function dateKey(date: Date) {
 }
 
 function jobDateKey(job: ScheduleJob): string | null {
-  if (job.start_date) return String(job.start_date).slice(0, 10);
-  if (job.due_date) return String(job.due_date).slice(0, 10);
-  if (job.scheduled_start) return localDateFromIso(job.scheduled_start);
-  return null;
+  return scheduleJobDateKey(job);
 }
 
 function actionLabel(status: string | null) {
   const value = String(status || 'new').toLowerCase();
   if (value === 'in_progress' || value === 'in progress' || value === 'started') return 'Continue';
-  if (value === 'completed' || value === 'complete') return 'View';
   return 'Start';
 }
 
@@ -63,23 +64,25 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
   const tomorrowKey = dateKey(addDays(today, 1));
   const weekEndKey = dateKey(addDays(today, 6));
 
-  const scheduled = useMemo(
-    () => jobs.filter((job) => jobDateKey(job)).sort((a, b) => (jobDateKey(a) || '').localeCompare(jobDateKey(b) || '')),
-    [jobs]
+  const partitions = useMemo(
+    () => partitionScheduleJobs(jobs, todayKey, tomorrowKey, weekEndKey),
+    [jobs, todayKey, tomorrowKey, weekEndKey]
   );
-  const unscheduled = useMemo(() => jobs.filter((job) => !jobDateKey(job)), [jobs]);
+  const scheduled = useMemo(
+    () =>
+      partitions.active
+        .filter((job) => jobDateKey(job))
+        .sort((a, b) => (jobDateKey(a) || '').localeCompare(jobDateKey(b) || '')),
+    [partitions.active]
+  );
+  const unscheduled = partitions.unscheduled;
 
   const visibleJobs = useMemo(() => {
-    if (view === 'today') return scheduled.filter((job) => jobDateKey(job) === todayKey);
-    if (view === 'tomorrow') return scheduled.filter((job) => jobDateKey(job) === tomorrowKey);
-    if (view === 'week') {
-      return scheduled.filter((job) => {
-        const key = jobDateKey(job);
-        return Boolean(key && key >= todayKey && key <= weekEndKey);
-      });
-    }
+    if (view === 'today') return partitions.today;
+    if (view === 'tomorrow') return partitions.tomorrow;
+    if (view === 'week') return partitions.week;
     return [];
-  }, [scheduled, todayKey, tomorrowKey, view, weekEndKey]);
+  }, [partitions, view]);
 
   const calendarDays = useMemo(() => {
     const start = new Date(calendarAnchor);

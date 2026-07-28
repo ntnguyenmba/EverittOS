@@ -11,13 +11,18 @@ const ALLOWED_RECORD_TYPES = new Set(['job', 'customer', 'photo', 'report', 'not
 const ALLOWED_ACCESS_LEVELS = new Set(['view', 'edit']);
 
 function recordTitle(recordType: string): string {
-  if (recordType === 'job') return 'Job shared with you';
+  if (recordType === 'job') return 'Job available';
   if (recordType === 'customer') return 'Customer record shared with you';
   if (recordType === 'photo') return 'Photo shared with you';
   if (recordType === 'report') return 'Report shared with you';
   if (recordType === 'note') return 'Note shared with you';
   if (recordType === 'document') return 'Document shared with you';
   return 'Record shared with you';
+}
+
+function recordBody(recordType: string, accessLevel: string): string {
+  if (recordType === 'job') return 'A job is available for you to review.';
+  return `You now have ${accessLevel} access to a ${recordType} record.`;
 }
 
 export async function GET(request: Request) {
@@ -136,7 +141,7 @@ export async function POST(request: Request) {
       user_id: row.shared_with_user_id,
       type: 'assignment',
       title: recordTitle(recordType),
-      body: `You now have ${accessLevel} access to a ${recordType} record.`,
+      body: recordBody(recordType, accessLevel),
       related_job_id: recordType === 'job' ? recordId : null
     }))
   );

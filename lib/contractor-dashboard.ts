@@ -101,12 +101,11 @@ export function normalizeLaborPaymentStatus(status: string | null | undefined): 
 
 export function contractorNavItems(): Array<{ id: string; label: string; href: string }> {
   return [
-    { id: 'overview', label: 'Overview', href: `${CONTRACTOR_HOME_PATH}#overview` },
-    { id: 'jobs', label: 'My jobs', href: `${CONTRACTOR_HOME_PATH}#jobs` },
+    { id: 'overview', label: 'Dashboard', href: CONTRACTOR_HOME_PATH },
+    { id: 'jobs', label: 'Jobs', href: `${CONTRACTOR_HOME_PATH}#jobs` },
     { id: 'schedule', label: 'Schedule', href: `${CONTRACTOR_HOME_PATH}#schedule` },
     { id: 'earnings', label: 'Earnings', href: `${CONTRACTOR_HOME_PATH}#earnings` },
-    { id: 'notifications', label: 'Notifications', href: `${CONTRACTOR_HOME_PATH}#notifications` },
-    { id: 'account', label: 'Account', href: CONTRACTOR_SETTINGS_PATH }
+    { id: 'account', label: 'Settings', href: CONTRACTOR_SETTINGS_PATH }
   ];
 }
 

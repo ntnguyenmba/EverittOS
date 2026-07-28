@@ -6,6 +6,7 @@ export type CustomerLifecycleCopy = {
     active: string;
     past: string;
     leads: string;
+    customers: string;
     archived: string;
   };
   stages: Record<string, string>;
@@ -26,10 +27,11 @@ export type CustomerLifecycleCopy = {
 
 const en: CustomerLifecycleCopy = {
   filters: {
-    all: 'All',
+    all: 'Customers',
     active: 'Active',
     past: 'Past',
-    leads: 'Requests',
+    leads: 'Leads',
+    customers: 'Customers',
     archived: 'Archived'
   },
   stages: {
@@ -69,10 +71,11 @@ const en: CustomerLifecycleCopy = {
 
 const es: CustomerLifecycleCopy = {
   filters: {
-    all: 'Todos',
+    all: 'Clientes',
     active: 'Activos',
     past: 'Anteriores',
-    leads: 'Solicitudes',
+    leads: 'Prospectos',
+    customers: 'Clientes',
     archived: 'Archivados'
   },
   stages: {
@@ -112,10 +115,11 @@ const es: CustomerLifecycleCopy = {
 
 const vi: CustomerLifecycleCopy = {
   filters: {
-    all: 'Tất cả',
+    all: 'Khách hàng',
     active: 'Đang hoạt động',
     past: 'Trước đây',
-    leads: 'Yêu cầu',
+    leads: 'Tiềm năng',
+    customers: 'Khách hàng',
     archived: 'Đã lưu trữ'
   },
   stages: {
