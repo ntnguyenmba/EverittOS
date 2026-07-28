@@ -58,20 +58,32 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     patch.payment_reference = cleanOptionalText(body.payment_reference, 240);
   }
 
-  if (body.hours !== undefined || body.hourly_cost !== undefined || body.hourlyCost !== undefined || body.payment_basis !== undefined) {
-    const { data: existing } = await ctx.supabase
+  if (
+    body.hours !== undefined ||
+    body.hourly_cost !== undefined ||
+    body.hourlyCost !== undefined ||
+    body.payment_basis !== undefined ||
+    body.paymentBasis !== undefined
+  ) {
+    // Do not select payment_basis here. Older databases may not have that
+    // migration yet, but pay amounts must still remain editable.
+    const { data: existing, error: existingError } = await ctx.supabase
       .from('job_labor')
-      .select('hours, hourly_cost, payment_basis')
+      .select('hours, hourly_cost')
       .eq('id', laborId)
       .eq('job_id', jobId)
       .eq('organization_id', ctx.organizationId)
       .maybeSingle();
 
+    if (existingError) {
+      return NextResponse.json({ error: existingError.message }, { status: 400 });
+    }
+
     if (!existing) {
       return NextResponse.json({ error: 'Contractor pay not found' }, { status: 404 });
     }
 
-    const paymentBasis = body.payment_basis ?? body.paymentBasis ?? existing.payment_basis;
+    const paymentBasis = body.payment_basis ?? body.paymentBasis ?? 'hourly';
     const labor = buildLaborRow({
       hours: paymentBasis === 'flat' ? 1 : body.hours ?? existing.hours,
       hourlyCost: body.hourly_cost ?? body.hourlyCost ?? existing.hourly_cost,
