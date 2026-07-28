@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PhotoGallery } from '@/components/photo-gallery';
+import { useTranslation } from '@/components/locale-provider';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
 import { supabase } from '@/lib/supabase';
@@ -41,9 +42,92 @@ type SharedJobResponse = {
   error?: string;
 };
 
+const COPY = {
+  en: {
+    notFound: 'This shared job could not be found.',
+    loadError: 'This shared job could not be loaded. Please try again.',
+    loading: 'Loading shared job...',
+    portal: 'Client portal',
+    sharedJob: 'Shared job',
+    description: 'View appointment details, reports, and photos shared with you.',
+    sections: 'Portal sections',
+    overview: 'Overview',
+    appointments: 'Appointments',
+    account: 'Account',
+    back: 'Back to shared jobs',
+    appointment: 'Appointment',
+    status: 'Status',
+    scheduled: 'scheduled',
+    date: 'Date',
+    notSet: 'Not set',
+    reports: 'Reports',
+    noReports: 'No reports have been shared for this job yet.',
+    openReport: 'Open report',
+    photos: 'Photos',
+    invoices: 'Invoices',
+    open: 'open',
+    amountPending: 'Amount pending',
+    due: 'Due'
+  },
+  es: {
+    notFound: 'No se pudo encontrar este trabajo compartido.',
+    loadError: 'No se pudo cargar este trabajo compartido. Inténtalo de nuevo.',
+    loading: 'Cargando trabajo compartido...',
+    portal: 'Portal del cliente',
+    sharedJob: 'Trabajo compartido',
+    description: 'Consulta los detalles de la cita, los informes y las fotos compartidas contigo.',
+    sections: 'Secciones del portal',
+    overview: 'Resumen',
+    appointments: 'Citas',
+    account: 'Cuenta',
+    back: 'Volver a trabajos compartidos',
+    appointment: 'Cita',
+    status: 'Estado',
+    scheduled: 'programado',
+    date: 'Fecha',
+    notSet: 'Sin definir',
+    reports: 'Informes',
+    noReports: 'Todavía no se han compartido informes para este trabajo.',
+    openReport: 'Abrir informe',
+    photos: 'Fotos',
+    invoices: 'Facturas',
+    open: 'abierta',
+    amountPending: 'Importe pendiente',
+    due: 'Vence'
+  },
+  vi: {
+    notFound: 'Không tìm thấy công việc được chia sẻ này.',
+    loadError: 'Không thể tải công việc được chia sẻ này. Vui lòng thử lại.',
+    loading: 'Đang tải công việc được chia sẻ...',
+    portal: 'Cổng thông tin khách hàng',
+    sharedJob: 'Công việc được chia sẻ',
+    description: 'Xem chi tiết lịch hẹn, báo cáo và hình ảnh được chia sẻ với bạn.',
+    sections: 'Các mục trong cổng thông tin',
+    overview: 'Tổng quan',
+    appointments: 'Lịch hẹn',
+    account: 'Tài khoản',
+    back: 'Quay lại công việc được chia sẻ',
+    appointment: 'Lịch hẹn',
+    status: 'Trạng thái',
+    scheduled: 'đã lên lịch',
+    date: 'Ngày',
+    notSet: 'Chưa đặt',
+    reports: 'Báo cáo',
+    noReports: 'Chưa có báo cáo nào được chia sẻ cho công việc này.',
+    openReport: 'Mở báo cáo',
+    photos: 'Hình ảnh',
+    invoices: 'Hóa đơn',
+    open: 'đang mở',
+    amountPending: 'Số tiền đang chờ',
+    due: 'Hạn thanh toán'
+  }
+} as const;
+
 export default function ClientPortalJobDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { locale } = useTranslation();
+  const copy = COPY[locale];
   const jobId = String(params?.id || '');
   const [job, setJob] = useState<ClientJob | null>(null);
   const [reports, setReports] = useState<ClientReport[]>([]);
@@ -81,7 +165,7 @@ export default function ClientPortalJobDetailPage() {
         const payload = (await response.json()) as SharedJobResponse;
 
         if (!response.ok || !payload.job) {
-          setMessage(payload.error || 'This shared job could not be found.');
+          setMessage(payload.error || copy.notFound);
           setLoading(false);
           return;
         }
@@ -92,19 +176,19 @@ export default function ClientPortalJobDetailPage() {
         setCanViewPhotos(payload.canViewPhotos !== false);
         setLoading(false);
       } catch {
-        setMessage('This shared job could not be loaded. Please try again.');
+        setMessage(copy.loadError);
         setLoading(false);
       }
     }
 
     void load();
-  }, [jobId, router]);
+  }, [copy.loadError, copy.notFound, jobId, router]);
 
   if (loading) {
     return (
       <AuthenticatedSection role="client">
         <div className="card" role="status" aria-live="polite">
-          Loading shared job...
+          {copy.loading}
         </div>
       </AuthenticatedSection>
     );
@@ -113,20 +197,20 @@ export default function ClientPortalJobDetailPage() {
   return (
     <AuthenticatedSection role="client">
       <header style={{ marginBottom: 20 }}>
-        <p className="eyebrow">Client portal</p>
-        <h2>{job?.title || 'Shared job'}</h2>
-        <p className="muted">View appointment details, reports, and photos shared with you.</p>
+        <p className="eyebrow">{copy.portal}</p>
+        <h2>{job?.title || copy.sharedJob}</h2>
+        <p className="muted">{copy.description}</p>
       </header>
 
-      <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label="Portal sections">
+      <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label={copy.sections}>
         <Link href={CLIENT_PORTAL_HOME} className="btn">
-          Overview
+          {copy.overview}
         </Link>
         <Link href={clientPortalJobsPath()} className="btn btn-primary" aria-current="page">
-          Appointments
+          {copy.appointments}
         </Link>
         <Link href={CLIENT_SETTINGS_PATH} className="btn">
-          Account
+          {copy.account}
         </Link>
       </nav>
 
@@ -134,28 +218,28 @@ export default function ClientPortalJobDetailPage() {
         <div className="card" role="alert">
           <p>{message}</p>
           <Link className="btn" href={clientPortalJobsPath()} style={{ marginTop: 12 }}>
-            Back to shared jobs
+            {copy.back}
           </Link>
         </div>
       ) : job ? (
         <>
           <article className="card">
-            <h3>Appointment</h3>
-            <p>Status: {job.status || 'scheduled'}</p>
-            <p>Date: {job.due_date || 'Not set'}</p>
+            <h3>{copy.appointment}</h3>
+            <p>{copy.status}: {job.status || copy.scheduled}</p>
+            <p>{copy.date}: {job.due_date || copy.notSet}</p>
             {job.customer_notes ? <p>{job.customer_notes}</p> : null}
           </article>
 
           <section className="card" style={{ marginTop: 16 }}>
-            <h3>Reports</h3>
+            <h3>{copy.reports}</h3>
             {sharedReports.length === 0 ? (
-              <p className="muted">No reports have been shared for this job yet.</p>
+              <p className="muted">{copy.noReports}</p>
             ) : (
               sharedReports.map((report) => (
                 <div key={report.id} className="list-row">
                   <strong>{report.title}</strong>
                   <Link className="btn btn-primary" href={`/report/${report.share_token}`}>
-                    Open report
+                    {copy.openReport}
                   </Link>
                 </div>
               ))
@@ -163,20 +247,20 @@ export default function ClientPortalJobDetailPage() {
           </section>
 
           <section className="card" style={{ marginTop: 16 }}>
-            <h3>Photos</h3>
+            <h3>{copy.photos}</h3>
             <PhotoGallery jobId={job.id} refreshKey={0} canView={canViewPhotos} customerOnly />
           </section>
 
           {invoices.length > 0 ? (
             <section className="card" style={{ marginTop: 16 }}>
-              <h3>Invoices</h3>
+              <h3>{copy.invoices}</h3>
               {invoices.map((invoice) => (
                 <div key={invoice.id} className="list-row">
                   <div>
-                    <strong>{invoice.status || 'open'}</strong>
+                    <strong>{invoice.status || copy.open}</strong>
                     <p className="muted">
-                      {invoice.amount != null ? `$${Number(invoice.amount).toFixed(2)}` : 'Amount pending'}
-                      {invoice.due_date ? ` · Due ${invoice.due_date}` : ''}
+                      {invoice.amount != null ? `$${Number(invoice.amount).toFixed(2)}` : copy.amountPending}
+                      {invoice.due_date ? ` · ${copy.due} ${invoice.due_date}` : ''}
                     </p>
                   </div>
                 </div>
