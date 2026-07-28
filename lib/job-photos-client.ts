@@ -60,7 +60,7 @@ async function selectJobPhotos(supabase: SupabaseClient, jobId: string, customer
     if (customerOnly) {
       return {
         data: [],
-        error: new Error('Customer photo visibility is not configured yet.')
+        error: null
       };
     }
 
