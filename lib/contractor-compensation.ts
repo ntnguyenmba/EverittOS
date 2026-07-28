@@ -17,6 +17,12 @@ export function contractorClassificationOptions(): Array<{ value: ContractorClas
   }));
 }
 
+export function contractorClassificationLabel(
+  value: string | null | undefined
+): string {
+  return CLASSIFICATION_LABELS[normalizeContractorClassification(value)];
+}
+
 export function normalizeContractorClassification(
   value: string | null | undefined
 ): ContractorClassification {
@@ -85,6 +91,7 @@ export function formatHourlyRateAmount(hourlyRate: number | null | undefined): s
   return `${amount} / hour`;
 }
 
+/** Legacy display helper for older rate-aware UI. Prefer classification labels on profiles. */
 export function formatContractorCompensationLabel(input: {
   classification?: string | null;
   hourlyRate?: number | null;
@@ -101,6 +108,10 @@ export function formatContractorCompensationLabel(input: {
       return `${rateLabel} · Owner`;
     }
     return 'Owner';
+  }
+
+  if (classification === 'client') {
+    return contractorClassificationLabel('client');
   }
 
   if (rateLabel) {

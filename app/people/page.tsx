@@ -4,10 +4,9 @@ import { AppShell } from '@/components/app-shell';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { useTranslation } from '@/components/locale-provider';
 import {
+  contractorClassificationLabel,
   contractorClassificationOptions,
-  formatContractorCompensationLabel,
   normalizeContractorClassification,
-  parseHourlyRateInput,
   type ContractorClassification
 } from '@/lib/contractor-compensation';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -33,7 +32,6 @@ const EMPTY_CONTRACTOR = {
   email: '',
   phone: '',
   companyName: '',
-  hourlyRate: '',
   contractorClassification: 'contractor' as ContractorClassification
 };
 
@@ -43,7 +41,6 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [rateError, setRateError] = useState('');
 
   const loadContractors = useCallback(async () => {
     setLoading(true);
@@ -79,15 +76,8 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
       return;
     }
 
-    const parsedRate = parseHourlyRateInput(form.hourlyRate);
-    if (!parsedRate.ok) {
-      setRateError(parsedRate.error);
-      return;
-    }
-
     setSaving(true);
     setMessage('');
-    setRateError('');
 
     const res = await fetch('/api/contractors', {
       method: 'POST',
@@ -97,7 +87,6 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         companyName: form.companyName.trim() || null,
-        hourlyRate: form.hourlyRate,
         contractorClassification: form.contractorClassification
       })
     });
@@ -173,23 +162,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
                   ))}
                 </select>
               </label>
-              <label>
-                Hourly rate
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.hourlyRate}
-                  onChange={(event) => {
-                    setForm({ ...form, hourlyRate: event.target.value });
-                    if (rateError) setRateError('');
-                  }}
-                  placeholder="Optional"
-                />
-              </label>
             </div>
-            {rateError ? <p className="auth-message auth-message-error">{rateError}</p> : null}
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addContractor()}>
               {saving ? 'Adding...' : 'Add'}
             </button>
@@ -210,10 +183,8 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong>{contractor.name}</strong>
                   <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>
-                    {formatContractorCompensationLabel({
-                      classification: contractor.contractor_classification,
-                      hourlyRate: contractor.hourly_rate
-                    })}
+                    {contractorClassificationLabel(contractor.contractor_classification)}
+                    {contractor.company_name ? ` · ${contractor.company_name}` : ''}
                   </p>
                   {contact ? (
                     <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>

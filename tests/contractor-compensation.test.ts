@@ -35,6 +35,16 @@ test('normalizeContractorClassification defaults legacy values to contractor', (
   assert.equal(normalizeContractorClassification(undefined), 'contractor');
   assert.equal(normalizeContractorClassification(''), 'contractor');
   assert.equal(normalizeContractorClassification('owner_operator'), 'owner_operator');
+  assert.equal(normalizeContractorClassification('client'), 'client');
+  assert.equal(normalizeContractorClassification('Customer'), 'client');
+});
+
+test('contractorClassificationOptions includes Client', async () => {
+  const { contractorClassificationOptions } = await import('@/lib/contractor-compensation');
+  assert.deepEqual(
+    contractorClassificationOptions().map((option) => option.label),
+    ['Independent contractor', 'Owner / owner-operator', 'Client']
+  );
 });
 
 test('formatContractorCompensationLabel shows zero owner compensation', () => {
