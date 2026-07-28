@@ -30,6 +30,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
   return (
     <div className={className ? `dashboard-shell ${className}` : 'dashboard-shell'}>
+      <div className="dashboard-shell-background" aria-hidden="true" />
+      <div className="dashboard-shell-overlay" aria-hidden="true" />
       <UnsavedChangesGuard />
       <AppNavigationTracker />
       <div className="dashboard-shell-mobile">
@@ -46,6 +48,45 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       </main>
 
       <style jsx global>{`
+        .dashboard-shell {
+          position: relative;
+          isolation: isolate;
+          min-height: 100svh;
+          background: #dfe8ee;
+        }
+
+        .dashboard-shell-background {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background-color: #dfe8ee;
+          background-image: url('/hero.jpg');
+          background-repeat: no-repeat;
+          background-size: cover;
+          background-position: center;
+          opacity: 0.58;
+          filter: saturate(0.74) contrast(0.98) brightness(0.86);
+          transform: scale(1.015);
+        }
+
+        .dashboard-shell-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background:
+            linear-gradient(90deg, rgba(221, 231, 238, 0.18), rgba(237, 242, 246, 0.5) 21%, rgba(237, 242, 246, 0.5) 79%, rgba(221, 231, 238, 0.18)),
+            linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
+        }
+
+        .dashboard-shell > .sidebar,
+        .dashboard-shell > .dashboard-shell-mobile,
+        .dashboard-shell > .main {
+          position: relative;
+          z-index: 2;
+        }
+
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
             --mobile-gutter-left: max(36px, env(safe-area-inset-left));
@@ -58,6 +99,15 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             grid-template-columns: minmax(0, 1fr) !important;
             grid-template-rows: auto minmax(0, 1fr) !important;
             grid-template-areas: 'mobile' 'main' !important;
+          }
+
+          .dashboard-shell-background {
+            background-position: 56% center;
+            opacity: 0.44;
+          }
+
+          .dashboard-shell-overlay {
+            background: rgba(231, 238, 243, 0.61);
           }
 
           .dashboard-shell > .sidebar {
