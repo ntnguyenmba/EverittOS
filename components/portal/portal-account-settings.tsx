@@ -11,15 +11,6 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
-const DEFAULT_NOTIFICATIONS = {
-  marketingEmails: false,
-  productUpdates: false,
-  operationalNotifications: true,
-  emailNotifications: true,
-  pushNotifications: false,
-  smsNotifications: false
-};
-
 type PortalAccountSettingsProps = {
   variant: 'contractor' | 'client';
   homeHref: string;
@@ -40,7 +31,6 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
   const [newEmail, setNewEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [loading, setLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
@@ -80,7 +70,6 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
         setDisplayName(json.displayName || profile?.display_name || profile?.full_name || '');
         setEmail(json.email || profile?.email || user.email || '');
         setPhone(json.phone || profile?.phone || '');
-        setNotifications({ ...DEFAULT_NOTIFICATIONS, ...(json.notifications || {}) });
       } else {
         setEmail(profile?.email || user.email || '');
         setDisplayName(profile?.display_name || profile?.full_name || '');
@@ -108,8 +97,7 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
           displayName,
           phone,
           newEmail: newEmail.trim() || undefined,
-          newPassword: newPassword.trim() || undefined,
-          notifications
+          newPassword: newPassword.trim() || undefined
         })
       })
     );
@@ -190,43 +178,6 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
         {saveMessage ? <p className="auth-message auth-message-success">{saveMessage}</p> : null}
       </div>
 
-      <div className="settings-card form settings-form-grid">
-        <h3>{t('portal.account.notifications.title')}</h3>
-        <p className="muted">
-          {variant === 'contractor'
-            ? t('portal.account.notifications.contractorDescription')
-            : t('portal.account.notifications.clientDescription')}
-        </p>
-        <label>
-          <input
-            type="checkbox"
-            checked={notifications.emailNotifications}
-            onChange={(event) => setNotifications((current) => ({ ...current, emailNotifications: event.target.checked }))}
-          />{' '}
-          {t('portal.account.notifications.emailNotifications')}
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={notifications.operationalNotifications}
-            onChange={(event) =>
-              setNotifications((current) => ({ ...current, operationalNotifications: event.target.checked }))
-            }
-          />{' '}
-          {variant === 'contractor'
-            ? t('portal.account.notifications.contractorOperational')
-            : t('portal.account.notifications.clientOperational')}
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={notifications.productUpdates}
-            onChange={(event) => setNotifications((current) => ({ ...current, productUpdates: event.target.checked }))}
-          />{' '}
-          {t('portal.account.notifications.productUpdates')}
-        </label>
-      </div>
-
       <div className="settings-card">
         <h3>{t('portal.common.language')}</h3>
         <LanguageSwitcher />
@@ -234,7 +185,6 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
 
       <div className="settings-card">
         <h3>{t('portal.legal.title')}</h3>
-        <p className="muted">{t('portal.legal.description')}</p>
         <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
           {legalLinks.map((link) => (
             <Link key={link.href} href={link.href} className="btn">
