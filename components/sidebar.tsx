@@ -67,9 +67,10 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
     normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
   const showViewPlans =
     normalized != null && !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const isOwnerDashboard = pathname === '/dashboard' && role === 'owner';
 
   return (
-    <aside className="sidebar" aria-label="App navigation">
+    <aside className={isOwnerDashboard ? 'sidebar sidebar-owner-dashboard' : 'sidebar'} aria-label="App navigation">
       <div className="sidebar-brand">
         <BrandLogo href={dashboardPathForRole(role)} size={28} showName />
       </div>
