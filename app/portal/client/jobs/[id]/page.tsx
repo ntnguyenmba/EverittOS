@@ -7,7 +7,6 @@ import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
-import { isClientRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type ClientJob = {
@@ -32,6 +31,14 @@ type ClientInvoice = {
   amount: number | null;
   status: string | null;
   due_date: string | null;
+};
+
+type SharedJobResponse = {
+  job?: ClientJob;
+  reports?: ClientReport[];
+  invoices?: ClientInvoice[];
+  canViewPhotos?: boolean;
+  error?: string;
 };
 
 export default function ClientPortalJobDetailPage() {
@@ -60,58 +67,34 @@ export default function ClientPortalJobDetailPage() {
       const {
         data: { user }
       } = await supabase.auth.getUser();
+
       if (!user) {
         router.push(`/login?next=${encodeURIComponent(clientPortalJobsPath(jobId))}`);
         return;
       }
 
       try {
-        await fetch('/api/portal/client/repair', { method: 'POST' });
+        const response = await fetch(`/api/portal/client/jobs/${encodeURIComponent(jobId)}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+        const payload = (await response.json()) as SharedJobResponse;
+
+        if (!response.ok || !payload.job) {
+          setMessage(payload.error || 'This shared job could not be found.');
+          setLoading(false);
+          return;
+        }
+
+        setJob(payload.job);
+        setReports(payload.reports || []);
+        setInvoices(payload.invoices || []);
+        setCanViewPhotos(payload.canViewPhotos !== false);
+        setLoading(false);
       } catch {
-        // Continue with current access rows.
-      }
-
-      const { data: profileRow } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-      if (!isClientRole(normalizeRole(profileRow?.role))) {
-        router.replace(CLIENT_PORTAL_HOME);
-        return;
-      }
-
-      const { data: access } = await supabase
-        .from('job_client_access')
-        .select('job_id, can_view_photos')
-        .eq('client_user_id', user.id)
-        .eq('job_id', jobId)
-        .maybeSingle();
-
-      if (!access) {
-        setMessage('This job is not shared with your account.');
+        setMessage('This shared job could not be loaded. Please try again.');
         setLoading(false);
-        return;
       }
-
-      setCanViewPhotos(access.can_view_photos !== false);
-
-      const [{ data: jobRow }, { data: reportRows }, { data: invoiceRows }] = await Promise.all([
-        supabase.from('jobs').select('id, title, status, customer_notes, due_date').eq('id', jobId).maybeSingle(),
-        supabase.from('job_reports').select('id, title, job_id, share_token, share_revoked_at').eq('job_id', jobId),
-        supabase
-          .from('invoices')
-          .select('id, job_id, amount, status, due_date')
-          .or(`client_user_id.eq.${user.id},job_id.eq.${jobId}`)
-          .order('created_at', { ascending: false })
-      ]);
-
-      if (!jobRow) {
-        setMessage('This shared job could not be found.');
-        setLoading(false);
-        return;
-      }
-
-      setJob(jobRow as ClientJob);
-      setReports((reportRows || []) as ClientReport[]);
-      setInvoices((invoiceRows || []) as ClientInvoice[]);
-      setLoading(false);
     }
 
     void load();
