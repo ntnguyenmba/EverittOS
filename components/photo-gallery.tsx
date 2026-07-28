@@ -2,7 +2,8 @@
 
 import { PhotoComparisonSection } from '@/components/before-after-comparison';
 import { EmptyState } from '@/components/empty-state';
-import { EMPTY_COPY } from '@/lib/empty-copy';
+import { useTranslation } from '@/components/locale-provider';
+import type { Locale } from '@/lib/i18n/config';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import { fetchJobPhotosWithUrls, resolvePhotoType } from '@/lib/job-photos-client';
 import { photoTagLabel } from '@/lib/job-photo-tags';
@@ -21,9 +22,45 @@ type PhotoGalleryProps = {
   customerOnly?: boolean;
 };
 
-function formatPhotoWhen(value: string | null) {
+type PhotoGalleryCopy = {
+  notShared: string;
+  loading: string;
+  emptyTitle: string;
+  emptyDescription: string;
+  photoAlt: string;
+  by: string;
+};
+
+const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
+  en: {
+    notShared: 'Photos are not shared for this job.',
+    loading: 'Loading photos…',
+    emptyTitle: 'No photos yet',
+    emptyDescription: 'Before and after photos will appear here when they are shared.',
+    photoAlt: 'photo',
+    by: 'By'
+  },
+  es: {
+    notShared: 'No se compartieron fotos para este trabajo.',
+    loading: 'Cargando fotos…',
+    emptyTitle: 'Aún no hay fotos',
+    emptyDescription: 'Las fotos del antes y después aparecerán aquí cuando se compartan.',
+    photoAlt: 'foto',
+    by: 'Por'
+  },
+  vi: {
+    notShared: 'Hình ảnh chưa được chia sẻ cho công việc này.',
+    loading: 'Đang tải hình ảnh…',
+    emptyTitle: 'Chưa có hình ảnh',
+    emptyDescription: 'Hình ảnh trước và sau khi hoàn thành sẽ xuất hiện tại đây khi được chia sẻ.',
+    photoAlt: 'hình ảnh',
+    by: 'Bởi'
+  }
+};
+
+function formatPhotoWhen(value: string | null, locale: Locale) {
   if (!value) return '';
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(locale);
 }
 
 export function PhotoGallery({
@@ -34,6 +71,8 @@ export function PhotoGallery({
   canView = true,
   customerOnly = false
 }: PhotoGalleryProps) {
+  const { locale } = useTranslation();
+  const copy = PHOTO_GALLERY_COPY[locale];
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,10 +103,10 @@ export function PhotoGallery({
   }, [jobId, refreshKey, canView, customerOnly]);
 
   if (!canView) {
-    return <p className="muted">Photos are not shared for this job.</p>;
+    return <p className="muted">{copy.notShared}</p>;
   }
 
-  if (loading) return <p className="loading-state" role="status">Loading photos…</p>;
+  if (loading) return <p className="loading-state" role="status">{copy.loading}</p>;
   if (error) {
     return (
       <p className="auth-message auth-message-error" role="alert">
@@ -76,7 +115,7 @@ export function PhotoGallery({
     );
   }
   if (photos.length === 0) {
-    return <EmptyState title={EMPTY_COPY.photos.title} description={EMPTY_COPY.photos.description} />;
+    return <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />;
   }
 
   return (
@@ -87,14 +126,14 @@ export function PhotoGallery({
           const photoType = resolvePhotoType(photo);
           return (
             <figure key={photo.id} className="photo-thumb">
-              <img src={photo.url} alt={`${photoTagLabel(photoType)} photo`} loading="lazy" />
+              <img src={photo.url} alt={`${photoTagLabel(photoType)} ${copy.photoAlt}`} loading="lazy" />
               <figcaption>
                 <span className="photo-tag-pill">{photoTagLabel(photoType)}</span>
                 {showMetadata ? (
                   <>
-                    <span className="photo-meta-line">{formatPhotoWhen(photo.created_at)}</span>
+                    <span className="photo-meta-line">{formatPhotoWhen(photo.created_at, locale)}</span>
                     {photo.uploader_display_name ? (
-                      <span className="photo-meta-line">By {photo.uploader_display_name}</span>
+                      <span className="photo-meta-line">{copy.by} {photo.uploader_display_name}</span>
                     ) : null}
                     {photo.file_name ? <span className="photo-meta-line">{photo.file_name}</span> : null}
                   </>
