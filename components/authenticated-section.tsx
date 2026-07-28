@@ -28,7 +28,7 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           min-height: 100svh;
           padding: clamp(18px, 3vw, 38px) 0;
           overflow-x: hidden;
-          background: #e8eef2;
+          background: #dfe8ee;
         }
 
         .authenticated-portal-background {
@@ -39,8 +39,8 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           background-image: url('https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/after.jpg');
           background-size: cover;
           background-position: center;
-          opacity: 0.22;
-          filter: saturate(0.55) contrast(0.92) brightness(0.92);
+          opacity: 0.46;
+          filter: saturate(0.66) contrast(0.94) brightness(0.82);
           transform: scale(1.015);
         }
 
@@ -50,8 +50,8 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           z-index: -2;
           pointer-events: none;
           background:
-            linear-gradient(180deg, rgba(239, 244, 247, 0.82), rgba(232, 239, 244, 0.9)),
-            rgba(233, 239, 243, 0.78);
+            linear-gradient(90deg, rgba(226, 235, 241, 0.28), rgba(235, 241, 245, 0.6) 22%, rgba(235, 241, 245, 0.6) 78%, rgba(226, 235, 241, 0.28)),
+            linear-gradient(180deg, rgba(238, 243, 247, 0.38), rgba(225, 234, 240, 0.52));
         }
 
         .authenticated-portal-container {
@@ -59,18 +59,18 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           z-index: 1;
           width: min(1200px, calc(100% - 48px));
           padding: clamp(18px, 3vw, 34px);
-          border: 1px solid rgba(255, 255, 255, 0.88);
+          border: 1px solid rgba(255, 255, 255, 0.9);
           border-radius: 24px;
-          background: rgba(247, 250, 252, 0.92);
-          box-shadow: 0 24px 70px rgba(28, 48, 63, 0.14);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          background: rgba(247, 250, 252, 0.965);
+          box-shadow: 0 24px 70px rgba(28, 48, 63, 0.18);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
         }
 
         .authenticated-portal-container :global(.card),
         .authenticated-portal-container :global(.panel),
         .authenticated-portal-container :global(.stat) {
-          background: rgba(255, 255, 255, 0.985);
+          background: rgba(255, 255, 255, 0.99);
           border-color: rgba(37, 54, 74, 0.13);
           box-shadow: 0 1px 3px rgba(37, 54, 74, 0.08), 0 8px 24px rgba(37, 54, 74, 0.045);
         }
@@ -91,20 +91,20 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
 
           .authenticated-portal-background {
             background-position: 58% center;
-            opacity: 0.16;
+            opacity: 0.3;
           }
 
           .authenticated-portal-overlay {
-            background: rgba(235, 241, 245, 0.9);
+            background: rgba(231, 238, 243, 0.7);
           }
 
           .authenticated-portal-container {
             width: min(100% - 20px, 1200px);
             padding: 14px;
             border-radius: 18px;
-            background: rgba(248, 250, 252, 0.96);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(248, 250, 252, 0.98);
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
           }
         }
 
