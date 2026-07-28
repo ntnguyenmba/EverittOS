@@ -25,17 +25,26 @@ async function recordUserActivity() {
     // Continue without local throttling when storage is unavailable.
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ updated_at: new Date(now).toISOString() })
-    .eq('id', user.id);
+  try {
+    const response = await fetch('/api/account/activity', {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      keepalive: true
+    });
 
-  if (!error) {
+    if (!response.ok) return;
+
+    const result = (await response.json().catch(() => null)) as { ok?: boolean } | null;
+    if (!result?.ok) return;
+
     try {
       window.localStorage.setItem(storageKey, String(now));
     } catch {
-      // The database update succeeded, so storage failure can be ignored.
+      // The server heartbeat succeeded, so storage failure can be ignored.
     }
+  } catch {
+    // Activity tracking must never interrupt navigation or app use.
   }
 }
 
