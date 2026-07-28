@@ -7,8 +7,14 @@ import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { CLIENT_PORTAL_SETTINGS, CONTRACTOR_PORTAL_SETTINGS } from '@/lib/portal-access';
 
+const deleteAccountLabel = {
+  en: 'Delete account',
+  es: 'Eliminar cuenta',
+  vi: 'Xóa tài khoản'
+} as const;
+
 export function AppFooter() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const workspace = useWorkspacePlanOptional();
   const role = normalizeRole(workspace?.role);
   const accountHref = isContractorRole(role)
@@ -23,7 +29,7 @@ export function AppFooter() {
         <Link href="/privacy">{t('legal.privacy')}</Link>
         <Link href="/terms">{t('legal.terms')}</Link>
         <a href={supportMailtoHref()}>{t('legal.support')}</a>
-        <Link href={accountHref}>Delete account</Link>
+        <Link href={accountHref}>{deleteAccountLabel[locale]}</Link>
       </nav>
       <p className="app-footer-copy muted">© {new Date().getFullYear()} Everitt Ventures</p>
     </footer>
