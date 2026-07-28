@@ -27,6 +27,57 @@ import { formatLocalDate } from '@/lib/schedule-times';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
+const dashboardCopy = {
+  en: {
+    todaysWork: "Today's work",
+    loadError: 'Some information could not load.',
+    loading: 'Loading…',
+    retry: 'Retry',
+    today: 'Today',
+    todaysJobs: "Today's Jobs",
+    teamWorkingToday: 'Team Working Today',
+    jobsNeedingAttention: 'Jobs Needing Attention',
+    openLeads: 'Open Leads',
+    myWork: 'My work',
+    myJobs: 'My jobs',
+    schedule: 'Schedule',
+    newJob: 'New Job',
+    newCustomer: 'New Customer'
+  },
+  es: {
+    todaysWork: 'Trabajo de hoy',
+    loadError: 'No se pudo cargar parte de la información.',
+    loading: 'Cargando…',
+    retry: 'Reintentar',
+    today: 'Hoy',
+    todaysJobs: 'Trabajos de hoy',
+    teamWorkingToday: 'Equipo trabajando hoy',
+    jobsNeedingAttention: 'Trabajos que requieren atención',
+    openLeads: 'Prospectos abiertos',
+    myWork: 'Mi trabajo',
+    myJobs: 'Mis trabajos',
+    schedule: 'Calendario',
+    newJob: 'Nuevo trabajo',
+    newCustomer: 'Nuevo cliente'
+  },
+  vi: {
+    todaysWork: 'Công việc hôm nay',
+    loadError: 'Một số thông tin không thể tải.',
+    loading: 'Đang tải…',
+    retry: 'Thử lại',
+    today: 'Hôm nay',
+    todaysJobs: 'Công việc hôm nay',
+    teamWorkingToday: 'Nhân sự làm việc hôm nay',
+    jobsNeedingAttention: 'Công việc cần chú ý',
+    openLeads: 'Khách tiềm năng đang mở',
+    myWork: 'Công việc của tôi',
+    myJobs: 'Công việc của tôi',
+    schedule: 'Lịch',
+    newJob: 'Công việc mới',
+    newCustomer: 'Khách hàng mới'
+  }
+} as const;
+
 const emptyRevenue = {
   revenueThisMonth: 0,
   cashCollected: 0,
@@ -119,19 +170,15 @@ type OpsCounts = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const c = dashboardCopy[locale];
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [ops, setOps] = useState<OpsCounts>({
-    todayJobs: 0,
-    needsAttention: 0,
-    openLeads: 0,
-    teamWorkingToday: 0
-  });
+  const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, teamWorkingToday: 0 });
 
   async function loadDashboard() {
     setLoading(true);
@@ -185,11 +232,7 @@ export default function DashboardPage() {
         ? withTimeout(fetchDashboardRevenueMetrics(supabase, organizationId), { ...emptyRevenue, loadFailed: true })
         : Promise.resolve(emptyRevenue),
       withTimeout(
-        supabase
-          .from('jobs')
-          .select('id, status, start_date, due_date, scheduled_start, assigned_to')
-          .eq(scopeColumn, scopeValue)
-          .limit(5000),
+        supabase.from('jobs').select('id, status, start_date, due_date, scheduled_start, assigned_to').eq(scopeColumn, scopeValue).limit(5000),
         { data: [], error: new Error('Jobs timed out') }
       ),
       withTimeout(
@@ -205,17 +248,11 @@ export default function DashboardPage() {
       scheduled_start?: string | null;
       assigned_to?: string | null;
     }>;
-    const customers = (customersResult.data || []) as Array<{
-      record_type: string | null;
-      pipeline_stage: string | null;
-    }>;
+    const customers = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
 
     const activeJobs = jobs.filter((job) => !['completed', 'cancelled', 'canceled'].includes(job.status || ''));
     const todayJobs = activeJobs.filter((job) => {
-      const date =
-        (job.scheduled_start || '').slice(0, 10) ||
-        (job.start_date || '').slice(0, 10) ||
-        (job.due_date || '').slice(0, 10);
+      const date = (job.scheduled_start || '').slice(0, 10) || (job.start_date || '').slice(0, 10) || (job.due_date || '').slice(0, 10);
       return date === today;
     });
     const needsAttention = activeJobs.filter((job) => {
@@ -228,11 +265,7 @@ export default function DashboardPage() {
     setOps({
       todayJobs: todayJobs.length,
       needsAttention,
-      openLeads: customers.filter(
-        (row) =>
-          row.record_type === 'lead' &&
-          !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
-      ).length,
+      openLeads: customers.filter((row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')).length,
       teamWorkingToday: new Set(todayJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)).size
     });
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
@@ -246,11 +279,7 @@ export default function DashboardPage() {
   if (!ready) {
     return (
       <main className="today-page dashboard-home" aria-busy="true">
-        <section style={{ padding: 24 }}>
-          <p className="loading-state" style={{ margin: 0 }}>
-            {t('common.loading')}
-          </p>
-        </section>
+        <section style={{ padding: 24 }}><p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p></section>
       </main>
     );
   }
@@ -263,24 +292,15 @@ export default function DashboardPage() {
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
-      <Suspense>
-        <DashboardAccessNotice />
-      </Suspense>
+      <Suspense><DashboardAccessNotice /></Suspense>
 
       <div className="today-page dashboard-home">
-        <PageHeader title={staffView ? t('dashboard.myWork') : managerView ? "Today's work" : t('dashboard.welcome')} />
+        <PageHeader title={staffView ? t('dashboard.myWork') : managerView ? c.todaysWork : t('dashboard.welcome')} />
 
         {loadError ? (
-          <section
-            role="status"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}
-          >
-            <p className="muted" style={{ margin: 0 }}>
-              Some information could not load.
-            </p>
-            <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>
-              {loading ? 'Loading...' : 'Retry'}
-            </button>
+          <section role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+            <p className="muted" style={{ margin: 0 }}>{c.loadError}</p>
+            <button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>{loading ? c.loading : c.retry}</button>
           </section>
         ) : null}
 
@@ -291,47 +311,29 @@ export default function DashboardPage() {
         ) : null}
 
         {managerView ? (
-          <section aria-label="Today" style={{ marginTop: showFinance ? 24 : 0 }}>
+          <section aria-label={c.today} style={{ marginTop: showFinance ? 24 : 0 }}>
             <div className="dashboard-revenue-grid">
-              {canLink('/schedule') ? <SimpleStat label="Today's Jobs" value={ops.todayJobs} href="/schedule" /> : null}
-              {canViewTeam(role) && canLink('/people') ? (
-                <SimpleStat label="Team Working Today" value={ops.teamWorkingToday} href="/people" />
-              ) : null}
-              {canLink('/jobs') ? (
-                <SimpleStat label="Jobs Needing Attention" value={ops.needsAttention} href="/jobs?status=active" />
-              ) : null}
-              {canLink('/leads') || canLink('/customers') ? (
-                <SimpleStat label="Open Leads" value={ops.openLeads} href="/customers?stage=leads" />
-              ) : null}
+              {canLink('/schedule') ? <SimpleStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
+              {canViewTeam(role) && canLink('/people') ? <SimpleStat label={c.teamWorkingToday} value={ops.teamWorkingToday} href="/people" /> : null}
+              {canLink('/jobs') ? <SimpleStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
+              {canLink('/leads') || canLink('/customers') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href="/customers?stage=leads" /> : null}
             </div>
           </section>
         ) : null}
 
         {staffView ? (
-          <section aria-label="My work" style={{ marginTop: 8 }}>
+          <section aria-label={c.myWork} style={{ marginTop: 8 }}>
             <div className="inline-actions" style={{ flexWrap: 'wrap' }}>
-              <Link className="btn btn-primary" href="/jobs?mine=true">
-                My jobs
-              </Link>
-              <Link className="btn" href="/schedule">
-                Schedule
-              </Link>
+              <Link className="btn btn-primary" href="/jobs?mine=true">{c.myJobs}</Link>
+              <Link className="btn" href="/schedule">{c.schedule}</Link>
             </div>
           </section>
         ) : null}
 
         {(ownerView || managerView) && !staffView ? (
           <div className="inline-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-            {canLink('/jobs') ? (
-              <Link className="btn btn-primary" href="/jobs/new">
-                New Job
-              </Link>
-            ) : null}
-            {canLink('/customers') ? (
-              <Link className="btn" href="/customers/new">
-                New Customer
-              </Link>
-            ) : null}
+            {canLink('/jobs') ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
+            {canLink('/customers') ? <Link className="btn" href="/customers/new">{c.newCustomer}</Link> : null}
           </div>
         ) : null}
       </div>
