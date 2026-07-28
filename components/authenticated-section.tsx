@@ -34,34 +34,36 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
         .authenticated-portal-background {
           position: fixed;
           inset: 0;
-          z-index: -3;
+          z-index: 0;
           pointer-events: none;
+          background-color: #dfe8ee;
           background-image: url('/hero.jpg');
+          background-repeat: no-repeat;
           background-size: cover;
           background-position: center;
-          opacity: 0.54;
-          filter: saturate(0.72) contrast(0.96) brightness(0.84);
+          opacity: 0.58;
+          filter: saturate(0.74) contrast(0.98) brightness(0.86);
           transform: scale(1.015);
         }
 
         .authenticated-portal-overlay {
           position: fixed;
           inset: 0;
-          z-index: -2;
+          z-index: 1;
           pointer-events: none;
           background:
-            linear-gradient(90deg, rgba(221, 231, 238, 0.22), rgba(237, 242, 246, 0.56) 21%, rgba(237, 242, 246, 0.56) 79%, rgba(221, 231, 238, 0.22)),
-            linear-gradient(180deg, rgba(238, 243, 247, 0.28), rgba(221, 231, 238, 0.46));
+            linear-gradient(90deg, rgba(221, 231, 238, 0.18), rgba(237, 242, 246, 0.5) 21%, rgba(237, 242, 246, 0.5) 79%, rgba(221, 231, 238, 0.18)),
+            linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
         }
 
         .authenticated-portal-container {
           position: relative;
-          z-index: 1;
+          z-index: 2;
           width: min(1200px, calc(100% - 48px));
           padding: clamp(18px, 3vw, 34px);
           border: 1px solid rgba(255, 255, 255, 0.92);
           border-radius: 24px;
-          background: rgba(247, 250, 252, 0.965);
+          background: rgba(247, 250, 252, 0.95);
           box-shadow: 0 24px 70px rgba(28, 48, 63, 0.2);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
@@ -91,18 +93,18 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
 
           .authenticated-portal-background {
             background-position: 56% center;
-            opacity: 0.38;
+            opacity: 0.44;
           }
 
           .authenticated-portal-overlay {
-            background: rgba(231, 238, 243, 0.66);
+            background: rgba(231, 238, 243, 0.61);
           }
 
           .authenticated-portal-container {
             width: min(100% - 20px, 1200px);
             padding: 14px;
             border-radius: 18px;
-            background: rgba(248, 250, 252, 0.98);
+            background: rgba(248, 250, 252, 0.965);
             backdrop-filter: blur(7px);
             -webkit-backdrop-filter: blur(7px);
           }
@@ -110,7 +112,7 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
 
         @media (prefers-reduced-transparency: reduce) {
           .authenticated-portal-container {
-            background: #f7fafc;
+            background: rgba(247, 250, 252, 0.985);
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
           }
