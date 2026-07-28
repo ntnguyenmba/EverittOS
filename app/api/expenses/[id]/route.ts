@@ -40,6 +40,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (!existing) {
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
   }
+  if (existing.source === 'quickbooks') {
+    return NextResponse.json(
+      { error: 'This expense is managed in QuickBooks and cannot be edited in EverittOS.' },
+      { status: 409 }
+    );
+  }
 
   const body = await request.json();
   const patch: Record<string, unknown> = {};
@@ -117,6 +123,12 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   const existing = await getExpense(ctx, id);
   if (!existing) {
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+  }
+  if (existing.source === 'quickbooks') {
+    return NextResponse.json(
+      { error: 'This expense is managed in QuickBooks and cannot be deleted in EverittOS.' },
+      { status: 409 }
+    );
   }
 
   const admin = createAdminSupabase();

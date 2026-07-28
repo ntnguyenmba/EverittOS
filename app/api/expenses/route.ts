@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const jobId = url.searchParams.get('jobId');
   const customerId = url.searchParams.get('customerId');
   const workerId = url.searchParams.get('workerId');
+  const search = String(url.searchParams.get('q') || '').trim();
 
   let query = ctx.supabase
     .from('expenses')
@@ -41,6 +42,14 @@ export async function GET(request: Request) {
   if (jobId) query = query.eq('job_id', jobId);
   if (customerId) query = query.eq('customer_id', customerId);
   if (workerId) query = query.eq('worker_id', workerId);
+  if (search) {
+    const escaped = search.replace(/[%_,]/g, '');
+    if (escaped) {
+      query = query.or(
+        `vendor.ilike.%${escaped}%,description.ilike.%${escaped}%,notes.ilike.%${escaped}%`
+      );
+    }
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -103,7 +112,8 @@ export async function POST(request: Request) {
       amount,
       payment_method: body.payment_method?.trim() || null,
       notes: body.notes?.trim() || null,
-      created_by: ctx.userId
+      created_by: ctx.userId,
+      source: 'manual'
     })
     .select('*')
     .single();

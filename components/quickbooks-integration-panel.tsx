@@ -5,20 +5,33 @@ import { useSearchParams } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 
+type SyncLog = {
+  id?: string;
+  entity_type?: string;
+  action?: string;
+  status?: string;
+  error_message?: string | null;
+  created_at?: string;
+};
+
 type QuickBooksStatus = {
   configured: boolean;
   canConnect: boolean;
   connection?: {
     status?: string;
     company_name?: string | null;
+    realm_id?: string | null;
     last_sync_at?: string | null;
     last_error?: string | null;
+    updated_at?: string | null;
     needsReconnect?: boolean;
   };
+  recentLogs?: SyncLog[];
   needsReconnect?: boolean;
+  setupMessage?: string | null;
 };
 
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 12000;
 
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -62,6 +75,12 @@ function formatRelativeTime(value: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function maskRealmId(realmId: string | null | undefined): string | null {
+  if (!realmId) return null;
+  if (realmId.length <= 6) return realmId;
+  return `${realmId.slice(0, 3)}…${realmId.slice(-3)}`;
+}
+
 export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }) {
   const searchParams = useSearchParams();
   const { t } = useTranslation();
@@ -98,7 +117,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
           setUnauthorized(true);
           setLoadError('Your session expired. Sign in again to manage QuickBooks.');
         } else {
-          setLoadError('QuickBooks status is temporarily unavailable.');
+          setLoadError(typeof json.error === 'string' ? json.error : 'QuickBooks status is temporarily unavailable.');
         }
         setStatus(null);
         return;
@@ -108,7 +127,9 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         configured: Boolean(json.configured),
         canConnect: Boolean(json.canConnect),
         connection: (json.connection || { status: 'disconnected' }) as QuickBooksStatus['connection'],
-        needsReconnect: Boolean(json.needsReconnect)
+        recentLogs: Array.isArray(json.recentLogs) ? (json.recentLogs as SyncLog[]) : [],
+        needsReconnect: Boolean(json.needsReconnect),
+        setupMessage: typeof json.setupMessage === 'string' ? json.setupMessage : null
       });
     } catch (error) {
       if (!mounted.current) return;
@@ -155,6 +176,27 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     }
   }
 
+  async function syncNow() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetchWithTimeout('/api/integrations/quickbooks/sync-now', { method: 'POST' });
+      const json = await readJson(res);
+      if (!res.ok) {
+        appFeedback.error(typeof json.error === 'string' ? json.error : 'QuickBooks sync failed.');
+        await load();
+        return;
+      }
+      appFeedback.success('QuickBooks connection verified. Customer and invoice exports remain one-way to QuickBooks.');
+      await load();
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === 'AbortError';
+      appFeedback.error(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks sync failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const connected = status?.connection?.status === 'connected';
   const needsReconnect = Boolean(
     status?.needsReconnect || status?.connection?.needsReconnect || status?.connection?.status === 'error'
@@ -165,25 +207,32 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     : unauthorized
       ? 'Sign in required'
       : loadError
-        ? 'Unavailable'
+        ? 'Failed'
         : connected
-          ? t('pages.quickbooks.connected')
+          ? 'Connected'
           : needsReconnect
-            ? t('pages.quickbooks.needsReconnect')
+            ? 'Failed — reconnect required'
             : configured
-              ? t('pages.quickbooks.notConnected')
+              ? 'Disconnected'
               : status
-                ? t('pages.quickbooks.notConfigured')
+                ? 'Not configured'
                 : 'Not checked';
   const showConnect = canManage && !connected;
+  const realmMasked = maskRealmId(status?.connection?.realm_id);
+  const recentLogs = status?.recentLogs || [];
 
   return (
     <div>
+      {!status && !loading && !loadError ? (
+        <p className="muted">Connect QuickBooks to sync supported customers, invoices, payments, and expenses.</p>
+      ) : null}
+
       <p style={{ marginBottom: 10 }}>
         {t('pages.quickbooks.statusLabel')}: <strong>{statusText}</strong>
       </p>
 
       {loadError ? <p className="auth-message auth-message-error" role="alert">{loadError}</p> : null}
+      {status?.setupMessage && !connected ? <p className="muted">{status.setupMessage}</p> : null}
       {needsReconnect && !loadError ? (
         <p className="muted">Reconnect QuickBooks to resume customer and invoice updates.</p>
       ) : null}
@@ -200,8 +249,14 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         ) : null}
 
         <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>
-          {loading ? 'Checking...' : 'Check connection'}
+          {loading ? 'Checking...' : 'Refresh status'}
         </button>
+
+        {canManage && connected ? (
+          <button type="button" className="btn" disabled={busy || loading} onClick={() => void syncNow()}>
+            {busy ? 'Syncing…' : 'Sync now'}
+          </button>
+        ) : null}
 
         {canManage && (connected || needsReconnect) ? (
           <button type="button" className="btn" disabled={busy || loading} onClick={() => void disconnect()}>
@@ -212,26 +267,52 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       {status?.connection?.company_name ? (
         <p className="muted" style={{ marginTop: 12 }}>
-          Connected to {status.connection.company_name}.
+          Connected company: <strong>{status.connection.company_name}</strong>
+          {realmMasked ? ` · Realm ${realmMasked}` : ''}
         </p>
       ) : null}
       {status?.connection?.last_sync_at ? (
-        <p className="muted">
-          Last updated {formatRelativeTime(status.connection.last_sync_at)}.
-        </p>
+        <p className="muted">Last successful sync {formatRelativeTime(status.connection.last_sync_at)}.</p>
+      ) : connected ? (
+        <p className="muted">No successful sync recorded yet. Use Sync now to verify the connection.</p>
       ) : null}
-      {status?.connection?.last_error && needsReconnect ? (
+      {status?.connection?.updated_at ? (
+        <p className="muted">Last attempted update {formatRelativeTime(status.connection.updated_at)}.</p>
+      ) : null}
+      {status?.connection?.last_error ? (
         <p className="auth-message auth-message-error" role="alert">
-          QuickBooks needs attention. Reconnect to continue.
+          {status.connection.last_error}
         </p>
       ) : null}
 
       <div style={{ marginTop: 16 }}>
-        <h4 style={{ marginBottom: 6 }}>What stays updated</h4>
-        <p className="muted" style={{ margin: 0 }}>
-          Eligible customers and invoices can be sent to QuickBooks while EverittOS remains your operations workspace.
+        <h4 style={{ marginBottom: 6 }}>What syncs today</h4>
+        <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
+          <li>Customers → QuickBooks customers (one-way export)</li>
+          <li>Invoices → QuickBooks invoices (one-way export)</li>
+          <li>Payments → not synced yet</li>
+          <li>Business expenses → not synced yet (enter manually in EverittOS)</li>
+        </ul>
+        <p className="muted" style={{ marginTop: 8 }}>
+          EverittOS remains your operations workspace. QuickBooks stays your accounting system. Manual EverittOS expenses
+          and QuickBooks expenses are tracked separately to avoid double counting.
         </p>
       </div>
+
+      {recentLogs.length ? (
+        <div style={{ marginTop: 16 }}>
+          <h4 style={{ marginBottom: 6 }}>Recent sync activity</h4>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {recentLogs.map((log, index) => (
+              <li key={log.id || `${log.created_at}-${index}`} className="muted">
+                {(log.created_at || '').slice(0, 16).replace('T', ' ')} · {log.entity_type || 'item'} ·{' '}
+                {log.action || 'sync'} · <strong>{log.status || 'unknown'}</strong>
+                {log.error_message ? ` — ${log.error_message}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

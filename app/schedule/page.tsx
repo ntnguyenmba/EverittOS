@@ -7,6 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { ScheduleViews, type ScheduleJob } from '@/components/schedule-views';
+import { ScheduleCalendarConnections } from '@/components/schedule-calendar-connections';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
@@ -227,18 +228,7 @@ function SchedulePageContent() {
         </div>
       )}
 
-      <details style={{ marginTop: 24 }}>
-        <summary>
-          <strong>Calendar connections</strong>
-        </summary>
-        <div className="card" style={{ marginTop: 12 }}>
-          <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <a className="btn" href="/api/integrations/google-calendar/connect">
-              Google Calendar
-            </a>
-          </div>
-        </div>
-      </details>
+      <ScheduleCalendarConnections role={role} />
     </AppShell>
   );
 }

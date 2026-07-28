@@ -1,20 +1,45 @@
 export const EXPENSE_CATEGORIES = [
-  'Fuel',
   'Supplies',
+  'Equipment',
+  'Fuel and mileage',
+  'Software',
+  'Advertising',
+  'Insurance',
+  'Office',
+  'Repairs and maintenance',
+  'Professional services',
+  'Taxes and fees',
+  'Other',
+  // Legacy categories (existing rows / older forms)
+  'Fuel',
   'Materials',
   'Equipment rental',
-  'Subcontractor payment',
   'Tools',
   'Vehicle',
   'Marketing',
-  'Office',
-  'Insurance',
-  'Other'
+  'Subcontractor payment'
 ] as const;
 
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
+/** Categories shown in the add/edit expense form (preferred labels). */
+export const EXPENSE_CATEGORY_OPTIONS: ExpenseCategory[] = [
+  'Supplies',
+  'Equipment',
+  'Fuel and mileage',
+  'Software',
+  'Advertising',
+  'Insurance',
+  'Office',
+  'Repairs and maintenance',
+  'Professional services',
+  'Taxes and fees',
+  'Other'
+];
+
 export const MATERIAL_EXPENSE_CATEGORIES: ExpenseCategory[] = ['Materials', 'Supplies'];
+
+export type ExpenseSource = 'manual' | 'quickbooks';
 
 export type ExpenseRecord = {
   id: string;
@@ -30,6 +55,8 @@ export type ExpenseRecord = {
   payment_method: string | null;
   receipt_url: string | null;
   notes: string | null;
+  source?: ExpenseSource | null;
+  quickbooks_expense_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

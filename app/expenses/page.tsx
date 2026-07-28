@@ -7,10 +7,9 @@ import { AppShell } from '@/components/app-shell';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
-import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
-import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OPTIONS, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
 import { formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
 import { billingUpgradeHref } from '@/lib/nav-access';
@@ -66,6 +65,7 @@ function ExpensesContent() {
   const [filterJobId, setFilterJobId] = useState(searchParams.get('jobId') || '');
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterWorkerId, setFilterWorkerId] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
 
   const hasAccess = canAccessFinancials(role, plan);
   const canManage = hasAccess;
@@ -82,6 +82,7 @@ function ExpensesContent() {
     if (filterJobId) params.set('jobId', filterJobId);
     if (filterCustomerId) params.set('customerId', filterCustomerId);
     if (filterWorkerId) params.set('workerId', filterWorkerId);
+    if (filterSearch.trim()) params.set('q', filterSearch.trim());
 
     const res = await fetch(`/api/expenses?${params.toString()}`);
     const json = await res.json();
@@ -90,7 +91,7 @@ function ExpensesContent() {
       return;
     }
     setExpenses(json.expenses || []);
-  }, [filterCategory, filterCustomerId, filterFrom, filterJobId, filterTo, filterWorkerId]);
+  }, [appFeedback, filterCategory, filterCustomerId, filterFrom, filterJobId, filterSearch, filterTo, filterWorkerId]);
 
   useEffect(() => {
     async function init() {
@@ -148,6 +149,10 @@ function ExpensesContent() {
   }
 
   function startEdit(expense: ExpenseView) {
+    if (expense.source === 'quickbooks') {
+      appFeedback.error('This expense is managed in QuickBooks and cannot be edited here.');
+      return;
+    }
     setEditingId(expense.id);
     setShowForm(true);
     setForm({
@@ -254,7 +259,7 @@ function ExpensesContent() {
       <AppShell plan={plan} role={role}>
         <PageHeader title="Expenses" subtitle="Track business spending without full bookkeeping." />
         <div className="card plan-gate-card">
-          <h3>Expenses are owner/admin only</h3>
+          <h3>Expenses are limited to owners, admins, and managers</h3>
           <p className="muted">Your workspace role cannot access business expenses, revenue, or profit tracking.</p>
         </div>
       </AppShell>
@@ -302,6 +307,13 @@ function ExpensesContent() {
 
       {showFilters ? (
         <div className="card finance-filter-panel">
+          <label>Search</label>
+          <input
+            className="input"
+            placeholder="Vendor, description, or notes"
+            value={filterSearch}
+            onChange={(e) => setFilterSearch(e.target.value)}
+          />
           <label>From date</label>
           <input className="input" type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
           <label>To date</label>
@@ -359,11 +371,14 @@ function ExpensesContent() {
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
           >
-            {EXPENSE_CATEGORIES.map((cat) => (
+            {EXPENSE_CATEGORY_OPTIONS.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
             ))}
+            {editingId && !EXPENSE_CATEGORY_OPTIONS.includes(form.category) ? (
+              <option value={form.category}>{form.category} (legacy)</option>
+            ) : null}
           </select>
           <label>Vendor</label>
           <input className="input" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
@@ -442,11 +457,17 @@ function ExpensesContent() {
       <div className="card">
         {loading ? <p className="loading-state">Loading expenses...</p> : null}
         {!loading && expenses.length === 0 ? (
-          <LocalizedEmptyState
-            emptyKey="expenses"
-            compact
-            onPrimaryClick={canManage ? () => setShowForm(true) : undefined}
-          />
+          <div className="empty-state">
+            <h3>No business expenses recorded yet</h3>
+            <p className="muted">
+              Add supplies, software, fuel, advertising, and other operating costs to improve profit reporting.
+            </p>
+            {canManage ? (
+              <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
+                {copy.addExpense}
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {!loading && expenses.length > 0 ? (
@@ -461,12 +482,17 @@ function ExpensesContent() {
                   <p className="muted">
                     {expense.date}
                     {expense.vendor ? ` · ${expense.vendor}` : ''}
+                    {` · ${expense.source === 'quickbooks' ? 'QuickBooks' : 'Manual'}`}
                   </p>
                   {expense.description ? <p>{expense.description}</p> : null}
+                  {expense.source === 'quickbooks' ? (
+                    <p className="muted">Managed in QuickBooks. Edit or delete it there to avoid duplicate totals.</p>
+                  ) : null}
                   <p className="muted finance-tags">
                     {expense.job_id ? <span>Job: {jobMap.get(expense.job_id) || 'Linked job'}</span> : null}
                     {expense.customer_id ? <span>Customer: {customerMap.get(expense.customer_id)}</span> : null}
                     {expense.worker_id ? <span>Team member: {workerMap.get(expense.worker_id)}</span> : null}
+                    {expense.created_at ? <span>Added {expense.created_at.slice(0, 10)}</span> : null}
                   </p>
                   {expense.receipt_signed_url ? (
                     <a className="btn" href={expense.receipt_signed_url} target="_blank" rel="noreferrer">
@@ -474,7 +500,7 @@ function ExpensesContent() {
                     </a>
                   ) : null}
                 </div>
-                {canManage ? (
+                {canManage && expense.source !== 'quickbooks' ? (
                   <div className="finance-list-card-actions">
                     <button type="button" className="btn" onClick={() => startEdit(expense)}>
                       Edit

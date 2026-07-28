@@ -13,7 +13,7 @@ export const DASHBOARD_LINKS = {
   contractorPay: '/dashboard/details?metric=contractor-pay',
   contractorPayOwed: '/dashboard/details?metric=contractor-pay-owed',
   contractorPayPending: '/dashboard/details?metric=contractor-pay-pending',
-  otherExpenses: '/dashboard/details?metric=expenses',
+  otherExpenses: '/expenses',
   newCustomersMonth: '/customers?period=month',
   openInvoices: '/dashboard/details?metric=unpaid-invoices',
   scheduledUpcoming: '/schedule?range=upcoming',

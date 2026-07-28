@@ -111,6 +111,7 @@ describe('settings links by role', () => {
       '/schedule',
       '/customers',
       '/people',
+      '/expenses',
       '/reports',
       '/settings'
     ]);
@@ -126,6 +127,7 @@ describe('settings links by role', () => {
       '/schedule',
       '/customers',
       '/people',
+      '/expenses',
       '/reports',
       '/settings'
     ]);

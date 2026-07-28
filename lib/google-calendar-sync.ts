@@ -210,5 +210,15 @@ export async function syncOrganizationJobsToGoogleCalendar(admin: SupabaseClient
       lastError = result.error;
     }
   }
+
+  await admin
+    .from('google_calendar_connections')
+    .update({
+      last_sync_at: new Date().toISOString(),
+      last_sync_error: failed > 0 ? lastError || `${failed} jobs failed to sync` : null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('organization_id', organizationId);
+
   return { synced, failed, error: lastError };
 }

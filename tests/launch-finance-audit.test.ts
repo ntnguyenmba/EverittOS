@@ -22,7 +22,6 @@ test('dashboard money links point at details drill-down routes', () => {
     DASHBOARD_LINKS.contractorPay,
     DASHBOARD_LINKS.contractorPayOwed,
     DASHBOARD_LINKS.contractorPayPending,
-    DASHBOARD_LINKS.otherExpenses,
     DASHBOARD_LINKS.activeCustomers
   ];
 
@@ -31,6 +30,8 @@ test('dashboard money links point at details drill-down routes', () => {
     const metric = new URL(href, 'https://example.com').searchParams.get('metric');
     assert.equal(isDashboardDetailMetric(metric), true, `metric missing for ${href}`);
   }
+
+  assert.equal(DASHBOARD_LINKS.otherExpenses, '/expenses');
 });
 
 test('getJobOperationalDate prefers completion then work dates over created_at', () => {

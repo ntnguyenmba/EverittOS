@@ -17,6 +17,7 @@ import {
   canViewTeam,
   isClientRole,
   isContractorRole,
+  isManagerRole,
   type UserRole
 } from '@/lib/roles';
 
@@ -143,8 +144,9 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/clients':
     case '/workers':
     case '/activity':
-    case '/analytics':
     case '/expenses':
+      return isManagerRole(role);
+    case '/analytics':
     case '/contractor-pay':
       return canSeeOrgWideData(role);
     case '/settings/people':
@@ -366,10 +368,10 @@ export function primaryNavHrefsForRole(role: UserRole): string[] {
     ];
   }
   if (role === 'manager') {
-    return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/reports', '/settings'];
+    return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/reports', '/settings'];
   }
   if (canSeeOrgWideData(role)) {
-    return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/reports', '/settings'];
+    return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/reports', '/settings'];
   }
   return ['/dashboard', '/jobs', '/schedule', '/settings'];
 }

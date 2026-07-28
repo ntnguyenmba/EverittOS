@@ -12,6 +12,7 @@ import { JobProfitabilityCard } from '@/components/job-profitability-card';
 import { CustomerReportSharePanel } from '@/components/customer-report-share-panel';
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
+import { JobAddToCalendar } from '@/components/job-add-to-calendar';
 import { AppShell } from '@/components/app-shell';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -421,6 +422,23 @@ export default function JobDetailPage({ params }: PageProps) {
 
           <div className="card">
             <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage} scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date} dueDate={job.due_date} onSaved={loadJob} />
+            <JobAddToCalendar
+              job={{
+                id: job.id,
+                title: job.title,
+                customer_name: job.customer_name,
+                address: job.address,
+                notes: job.notes,
+                customer_notes: job.customer_notes,
+                scheduled_start: job.scheduled_start,
+                scheduled_end: job.scheduled_end,
+                start_date: job.start_date,
+                due_date: job.due_date,
+                assignedNames: assignments
+                  .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
+                  .filter((name): name is string => Boolean(name))
+              }}
+            />
           </div>
         </div>
 

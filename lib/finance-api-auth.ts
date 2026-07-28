@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { canAccessFinancialTracking, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-access';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
-import { canSeeOrgWideData } from '@/lib/permissions';
 import { isManagerRole } from '@/lib/roles';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -21,7 +20,7 @@ export async function requireFinanceApiAccess(): Promise<FinanceApiContext> {
     return { ok: false, status: ctx.status, error: ctx.error };
   }
 
-  if (!canSeeOrgWideData(ctx.workspace.role)) {
+  if (!isManagerRole(ctx.workspace.role)) {
     return { ok: false, status: 403, error: 'Permission denied' };
   }
 

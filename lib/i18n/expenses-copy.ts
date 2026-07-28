@@ -16,7 +16,7 @@ export type ExpensesPageCopy = {
 const byLocale: Record<Locale, ExpensesPageCopy> = {
   en: {
     title: 'Expenses',
-    subtitle: 'Track fuel, supplies, materials, and other costs. Link expenses to jobs for profit estimates.',
+    subtitle: 'Track supplies, software, fuel, advertising, and other operating costs. Link expenses to jobs for profit estimates.',
     gateTitle: 'Expenses and job profit',
     gateBody:
       '{plan} and above unlock expense tracking, job profitability, and business performance reports.',
