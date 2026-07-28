@@ -87,6 +87,15 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           z-index: 2;
         }
 
+        .dashboard-shell > .main,
+        .dashboard-shell .main,
+        .dashboard-shell .app-page-content,
+        .dashboard-shell .today-page,
+        .dashboard-shell .dashboard-home {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
             --mobile-gutter-left: max(36px, env(safe-area-inset-left));
