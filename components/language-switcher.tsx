@@ -24,6 +24,12 @@ export function LanguageSwitcher({
   }
 
   const showLabel = variant !== 'compact';
+  const selectStyle =
+    variant === 'drawer'
+      ? { width: '100%', minWidth: 0 }
+      : variant === 'compact'
+        ? { width: '8.75rem', minWidth: '8.75rem', maxWidth: '100%' }
+        : { width: '100%', minWidth: 0 };
 
   return (
     <label
@@ -33,6 +39,7 @@ export function LanguageSwitcher({
           : `language-switcher language-switcher-${variant}`
       }
       htmlFor={id}
+      style={variant === 'drawer' || variant === 'default' ? { width: '100%', minWidth: 0 } : undefined}
     >
       {showLabel ? <span className="language-switcher-label">{t('common.language')}</span> : null}
       <select
@@ -41,6 +48,8 @@ export function LanguageSwitcher({
         value={locale}
         onChange={(event) => void onChange(event.target.value as Locale)}
         aria-label={t('common.language')}
+        title={LOCALE_LABELS[locale]}
+        style={selectStyle}
       >
         {LOCALES.map((code) => (
           <option key={code} value={code}>
