@@ -1,4 +1,5 @@
 import type { Messages } from '@/lib/i18n/types';
+import { portalMessagesVi } from '@/lib/i18n/portal-messages';
 
 export const messages: Messages = {
   common: {
@@ -1078,5 +1079,6 @@ export const messages: Messages = {
       cancelJob: 'Hủy công việc',
       missingCompletionDate: 'Thiếu ngày hoàn thành'
     }
-  }
+  },
+  portal: portalMessagesVi
 };

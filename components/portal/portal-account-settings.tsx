@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/components/locale-provider';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAsyncAction } from '@/hooks/use-async-action';
@@ -22,13 +23,13 @@ const DEFAULT_NOTIFICATIONS = {
 type PortalAccountSettingsProps = {
   variant: 'contractor' | 'client';
   homeHref: string;
-  legalLinks: Array<{ href: string; label: string }>;
 };
 
-export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalAccountSettingsProps) {
+export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettingsProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
-    successMessage: 'Account settings saved.'
+    successMessage: t('portal.account.profile.saveAccount')
   });
   const [saveMessage, setSaveMessage] = useState('');
   const [role, setRole] = useState<UserRole>(variant === 'client' ? 'client' : 'contractor');
@@ -112,74 +113,89 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
         })
       })
     );
-    if (ok) setSaveMessage('Account settings saved.');
+    if (ok) setSaveMessage(t('portal.common.saved'));
     setNewPassword('');
     setNewEmail('');
   }
 
   if (loading) {
-    return <div className="card">Loading account settings…</div>;
+    return <div className="card">{t('portal.account.loading')}</div>;
   }
+
+  const legalLinks =
+    variant === 'client'
+      ? [
+          { href: '/privacy', label: t('portal.legal.privacy') },
+          { href: '/terms', label: t('portal.legal.terms') },
+          { href: '/disclaimer', label: t('portal.legal.generalDisclaimer') },
+          { href: '/disclaimer/customer', label: t('portal.legal.customerDisclaimer') }
+        ]
+      : [
+          { href: '/privacy', label: t('portal.legal.privacy') },
+          { href: '/terms', label: t('portal.legal.terms') },
+          { href: '/disclaimer', label: t('portal.legal.generalDisclaimer') },
+          { href: '/disclaimer/contractor', label: t('portal.legal.contractorDisclaimer') }
+        ];
 
   return (
     <div className="portal-account-settings">
       <div className="settings-card form settings-form-grid">
-        <h3>Profile</h3>
-        <p className="muted">Update the contact details used for job and account notifications.</p>
+        <h3>{t('portal.account.profile.title')}</h3>
+        <p className="muted">{t('portal.account.profile.description')}</p>
         <label className="settings-field">
-          <span>First name</span>
+          <span>{t('portal.account.profile.firstName')}</span>
           <input className="input" value={firstName} onChange={(event) => setFirstName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Last name</span>
+          <span>{t('portal.account.profile.lastName')}</span>
           <input className="input" value={lastName} onChange={(event) => setLastName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Display name</span>
+          <span>{t('portal.account.profile.displayName')}</span>
           <input className="input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Phone</span>
+          <span>{t('portal.account.profile.phone')}</span>
           <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Email</span>
+          <span>{t('portal.account.profile.email')}</span>
           <input className="input" value={email} disabled />
         </label>
         <label className="settings-field">
-          <span>New email</span>
+          <span>{t('portal.account.profile.newEmail')}</span>
           <input
             className="input"
             type="email"
             value={newEmail}
             onChange={(event) => setNewEmail(event.target.value)}
-            placeholder="Leave blank to keep current email"
+            placeholder={t('portal.account.profile.keepEmail')}
           />
         </label>
         <label className="settings-field">
-          <span>New password</span>
+          <span>{t('portal.account.profile.newPassword')}</span>
           <input
             className="input"
             type="password"
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
-            placeholder="Leave blank to keep current password"
+            placeholder={t('portal.account.profile.keepPassword')}
           />
         </label>
         <div className="settings-actions">
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveProfile()}>
-            {buttonLabel('Save account', FEEDBACK.loading)}
+            {buttonLabel(t('portal.account.profile.saveAccount'), FEEDBACK.loading)}
           </button>
         </div>
         {saveMessage ? <p className="auth-message auth-message-success">{saveMessage}</p> : null}
       </div>
 
       <div className="settings-card form settings-form-grid">
-        <h3>Notifications</h3>
+        <h3>{t('portal.account.notifications.title')}</h3>
         <p className="muted">
           {variant === 'contractor'
-            ? 'Choose which contractor updates you want by email.'
-            : 'Choose which appointment and invoice updates you want by email.'}
+            ? t('portal.account.notifications.contractorDescription')
+            : t('portal.account.notifications.clientDescription')}
         </p>
         <label>
           <input
@@ -187,7 +203,7 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
             checked={notifications.emailNotifications}
             onChange={(event) => setNotifications((current) => ({ ...current, emailNotifications: event.target.checked }))}
           />{' '}
-          Email notifications
+          {t('portal.account.notifications.emailNotifications')}
         </label>
         <label>
           <input
@@ -197,7 +213,9 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
               setNotifications((current) => ({ ...current, operationalNotifications: event.target.checked }))
             }
           />{' '}
-          {variant === 'contractor' ? 'Job and payment updates' : 'Appointment and invoice updates'}
+          {variant === 'contractor'
+            ? t('portal.account.notifications.contractorOperational')
+            : t('portal.account.notifications.clientOperational')}
         </label>
         <label>
           <input
@@ -205,18 +223,18 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
             checked={notifications.productUpdates}
             onChange={(event) => setNotifications((current) => ({ ...current, productUpdates: event.target.checked }))}
           />{' '}
-          Product updates
+          {t('portal.account.notifications.productUpdates')}
         </label>
       </div>
 
       <div className="settings-card">
-        <h3>Language</h3>
+        <h3>{t('portal.common.language')}</h3>
         <LanguageSwitcher />
       </div>
 
       <div className="settings-card">
-        <h3>Legal</h3>
-        <p className="muted">Review the policies that apply to your portal access.</p>
+        <h3>{t('portal.legal.title')}</h3>
+        <p className="muted">{t('portal.legal.description')}</p>
         <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
           {legalLinks.map((link) => (
             <Link key={link.href} href={link.href} className="btn">
@@ -227,11 +245,11 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
       </div>
 
       <div className="settings-card">
-        <h3>Calendar</h3>
+        <h3>{t('portal.account.calendar.title')}</h3>
         <p className="muted">
           {variant === 'contractor'
-            ? 'Use Add to Calendar on an assigned job for a one-time calendar event. Organization-wide Google Calendar and QuickBooks connections are managed by the workspace owner.'
-            : 'Use Add to Calendar on your appointments for Google, Outlook, or Apple Calendar. This portal does not include organization integrations.'}
+            ? t('portal.account.calendar.contractorDescription')
+            : t('portal.account.calendar.clientDescription')}
         </p>
       </div>
 
@@ -239,9 +257,7 @@ export function PortalAccountSettings({ variant, homeHref, legalLinks }: PortalA
         hasActiveSubscription={hasActiveSubscription}
         role={role}
         retentionNote={
-          variant === 'contractor'
-            ? 'Deleting your login removes your access and personal profile details. Organization job history, customer records, and payment records stay with the hiring organization.'
-            : 'Deleting your login removes your portal access and personal profile details. Invoices, payments, completed jobs, and other service records stay with your service provider when required.'
+          variant === 'contractor' ? t('portal.account.delete.contractorRetention') : t('portal.account.delete.clientRetention')
         }
       />
     </div>

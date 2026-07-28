@@ -864,6 +864,7 @@ export type MessageTree = {
     customers: { notFound: string };
     jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string; missingCompletionDate: string };
   };
+  portal: import('@/lib/i18n/portal-messages-types').PortalMessages;
 };
 
 export type Messages = MessageTree;

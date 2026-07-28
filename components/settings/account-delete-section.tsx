@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRef, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { ACCOUNT_DELETION_CONFIRMATION } from '@/lib/deletion-policy';
 import { performClientLogout } from '@/lib/client-logout';
 import { canManageBilling, isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -19,6 +20,7 @@ export function AccountDeleteSection({
   role: roleInput,
   retentionNote
 }: AccountDeleteSectionProps) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [confirmation, setConfirmation] = useState('');
   const [message, setMessage] = useState('');
@@ -31,8 +33,8 @@ export function AccountDeleteSection({
 
   const defaultRetention =
     isContractorRole(role) || isClientRole(role)
-      ? 'Deleting your login removes portal access and personal profile details. Organization-owned job, invoice, payment, and audit records remain with the service provider when required.'
-      : 'Permanently delete your account and associated profile information. This action cannot be undone. Deleting your personal EverittOS account does not automatically delete a workspace you own when other ownership handling is required.';
+      ? t('portal.account.delete.defaultPortalRetention')
+      : t('portal.account.delete.defaultOwnerRetention');
 
   function openDialog() {
     if (hasActiveSubscription) return;
@@ -60,7 +62,7 @@ export function AccountDeleteSection({
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setMessage(json.error || 'Unable to delete account.');
+        setMessage(json.error || t('portal.account.delete.unableToDelete'));
         setLocalBusy(false);
         return;
       }
@@ -69,38 +71,35 @@ export function AccountDeleteSection({
       await performClientLogout();
       window.location.href = '/login?deleted=1';
     } catch {
-      setMessage('Unable to delete account. Please try again.');
+      setMessage(t('portal.account.delete.unableToDeleteRetry'));
       setLocalBusy(false);
     }
   }
 
   return (
     <section className="settings-card settings-danger-zone">
-      <h3>Danger Zone</h3>
+      <h3>{t('portal.account.delete.dangerZone')}</h3>
 
       <div className="settings-danger-block">
-        <h4>Delete Account</h4>
+        <h4>{t('portal.account.delete.deleteAccount')}</h4>
         <p className="muted">{retentionNote || defaultRetention}</p>
-        <p className="muted">
-          Deleting your EverittOS account does not automatically cancel an App Store or Google Play subscription —
-          manage those in Apple Settings or Google Play Subscriptions.
-        </p>
+        <p className="muted">{t('portal.account.delete.subscriptionWarning')}</p>
 
         {hasActiveSubscription ? (
           <div className="settings-warning" role="alert">
-            <p>Active subscriptions must be cancelled before account deletion.</p>
+            <p>{t('portal.account.delete.activeSubscription')}</p>
             {showBillingLink ? (
               <Link href="/settings/billing" className="btn">
-                Go to Billing
+                {t('portal.account.delete.goToBilling')}
               </Link>
             ) : (
-              <p className="muted">Ask your workspace owner to cancel billing, or cancel any store subscription first.</p>
+              <p className="muted">{t('portal.account.delete.askOwnerCancel')}</p>
             )}
           </div>
         ) : (
           <div className="settings-actions">
             <button type="button" className="btn btn-danger" disabled={localBusy || busy} onClick={openDialog}>
-              Delete My Account
+              {t('portal.account.delete.deleteMyAccount')}
             </button>
           </div>
         )}
@@ -110,15 +109,10 @@ export function AccountDeleteSection({
 
       <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="delete-account-title">
         <form method="dialog" className="confirm-dialog-body" onSubmit={(event) => event.preventDefault()}>
-          <h3 id="delete-account-title">Delete Account</h3>
-          <p className="muted">
-            Are you sure you want to permanently delete your account? This action cannot be undone and you will lose
-            access to your login. Organization-owned business records are retained where required.
-          </p>
+          <h3 id="delete-account-title">{t('portal.account.delete.confirmTitle')}</h3>
+          <p className="muted">{t('portal.account.delete.confirmBody')}</p>
           <label className="settings-field">
-            <span>
-              Type <strong>{ACCOUNT_DELETION_CONFIRMATION}</strong> to confirm
-            </span>
+            <span>{t('portal.account.delete.typeToConfirm')}</span>
             <input
               className="input"
               value={confirmation}
@@ -130,7 +124,7 @@ export function AccountDeleteSection({
           {message ? <p className="auth-message auth-message-error">{message}</p> : null}
           <div className="confirm-dialog-actions">
             <button type="button" className="btn" onClick={closeDialog}>
-              Cancel
+              {t('portal.account.delete.cancel')}
             </button>
             <button
               type="button"
@@ -138,7 +132,7 @@ export function AccountDeleteSection({
               disabled={deleteDisabled}
               onClick={() => void deleteAccount()}
             >
-              {localBusy ? 'Deleting…' : 'Permanently Delete Account'}
+              {localBusy ? t('portal.account.delete.deleting') : t('portal.account.delete.permanentlyDelete')}
             </button>
           </div>
         </form>

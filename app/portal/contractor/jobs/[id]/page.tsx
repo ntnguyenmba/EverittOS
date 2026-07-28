@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { useTranslation } from '@/components/locale-provider';
 import {
   CONTRACTOR_HOME_PATH,
   contractorIdentityFromWorkers,
@@ -15,16 +16,20 @@ import {
   toContractorSafeJobView,
   type ContractorSafeJobView
 } from '@/lib/contractor-job-access';
+import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
+type JobDetailError = 'workspace_not_found' | 'job_not_found' | 'no_access';
+
 export default function ContractorJobDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const jobId = String(params?.id || '');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<JobDetailError | ''>('');
   const [view, setView] = useState<ContractorSafeJobView | null>(null);
 
   const load = useCallback(async () => {
@@ -49,7 +54,7 @@ export default function ContractorJobDetailPage() {
     const org = await ensureOrganizationForUser(user.id);
     const organizationId = org?.organizationId || null;
     if (!organizationId) {
-      setError('Workspace not found.');
+      setError('workspace_not_found');
       setLoading(false);
       return;
     }
@@ -89,7 +94,7 @@ export default function ContractorJobDetailPage() {
     ]);
 
     if (!job) {
-      setError('Job not found.');
+      setError('job_not_found');
       setLoading(false);
       return;
     }
@@ -103,7 +108,7 @@ export default function ContractorJobDetailPage() {
     });
 
     if (!allowed) {
-      setError('You do not have access to this job.');
+      setError('no_access');
       setLoading(false);
       return;
     }
@@ -136,20 +141,31 @@ export default function ContractorJobDetailPage() {
     void load();
   }, [load]);
 
+  function errorText(code: JobDetailError): string {
+    switch (code) {
+      case 'workspace_not_found':
+        return t('portal.contractor.workspaceNotFound');
+      case 'job_not_found':
+        return t('portal.contractor.jobNotFound');
+      case 'no_access':
+        return t('portal.contractor.noAccess');
+    }
+  }
+
   return (
     <AuthenticatedSection role="contractor">
       <div style={{ marginBottom: 16 }}>
         <Link href={CONTRACTOR_HOME_PATH} className="btn">
-          Back
+          {t('portal.contractor.back')}
         </Link>
       </div>
 
-      {loading ? <div className="card">Loading…</div> : null}
+      {loading ? <div className="card">{t('portal.contractor.loading')}</div> : null}
       {!loading && error ? (
         <div className="card" role="alert">
-          <p style={{ margin: 0 }}>{error}</p>
+          <p style={{ margin: 0 }}>{errorText(error)}</p>
           <Link href={CONTRACTOR_HOME_PATH} className="btn" style={{ marginTop: 12 }}>
-            My jobs
+            {t('portal.contractor.myJobs')}
           </Link>
         </div>
       ) : null}
@@ -160,18 +176,18 @@ export default function ContractorJobDetailPage() {
             <div>
               <h1 style={{ margin: 0, fontSize: 28 }}>{view.title}</h1>
               <p className="muted" style={{ margin: '8px 0 0' }}>
-                {view.scheduledDate || 'Date not set'} · {view.status}
-                {view.readOnly ? ' · View only' : ''}
+                {view.scheduledDate || t('portal.common.dateNotSet')} · {translatePortalJobStatus(t, view.status)}
+                {view.readOnly ? ` · ${t('portal.contractor.viewOnly')}` : ''}
               </p>
             </div>
-            {view.mode === 'cancelled' ? <span className="badge">Cancelled</span> : null}
-            {view.mode === 'completed' ? <span className="badge">Completed</span> : null}
+            {view.mode === 'cancelled' ? <span className="badge">{t('portal.contractor.cancelled')}</span> : null}
+            {view.mode === 'completed' ? <span className="badge">{t('portal.contractor.completed')}</span> : null}
           </div>
 
           <div style={{ marginTop: 20, display: 'grid', gap: 12 }}>
             {view.customerName ? (
               <div>
-                <strong>Customer</strong>
+                <strong>{t('portal.contractor.customer')}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {view.customerName}
                 </p>
@@ -179,18 +195,18 @@ export default function ContractorJobDetailPage() {
             ) : null}
             {view.address ? (
               <div>
-                <strong>Address</strong>
+                <strong>{t('portal.contractor.address')}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {view.address}
                 </p>
                 <a className="btn" style={{ marginTop: 8 }} href={`https://maps.google.com/?q=${encodeURIComponent(view.address)}`} target="_blank" rel="noreferrer">
-                  Maps
+                  {t('portal.contractor.maps')}
                 </a>
               </div>
             ) : null}
             {view.phone ? (
               <div>
-                <strong>Contact</strong>
+                <strong>{t('portal.contractor.contact')}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   <a href={`tel:${view.phone}`}>{view.phone}</a>
                 </p>
@@ -198,7 +214,7 @@ export default function ContractorJobDetailPage() {
             ) : null}
             {view.instructions ? (
               <div>
-                <strong>Instructions</strong>
+                <strong>{t('portal.contractor.instructions')}</strong>
                 <p className="muted" style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>
                   {view.instructions}
                 </p>
@@ -206,10 +222,10 @@ export default function ContractorJobDetailPage() {
             ) : null}
             {view.payAmount != null ? (
               <div>
-                <strong>Your pay</strong>
+                <strong>{t('portal.contractor.yourPay')}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {formatContractorMoney(view.payAmount)}
-                  {view.paymentStatus ? ` · ${view.paymentStatus}` : ''}
+                  {view.paymentStatus ? ` · ${translatePortalPaymentStatus(t, view.paymentStatus)}` : ''}
                 </p>
               </div>
             ) : null}

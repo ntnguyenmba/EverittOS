@@ -5,10 +5,13 @@ import { AuthenticatedSection } from '@/components/authenticated-section';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGallery } from '@/components/photo-gallery';
+import { useTranslation } from '@/components/locale-provider';
+import { PortalClientNav } from '@/components/portal/portal-client-nav';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
-import { clientPortalJobsPath } from '@/lib/portal-access';
+import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
+import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
@@ -63,18 +66,20 @@ type CustomerRow = {
 
 type PortalTab = 'dashboard' | 'jobs' | 'schedule' | 'reports' | 'invoices' | 'profile';
 
-const TAB_LABELS: Record<PortalTab, string> = {
-  dashboard: 'Overview',
-  jobs: 'Appointments',
-  schedule: 'Schedule',
-  reports: 'Reports & photos',
-  invoices: 'Invoices',
-  profile: 'Account'
-};
+function ClientPortalFallback() {
+  const { t } = useTranslation();
+  return (
+    <main className="section">
+      <div className="container">
+        <div className="card">{t('portal.client.loadingPortal')}</div>
+      </div>
+    </main>
+  );
+}
 
 export default function ClientPortalPage() {
   return (
-    <Suspense fallback={<main className="section"><div className="container"><div className="card">Loading portal...</div></div></main>}>
+    <Suspense fallback={<ClientPortalFallback />}>
       <ClientPortalContent />
     </Suspense>
   );
@@ -83,6 +88,7 @@ export default function ClientPortalPage() {
 function ClientPortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const portalToken = searchParams.get('token');
   const requestedTab = searchParams.get('tab');
   const initialTab: PortalTab =
@@ -105,7 +111,6 @@ function ClientPortalContent() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [photoAccessByJob, setPhotoAccessByJob] = useState<Record<string, boolean>>({});
-  const [signingOut, setSigningOut] = useState(false);
 
   const jobMap = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
   const upcomingJobs = useMemo(
@@ -163,7 +168,7 @@ function ClientPortalContent() {
 
       // Client portal guests are not EverittOS subscribers — never gate them on Growth/billing.
       if (!isClientRole(role) && !limitsForPlan(plan).clientPortal) {
-        setMessage('Client portal requires Growth plan or higher, or a client role.');
+        setMessage(t('portal.client.growthRequired'));
         setLoading(false);
         return;
       }
@@ -179,7 +184,7 @@ function ClientPortalContent() {
             .eq('client_user_id', user.id);
 
       if (portalToken && access?.[0]?.client_user_id && access[0].client_user_id !== user.id) {
-        setMessage('This portal link belongs to a different client account.');
+        setMessage(t('portal.client.wrongAccountLink'));
         setLoading(false);
         return;
       }
@@ -200,7 +205,7 @@ function ClientPortalContent() {
 
       if (jobIds.length === 0) {
         if (isClientRole(role)) {
-          setMessage('There are currently no shared jobs for your account. When a business shares a job with you, it will appear here.');
+          setMessage(t('portal.client.noSharedMessage'));
         }
         setLoading(false);
         return;
@@ -255,54 +260,43 @@ function ClientPortalContent() {
       setLoading(false);
     }
     load();
-  }, [router, portalToken, requestedTab]);
-
-  async function signOut() {
-    setSigningOut(true);
-    try {
-      await fetch('/api/auth/sign-out', { method: 'POST', keepalive: true });
-      await supabase.auth.signOut();
-    } finally {
-      router.push('/login');
-      setSigningOut(false);
-    }
-  }
+  }, [router, portalToken, requestedTab, t]);
 
   if (loading) {
     return (
       <AuthenticatedSection role="client">
         <div className="card" role="status" aria-live="polite">
-          Loading your client portal...
+          {t('portal.client.loadingPortal')}
         </div>
       </AuthenticatedSection>
     );
   }
 
+  const tabButtons = (['dashboard', 'jobs', 'schedule', 'reports', 'invoices'] as PortalTab[]).map((key) => (
+    <button
+      key={key}
+      type="button"
+      className={tab === key ? 'btn btn-primary' : 'btn'}
+      onClick={() => setTab(key)}
+      aria-current={tab === key ? 'page' : undefined}
+    >
+      {t(`portal.client.tabs.${key}`)}
+    </button>
+  ));
+
   return (
     <AuthenticatedSection role="client">
         <header style={{ marginBottom: 20 }}>
-          <h2>Your service</h2>
+          <h2>{t('portal.client.yourService')}</h2>
         </header>
 
-        <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label="Portal sections">
-          {(['dashboard', 'jobs', 'schedule', 'reports', 'invoices'] as PortalTab[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={tab === key ? 'btn btn-primary' : 'btn'}
-              onClick={() => setTab(key)}
-              aria-current={tab === key ? 'page' : undefined}
-            >
-              {TAB_LABELS[key]}
-            </button>
-          ))}
-          <Link href={CLIENT_SETTINGS_PATH} className="btn">
-            Account
-          </Link>
-          <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut}>
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </nav>
+        <PortalClientNav
+          active="overview"
+          overviewHref={CLIENT_PORTAL_HOME}
+          appointmentsHref={clientPortalJobsPath()}
+          accountHref={CLIENT_SETTINGS_PATH}
+          extraActions={tabButtons}
+        />
 
         {message && (
           <div className="card" role="alert">
@@ -315,37 +309,38 @@ function ClientPortalContent() {
             {tab === 'dashboard' && (
               <>
                 <div className="card">
-                  <h3>Upcoming Appointment</h3>
+                  <h3>{t('portal.client.dashboard.upcomingAppointment')}</h3>
                   {upcomingJobs[0] ? (
                     <div className="list-row">
                       <div>
                         <strong>{upcomingJobs[0].title}</strong>
                         <p className="muted">
-                          {upcomingJobs[0].due_date || 'Date not set'} · {upcomingJobs[0].status || 'scheduled'}
+                          {upcomingJobs[0].due_date || t('portal.common.dateNotSet')} ·{' '}
+                          {translatePortalJobStatus(t, upcomingJobs[0].status)}
                         </p>
                       </div>
                       <Link className="btn" href={clientPortalJobsPath(upcomingJobs[0].id)}>
-                        View
+                        {t('portal.common.view')}
                       </Link>
                     </div>
                   ) : (
-                    <p className="muted">No upcoming appointments.</p>
+                    <p className="muted">{t('portal.client.dashboard.noUpcoming')}</p>
                   )}
                 </div>
 
                 <div className="card" style={{ marginTop: 16 }}>
-                  <h3>Job Status</h3>
+                  <h3>{t('portal.client.dashboard.jobStatus')}</h3>
                   {jobs.length === 0 ? (
-                    <p className="muted">No jobs shared yet.</p>
+                    <p className="muted">{t('portal.client.dashboard.noJobsShared')}</p>
                   ) : (
                     jobs.slice(0, 4).map((job) => (
                       <div key={job.id} className="list-row">
                         <div>
                           <strong>{job.title}</strong>
-                          <p className="muted">{job.status || 'scheduled'}</p>
+                          <p className="muted">{translatePortalJobStatus(t, job.status)}</p>
                         </div>
                         <Link className="btn" href={clientPortalJobsPath(job.id)}>
-                          Open
+                          {t('portal.common.open')}
                         </Link>
                       </div>
                     ))
@@ -353,21 +348,24 @@ function ClientPortalContent() {
                 </div>
 
                 <div className="card" style={{ marginTop: 16 }}>
-                  <h3>Invoices & Payments</h3>
+                  <h3>{t('portal.client.dashboard.invoicesPayments')}</h3>
                   {invoices.length === 0 ? (
-                    <p className="muted">No invoices yet.</p>
+                    <p className="muted">{t('portal.client.dashboard.noInvoices')}</p>
                   ) : (
                     invoices.slice(0, 4).map((inv) => (
                       <div key={inv.id} className="list-row">
                         <div>
-                          <strong>{jobMap.get(String(inv.job_id || ''))?.title || 'Invoice'}</strong>
+                          <strong>
+                            {jobMap.get(String(inv.job_id || ''))?.title ||
+                              t('portal.client.dashboard.invoiceFallback')}
+                          </strong>
                           <p className="muted">
-                            {inv.status || 'open'}
+                            {translatePortalPaymentStatus(t, inv.status)}
                             {inv.amount != null ? ` · $${Number(inv.amount).toFixed(2)}` : ''}
                           </p>
                         </div>
                         <button type="button" className="btn" onClick={() => setTab('invoices')}>
-                          Open
+                          {t('portal.common.open')}
                         </button>
                       </div>
                     ))
@@ -375,12 +373,12 @@ function ClientPortalContent() {
                 </div>
 
                 <div className="card" style={{ marginTop: 16 }}>
-                  <h3>Reports & Photos</h3>
+                  <h3>{t('portal.client.dashboard.reportsPhotos')}</h3>
                   {reports.filter((r) => r.share_token && !r.share_revoked_at).length === 0 ? (
-                    <p className="muted">No shared reports yet.</p>
+                    <p className="muted">{t('portal.client.dashboard.noSharedReports')}</p>
                   ) : (
                     <button type="button" className="btn" onClick={() => setTab('reports')}>
-                      View reports & photos
+                      {t('portal.client.dashboard.viewReportsPhotos')}
                     </button>
                   )}
                 </div>
@@ -389,18 +387,21 @@ function ClientPortalContent() {
 
             {tab === 'schedule' && (
               <div className="card">
-                <h3>Schedule</h3>
+                <h3>{t('portal.client.schedule.title')}</h3>
                 {upcomingJobs.length === 0 ? (
-                  <p className="muted">No upcoming appointments.</p>
+                  <p className="muted">{t('portal.client.dashboard.noUpcoming')}</p>
                 ) : (
                   upcomingJobs.map((job) => (
                     <div key={job.id} className="list-row">
                       <div>
                         <strong>{job.title}</strong>
-                        <p className="muted">{job.due_date || 'Date not set'} · {job.status || 'scheduled'}</p>
+                        <p className="muted">
+                          {job.due_date || t('portal.common.dateNotSet')} ·{' '}
+                          {translatePortalJobStatus(t, job.status)}
+                        </p>
                       </div>
                       <button type="button" className="btn" onClick={() => setTab('jobs')}>
-                        View details
+                        {t('portal.client.schedule.viewDetails')}
                       </button>
                     </div>
                   ))
@@ -410,28 +411,40 @@ function ClientPortalContent() {
 
             {tab === 'profile' && (
               <div className="card">
-                <h3>Your profile</h3>
-                <p>Name: {profile?.full_name || 'Not set'}</p>
-                <p>Email: {profile?.email || 'Not set'}</p>
-                <p>Phone: {profile?.phone || 'Not set'}</p>
-                <p>Business: {profile?.business_name || 'Not set'}</p>
+                <h3>{t('portal.client.profile.title')}</h3>
+                <p>
+                  {t('portal.client.profile.name')}: {profile?.full_name || t('portal.client.profile.notSet')}
+                </p>
+                <p>
+                  {t('portal.client.profile.email')}: {profile?.email || t('portal.client.profile.notSet')}
+                </p>
+                <p>
+                  {t('portal.client.profile.phone')}: {profile?.phone || t('portal.client.profile.notSet')}
+                </p>
+                <p>
+                  {t('portal.client.profile.business')}:{' '}
+                  {profile?.business_name || t('portal.client.profile.notSet')}
+                </p>
                 {customers.length > 0 && (
                   <>
-                    <h4 style={{ marginTop: 16 }}>Linked customer records</h4>
+                    <h4 style={{ marginTop: 16 }}>{t('portal.client.profile.linkedCustomers')}</h4>
                     {customers.map((c) => (
                       <div key={c.id} className="list-row">
                         <strong>{customerDisplayName(c)}</strong>
-                        <p className="muted">{c.email || 'No email'} · {c.phone || 'No phone'}</p>
+                        <p className="muted">
+                          {c.email || t('portal.client.profile.noEmail')} ·{' '}
+                          {c.phone || t('portal.client.profile.noPhone')}
+                        </p>
                       </div>
                     ))}
                   </>
                 )}
                 <div className="button-row" style={{ marginTop: 16, flexWrap: 'wrap', gap: 8 }}>
                   <Link href={CLIENT_SETTINGS_PATH} className="btn btn-primary">
-                    Edit account settings
+                    {t('portal.client.profile.editAccount')}
                   </Link>
                   <Link href="/disclaimer/customer" className="btn">
-                    Customer portal disclaimer
+                    {t('portal.client.profile.customerDisclaimer')}
                   </Link>
                 </div>
               </div>
@@ -440,9 +453,9 @@ function ClientPortalContent() {
             {tab === 'reports' && (
               <>
                 <div className="card">
-                  <h3>Shared reports</h3>
+                  <h3>{t('portal.client.reportsTab.sharedReports')}</h3>
                   {reports.filter((r) => r.share_token && !r.share_revoked_at).length === 0 ? (
-                    <p className="muted">No reports have been shared with you.</p>
+                    <p className="muted">{t('portal.client.reportsTab.noReportsShared')}</p>
                   ) : (
                     reports
                       .filter((r) => r.share_token && !r.share_revoked_at)
@@ -450,19 +463,21 @@ function ClientPortalContent() {
                         <div key={r.id} className="list-row">
                           <div>
                             <strong>{r.title}</strong>
-                            <p className="muted">{jobMap.get(r.job_id)?.title || 'Appointment report'}</p>
+                            <p className="muted">
+                              {jobMap.get(r.job_id)?.title || t('portal.client.reportsTab.appointmentReport')}
+                            </p>
                           </div>
                           <Link className="btn btn-primary" href={`/report/${r.share_token}`}>
-                            Open report
+                            {t('portal.client.openReport')}
                           </Link>
                         </div>
                       ))
                   )}
                 </div>
                 <div className="card" style={{ marginTop: 16 }}>
-                  <h3>Photos</h3>
+                  <h3>{t('portal.client.reportsTab.photosHeading')}</h3>
                   {jobs.length === 0 ? (
-                    <p className="muted">No appointments yet.</p>
+                    <p className="muted">{t('portal.client.reportsTab.noAppointments')}</p>
                   ) : (
                     jobs.map((job) => (
                       <div key={`photos-${job.id}`} style={{ marginTop: 12 }}>
@@ -484,18 +499,24 @@ function ClientPortalContent() {
 
             {tab === 'invoices' && (
               <div className="card">
-                <h3>Invoices and payments</h3>
-                {invoices.length === 0 && <p className="muted">You do not have any open invoices.</p>}
+                <h3>{t('portal.client.invoicesTab.title')}</h3>
+                {invoices.length === 0 && (
+                  <p className="muted">{t('portal.client.invoicesTab.none')}</p>
+                )}
                 {invoices.map((inv) => (
                   <div key={inv.id} className="list-row">
                     <div>
-                      <strong>{inv.status || 'draft'}</strong>
+                      <strong>{translatePortalPaymentStatus(t, inv.status)}</strong>
                       <p className="muted">
-                        {inv.amount != null ? `$${Number(inv.amount).toFixed(2)}` : 'Amount pending'}
-                        {inv.due_date ? ` · Due ${inv.due_date}` : ''}
+                        {inv.amount != null
+                          ? `$${Number(inv.amount).toFixed(2)}`
+                          : t('portal.client.amountPending')}
+                        {inv.due_date ? ` · ${t('portal.common.due')} ${inv.due_date}` : ''}
                       </p>
                       {inv.job_id && jobMap.get(inv.job_id) && (
-                        <p className="muted">Job: {jobMap.get(inv.job_id)?.title}</p>
+                        <p className="muted">
+                          {t('portal.client.invoicesTab.jobLabel')}: {jobMap.get(inv.job_id)?.title}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -507,10 +528,8 @@ function ClientPortalContent() {
               <>
                 {jobs.length === 0 && (
                   <div className="card" role="status">
-                    <h3>No shared jobs yet</h3>
-                    <p className="muted">
-                      There are currently no shared jobs for your account. When a business shares a job with you, it will appear here.
-                    </p>
+                    <h3>{t('portal.client.jobsTab.emptyTitle')}</h3>
+                    <p className="muted">{t('portal.client.jobsTab.emptyBody')}</p>
                   </div>
                 )}
                 {jobs.map((job) => (
@@ -518,12 +537,16 @@ function ClientPortalContent() {
                     <div className="list-row">
                       <div>
                         <h3 style={{ margin: 0 }}>{job.title}</h3>
-                        <p>Status: {job.status || 'new'}</p>
-                        <p>Due: {job.due_date || 'Not set'}</p>
+                        <p>
+                          {t('portal.common.status')}: {translatePortalJobStatus(t, job.status)}
+                        </p>
+                        <p>
+                          {t('portal.common.due')}: {job.due_date || t('portal.common.notSet')}
+                        </p>
                         {job.customer_notes && <p>{job.customer_notes}</p>}
                       </div>
                       <Link className="btn btn-primary" href={clientPortalJobsPath(job.id)}>
-                        Open job
+                        {t('portal.client.openJob')}
                       </Link>
                     </div>
                     <button
@@ -533,7 +556,9 @@ function ClientPortalContent() {
                       aria-expanded={selectedJob === job.id}
                       style={{ marginTop: 8 }}
                     >
-                      {selectedJob === job.id ? 'Hide photos' : 'View photos'}
+                      {selectedJob === job.id
+                        ? t('portal.client.jobsTab.hidePhotos')
+                        : t('portal.client.jobsTab.viewPhotos')}
                     </button>
                     {selectedJob === job.id ? (
                       <PhotoGallery
@@ -546,13 +571,19 @@ function ClientPortalContent() {
                     {reports
                       .filter((r) => r.job_id === job.id && r.share_token && !r.share_revoked_at)
                       .map((r) => (
-                        <Link key={r.id} className="btn btn-primary" href={`/report/${r.share_token}`} style={{ marginTop: 8 }}>
-                          View report: {r.title}
+                        <Link
+                          key={r.id}
+                          className="btn btn-primary"
+                          href={`/report/${r.share_token}`}
+                          style={{ marginTop: 8 }}
+                        >
+                          {t('portal.client.openReport')}: {r.title}
                         </Link>
                       ))}
-                    {reports.filter((r) => r.job_id === job.id && r.share_token && !r.share_revoked_at).length === 0 ? (
+                    {reports.filter((r) => r.job_id === job.id && r.share_token && !r.share_revoked_at)
+                      .length === 0 ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        No reports have been shared with you for this job.
+                        {t('portal.client.jobsTab.noReportsForJob')}
                       </p>
                     ) : null}
                   </article>
@@ -560,12 +591,16 @@ function ClientPortalContent() {
 
                 {timeline.length > 0 && (
                   <div className="card" style={{ marginTop: 20 }}>
-                    <h3>Activity timeline</h3>
+                    <h3>{t('portal.client.jobsTab.activityTimeline')}</h3>
                     {timeline.map((row) => (
                       <div key={row.id} className="list-row">
                         <div>
-                          <strong>{jobMap.get(row.job_id)?.title || 'Job update'}</strong>
-                          <p className="muted">{row.event_type} · {new Date(row.created_at).toLocaleString()}</p>
+                          <strong>
+                            {jobMap.get(row.job_id)?.title || t('portal.client.jobsTab.jobUpdate')}
+                          </strong>
+                          <p className="muted">
+                            {row.event_type} · {new Date(row.created_at).toLocaleString()}
+                          </p>
                           {row.message && <p>{row.message}</p>}
                         </div>
                       </div>
@@ -575,20 +610,20 @@ function ClientPortalContent() {
               </>
             )}
 
-            <section className="card" style={{ marginTop: 20 }} aria-label="Legal">
-              <h3>Legal</h3>
+            <section className="card" style={{ marginTop: 20 }} aria-label={t('portal.legal.title')}>
+              <h3>{t('portal.legal.title')}</h3>
               <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
                 <Link className="btn" href="/privacy">
-                  Privacy Policy
+                  {t('portal.legal.privacy')}
                 </Link>
                 <Link className="btn" href="/terms">
-                  Terms of Service
+                  {t('portal.legal.terms')}
                 </Link>
                 <Link className="btn" href="/disclaimer/customer">
-                  Customer Portal Disclaimer
+                  {t('portal.legal.customerDisclaimer')}
                 </Link>
                 <Link className="btn" href={CLIENT_SETTINGS_PATH}>
-                  Account settings
+                  {t('portal.client.settingsTitle')}
                 </Link>
               </div>
             </section>

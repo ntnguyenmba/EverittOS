@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { useTranslation } from '@/components/locale-provider';
 import { PhotoUpload } from '@/components/photo-upload';
 import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -30,6 +31,8 @@ import {
   googleCalendarEventUrl,
   outlookCalendarEventUrl
 } from '@/lib/calendar-links';
+import { performClientLogout } from '@/lib/client-logout';
+import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { localToday } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
@@ -45,29 +48,30 @@ const EMPTY_METRICS: ContractorDashboardMetrics = {
   owedEarnings: 0
 };
 
+type Translate = (path: string, values?: Record<string, string | number>) => string;
+
 function logContractorError(code: ContractorLoadErrorCode, detail: string) {
   if (code === 'worker_not_linked' || process.env.NODE_ENV !== 'production') {
     console.error(`[contractor-dashboard] ${code}: ${detail}`);
   }
 }
 
-function errorMessage(code: ContractorLoadErrorCode): string {
+function errorMessage(code: ContractorLoadErrorCode, t: Translate): string {
   switch (code) {
     case 'worker_not_linked':
-      return 'Your contractor account is not linked to a worker profile yet. Ask your workspace owner to assign you on a job.';
-    case 'worker_lookup_failed':
-      return 'Could not load your worker profile. Refresh and try again.';
+      return t('portal.contractor.errors.workerNotLinked');
     case 'assignment_query_failed':
-      return 'Could not load your job assignments.';
+      return t('portal.contractor.errors.assignmentsQueryFailed');
     case 'jobs_query_failed':
-      return 'Could not load your assigned jobs.';
+      return t('portal.contractor.errors.jobsQueryFailed');
     case 'earnings_query_failed':
     case 'payment_query_failed':
-      return 'Could not load your contractor pay records.';
+      return t('portal.contractor.errors.laborQueryFailed');
     case 'access_blocked':
-      return 'Access to contractor pay or jobs was blocked. Contact your workspace owner.';
+      return t('portal.contractor.errors.permissionDenied');
+    case 'worker_lookup_failed':
     default:
-      return 'Your contractor dashboard could not be loaded. Refresh the page or contact your workspace owner.';
+      return t('portal.contractor.errors.unknown');
   }
 }
 
@@ -75,8 +79,17 @@ function normalizedJobStatus(status: string) {
   return String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
 }
 
+const NAV_LABEL_KEYS: Record<string, string> = {
+  overview: 'portal.contractor.nav.dashboard',
+  jobs: 'portal.contractor.nav.jobs',
+  schedule: 'portal.contractor.nav.schedule',
+  earnings: 'portal.contractor.nav.earnings',
+  account: 'portal.contractor.nav.settings'
+};
+
 export default function ContractorPortalPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState(normalizePlan('free'));
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -91,7 +104,14 @@ export default function ContractorPortalPage() {
     Array<{ id: string; title: string | null; body: string | null; created_at: string | null; read_at: string | null }>
   >([]);
 
-  const navItems = useMemo(() => contractorNavItems(), []);
+  const navItems = useMemo(
+    () =>
+      contractorNavItems().map((item) => ({
+        ...item,
+        label: NAV_LABEL_KEYS[item.id] ? t(NAV_LABEL_KEYS[item.id]) : item.label
+      })),
+    [t]
+  );
 
   const groupedJobs = useMemo(() => {
     const active: ContractorJobCardModel[] = [];
@@ -142,7 +162,7 @@ export default function ContractorPortalPage() {
     setPlan(nextPlan);
 
     if (!isContractorRole(role) && !limitsForPlan(nextPlan).contractorPortal) {
-      setGateMessage('Contractor portal requires Growth plan or a contractor role.');
+      setGateMessage(t('portal.contractor.growthRequired'));
       setLoading(false);
       return;
     }
@@ -325,7 +345,7 @@ export default function ContractorPortalPage() {
 
     setErrors(Array.from(new Set(nextErrors)));
     setLoading(false);
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     void load();
@@ -344,11 +364,12 @@ export default function ContractorPortalPage() {
   }
 
   async function signOut() {
+    if (signingOut) return;
     setSigningOut(true);
     try {
-      await fetch('/api/auth/sign-out', { method: 'POST', keepalive: true });
-      await supabase.auth.signOut();
-    } finally {
+      await performClientLogout();
+      window.location.assign('/login');
+    } catch {
       router.push('/login');
       setSigningOut(false);
     }
@@ -384,7 +405,7 @@ export default function ContractorPortalPage() {
             <div style={{ minWidth: 0 }}>
               <h3 style={{ fontSize: 17, margin: 0 }}>{job.title}</h3>
               <p className="muted" style={{ margin: '5px 0 0' }}>
-                {job.customerName} · {job.date || 'Date not set'}
+                {job.customerName} · {job.date || t('portal.common.dateNotSet')}
               </p>
               <p className="muted" style={{ margin: '4px 0 0' }}>{job.address}</p>
             </div>
@@ -393,12 +414,17 @@ export default function ContractorPortalPage() {
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-            <span className="badge">{job.status}</span>
+            <span className="badge">{translatePortalJobStatus(t, job.status)}</span>
             <span className="badge">
-              Pay: {job.paymentStatus === 'none' ? 'Not set' : formatContractorMoney(job.payAmount)}
+              {t('portal.contractor.pay')}:{' '}
+              {job.paymentStatus === 'none'
+                ? t('portal.status.payment.notSet')
+                : formatContractorMoney(job.payAmount)}
             </span>
             {job.paymentStatus !== 'none' ? (
-              <span className="badge">Payment: {job.paymentStatus}</span>
+              <span className="badge">
+                {t('portal.contractor.payment')}: {translatePortalPaymentStatus(t, job.paymentStatus)}
+              </span>
             ) : null}
           </div>
         </button>
@@ -408,16 +434,16 @@ export default function ContractorPortalPage() {
             <div className="inline-actions" style={{ marginTop: 14, flexWrap: 'wrap' }}>
               {!completed && status !== 'in_progress' ? (
                 <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
-                  Start job
+                  {t('portal.contractor.startJob')}
                 </button>
               ) : null}
               {!completed ? (
                 <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
-                  Mark complete
+                  {t('portal.contractor.markComplete')}
                 </button>
               ) : null}
               <Link className="btn" href={contractorJobDetailPath(job.id)}>
-                Open details
+                {t('portal.contractor.openDetails')}
               </Link>
               {(() => {
                 const event = contractorJobCalendarEvent(job);
@@ -425,13 +451,13 @@ export default function ContractorPortalPage() {
                 return (
                   <>
                     <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                      Google Calendar
+                      {t('portal.contractor.googleCalendar')}
                     </a>
                     <a className="btn" href={outlookCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                      Outlook
+                      {t('portal.contractor.outlook')}
                     </a>
                     <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
-                      Apple / ICS
+                      {t('portal.contractor.appleIcs')}
                     </button>
                   </>
                 );
@@ -440,7 +466,7 @@ export default function ContractorPortalPage() {
 
             {photoUploadAllowed(plan) && userId ? (
               <div style={{ marginTop: 14 }}>
-                <h4 style={{ fontSize: 15, marginBottom: 8 }}>Job photos</h4>
+                <h4 style={{ fontSize: 15, marginBottom: 8 }}>{t('portal.contractor.jobPhotos')}</h4>
                 <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={completed} />
               </div>
             ) : null}
@@ -464,38 +490,40 @@ export default function ContractorPortalPage() {
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
       <header id="overview" className="contractor-dash-header">
         <div>
-          <h1>Today</h1>
+          <h1>{t('portal.contractor.today')}</h1>
         </div>
       </header>
 
-      <nav className="contractor-dash-nav" aria-label="Contractor">
+      <nav className="contractor-dash-nav" aria-label={t('portal.contractor.portal')}>
         {navItems.map((item) => (
           <Link key={item.id} href={item.href} className="btn">{item.label}</Link>
         ))}
-        <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut}>
-          {signingOut ? 'Signing out…' : 'Sign out'}
+        <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut} aria-busy={signingOut}>
+          {signingOut ? t('portal.common.signingOut') : t('portal.common.signOut')}
         </button>
       </nav>
 
-      {loading ? <div className="card">Loading…</div> : null}
+      {loading ? <div className="card">{t('portal.contractor.loading')}</div> : null}
       {gateMessage ? <div className="card">{gateMessage}</div> : null}
 
       {!loading && !gateMessage ? (
         <>
           {hasDataError ? (
             <div className="card" role="alert" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 17 }}>Could not load everything</h2>
+              <h2 style={{ fontSize: 17 }}>{t('portal.contractor.loadErrorTitle')}</h2>
               <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-                {errors.map((code) => <li key={code}>{errorMessage(code)}</li>)}
+                {errors.map((code) => <li key={code}>{errorMessage(code, t)}</li>)}
               </ul>
-              <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>Try again</button>
+              <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>
+                {t('portal.contractor.tryAgain')}
+              </button>
             </div>
           ) : null}
 
-          <section id="jobs" className="card" aria-label="Today's jobs" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, margin: 0 }}>Today&apos;s Jobs</h2>
+          <section id="jobs" className="card" aria-label={t('portal.contractor.todaysJobs')} style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.todaysJobs')}</h2>
             {todaysJobs.length === 0 && groupedJobs.active.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>Nothing scheduled for today.</p>
+              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.nothingToday')}</p>
             ) : (
               <div style={{ marginTop: 8 }}>
                 {(todaysJobs.length ? todaysJobs : groupedJobs.active).map(renderJobCard)}
@@ -503,10 +531,10 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
-          <section id="schedule" className="card" aria-label="Upcoming jobs" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, margin: 0 }}>Upcoming Jobs</h2>
+          <section id="schedule" className="card" aria-label={t('portal.contractor.upcomingJobs')} style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.upcomingJobs')}</h2>
             {upcomingOnly.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>No upcoming jobs.</p>
+              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noUpcoming')}</p>
             ) : (
               <div style={{ marginTop: 8 }}>
                 {upcomingOnly
@@ -517,13 +545,15 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
-          <section id="past-jobs" className="card" aria-label="Past jobs" style={{ marginBottom: 16 }}>
+          <section id="past-jobs" className="card" aria-label={t('portal.contractor.pastJobs')} style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>Past Jobs</h2>
-              <span className="muted">{metrics.completedJobs} completed</span>
+              <h2 style={{ fontSize: 18 }}>{t('portal.contractor.pastJobs')}</h2>
+              <span className="muted">
+                {metrics.completedJobs} {t('portal.contractor.completed')}
+              </span>
             </div>
             {completedJobs.length === 0 ? (
-              <p className="muted">No completed jobs yet.</p>
+              <p className="muted">{t('portal.contractor.noCompleted')}</p>
             ) : (
               <div style={{ marginTop: 8 }}>
                 {completedJobs.map(renderJobCard)}
@@ -531,19 +561,29 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
-          <section id="earnings" className="card" aria-label="Earnings" style={{ marginBottom: 16 }}>
+          <section id="earnings" className="card" aria-label={t('portal.contractor.earnings')} style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>Earnings</h2>
+              <h2 style={{ fontSize: 18 }}>{t('portal.contractor.earnings')}</h2>
               <span className="muted">
-                Paid {formatContractorMoney(metrics.paidEarnings)} · Owed {formatContractorMoney(metrics.owedEarnings)}
+                {t('portal.contractor.paid')} {formatContractorMoney(metrics.paidEarnings)} · {t('portal.contractor.owed')}{' '}
+                {formatContractorMoney(metrics.owedEarnings)}
               </span>
             </div>
-            {emptyEarnings ? <p className="muted">No payment history yet.</p> : null}
+            {emptyEarnings ? <p className="muted">{t('portal.contractor.noPaymentHistory')}</p> : null}
             {history.length ? (
               <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 12 }}>
                 <table className="table data-table">
                   <thead>
-                    <tr><th>Job</th><th>Customer</th><th>Work date</th><th>Earned</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Paid date</th></tr>
+                    <tr>
+                      <th>{t('portal.contractor.job')}</th>
+                      <th>{t('portal.contractor.customer')}</th>
+                      <th>{t('portal.contractor.workDate')}</th>
+                      <th>{t('portal.contractor.earned')}</th>
+                      <th>{t('portal.contractor.paid')}</th>
+                      <th>{t('portal.contractor.outstanding')}</th>
+                      <th>{t('portal.common.status')}</th>
+                      <th>{t('portal.contractor.paidDate')}</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {history.map((row) => (
@@ -554,7 +594,7 @@ export default function ContractorPortalPage() {
                         <td>{formatContractorMoney(row.amountEarned)}</td>
                         <td>{formatContractorMoney(row.amountPaid)}</td>
                         <td>{formatContractorMoney(row.outstandingAmount)}</td>
-                        <td>{row.paymentStatus}</td>
+                        <td>{translatePortalPaymentStatus(t, row.paymentStatus)}</td>
                         <td>{row.paidDate || '—'}</td>
                       </tr>
                     ))}
@@ -564,46 +604,46 @@ export default function ContractorPortalPage() {
             ) : null}
           </section>
 
-          <section id="notifications" className="card" aria-label="Contractor notifications" style={{ marginBottom: 16 }}>
+          <section id="notifications" className="card" aria-label={t('portal.contractor.notifications')} style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>Notifications</h2>
+              <h2 style={{ fontSize: 18 }}>{t('portal.contractor.notifications')}</h2>
               <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">
-                Preferences
+                {t('portal.contractor.preferences')}
               </Link>
             </div>
             {notifications.length === 0 ? (
-              <p className="muted">No notifications yet.</p>
+              <p className="muted">{t('portal.contractor.noNotifications')}</p>
             ) : (
               notifications.map((item) => (
                 <div key={item.id} className="list-row">
                   <div>
-                    <strong>{item.title || 'Update'}</strong>
+                    {item.title ? <strong>{item.title}</strong> : null}
                     {item.body ? <p className="muted">{item.body}</p> : null}
                   </div>
                   <span className="muted">
                     {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
-                    {item.read_at ? '' : ' · unread'}
+                    {item.read_at ? '' : ` · ${t('portal.contractor.unread')}`}
                   </span>
                 </div>
               ))
             )}
           </section>
 
-          <section className="card" aria-label="Legal">
-            <h2 style={{ fontSize: 18 }}>Legal</h2>
-            <p className="muted">Policies that apply to contractor portal access.</p>
+          <section className="card" aria-label={t('portal.legal.title')}>
+            <h2 style={{ fontSize: 18 }}>{t('portal.legal.title')}</h2>
+            <p className="muted">{t('portal.legal.description')}</p>
             <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
               <Link className="btn" href="/privacy">
-                Privacy Policy
+                {t('portal.legal.privacy')}
               </Link>
               <Link className="btn" href="/terms">
-                Terms of Service
+                {t('portal.legal.terms')}
               </Link>
               <Link className="btn" href="/disclaimer/contractor">
-                Contractor Disclaimer
+                {t('portal.legal.contractorDisclaimer')}
               </Link>
               <Link className="btn" href={CONTRACTOR_SETTINGS_PATH}>
-                Account settings
+                {t('portal.contractor.settingsTitle')}
               </Link>
             </div>
           </section>

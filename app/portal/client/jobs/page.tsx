@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useTranslation } from '@/components/locale-provider';
+import { PortalClientNav } from '@/components/portal/portal-client-nav';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
+import { translatePortalJobStatus } from '@/lib/portal-status-i18n';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
@@ -17,55 +19,9 @@ type ClientJob = {
   due_date: string | null;
 };
 
-const COPY = {
-  en: {
-    noSharedMessage: 'There are currently no shared jobs for your account. When a business shares a job with you, it will appear here.',
-    loading: 'Loading your shared jobs...',
-    portal: 'Client portal',
-    title: 'Shared jobs',
-    description: 'Only jobs shared with you are listed here.',
-    sections: 'Portal sections',
-    overview: 'Overview',
-    appointments: 'Appointments',
-    account: 'Account',
-    noSharedTitle: 'No shared jobs yet',
-    scheduled: 'scheduled',
-    openJob: 'Open job'
-  },
-  es: {
-    noSharedMessage: 'Actualmente no hay trabajos compartidos con tu cuenta. Cuando una empresa comparta un trabajo contigo, aparecerá aquí.',
-    loading: 'Cargando tus trabajos compartidos...',
-    portal: 'Portal del cliente',
-    title: 'Trabajos compartidos',
-    description: 'Aquí solo aparecen los trabajos compartidos contigo.',
-    sections: 'Secciones del portal',
-    overview: 'Resumen',
-    appointments: 'Citas',
-    account: 'Cuenta',
-    noSharedTitle: 'Aún no hay trabajos compartidos',
-    scheduled: 'programado',
-    openJob: 'Abrir trabajo'
-  },
-  vi: {
-    noSharedMessage: 'Hiện chưa có công việc nào được chia sẻ với tài khoản của bạn. Khi một doanh nghiệp chia sẻ công việc với bạn, công việc đó sẽ xuất hiện tại đây.',
-    loading: 'Đang tải các công việc được chia sẻ...',
-    portal: 'Cổng thông tin khách hàng',
-    title: 'Công việc được chia sẻ',
-    description: 'Chỉ những công việc được chia sẻ với bạn mới xuất hiện tại đây.',
-    sections: 'Các mục trong cổng thông tin',
-    overview: 'Tổng quan',
-    appointments: 'Lịch hẹn',
-    account: 'Tài khoản',
-    noSharedTitle: 'Chưa có công việc được chia sẻ',
-    scheduled: 'đã lên lịch',
-    openJob: 'Mở công việc'
-  }
-} as const;
-
 export default function ClientPortalJobsPage() {
   const router = useRouter();
-  const { locale } = useTranslation();
-  const copy = COPY[locale];
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -102,7 +58,7 @@ export default function ClientPortalJobsPage() {
 
       if (jobIds.length === 0) {
         setJobs([]);
-        setMessage(copy.noSharedMessage);
+        setMessage(t('portal.client.noSharedMessage'));
         setLoading(false);
         return;
       }
@@ -118,13 +74,13 @@ export default function ClientPortalJobsPage() {
     }
 
     void load();
-  }, [copy.noSharedMessage, router]);
+  }, [router, t]);
 
   if (loading) {
     return (
       <AuthenticatedSection role="client">
         <div className="card" role="status" aria-live="polite">
-          {copy.loading}
+          {t('portal.client.loadingSharedJobs')}
         </div>
       </AuthenticatedSection>
     );
@@ -133,26 +89,21 @@ export default function ClientPortalJobsPage() {
   return (
     <AuthenticatedSection role="client">
       <header style={{ marginBottom: 20 }}>
-        <p className="eyebrow">{copy.portal}</p>
-        <h2>{copy.title}</h2>
-        <p className="muted">{copy.description}</p>
+        <p className="eyebrow">{t('portal.client.portal')}</p>
+        <h2>{t('portal.client.sharedJobsTitle')}</h2>
+        <p className="muted">{t('portal.client.sharedJobsDescription')}</p>
       </header>
 
-      <nav className="inline-actions" style={{ marginBottom: 16, flexWrap: 'wrap' }} aria-label={copy.sections}>
-        <Link href={CLIENT_PORTAL_HOME} className="btn">
-          {copy.overview}
-        </Link>
-        <Link href={clientPortalJobsPath()} className="btn btn-primary" aria-current="page">
-          {copy.appointments}
-        </Link>
-        <Link href={CLIENT_SETTINGS_PATH} className="btn">
-          {copy.account}
-        </Link>
-      </nav>
+      <PortalClientNav
+        active="appointments"
+        overviewHref={CLIENT_PORTAL_HOME}
+        appointmentsHref={clientPortalJobsPath()}
+        accountHref={CLIENT_SETTINGS_PATH}
+      />
 
       {message ? (
         <div className="card" role="status">
-          <h3>{copy.noSharedTitle}</h3>
+          <h3>{t('portal.client.noSharedTitle')}</h3>
           <p>{message}</p>
         </div>
       ) : (
@@ -162,12 +113,12 @@ export default function ClientPortalJobsPage() {
               <div>
                 <strong>{job.title}</strong>
                 <p className="muted">
-                  {job.status || copy.scheduled}
+                  {translatePortalJobStatus(t, job.status)}
                   {job.due_date ? ` · ${job.due_date}` : ''}
                 </p>
               </div>
               <Link className="btn btn-primary" href={clientPortalJobsPath(job.id)}>
-                {copy.openJob}
+                {t('portal.client.openJob')}
               </Link>
             </div>
           </article>
