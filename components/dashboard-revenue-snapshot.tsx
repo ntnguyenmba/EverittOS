@@ -87,10 +87,15 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     range === 'all_time'
       ? activeMetrics.unpaidContractorPay ?? 0
       : activeMetrics.periodUnpaidContractorPay ?? 0;
+  const contractorCost = activeMetrics.contractorPayThisMonth ?? contractorPaid + contractorsAwaitingPayment;
   const unbilled = activeMetrics.uninvoicedCompletedWork ?? 0;
-  const expectedRevenue = activeMetrics.expectedRevenue ?? 0;
-  const expectedProfit = activeMetrics.estimatedProfit ?? activeMetrics.netEstimateThisMonth ?? 0;
+  const recordedExpectedRevenue = activeMetrics.expectedRevenue ?? 0;
+  const expectedRevenue =
+    range === 'all_time'
+      ? Math.max(recordedExpectedRevenue, collected + outstanding)
+      : recordedExpectedRevenue;
   const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
+  const expectedProfit = Number((expectedRevenue - contractorCost - expenses).toFixed(2));
   const busy = Boolean(loading || rangeLoading);
 
   const primaryItems: MetricItem[] = [
@@ -129,22 +134,31 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
       description: range === 'all_time' ? 'All unpaid contractor labor.' : 'Unpaid contractor labor tied to this period.'
     },
     {
-      label: 'Uninvoiced expected revenue',
+      label: 'Total contractor cost',
+      value: formatCurrency(contractorCost),
+      href: DASHBOARD_LINKS.contractorPay,
+      description: 'All contractor labor tied to this period, whether paid or still awaiting payment.'
+    },
+    {
+      label: 'Uninvoiced job amounts',
       value: formatCurrency(unbilled),
       href: DASHBOARD_LINKS.completedJobs,
-      description: 'Job amounts without a collectible invoice. Invoiced jobs are excluded.'
+      description: 'Saved job amounts without a collectible invoice. Invoiced jobs are excluded.'
     },
     {
       label: 'Expected revenue',
       value: formatCurrency(expectedRevenue),
       href: DASHBOARD_LINKS.estimatedProfit,
-      description: 'Collectible invoice totals plus uninvoiced job amounts, without double counting.'
+      description:
+        range === 'all_time'
+          ? 'Recorded revenue reconciled so it is never lower than customer payments received plus balances still due.'
+          : 'Collectible invoice totals plus uninvoiced job amounts, without double counting.'
     },
     {
       label: 'Expected profit',
       value: formatCurrency(expectedProfit),
       href: DASHBOARD_LINKS.estimatedProfit,
-      description: 'Expected revenue minus contractor cost and business expenses.'
+      description: 'Expected revenue minus total contractor cost and business expenses.'
     },
     {
       label: 'Business expenses',
