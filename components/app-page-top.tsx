@@ -1,6 +1,7 @@
 'use client';
 
 import { AppBackButton } from '@/components/app-back-button';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { OrgSwitcher } from '@/components/org-switcher';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 
@@ -13,11 +14,18 @@ type AppPageTopProps = {
 export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   const normalizedRole = normalizeRole(role);
 
-  // Client portal pages have their own focused navigation. Never show workspace
-  // switching here because invited clients may also have an auto-created personal
-  // workspace, which makes the portal look duplicated and can send them away from
-  // the job that was shared with them.
-  if (isClientRole(normalizedRole)) return null;
+  // Client portal pages keep focused navigation and never show workspace switching.
+  // Keep the language selector visible on every client-facing portal view so invited
+  // clients can change language without opening account settings first.
+  if (isClientRole(normalizedRole)) {
+    return (
+      <div className="app-page-top">
+        <div style={{ marginLeft: 'auto', width: 'min(100%, 8.75rem)' }}>
+          <LanguageSwitcher id="client-portal-language" variant="compact" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-page-top">
