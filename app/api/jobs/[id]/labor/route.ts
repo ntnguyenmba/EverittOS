@@ -5,52 +5,87 @@ import { isValidUuid } from '@/lib/input-validation';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-async function verifyJob(ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>, jobId: string) {
-  if (!ctx.ok) return false;
+type VerifiedJob = {
+  id: string;
+  assigned_to: string | null;
+};
+
+async function verifyJob(
+  ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>,
+  jobId: string
+): Promise<VerifiedJob | null> {
+  if (!ctx.ok) return null;
   const { data } = await ctx.supabase
     .from('jobs')
-    .select('id')
+    .select('id, assigned_to')
     .eq('id', jobId)
     .eq('organization_id', ctx.organizationId)
     .maybeSingle();
-  return Boolean(data);
+  return data ? { id: data.id, assigned_to: data.assigned_to || null } : null;
 }
 
 async function resolveWorkerId(
   ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>,
   suppliedWorkerId: unknown,
-  suppliedWorkerName: unknown
-): Promise<{ workerId: string | null; error: string | null }> {
-  if (!ctx.ok) return { workerId: null, error: 'Unable to verify contractor' };
+  suppliedWorkerName: unknown,
+  assignedUserId?: string | null
+): Promise<{ workerId: string | null; workerName: string | null; error: string | null }> {
+  if (!ctx.ok) return { workerId: null, workerName: null, error: 'Unable to verify contractor' };
 
   const workerId = typeof suppliedWorkerId === 'string' ? suppliedWorkerId.trim() : '';
   if (workerId) {
-    if (!isValidUuid(workerId)) return { workerId: null, error: 'Invalid contractor selection' };
+    if (!isValidUuid(workerId)) {
+      return { workerId: null, workerName: null, error: 'Invalid contractor selection' };
+    }
     const { data, error } = await ctx.supabase
       .from('workers')
-      .select('id')
+      .select('id, name')
       .eq('id', workerId)
       .eq('organization_id', ctx.organizationId)
       .maybeSingle();
-    if (error || !data) return { workerId: null, error: 'Select a contractor from your team list' };
-    return { workerId: data.id, error: null };
+    if (error || !data) {
+      return { workerId: null, workerName: null, error: 'Select a contractor from your team list' };
+    }
+    return { workerId: data.id, workerName: data.name || null, error: null };
+  }
+
+  // The assigned team member is the strongest fallback. This prevents contractor pay
+  // from being saved without a worker_id when the free-text name differs slightly.
+  if (assignedUserId && isValidUuid(assignedUserId)) {
+    const { data, error } = await ctx.supabase
+      .from('workers')
+      .select('id, name')
+      .eq('organization_id', ctx.organizationId)
+      .eq('auth_user_id', assignedUserId)
+      .eq('active', true)
+      .limit(2);
+
+    if (!error && data?.length === 1) {
+      return { workerId: data[0].id, workerName: data[0].name || null, error: null };
+    }
   }
 
   const workerName = typeof suppliedWorkerName === 'string' ? suppliedWorkerName.trim() : '';
-  if (!workerName) return { workerId: null, error: 'Select a contractor from your team list' };
+  if (!workerName) {
+    return { workerId: null, workerName: null, error: 'Assign the job to a contractor or select a contractor from your team list' };
+  }
 
   const { data, error } = await ctx.supabase
     .from('workers')
-    .select('id')
+    .select('id, name')
     .eq('organization_id', ctx.organizationId)
     .ilike('name', workerName)
     .limit(2);
 
   if (error || !data || data.length !== 1) {
-    return { workerId: null, error: 'Select a contractor from your team list so their earnings are linked correctly' };
+    return {
+      workerId: null,
+      workerName: null,
+      error: 'Assign the job to a contractor or select a contractor from your team list so earnings are linked correctly'
+    };
   }
 
-  return { workerId: data[0].id, error: null };
+  return { workerId: data[0].id, workerName: data[0].name || workerName, error: null };
 }
 
 export async function GET(_request: Request, { params }: RouteParams) {
@@ -93,12 +128,13 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'Invalid job id' }, { status: 400 });
   }
 
-  if (!(await verifyJob(ctx, jobId))) {
+  const job = await verifyJob(ctx, jobId);
+  if (!job) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
   const body = await request.json();
-  const resolvedWorker = await resolveWorkerId(ctx, body.worker_id, body.worker_name);
+  const resolvedWorker = await resolveWorkerId(ctx, body.worker_id, body.worker_name, job.assigned_to);
   if (!resolvedWorker.workerId) {
     return NextResponse.json({ error: resolvedWorker.error }, { status: 400 });
   }
@@ -117,12 +153,14 @@ export async function POST(request: Request, { params }: RouteParams) {
     organization_id: ctx.organizationId,
     job_id: jobId,
     worker_id: resolvedWorker.workerId,
-    worker_name: body.worker_name?.trim() || null,
+    worker_name: resolvedWorker.workerName || body.worker_name?.trim() || null,
     hours: labor.hours,
     hourly_cost: labor.hourly_cost,
     total_cost: labor.total_cost,
     notes: body.notes?.trim() || null,
-    payment_basis: labor.payment_basis
+    payment_basis: labor.payment_basis,
+    payment_status: body.payment_status === 'paid' ? 'paid' : body.payment_status === 'pending' ? 'pending' : 'unpaid',
+    paid_at: body.payment_status === 'paid' ? body.paid_at || new Date().toISOString() : null
   };
 
   let result = await ctx.supabase.from('job_labor').insert(insertPayload).select('*').single();
