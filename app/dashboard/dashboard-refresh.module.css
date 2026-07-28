@@ -2,6 +2,10 @@
   background: #f7f9fc;
 }
 
+.dashboardRefresh :global(.sidebar-owner-dashboard .sidebar-brand) {
+  padding-left: 14px;
+}
+
 .dashboardRefresh :global(.main) {
   max-width: none;
   padding: 24px 32px 40px;
