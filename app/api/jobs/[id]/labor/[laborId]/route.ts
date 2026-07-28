@@ -22,6 +22,49 @@ function contractorPaymentMigrationMessage() {
   return 'Contractor payment tracking needs the latest database migration. Contractor pay amounts can still be edited, but paid, pending, method, and reference tracking will be unavailable until the migration is applied.';
 }
 
+async function resolveLaborWorkerId(
+  ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>,
+  jobId: string,
+  laborId: string
+): Promise<{ workerId: string | null; error: string | null }> {
+  if (!ctx.ok) return { workerId: null, error: 'Unable to verify contractor' };
+
+  const { data: laborRow, error: laborError } = await ctx.supabase
+    .from('job_labor')
+    .select('worker_id, worker_name')
+    .eq('id', laborId)
+    .eq('job_id', jobId)
+    .eq('organization_id', ctx.organizationId)
+    .maybeSingle();
+
+  if (laborError || !laborRow) {
+    return { workerId: null, error: laborError?.message || 'Contractor pay not found' };
+  }
+
+  if (laborRow.worker_id) return { workerId: String(laborRow.worker_id), error: null };
+
+  const workerName = String(laborRow.worker_name || '').trim();
+  if (!workerName) {
+    return { workerId: null, error: 'Select the contractor before marking this payment paid' };
+  }
+
+  const { data: workers, error: workerError } = await ctx.supabase
+    .from('workers')
+    .select('id')
+    .eq('organization_id', ctx.organizationId)
+    .ilike('name', workerName)
+    .limit(2);
+
+  if (workerError || !workers || workers.length !== 1) {
+    return {
+      workerId: null,
+      error: 'This payment is not linked to one contractor. Edit the contractor pay entry and select the contractor first.'
+    };
+  }
+
+  return { workerId: String(workers[0].id), error: null };
+}
+
 export async function PATCH(request: Request, { params }: RouteParams) {
   const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) {
@@ -45,6 +88,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (!PAYMENT_STATUSES.has(paymentStatus)) {
       return NextResponse.json({ error: 'Invalid contractor payment status' }, { status: 400 });
     }
+
+    if (paymentStatus === 'paid' && body.worker_id === undefined) {
+      const resolvedWorker = await resolveLaborWorkerId(ctx, jobId, laborId);
+      if (!resolvedWorker.workerId) {
+        return NextResponse.json({ error: resolvedWorker.error }, { status: 400 });
+      }
+      patch.worker_id = resolvedWorker.workerId;
+    }
+
     patch.payment_status = paymentStatus;
     patch.paid_at = paymentStatus === 'paid' ? body.paid_at || new Date().toISOString() : null;
   } else if (body.paid_at !== undefined) {
@@ -65,8 +117,6 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     body.payment_basis !== undefined ||
     body.paymentBasis !== undefined
   ) {
-    // Do not select payment_basis here. Older databases may not have that
-    // migration yet, but pay amounts must still remain editable.
     const { data: existing, error: existingError } = await ctx.supabase
       .from('job_labor')
       .select('hours, hourly_cost')
