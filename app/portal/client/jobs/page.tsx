@@ -32,6 +32,12 @@ export default function ClientPortalJobsPage() {
         return;
       }
 
+      try {
+        await fetch('/api/portal/client/repair', { method: 'POST' });
+      } catch {
+        // Continue with current access rows.
+      }
+
       const { data: profileRow } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       if (!isClientRole(normalizeRole(profileRow?.role))) {
         router.replace(CLIENT_PORTAL_HOME);

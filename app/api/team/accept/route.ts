@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { repairClientPortalAccessForUser } from '@/lib/client-portal-repair';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { inviteAcceptLandingPath } from '@/lib/portal-access';
@@ -145,6 +146,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (invite.role === 'client') {
+      await repairClientPortalAccessForUser(admin, user.id, userEmail);
+    }
+
     const sharedJobIds = invite.role === 'client' ? await sharedJobIdsForClient(admin, user.id) : [];
     return NextResponse.json(
       landingPayload(invite.role, invite.organization_id, {
@@ -202,6 +207,11 @@ export async function POST(request: Request) {
       },
       { onConflict: 'job_id,client_user_id' }
     );
+  }
+
+  // Final pass repairs any related historical client invites for this email (idempotent).
+  if (invite.role === 'client') {
+    await repairClientPortalAccessForUser(admin, user.id, userEmail);
   }
 
   const sharedJobIds = invite.role === 'client' ? await sharedJobIdsForClient(admin, user.id) : [];

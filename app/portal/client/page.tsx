@@ -139,6 +139,13 @@ function ClientPortalContent() {
         return;
       }
 
+      // Repair incomplete historical client invite relationships before loading jobs.
+      try {
+        await fetch('/api/portal/client/repair', { method: 'POST' });
+      } catch {
+        // Portal still loads with whatever access is already present.
+      }
+
       const { data: profileRow } = await supabase
         .from('profiles')
         .select('role, plan, email, full_name, business_name, phone')

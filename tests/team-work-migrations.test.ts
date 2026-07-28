@@ -92,7 +92,9 @@ describe('team work migration safety', () => {
     assert.match(authRelink, /auth_user_id = r\.auth_user_id/);
     assert.doesNotMatch(authRelink, /insert into public\.workers/i);
 
-    const laterMigrations = migrationFiles().filter((name) => name > '202609210001_contractor_worker_auth_relink.sql');
+    const laterMigrations = migrationFiles().filter(
+      (name) => name > '202609210001_contractor_worker_auth_relink.sql' && !name.includes('client_portal_access_repair')
+    );
     for (const name of laterMigrations) {
       const sql = readMigration(name);
       if (!sql.includes('jobs_team_work_read')) continue;

@@ -7,8 +7,10 @@ import { diagnoseLoginFailure } from '@/lib/auth-user-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
+import { repairClientPortalAccessForUser } from '@/lib/client-portal-repair';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
 import { ensureUserWorkspace, isRetryableBootstrapCode } from '@/lib/profile-bootstrap-server';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { isSupabaseConfigured, supabaseConfigDiagnostics } from '@/lib/supabase-config';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 import { normalizeRole } from '@/lib/roles';
@@ -288,23 +290,44 @@ export async function POST(request: Request) {
       );
     }
 
+    // Repair incomplete client invite relationships from the prior subscription-wall bug.
+    // Owners/managers/contractors are skipped by the repair routine.
+    let effectiveRole = profile.role;
+    let effectiveOrganizationId = profile.organization_id;
+    let clientRepairRedirect: string | null = null;
+    try {
+      const admin = createAdminSupabase();
+      const repair = await repairClientPortalAccessForUser(admin, user.id, email);
+      if (repair.ok && !repair.skipped && repair.role) {
+        effectiveRole = String(repair.role);
+        if (repair.organizationId) effectiveOrganizationId = repair.organizationId;
+        if (repair.redirectTo && normalizeRole(repair.role) === 'client') {
+          clientRepairRedirect = repair.redirectTo;
+        }
+      }
+    } catch {
+      // Login must still succeed even if repair is unavailable.
+    }
+
     let onboardingCompleted = true;
     let onboardingSkipped = false;
-    if (profile.organization_id && roleNeedsOnboarding(profile.role)) {
+    if (effectiveOrganizationId && roleNeedsOnboarding(effectiveRole)) {
       const { data: settings } = await supabase
         .from('organization_settings')
         .select('onboarding_completed, onboarding_skipped')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', effectiveOrganizationId)
         .maybeSingle();
       onboardingCompleted = Boolean(settings?.onboarding_completed);
       onboardingSkipped = Boolean(settings?.onboarding_skipped);
     }
 
-    const redirectTo = postAuthRedirectPath(profile.role, next, onboardingCompleted, onboardingSkipped);
+    const redirectTo =
+      clientRepairRedirect ||
+      postAuthRedirectPath(effectiveRole, next, onboardingCompleted, onboardingSkipped);
 
     logAuthEvent('login_success', {
       userId: user.id,
-      role: profile.role,
+      role: effectiveRole,
       bootstrapped: bootstrap.created ? 1 : 0,
       host: configDiagnostics.urlHost || 'unknown',
       ...(process.env.NODE_ENV === 'development' ? { durationMs: Date.now() - startedAt } : {})
@@ -337,7 +360,7 @@ export async function POST(request: Request) {
       secureLoginPayload({
         ok: true,
         redirectTo,
-        role: profile.role,
+        role: effectiveRole,
         plan: profile.plan,
         subscriptionStatus: profile.subscription_status,
         workspaceCreated: bootstrap.created,
@@ -345,8 +368,8 @@ export async function POST(request: Request) {
           authStep: 'complete',
           userId: user.id,
           sessionVerified: true,
-          profile,
-          hasMembership: Boolean(profile.organization_id),
+          profile: { ...profile, role: effectiveRole, organization_id: effectiveOrganizationId },
+          hasMembership: Boolean(effectiveOrganizationId),
           profileLookupRan: true,
           membershipLookupRan: true
         }),

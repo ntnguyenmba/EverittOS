@@ -11,6 +11,7 @@ import { hasPermission } from '@/lib/permissions';
 import {
   CLIENT_PORTAL_HOME,
   CONTRACTOR_PORTAL_HOME,
+  clientPortalJobsPath,
   isClientAllowedPath,
   isContractorAllowedPath,
   isPortalPersonalSettingsPath,
@@ -314,7 +315,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const role = normalizeRole(profile?.role || 'owner');
+  let role = normalizeRole(profile?.role || 'owner');
   const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
@@ -322,6 +323,50 @@ export async function middleware(request: NextRequest) {
   // Skip subscription, plan, and /team permission gates entirely for this path.
   if (isTeamInviteAcceptPath(pathname)) {
     return supabaseResponse;
+  }
+
+  // Backward-compat: repair stuck client invitees on portal/billing/dashboard entry points.
+  // SQL function skips managers/contractors and real business owners.
+  const shouldAttemptClientRepair =
+    isClientRole(role) ||
+    pathname.startsWith('/portal/client') ||
+    pathname === '/dashboard' ||
+    pathname.startsWith('/settings/billing') ||
+    pathname === '/billing' ||
+    pathname.startsWith('/pricing');
+
+  if ((role === 'owner' || isClientRole(role)) && shouldAttemptClientRepair) {
+    try {
+      const { data: repairResult } = await supabase.rpc('repair_client_portal_access_for_user', {
+        p_user_id: user.id
+      });
+      const repairedRole =
+        repairResult && typeof repairResult === 'object'
+          ? normalizeRole((repairResult as { role?: string }).role)
+          : role;
+      const repaired = Boolean(
+        repairResult &&
+          typeof repairResult === 'object' &&
+          (repairResult as { ok?: boolean }).ok &&
+          !(repairResult as { skipped?: boolean }).skipped
+      );
+      if (repaired) {
+        role = repairedRole;
+      }
+      // Pull repaired clients off billing/pricing/owner dashboard immediately.
+      if (
+        isClientRole(role) &&
+        repaired &&
+        (pathname.startsWith('/settings/billing') ||
+          pathname === '/billing' ||
+          pathname.startsWith('/pricing') ||
+          pathname === '/dashboard')
+      ) {
+        return redirectWithCookies(new URL(clientPortalJobsPath(), request.url), supabaseResponse);
+      }
+    } catch {
+      // RPC may be unavailable until migration is applied; continue with current role.
+    }
   }
 
   if (isClientRole(role)) {
