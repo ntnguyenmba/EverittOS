@@ -523,8 +523,13 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
-          <section id="schedule" className="card" aria-label={t('portal.contractor.upcomingJobs')} style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.upcomingJobs')}</h2>
+          <details id="schedule" className="card" open style={{ marginBottom: 16 }}>
+            <summary
+              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+            >
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.upcomingJobs')}</h2>
+              <span className="muted">{upcomingOnly.length}</span>
+            </summary>
             {upcomingOnly.length === 0 ? (
               <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noUpcoming')}</p>
             ) : (
@@ -532,19 +537,21 @@ export default function ContractorPortalPage() {
                 {upcomingOnly.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).map(renderJobCard)}
               </div>
             )}
-          </section>
+          </details>
 
-          <section id="past-jobs" className="card" aria-label={t('portal.contractor.pastJobs')} style={{ marginBottom: 16 }}>
-            <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>{t('portal.contractor.pastJobs')}</h2>
+          <details id="past-jobs" className="card" style={{ marginBottom: 16 }}>
+            <summary
+              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+            >
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.pastJobs')}</h2>
               <span className="muted">{metrics.completedJobs} {t('portal.contractor.completed')}</span>
-            </div>
+            </summary>
             {completedJobs.length === 0 ? (
-              <p className="muted">{t('portal.contractor.noCompleted')}</p>
+              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noCompleted')}</p>
             ) : (
               <div style={{ marginTop: 8 }}>{completedJobs.map(renderJobCard)}</div>
             )}
-          </section>
+          </details>
 
           <section id="earnings" className="card" aria-label={t('portal.contractor.earnings')} style={{ marginBottom: 16 }}>
             <div className="dashboard-section-head">
