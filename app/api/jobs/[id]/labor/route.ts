@@ -16,6 +16,43 @@ async function verifyJob(ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>
   return Boolean(data);
 }
 
+async function resolveWorkerId(
+  ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>,
+  suppliedWorkerId: unknown,
+  suppliedWorkerName: unknown
+): Promise<{ workerId: string | null; error: string | null }> {
+  if (!ctx.ok) return { workerId: null, error: 'Unable to verify contractor' };
+
+  const workerId = typeof suppliedWorkerId === 'string' ? suppliedWorkerId.trim() : '';
+  if (workerId) {
+    if (!isValidUuid(workerId)) return { workerId: null, error: 'Invalid contractor selection' };
+    const { data, error } = await ctx.supabase
+      .from('workers')
+      .select('id')
+      .eq('id', workerId)
+      .eq('organization_id', ctx.organizationId)
+      .maybeSingle();
+    if (error || !data) return { workerId: null, error: 'Select a contractor from your team list' };
+    return { workerId: data.id, error: null };
+  }
+
+  const workerName = typeof suppliedWorkerName === 'string' ? suppliedWorkerName.trim() : '';
+  if (!workerName) return { workerId: null, error: 'Select a contractor from your team list' };
+
+  const { data, error } = await ctx.supabase
+    .from('workers')
+    .select('id')
+    .eq('organization_id', ctx.organizationId)
+    .ilike('name', workerName)
+    .limit(2);
+
+  if (error || !data || data.length !== 1) {
+    return { workerId: null, error: 'Select a contractor from your team list so their earnings are linked correctly' };
+  }
+
+  return { workerId: data[0].id, error: null };
+}
+
 export async function GET(_request: Request, { params }: RouteParams) {
   const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) {
@@ -61,6 +98,11 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const body = await request.json();
+  const resolvedWorker = await resolveWorkerId(ctx, body.worker_id, body.worker_name);
+  if (!resolvedWorker.workerId) {
+    return NextResponse.json({ error: resolvedWorker.error }, { status: 400 });
+  }
+
   const labor = buildLaborRow({
     hours: body.payment_basis === 'flat' ? 1 : body.hours,
     hourlyCost: body.hourly_cost ?? body.hourlyCost,
@@ -74,7 +116,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   const insertPayload: Record<string, unknown> = {
     organization_id: ctx.organizationId,
     job_id: jobId,
-    worker_id: body.worker_id || null,
+    worker_id: resolvedWorker.workerId,
     worker_name: body.worker_name?.trim() || null,
     hours: labor.hours,
     hourly_cost: labor.hourly_cost,
