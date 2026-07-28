@@ -110,7 +110,6 @@ export function AppNavItems({
     const links = [
       { label: 'Dashboard', href: CLIENT_PORTAL_HOME },
       { label: 'Appointments', href: `${CLIENT_PORTAL_HOME}?tab=jobs` },
-      { label: 'Invoices', href: `${CLIENT_PORTAL_HOME}?tab=invoices` },
       { label: 'Settings', href: CLIENT_PORTAL_SETTINGS }
     ];
     return (

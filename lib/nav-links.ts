@@ -20,7 +20,6 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Jobs', href: '/jobs' },
   { label: 'Schedule', href: '/schedule' },
   { label: 'Customers', href: '/customers' },
-  { label: 'Payments', href: '/invoices', flag: 'invoicesNav' },
   { label: 'Team', href: '/people' },
   { label: 'Reports', href: '/reports' },
   { label: 'Settings', href: '/settings' }

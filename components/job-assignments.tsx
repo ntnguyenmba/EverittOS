@@ -122,7 +122,7 @@ export function JobAssignments({
     <div className="form">
       <h4>Assigned team</h4>
       <p className="muted">
-        People assigned to work on this job. {isCompleted && canManage ? 'Completed job assignments can still be corrected here.' : ''}
+        Team members assigned to this job. {isCompleted && canManage ? 'Completed job assignments can still be corrected here.' : ''}
       </p>
       {assignments.length === 0 && <p>No team assigned yet.</p>}
       {assignments.map((assignment) => {

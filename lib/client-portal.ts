@@ -5,7 +5,6 @@ export function clientNavItems(): Array<{ id: string; label: string; href: strin
   return [
     { id: 'overview', label: 'Dashboard', href: `${CLIENT_HOME_PATH}?tab=dashboard` },
     { id: 'jobs', label: 'Appointments', href: `${CLIENT_HOME_PATH}?tab=jobs` },
-    { id: 'invoices', label: 'Invoices', href: `${CLIENT_HOME_PATH}?tab=invoices` },
     { id: 'account', label: 'Settings', href: CLIENT_SETTINGS_PATH }
   ];
 }

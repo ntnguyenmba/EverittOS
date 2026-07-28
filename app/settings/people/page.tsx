@@ -38,7 +38,7 @@ export default function SettingsPeoplePage() {
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p>Loading people settings...</p>
+        <p>Loading team settings...</p>
       </AppShell>
     );
   }
@@ -47,8 +47,8 @@ export default function SettingsPeoplePage() {
     <SettingsShell
       plan={plan}
       role={role}
-      title="People"
-      description="Invite people and manage roles."
+      title="Team"
+      description="Invite team members and manage roles."
     >
       <EverittteamAiUsagePanel />
       <TeamManagementPanel showPermissionMatrix showAuditHistory={false} />

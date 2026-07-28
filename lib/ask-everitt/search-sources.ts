@@ -79,12 +79,12 @@ const SOURCE_LIST: SearchSourceDefinition[] = [
   },
   {
     id: 'workers',
-    label: 'People',
+    label: 'Team',
     recordType: 'worker',
     table: 'workers',
-    keywords: ['worker', 'workers', 'crew', 'technician', 'staff member', 'team member', 'people'],
+    keywords: ['worker', 'workers', 'crew', 'technician', 'staff member', 'team member', 'people', 'team'],
     href: '/people',
-    actionLabel: 'Open People',
+    actionLabel: 'Open Team',
     listPath: '/people'
   },
   {

@@ -17,10 +17,10 @@ describe('portal navigation menus', () => {
 
   it('customer menu stays limited to portal sections', () => {
     const labels = clientNavItems().map((item) => item.label);
-    assert.deepEqual(labels, ['Dashboard', 'Appointments', 'Invoices', 'Settings']);
+    assert.deepEqual(labels, ['Dashboard', 'Appointments', 'Settings']);
     assert.equal(CLIENT_SETTINGS_PATH, '/portal/client/settings');
     assert.equal(
-      clientNavItems().some((item) => /team|analytics|expense|quickbooks/i.test(item.label)),
+      clientNavItems().some((item) => /team|analytics|expense|quickbooks|invoice/i.test(item.label)),
       false
     );
   });

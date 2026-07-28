@@ -187,7 +187,7 @@ const en: DashboardFinanceCopy = {
   money: {
     expectedRevenue: 'Expected revenue',
     expectedRevenueHelp:
-      'Invoice totals created in this period plus expected amounts on jobs that do not have an invoice yet. A job is never counted twice.',
+      'Expected customer revenue for this period, including invoiced and direct job payment activity without double counting.',
     collected: 'Collected',
     collectedHelp:
       'Client payments actually received in this period from invoices and direct job payments.',
@@ -359,7 +359,7 @@ const es: DashboardFinanceCopy = {
     ...en.money,
     expectedRevenue: 'Ingresos esperados',
     expectedRevenueHelp:
-      'Totales de facturas creadas en este período más montos esperados de trabajos sin factura. Un trabajo nunca se cuenta dos veces.',
+      'Ingresos esperados de clientes en este período, incluyendo actividad facturada y pagos directos sin contar dos veces.',
     collected: 'Cobrado',
     collectedHelp:
       'Pagos de clientes realmente recibidos en este período por facturas y pagos directos.',
@@ -514,7 +514,7 @@ const vi: DashboardFinanceCopy = {
     ...en.money,
     expectedRevenue: 'Doanh thu dự kiến',
     expectedRevenueHelp:
-      'Tổng hóa đơn tạo trong kỳ cộng số tiền dự kiến của việc chưa có hóa đơn. Một công việc không được tính hai lần.',
+      'Doanh thu khách hàng dự kiến trong kỳ, gồm hoạt động đã xuất hóa đơn và thanh toán trực tiếp trên công việc, không tính trùng.',
     collected: 'Đã thu',
     collectedHelp: 'Tiền khách thực nhận trong kỳ từ hóa đơn và thanh toán trực tiếp.',
     outstanding: 'Còn nợ',

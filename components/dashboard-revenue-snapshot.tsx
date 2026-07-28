@@ -88,7 +88,6 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
       ? activeMetrics.unpaidContractorPay ?? 0
       : activeMetrics.periodUnpaidContractorPay ?? 0;
   const contractorCost = activeMetrics.contractorPayThisMonth ?? contractorPaid + contractorsAwaitingPayment;
-  const unbilled = activeMetrics.uninvoicedCompletedWork ?? 0;
   const recordedExpectedRevenue = activeMetrics.expectedRevenue ?? 0;
   const expectedRevenue =
     range === 'all_time'
@@ -140,19 +139,11 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
       description: 'All contractor labor tied to this period, whether paid or still awaiting payment.'
     },
     {
-      label: 'Uninvoiced job amounts',
-      value: formatCurrency(unbilled),
-      href: DASHBOARD_LINKS.completedJobs,
-      description: 'Saved job amounts without a collectible invoice. Invoiced jobs are excluded.'
-    },
-    {
       label: 'Expected revenue',
       value: formatCurrency(expectedRevenue),
       href: DASHBOARD_LINKS.estimatedProfit,
       description:
-        range === 'all_time'
-          ? 'Recorded revenue reconciled so it is never lower than customer payments received plus balances still due.'
-          : 'Collectible invoice totals plus uninvoiced job amounts, without double counting.'
+        'Expected customer revenue for this period, including invoiced and direct job payment activity without double counting.'
     },
     {
       label: 'Expected profit',

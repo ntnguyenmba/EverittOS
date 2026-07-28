@@ -102,7 +102,7 @@ describe('settings links by role', () => {
     assert.ok(managerLinks.some((link) => link.href === '/settings/notifications'));
   });
 
-  it('owner primary nav is slim and includes Payments', () => {
+  it('owner primary nav is slim without Invoices or Payments', () => {
     const items = appNavItemsForRole('owner', 'business');
     const hrefs = items.map((item) => item.href);
     assert.deepEqual(hrefs, [
@@ -110,14 +110,14 @@ describe('settings links by role', () => {
       '/jobs',
       '/schedule',
       '/customers',
-      '/invoices',
       '/people',
       '/reports',
       '/settings'
     ]);
+    assert.equal(items.some((item) => /invoice|payment/i.test(item.label)), false);
   });
 
-  it('manager primary nav excludes Payments', () => {
+  it('manager primary nav excludes Invoices and Payments', () => {
     const items = appNavItemsForRole('manager', 'business');
     const hrefs = items.map((item) => item.href);
     assert.deepEqual(hrefs, [
@@ -129,6 +129,7 @@ describe('settings links by role', () => {
       '/reports',
       '/settings'
     ]);
+    assert.equal(items.some((item) => /invoice|payment/i.test(item.label)), false);
   });
 });
 

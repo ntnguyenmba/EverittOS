@@ -1,7 +1,7 @@
 /** Shared empty-state copy for authenticated app pages (no demo or placeholder records). */
 export const EMPTY_COPY = {
   workers: {
-    title: 'No people yet',
+    title: 'No team members yet',
     description: 'Invite teammates so you can assign jobs and track labor.'
   },
   customers: {

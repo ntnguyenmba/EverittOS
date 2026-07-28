@@ -123,7 +123,7 @@ export const messages: Messages = {
       properties: 'Bất động sản',
       customers: 'Khách hàng',
       contractors: 'Nhà thầu',
-      workers: 'Mọi người',
+      workers: 'Nhóm',
       maintenance: 'Bảo trì',
       cleaning: 'Vệ sinh',
       inspections: 'Kiểm tra',
@@ -181,9 +181,9 @@ export const messages: Messages = {
       action: 'Lên lịch'
     },
     workers: {
-      title: 'Chưa có ai',
-      description: 'Mời mọi người để giao việc và quản lý quyền truy cập.',
-      action: 'Mời người'
+      title: 'Chưa có thành viên nhóm',
+      description: 'Mời thành viên nhóm để giao việc và quản lý quyền truy cập.',
+      action: 'Mời thành viên nhóm'
     },
     activity: {
       title: 'Chưa có hoạt động',
@@ -391,8 +391,8 @@ export const messages: Messages = {
     clients: 'Khách hàng portal',
     schedule: 'Lịch',
     expenses: 'Chi phí',
-    workers: 'Mọi người',
-    team: 'Mọi người',
+    workers: 'Nhóm',
+    team: 'Nhóm',
     activity: 'Hoạt động',
     analytics: 'Phân tích',
     workflows: 'Quy trình',
@@ -409,7 +409,7 @@ export const messages: Messages = {
   },
   settingsNav: {
     workspace: 'Không gian làm việc',
-    team: 'Mọi người',
+    team: 'Nhóm',
     branding: 'Thương hiệu',
     integrations: 'Tích hợp',
     account: 'Tài khoản',
@@ -547,7 +547,7 @@ export const messages: Messages = {
       newJob: 'Công việc mới',
       schedule: 'Lịch',
       customers: 'Khách hàng',
-      workers: 'Mọi người',
+      workers: 'Nhóm',
       billing: 'Thanh toán'
     },
     metrics: {
@@ -1071,7 +1071,7 @@ export const messages: Messages = {
       needsAssignment: 'Cần phân công',
       showAll: 'Xem tất cả công việc',
       assignedEmail: 'Email được phân công',
-      assignedEmailHint: 'Tùy chọn. Ai sẽ nhận công việc này. Không cần hồ sơ trong Mọi người.',
+      assignedEmailHint: 'Tùy chọn. Ai sẽ nhận công việc này. Không cần hồ sơ trong Nhóm.',
       createTitle: 'Tạo công việc',
       createPermissionBlocked: 'Bạn không có quyền tạo công việc trên tài khoản này.',
       restoreJob: 'Khôi phục công việc',

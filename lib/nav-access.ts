@@ -209,7 +209,7 @@ export function requiredPlanForNavHref(href: string): EverittosPlan | null {
   }
 }
 
-/** Plan feature gate beyond route minimums (e.g. People needs teamManagement flag). */
+/** Plan feature gate beyond route minimums (e.g. Team needs teamManagement flag). */
 function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan | null {
   const normalized = normalizePlan(plan);
   const path = navPath(href);
@@ -354,7 +354,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 /** Slim primary nav destinations by role. */
 export function primaryNavHrefsForRole(role: UserRole): string[] {
   if (isClientRole(role)) {
-    return ['/portal/client', '/portal/client?tab=jobs', '/portal/client?tab=invoices', '/portal/client/settings'];
+    return ['/portal/client', '/portal/client?tab=jobs', '/portal/client/settings'];
   }
   if (isContractorRole(role)) {
     return [
@@ -369,7 +369,7 @@ export function primaryNavHrefsForRole(role: UserRole): string[] {
     return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/reports', '/settings'];
   }
   if (canSeeOrgWideData(role)) {
-    return ['/dashboard', '/jobs', '/schedule', '/customers', '/invoices', '/people', '/reports', '/settings'];
+    return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/reports', '/settings'];
   }
   return ['/dashboard', '/jobs', '/schedule', '/settings'];
 }

@@ -23,7 +23,7 @@ export type PlanValidateResult = {
 };
 
 export function workerPlanFeatureMessage(plan: EverittosPlan): string {
-  return `People management requires Business plan or higher. Your workspace is on ${planDisplayName(plan)} plan.`;
+  return `Team management requires Business plan or higher. Your workspace is on ${planDisplayName(plan)} plan.`;
 }
 
 export function workerPlanLimitMessage(plan: EverittosPlan, workerLimit: number): string {
