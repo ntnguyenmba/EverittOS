@@ -13,7 +13,8 @@ import {
   CONTRACTOR_PORTAL_HOME,
   isClientAllowedPath,
   isContractorAllowedPath,
-  isPortalPersonalSettingsPath
+  isPortalPersonalSettingsPath,
+  isTeamInviteAcceptPath
 } from '@/lib/portal-access';
 import { defaultPathForRole } from '@/lib/role-routes';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
@@ -317,6 +318,12 @@ export async function middleware(request: NextRequest) {
   const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
+  // Invite acceptance must work for free personal accounts before they become clients/contractors.
+  // Skip subscription, plan, and /team permission gates entirely for this path.
+  if (isTeamInviteAcceptPath(pathname)) {
+    return supabaseResponse;
+  }
+
   if (isClientRole(role)) {
     if (!isClientAllowedPath(pathname)) {
       return redirectWithCookies(new URL(CLIENT_PORTAL_HOME, request.url), supabaseResponse);
@@ -341,6 +348,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // Subscription/paywall checks apply only to owner/manager (and other org staff) accounts.
   if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
     const billing = new URL('/settings/billing', request.url);
     billing.searchParams.set('reason', 'subscription');

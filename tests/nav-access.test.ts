@@ -156,9 +156,14 @@ describe('route landing and portal path helpers', () => {
 
     assert.equal(isClientAllowedPath('/portal/client'), true);
     assert.equal(isClientAllowedPath('/portal/client/settings'), true);
+    assert.equal(isClientAllowedPath('/portal/client/jobs'), true);
+    assert.equal(isClientAllowedPath('/portal/client/jobs/job-1'), true);
+    assert.equal(isClientAllowedPath('/team/accept'), true);
+    assert.equal(isClientAllowedPath('/team/accept?token=abc'), true);
     assert.equal(isClientAllowedPath('/settings/account'), true);
     assert.equal(isClientAllowedPath('/invoices'), false);
     assert.equal(isClientAllowedPath('/team'), false);
+    assert.equal(isContractorAllowedPath('/team/accept'), true);
 
     assert.equal(settingsHomeForRole('contractor'), '/portal/contractor/settings');
     assert.equal(settingsHomeForRole('client'), '/portal/client/settings');

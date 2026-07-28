@@ -36,6 +36,11 @@ export function isPublicLegalPath(pathname: string): boolean {
   );
 }
 
+export function isTeamInviteAcceptPath(pathname: string): boolean {
+  const path = pathOnly(pathname);
+  return path === '/team/accept' || path.startsWith('/team/accept/');
+}
+
 /**
  * Paths a contractor may open without being bounced back to the portal home.
  * Job detail pages enforce assignment/shared access themselves.
@@ -45,6 +50,8 @@ export function isContractorAllowedPath(pathname: string): boolean {
   if (path.startsWith(CONTRACTOR_PORTAL_HOME)) return true;
   if (isPortalPersonalSettingsPath(path)) return true;
   if (path.startsWith('/jobs/')) return true;
+  if (isTeamInviteAcceptPath(path)) return true;
+  if (isPublicLegalPath(path)) return true;
   return false;
 }
 
@@ -54,7 +61,40 @@ export function isClientAllowedPath(pathname: string): boolean {
   if (path.startsWith(CLIENT_PORTAL_HOME)) return true;
   if (isPortalPersonalSettingsPath(path)) return true;
   if (path.startsWith('/report/')) return true;
+  if (isTeamInviteAcceptPath(path)) return true;
+  if (isPublicLegalPath(path)) return true;
   return false;
+}
+
+/** Landing path for a client after invite accept or login with shared jobs. */
+export function clientPortalJobsPath(jobId?: string | null): string {
+  if (jobId) return `${CLIENT_PORTAL_HOME}/jobs/${jobId}`;
+  return `${CLIENT_PORTAL_HOME}/jobs`;
+}
+
+/**
+ * Where to send a user after accepting a workspace invitation.
+ * Clients/contractors never land on billing, pricing, or owner onboarding.
+ */
+export function inviteAcceptLandingPath(
+  roleInput: string | null | undefined,
+  options?: { jobId?: string | null; sharedJobIds?: string[] | null }
+): string {
+  const role = normalizeRole(roleInput);
+  const jobId = options?.jobId || null;
+  const sharedJobIds = (options?.sharedJobIds || []).filter(Boolean);
+
+  if (isClientRole(role)) {
+    if (jobId) return clientPortalJobsPath(jobId);
+    if (sharedJobIds.length === 1) return clientPortalJobsPath(sharedJobIds[0]);
+    return clientPortalJobsPath();
+  }
+
+  if (isContractorRole(role)) {
+    return CONTRACTOR_PORTAL_HOME;
+  }
+
+  return '/dashboard';
 }
 
 export function portalHomeForRole(roleInput: string | null | undefined): string | null {

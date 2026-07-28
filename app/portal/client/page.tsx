@@ -8,6 +8,7 @@ import { PhotoGallery } from '@/components/photo-gallery';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
+import { clientPortalJobsPath } from '@/lib/portal-access';
 import { isClientRole, normalizeRole } from '@/lib/roles';
 import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
 import { supabase } from '@/lib/supabase';
@@ -153,6 +154,7 @@ function ClientPortalContent() {
         phone: profileRow?.phone || null
       });
 
+      // Client portal guests are not EverittOS subscribers — never gate them on Growth/billing.
       if (!isClientRole(role) && !limitsForPlan(plan).clientPortal) {
         setMessage('Client portal requires Growth plan or higher, or a client role.');
         setLoading(false);
@@ -182,7 +184,17 @@ function ClientPortalContent() {
       setPhotoAccessByJob(accessMap);
 
       const jobIds = (access || []).map((a: { job_id: string }) => a.job_id);
+
+      // After login / invite: one shared job opens immediately; never send clients to pricing.
+      if (isClientRole(role) && !portalToken && !requestedTab && jobIds.length === 1) {
+        router.replace(clientPortalJobsPath(jobIds[0]));
+        return;
+      }
+
       if (jobIds.length === 0) {
+        if (isClientRole(role)) {
+          setMessage('There are currently no shared jobs for your account. When a business shares a job with you, it will appear here.');
+        }
         setLoading(false);
         return;
       }
@@ -236,7 +248,7 @@ function ClientPortalContent() {
       setLoading(false);
     }
     load();
-  }, [router, portalToken]);
+  }, [router, portalToken, requestedTab]);
 
   async function signOut() {
     setSigningOut(true);
@@ -305,9 +317,9 @@ function ClientPortalContent() {
                           {upcomingJobs[0].due_date || 'Date not set'} · {upcomingJobs[0].status || 'scheduled'}
                         </p>
                       </div>
-                      <button type="button" className="btn" onClick={() => setTab('jobs')}>
+                      <Link className="btn" href={clientPortalJobsPath(upcomingJobs[0].id)}>
                         View
-                      </button>
+                      </Link>
                     </div>
                   ) : (
                     <p className="muted">No upcoming appointments.</p>
@@ -325,6 +337,9 @@ function ClientPortalContent() {
                           <strong>{job.title}</strong>
                           <p className="muted">{job.status || 'scheduled'}</p>
                         </div>
+                        <Link className="btn" href={clientPortalJobsPath(job.id)}>
+                          Open
+                        </Link>
                       </div>
                     ))
                   )}
@@ -483,18 +498,33 @@ function ClientPortalContent() {
 
             {tab === 'jobs' && (
               <>
-                {jobs.length === 0 && <div className="card">No upcoming appointments.</div>}
+                {jobs.length === 0 && (
+                  <div className="card" role="status">
+                    <h3>No shared jobs yet</h3>
+                    <p className="muted">
+                      There are currently no shared jobs for your account. When a business shares a job with you, it will appear here.
+                    </p>
+                  </div>
+                )}
                 {jobs.map((job) => (
                   <article key={job.id} className="card" style={{ marginTop: 16 }}>
-                    <h3>{job.title}</h3>
-                    <p>Status: {job.status || 'new'}</p>
-                    <p>Due: {job.due_date || 'Not set'}</p>
-                    {job.customer_notes && <p>{job.customer_notes}</p>}
+                    <div className="list-row">
+                      <div>
+                        <h3 style={{ margin: 0 }}>{job.title}</h3>
+                        <p>Status: {job.status || 'new'}</p>
+                        <p>Due: {job.due_date || 'Not set'}</p>
+                        {job.customer_notes && <p>{job.customer_notes}</p>}
+                      </div>
+                      <Link className="btn btn-primary" href={clientPortalJobsPath(job.id)}>
+                        Open job
+                      </Link>
+                    </div>
                     <button
                       type="button"
                       className="btn"
                       onClick={() => setSelectedJob(selectedJob === job.id ? null : job.id)}
                       aria-expanded={selectedJob === job.id}
+                      style={{ marginTop: 8 }}
                     >
                       {selectedJob === job.id ? 'Hide photos' : 'View photos'}
                     </button>

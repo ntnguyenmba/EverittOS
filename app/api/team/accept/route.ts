@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { inviteAcceptLandingPath } from '@/lib/portal-access';
+import { normalizeRole } from '@/lib/roles';
 
 function normalizeEmail(value?: string | null): string {
   return (value || '').trim().toLowerCase();
@@ -38,6 +40,34 @@ async function moveUserRecordsToOrganization(admin: ReturnType<typeof createAdmi
     .update({ organization_id: organizationId })
     .eq('user_id', userId)
     .is('organization_id', null);
+}
+
+async function sharedJobIdsForClient(
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>,
+  userId: string
+): Promise<string[]> {
+  const { data } = await admin.from('job_client_access').select('job_id').eq('client_user_id', userId);
+  return (data || []).map((row) => String(row.job_id)).filter(Boolean);
+}
+
+function landingPayload(
+  roleInput: string | null | undefined,
+  organizationId: string,
+  options?: { jobId?: string | null; sharedJobIds?: string[] | null; message?: string }
+) {
+  const role = normalizeRole(roleInput);
+  const redirectTo = inviteAcceptLandingPath(role, {
+    jobId: options?.jobId,
+    sharedJobIds: options?.sharedJobIds
+  });
+  return {
+    ok: true as const,
+    organizationId,
+    role,
+    jobId: options?.jobId || null,
+    redirectTo,
+    ...(options?.message ? { message: options.message } : {})
+  };
 }
 
 export async function POST(request: Request) {
@@ -100,7 +130,29 @@ export async function POST(request: Request) {
       { onConflict: 'organization_id,user_id' }
     );
     await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
-    return NextResponse.json({ ok: true, organizationId: invite.organization_id, message: 'Invitation was already accepted. Access restored.' });
+
+    if (invite.role === 'client' && invite.job_id) {
+      const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle();
+      await admin.from('job_client_access').upsert(
+        {
+          job_id: invite.job_id,
+          client_user_id: user.id,
+          owner_user_id: org?.owner_user_id,
+          organization_id: invite.organization_id,
+          granted_at: new Date().toISOString()
+        },
+        { onConflict: 'job_id,client_user_id' }
+      );
+    }
+
+    const sharedJobIds = invite.role === 'client' ? await sharedJobIdsForClient(admin, user.id) : [];
+    return NextResponse.json(
+      landingPayload(invite.role, invite.organization_id, {
+        jobId: invite.job_id || null,
+        sharedJobIds,
+        message: 'Invitation was already accepted. Access restored.'
+      })
+    );
   }
 
   if (invite.status !== 'pending') {
@@ -152,5 +204,11 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, organizationId: invite.organization_id });
+  const sharedJobIds = invite.role === 'client' ? await sharedJobIdsForClient(admin, user.id) : [];
+  return NextResponse.json(
+    landingPayload(invite.role, invite.organization_id, {
+      jobId: invite.job_id || null,
+      sharedJobIds
+    })
+  );
 }

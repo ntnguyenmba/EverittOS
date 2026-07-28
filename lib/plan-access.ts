@@ -134,6 +134,11 @@ export const ROUTE_MIN_PLAN: { prefix: string; plan: EverittosPlan }[] = [
 ];
 
 export function minimumPlanForPath(pathname: string): EverittosPlan | null {
+  // Invite acceptance must work for free personal accounts becoming clients/contractors.
+  if (pathname === '/team/accept' || pathname.startsWith('/team/accept/')) {
+    return null;
+  }
+
   for (const route of ROUTE_MIN_PLAN) {
     if (pathname === route.prefix || pathname.startsWith(`${route.prefix}/`)) {
       return route.plan;
