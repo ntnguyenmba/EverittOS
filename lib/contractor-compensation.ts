@@ -1,4 +1,4 @@
-export type ContractorClassification = 'contractor' | 'owner_operator';
+export type ContractorClassification = 'contractor' | 'owner_operator' | 'client';
 
 export type HourlyRateParseResult =
   | { ok: true; value: number | null }
@@ -6,7 +6,8 @@ export type HourlyRateParseResult =
 
 const CLASSIFICATION_LABELS: Record<ContractorClassification, string> = {
   contractor: 'Independent contractor',
-  owner_operator: 'Owner / owner-operator'
+  owner_operator: 'Owner / owner-operator',
+  client: 'Client'
 };
 
 export function contractorClassificationOptions(): Array<{ value: ContractorClassification; label: string }> {
@@ -22,6 +23,9 @@ export function normalizeContractorClassification(
   const normalized = (value || '').trim().toLowerCase();
   if (normalized === 'owner_operator' || normalized === 'owner-operator' || normalized === 'owner') {
     return 'owner_operator';
+  }
+  if (normalized === 'client' || normalized === 'customer') {
+    return 'client';
   }
   return 'contractor';
 }
@@ -88,18 +92,22 @@ export function formatContractorCompensationLabel(input: {
   const classification = normalizeContractorClassification(input.classification);
   const rateLabel = formatHourlyRateAmount(input.hourlyRate);
 
+  if (classification === 'client') {
+    return 'Client';
+  }
+
   if (classification === 'owner_operator') {
     if (rateLabel) {
       return `${rateLabel} · Owner`;
     }
-    return 'Owner · Compensation not entered';
+    return 'Owner';
   }
 
   if (rateLabel) {
     return rateLabel;
   }
 
-  return 'Rate not entered';
+  return 'Independent contractor';
 }
 
 export function laborCostFromHourlyRate(hourlyRate: number | null | undefined, hours: number): number {
