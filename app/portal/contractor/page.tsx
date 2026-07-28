@@ -25,7 +25,7 @@ import {
   type ContractorLoadErrorCode,
   type ContractorPaymentHistoryRow
 } from '@/lib/contractor-dashboard';
-import { contractorJobDetailPath, isLegacyContractorShareNotification } from '@/lib/contractor-job-access';
+import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import {
   contractorJobCalendarEvent,
   downloadCalendarIcs,
@@ -53,7 +53,6 @@ type Translate = (path: string, values?: Record<string, string | number>) => str
 
 type EarningsCopy = {
   completedWork: string;
-  keepGoing: string;
   paymentRecordsPending: string;
   paidToYou: string;
 };
@@ -61,19 +60,16 @@ type EarningsCopy = {
 const EARNINGS_COPY: Record<'en' | 'es' | 'vi', EarningsCopy> = {
   en: {
     completedWork: 'jobs completed',
-    keepGoing: 'Every completed job builds your work history and opens the door to more assignments.',
     paymentRecordsPending: 'No earnings available yet.',
     paidToYou: 'Paid to you'
   },
   es: {
     completedWork: 'trabajos completados',
-    keepGoing: 'Cada trabajo completado fortalece tu historial y abre la puerta a más asignaciones.',
     paymentRecordsPending: 'Aún no hay ganancias disponibles.',
     paidToYou: 'Pagado a ti'
   },
   vi: {
     completedWork: 'công việc đã hoàn thành',
-    keepGoing: 'Mỗi công việc hoàn thành sẽ xây dựng lịch sử làm việc và giúp bạn nhận thêm công việc mới.',
     paymentRecordsPending: 'Chưa có thu nhập để hiển thị.',
     paidToYou: 'Đã trả cho bạn'
   }
@@ -130,9 +126,6 @@ export default function ContractorPortalPage() {
   const [history, setHistory] = useState<ContractorPaymentHistoryRow[]>([]);
   const [signingOut, setSigningOut] = useState(false);
   const [openJobId, setOpenJobId] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<
-    Array<{ id: string; title: string | null; body: string | null; created_at: string | null; read_at: string | null }>
-  >([]);
 
   const navItems = useMemo(
     () =>
@@ -342,19 +335,6 @@ export default function ContractorPortalPage() {
     setMetrics(computeContractorDashboardMetrics(jobsForView, laborRows, identity, undefined, assignmentWorkerIdsByJob));
     setJobCards(buildContractorJobCards(jobsForView, laborRows, identity, assignmentWorkerIdsByJob));
     setHistory(buildContractorPaymentHistory(laborRows, jobsById, workerIds));
-
-    const { data: notificationRows } = await supabase
-      .from('notifications')
-      .select('id, title, body, created_at, read_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(12);
-    setNotifications(
-      (notificationRows || []).filter(
-        (item: { title?: string | null; body?: string | null }) => !isLegacyContractorShareNotification(item)
-      )
-    );
-
     setErrors(Array.from(new Set(nextErrors)));
     setLoading(false);
   }, [router, t]);
@@ -553,18 +533,18 @@ export default function ContractorPortalPage() {
             )}
           </details>
 
-          <section id="earnings" className="card" aria-label={t('portal.contractor.earnings')} style={{ marginBottom: 16 }}>
-            <div className="dashboard-section-head">
+          <details id="earnings" className="card" style={{ marginBottom: 16 }}>
+            <summary
+              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
+            >
               <div>
-                <h2 style={{ fontSize: 18 }}>{t('portal.contractor.earnings')}</h2>
-                <p className="muted" style={{ marginTop: 4 }}>
-                  {metrics.completedJobs} {earningsCopy.completedWork}. {earningsCopy.keepGoing}
-                </p>
+                <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.earnings')}</h2>
+                <span className="muted">{metrics.completedJobs} {earningsCopy.completedWork}</span>
               </div>
               {history.length > 0 ? (
                 <strong>{earningsCopy.paidToYou}: {formatContractorMoney(metrics.paidEarnings)}</strong>
               ) : null}
-            </div>
+            </summary>
 
             {history.length === 0 && !hasDataError ? (
               <p className="muted" style={{ marginTop: 12 }}>{earningsCopy.paymentRecordsPending}</p>
@@ -598,34 +578,10 @@ export default function ContractorPortalPage() {
                 </table>
               </div>
             ) : null}
-          </section>
-
-          <section id="notifications" className="card" aria-label={t('portal.contractor.notifications')} style={{ marginBottom: 16 }}>
-            <div className="dashboard-section-head">
-              <h2 style={{ fontSize: 18 }}>{t('portal.contractor.notifications')}</h2>
-              <Link href={CONTRACTOR_SETTINGS_PATH} className="dashboard-section-link">{t('portal.contractor.preferences')}</Link>
-            </div>
-            {notifications.length === 0 ? (
-              <p className="muted">{t('portal.contractor.noNotifications')}</p>
-            ) : (
-              notifications.map((item) => (
-                <div key={item.id} className="list-row">
-                  <div>
-                    {item.title ? <strong>{item.title}</strong> : null}
-                    {item.body ? <p className="muted">{item.body}</p> : null}
-                  </div>
-                  <span className="muted">
-                    {item.created_at ? new Date(item.created_at).toLocaleString(locale) : ''}
-                    {item.read_at ? '' : ` · ${t('portal.contractor.unread')}`}
-                  </span>
-                </div>
-              ))
-            )}
-          </section>
+          </details>
 
           <section className="card" aria-label={t('portal.legal.title')}>
             <h2 style={{ fontSize: 18 }}>{t('portal.legal.title')}</h2>
-            <p className="muted">{t('portal.legal.description')}</p>
             <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
               <Link className="btn" href="/privacy">{t('portal.legal.privacy')}</Link>
               <Link className="btn" href="/terms">{t('portal.legal.terms')}</Link>
