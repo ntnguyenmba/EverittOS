@@ -36,11 +36,11 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           inset: 0;
           z-index: -3;
           pointer-events: none;
-          background-image: url('https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/after.jpg');
+          background-image: url('/hero.jpg');
           background-size: cover;
           background-position: center;
-          opacity: 0.46;
-          filter: saturate(0.66) contrast(0.94) brightness(0.82);
+          opacity: 0.54;
+          filter: saturate(0.72) contrast(0.96) brightness(0.84);
           transform: scale(1.015);
         }
 
@@ -50,8 +50,8 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           z-index: -2;
           pointer-events: none;
           background:
-            linear-gradient(90deg, rgba(226, 235, 241, 0.28), rgba(235, 241, 245, 0.6) 22%, rgba(235, 241, 245, 0.6) 78%, rgba(226, 235, 241, 0.28)),
-            linear-gradient(180deg, rgba(238, 243, 247, 0.38), rgba(225, 234, 240, 0.52));
+            linear-gradient(90deg, rgba(221, 231, 238, 0.22), rgba(237, 242, 246, 0.56) 21%, rgba(237, 242, 246, 0.56) 79%, rgba(221, 231, 238, 0.22)),
+            linear-gradient(180deg, rgba(238, 243, 247, 0.28), rgba(221, 231, 238, 0.46));
         }
 
         .authenticated-portal-container {
@@ -59,10 +59,10 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           z-index: 1;
           width: min(1200px, calc(100% - 48px));
           padding: clamp(18px, 3vw, 34px);
-          border: 1px solid rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.92);
           border-radius: 24px;
           background: rgba(247, 250, 252, 0.965);
-          box-shadow: 0 24px 70px rgba(28, 48, 63, 0.18);
+          box-shadow: 0 24px 70px rgba(28, 48, 63, 0.2);
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
         }
@@ -90,12 +90,12 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           }
 
           .authenticated-portal-background {
-            background-position: 58% center;
-            opacity: 0.3;
+            background-position: 56% center;
+            opacity: 0.38;
           }
 
           .authenticated-portal-overlay {
-            background: rgba(231, 238, 243, 0.7);
+            background: rgba(231, 238, 243, 0.66);
           }
 
           .authenticated-portal-container {
