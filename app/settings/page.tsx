@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { WorkspaceDeleteSection } from '@/components/settings/workspace-delete-section';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
+import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isOwner, normalizeRole } from '@/lib/roles';
 import { useTranslation } from '@/components/locale-provider';
@@ -242,6 +243,16 @@ export default function SettingsPage() {
           {buttonLabel('Save', FEEDBACK.loading)}
         </button>
       </section>
+
+      {isOwner(role) ? (
+        <details className="settings-card" style={{ marginTop: 18 }} open>
+          <summary><strong>Integrations</strong></summary>
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ marginBottom: 8 }}>QuickBooks</h3>
+            <QuickBooksIntegrationPanel canManage />
+          </div>
+        </details>
+      ) : null}
 
       <details className="settings-card" style={{ marginTop: 18 }}>
         <summary><strong>Business details</strong></summary>
