@@ -65,7 +65,7 @@ function errorMessage(code: ContractorLoadErrorCode): string {
     case 'access_blocked':
       return 'Access to contractor pay or jobs was blocked. Contact your workspace owner.';
     default:
-      return 'Something went wrong loading your contractor dashboard.';
+      return 'Your contractor dashboard could not be loaded. Refresh the page or contact your workspace owner.';
   }
 }
 

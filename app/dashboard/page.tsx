@@ -26,6 +26,7 @@ import {
   normalizeRole,
   type UserRole
 } from '@/lib/roles';
+import { formatLocalDate } from '@/lib/schedule-times';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -188,7 +189,7 @@ export default function DashboardPage() {
     const organizationId = organization?.organizationId || null;
     const scopeColumn = organizationId ? 'organization_id' : 'user_id';
     const scopeValue = organizationId || user.id;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatLocalDate(new Date());
 
     const [nextRevenue, usage, jobsResult, customersResult] = await Promise.all([
       canAccessFinancials(nextRole, nextPlan)

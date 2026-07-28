@@ -8,6 +8,7 @@
  *   - worker_id → workers.id (never customer invoice revenue)
  */
 
+import { localToday } from '@/lib/schedule-times';
 import {
   getEffectiveJobSchedule,
   isJobAssignedToWorker,
@@ -229,7 +230,7 @@ export function computeContractorDashboardMetrics(
   jobs: ContractorJobRow[],
   laborRows: ContractorLaborRow[],
   identity: WorkerIdentity,
-  today = new Date().toISOString().slice(0, 10),
+  today = localToday(),
   assignmentWorkerIdsByJob?: Map<string, string[]>
 ): ContractorDashboardMetrics {
   const mine = jobs.filter((job) => isJobAssignedToWorker(job, identity, assignmentWorkerIdsByJob));

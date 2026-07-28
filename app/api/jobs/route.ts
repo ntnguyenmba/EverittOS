@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { logJobFlowEvent } from '@/lib/job-flow-log';
+import {
+  cleanVisits,
+  scheduleFieldsFromVisits,
+  sortVisits,
+  validateVisits,
+  type VisitInput
+} from '@/lib/job-visits';
 import { listWorkspaceJobs } from '@/lib/jobs-org-query';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { isAdminRole, normalizeRole } from '@/lib/roles';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
+import { localDateFromIso } from '@/lib/schedule-times';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,6 +95,11 @@ export async function POST(request: Request) {
     assigned_to?: string | null;
     assigned_email?: string | null;
     status?: string;
+    start_date?: string | null;
+    due_date?: string | null;
+    scheduled_start?: string | null;
+    scheduled_end?: string | null;
+    visits?: VisitInput[];
   };
 
   if (!body.title?.trim()) {
@@ -141,6 +156,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
   }
 
+  let schedule: {
+    start_date: string | null;
+    due_date: string | null;
+    scheduled_start: string | null;
+    scheduled_end: string | null;
+  } = {
+    start_date: body.start_date?.trim() || null,
+    due_date: body.due_date?.trim() || null,
+    scheduled_start: body.scheduled_start?.trim() || null,
+    scheduled_end: body.scheduled_end?.trim() || null
+  };
+  let visitsToInsert: ReturnType<typeof cleanVisits> = [];
+
+  if (Array.isArray(body.visits) && body.visits.length > 0) {
+    const cleaned = sortVisits(cleanVisits(body.visits));
+    const visitError = validateVisits(cleaned);
+    if (visitError) {
+      return NextResponse.json({ error: visitError }, { status: 400 });
+    }
+    visitsToInsert = cleaned;
+    schedule = scheduleFieldsFromVisits(cleaned);
+  } else if (schedule.scheduled_start || schedule.scheduled_end || schedule.start_date || schedule.due_date) {
+    // Preserve wall-clock schedule fields even when visits are omitted.
+    if (schedule.scheduled_start && !schedule.start_date) {
+      schedule.start_date = localDateFromIso(schedule.scheduled_start) || schedule.scheduled_start.slice(0, 10);
+    }
+    if (schedule.scheduled_end && !schedule.due_date) {
+      schedule.due_date = localDateFromIso(schedule.scheduled_end) || schedule.scheduled_end.slice(0, 10);
+    }
+  }
+
   const { data, error } = await ctx.supabase
     .from('jobs')
     .insert({
@@ -153,7 +199,11 @@ export async function POST(request: Request) {
       customer_id: body.customer_id || null,
       assigned_to: assignedWorkerId,
       assigned_email: emailCheck.email,
-      status: body.status?.trim() || 'new'
+      status: body.status?.trim() || 'new',
+      start_date: schedule.start_date,
+      due_date: schedule.due_date,
+      scheduled_start: schedule.scheduled_start,
+      scheduled_end: schedule.scheduled_end
     })
     .select('id')
     .single();
@@ -165,6 +215,34 @@ export async function POST(request: Request) {
       reason: error.message
     });
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  }
+
+  if (visitsToInsert.length > 0) {
+    const { error: visitInsertError } = await ctx.supabase.from('job_visits').insert(
+      visitsToInsert.map((visit) => ({
+        organization_id: ctx.workspace.organizationId,
+        job_id: data.id,
+        visit_date: visit.visit_date,
+        start_time: visit.start_time,
+        end_time: visit.end_time,
+        notes: visit.notes
+      }))
+    );
+
+    if (visitInsertError) {
+      await ctx.supabase.from('jobs').delete().eq('id', data.id).eq('organization_id', ctx.workspace.organizationId);
+      logJobFlowEvent('job_create_failed', {
+        userId: ctx.userId,
+        organizationId: ctx.workspace.organizationId,
+        reason: visitInsertError.message
+      });
+      return NextResponse.json({ error: mapWorkspaceSaveError(visitInsertError.message) }, { status: 400 });
+    }
+  }
+
+  const admin = createAdminSupabase();
+  if (admin && (schedule.scheduled_start || visitsToInsert.length > 0)) {
+    await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, data.id);
   }
 
   logJobFlowEvent('job_create_succeeded', {

@@ -5,6 +5,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { canAccessNavHref } from '@/lib/nav-access';
 import { normalizePlan } from '@/lib/everittos-plans';
 import { isAdminRole, isClientRole, isContractorRole, isStaffRole, type UserRole } from '@/lib/roles';
+import { formatLocalDate, localToday } from '@/lib/schedule-times';
 
 type JobRow = {
   id: string;
@@ -60,7 +61,7 @@ function FieldWorkerDashboard({
   photoCount: number;
   t: (path: string, values?: Record<string, string | number>) => string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const todayJobs = active.filter((j) => (j.start_date || j.due_date || '').slice(0, 10) === today);
   const nextJobs = active
@@ -209,7 +210,7 @@ export function RoleDashboard({
 
   const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], normalizedPlan);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const active = jobs.filter((j) => j.status !== 'completed' && j.status !== 'cancelled');
   const completed = jobs.filter((j) => j.status === 'completed');
   const overdue = active.filter((j) => j.due_date && j.due_date < today);
@@ -220,7 +221,7 @@ export function RoleDashboard({
 
   const monthStart = new Date();
   monthStart.setDate(1);
-  const monthStartIso = monthStart.toISOString().slice(0, 10);
+  const monthStartIso = formatLocalDate(monthStart);
   const createdThisMonth = jobs.filter((j) => j.start_date && j.start_date >= monthStartIso).length;
   const canViewTeamCommandCenter = isAdminRole(role);
 

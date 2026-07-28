@@ -15,6 +15,7 @@ import { ensureWorkspaceForSave } from '@/lib/workspace-client';
 import { compressImageFile } from '@/lib/image-compress';
 import { insertJobPhotoRow } from '@/lib/job-photos-client';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
+import { wallClockDateTime } from '@/lib/schedule-times';
 
 type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
@@ -75,10 +76,6 @@ function newVisit(): VisitDraft {
   };
 }
 
-function toLocalDateTime(date: string, time: string): string | null {
-  if (!date || !time) return null;
-  return `${date}T${time}:00`;
-}
 
 function validVisits(visits: VisitDraft[]) {
   return visits.filter((visit) => visit.visit_date || visit.start_time || visit.end_time || visit.notes.trim());
@@ -238,8 +235,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     const firstVisit = scheduledVisits[0];
     const lastVisit = scheduledVisits[scheduledVisits.length - 1];
-    const scheduledStart = firstVisit ? toLocalDateTime(firstVisit.visit_date, firstVisit.start_time) : null;
-    const scheduledEnd = lastVisit ? toLocalDateTime(lastVisit.visit_date, lastVisit.end_time) : null;
+    const scheduledStart = firstVisit ? wallClockDateTime(firstVisit.visit_date, firstVisit.start_time) : null;
+    const scheduledEnd = lastVisit ? wallClockDateTime(lastVisit.visit_date, lastVisit.end_time) : null;
 
     setLoading(true);
 

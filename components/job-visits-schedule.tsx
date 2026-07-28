@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FriendlyDateInput } from '@/components/friendly-date-input';
+import { addLocalDays, localToday, wallClockFromTimestamp } from '@/lib/schedule-times';
 
 export type JobVisitRow = {
   id?: string;
@@ -24,23 +25,11 @@ type JobVisitsScheduleProps = {
   onSaved?: () => void;
 };
 
-function toDate(value?: string | null) {
-  if (!value) return '';
-  return value.slice(0, 10);
-}
-
-function toTime(value?: string | null, fallback = '08:00') {
-  if (!value) return fallback;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return fallback;
-  return date.toTimeString().slice(0, 5);
-}
-
 function addHours(time: string, hours: number) {
   const [h, m] = time.split(':').map(Number);
   const date = new Date(2000, 0, 1, h || 8, m || 0);
   date.setHours(date.getHours() + hours);
-  return date.toTimeString().slice(0, 5);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function visitHours(visit: JobVisitRow) {
@@ -57,13 +46,16 @@ function formatHours(value: number) {
 }
 
 function fallbackVisit(props: JobVisitsScheduleProps): JobVisitRow {
-  const visitDate = toDate(props.scheduledStart) || props.startDate || props.dueDate || new Date().toISOString().slice(0, 10);
-  const startTime = toTime(props.scheduledStart, '08:00');
-  const endTime = toTime(props.scheduledEnd, addHours(startTime, 8));
+  const startWall = wallClockFromTimestamp(props.scheduledStart, '08:00');
+  const endWall = wallClockFromTimestamp(props.scheduledEnd, addHours(startWall?.time || '08:00', 8));
+  const visitDate = startWall?.date || props.startDate || props.dueDate || localToday();
+  const startTime = startWall?.time || '08:00';
+  const endTime = endWall?.time || addHours(startTime, 8);
   return { visit_date: visitDate, start_time: startTime, end_time: endTime, notes: '' };
 }
 
 export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
+  const { jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, onSaved } = props;
   const [visits, setVisits] = useState<JobVisitRow[]>([fallbackVisit(props)]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,23 +63,39 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
   useEffect(() => {
     let active = true;
+    const fallbackProps: JobVisitsScheduleProps = {
+      jobId,
+      organizationId: props.organizationId,
+      canManage,
+      scheduledStart,
+      scheduledEnd,
+      startDate,
+      dueDate
+    };
 
     async function loadVisits() {
       setLoading(true);
       const { data, error } = await supabase
         .from('job_visits')
         .select('id, visit_date, start_time, end_time, notes')
-        .eq('job_id', props.jobId)
+        .eq('job_id', jobId)
         .order('visit_date', { ascending: true })
         .order('start_time', { ascending: true });
 
       if (!active) return;
       if (error) {
-        setVisits([fallbackVisit(props)]);
+        setVisits([fallbackVisit(fallbackProps)]);
       } else if (data && data.length > 0) {
-        setVisits(data as JobVisitRow[]);
+        setVisits(
+          (data as JobVisitRow[]).map((visit) => ({
+            ...visit,
+            visit_date: String(visit.visit_date || '').slice(0, 10),
+            start_time: String(visit.start_time || '').slice(0, 5),
+            end_time: String(visit.end_time || '').slice(0, 5)
+          }))
+        );
       } else {
-        setVisits([fallbackVisit(props)]);
+        setVisits([fallbackVisit(fallbackProps)]);
       }
       setLoading(false);
     }
@@ -96,7 +104,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     return () => {
       active = false;
     };
-  }, [props.jobId, props.scheduledStart, props.scheduledEnd, props.startDate, props.dueDate]);
+  }, [jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, props.organizationId]);
 
   const totalHours = useMemo(() => visits.reduce((sum, visit) => sum + visitHours(visit), 0), [visits]);
 
@@ -106,12 +114,10 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
   function addVisit() {
     const last = visits[visits.length - 1] || fallbackVisit(props);
-    const nextDate = new Date(`${last.visit_date || new Date().toISOString().slice(0, 10)}T00:00:00`);
-    nextDate.setDate(nextDate.getDate() + 1);
     setVisits((current) => [
       ...current,
       {
-        visit_date: nextDate.toISOString().slice(0, 10),
+        visit_date: addLocalDays(last.visit_date || localToday(), 1),
         start_time: last.start_time || '08:00',
         end_time: last.end_time || '16:00',
         notes: ''
@@ -124,7 +130,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   }
 
   async function saveVisits() {
-    if (!props.canManage || saving) return;
+    if (!canManage || saving) return;
     const cleanVisits = visits.map((visit) => ({
       id: visit.id,
       visit_date: visit.visit_date,
@@ -142,18 +148,18 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     const res = await fetch('/api/schedule/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId: props.jobId, visits: cleanVisits })
+      body: JSON.stringify({ jobId, visits: cleanVisits })
     });
-    await res.json().catch(() => ({}));
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSaving(false);
 
     if (!res.ok) {
-      feedback.error('The schedule could not be saved. Please try again.');
+      feedback.error(json.error || 'The schedule could not be saved. Please try again.');
       return;
     }
 
     feedback.success('Schedule saved. Connected calendars will update automatically.');
-    props.onSaved?.();
+    onSaved?.();
   }
 
   if (loading) return <p className="loading-state">Loading schedule...</p>;
@@ -165,7 +171,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
           <h3>Schedule</h3>
           <p className="muted">Set each visit date and time. Connected calendars update automatically after saving.</p>
         </div>
-        {props.canManage ? (
+        {canManage ? (
           <button className="btn job-visits-add" type="button" onClick={addVisit}>+ Add visit</button>
         ) : null}
       </div>
@@ -177,20 +183,20 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
               <label>Date</label>
               <FriendlyDateInput
                 value={visit.visit_date}
-                disabled={!props.canManage}
+                disabled={!canManage}
                 ariaLabel={`Visit ${index + 1} date`}
                 onChange={(value) => updateVisit(index, 'visit_date', value)}
               />
             </div>
             <div className="job-visit-field">
               <label>Start</label>
-              <input className="input" type="time" value={visit.start_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'start_time', e.target.value)} />
+              <input className="input" type="time" value={visit.start_time} disabled={!canManage} onChange={(e) => updateVisit(index, 'start_time', e.target.value)} />
             </div>
             <div className="job-visit-field">
               <label>End</label>
-              <input className="input" type="time" value={visit.end_time} disabled={!props.canManage} onChange={(e) => updateVisit(index, 'end_time', e.target.value)} />
+              <input className="input" type="time" value={visit.end_time} disabled={!canManage} onChange={(e) => updateVisit(index, 'end_time', e.target.value)} />
             </div>
-            {props.canManage ? (
+            {canManage ? (
               <button className="btn job-visit-remove" type="button" disabled={visits.length === 1} onClick={() => removeVisit(index)}>Remove</button>
             ) : (
               <span className="muted job-visit-hours">{formatHours(visitHours(visit))}</span>
@@ -203,8 +209,8 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
         Total scheduled: {formatHours(totalHours)} across {visits.length} {visits.length === 1 ? 'visit' : 'visits'}.
       </p>
 
-      {props.canManage ? (
-        <button className="btn btn-primary job-visits-save" type="button" onClick={saveVisits} disabled={saving}>
+      {canManage ? (
+        <button className="btn btn-primary job-visits-save" type="button" onClick={() => void saveVisits()} disabled={saving}>
           {saving ? 'Saving...' : 'Save schedule'}
         </button>
       ) : null}

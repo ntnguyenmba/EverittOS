@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { StatusPill } from '@/components/status-pill';
-import { formatScheduleTimeRange } from '@/lib/schedule-times';
+import { formatLocalDate, formatScheduleTimeRange, localDateFromIso } from '@/lib/schedule-times';
 
 export type ScheduleJob = {
   id: string;
@@ -30,13 +30,13 @@ type ScheduleViewsProps = {
 type ViewMode = 'today' | 'tomorrow' | 'week' | 'calendar';
 
 function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  return formatLocalDate(date);
 }
 
 function jobDateKey(job: ScheduleJob): string | null {
-  if (job.start_date) return job.start_date;
-  if (job.due_date) return job.due_date;
-  if (job.scheduled_start) return job.scheduled_start.slice(0, 10);
+  if (job.start_date) return String(job.start_date).slice(0, 10);
+  if (job.due_date) return String(job.due_date).slice(0, 10);
+  if (job.scheduled_start) return localDateFromIso(job.scheduled_start);
   return null;
 }
 

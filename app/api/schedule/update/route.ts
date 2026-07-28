@@ -3,44 +3,18 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
+import {
+  cleanVisits,
+  scheduleFieldsFromVisits,
+  sortVisits,
+  validateVisits,
+  type VisitInput
+} from '@/lib/job-visits';
+import { localDateFromIso } from '@/lib/schedule-times';
 import { canAssignJobs } from '@/lib/roles';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
-
-type VisitInput = {
-  id?: string;
-  visit_date?: string;
-  start_time?: string;
-  end_time?: string;
-  notes?: string | null;
-};
-
-function normalizeDate(value: string | undefined) {
-  const trimmed = value?.trim() || '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
-  return '';
-}
-
-function normalizeTime(value: string | undefined) {
-  const trimmed = value?.trim() || '';
-  const match = trimmed.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
-  return match ? match[1] : '';
-}
-
-function combineVisitDateTime(date: string, time: string) {
-  return `${date}T${time}:00`;
-}
-
-function cleanVisits(visits: VisitInput[]) {
-  return visits.map((visit) => ({
-    id: visit.id || undefined,
-    visit_date: normalizeDate(visit.visit_date),
-    start_time: normalizeTime(visit.start_time),
-    end_time: normalizeTime(visit.end_time),
-    notes: visit.notes?.trim() || null
-  }));
-}
 
 export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession();
@@ -95,21 +69,12 @@ export async function POST(request: Request) {
   let visitCount = 0;
 
   if (Array.isArray(body.visits)) {
-    const visits = cleanVisits(body.visits);
-    if (visits.length === 0) {
-      return NextResponse.json({ error: 'At least one visit is required.' }, { status: 400 });
+    const visits = sortVisits(cleanVisits(body.visits));
+    const visitError = validateVisits(visits);
+    if (visitError) {
+      return NextResponse.json({ error: visitError }, { status: 400 });
     }
 
-    for (const visit of visits) {
-      if (!visit.visit_date || !visit.start_time || !visit.end_time) {
-        return NextResponse.json({ error: 'Each visit needs a valid date, start time, and end time.' }, { status: 400 });
-      }
-      if (visit.end_time <= visit.start_time) {
-        return NextResponse.json({ error: 'Visit end time must be after start time.' }, { status: 400 });
-      }
-    }
-
-    visits.sort((a, b) => `${a.visit_date} ${a.start_time}`.localeCompare(`${b.visit_date} ${b.start_time}`));
     visitCount = visits.length;
 
     const { error: deleteError } = await admin
@@ -133,12 +98,7 @@ export async function POST(request: Request) {
 
     if (insertError) return NextResponse.json({ error: mapWorkspaceSaveError(insertError.message) }, { status: 400 });
 
-    const firstVisit = visits[0];
-    const lastVisit = visits[visits.length - 1];
-    update.start_date = firstVisit.visit_date;
-    update.due_date = lastVisit.visit_date;
-    update.scheduled_start = combineVisitDateTime(firstVisit.visit_date, firstVisit.start_time);
-    update.scheduled_end = combineVisitDateTime(lastVisit.visit_date, lastVisit.end_time);
+    Object.assign(update, scheduleFieldsFromVisits(visits));
   } else {
     if (body.scheduled_start !== undefined) update.scheduled_start = body.scheduled_start;
     if (body.scheduled_end !== undefined) update.scheduled_end = body.scheduled_end;
@@ -146,10 +106,10 @@ export async function POST(request: Request) {
     if (body.due_date !== undefined) update.due_date = body.due_date;
 
     if (body.scheduled_start && !body.start_date) {
-      update.start_date = body.scheduled_start.slice(0, 10);
+      update.start_date = localDateFromIso(body.scheduled_start) || body.scheduled_start.slice(0, 10);
     }
     if (body.scheduled_end && !body.due_date) {
-      update.due_date = body.scheduled_end.slice(0, 10);
+      update.due_date = localDateFromIso(body.scheduled_end) || body.scheduled_end.slice(0, 10);
     }
   }
 
