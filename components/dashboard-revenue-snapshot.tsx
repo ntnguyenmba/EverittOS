@@ -30,6 +30,7 @@ type MetricItem = {
   label: string;
   value: string;
   href: string;
+  description?: string;
 };
 
 export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: DashboardRevenueSnapshotProps) {
@@ -79,33 +80,78 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     range === 'all_time'
       ? activeMetrics.stillOwed ?? 0
       : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
-  const available =
+  const cashAfterPaidCosts =
     activeMetrics.cashAfterPaidCosts ?? activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? 0;
-  const contractorPaid = activeMetrics.contractorPaymentsPaid || 0;
-  const contractorsOwed =
+  const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
+  const contractorsAwaitingPayment =
     range === 'all_time'
-      ? activeMetrics.unpaidContractorPay || 0
-      : activeMetrics.periodUnpaidContractorPay || activeMetrics.unpaidContractorPay || 0;
+      ? activeMetrics.unpaidContractorPay ?? 0
+      : activeMetrics.periodUnpaidContractorPay ?? 0;
   const unbilled = activeMetrics.uninvoicedCompletedWork ?? 0;
   const expectedRevenue = activeMetrics.expectedRevenue ?? 0;
   const expectedProfit = activeMetrics.estimatedProfit ?? activeMetrics.netEstimateThisMonth ?? 0;
-  const expenses = activeMetrics.otherExpensesThisMonth || 0;
+  const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
   const busy = Boolean(loading || rangeLoading);
 
   const primaryItems: MetricItem[] = [
-    { label: 'Collected', value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou },
-    { label: 'Outstanding', value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed },
-    { label: 'Available', value: formatCurrency(available), href: DASHBOARD_LINKS.cashAfterExpenses },
+    {
+      label: 'Collected',
+      value: formatCurrency(collected),
+      href: DASHBOARD_LINKS.paidToYou,
+      description: 'Customer payments received in this period.'
+    },
+    {
+      label: 'Customer balance due',
+      value: formatCurrency(outstanding),
+      href: DASHBOARD_LINKS.stillOwed,
+      description: range === 'all_time' ? 'All current customer balances.' : 'Customer balances tied to this period.'
+    },
+    {
+      label: 'Cash after paid costs',
+      value: formatCurrency(cashAfterPaidCosts),
+      href: DASHBOARD_LINKS.cashAfterExpenses,
+      description: 'Collected minus contractor payments paid and expenses paid.'
+    },
     { label: "Today's Jobs", value: String(todayJobs), href: '/schedule' }
   ];
 
   const detailItems: MetricItem[] = [
-    { label: 'Paid to Contractors', value: formatCurrency(contractorPaid), href: DASHBOARD_LINKS.contractorPay },
-    { label: 'Contractors Owed', value: formatCurrency(contractorsOwed), href: DASHBOARD_LINKS.contractorPayOwed },
-    { label: 'Unbilled Revenue', value: formatCurrency(unbilled), href: DASHBOARD_LINKS.completedJobs },
-    { label: 'Expected Revenue', value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit },
-    { label: 'Expected Profit', value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit },
-    { label: 'Expenses', value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses }
+    {
+      label: 'Contractors paid',
+      value: formatCurrency(contractorPaid),
+      href: DASHBOARD_LINKS.contractorPay,
+      description: 'Contractor payments actually marked paid in this period.'
+    },
+    {
+      label: 'Contractor pay awaiting payment',
+      value: formatCurrency(contractorsAwaitingPayment),
+      href: DASHBOARD_LINKS.contractorPayOwed,
+      description: range === 'all_time' ? 'All unpaid contractor labor.' : 'Unpaid contractor labor tied to this period.'
+    },
+    {
+      label: 'Uninvoiced expected revenue',
+      value: formatCurrency(unbilled),
+      href: DASHBOARD_LINKS.completedJobs,
+      description: 'Job amounts without a collectible invoice. Invoiced jobs are excluded.'
+    },
+    {
+      label: 'Expected revenue',
+      value: formatCurrency(expectedRevenue),
+      href: DASHBOARD_LINKS.estimatedProfit,
+      description: 'Collectible invoice totals plus uninvoiced job amounts, without double counting.'
+    },
+    {
+      label: 'Expected profit',
+      value: formatCurrency(expectedProfit),
+      href: DASHBOARD_LINKS.estimatedProfit,
+      description: 'Expected revenue minus contractor cost and business expenses.'
+    },
+    {
+      label: 'Business expenses',
+      value: formatCurrency(expenses),
+      href: DASHBOARD_LINKS.otherExpenses,
+      description: 'Non-contractor business expenses recorded in this period.'
+    }
   ];
 
   return (
@@ -140,6 +186,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
           >
             <span className="dashboard-revenue-metric-label">{item.label}</span>
             <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+            {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}
           </Link>
         ))}
       </div>
@@ -167,6 +214,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
             >
               <span className="dashboard-revenue-metric-label">{item.label}</span>
               <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+              {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}
             </Link>
           ))}
         </div>
