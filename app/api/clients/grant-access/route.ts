@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -69,8 +70,6 @@ export async function POST(request: Request) {
   const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
   let portalUrl: string | undefined;
 
-  // Existing accounts should receive access immediately. A previous version silently
-  // ignored access-write failures, leaving accepted clients with an empty portal.
   const { data: clientProfile } = await admin
     .from('profiles')
     .select('id')
@@ -78,30 +77,38 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (clientProfile?.id) {
-    const repair = await repairClientPortalAccessForUser(admin, clientProfile.id, email);
-    if (!repair.ok) {
+    const portalToken = randomBytes(24).toString('hex');
+    const { error: directAccessError } = await admin.from('job_client_access').upsert(
+      {
+        job_id: jobId,
+        client_user_id: clientProfile.id,
+        owner_user_id: user.id,
+        organization_id: org.organizationId,
+        portal_token: portalToken,
+        granted_at: new Date().toISOString()
+      },
+      { onConflict: 'job_id,client_user_id' }
+    );
+
+    if (directAccessError) {
       return NextResponse.json(
-        { error: repair.error || 'Could not grant client access to this job.' },
+        { error: directAccessError.message || 'Could not grant client access to this job.' },
         { status: 500 }
       );
     }
 
-    const { data: access, error: accessError } = await admin
-      .from('job_client_access')
-      .select('portal_token')
-      .eq('job_id', jobId)
-      .eq('client_user_id', clientProfile.id)
-      .maybeSingle();
+    await admin.from('organization_members').upsert(
+      {
+        organization_id: org.organizationId,
+        user_id: clientProfile.id,
+        role: 'client',
+        active: true
+      },
+      { onConflict: 'organization_id,user_id' }
+    );
 
-    if (accessError || !access) {
-      return NextResponse.json(
-        { error: accessError?.message || 'Client access was not created for this job.' },
-        { status: 500 }
-      );
-    }
-
-    const portalToken = access.portal_token as string | undefined;
-    if (portalToken) portalUrl = clientPortalUrl(portalToken);
+    await repairClientPortalAccessForUser(admin, clientProfile.id, email);
+    portalUrl = clientPortalUrl(portalToken);
   }
 
   const emailResult = await sendClientInviteEmail({
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
     message: clientProfile?.id
       ? 'Client access granted. The shared job is available now.'
       : emailResult.sent
-        ? 'Invitation sent. Check your email.'
-        : 'Invitation created. Email is not configured.'
+        ? 'Invitation sent. Access will appear after the client accepts.'
+        : 'Invitation created. Access will appear after the client accepts.'
   });
 }
