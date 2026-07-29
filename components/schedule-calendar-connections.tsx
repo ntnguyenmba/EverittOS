@@ -30,7 +30,6 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   const [feed, setFeed] = useState<FeedInfo>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showUrl, setShowUrl] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,17 +61,6 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function copySubscriptionUrl() {
-    if (!feed?.url) return;
-    try {
-      await navigator.clipboard.writeText(feed.url);
-      appFeedback.success('Calendar subscription URL copied.');
-    } catch {
-      setShowUrl(true);
-      appFeedback.error('Copy was blocked by the browser. The URL is shown below so you can copy it manually.');
-    }
-  }
 
   async function syncNow() {
     if (busy) return;
@@ -110,38 +98,46 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
     }
   }
 
-  async function createOrRotateFeed() {
+  async function syncCalendarSubscription() {
     if (busy) return;
+    if (feed?.webcalUrl) {
+      window.location.href = feed.webcalUrl;
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch('/api/calendar/feed', { method: 'POST' });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        appFeedback.error(json.error || 'Could not create calendar feed.');
+        appFeedback.error(json.error || 'Could not connect calendar subscription.');
         return;
       }
-      setFeed(json.feed || null);
-      setShowUrl(false);
-      appFeedback.success('Private calendar subscription created.');
+
+      const nextFeed = json.feed || null;
+      setFeed(nextFeed);
+      if (nextFeed?.webcalUrl) {
+        window.location.href = nextFeed.webcalUrl;
+      } else {
+        appFeedback.error('Calendar subscription could not be opened.');
+      }
     } finally {
       setBusy(false);
     }
   }
 
-  async function revokeFeed() {
-    if (busy) return;
-    if (!window.confirm('Revoke this calendar subscription link? Existing calendar apps will stop updating.')) return;
+  async function disconnectCalendarSubscription() {
+    if (busy || !feed) return;
     setBusy(true);
     try {
       const res = await fetch('/api/calendar/feed', { method: 'DELETE' });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        appFeedback.error(json.error || 'Could not revoke calendar feed.');
+        appFeedback.error(json.error || 'Could not disconnect calendar subscription.');
         return;
       }
       setFeed(null);
-      setShowUrl(false);
-      appFeedback.success('Calendar subscription revoked.');
+      appFeedback.disconnected();
     } finally {
       setBusy(false);
     }
@@ -192,59 +188,16 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         <p className="muted">
           Add authorized jobs to Apple Calendar, Outlook, or another calendar app. Updates happen automatically.
         </p>
-        {feed ? (
-          <>
-            <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <a className="btn btn-primary" href={feed.webcalUrl}>
-                Subscribe
-              </a>
-              <button type="button" className="btn" onClick={() => void copySubscriptionUrl()}>
-                Copy link
-              </button>
-            </div>
-
-            {showUrl ? (
-              <div style={{ marginTop: 12 }}>
-                <label htmlFor="calendar-subscription-url" className="muted">
-                  Subscription URL
-                </label>
-                <input
-                  id="calendar-subscription-url"
-                  className="input"
-                  readOnly
-                  value={feed.url}
-                  onFocus={(event) => event.currentTarget.select()}
-                  style={{ marginTop: 6, width: '100%' }}
-                />
-              </div>
-            ) : null}
-
-            <details style={{ marginTop: 16 }}>
-              <summary>Setup help and link settings</summary>
-              <div className="muted" style={{ marginTop: 12 }}>
-                <p><strong>Apple devices:</strong> choose Subscribe. On Mac, you can also use File → New Calendar Subscription.</p>
-                <p><strong>Outlook:</strong> choose Add calendar → Subscribe from web, then paste the copied link.</p>
-                <p><strong>Google Calendar:</strong> on desktop, choose Settings → Add calendar → From URL.</p>
-                <p>Keep this link private. Contractors only receive jobs assigned or shared with them.</p>
-              </div>
-              <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                <button type="button" className="btn" onClick={() => setShowUrl((current) => !current)}>
-                  {showUrl ? 'Hide full link' : 'Show full link'}
-                </button>
-                <button type="button" className="btn" disabled={busy} onClick={() => void createOrRotateFeed()}>
-                  Regenerate link
-                </button>
-                <button type="button" className="btn" disabled={busy} onClick={() => void revokeFeed()}>
-                  Revoke link
-                </button>
-              </div>
-            </details>
-          </>
-        ) : (
-          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createOrRotateFeed()}>
-            Create calendar subscription
+        <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <button type="button" className="btn btn-primary" disabled={loading || busy} onClick={() => void syncCalendarSubscription()}>
+            {busy ? 'Working…' : 'Sync'}
           </button>
-        )}
+          {feed ? (
+            <button type="button" className="btn" disabled={busy} onClick={() => void disconnectCalendarSubscription()}>
+              Disconnect
+            </button>
+          ) : null}
+        </div>
       </div>
     </details>
   );
