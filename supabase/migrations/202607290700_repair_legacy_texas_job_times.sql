@@ -1,0 +1,7 @@
+-- One-time repair support for legacy EverittOS jobs that were saved as UTC
+-- even though the entered clock value represented Texas local time.
+--
+-- This migration DOES NOT automatically change every workspace. It installs a
+-- guarded function that must be called for the specific Texas organization.
+-- Future jobs use the organization's selected IANA timezone and must not be
+-- passed through
