@@ -11,7 +11,7 @@ type AccessRow = {
   client_user_id: string;
   portal_token: string | null;
   granted_at: string | null;
-  profiles?: { email: string | null } | null;
+  email: string | null;
 };
 
 type ClientAccessPanelProps = {
@@ -26,6 +26,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loadingAccess, setLoadingAccess] = useState(false);
 
   const portalAllowed = limitsForPlan(plan).clientPortal;
 
@@ -40,27 +41,25 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
   }, []);
 
   const loadAccess = useCallback(async () => {
-    const { supabase } = await import('@/lib/supabase');
-    const { data } = await supabase
-      .from('job_client_access')
-      .select('client_user_id, portal_token, granted_at, profiles:profiles(email)')
-      .eq('job_id', jobId);
-    setAccessRows(
-      (data || []).map((row: {
-        client_user_id: string;
-        portal_token: string | null;
-        granted_at: string | null;
-        profiles: { email: string | null } | { email: string | null }[] | null;
-      }) => {
-        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-        return {
-          client_user_id: row.client_user_id as string,
-          portal_token: (row.portal_token as string | null) || null,
-          granted_at: row.granted_at as string | null,
-          profiles: profile ? { email: (profile as { email: string | null }).email } : null
-        };
-      })
-    );
+    setLoadingAccess(true);
+    try {
+      const res = await fetch(`/api/clients/access-status?jobId=${encodeURIComponent(jobId)}`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      const json = (await res.json()) as { access?: AccessRow[]; error?: string };
+      if (!res.ok) {
+        setAccessRows([]);
+        setMessage(json.error || 'Unable to load client access.');
+        return;
+      }
+      setAccessRows(json.access || []);
+    } catch {
+      setAccessRows([]);
+      setMessage('Unable to load client access.');
+    } finally {
+      setLoadingAccess(false);
+    }
   }, [jobId]);
 
   useEffect(() => {
@@ -72,40 +71,59 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     if (!email.trim() || busy) return;
     setBusy(true);
     setMessage('');
-    const res = await fetch('/api/clients/grant-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim(), jobId })
-    });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setMessage(json.error || 'Unable to grant access.');
-      return;
+    try {
+      const res = await fetch('/api/clients/grant-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), jobId })
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.error || 'Unable to grant access.');
+        return;
+      }
+      setMessage(json.message || 'Client access updated.');
+      setEmail('');
+      await loadAccess();
+    } catch {
+      setMessage('Unable to grant access.');
+    } finally {
+      setBusy(false);
     }
-    setMessage(json.message + (json.acceptUrl ? ` Link: ${json.acceptUrl}` : ''));
-    setEmail('');
-    void loadAccess();
   }
 
   async function revokeAccess(clientUserId: string) {
+    if (busy) return;
     setBusy(true);
-    const res = await fetch('/api/clients/revoke-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId, clientUserId })
-    });
-    const json = await res.json();
-    setBusy(false);
-    setMessage(json.message || json.error || 'Updated.');
-    void loadAccess();
+    setMessage('');
+    try {
+      const res = await fetch('/api/clients/revoke-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, clientUserId })
+      });
+      const json = await res.json();
+      setMessage(json.message || json.error || 'Updated.');
+      if (res.ok) await loadAccess();
+    } catch {
+      setMessage('Unable to revoke client access.');
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function copyLink(token: string | null) {
-    if (!token) return;
-    const url = appUrl(`/portal/client?token=${token}`);
-    navigator.clipboard.writeText(url);
-    setMessage('Client portal link copied.');
+  async function copyLink(token: string | null) {
+    if (!token) {
+      setMessage('This client link is not available yet.');
+      return;
+    }
+    try {
+      const url = appUrl(`/portal/client?token=${token}`);
+      await navigator.clipboard.writeText(url);
+      setMessage('Client portal link copied.');
+    } catch {
+      setMessage('Unable to copy the client portal link.');
+    }
   }
 
   return (
@@ -124,28 +142,43 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
           <h3>Client access</h3>
           {canManage ? (
             <div className="inline-actions">
-              <input className="input" placeholder="Client email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={grantAccess}>
-                Grant client access
+              <input
+                className="input"
+                type="email"
+                autoComplete="email"
+                placeholder="Client email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void grantAccess();
+                }}
+              />
+              <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={grantAccess}>
+                {busy ? 'Updating...' : 'Grant client access'}
               </button>
             </div>
           ) : (
             <p className="muted">Only managers can grant client access.</p>
           )}
 
-          {accessRows.length === 0 ? <p className="muted">No clients have access to this job yet.</p> : null}
+          {loadingAccess ? <p className="muted">Checking client access...</p> : null}
+          {!loadingAccess && accessRows.length === 0 ? (
+            <p className="muted">No clients have access to this job yet.</p>
+          ) : null}
           {accessRows.map((row) => (
             <div key={row.client_user_id} className="list-row">
               <div>
-                <strong>{row.profiles?.email || row.client_user_id}</strong>
-                <p className="muted">Granted {row.granted_at ? new Date(row.granted_at).toLocaleString() : 'recently'}</p>
+                <strong>{row.email || row.client_user_id}</strong>
+                <p className="muted">
+                  Access granted {row.granted_at ? new Date(row.granted_at).toLocaleString() : 'recently'}
+                </p>
               </div>
               <div className="inline-actions">
-                <button type="button" className="btn" onClick={() => copyLink(row.portal_token)}>
+                <button type="button" className="btn" disabled={!row.portal_token} onClick={() => void copyLink(row.portal_token)}>
                   Copy client link
                 </button>
                 {canManage ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => revokeAccess(row.client_user_id)}>
+                  <button type="button" className="btn" disabled={busy} onClick={() => void revokeAccess(row.client_user_id)}>
                     Revoke
                   </button>
                 ) : null}
