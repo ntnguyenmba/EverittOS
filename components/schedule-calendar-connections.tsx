@@ -188,32 +188,22 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
           </button>
         </div>
 
-        <h3 style={{ marginTop: 24 }}>Apple Calendar, iCal, and Outlook subscription</h3>
+        <h3 style={{ marginTop: 24 }}>Calendar subscription</h3>
         <p className="muted">
-          Subscribe once and your calendar app will keep authorized jobs updated automatically. Contractors only receive jobs
-          assigned or shared with them. Keep this private link confidential.
+          Add authorized jobs to Apple Calendar, Outlook, or another calendar app. Updates happen automatically.
         </p>
         {feed ? (
           <>
             <p className="muted">
-              <strong>Private feed:</strong> {feed.tokenMasked}
-              {feed.lastAccessedAt ? ` · Last checked ${new Date(feed.lastAccessedAt).toLocaleString()}` : ' · Not checked yet'}
+              <strong>Private link:</strong> {feed.tokenMasked}
+              {feed.lastAccessedAt ? ` · Last used ${new Date(feed.lastAccessedAt).toLocaleString()}` : ''}
             </p>
             <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
               <a className="btn btn-primary" href={feed.webcalUrl}>
-                Subscribe in calendar app
+                Subscribe
               </a>
               <button type="button" className="btn" onClick={() => void copySubscriptionUrl()}>
-                Copy subscription URL
-              </button>
-              <button type="button" className="btn" onClick={() => setShowUrl((current) => !current)}>
-                {showUrl ? 'Hide URL' : 'Show URL'}
-              </button>
-              <button type="button" className="btn" disabled={busy} onClick={() => void createOrRotateFeed()}>
-                Regenerate link
-              </button>
-              <button type="button" className="btn" disabled={busy} onClick={() => void revokeFeed()}>
-                Revoke link
+                Copy link
               </button>
             </div>
 
@@ -233,26 +223,30 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
               </div>
             ) : null}
 
-            <div className="muted" style={{ marginTop: 16 }}>
-              <p style={{ marginBottom: 6 }}>
-                <strong>Apple Calendar on Mac:</strong> click “Subscribe in calendar app,” or use File → New Calendar
-                Subscription and paste the copied URL.
-              </p>
-              <p style={{ marginBottom: 6 }}>
-                <strong>iPhone or iPad:</strong> tap “Subscribe in calendar app.” If iOS does not open Calendar, copy the URL,
-                then go to Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → Add Subscribed Calendar.
-              </p>
-              <p style={{ marginBottom: 6 }}>
-                <strong>Outlook:</strong> copy the URL, then choose Add calendar → Subscribe from web.
-              </p>
-              <p style={{ marginBottom: 0 }}>
-                <strong>Google Calendar:</strong> on desktop, choose Settings → Add calendar → From URL and paste the URL.
-              </p>
-            </div>
+            <details style={{ marginTop: 16 }}>
+              <summary>Setup help and link settings</summary>
+              <div className="muted" style={{ marginTop: 12 }}>
+                <p><strong>Apple devices:</strong> choose Subscribe. On Mac, you can also use File → New Calendar Subscription.</p>
+                <p><strong>Outlook:</strong> choose Add calendar → Subscribe from web, then paste the copied link.</p>
+                <p><strong>Google Calendar:</strong> on desktop, choose Settings → Add calendar → From URL.</p>
+                <p>Keep this link private. Contractors only receive jobs assigned or shared with them.</p>
+              </div>
+              <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                <button type="button" className="btn" onClick={() => setShowUrl((current) => !current)}>
+                  {showUrl ? 'Hide full link' : 'Show full link'}
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => void createOrRotateFeed()}>
+                  Regenerate link
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => void revokeFeed()}>
+                  Revoke link
+                </button>
+              </div>
+            </details>
           </>
         ) : (
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createOrRotateFeed()}>
-            Create private calendar subscription
+            Create calendar subscription
           </button>
         )}
       </div>
