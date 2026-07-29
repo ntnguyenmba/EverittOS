@@ -29,7 +29,7 @@ function secureCalendarOrigin(): string {
 }
 
 export function calendarFeedUrl(token: string): string {
-  return `${secureCalendarOrigin()}/api/calendar/feed/${token}.ics`;
+  return `${secureCalendarOrigin()}/api/public/calendar-feed/${token}.ics`;
 }
 
 export function webcalFeedUrl(token: string): string {
