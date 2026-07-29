@@ -2,7 +2,7 @@
  *
  * Field-service scheduling uses two shapes:
  * 1. Visit rows: visit_date (YYYY-MM-DD) + start_time/end_time (HH:mm) — wall clock, no TZ.
- * 2. Legacy jobs.scheduled_start/end (timestamptz) — may be naive wall-clock or zoned UTC ISO.
+ * 2. Legacy jobs.scheduled_start/end (timestamptz) — UTC-backed wall-clock values.
  *
  * Rule: never shift a user-selected local date/time when round-tripping through storage.
  */
@@ -52,11 +52,10 @@ export function hasExplicitTimeZone(value: string): boolean {
 }
 
 /**
- * Extract the wall-clock date + HH:mm a user selected.
+ * Extract the written wall-clock date + HH:mm a user selected.
  *
- * Legacy EverittOS job timestamps may end in Z even though the written clock
- * was the user's intended local business time. Preserve the written clock so
- * historical jobs do not shift backward when displayed or exported.
+ * EverittOS job schedule columns are UTC-backed wall-clock storage. Even when a
+ * client sends Z or an offset, the written date/time components are authoritative.
  */
 export function wallClockFromTimestamp(
   value: string | null | undefined,
@@ -78,6 +77,17 @@ export function wallClockDateTime(dateStr: string, timeStr: string): string | nu
   const time = normalizeTimeInput(timeStr);
   if (!date || !time) return null;
   return `${date}T${time}:00`;
+}
+
+/**
+ * Canonicalize any accepted job timestamp into EverittOS wall-clock storage.
+ * This deliberately strips Z/offset markers without converting the clock.
+ */
+export function normalizeJobScheduleTimestamp(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const wall = wallClockFromTimestamp(value, '');
+  if (!wall?.date || !wall.time) return null;
+  return wallClockDateTime(wall.date, wall.time);
 }
 
 export function localTimeFromIso(iso: string | null | undefined, fallback = '09:00'): string {
