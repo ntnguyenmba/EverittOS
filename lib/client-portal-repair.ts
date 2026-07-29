@@ -302,30 +302,36 @@ export async function repairClientPortalAccessForUser(
       const result = data as Record<string, unknown>;
       const role = normalizeRole(String(result.role || 'client'));
       const organizationId = (result.organizationId as string | null | undefined) ?? null;
+      const rpcOk = Boolean(result.ok);
+      const rpcSkipped = Boolean(result.skipped);
 
-      const { data: access } = await admin.from('job_client_access').select('job_id').eq('client_user_id', userId);
-      const jobIds = (access || []).map((row) => String(row.job_id)).filter(Boolean);
+      // A deployed but older RPC can incorrectly skip existing client accounts.
+      // Let the admin mirror verify job access and invitations before accepting a skip.
+      if (rpcOk && !rpcSkipped) {
+        const { data: access } = await admin.from('job_client_access').select('job_id').eq('client_user_id', userId);
+        const jobIds = (access || []).map((row) => String(row.job_id)).filter(Boolean);
 
-      return {
-        ok: Boolean(result.ok),
-        skipped: Boolean(result.skipped),
-        reason: result.reason ? String(result.reason) : undefined,
-        userId,
-        email: result.email ? String(result.email) : normalizeEmail(emailHint),
-        role,
-        organizationId,
-        jobIds,
-        redirectTo: inviteAcceptLandingPath(role, {
-          jobId: jobIds.length === 1 ? jobIds[0] : null,
-          sharedJobIds: jobIds
-        }),
-        invitesRepaired: Number(result.invitesRepaired || 0),
-        membershipUpserts: Number(result.membershipUpserts || 0),
-        accessUpserts: Number(result.accessUpserts || 0),
-        profileUpdated: Boolean(result.profileUpdated),
-        error: result.error ? String(result.error) : undefined,
-        source: 'rpc'
-      };
+        return {
+          ok: true,
+          skipped: false,
+          reason: result.reason ? String(result.reason) : undefined,
+          userId,
+          email: result.email ? String(result.email) : normalizeEmail(emailHint),
+          role,
+          organizationId,
+          jobIds,
+          redirectTo: inviteAcceptLandingPath(role, {
+            jobId: jobIds.length === 1 ? jobIds[0] : null,
+            sharedJobIds: jobIds
+          }),
+          invitesRepaired: Number(result.invitesRepaired || 0),
+          membershipUpserts: Number(result.membershipUpserts || 0),
+          accessUpserts: Number(result.accessUpserts || 0),
+          profileUpdated: Boolean(result.profileUpdated),
+          error: result.error ? String(result.error) : undefined,
+          source: 'rpc'
+        };
+      }
     }
   } catch {
     // Fall through to admin mirror when RPC is not deployed yet.
