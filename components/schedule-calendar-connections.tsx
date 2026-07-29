@@ -30,6 +30,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   const [feed, setFeed] = useState<FeedInfo>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showUrl, setShowUrl] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,6 +62,17 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function copySubscriptionUrl() {
+    if (!feed?.url) return;
+    try {
+      await navigator.clipboard.writeText(feed.url);
+      appFeedback.success('Calendar subscription URL copied.');
+    } catch {
+      setShowUrl(true);
+      appFeedback.error('Copy was blocked by the browser. The URL is shown below so you can copy it manually.');
+    }
+  }
 
   async function syncNow() {
     if (busy) return;
@@ -109,7 +121,8 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         return;
       }
       setFeed(json.feed || null);
-      appFeedback.success('Calendar subscription link ready. Copy it into Apple Calendar, Google Calendar, or Outlook.');
+      setShowUrl(false);
+      appFeedback.success('Private calendar subscription created.');
     } finally {
       setBusy(false);
     }
@@ -127,6 +140,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         return;
       }
       setFeed(null);
+      setShowUrl(false);
       appFeedback.success('Calendar subscription revoked.');
     } finally {
       setBusy(false);
@@ -145,8 +159,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         <p className="muted">
           {status?.connected
             ? `Connected${status.googleEmail ? ` as ${status.googleEmail}` : ''}. Jobs sync to your organization calendar.`
-            : status?.setupMessage ||
-              'Connect Google Calendar to keep EverittOS jobs visible in Apple Calendar, Google Calendar, Outlook, or another calendar app.'}
+            : status?.setupMessage || 'Connect Google Calendar to sync EverittOS jobs directly.'}
         </p>
         {status?.lastSyncAt ? <p className="muted">Last sync: {new Date(status.lastSyncAt).toLocaleString()}</p> : null}
         {status?.lastError ? (
@@ -175,33 +188,27 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
           </button>
         </div>
 
-        <h3 style={{ marginTop: 24 }}>Apple Calendar / iCal / Outlook subscription</h3>
+        <h3 style={{ marginTop: 24 }}>Apple Calendar, iCal, and Outlook subscription</h3>
         <p className="muted">
-          Create a private subscription link for your authorized jobs. Regenerate or revoke it anytime. Contractors only
-          receive assigned or shared jobs.
+          Subscribe once and your calendar app will keep authorized jobs updated automatically. Contractors only receive jobs
+          assigned or shared with them. Keep this private link confidential.
         </p>
         {feed ? (
           <>
-            <p>
-              <strong>Feed:</strong> <code>{feed.tokenMasked}</code>
-            </p>
-            <p className="muted" style={{ wordBreak: 'break-all' }}>
-              {feed.url}
+            <p className="muted">
+              <strong>Private feed:</strong> {feed.tokenMasked}
+              {feed.lastAccessedAt ? ` · Last checked ${new Date(feed.lastAccessedAt).toLocaleString()}` : ' · Not checked yet'}
             </p>
             <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  void navigator.clipboard.writeText(feed.url);
-                  appFeedback.success('Calendar feed URL copied.');
-                }}
-              >
+              <a className="btn btn-primary" href={feed.webcalUrl}>
+                Subscribe in calendar app
+              </a>
+              <button type="button" className="btn" onClick={() => void copySubscriptionUrl()}>
                 Copy subscription URL
               </button>
-              <a className="btn" href={feed.webcalUrl}>
-                Open in calendar app
-              </a>
+              <button type="button" className="btn" onClick={() => setShowUrl((current) => !current)}>
+                {showUrl ? 'Hide URL' : 'Show URL'}
+              </button>
               <button type="button" className="btn" disabled={busy} onClick={() => void createOrRotateFeed()}>
                 Regenerate link
               </button>
@@ -209,15 +216,43 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
                 Revoke link
               </button>
             </div>
-            <ol className="muted" style={{ marginTop: 12, paddingLeft: 18 }}>
-              <li>Apple Calendar: File → New Calendar Subscription → paste the URL.</li>
-              <li>Google Calendar: Settings → Add calendar → From URL → paste the URL.</li>
-              <li>Outlook: Add calendar → Subscribe from web → paste the URL.</li>
-            </ol>
+
+            {showUrl ? (
+              <div style={{ marginTop: 12 }}>
+                <label htmlFor="calendar-subscription-url" className="muted">
+                  Subscription URL
+                </label>
+                <input
+                  id="calendar-subscription-url"
+                  className="input"
+                  readOnly
+                  value={feed.url}
+                  onFocus={(event) => event.currentTarget.select()}
+                  style={{ marginTop: 6, width: '100%' }}
+                />
+              </div>
+            ) : null}
+
+            <div className="muted" style={{ marginTop: 16 }}>
+              <p style={{ marginBottom: 6 }}>
+                <strong>Apple Calendar on Mac:</strong> click “Subscribe in calendar app,” or use File → New Calendar
+                Subscription and paste the copied URL.
+              </p>
+              <p style={{ marginBottom: 6 }}>
+                <strong>iPhone or iPad:</strong> tap “Subscribe in calendar app.” If iOS does not open Calendar, copy the URL,
+                then go to Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → Add Subscribed Calendar.
+              </p>
+              <p style={{ marginBottom: 6 }}>
+                <strong>Outlook:</strong> copy the URL, then choose Add calendar → Subscribe from web.
+              </p>
+              <p style={{ marginBottom: 0 }}>
+                <strong>Google Calendar:</strong> on desktop, choose Settings → Add calendar → From URL and paste the URL.
+              </p>
+            </div>
           </>
         ) : (
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createOrRotateFeed()}>
-            Create calendar subscription
+            Create private calendar subscription
           </button>
         )}
       </div>
