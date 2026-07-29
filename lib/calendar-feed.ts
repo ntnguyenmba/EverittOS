@@ -33,7 +33,7 @@ export function calendarFeedUrl(token: string): string {
 }
 
 export function webcalFeedUrl(token: string): string {
-  return calendarFeedUrl(token).replace(/^https:/, 'webcals:').replace(/^http:/, 'webcal:');
+  return calendarFeedUrl(token).replace(/^https?:/, 'webcal:');
 }
 
 type FeedJobRow = {
