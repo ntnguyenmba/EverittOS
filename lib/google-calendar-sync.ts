@@ -97,15 +97,41 @@ function eventDescription(job: JobForCalendarSync, extraNote?: string | null): s
   ].filter(Boolean).join('\n');
 }
 
+/**
+ * EverittOS stores scheduled job values as UTC-backed wall-clock timestamps.
+ * Google must receive the stored calendar components without a trailing Z,
+ * plus the workspace IANA timezone. Sending toISOString() with Z makes Google
+ * treat the value as an absolute UTC instant and shifts the displayed time.
+ */
+function wallClockDateTime(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid scheduled date: ${value}`);
+  return parsed.toISOString().slice(0, 19);
+}
+
+function addWallClockHour(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid scheduled date: ${value}`);
+  parsed.setUTCHours(parsed.getUTCHours() + 1);
+  return parsed.toISOString().slice(0, 19);
+}
+
 function buildEventBody(job: JobForCalendarSync, timeZone: string): GoogleCalendarEventBody | null {
   const summary = job.title || 'EverittOS job';
   const description = eventDescription(job);
   const location = job.address || undefined;
   const extendedProperties = { private: { everittosJobId: job.id } };
   if (job.scheduled_start) {
-    const start = new Date(job.scheduled_start);
-    const end = job.scheduled_end ? new Date(job.scheduled_end) : new Date(start.getTime() + 60 * 60 * 1000);
-    return { summary, description, location, extendedProperties, start: { dateTime: start.toISOString(), timeZone }, end: { dateTime: end.toISOString(), timeZone } };
+    const startDateTime = wallClockDateTime(job.scheduled_start);
+    const endDateTime = job.scheduled_end ? wallClockDateTime(job.scheduled_end) : addWallClockHour(job.scheduled_start);
+    return {
+      summary,
+      description,
+      location,
+      extendedProperties,
+      start: { dateTime: startDateTime, timeZone },
+      end: { dateTime: endDateTime, timeZone }
+    };
   }
   const allDay = job.due_date || job.start_date;
   if (allDay) {
