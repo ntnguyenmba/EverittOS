@@ -11,9 +11,9 @@ const copy = {
     connected: 'Connected', connectedAs: 'Connected as {email}. Jobs sync to your organization calendar.',
     connectedNoEmail: 'Connected. Jobs sync to your organization calendar.', connectHelp: 'Connect Google Calendar to sync EverittOS jobs directly.',
     lastSync: 'Last sync', connect: 'Connect Google Calendar', syncNow: 'Sync now', disconnect: 'Disconnect', refresh: 'Refresh status', working: 'Working…',
-    subscriptionTitle: 'Calendar subscription', subscriptionHelp: 'Add authorized jobs to Apple Calendar, Outlook, or another calendar app. Updates happen automatically.',
-    sync: 'Sync', syncFailed: 'Google Calendar sync failed.', disconnectFailed: 'Could not disconnect Google Calendar.',
-    feedConnectFailed: 'Could not connect calendar subscription.', feedOpenFailed: 'Calendar subscription could not be opened.', feedDisconnectFailed: 'Could not disconnect calendar subscription.',
+    subscriptionTitle: 'Apple Calendar, Outlook, and calendar apps', subscriptionHelp: 'Add your authorized EverittOS jobs directly. This subscription works independently and does not require Google Calendar.',
+    addSubscription: 'Add calendar subscription', openSubscription: 'Open calendar subscription', syncFailed: 'Google Calendar sync failed.', disconnectFailed: 'Could not disconnect Google Calendar.',
+    feedConnectFailed: 'Could not create calendar subscription.', feedOpenFailed: 'Calendar subscription could not be opened.', feedDisconnectFailed: 'Could not disconnect calendar subscription.',
     synced: 'Synced {count} job(s){failed}.'
   },
   es: {
@@ -21,9 +21,9 @@ const copy = {
     connected: 'Conectado', connectedAs: 'Conectado como {email}. Los trabajos se sincronizan con el calendario de tu organización.',
     connectedNoEmail: 'Conectado. Los trabajos se sincronizan con el calendario de tu organización.', connectHelp: 'Conecta Google Calendar para sincronizar directamente los trabajos de EverittOS.',
     lastSync: 'Última sincronización', connect: 'Conectar Google Calendar', syncNow: 'Sincronizar ahora', disconnect: 'Desconectar', refresh: 'Actualizar estado', working: 'Procesando…',
-    subscriptionTitle: 'Suscripción al calendario', subscriptionHelp: 'Añade los trabajos autorizados a Apple Calendar, Outlook u otra aplicación de calendario. Las actualizaciones se realizan automáticamente.',
-    sync: 'Sincronizar', syncFailed: 'No se pudo sincronizar Google Calendar.', disconnectFailed: 'No se pudo desconectar Google Calendar.',
-    feedConnectFailed: 'No se pudo conectar la suscripción al calendario.', feedOpenFailed: 'No se pudo abrir la suscripción al calendario.', feedDisconnectFailed: 'No se pudo desconectar la suscripción al calendario.',
+    subscriptionTitle: 'Apple Calendar, Outlook y otras aplicaciones', subscriptionHelp: 'Añade directamente tus trabajos autorizados de EverittOS. Esta suscripción funciona de forma independiente y no requiere Google Calendar.',
+    addSubscription: 'Añadir suscripción de calendario', openSubscription: 'Abrir suscripción de calendario', syncFailed: 'No se pudo sincronizar Google Calendar.', disconnectFailed: 'No se pudo desconectar Google Calendar.',
+    feedConnectFailed: 'No se pudo crear la suscripción al calendario.', feedOpenFailed: 'No se pudo abrir la suscripción al calendario.', feedDisconnectFailed: 'No se pudo desconectar la suscripción al calendario.',
     synced: 'Se sincronizaron {count} trabajo(s){failed}.'
   },
   vi: {
@@ -31,9 +31,9 @@ const copy = {
     connected: 'Đã kết nối', connectedAs: 'Đã kết nối bằng {email}. Công việc được đồng bộ với lịch của tổ chức.',
     connectedNoEmail: 'Đã kết nối. Công việc được đồng bộ với lịch của tổ chức.', connectHelp: 'Kết nối Google Calendar để đồng bộ trực tiếp công việc EverittOS.',
     lastSync: 'Lần đồng bộ gần nhất', connect: 'Kết nối Google Calendar', syncNow: 'Đồng bộ ngay', disconnect: 'Ngắt kết nối', refresh: 'Làm mới trạng thái', working: 'Đang xử lý…',
-    subscriptionTitle: 'Đăng ký lịch', subscriptionHelp: 'Thêm các công việc được phép vào Apple Calendar, Outlook hoặc ứng dụng lịch khác. Các thay đổi sẽ tự động cập nhật.',
-    sync: 'Đồng bộ', syncFailed: 'Đồng bộ Google Calendar không thành công.', disconnectFailed: 'Không thể ngắt kết nối Google Calendar.',
-    feedConnectFailed: 'Không thể kết nối đăng ký lịch.', feedOpenFailed: 'Không thể mở đăng ký lịch.', feedDisconnectFailed: 'Không thể ngắt kết nối đăng ký lịch.',
+    subscriptionTitle: 'Apple Calendar, Outlook và ứng dụng lịch', subscriptionHelp: 'Thêm trực tiếp các công việc EverittOS được phép. Đăng ký này hoạt động độc lập và không cần Google Calendar.',
+    addSubscription: 'Thêm đăng ký lịch', openSubscription: 'Mở đăng ký lịch', syncFailed: 'Đồng bộ Google Calendar không thành công.', disconnectFailed: 'Không thể ngắt kết nối Google Calendar.',
+    feedConnectFailed: 'Không thể tạo đăng ký lịch.', feedOpenFailed: 'Không thể mở đăng ký lịch.', feedDisconnectFailed: 'Không thể ngắt kết nối đăng ký lịch.',
     synced: 'Đã đồng bộ {count} công việc{failed}.'
   }
 } as const;
@@ -73,21 +73,27 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [statusRes, feedRes] = await Promise.all([
+      const [statusResult, feedResult] = await Promise.allSettled([
         fetch('/api/integrations/google-calendar/status', { cache: 'no-store' }),
         fetch('/api/calendar/feed', { cache: 'no-store' })
       ]);
-      const statusJson = await statusRes.json().catch(() => ({}));
-      const feedJson = await feedRes.json().catch(() => ({}));
-      if (statusRes.ok) {
-        setStatus({
-          configured: Boolean(statusJson.configured), connected: Boolean(statusJson.connected),
-          healthLabel: statusJson.healthLabel || statusJson.health || 'Unknown', canManage: Boolean(statusJson.canManage),
-          googleEmail: statusJson.googleEmail || null, lastSyncAt: statusJson.lastSyncAt || statusJson.last_sync_at || null,
-          lastError: statusJson.lastError || statusJson.last_sync_error || null, setupMessage: statusJson.setupMessage || null
-        });
+
+      if (statusResult.status === 'fulfilled') {
+        const statusJson = await statusResult.value.json().catch(() => ({}));
+        if (statusResult.value.ok) {
+          setStatus({
+            configured: Boolean(statusJson.configured), connected: Boolean(statusJson.connected),
+            healthLabel: statusJson.healthLabel || statusJson.health || 'Unknown', canManage: Boolean(statusJson.canManage),
+            googleEmail: statusJson.googleEmail || null, lastSyncAt: statusJson.lastSyncAt || statusJson.last_sync_at || null,
+            lastError: statusJson.lastError || statusJson.last_sync_error || null, setupMessage: statusJson.setupMessage || null
+          });
+        }
       }
-      setFeed(feedJson.feed || null);
+
+      if (feedResult.status === 'fulfilled') {
+        const feedJson = await feedResult.value.json().catch(() => ({}));
+        if (feedResult.value.ok) setFeed(feedJson.feed || null);
+      }
     } finally { setLoading(false); }
   }, []);
 
@@ -117,9 +123,9 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
     } finally { setActiveAction(null); }
   }
 
-  async function syncCalendarSubscription() {
+  async function openCalendarSubscription() {
     if (busy) return;
-    if (feed?.webcalUrl) { window.location.href = feed.webcalUrl; return; }
+    if (feed?.webcalUrl) { window.location.assign(feed.webcalUrl); return; }
     setActiveAction('feed-sync');
     try {
       const res = await fetch('/api/calendar/feed', { method: 'POST' });
@@ -127,7 +133,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
       if (!res.ok) { appFeedback.error(json.error || text.feedConnectFailed); return; }
       const nextFeed = json.feed || null;
       setFeed(nextFeed);
-      if (nextFeed?.webcalUrl) window.location.href = nextFeed.webcalUrl;
+      if (nextFeed?.webcalUrl) window.location.assign(nextFeed.webcalUrl);
       else appFeedback.error(text.feedOpenFailed);
     } finally { setActiveAction(null); }
   }
@@ -167,7 +173,9 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         <h3 style={{ marginTop: 24 }}>{text.subscriptionTitle}</h3>
         <p className="muted">{text.subscriptionHelp}</p>
         <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <button type="button" className="btn btn-primary" disabled={loading || busy} onClick={() => void syncCalendarSubscription()}>{activeAction === 'feed-sync' ? text.working : text.sync}</button>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void openCalendarSubscription()}>
+            {activeAction === 'feed-sync' ? text.working : feed ? text.openSubscription : text.addSubscription}
+          </button>
           {feed ? <button type="button" className="btn" disabled={busy} onClick={() => void disconnectCalendarSubscription()}>{activeAction === 'feed-disconnect' ? text.working : text.disconnect}</button> : null}
         </div>
       </div>
