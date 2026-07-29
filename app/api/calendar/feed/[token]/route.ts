@@ -29,18 +29,26 @@ export async function GET(_request: Request, context: Params) {
     return new NextResponse('Not found', { status: 404 });
   }
 
-  const { data: membership } = await admin
-    .from('organization_members')
-    .select('role')
-    .eq('organization_id', row.organization_id)
-    .eq('user_id', row.user_id)
-    .maybeSingle();
+  const [{ data: membership }, { data: organizationSettings }] = await Promise.all([
+    admin
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', row.organization_id)
+      .eq('user_id', row.user_id)
+      .maybeSingle(),
+    admin
+      .from('organization_settings')
+      .select('timezone')
+      .eq('organization_id', row.organization_id)
+      .maybeSingle()
+  ]);
 
   const ics = await buildAuthorizedCalendarFeedIcs({
     admin,
     organizationId: row.organization_id,
     userId: row.user_id,
-    role: membership?.role || 'employee'
+    role: membership?.role || 'employee',
+    timeZone: organizationSettings?.timezone || 'America/Chicago'
   });
 
   await admin
