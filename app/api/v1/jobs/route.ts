@@ -3,6 +3,7 @@ import { authenticateApiRequest, hasScope, jsonError } from '@/lib/api-auth';
 import { ALLOWED_JOB_STATUSES, customerBelongsToOrg } from '@/lib/org-validation';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
+import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 
 export async function GET(request: Request) {
   const auth = await authenticateApiRequest(request);
@@ -61,6 +62,11 @@ export async function POST(request: Request) {
     }
   }
 
+  const scheduledStart = normalizeJobScheduleTimestamp(body.scheduled_start);
+  const scheduledEnd = normalizeJobScheduleTimestamp(body.scheduled_end);
+  if (body.scheduled_start && !scheduledStart) return jsonError('Invalid scheduled_start timestamp.', 400);
+  if (body.scheduled_end && !scheduledEnd) return jsonError('Invalid scheduled_end timestamp.', 400);
+
   const { data: org } = await auth.admin.from('organizations').select('owner_user_id').eq('id', auth.organizationId).maybeSingle();
   if (!org?.owner_user_id) return jsonError('Organization not found.', 404);
 
@@ -77,10 +83,14 @@ export async function POST(request: Request) {
       customer_id: body.customer_id || null,
       status: body.status || 'new',
       notes: body.notes?.trim() || null,
-      scheduled_start: body.scheduled_start || null,
-      scheduled_end: body.scheduled_end || null,
-      start_date: body.scheduled_start ? body.scheduled_start.slice(0, 10) : null,
-      due_date: body.scheduled_end ? body.scheduled_end.slice(0, 10) : body.scheduled_start?.slice(0, 10) || null
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
+      start_date: scheduledStart ? localDateFromIso(scheduledStart) : null,
+      due_date: scheduledEnd
+        ? localDateFromIso(scheduledEnd)
+        : scheduledStart
+          ? localDateFromIso(scheduledStart)
+          : null
     })
     .select('id, title, status, created_at')
     .single();
