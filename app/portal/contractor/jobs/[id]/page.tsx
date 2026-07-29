@@ -19,9 +19,17 @@ import {
 import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
 
-type JobDetailError = 'workspace_not_found' | 'job_not_found' | 'no_access';
+type JobDetailError = 'job_not_found' | 'no_access';
+
+type WorkerRow = {
+  id?: string | null;
+  auth_user_id?: string | null;
+  email?: string | null;
+  name?: string | null;
+  full_name?: string | null;
+  organization_id?: string | null;
+};
 
 export default function ContractorJobDetailPage() {
   const params = useParams<{ id: string }>();
@@ -45,52 +53,49 @@ export default function ContractorJobDetailPage() {
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role, email, full_name, display_name').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, email, full_name, display_name')
+      .eq('id', user.id)
+      .maybeSingle();
     if (!isContractorRole(normalizeRole(profile?.role))) {
       router.replace(`/jobs/${jobId}`);
       return;
     }
 
-    const org = await ensureOrganizationForUser(user.id);
-    const organizationId = org?.organizationId || null;
-    if (!organizationId) {
-      setError('workspace_not_found');
-      setLoading(false);
-      return;
-    }
-
     const lookupEmail = String(user.email || profile?.email || '').trim().toLowerCase();
-    const { data: workers } = await supabase
-      .from('workers')
-      .select('id, auth_user_id, email, name, full_name')
-      .eq('organization_id', organizationId);
-    const identity = contractorIdentityFromWorkers(
-      user.id,
-      workers || [],
-      lookupEmail,
-      profile?.full_name || profile?.display_name
-    );
+    const displayName = String(profile?.full_name || profile?.display_name || '').trim();
+    const workerSelect = 'id, auth_user_id, email, name, full_name, organization_id';
+    const [authWorkersRes, emailWorkersRes] = await Promise.all([
+      supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
+      lookupEmail
+        ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
+        : Promise.resolve({ data: [] as WorkerRow[], error: null })
+    ]);
 
-    const [{ data: job }, { data: assignments }, { data: shares }, { data: labor }] = await Promise.all([
+    const workerMap = new Map<string, WorkerRow>();
+    for (const row of [...(authWorkersRes.data || []), ...(emailWorkersRes.data || [])] as WorkerRow[]) {
+      if (row.id) workerMap.set(String(row.id), row);
+    }
+    const workers = Array.from(workerMap.values());
+    const identity = contractorIdentityFromWorkers(user.id, workers, lookupEmail, displayName);
+    const workerIds = identity.workerIds || [];
+
+    const [{ data: job }, { data: assignments }, { data: shares }] = await Promise.all([
       supabase
         .from('jobs')
-        .select('id, title, status, start_date, due_date, scheduled_start, address, notes, customer_notes, customer_name, phone, assigned_to, organization_id')
+        .select(
+          'id, title, status, start_date, due_date, scheduled_start, address, notes, customer_notes, customer_name, phone, assigned_to, organization_id'
+        )
         .eq('id', jobId)
-        .eq('organization_id', organizationId)
         .maybeSingle(),
-      supabase.from('job_assignments').select('job_id, worker_id').eq('job_id', jobId).eq('organization_id', organizationId),
+      supabase.from('job_assignments').select('job_id, worker_id').eq('job_id', jobId),
       supabase
         .from('record_shares')
         .select('record_id, shared_with_user_id, access_level')
-        .eq('organization_id', organizationId)
         .eq('record_type', 'job')
         .eq('record_id', jobId)
-        .eq('shared_with_user_id', user.id),
-      supabase
-        .from('job_labor')
-        .select('total_cost, payment_status, worker_id')
-        .eq('organization_id', organizationId)
-        .eq('job_id', jobId)
+        .eq('shared_with_user_id', user.id)
     ]);
 
     if (!job) {
@@ -101,7 +106,7 @@ export default function ContractorJobDetailPage() {
 
     const allowed = contractorCanAccessJob({
       job: { id: job.id, status: job.status, assigned_to: job.assigned_to },
-      workerIds: identity.workerIds || [],
+      workerIds,
       userId: user.id,
       assignments: assignments || [],
       shares: shares || []
@@ -113,9 +118,18 @@ export default function ContractorJobDetailPage() {
       return;
     }
 
-    const workerIds = new Set((identity.workerIds || []).map(String));
-    const ownLabor = (labor || []).find((row: { worker_id?: string | null; total_cost?: number | null; payment_status?: string | null }) =>
-      workerIds.has(String(row.worker_id || ''))
+    const { data: labor } = workerIds.length
+      ? await supabase
+          .from('job_labor')
+          .select('total_cost, payment_status, worker_id')
+          .eq('job_id', jobId)
+          .in('worker_id', workerIds)
+      : { data: [] };
+
+    const workerIdSet = new Set(workerIds.map(String));
+    const ownLabor = (labor || []).find(
+      (row: { worker_id?: string | null; total_cost?: number | null; payment_status?: string | null }) =>
+        workerIdSet.has(String(row.worker_id || ''))
     );
     setView(
       toContractorSafeJobView({
@@ -143,8 +157,6 @@ export default function ContractorJobDetailPage() {
 
   function errorText(code: JobDetailError): string {
     switch (code) {
-      case 'workspace_not_found':
-        return t('portal.contractor.workspaceNotFound');
       case 'job_not_found':
         return t('portal.contractor.jobNotFound');
       case 'no_access':
@@ -199,7 +211,13 @@ export default function ContractorJobDetailPage() {
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {view.address}
                 </p>
-                <a className="btn" style={{ marginTop: 8 }} href={`https://maps.google.com/?q=${encodeURIComponent(view.address)}`} target="_blank" rel="noreferrer">
+                <a
+                  className="btn"
+                  style={{ marginTop: 8 }}
+                  href={`https://maps.google.com/?q=${encodeURIComponent(view.address)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   {t('portal.contractor.maps')}
                 </a>
               </div>
