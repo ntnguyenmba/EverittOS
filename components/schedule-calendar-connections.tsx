@@ -194,10 +194,6 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         </p>
         {feed ? (
           <>
-            <p className="muted">
-              <strong>Private link:</strong> {feed.tokenMasked}
-              {feed.lastAccessedAt ? ` · Last used ${new Date(feed.lastAccessedAt).toLocaleString()}` : ''}
-            </p>
             <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
               <a className="btn btn-primary" href={feed.webcalUrl}>
                 Subscribe
