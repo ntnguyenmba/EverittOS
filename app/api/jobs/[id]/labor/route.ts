@@ -49,8 +49,12 @@ async function resolveWorkerId(
     return { workerId: data.id, workerName: data.name || null, error: null };
   }
 
-  // The assigned team member is the strongest fallback. This prevents contractor pay
-  // from being saved without a worker_id when the free-text name differs slightly.
+  const workerName = typeof suppliedWorkerName === 'string' ? suppliedWorkerName.trim() : '';
+  if (workerName) {
+    return { workerId: null, workerName, error: null };
+  }
+
+  // A job assignment remains a fallback only when no contractor name was supplied.
   if (assignedUserId && isValidUuid(assignedUserId)) {
     const { data, error } = await ctx.supabase
       .from('workers')
@@ -65,27 +69,11 @@ async function resolveWorkerId(
     }
   }
 
-  const workerName = typeof suppliedWorkerName === 'string' ? suppliedWorkerName.trim() : '';
-  if (!workerName) {
-    return { workerId: null, workerName: null, error: 'Assign the job to a contractor or select a contractor from your team list' };
-  }
-
-  const { data, error } = await ctx.supabase
-    .from('workers')
-    .select('id, name')
-    .eq('organization_id', ctx.organizationId)
-    .ilike('name', workerName)
-    .limit(2);
-
-  if (error || !data || data.length !== 1) {
-    return {
-      workerId: null,
-      workerName: null,
-      error: 'Assign the job to a contractor or select a contractor from your team list so earnings are linked correctly'
-    };
-  }
-
-  return { workerId: data[0].id, workerName: data[0].name || workerName, error: null };
+  return {
+    workerId: null,
+    workerName: null,
+    error: 'Enter a contractor name or select a contractor from your team list'
+  };
 }
 
 export async function GET(_request: Request, { params }: RouteParams) {
@@ -135,8 +123,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const body = await request.json();
   const resolvedWorker = await resolveWorkerId(ctx, body.worker_id, body.worker_name, job.assigned_to);
-  if (!resolvedWorker.workerId) {
-    return NextResponse.json({ error: resolvedWorker.error }, { status: 400 });
+  if (resolvedWorker.error || (!resolvedWorker.workerId && !resolvedWorker.workerName)) {
+    return NextResponse.json({ error: resolvedWorker.error || 'Unable to verify contractor' }, { status: 400 });
   }
 
   const labor = buildLaborRow({
