@@ -53,8 +53,10 @@ export function hasExplicitTimeZone(value: string): boolean {
 
 /**
  * Extract the wall-clock date + HH:mm a user selected.
- * - Naive ISO / Postgres strings (`2026-07-28T14:30:00`) keep the written clock (no TZ shift).
- * - Zoned ISO (`...Z` or offset) converts into the runtime local calendar/clock.
+ *
+ * Legacy EverittOS job timestamps may end in Z even though the written clock
+ * was the user's intended local business time. Preserve the written clock so
+ * historical jobs do not shift backward when displayed or exported.
  */
 export function wallClockFromTimestamp(
   value: string | null | undefined,
@@ -62,19 +64,12 @@ export function wallClockFromTimestamp(
 ): { date: string; time: string } | null {
   if (!value?.trim()) return null;
   const trimmed = value.trim();
-
-  if (!hasExplicitTimeZone(trimmed)) {
-    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
-    if (!match) return null;
-    return {
-      date: match[1],
-      time: match[2] ? `${match[2]}:${match[3]}` : fallbackTime
-    };
-  }
-
-  const d = new Date(trimmed);
-  if (Number.isNaN(d.getTime())) return null;
-  return { date: formatLocalDate(d), time: formatLocalTime(d) };
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+  if (!match) return null;
+  return {
+    date: match[1],
+    time: match[2] ? `${match[2]}:${match[3]}` : fallbackTime
+  };
 }
 
 /** Persist a wall-clock appointment as a timezone-less local datetime string. */
@@ -96,15 +91,13 @@ export function localDateFromIso(iso: string | null | undefined): string {
 }
 
 /**
- * Combine YYYY-MM-DD and HH:mm in the runtime local timezone and return a UTC ISO string.
- * Prefer wallClockDateTime + visit rows for persistence that must survive server TZ differences.
+ * Combine YYYY-MM-DD and HH:mm without converting the selected wall-clock
+ * value through the browser or server timezone. The organization's selected
+ * IANA timezone is applied when displaying, syncing, or exporting the event.
  */
 export function combineDateAndTime(dateStr: string, timeStr: string): string | null {
   if (!dateStr?.trim()) return null;
-  const time = normalizeTimeInput(timeStr, '09:00') || '09:00';
-  const d = new Date(`${dateStr.trim()}T${time}:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString();
+  return wallClockDateTime(dateStr, normalizeTimeInput(timeStr, '09:00') || '09:00');
 }
 
 export function hoursBetween(startIso: string | null | undefined, endIso: string | null | undefined): number | null {
