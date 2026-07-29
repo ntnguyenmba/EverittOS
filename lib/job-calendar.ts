@@ -15,6 +15,10 @@ export type JobCalendarFields = {
   assignedNames?: string[];
 };
 
+function hasExplicitTimeZone(value: string): boolean {
+  return /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim());
+}
+
 function asLocalWallClock(value: string): string {
   const match = value
     .trim()
@@ -23,7 +27,14 @@ function asLocalWallClock(value: string): string {
   return `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6] || '00'}`;
 }
 
-function addLocalHours(value: string, hours: number): string {
+function addHours(value: string, hours: number): string {
+  if (hasExplicitTimeZone(value)) {
+    const instant = new Date(value);
+    if (!Number.isNaN(instant.getTime())) {
+      return new Date(instant.getTime() + hours * 60 * 60 * 1000).toISOString();
+    }
+  }
+
   const match = value
     .trim()
     .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
@@ -43,12 +54,16 @@ function addLocalHours(value: string, hours: number): string {
   return date.toISOString().replace(/\.000Z$/, '');
 }
 
+function calendarDateTime(value: string): string {
+  return hasExplicitTimeZone(value) ? value.trim() : asLocalWallClock(value);
+}
+
 function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: string } | null {
   if (job.scheduled_start) {
-    const startsAt = asLocalWallClock(job.scheduled_start);
+    const startsAt = calendarDateTime(job.scheduled_start);
     const endsAt = job.scheduled_end
-      ? asLocalWallClock(job.scheduled_end)
-      : addLocalHours(startsAt, 2);
+      ? calendarDateTime(job.scheduled_end)
+      : addHours(startsAt, 2);
     return { startsAt, endsAt };
   }
 
@@ -60,8 +75,8 @@ function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: s
     return { startsAt, endsAt: `${day}T11:00:00` };
   }
 
-  const startsAt = asLocalWallClock(day);
-  return { startsAt, endsAt: addLocalHours(startsAt, 2) };
+  const startsAt = calendarDateTime(day);
+  return { startsAt, endsAt: addHours(startsAt, 2) };
 }
 
 /** Calendar-safe job event: no internal notes, invoices, or financial fields. */
