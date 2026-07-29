@@ -15,11 +15,13 @@ export type JobCalendarFields = {
   assignedNames?: string[];
 };
 
-function hasExplicitTimeZone(value: string): boolean {
-  return /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim());
-}
-
-function asLocalWallClock(value: string): string {
+/**
+ * jobs.scheduled_start/end are timestamptz columns used as UTC-backed wall-clock
+ * storage. Supabase returns a trailing Z even though the written date and clock
+ * components are the business-local appointment time. Calendar providers must
+ * receive those components without Z and with the workspace IANA timezone.
+ */
+function asJobWallClock(value: string): string {
   const match = value
     .trim()
     .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
@@ -28,16 +30,9 @@ function asLocalWallClock(value: string): string {
 }
 
 function addHours(value: string, hours: number): string {
-  if (hasExplicitTimeZone(value)) {
-    const instant = new Date(value);
-    if (!Number.isNaN(instant.getTime())) {
-      return new Date(instant.getTime() + hours * 60 * 60 * 1000).toISOString();
-    }
-  }
-
-  const match = value
-    .trim()
-    .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+  const match = asJobWallClock(value).match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/
+  );
   if (!match) return value;
 
   const date = new Date(
@@ -47,22 +42,18 @@ function addHours(value: string, hours: number): string {
       Number(match[3]),
       Number(match[4]) + hours,
       Number(match[5]),
-      Number(match[6] || '0')
+      Number(match[6])
     )
   );
 
   return date.toISOString().replace(/\.000Z$/, '');
 }
 
-function calendarDateTime(value: string): string {
-  return hasExplicitTimeZone(value) ? value.trim() : asLocalWallClock(value);
-}
-
 function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: string } | null {
   if (job.scheduled_start) {
-    const startsAt = calendarDateTime(job.scheduled_start);
+    const startsAt = asJobWallClock(job.scheduled_start);
     const endsAt = job.scheduled_end
-      ? calendarDateTime(job.scheduled_end)
+      ? asJobWallClock(job.scheduled_end)
       : addHours(startsAt, 2);
     return { startsAt, endsAt };
   }
@@ -75,7 +66,7 @@ function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: s
     return { startsAt, endsAt: `${day}T11:00:00` };
   }
 
-  const startsAt = calendarDateTime(day);
+  const startsAt = asJobWallClock(day);
   return { startsAt, endsAt: addHours(startsAt, 2) };
 }
 
