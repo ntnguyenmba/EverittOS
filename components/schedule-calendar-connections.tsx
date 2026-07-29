@@ -23,13 +23,21 @@ type FeedInfo = {
   lastAccessedAt?: string | null;
 } | null;
 
+type CalendarAction =
+  | 'google-sync'
+  | 'google-disconnect'
+  | 'feed-sync'
+  | 'feed-disconnect'
+  | null;
+
 export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
   const appFeedback = useAppFeedback();
   const canManageGoogle = canManageOrganizationSettings(role);
   const [status, setStatus] = useState<CalendarStatus | null>(null);
   const [feed, setFeed] = useState<FeedInfo>(null);
-  const [busy, setBusy] = useState(false);
+  const [activeAction, setActiveAction] = useState<CalendarAction>(null);
   const [loading, setLoading] = useState(true);
+  const busy = activeAction !== null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +72,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
 
   async function syncNow() {
     if (busy) return;
-    setBusy(true);
+    setActiveAction('google-sync');
     try {
       const res = await fetch('/api/integrations/google-calendar/sync', { method: 'POST' });
       const json = await res.json().catch(() => ({}));
@@ -77,13 +85,13 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
       );
       await load();
     } finally {
-      setBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function disconnect() {
     if (busy) return;
-    setBusy(true);
+    setActiveAction('google-disconnect');
     try {
       const res = await fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' });
       if (!res.ok) {
@@ -94,7 +102,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
       appFeedback.disconnected();
       await load();
     } finally {
-      setBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -105,7 +113,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
       return;
     }
 
-    setBusy(true);
+    setActiveAction('feed-sync');
     try {
       const res = await fetch('/api/calendar/feed', { method: 'POST' });
       const json = await res.json().catch(() => ({}));
@@ -122,13 +130,13 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         appFeedback.error('Calendar subscription could not be opened.');
       }
     } finally {
-      setBusy(false);
+      setActiveAction(null);
     }
   }
 
   async function disconnectCalendarSubscription() {
     if (busy || !feed) return;
-    setBusy(true);
+    setActiveAction('feed-disconnect');
     try {
       const res = await fetch('/api/calendar/feed', { method: 'DELETE' });
       if (!res.ok) {
@@ -139,7 +147,7 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
       setFeed(null);
       appFeedback.disconnected();
     } finally {
-      setBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -172,10 +180,10 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
           {canManageGoogle && status?.connected ? (
             <>
               <button type="button" className="btn" disabled={busy} onClick={() => void syncNow()}>
-                {busy ? 'Working…' : 'Sync now'}
+                {activeAction === 'google-sync' ? 'Working…' : 'Sync now'}
               </button>
               <button type="button" className="btn" disabled={busy} onClick={() => void disconnect()}>
-                Disconnect
+                {activeAction === 'google-disconnect' ? 'Working…' : 'Disconnect'}
               </button>
             </>
           ) : null}
@@ -190,11 +198,11 @@ export function ScheduleCalendarConnections({ role }: { role: UserRole }) {
         </p>
         <div className="inline-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
           <button type="button" className="btn btn-primary" disabled={loading || busy} onClick={() => void syncCalendarSubscription()}>
-            {busy ? 'Working…' : 'Sync'}
+            {activeAction === 'feed-sync' ? 'Working…' : 'Sync'}
           </button>
           {feed ? (
             <button type="button" className="btn" disabled={busy} onClick={() => void disconnectCalendarSubscription()}>
-              Disconnect
+              {activeAction === 'feed-disconnect' ? 'Working…' : 'Disconnect'}
             </button>
           ) : null}
         </div>
