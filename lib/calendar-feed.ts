@@ -34,6 +34,7 @@ type FeedJobRow = {
   start_date?: string | null;
   due_date?: string | null;
   status?: string | null;
+  updated_at?: string | null;
 };
 
 function calendarEnvelope(timeZone: string, vevents: string[] = []): string {
@@ -52,6 +53,12 @@ function calendarEnvelope(timeZone: string, vevents: string[] = []): string {
     ...vevents,
     'END:VCALENDAR'
   ].join('\r\n') + '\r\n';
+}
+
+function eventSequence(updatedAt?: string | null): number {
+  const timestamp = updatedAt ? Date.parse(updatedAt) : 0;
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return 0;
+  return Math.floor(timestamp / 1000);
 }
 
 async function contractorAccessibleJobIds(
@@ -99,7 +106,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
   let jobsQuery = input.admin
     .from('jobs')
     .select(
-      'id, title, customer_name, address, notes, customer_notes, scheduled_start, scheduled_end, start_date, due_date, status'
+      'id, title, customer_name, address, notes, customer_notes, scheduled_start, scheduled_end, start_date, due_date, status, updated_at'
     )
     .eq('organization_id', input.organizationId)
     .not('status', 'eq', 'cancelled')
@@ -115,25 +122,22 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
   }
 
   const { data: jobs } = await jobsQuery;
-  const events = ((jobs || []) as FeedJobRow[])
-    .map((job) => jobCalendarEvent(job))
-    .filter(Boolean);
-
-  if (!events.length) return calendarEnvelope(timeZone);
-
-  const vevents = events
-    .map((event) =>
-      generateBookingIcs({
-        uid: event!.id,
-        title: event!.title,
-        description: event!.description,
-        location: event!.location,
-        startsAt: event!.startsAt,
-        endsAt: event!.endsAt || event!.startsAt,
-        timeZone
-      })
-    )
-    .map((ics) => {
+  const rows = (jobs || []) as FeedJobRow[];
+  const vevents = rows
+    .map((job) => {
+      const event = jobCalendarEvent(job);
+      if (!event) return '';
+      const ics = generateBookingIcs({
+        uid: event.id,
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt || event.startsAt,
+        timeZone,
+        lastModified: job.updated_at || undefined,
+        sequence: eventSequence(job.updated_at)
+      });
       const start = ics.indexOf('BEGIN:VEVENT');
       const end = ics.indexOf('END:VEVENT');
       if (start < 0 || end < 0) return '';
