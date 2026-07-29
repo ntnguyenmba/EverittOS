@@ -5,10 +5,8 @@ import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 
-// Bump this whenever a feed-wide calendar correction must be applied to events
-// that did not otherwise change in the database. Apple Calendar compares
-// SEQUENCE and LAST-MODIFIED for a stable UID before replacing an old event.
-const CALENDAR_FEED_REVISION_AT = '2026-07-29T12:30:00.000Z';
+const CALENDAR_FEED_REVISION = 'tz2';
+const CALENDAR_FEED_REVISION_AT = '2026-07-29T12:45:00.000Z';
 const CALENDAR_FEED_REVISION_SEQUENCE = Math.floor(Date.parse(CALENDAR_FEED_REVISION_AT) / 1000);
 
 export function generateCalendarFeedToken(): string {
@@ -25,7 +23,7 @@ export function calendarFeedUrl(token: string): string {
 }
 
 export function webcalFeedUrl(token: string): string {
-  return calendarFeedUrl(token);
+  return calendarFeedUrl(token).replace(/^https?:\/\//i, 'webcal://');
 }
 
 type FeedJobRow = {
@@ -54,8 +52,8 @@ function calendarEnvelope(timeZone: string, vevents: string[] = []): string {
     'X-WR-CALNAME:EverittOS Jobs',
     'X-WR-CALDESC:Authorized EverittOS job schedule',
     `X-WR-TIMEZONE:${timeZone}`,
-    'REFRESH-INTERVAL;VALUE=DURATION:PT30M',
-    'X-PUBLISHED-TTL:PT30M',
+    'REFRESH-INTERVAL;VALUE=DURATION:PT15M',
+    'X-PUBLISHED-TTL:PT15M',
     ...vevents,
     'END:VCALENDAR'
   ].join('\r\n') + '\r\n';
@@ -142,7 +140,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
       const event = jobCalendarEvent(job);
       if (!event) return '';
       const ics = generateBookingIcs({
-        uid: event.id,
+        uid: `${event.id}-${CALENDAR_FEED_REVISION}`,
         title: event.title,
         description: event.description,
         location: event.location,
