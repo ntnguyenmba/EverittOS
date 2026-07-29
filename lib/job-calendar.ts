@@ -15,6 +15,14 @@ export type JobCalendarFields = {
   assignedNames?: string[];
 };
 
+function asLocalWallClock(value: string): string {
+  const match = value
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return value;
+  return `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6] || '00'}`;
+}
+
 function addLocalHours(value: string, hours: number): string {
   const match = value
     .trim()
@@ -37,10 +45,10 @@ function addLocalHours(value: string, hours: number): string {
 
 function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: string } | null {
   if (job.scheduled_start) {
-    const startsAt = job.scheduled_start;
-    const endsAt =
-      job.scheduled_end ||
-      new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString();
+    const startsAt = asLocalWallClock(job.scheduled_start);
+    const endsAt = job.scheduled_end
+      ? asLocalWallClock(job.scheduled_end)
+      : addLocalHours(startsAt, 2);
     return { startsAt, endsAt };
   }
 
@@ -52,12 +60,8 @@ function resolveJobWindow(job: JobCalendarFields): { startsAt: string; endsAt: s
     return { startsAt, endsAt: `${day}T11:00:00` };
   }
 
-  const hasExplicitTimeZone = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(day.trim());
-  const startsAt = day;
-  const endsAt = hasExplicitTimeZone
-    ? new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString()
-    : addLocalHours(startsAt, 2);
-  return { startsAt, endsAt };
+  const startsAt = asLocalWallClock(day);
+  return { startsAt, endsAt: addLocalHours(startsAt, 2) };
 }
 
 /** Calendar-safe job event: no internal notes, invoices, or financial fields. */
