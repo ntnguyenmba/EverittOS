@@ -15,6 +15,8 @@ export function maskCalendarToken(token: string): string {
 }
 
 function secureCalendarOrigin(): string {
+  if (process.env.NODE_ENV === 'production') return PRODUCTION_APP_ORIGIN;
+
   try {
     const url = new URL(appOrigin());
     const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
@@ -27,11 +29,11 @@ function secureCalendarOrigin(): string {
 }
 
 export function calendarFeedUrl(token: string): string {
-  return `${secureCalendarOrigin()}/api/calendar/feed/${token}`;
+  return `${secureCalendarOrigin()}/api/calendar/feed/${token}.ics`;
 }
 
 export function webcalFeedUrl(token: string): string {
-  return calendarFeedUrl(token).replace(/^https:/, 'webcal:').replace(/^http:/, 'webcal:');
+  return calendarFeedUrl(token).replace(/^https:/, 'webcals:').replace(/^http:/, 'webcal:');
 }
 
 type FeedJobRow = {
