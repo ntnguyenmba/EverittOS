@@ -46,5 +46,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  const { data: clientProfile } = await admin
+    .from('profiles')
+    .select('email')
+    .eq('id', body.clientUserId)
+    .maybeSingle();
+
+  const clientEmail = (clientProfile?.email || '').trim().toLowerCase();
+
+  // Mark the matching invitations as revoked so the automatic client repair
+  // process cannot recreate access from an old accepted or expired invite.
+  if (clientEmail) {
+    await admin
+      .from('organization_invitations')
+      .update({ status: 'revoked' })
+      .eq('organization_id', org.organizationId)
+      .eq('job_id', body.jobId)
+      .eq('role', 'client')
+      .ilike('email', clientEmail)
+      .in('status', ['pending', 'accepted', 'expired']);
+  }
+
+  const { count: remainingOrgAccess } = await admin
+    .from('job_client_access')
+    .select('job_id', { count: 'exact', head: true })
+    .eq('client_user_id', body.clientUserId)
+    .eq('organization_id', org.organizationId);
+
+  // Keep the client membership active while any other job from this workspace
+  // is still shared. Otherwise remove the workspace from the client portal.
+  if ((remainingOrgAccess || 0) === 0) {
+    await admin
+      .from('organization_members')
+      .update({ active: false })
+      .eq('organization_id', org.organizationId)
+      .eq('user_id', body.clientUserId)
+      .eq('role', 'client');
+  }
+
   return NextResponse.json({ ok: true, message: 'Client access revoked.' });
 }
