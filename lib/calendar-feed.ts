@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { appUrl } from '@/lib/app-url';
+import { appOrigin, PRODUCTION_APP_ORIGIN } from '@/lib/app-url';
 import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -14,8 +14,20 @@ export function maskCalendarToken(token: string): string {
   return `${token.slice(0, 6)}…${token.slice(-4)}`;
 }
 
+function secureCalendarOrigin(): string {
+  try {
+    const url = new URL(appOrigin());
+    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
+    if (url.protocol === 'http:' && !isLocal) url.protocol = 'https:';
+    if (url.protocol !== 'https:' && !isLocal) return PRODUCTION_APP_ORIGIN;
+    return url.origin;
+  } catch {
+    return PRODUCTION_APP_ORIGIN;
+  }
+}
+
 export function calendarFeedUrl(token: string): string {
-  return appUrl(`/api/calendar/feed/${token}`);
+  return `${secureCalendarOrigin()}/api/calendar/feed/${token}`;
 }
 
 export function webcalFeedUrl(token: string): string {
