@@ -11,9 +11,9 @@ const NO_CACHE_HEADERS = {
   Pragma: 'no-cache'
 };
 
-// The wall-clock timezone fix shipped in this release. Connections that have
-// synced successfully after this instant already use the corrected event body.
-const TIMEZONE_FIX_RELEASED_AT = '2026-07-29T11:49:10.000Z';
+// Process a small rotating batch on every run. Successful syncs update
+// last_sync_at, so the oldest connection moves to the end of the queue and
+// every connected workspace is periodically repaired, including old events.
 const BATCH_SIZE = 5;
 
 type ConnectionCandidate = {
@@ -47,7 +47,6 @@ export async function GET(request: NextRequest) {
     .from('google_calendar_connections')
     .select('organization_id, last_sync_at')
     .eq('sync_enabled', true)
-    .or(`last_sync_at.is.null,last_sync_at.lt.${TIMEZONE_FIX_RELEASED_AT}`)
     .order('last_sync_at', { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE);
 
@@ -84,7 +83,7 @@ export async function GET(request: NextRequest) {
     const result = await syncOrganizationJobsToGoogleCalendar(
       admin,
       connection.organization_id,
-      settings?.timezone || 'America/New_York'
+      settings?.timezone || 'America/Chicago'
     );
 
     results.push({
@@ -100,9 +99,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(
     {
       ok: failedOrganizations === 0,
-      releaseCutoff: TIMEZONE_FIX_RELEASED_AT,
       processed: results.length,
       failedOrganizations,
+      rotatingBatch: true,
       remainingBatchPossible: candidates.length === BATCH_SIZE,
       results
     },
