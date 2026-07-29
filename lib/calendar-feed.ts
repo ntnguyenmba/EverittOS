@@ -36,6 +36,24 @@ type FeedJobRow = {
   status?: string | null;
 };
 
+function calendarEnvelope(timeZone: string, vevents: string[] = []): string {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//EverittOS//Authorized Job Schedule//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'NAME:EverittOS Jobs',
+    'X-WR-CALNAME:EverittOS Jobs',
+    'X-WR-CALDESC:Authorized EverittOS job schedule',
+    `X-WR-TIMEZONE:${timeZone}`,
+    'REFRESH-INTERVAL;VALUE=DURATION:PT30M',
+    'X-PUBLISHED-TTL:PT30M',
+    ...vevents,
+    'END:VCALENDAR'
+  ].join('\r\n') + '\r\n';
+}
+
 async function contractorAccessibleJobIds(
   admin: SupabaseClient,
   organizationId: string,
@@ -90,16 +108,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
 
   if (isContractorRole(role)) {
     const allowed = await contractorAccessibleJobIds(input.admin, input.organizationId, input.userId);
-    if (!allowed.size) {
-      return generateBookingIcs({
-        uid: createHash('sha1').update(`${input.userId}-empty`).digest('hex'),
-        title: 'EverittOS schedule',
-        description: 'No assigned jobs yet.',
-        startsAt: new Date().toISOString(),
-        endsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        timeZone
-      });
-    }
+    if (!allowed.size) return calendarEnvelope(timeZone);
     jobsQuery = jobsQuery.in('id', Array.from(allowed));
   } else if (!isManagerRole(role)) {
     jobsQuery = jobsQuery.or(`assigned_user_id.eq.${input.userId},created_by.eq.${input.userId}`);
@@ -110,31 +119,20 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
     .map((job) => jobCalendarEvent(job))
     .filter(Boolean);
 
-  if (!events.length) {
-    return [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//EverittOS//Calendar Feed//EN',
-      'CALSCALE:GREGORIAN',
-      'METHOD:PUBLISH',
-      `X-WR-TIMEZONE:${timeZone}`,
-      'END:VCALENDAR'
-    ].join('\r\n');
-  }
+  if (!events.length) return calendarEnvelope(timeZone);
 
-  const chunks = events.map((event) =>
-    generateBookingIcs({
-      uid: event!.id,
-      title: event!.title,
-      description: event!.description,
-      location: event!.location,
-      startsAt: event!.startsAt,
-      endsAt: event!.endsAt || event!.startsAt,
-      timeZone
-    })
-  );
-
-  const vevents = chunks
+  const vevents = events
+    .map((event) =>
+      generateBookingIcs({
+        uid: event!.id,
+        title: event!.title,
+        description: event!.description,
+        location: event!.location,
+        startsAt: event!.startsAt,
+        endsAt: event!.endsAt || event!.startsAt,
+        timeZone
+      })
+    )
     .map((ics) => {
       const start = ics.indexOf('BEGIN:VEVENT');
       const end = ics.indexOf('END:VEVENT');
@@ -143,14 +141,5 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
     })
     .filter(Boolean);
 
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//EverittOS//Calendar Feed//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    `X-WR-TIMEZONE:${timeZone}`,
-    ...vevents,
-    'END:VCALENDAR'
-  ].join('\r\n') + '\r\n';
+  return calendarEnvelope(timeZone, vevents);
 }
