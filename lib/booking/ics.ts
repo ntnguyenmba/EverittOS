@@ -29,28 +29,12 @@ function formatUtcIcsDate(iso: string): string {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
-function formatWallClockIcsDate(value: string, timeZone: string): string {
-  const trimmed = value.trim();
-  if (!hasExplicitTimeZone(trimmed)) {
-    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (!match) return '';
-    return `${match[1]}${match[2]}${match[3]}T${match[4]}${match[5]}${match[6] || '00'}`;
-  }
-
-  const date = new Date(trimmed);
-  if (Number.isNaN(date.getTime())) return '';
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}${values.month}${values.day}T${values.hour}${values.minute}${values.second}`;
+function formatWallClockIcsDate(value: string): string {
+  const match = value
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return '';
+  return `${match[1]}${match[2]}${match[3]}T${match[4]}${match[5]}${match[6] || '00'}`;
 }
 
 function escapeIcsText(value: string): string {
@@ -61,8 +45,10 @@ function escapeIcsText(value: string): string {
 export function generateBookingIcs(input: BookingIcsInput): string {
   const requestedTimeZone = input.timeZone?.trim() || '';
   const timeZone = requestedTimeZone && isValidTimeZone(requestedTimeZone) ? requestedTimeZone : null;
-  const dtStart = timeZone ? formatWallClockIcsDate(input.startsAt, timeZone) : formatUtcIcsDate(input.startsAt);
-  const dtEnd = timeZone ? formatWallClockIcsDate(input.endsAt, timeZone) : formatUtcIcsDate(input.endsAt);
+  const startUsesTimeZone = Boolean(timeZone && !hasExplicitTimeZone(input.startsAt));
+  const endUsesTimeZone = Boolean(timeZone && !hasExplicitTimeZone(input.endsAt));
+  const dtStart = startUsesTimeZone ? formatWallClockIcsDate(input.startsAt) : formatUtcIcsDate(input.startsAt);
+  const dtEnd = endUsesTimeZone ? formatWallClockIcsDate(input.endsAt) : formatUtcIcsDate(input.endsAt);
   const dtStamp = formatUtcIcsDate(new Date().toISOString());
   const lines = [
     'BEGIN:VCALENDAR',
@@ -74,8 +60,12 @@ export function generateBookingIcs(input: BookingIcsInput): string {
     'BEGIN:VEVENT',
     `UID:${escapeIcsText(input.uid)}@everittos.com`,
     `DTSTAMP:${dtStamp}`,
-    timeZone ? `DTSTART;TZID=${escapeIcsText(timeZone)}:${dtStart}` : `DTSTART:${dtStart}`,
-    timeZone ? `DTEND;TZID=${escapeIcsText(timeZone)}:${dtEnd}` : `DTEND:${dtEnd}`,
+    startUsesTimeZone
+      ? `DTSTART;TZID=${escapeIcsText(timeZone!)}:${dtStart}`
+      : `DTSTART:${dtStart}`,
+    endUsesTimeZone
+      ? `DTEND;TZID=${escapeIcsText(timeZone!)}:${dtEnd}`
+      : `DTEND:${dtEnd}`,
     `SUMMARY:${escapeIcsText(input.title)}`
   ].filter((line): line is string => Boolean(line));
 
