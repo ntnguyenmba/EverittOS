@@ -104,6 +104,7 @@ export type ContractorSafeJobView = {
   scheduledDate: string | null;
   address: string | null;
   instructions: string | null;
+  workNotes: string;
   customerName: string | null;
   phone: string | null;
   payAmount: number | null;
@@ -139,6 +140,7 @@ export function toContractorSafeJobView(input: {
       null,
     address: input.address || null,
     instructions: input.customer_notes || input.notes || null,
+    workNotes: input.notes || '',
     customerName: input.customer_name || null,
     phone: input.phone || null,
     payAmount: input.payAmount ?? null,
