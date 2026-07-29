@@ -10,7 +10,7 @@ import {
   validateVisits,
   type VisitInput
 } from '@/lib/job-visits';
-import { localDateFromIso } from '@/lib/schedule-times';
+import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 import { canAssignJobs } from '@/lib/roles';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
@@ -100,16 +100,29 @@ export async function POST(request: Request) {
 
     Object.assign(update, scheduleFieldsFromVisits(visits));
   } else {
-    if (body.scheduled_start !== undefined) update.scheduled_start = body.scheduled_start;
-    if (body.scheduled_end !== undefined) update.scheduled_end = body.scheduled_end;
+    const normalizedStart = normalizeJobScheduleTimestamp(body.scheduled_start);
+    const normalizedEnd = normalizeJobScheduleTimestamp(body.scheduled_end);
+
+    if (body.scheduled_start !== undefined) {
+      if (body.scheduled_start && !normalizedStart) {
+        return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
+      }
+      update.scheduled_start = normalizedStart;
+    }
+    if (body.scheduled_end !== undefined) {
+      if (body.scheduled_end && !normalizedEnd) {
+        return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
+      }
+      update.scheduled_end = normalizedEnd;
+    }
     if (body.start_date !== undefined) update.start_date = body.start_date;
     if (body.due_date !== undefined) update.due_date = body.due_date;
 
-    if (body.scheduled_start && !body.start_date) {
-      update.start_date = localDateFromIso(body.scheduled_start) || body.scheduled_start.slice(0, 10);
+    if (normalizedStart && !body.start_date) {
+      update.start_date = localDateFromIso(normalizedStart) || normalizedStart.slice(0, 10);
     }
-    if (body.scheduled_end && !body.due_date) {
-      update.due_date = localDateFromIso(body.scheduled_end) || body.scheduled_end.slice(0, 10);
+    if (normalizedEnd && !body.due_date) {
+      update.due_date = localDateFromIso(normalizedEnd) || normalizedEnd.slice(0, 10);
     }
   }
 
