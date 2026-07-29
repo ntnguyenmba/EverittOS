@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { sendAssignmentNotification } from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
+import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { canAssignJobs } from '@/lib/roles';
+import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -180,6 +183,36 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
   }
 
+  if ('scheduled_start' in payload) {
+    const rawStart = payload.scheduled_start;
+    if (rawStart !== null && typeof rawStart !== 'string') {
+      return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
+    }
+    const normalizedStart = normalizeJobScheduleTimestamp(rawStart);
+    if (rawStart && !normalizedStart) {
+      return NextResponse.json({ error: 'Invalid scheduled start time.' }, { status: 400 });
+    }
+    payload.scheduled_start = normalizedStart;
+    if (normalizedStart && !('start_date' in payload)) {
+      payload.start_date = localDateFromIso(normalizedStart);
+    }
+  }
+
+  if ('scheduled_end' in payload) {
+    const rawEnd = payload.scheduled_end;
+    if (rawEnd !== null && typeof rawEnd !== 'string') {
+      return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
+    }
+    const normalizedEnd = normalizeJobScheduleTimestamp(rawEnd);
+    if (rawEnd && !normalizedEnd) {
+      return NextResponse.json({ error: 'Invalid scheduled end time.' }, { status: 400 });
+    }
+    payload.scheduled_end = normalizedEnd;
+    if (normalizedEnd && !('due_date' in payload)) {
+      payload.due_date = localDateFromIso(normalizedEnd);
+    }
+  }
+
   let assignedUserId: string | null = null;
   if ('assigned_to' in payload) {
     if (!canAssignJobs(ctx.workspace.role)) {
@@ -206,10 +239,22 @@ export async function PATCH(request: Request, context: RouteContext) {
     payload.assigned_email = emailCheck.email;
   }
 
-  const { error } = await ctx.supabase.from('jobs').update(payload).eq('id', id);
+  const { error } = await ctx.supabase
+    .from('jobs')
+    .update(payload)
+    .eq('id', id)
+    .eq('organization_id', ctx.workspace.organizationId);
 
   if (error) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  }
+
+  const scheduleChanged = ['scheduled_start', 'scheduled_end', 'start_date', 'due_date'].some((field) => field in payload);
+  if (scheduleChanged) {
+    const admin = createAdminSupabase();
+    if (admin) {
+      await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, id);
+    }
   }
 
   await logWorkspaceActivity(
