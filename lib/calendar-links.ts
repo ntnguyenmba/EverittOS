@@ -7,6 +7,7 @@ export type CalendarEventInput = {
   location?: string;
   startsAt: string;
   endsAt?: string;
+  timeZone?: string;
 };
 
 function toUtcStamp(iso: string): string {
@@ -22,6 +23,14 @@ function ensureEnd(startsAt: string, endsAt?: string): string {
   return new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString();
 }
 
+function browserTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Google Calendar template URL for a one-time event. */
 export function googleCalendarEventUrl(input: CalendarEventInput): string {
   const endsAt = ensureEnd(input.startsAt, input.endsAt);
@@ -32,6 +41,7 @@ export function googleCalendarEventUrl(input: CalendarEventInput): string {
   });
   if (input.description?.trim()) params.set('details', input.description.trim());
   if (input.location?.trim()) params.set('location', input.location.trim());
+  if (input.timeZone?.trim()) params.set('ctz', input.timeZone.trim());
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
@@ -52,13 +62,15 @@ export function outlookCalendarEventUrl(input: CalendarEventInput): string {
 
 export function downloadCalendarIcs(input: CalendarEventInput): void {
   const endsAt = ensureEnd(input.startsAt, input.endsAt);
+  const timeZone = input.timeZone || browserTimeZone();
   const ics = generateBookingIcs({
     uid: input.id,
     title: input.title,
     description: input.description,
     location: input.location,
     startsAt: input.startsAt,
-    endsAt
+    endsAt,
+    timeZone
   });
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -78,14 +90,16 @@ export function contractorJobCalendarEvent(job: {
   customerName?: string | null;
   address?: string | null;
   date?: string | null;
+  timeZone?: string;
 }): CalendarEventInput | null {
   if (!job.date) return null;
-  const startsAt = job.date.includes('T') ? job.date : `${job.date}T09:00:00.000Z`;
+  const startsAt = job.date.includes('T') ? job.date : `${job.date}T09:00:00`;
   return {
     id: job.id,
     title: job.title,
     description: job.customerName ? `Customer: ${job.customerName}` : undefined,
     location: job.address || undefined,
-    startsAt
+    startsAt,
+    timeZone: job.timeZone
   };
 }
