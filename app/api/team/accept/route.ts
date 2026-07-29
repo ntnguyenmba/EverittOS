@@ -3,10 +3,15 @@ import { repairClientPortalAccessForUser } from '@/lib/client-portal-repair';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { inviteAcceptLandingPath } from '@/lib/portal-access';
-import { normalizeRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 function normalizeEmail(value?: string | null): string {
   return (value || '').trim().toLowerCase();
+}
+
+function shouldMoveWorkspaceRecords(roleInput: string | null | undefined): boolean {
+  const role = normalizeRole(roleInput);
+  return !isClientRole(role) && !isContractorRole(role);
 }
 
 async function moveUserRecordsToOrganization(admin: ReturnType<typeof createAdminSupabase>, userId: string, organizationId: string) {
@@ -130,7 +135,12 @@ export async function POST(request: Request) {
       { organization_id: invite.organization_id, user_id: user.id, role: invite.role, active: true },
       { onConflict: 'organization_id,user_id' }
     );
-    await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
+
+    // Client and contractor invites grant portal access only. Never move their personal
+    // customers or jobs into the inviting business workspace.
+    if (shouldMoveWorkspaceRecords(invite.role)) {
+      await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
+    }
 
     if (invite.role === 'client' && invite.job_id) {
       const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle();
@@ -193,7 +203,11 @@ export async function POST(request: Request) {
     .update({ organization_id: invite.organization_id, role: invite.role })
     .eq('id', user.id);
 
-  await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
+  // Joining as a client or contractor must not transfer data from the invitee's
+  // existing personal workspace into the owner's organization.
+  if (shouldMoveWorkspaceRecords(invite.role)) {
+    await moveUserRecordsToOrganization(admin, user.id, invite.organization_id);
+  }
 
   if (invite.role === 'client' && invite.job_id) {
     const { data: org } = await admin.from('organizations').select('owner_user_id').eq('id', invite.organization_id).maybeSingle();
