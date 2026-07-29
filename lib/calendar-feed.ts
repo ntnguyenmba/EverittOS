@@ -5,6 +5,12 @@ import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 
+// Bump this whenever a feed-wide calendar correction must be applied to events
+// that did not otherwise change in the database. Apple Calendar compares
+// SEQUENCE and LAST-MODIFIED for a stable UID before replacing an old event.
+const CALENDAR_FEED_REVISION_AT = '2026-07-29T12:30:00.000Z';
+const CALENDAR_FEED_REVISION_SEQUENCE = Math.floor(Date.parse(CALENDAR_FEED_REVISION_AT) / 1000);
+
 export function generateCalendarFeedToken(): string {
   return randomBytes(24).toString('hex');
 }
@@ -57,8 +63,16 @@ function calendarEnvelope(timeZone: string, vevents: string[] = []): string {
 
 function eventSequence(updatedAt?: string | null): number {
   const timestamp = updatedAt ? Date.parse(updatedAt) : 0;
-  if (!Number.isFinite(timestamp) || timestamp <= 0) return 0;
-  return Math.floor(timestamp / 1000);
+  const jobSequence = Number.isFinite(timestamp) && timestamp > 0 ? Math.floor(timestamp / 1000) : 0;
+  return Math.max(jobSequence, CALENDAR_FEED_REVISION_SEQUENCE);
+}
+
+function eventLastModified(updatedAt?: string | null): string {
+  const timestamp = updatedAt ? Date.parse(updatedAt) : 0;
+  if (Number.isFinite(timestamp) && timestamp > Date.parse(CALENDAR_FEED_REVISION_AT)) {
+    return updatedAt!;
+  }
+  return CALENDAR_FEED_REVISION_AT;
 }
 
 async function contractorAccessibleJobIds(
@@ -135,7 +149,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
         startsAt: event.startsAt,
         endsAt: event.endsAt || event.startsAt,
         timeZone,
-        lastModified: job.updated_at || undefined,
+        lastModified: eventLastModified(job.updated_at),
         sequence: eventSequence(job.updated_at)
       });
       const start = ics.indexOf('BEGIN:VEVENT');
