@@ -38,7 +38,6 @@ const MANAGER_ONLY_FIELDS = new Set([
   'customer_name',
   'phone',
   'address',
-  'notes',
   'start_date',
   'due_date',
   'scheduled_start',
@@ -52,7 +51,7 @@ const MANAGER_ONLY_FIELDS = new Set([
   'internal_notes'
 ]);
 
-const STAFF_ALLOWED_FIELDS = new Set(['status']);
+const STAFF_ALLOWED_FIELDS = new Set(['status', 'notes']);
 
 async function resolveAssignedWorkerId(
   ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
@@ -156,7 +155,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  // Never overwrite an existing completion timestamp from client payloads.
   delete payload.completed_at;
   if (String(payload.status || '').toLowerCase() === 'completed' && !existing.completed_at) {
     payload.completed_at = new Date().toISOString();
