@@ -8,6 +8,8 @@ export type BookingIcsInput = {
   timeZone?: string;
   organizerName?: string;
   organizerEmail?: string;
+  lastModified?: string;
+  sequence?: number;
 };
 
 function isValidTimeZone(value: string): boolean {
@@ -50,6 +52,8 @@ export function generateBookingIcs(input: BookingIcsInput): string {
   const dtStart = startUsesTimeZone ? formatWallClockIcsDate(input.startsAt) : formatUtcIcsDate(input.startsAt);
   const dtEnd = endUsesTimeZone ? formatWallClockIcsDate(input.endsAt) : formatUtcIcsDate(input.endsAt);
   const dtStamp = formatUtcIcsDate(new Date().toISOString());
+  const lastModified = input.lastModified ? formatUtcIcsDate(input.lastModified) : '';
+  const sequence = Number.isInteger(input.sequence) && input.sequence! >= 0 ? input.sequence : null;
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -60,6 +64,8 @@ export function generateBookingIcs(input: BookingIcsInput): string {
     'BEGIN:VEVENT',
     `UID:${escapeIcsText(input.uid)}@everittos.com`,
     `DTSTAMP:${dtStamp}`,
+    lastModified ? `LAST-MODIFIED:${lastModified}` : null,
+    sequence !== null ? `SEQUENCE:${sequence}` : null,
     startUsesTimeZone
       ? `DTSTART;TZID=${escapeIcsText(timeZone!)}:${dtStart}`
       : `DTSTART:${dtStart}`,
