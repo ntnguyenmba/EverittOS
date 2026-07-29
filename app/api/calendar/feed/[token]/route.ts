@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: Promise<{ token: string }> };
 
-export async function GET(_request: Request, context: Params) {
+async function resolveFeed(context: Params, includeBody: boolean) {
   const { token } = await context.params;
   const feedToken = String(token || '')
     .trim()
@@ -29,6 +29,17 @@ export async function GET(_request: Request, context: Params) {
 
   if (error || !row || row.revoked_at) {
     return new NextResponse('Not found', { status: 404 });
+  }
+
+  const headers = {
+    'Content-Type': 'text/calendar; charset=utf-8',
+    'Content-Disposition': 'inline; filename="everittos-schedule.ics"',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'X-Content-Type-Options': 'nosniff'
+  };
+
+  if (!includeBody) {
+    return new NextResponse(null, { status: 200, headers });
   }
 
   const [{ data: membership }, { data: organizationSettings }] = await Promise.all([
@@ -60,11 +71,14 @@ export async function GET(_request: Request, context: Params) {
 
   return new NextResponse(ics, {
     status: 200,
-    headers: {
-      'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'inline; filename="everittos-schedule.ics"',
-      'Cache-Control': 'no-store',
-      'X-Content-Type-Options': 'nosniff'
-    }
+    headers
   });
+}
+
+export async function GET(_request: Request, context: Params) {
+  return resolveFeed(context, true);
+}
+
+export async function HEAD(_request: Request, context: Params) {
+  return resolveFeed(context, false);
 }
