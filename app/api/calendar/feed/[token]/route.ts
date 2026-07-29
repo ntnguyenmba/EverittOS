@@ -9,7 +9,9 @@ type Params = { params: Promise<{ token: string }> };
 
 export async function GET(_request: Request, context: Params) {
   const { token } = await context.params;
-  const feedToken = String(token || '').trim();
+  const feedToken = String(token || '')
+    .trim()
+    .replace(/\.ics$/i, '');
   if (!feedToken || feedToken.length < 16) {
     return new NextResponse('Not found', { status: 404 });
   }
@@ -61,7 +63,8 @@ export async function GET(_request: Request, context: Params) {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': 'inline; filename="everittos-schedule.ics"',
-      'Cache-Control': 'no-store'
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff'
     }
   });
 }
