@@ -74,8 +74,10 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
   organizationId: string;
   userId: string;
   role: UserRole | string;
+  timeZone?: string;
 }): Promise<string> {
   const role = normalizeRole(input.role);
+  const timeZone = input.timeZone?.trim() || 'America/Chicago';
   let jobsQuery = input.admin
     .from('jobs')
     .select(
@@ -94,12 +96,12 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
         title: 'EverittOS schedule',
         description: 'No assigned jobs yet.',
         startsAt: new Date().toISOString(),
-        endsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        endsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        timeZone
       });
     }
     jobsQuery = jobsQuery.in('id', Array.from(allowed));
   } else if (!isManagerRole(role)) {
-    // Employees/viewers: only jobs they are assigned to when assignment columns exist.
     jobsQuery = jobsQuery.or(`assigned_user_id.eq.${input.userId},created_by.eq.${input.userId}`);
   }
 
@@ -115,6 +117,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
       'PRODID:-//EverittOS//Calendar Feed//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
+      `X-WR-TIMEZONE:${timeZone}`,
       'END:VCALENDAR'
     ].join('\r\n');
   }
@@ -126,11 +129,11 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
       description: event!.description,
       location: event!.location,
       startsAt: event!.startsAt,
-      endsAt: event!.endsAt || event!.startsAt
+      endsAt: event!.endsAt || event!.startsAt,
+      timeZone
     })
   );
 
-  // Merge VEVENT blocks into one calendar.
   const vevents = chunks
     .map((ics) => {
       const start = ics.indexOf('BEGIN:VEVENT');
@@ -140,7 +143,14 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
     })
     .filter(Boolean);
 
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EverittOS//Calendar Feed//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', ...vevents, 'END:VCALENDAR'].join(
-    '\r\n'
-  ) + '\r\n';
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//EverittOS//Calendar Feed//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-TIMEZONE:${timeZone}`,
+    ...vevents,
+    'END:VCALENDAR'
+  ].join('\r\n') + '\r\n';
 }
