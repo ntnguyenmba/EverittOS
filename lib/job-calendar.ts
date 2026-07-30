@@ -12,6 +12,7 @@ export type JobCalendarFields = {
   scheduled_end?: string | null;
   start_date?: string | null;
   due_date?: string | null;
+  timezone?: string | null;
   assignedNames?: string[];
 };
 
@@ -19,7 +20,7 @@ export type JobCalendarFields = {
  * jobs.scheduled_start/end are timestamptz columns used as UTC-backed wall-clock
  * storage. Supabase returns a trailing Z even though the written date and clock
  * components are the business-local appointment time. Calendar providers must
- * receive those components without Z and with the workspace IANA timezone.
+ * receive those components without Z and with the job IANA timezone.
  */
 function asJobWallClock(value: string): string {
   const match = value
@@ -90,6 +91,7 @@ export function jobCalendarEvent(job: JobCalendarFields): CalendarEventInput | n
     description: lines.join('\n'),
     location: job.address || undefined,
     startsAt: window.startsAt,
-    endsAt: window.endsAt
+    endsAt: window.endsAt,
+    timeZone: job.timezone || undefined
   };
 }
