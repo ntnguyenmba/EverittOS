@@ -7,6 +7,7 @@ import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { canAssignJobs } from '@/lib/roles';
 import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { isValidTimeZone } from '@/lib/time-zones';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -31,7 +32,8 @@ const ALLOWED_FIELDS = new Set([
   'priority',
   'customer_notes',
   'completion_verified',
-  'customer_id'
+  'customer_id',
+  'timezone'
 ]);
 
 const INTERNAL_ONLY_FIELDS = new Set(['internal_notes']);
@@ -51,7 +53,8 @@ const MANAGER_ONLY_FIELDS = new Set([
   'customer_notes',
   'completion_verified',
   'customer_id',
-  'internal_notes'
+  'internal_notes',
+  'timezone'
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status', 'notes']);
@@ -183,6 +186,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'You do not have permission to edit this job.' }, { status: 403 });
   }
 
+  if ('timezone' in payload) {
+    const rawTimeZone = payload.timezone;
+    if (rawTimeZone === null || rawTimeZone === '') {
+      payload.timezone = null;
+    } else if (!isValidTimeZone(rawTimeZone)) {
+      return NextResponse.json({ error: 'Invalid job timezone.' }, { status: 400 });
+    } else {
+      payload.timezone = rawTimeZone.trim();
+    }
+  }
+
   if ('scheduled_start' in payload) {
     const rawStart = payload.scheduled_start;
     if (rawStart !== null && typeof rawStart !== 'string') {
@@ -249,7 +263,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  const scheduleChanged = ['scheduled_start', 'scheduled_end', 'start_date', 'due_date'].some((field) => field in payload);
+  const scheduleChanged = ['scheduled_start', 'scheduled_end', 'start_date', 'due_date', 'timezone'].some((field) => field in payload);
   if (scheduleChanged) {
     const admin = createAdminSupabase();
     if (admin) {
@@ -264,7 +278,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     id,
     canEditJobDetails ? 'job_updated' : 'job_status_updated',
     canEditJobDetails ? `Job updated: ${existing.title || 'Untitled'}` : `Job status updated: ${existing.title || 'Untitled'}`,
-    { assignedTo: payload.assigned_to ?? null, assignedUserId }
+    { assignedTo: payload.assigned_to ?? null, assignedUserId, timezone: payload.timezone ?? null }
   );
 
   if (assignedUserId) {
