@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { FriendlyDateInput } from '@/components/friendly-date-input';
 import { addLocalDays, localToday, wallClockFromTimestamp } from '@/lib/schedule-times';
+import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 
 export type JobVisitRow = {
   id?: string;
@@ -57,6 +58,7 @@ function fallbackVisit(props: JobVisitsScheduleProps): JobVisitRow {
 export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   const { jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, onSaved } = props;
   const [visits, setVisits] = useState<JobVisitRow[]>([fallbackVisit(props)]);
+  const [timeZone, setTimeZone] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const feedback = useAppFeedback();
@@ -75,14 +77,18 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
     async function loadVisits() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('job_visits')
-        .select('id, visit_date, start_time, end_time, notes')
-        .eq('job_id', jobId)
-        .order('visit_date', { ascending: true })
-        .order('start_time', { ascending: true });
+      const [{ data, error }, { data: jobData }] = await Promise.all([
+        supabase
+          .from('job_visits')
+          .select('id, visit_date, start_time, end_time, notes')
+          .eq('job_id', jobId)
+          .order('visit_date', { ascending: true })
+          .order('start_time', { ascending: true }),
+        supabase.from('jobs').select('timezone').eq('id', jobId).maybeSingle()
+      ]);
 
       if (!active) return;
+      setTimeZone(typeof jobData?.timezone === 'string' ? jobData.timezone : '');
       if (error) {
         setVisits([fallbackVisit(fallbackProps)]);
       } else if (data && data.length > 0) {
@@ -148,7 +154,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     const res = await fetch('/api/schedule/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId, visits: cleanVisits })
+      body: JSON.stringify({ jobId, visits: cleanVisits, timezone: timeZone || null })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSaving(false);
@@ -158,7 +164,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       return;
     }
 
-    feedback.success('Schedule saved. Connected calendars will update automatically.');
+    feedback.success('Schedule and timezone saved. Connected calendars will update automatically.');
     onSaved?.();
   }
 
@@ -174,6 +180,21 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
         {canManage ? (
           <button className="btn job-visits-add" type="button" onClick={addVisit}>+ Add visit</button>
         ) : null}
+      </div>
+
+      <div className="job-visit-field">
+        <label>Job timezone</label>
+        {canManage ? (
+          <select className="input" value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
+            <option value="">Use workspace default</option>
+            {TIME_ZONE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        ) : (
+          <p>{TIME_ZONE_OPTIONS.find((option) => option.value === timeZone)?.label || 'Workspace default'}</p>
+        )}
+        <p className="muted">Visit times and connected calendar events use this location's timezone.</p>
       </div>
 
       <div className="job-visits-list">
