@@ -16,6 +16,7 @@ import { compressImageFile } from '@/lib/image-compress';
 import { insertJobPhotoRow } from '@/lib/job-photos-client';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { wallClockDateTime } from '@/lib/schedule-times';
+import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 
 type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
@@ -76,7 +77,6 @@ function newVisit(): VisitDraft {
   };
 }
 
-
 function validVisits(visits: VisitDraft[]) {
   return visits.filter((visit) => visit.visit_date || visit.start_time || visit.end_time || visit.notes.trim());
 }
@@ -93,6 +93,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [timeZone, setTimeZone] = useState('');
   const [clientIncome, setClientIncome] = useState('');
   const [contractorName, setContractorName] = useState('');
   const [contractorPayMode, setContractorPayMode] = useState<ContractorPayMode>('hourly');
@@ -297,6 +298,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
+        timezone: timeZone || null,
         revenue_amount: clientIncome ? moneyValue(clientIncome) : null,
         assigned_to: assignedTo || null,
         start_date: firstVisit?.visit_date || null,
@@ -408,7 +410,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
         <section className="job-create-section">
           <h4>Days and hours</h4>
-          <p className="muted">Add one or more scheduled visits.</p>
+          <p className="muted">Add one or more scheduled visits. Times are saved in the timezone selected below.</p>
+          <label htmlFor="job-timezone">Job timezone</label>
+          <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+            <option value="">Use workspace default</option>
+            {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <p className="muted">Only choose a different timezone when this job is outside your normal service area.</p>
           {visits.map((visit, index) => (
             <div key={visit.id} className="form visit-editor">
               <label>Visit {index + 1}</label>
