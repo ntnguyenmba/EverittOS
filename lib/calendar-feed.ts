@@ -4,9 +4,10 @@ import { PRODUCTION_APP_ORIGIN } from '@/lib/app-url';
 import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { normalizeTimeZone } from '@/lib/time-zones';
 
-const CALENDAR_FEED_REVISION = 'tz4';
-const CALENDAR_FEED_REVISION_AT = '2026-07-30T00:35:00.000Z';
+const CALENDAR_FEED_REVISION = 'tz5';
+const CALENDAR_FEED_REVISION_AT = '2026-07-30T01:20:00.000Z';
 const CALENDAR_FEED_REVISION_SEQUENCE = Math.floor(Date.parse(CALENDAR_FEED_REVISION_AT) / 1000);
 
 export function generateCalendarFeedToken(): string {
@@ -38,6 +39,7 @@ type FeedJobRow = {
   start_date?: string | null;
   due_date?: string | null;
   status?: string | null;
+  timezone?: string | null;
   updated_at?: string | null;
 };
 
@@ -71,14 +73,6 @@ function eventLastModified(updatedAt?: string | null): string {
     return updatedAt!;
   }
   return CALENDAR_FEED_REVISION_AT;
-}
-
-function resolveCalendarTimeZone(value?: string): string {
-  const configured = value?.trim();
-  if (!configured || configured.toUpperCase() === 'UTC' || configured === 'Etc/UTC') {
-    return 'America/Chicago';
-  }
-  return configured;
 }
 
 async function contractorAccessibleJobIds(
@@ -122,11 +116,11 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
   timeZone?: string;
 }): Promise<string> {
   const role = normalizeRole(input.role);
-  const timeZone = resolveCalendarTimeZone(input.timeZone);
+  const workspaceTimeZone = normalizeTimeZone(input.timeZone);
   let jobsQuery = input.admin
     .from('jobs')
     .select(
-      'id, title, customer_name, address, notes, customer_notes, scheduled_start, scheduled_end, start_date, due_date, status, updated_at'
+      'id, title, customer_name, address, notes, customer_notes, scheduled_start, scheduled_end, start_date, due_date, status, timezone, updated_at'
     )
     .eq('organization_id', input.organizationId)
     .not('status', 'eq', 'cancelled')
@@ -135,7 +129,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
 
   if (isContractorRole(role)) {
     const allowed = await contractorAccessibleJobIds(input.admin, input.organizationId, input.userId);
-    if (!allowed.size) return calendarEnvelope(timeZone);
+    if (!allowed.size) return calendarEnvelope(workspaceTimeZone);
     jobsQuery = jobsQuery.in('id', Array.from(allowed));
   } else if (!isManagerRole(role)) {
     jobsQuery = jobsQuery.or(`assigned_user_id.eq.${input.userId},created_by.eq.${input.userId}`);
@@ -147,6 +141,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
     .map((job) => {
       const event = jobCalendarEvent(job);
       if (!event) return '';
+      const jobTimeZone = normalizeTimeZone(job.timezone, workspaceTimeZone);
       const ics = generateBookingIcs({
         uid: `${event.id}-${CALENDAR_FEED_REVISION}`,
         title: event.title,
@@ -154,7 +149,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
         location: event.location,
         startsAt: event.startsAt,
         endsAt: event.endsAt || event.startsAt,
-        timeZone,
+        timeZone: jobTimeZone,
         lastModified: eventLastModified(job.updated_at),
         sequence: eventSequence(job.updated_at)
       });
@@ -165,5 +160,5 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
     })
     .filter(Boolean);
 
-  return calendarEnvelope(timeZone, vevents);
+  return calendarEnvelope(workspaceTimeZone, vevents);
 }
