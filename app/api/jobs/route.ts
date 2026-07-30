@@ -19,6 +19,7 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { localDateFromIso } from '@/lib/schedule-times';
+import { isValidTimeZone } from '@/lib/time-zones';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,11 +100,17 @@ export async function POST(request: Request) {
     due_date?: string | null;
     scheduled_start?: string | null;
     scheduled_end?: string | null;
+    timezone?: string | null;
     visits?: VisitInput[];
   };
 
   if (!body.title?.trim()) {
     return NextResponse.json({ error: 'Job title is required.' }, { status: 400 });
+  }
+
+  const requestedTimeZone = body.timezone?.trim() || null;
+  if (requestedTimeZone && !isValidTimeZone(requestedTimeZone)) {
+    return NextResponse.json({ error: 'Choose a valid job timezone.' }, { status: 400 });
   }
 
   const emailCheck = validateAssignedEmail(body.assigned_email);
@@ -178,7 +185,6 @@ export async function POST(request: Request) {
     visitsToInsert = cleaned;
     schedule = scheduleFieldsFromVisits(cleaned);
   } else if (schedule.scheduled_start || schedule.scheduled_end || schedule.start_date || schedule.due_date) {
-    // Preserve wall-clock schedule fields even when visits are omitted.
     if (schedule.scheduled_start && !schedule.start_date) {
       schedule.start_date = localDateFromIso(schedule.scheduled_start) || schedule.scheduled_start.slice(0, 10);
     }
@@ -203,9 +209,10 @@ export async function POST(request: Request) {
       start_date: schedule.start_date,
       due_date: schedule.due_date,
       scheduled_start: schedule.scheduled_start,
-      scheduled_end: schedule.scheduled_end
+      scheduled_end: schedule.scheduled_end,
+      timezone: requestedTimeZone
     })
-    .select('id')
+    .select('id, timezone')
     .single();
 
   if (error) {
@@ -258,7 +265,7 @@ export async function POST(request: Request) {
     data.id,
     'job_created',
     `Job created: ${body.title.trim()}`,
-    { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
+    { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email, timezone: requestedTimeZone }
   );
 
   if (assignedUserId) {
@@ -277,7 +284,7 @@ export async function POST(request: Request) {
       'job',
       data.id,
       'job_assigned',
-      `Job assigned to a teammate`,
+      'Job assigned to a teammate',
       { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
     );
   }
@@ -285,7 +292,7 @@ export async function POST(request: Request) {
   await trackProductEventServer(ctx.supabase, 'job_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: data.id, assignedTo: assignedWorkerId, assignedUserId }
+    metadata: { jobId: data.id, assignedTo: assignedWorkerId, assignedUserId, timezone: requestedTimeZone }
   });
 
   return NextResponse.json({ ok: true, job: data, message: 'Job saved successfully.' });
