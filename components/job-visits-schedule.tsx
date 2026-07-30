@@ -194,7 +194,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
         ) : (
           <p>{TIME_ZONE_OPTIONS.find((option) => option.value === timeZone)?.label || 'Workspace default'}</p>
         )}
-        <p className="muted">Visit times and connected calendar events use this location's timezone.</p>
+        <p className="muted">Visit times and connected calendar events use the selected location timezone.</p>
       </div>
 
       <div className="job-visits-list">
