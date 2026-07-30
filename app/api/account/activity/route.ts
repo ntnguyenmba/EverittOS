@@ -28,8 +28,18 @@ export async function POST() {
   // Use the service-role client only after the request has been authenticated.
   // This covers production environments where the RPC is missing, returns null,
   // or profile update RLS blocks the normal session client.
-  const nowIso = new Date().toISOString();
   const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json(
+      {
+        error: rpcError?.message || 'Activity tracking is not configured on the server.',
+        ok: false
+      },
+      { status: 503 }
+    );
+  }
+
+  const nowIso = new Date().toISOString();
   const { data: updatedProfile, error: adminError } = await admin
     .from('profiles')
     .update({ last_seen_at: nowIso })
