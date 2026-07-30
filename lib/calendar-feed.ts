@@ -5,8 +5,8 @@ import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 
-const CALENDAR_FEED_REVISION = 'tz2';
-const CALENDAR_FEED_REVISION_AT = '2026-07-29T12:45:00.000Z';
+const CALENDAR_FEED_REVISION = 'tz3';
+const CALENDAR_FEED_REVISION_AT = '2026-07-30T00:10:00.000Z';
 const CALENDAR_FEED_REVISION_SEQUENCE = Math.floor(Date.parse(CALENDAR_FEED_REVISION_AT) / 1000);
 
 export function generateCalendarFeedToken(): string {
