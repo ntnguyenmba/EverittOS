@@ -12,6 +12,7 @@ import {
 } from '@/lib/job-visits';
 import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 import { canAssignJobs } from '@/lib/roles';
+import { isValidTimeZone } from '@/lib/time-zones';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { departmentBelongsToOrg, workerBelongsToOrg } from '@/lib/org-validation';
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     due_date?: string | null;
     assigned_to?: string | null;
     department_id?: string | null;
+    timezone?: string | null;
     visits?: VisitInput[];
   };
 
@@ -128,6 +130,15 @@ export async function POST(request: Request) {
 
   if (body.assigned_to !== undefined) update.assigned_to = body.assigned_to;
   if (body.department_id !== undefined) update.department_id = body.department_id;
+  if (body.timezone !== undefined) {
+    if (body.timezone === null || body.timezone === '') {
+      update.timezone = null;
+    } else if (!isValidTimeZone(body.timezone)) {
+      return NextResponse.json({ error: 'Invalid job timezone.' }, { status: 400 });
+    } else {
+      update.timezone = body.timezone.trim();
+    }
+  }
 
   const { error } = await admin
     .from('jobs')
@@ -144,13 +155,14 @@ export async function POST(request: Request) {
     'job',
     body.jobId,
     'schedule_changed',
-    `Schedule updated: ${job.title || 'Job'}`
+    `Schedule updated: ${job.title || 'Job'}`,
+    { timezone: body.timezone ?? null }
   );
 
   await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: body.jobId, visitCount }
+    metadata: { jobId: body.jobId, visitCount, timezone: body.timezone ?? null }
   });
 
   return NextResponse.json({ ok: true, message: Array.isArray(body.visits) ? 'Visits saved successfully.' : 'Schedule saved successfully.' });
