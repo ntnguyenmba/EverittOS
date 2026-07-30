@@ -5,8 +5,8 @@ import { generateBookingIcs } from '@/lib/booking/ics';
 import { jobCalendarEvent } from '@/lib/job-calendar';
 import { isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 
-const CALENDAR_FEED_REVISION = 'tz3';
-const CALENDAR_FEED_REVISION_AT = '2026-07-30T00:10:00.000Z';
+const CALENDAR_FEED_REVISION = 'tz4';
+const CALENDAR_FEED_REVISION_AT = '2026-07-30T00:35:00.000Z';
 const CALENDAR_FEED_REVISION_SEQUENCE = Math.floor(Date.parse(CALENDAR_FEED_REVISION_AT) / 1000);
 
 export function generateCalendarFeedToken(): string {
@@ -73,6 +73,14 @@ function eventLastModified(updatedAt?: string | null): string {
   return CALENDAR_FEED_REVISION_AT;
 }
 
+function resolveCalendarTimeZone(value?: string): string {
+  const configured = value?.trim();
+  if (!configured || configured.toUpperCase() === 'UTC' || configured === 'Etc/UTC') {
+    return 'America/Chicago';
+  }
+  return configured;
+}
+
 async function contractorAccessibleJobIds(
   admin: SupabaseClient,
   organizationId: string,
@@ -114,7 +122,7 @@ export async function buildAuthorizedCalendarFeedIcs(input: {
   timeZone?: string;
 }): Promise<string> {
   const role = normalizeRole(input.role);
-  const timeZone = input.timeZone?.trim() || 'America/Chicago';
+  const timeZone = resolveCalendarTimeZone(input.timeZone);
   let jobsQuery = input.admin
     .from('jobs')
     .select(
