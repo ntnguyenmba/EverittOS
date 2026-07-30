@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createRouteHandlerSupabase } from '@/lib/supabase-route-client';
 
 export const runtime = 'nodejs';
@@ -17,24 +18,36 @@ export async function POST() {
 
   const { data: touchedAt, error: rpcError } = await supabase.rpc('touch_profile_last_seen');
 
-  if (!rpcError) {
+  if (!rpcError && touchedAt) {
     return json({
       ok: true,
       lastSeenAt: typeof touchedAt === 'string' ? touchedAt : touchedAt ?? null
     });
   }
 
-  // Fallback when the RPC migration is not applied yet.
+  // Use the service-role client only after the request has been authenticated.
+  // This covers production environments where the RPC is missing, returns null,
+  // or profile update RLS blocks the normal session client.
   const nowIso = new Date().toISOString();
-  const { error } = await supabase.from('profiles').update({ last_seen_at: nowIso }).eq('id', user.id);
+  const admin = createAdminSupabase();
+  const { data: updatedProfile, error: adminError } = await admin
+    .from('profiles')
+    .update({ last_seen_at: nowIso })
+    .eq('id', user.id)
+    .select('id, last_seen_at')
+    .maybeSingle();
 
-  if (error) {
+  if (adminError) {
     // Missing-column environments should not break the app shell.
-    if (/last_seen_at/i.test(error.message) || /column/i.test(error.message)) {
+    if (/last_seen_at/i.test(adminError.message) || /column/i.test(adminError.message)) {
       return json({ ok: true, lastSeenAt: null, deferred: true });
     }
-    return NextResponse.json({ error: error.message, ok: false }, { status: 500 });
+    return NextResponse.json({ error: adminError.message, ok: false }, { status: 500 });
   }
 
-  return json({ ok: true, lastSeenAt: nowIso });
+  if (!updatedProfile) {
+    return NextResponse.json({ error: 'Authenticated profile not found', ok: false }, { status: 404 });
+  }
+
+  return json({ ok: true, lastSeenAt: updatedProfile.last_seen_at || nowIso });
 }
