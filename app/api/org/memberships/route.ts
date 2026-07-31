@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { dashboardPathForRole } from '@/lib/dashboard-nav';
 import type { OrgMembership } from '@/lib/os-types';
+import { normalizeRole } from '@/lib/roles';
+import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,8 +44,14 @@ export async function GET() {
     };
   });
 
+  const activeOrganizationId = profile?.organization_id || memberships[0]?.organizationId || null;
+  const activeMembership = memberships.find((membership) => membership.organizationId === activeOrganizationId) || null;
+  const activeRole = activeMembership ? normalizeRole(activeMembership.role) : null;
+
   return NextResponse.json({
-    activeOrganizationId: profile?.organization_id || memberships[0]?.organizationId || null,
+    activeOrganizationId,
+    activeRole,
+    destination: activeRole ? dashboardPathForRole(activeRole) : '/dashboard',
     memberships
   });
 }
