@@ -34,6 +34,7 @@ import './dashboard.css';
 import './job-mobile-fixes.css';
 import './job-visit-layout-override.css';
 import './form-alignment-fixes.css';
+import './jobs-visual-polish.css';
 import './mobile-safe-areas.css';
 import './receipt.css';
 import './mobile-usability-fixes.css';
