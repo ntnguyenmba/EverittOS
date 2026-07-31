@@ -9,6 +9,17 @@
   table-layout: fixed !important;
 }
 
+.jobs-operations-table th {
+  height: 38px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.jobs-operations-table td {
+  padding-top: 13px !important;
+  padding-bottom: 13px !important;
+}
+
 .jobs-operations-table th:first-child,
 .jobs-operations-table td.jobs-col-date {
   width: 17% !important;
@@ -19,23 +30,23 @@
 
 .jobs-operations-table th:nth-child(2),
 .jobs-operations-table td.jobs-col-property {
-  width: 43% !important;
+  width: 45% !important;
   padding-left: 10px !important;
-  padding-right: 6px !important;
+  padding-right: 4px !important;
 }
 
 .jobs-operations-table th:nth-child(3),
 .jobs-operations-table td.jobs-col-assigned {
-  width: 25% !important;
-  padding-left: 6px !important;
-  padding-right: 8px !important;
+  width: 24% !important;
+  padding-left: 4px !important;
+  padding-right: 6px !important;
 }
 
 .jobs-operations-table th:nth-child(4),
 .jobs-operations-table td.jobs-col-status {
-  width: 15% !important;
-  padding-left: 8px !important;
-  padding-right: 16px !important;
+  width: 14% !important;
+  padding-left: 6px !important;
+  padding-right: 14px !important;
   white-space: nowrap !important;
 }
 
@@ -47,6 +58,34 @@
 .jobs-col-property > *,
 .jobs-col-assigned > * {
   max-width: 100%;
+}
+
+.jobs-col-assigned > span:not(.jobs-needs-worker) {
+  min-height: 30px !important;
+  max-width: 100% !important;
+  padding: 5px 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.jobs-col-assigned > span:not(.jobs-needs-worker)::before {
+  width: 7px !important;
+  height: 7px !important;
+  margin-right: 7px !important;
+  box-shadow: 0 0 0 2px #e4eef2 !important;
+}
+
+.jobs-property-link {
+  line-height: 1.25 !important;
+}
+
+.jobs-secondary {
+  line-height: 1.3 !important;
+}
+
+.jobs-row-time {
+  margin-top: 4px !important;
 }
 
 @media (max-width: 760px) {
@@ -70,5 +109,14 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
     white-space: normal !important;
+  }
+
+  .jobs-operations-table td {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .jobs-col-assigned > span:not(.jobs-needs-worker) {
+    max-width: 100% !important;
   }
 }
