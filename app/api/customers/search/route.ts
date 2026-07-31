@@ -48,7 +48,7 @@ export async function GET(request: Request) {
   const pattern = `%${q}%`;
   const orgId = ctx.workspace.organizationId;
 
-  const { data: customers, error } = await ctx.supabase
+  const primaryCustomers = await ctx.supabase
     .from('customers')
     .select(CUSTOMER_LIST_SELECT)
     .eq('organization_id', orgId)
@@ -56,6 +56,22 @@ export async function GET(request: Request) {
       `company_name.ilike."${pattern}",email.ilike."${pattern}",phone.ilike."${pattern}",address_line1.ilike."${pattern}",service_address.ilike."${pattern}",property_address.ilike."${pattern}"`
     )
     .limit(20);
+
+  const customersQuery =
+    primaryCustomers.error && isMissingSchemaError(primaryCustomers.error)
+      ? await ctx.supabase
+          .from('customers')
+          .select(
+            'id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, address_line2, city, state, postal_code, country, service_address, property_address'
+          )
+          .eq('organization_id', orgId)
+          .or(
+            `company_name.ilike."${pattern}",email.ilike."${pattern}",phone.ilike."${pattern}",address_line1.ilike."${pattern}",service_address.ilike."${pattern}",property_address.ilike."${pattern}"`
+          )
+          .limit(20)
+      : primaryCustomers;
+
+  const { data: customers, error } = customersQuery;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

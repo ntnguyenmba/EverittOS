@@ -38,9 +38,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [canEdit, setCanEdit] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [billingAddress, setBillingAddress] = useState('');
+  const [preferredContactMethod, setPreferredContactMethod] = useState('');
   const [notes, setNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [pipelineStage, setPipelineStage] = useState('active');
@@ -104,9 +107,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
     const customerRecord = customer as CustomerRecord;
     setDisplayName(customerDisplayName(customerRecord));
+    setContactName(customerRecord.contact_name || customerDisplayName(customerRecord));
     setPhone(customer.phone || '');
     setEmail(customer.email || '');
     setAddress(customerDisplayAddress(customerRecord, ''));
+    setBillingAddress(customerRecord.billing_address || customerDisplayAddress(customerRecord, ''));
+    setPreferredContactMethod(customerRecord.preferred_contact_method || '');
     setNotes(customer.notes || '');
     setAssignedTo(customerRecord.assigned_to || '');
     setPipelineStage(customerRecord.pipeline_stage || 'active');
@@ -204,9 +210,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         displayName,
+        contactName,
         phone,
         email,
         address,
+        billingAddress,
+        preferredContactMethod: preferredContactMethod || null,
         notes,
         assigned_to: assignedTo || null,
         pipeline_stage: pipelineStage,
@@ -320,27 +329,63 @@ export default function CustomerDetailPage({ params }: PageProps) {
           ) : null}
         </div>
         <div style={{ marginTop: 14 }}>
-          {phone ? <p><ContactLink type="phone" value={phone} /></p> : null}
-          {email ? <p><ContactLink type="email" value={email} /></p> : null}
-          {address ? <p>{address}</p> : null}
+          {email ? (
+            <p>
+              <strong>Email:</strong> <ContactLink type="email" value={email} />
+            </p>
+          ) : (
+            <p className="muted">Email: Not on file</p>
+          )}
+          {phone ? (
+            <p>
+              <strong>Phone:</strong> <ContactLink type="phone" value={phone} />
+            </p>
+          ) : (
+            <p className="muted">Phone: Not on file</p>
+          )}
+          {address ? <p><strong>Service address:</strong> {address}</p> : null}
+          {billingAddress ? <p><strong>Billing address:</strong> {billingAddress}</p> : null}
         </div>
       </div>
 
       <details className="card" style={{ marginBottom: 18 }}>
         <summary><strong>Customer details</strong></summary>
         <div className="form" style={{ marginTop: 16 }}>
-          <label>Name</label>
+          <label>Company / client name</label>
           <input className="input" value={displayName} disabled={!canEdit} onChange={(e) => setDisplayName(e.target.value)} />
-          <label htmlFor="customer-phone">Phone</label>
-          <input id="customer-phone" className="input" type="tel" autoComplete="tel" inputMode="tel" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
-          <label htmlFor="customer-email">Email</label>
+          <label htmlFor="customer-contact-name">Contact name</label>
+          <input id="customer-contact-name" className="input" value={contactName} disabled={!canEdit} onChange={(e) => setContactName(e.target.value)} />
+          <label htmlFor="customer-email">Email address</label>
           <input id="customer-email" className="input" type="email" autoComplete="email" inputMode="email" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="customer-phone">Phone number</label>
+          <input id="customer-phone" className="input" type="tel" autoComplete="tel" inputMode="tel" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
+          <label htmlFor="preferred-contact">Preferred contact method</label>
+          <select
+            id="preferred-contact"
+            className="input"
+            value={preferredContactMethod}
+            disabled={!canEdit}
+            onChange={(e) => setPreferredContactMethod(e.target.value)}
+          >
+            <option value="">Not set</option>
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+            <option value="text">Text</option>
+            <option value="any">Any</option>
+          </select>
           <AddressAutocomplete
             id="customer-address"
-            label="Address"
+            label="Service address"
             value={address}
             disabled={!canEdit}
             onChange={(formatted) => setAddress(formatted)}
+          />
+          <AddressAutocomplete
+            id="customer-billing-address"
+            label="Billing address"
+            value={billingAddress}
+            disabled={!canEdit}
+            onChange={(formatted) => setBillingAddress(formatted)}
           />
           <label>Assign to</label>
           <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>

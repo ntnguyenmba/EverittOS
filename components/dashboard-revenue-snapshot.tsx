@@ -29,7 +29,13 @@ const copy = {
     cashDesc: 'Collected minus contractor payments paid and expenses paid.', contractorsPaidDesc: 'Contractor payments actually marked paid in this period.',
     contractorCostDesc: 'All contractor labor tied to this period, whether paid or still awaiting payment.',
     expectedRevenueDesc: 'Expected customer revenue for this period, including invoiced and direct job payment activity without double counting.',
-    expectedProfitDesc: 'Expected revenue minus total contractor cost and business expenses.', expensesDesc: 'Non-contractor business expenses recorded in this period.'
+    expectedProfitDesc: 'Expected revenue minus total contractor cost and business expenses.', expensesDesc: 'Non-contractor business expenses recorded in this period.',
+    scheduledRevenue: 'Scheduled revenue',
+    scheduledRevenueDesc: 'Price on currently generated future visits only (next ~75 days). Not unlimited lifetime series totals.',
+    recurringJobs: 'Recurring visits',
+    recurringJobsDesc: 'Generated recurring occurrences still scheduled in the current window.',
+    oneTimeJobs: 'One-time jobs',
+    oneTimeJobsDesc: 'Jobs that are not part of a recurring series.'
   },
   es: {
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
@@ -40,7 +46,13 @@ const copy = {
     cashDesc: 'Cobrado menos pagos a contratistas y gastos pagados.', contractorsPaidDesc: 'Pagos a contratistas marcados como pagados en este período.',
     contractorCostDesc: 'Toda la mano de obra de contratistas asociada con este período, pagada o pendiente.',
     expectedRevenueDesc: 'Ingresos esperados de clientes para este período sin duplicar facturas ni pagos directos.',
-    expectedProfitDesc: 'Ingresos esperados menos costo total de contratistas y gastos del negocio.', expensesDesc: 'Gastos del negocio no relacionados con contratistas registrados en este período.'
+    expectedProfitDesc: 'Ingresos esperados menos costo total de contratistas y gastos del negocio.', expensesDesc: 'Gastos del negocio no relacionados con contratistas registrados en este período.',
+    scheduledRevenue: 'Ingresos programados',
+    scheduledRevenueDesc: 'Precio solo de visitas futuras ya generadas (próximos ~75 días). No incluye totales ilimitados de series.',
+    recurringJobs: 'Visitas recurrentes',
+    recurringJobsDesc: 'Ocurrencias recurrentes generadas que siguen programadas en la ventana actual.',
+    oneTimeJobs: 'Trabajos únicos',
+    oneTimeJobsDesc: 'Trabajos que no forman parte de una serie recurrente.'
   },
   vi: {
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
@@ -51,7 +63,13 @@ const copy = {
     cashDesc: 'Tiền đã thu trừ khoản đã trả cho nhà thầu và chi phí đã thanh toán.', contractorsPaidDesc: 'Khoản thanh toán cho nhà thầu đã được đánh dấu là đã trả trong khoảng thời gian này.',
     contractorCostDesc: 'Toàn bộ chi phí lao động nhà thầu trong khoảng thời gian này, dù đã trả hay đang chờ thanh toán.',
     expectedRevenueDesc: 'Doanh thu khách hàng dự kiến trong khoảng thời gian này, không tính trùng hóa đơn và thanh toán trực tiếp.',
-    expectedProfitDesc: 'Doanh thu dự kiến trừ tổng chi phí nhà thầu và chi phí kinh doanh.', expensesDesc: 'Chi phí kinh doanh không phải nhà thầu được ghi nhận trong khoảng thời gian này.'
+    expectedProfitDesc: 'Doanh thu dự kiến trừ tổng chi phí nhà thầu và chi phí kinh doanh.', expensesDesc: 'Chi phí kinh doanh không phải nhà thầu được ghi nhận trong khoảng thời gian này.',
+    scheduledRevenue: 'Doanh thu đã lên lịch',
+    scheduledRevenueDesc: 'Chỉ tính giá của các lần ghé thăm tương lai đã tạo (khoảng 75 ngày tới). Không tính tổng trọn đời không giới hạn.',
+    recurringJobs: 'Lịch định kỳ',
+    recurringJobsDesc: 'Các lần định kỳ đã tạo và vẫn còn lên lịch trong cửa sổ hiện tại.',
+    oneTimeJobs: 'Công việc một lần',
+    oneTimeJobsDesc: 'Công việc không thuộc chuỗi định kỳ.'
   }
 } as const;
 
@@ -135,7 +153,25 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
     { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedRevenueDesc },
     { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc },
-    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc }
+    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc },
+    {
+      label: c.scheduledRevenue,
+      value: formatCurrency(activeMetrics.scheduledRevenue ?? 0),
+      href: '/schedule',
+      description: c.scheduledRevenueDesc
+    },
+    {
+      label: c.recurringJobs,
+      value: String(activeMetrics.recurringOccurrenceCount ?? 0),
+      href: '/schedule',
+      description: c.recurringJobsDesc
+    },
+    {
+      label: c.oneTimeJobs,
+      value: String(activeMetrics.oneTimeJobCount ?? 0),
+      href: '/jobs',
+      description: c.oneTimeJobsDesc
+    }
   ];
 
   return (

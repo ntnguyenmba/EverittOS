@@ -20,6 +20,11 @@ import { wallClockDateTime } from '@/lib/schedule-times';
 import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 import type { StructuredAddress } from '@/lib/address/types';
 import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
+import {
+  RECURRING_GENERATION_WINDOW_DAYS,
+  summarizeRecurrence,
+  type RecurrenceFrequency
+} from '@/lib/recurring-jobs';
 
 type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
@@ -133,8 +138,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [address, setAddress] = useState('');
   const [structuredAddress, setStructuredAddress] = useState<StructuredAddress | null>(null);
   const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>('none');
+  const [recurrenceWeekday, setRecurrenceWeekday] = useState<number>(new Date().getDay());
+  const [recurrenceInterval, setRecurrenceInterval] = useState('1');
+  const [recurrenceIntervalUnit, setRecurrenceIntervalUnit] = useState<'weeks' | 'months'>('weeks');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [recurrenceLimit, setRecurrenceLimit] = useState('');
+  const [showRecurrenceAdvanced, setShowRecurrenceAdvanced] = useState(false);
   const [timeZone, setTimeZone] = useState('');
   const [clientIncome, setClientIncome] = useState('');
   const [contractorName, setContractorName] = useState('');
@@ -257,6 +270,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         display_address: p.formatted_address || p.address || null
       }))
     };
+    setCustomerEmail(customer.email || '');
     applyCustomer(option, propertyId);
   }
 
@@ -264,18 +278,24 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setSelectedCustomer(customer);
     setCustomerQuery(customer.name);
     setCustomerName(customer.name);
+    setCustomerEmail(customer.email || '');
     setPhone(customer.phone || '');
     setCustomerResults([]);
     setCreatingNewProperty(false);
 
     const preferred =
       (propertyId && customer.properties.find((p) => p.id === propertyId)) ||
-      customer.properties.find((p) => p.is_primary) ||
-      customer.properties[0] ||
-      null;
+      (customer.properties.length === 1 ? customer.properties[0] : null);
 
     if (preferred) {
       applyProperty(preferred);
+    } else if (customer.properties.length > 1) {
+      // Require an explicit property choice when multiple homes/locations exist.
+      setSelectedPropertyId('');
+      setCreatingNewProperty(false);
+      setAddress('');
+      setStructuredAddress(null);
+      setAccessInstructions('');
     } else {
       setSelectedPropertyId('');
       setCreatingNewProperty(true);
@@ -457,6 +477,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    if (selectedCustomer && selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty) {
+      appFeedback.error('Select which property this job is for.');
+      return;
+    }
+
     const scheduledVisits = validVisits(visits);
     for (const visit of scheduledVisits) {
       if (!visit.visit_date || !visit.start_time || !visit.end_time) {
@@ -548,6 +573,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             displayName: customerName.trim(),
+            email: customerEmail.trim() || null,
             phone: phone.trim() || null,
             record_type: 'customer',
             pipeline_stage: 'active'
@@ -573,12 +599,58 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    if (recurrenceFrequency !== 'none') {
+      const startDate = firstVisit?.visit_date || new Date().toISOString().slice(0, 10);
+      const recurringRes = await fetch('/api/recurring-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          customer_id: customerId,
+          property_id: propertyId,
+          customer_name: customerName.trim() || null,
+          customer_email: customerEmail.trim() || null,
+          customer_phone: phone.trim() || null,
+          address: address.trim() || null,
+          notes: notes.trim() || null,
+          timezone: timeZone || null,
+          default_price: clientIncome ? moneyValue(clientIncome) : null,
+          assigned_to: assignedTo || null,
+          recurrence: {
+            frequency: recurrenceFrequency,
+            interval: Number(recurrenceInterval) || 1,
+            intervalUnit: recurrenceIntervalUnit,
+            weekday: recurrenceWeekday,
+            startDate,
+            endDate: recurrenceEndDate || null,
+            occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
+            preferredStartTime: firstVisit?.start_time || '09:00'
+          }
+        })
+      });
+      const recurringJson = (await recurringRes.json().catch(() => ({}))) as {
+        firstJobId?: string;
+        job?: { id: string };
+        error?: string;
+        summary?: string;
+      };
+      setLoading(false);
+      if (!recurringRes.ok || !(recurringJson.firstJobId || recurringJson.job?.id)) {
+        appFeedback.error(recurringJson.error || 'Unable to create recurring jobs.');
+        return;
+      }
+      appFeedback.success(recurringJson.summary || 'Recurring series created.');
+      onJobCreated?.(recurringJson.firstJobId || recurringJson.job!.id);
+      return;
+    }
+
     const createRes = await fetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: title.trim(),
         customer_name: customerName.trim() || null,
+        customer_email: customerEmail.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
         notes: notes.trim() || null,
@@ -730,24 +802,46 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
               </div>
               <div className="form-group">
+                <label>Email</label>
+                <input className="input" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
+              </div>
+              <div className="form-group">
                 <label>Phone</label>
                 <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
           ) : (
-            <div style={{ marginTop: 12 }}>
-              <p>
+            <div
+              className="client-summary-card"
+              style={{
+                marginTop: 12,
+                border: '1px solid var(--line)',
+                borderRadius: 12,
+                padding: 12,
+                background: 'var(--surface-subtle, var(--surface))'
+              }}
+            >
+              <p style={{ margin: 0 }}>
                 <strong>{selectedCustomer.name}</strong>
-                {selectedCustomer.phone ? <span className="muted"> · {selectedCustomer.phone}</span> : null}
-                {selectedCustomer.email ? <span className="muted"> · {selectedCustomer.email}</span> : null}
               </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Email: {customerEmail || selectedCustomer.email || 'Not on file'}
+              </p>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Phone: {phone || selectedCustomer.phone || 'Not on file'}
+              </p>
+              {selectedCustomer.company_name ? (
+                <p className="muted" style={{ margin: '4px 0 0' }}>Company: {selectedCustomer.company_name}</p>
+              ) : null}
               <button
                 type="button"
                 className="btn"
+                style={{ marginTop: 10 }}
                 onClick={() => {
                   setSelectedCustomer(null);
                   setSelectedPropertyId('');
                   setCustomerQuery('');
+                  setCustomerEmail('');
                 }}
               >
                 Change customer
@@ -758,6 +852,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
         <section className="job-create-section">
           <h4>2. Property / service location</h4>
+          {selectedCustomer && selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty ? (
+            <p className="muted">This client has multiple properties. Choose the correct one before saving.</p>
+          ) : null}
           {selectedCustomer && selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
             <>
               <label htmlFor="property-select">Saved properties</label>
@@ -765,11 +862,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 id="property-select"
                 className="input"
                 value={selectedPropertyId}
+                required={selectedCustomer.properties.length > 1}
                 onChange={(e) => {
                   const property = selectedCustomer.properties.find((p) => p.id === e.target.value);
                   if (property) applyProperty(property);
                 }}
               >
+                {selectedCustomer.properties.length > 1 ? <option value="">Select a property</option> : null}
                 {selectedCustomer.properties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {propertyLabel(property)}
@@ -876,7 +975,76 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </section>
 
         <section className="job-create-section">
-          <h4>4. Days and hours</h4>
+          <h4>4. One-time or recurring</h4>
+          <label htmlFor="recurrence-frequency">Repeat</label>
+          <select
+            id="recurrence-frequency"
+            className="input"
+            value={recurrenceFrequency}
+            onChange={(e) => setRecurrenceFrequency(e.target.value as RecurrenceFrequency)}
+          >
+            <option value="none">Does not repeat</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every two weeks</option>
+            <option value="every_four_weeks">Every four weeks</option>
+            <option value="monthly">Monthly</option>
+            <option value="custom">Custom</option>
+          </select>
+          {recurrenceFrequency !== 'none' ? (
+            <>
+              <label htmlFor="recurrence-weekday">Weekday</label>
+              <select
+                id="recurrence-weekday"
+                className="input"
+                value={recurrenceWeekday}
+                onChange={(e) => setRecurrenceWeekday(Number(e.target.value))}
+              >
+                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((label, index) => (
+                  <option key={label} value={index}>{label}</option>
+                ))}
+              </select>
+              {recurrenceFrequency === 'custom' ? (
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label>Every</label>
+                    <input className="input" type="number" min="1" max="52" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Unit</label>
+                    <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as 'weeks' | 'months')}>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                </div>
+              ) : null}
+              <details open={showRecurrenceAdvanced} onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}>
+                <summary>Advanced recurrence options</summary>
+                <label style={{ marginTop: 8 }}>End date (optional)</label>
+                <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} />
+                <label>Number of occurrences (optional)</label>
+                <input className="input" type="number" min="1" value={recurrenceLimit} onChange={(e) => setRecurrenceLimit(e.target.value)} />
+              </details>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {summarizeRecurrence({
+                  frequency: recurrenceFrequency,
+                  interval: Number(recurrenceInterval) || 1,
+                  intervalUnit: recurrenceIntervalUnit,
+                  weekday: recurrenceWeekday,
+                  startDate: visits[0]?.visit_date || new Date().toISOString().slice(0, 10),
+                  endDate: recurrenceEndDate || null,
+                  occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
+                  preferredStartTime: visits[0]?.start_time || '09:00',
+                  timezone: timeZone || null
+                })}
+              </p>
+              <p className="muted">Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
+            </>
+          ) : null}
+        </section>
+
+        <section className="job-create-section">
+          <h4>5. Days and hours</h4>
           <p className="muted">Add one or more scheduled visits. Times are saved in the timezone selected below.</p>
           <label htmlFor="job-timezone">Job timezone</label>
           <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>

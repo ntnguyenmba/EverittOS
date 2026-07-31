@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sendAssignmentNotification } from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { buildCustomerUpdatePayload, customerDisplayName } from '@/lib/customer-record';
+import { normalizePreferredContactMethod, validateOptionalContact } from '@/lib/contact-validation';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -21,9 +22,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = (await request.json()) as {
     displayName?: string;
+    contactName?: string;
     phone?: string;
     email?: string;
     address?: string;
+    billingAddress?: string;
+    preferredContactMethod?: string;
     notes?: string;
     logo_path?: string | null;
     pipeline_stage?: string;
@@ -31,6 +35,18 @@ export async function PATCH(request: Request, context: RouteContext) {
     record_type?: string;
     assigned_to?: string | null;
   };
+
+  const contactCheck = validateOptionalContact({ email: body.email, phone: body.phone });
+  if (!contactCheck.ok) {
+    return NextResponse.json({ error: contactCheck.error }, { status: 400 });
+  }
+  if (
+    body.preferredContactMethod !== undefined &&
+    body.preferredContactMethod &&
+    !normalizePreferredContactMethod(body.preferredContactMethod)
+  ) {
+    return NextResponse.json({ error: 'Preferred contact method must be email, phone, text, or any.' }, { status: 400 });
+  }
 
   const ownershipFilter = `organization_id.eq.${ctx.workspace.organizationId},user_id.eq.${ctx.userId}`;
 
@@ -67,9 +83,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const payload = buildCustomerUpdatePayload({
     displayName: body.displayName,
+    contactName: body.contactName,
     phone: body.phone,
     email: body.email,
     address: body.address,
+    billingAddress: body.billingAddress,
+    preferredContactMethod: body.preferredContactMethod,
     notes: body.notes,
     pipeline_stage: body.pipeline_stage,
     lead_source: body.lead_source,

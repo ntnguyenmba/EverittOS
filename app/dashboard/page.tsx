@@ -125,7 +125,10 @@ const emptyRevenue = {
   messageCount: 0,
   reportCount: 0,
   jobsByStatus: {},
-  totalJobs: 0
+  totalJobs: 0,
+  scheduledRevenue: 0,
+  recurringOccurrenceCount: 0,
+  oneTimeJobCount: 0
 } satisfies DashboardRevenueMetrics;
 
 const TIMEOUT_MS = 7000;

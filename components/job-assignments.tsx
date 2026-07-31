@@ -62,11 +62,16 @@ export function JobAssignments({
       user_id: userId,
       organization_id: organizationId
     });
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       appFeedback.error(error.message);
       return;
     }
+    // Keep canonical jobs.assigned_to aligned with the first/primary assignee.
+    if (assignments.length === 0) {
+      await supabase.from('jobs').update({ assigned_to: workerId }).eq('id', jobId).eq('organization_id', organizationId);
+    }
+    setBusyId(null);
     const worker = workers.find((item) => item.id === workerId);
     await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'team member'}`, {
       worker_id: workerId
@@ -87,11 +92,13 @@ export function JobAssignments({
       .eq('id', assignment.id)
       .eq('job_id', jobId)
       .eq('organization_id', organizationId);
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       appFeedback.error(error.message);
       return;
     }
+    await supabase.from('jobs').update({ assigned_to: nextWorkerId }).eq('id', jobId).eq('organization_id', organizationId);
+    setBusyId(null);
     await logClientActivity(
       organizationId,
       'job',
@@ -108,11 +115,18 @@ export function JobAssignments({
     if (!canManage || busy) return;
     setBusyId(assignmentId);
     const { error } = await supabase.from('job_assignments').delete().eq('id', assignmentId);
-    setBusyId(null);
     if (error) {
+      setBusyId(null);
       appFeedback.error(error.message);
       return;
     }
+    const remaining = assignments.filter((row) => row.id !== assignmentId);
+    await supabase
+      .from('jobs')
+      .update({ assigned_to: remaining[0]?.worker_id || null })
+      .eq('id', jobId)
+      .eq('organization_id', organizationId);
+    setBusyId(null);
     await logClientActivity(organizationId, 'job', jobId, 'worker_removed', `Removed ${workerName}`);
     appFeedback.label('removed');
     onChange();
@@ -124,7 +138,9 @@ export function JobAssignments({
       <p className="muted">
         Team members assigned to this job. {isCompleted && canManage ? 'Completed job assignments can still be corrected here.' : ''}
       </p>
-      {assignments.length === 0 && <p>No team assigned yet.</p>}
+      {assignments.length === 0 ? (
+        <p className="muted">No contractor selected yet. Assign someone below only if this job still needs a worker.</p>
+      ) : null}
       {assignments.map((assignment) => {
         const assignedWorker = workers.find((worker) => worker.id === assignment.worker_id);
         const replacementOptions = workers.filter(
@@ -162,10 +178,10 @@ export function JobAssignments({
           </div>
         );
       })}
-      {canManage && availableWorkers.length > 0 ? (
+      {canManage && availableWorkers.length > 0 && assignments.length === 0 ? (
         <>
           <select className="input" value={workerId} disabled={busy} onChange={(event) => setWorkerId(event.target.value)}>
-            <option value="">Select additional team member</option>
+            <option value="">Select contractor or team member</option>
             {availableWorkers.map((worker) => (
               <option key={worker.id} value={worker.id}>
                 {workerLabel(worker)}
@@ -176,6 +192,22 @@ export function JobAssignments({
             {busyId === 'new' ? FEEDBACK.loading : 'Assign to job'}
           </button>
         </>
+      ) : null}
+      {canManage && availableWorkers.length > 0 && assignments.length > 0 ? (
+        <details>
+          <summary>Add another team member</summary>
+          <select className="input" value={workerId} disabled={busy} onChange={(event) => setWorkerId(event.target.value)}>
+            <option value="">Select additional team member</option>
+            {availableWorkers.map((worker) => (
+              <option key={worker.id} value={worker.id}>
+                {workerLabel(worker)}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn" disabled={busy || !workerId} onClick={() => void addAssignment()}>
+            {busyId === 'new' ? FEEDBACK.loading : 'Add to job'}
+          </button>
+        </details>
       ) : null}
     </div>
   );

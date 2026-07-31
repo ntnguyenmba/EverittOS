@@ -55,6 +55,12 @@ type Job = {
   assigned_email: string | null;
   organization_id: string | null;
   customer_id: string | null;
+  customer_email?: string | null;
+  recurring_series_id?: string | null;
+  occurrence_date?: string | null;
+  is_skipped?: boolean | null;
+  revenue_amount?: number | null;
+  timezone?: string | null;
   priority: string | null;
   internal_notes: string | null;
   customer_notes: string | null;
@@ -82,6 +88,12 @@ const SAFE_JOB_DETAIL_COLUMNS = [
   'assigned_email',
   'organization_id',
   'customer_id',
+  'customer_email',
+  'recurring_series_id',
+  'occurrence_date',
+  'is_skipped',
+  'revenue_amount',
+  'timezone',
   'priority',
   'customer_notes',
   'completion_verified',
@@ -129,6 +141,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [creatingReport, setCreatingReport] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [seriesBusy, setSeriesBusy] = useState('');
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [financeRefresh, setFinanceRefresh] = useState(0);
   const [loadError, setLoadError] = useState('');
@@ -178,14 +191,24 @@ export default function JobDetailPage({ params }: PageProps) {
     setCanUploadPhotos(isManagerRole(role) || hasPermission(role, 'upload_before_photos') || hasPermission(role, 'upload_after_photos'));
     if (org) setOrgId(org.organizationId);
 
-    const { data, error } = await supabase.from('jobs').select(jobDetailColumns(canReadInternalNotes)).eq('id', jobId).single();
+    let { data, error } = await supabase.from('jobs').select(jobDetailColumns(canReadInternalNotes)).eq('id', jobId).single();
+    if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+      const fallback = await supabase
+        .from('jobs')
+        .select(
+          [...SAFE_JOB_DETAIL_COLUMNS.filter((col) => !['customer_email', 'recurring_series_id', 'occurrence_date', 'is_skipped', 'revenue_amount', 'timezone'].includes(col)), ...(canReadInternalNotes ? ['internal_notes'] : [])].join(', ')
+        )
+        .eq('id', jobId)
+        .single();
+      data = fallback.data as typeof data;
+      error = fallback.error;
+    }
     const [{ data: checklistRows }, { data: assignmentRows }] = await Promise.all([
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
       supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId)
     ]);
-    const typedAssignments = (assignmentRows || []) as Assignment[];
+    let typedAssignments = (assignmentRows || []) as Assignment[];
     setChecklist(checklistRows || []);
-    setAssignments(typedAssignments);
 
     if (limitsForPlan(userPlan).crewAssignment) {
       let workersQuery = supabase.from('workers').select('id, name').eq('active', true).order('name');
@@ -203,6 +226,39 @@ export default function JobDetailPage({ params }: PageProps) {
       appFeedback.error(msg);
       return;
     }
+
+    // Single source of truth: if create saved jobs.assigned_to but missed job_assignments,
+    // repair the join row so the detail page never asks to assign again.
+    const assignedWorkerId = (data as { assigned_to?: string | null }).assigned_to || null;
+    if (
+      assignedWorkerId &&
+      !typedAssignments.some((row) => row.worker_id === assignedWorkerId) &&
+      org?.organizationId &&
+      isManagerRole(role)
+    ) {
+      const { data: repaired } = await supabase
+        .from('job_assignments')
+        .upsert(
+          {
+            job_id: jobId,
+            worker_id: assignedWorkerId,
+            user_id: user.id,
+            organization_id: org.organizationId
+          },
+          { onConflict: 'job_id,worker_id', ignoreDuplicates: false }
+        )
+        .select('id, worker_id, responsibility')
+        .maybeSingle();
+      if (repaired) {
+        typedAssignments = [...typedAssignments, repaired as Assignment];
+      } else {
+        typedAssignments = [
+          ...typedAssignments,
+          { id: `legacy-${assignedWorkerId}`, worker_id: assignedWorkerId, responsibility: null }
+        ];
+      }
+    }
+    setAssignments(typedAssignments);
 
     const lookupEmail = String(user.email || profile?.email || '').trim().toLowerCase();
     const displayName = String(profile?.full_name || profile?.display_name || '').trim();
@@ -315,6 +371,91 @@ export default function JobDetailPage({ params }: PageProps) {
     loadJob();
   }
 
+  async function runSeriesAction(action: 'skip' | 'cancel_visit' | 'pause' | 'resume' | 'end' | 'edit_future' | 'edit_series') {
+    if (!job || !canManage || seriesBusy) return;
+    setSeriesBusy(action);
+    if (action === 'skip' || action === 'cancel_visit') {
+      const res = await fetch(`/api/jobs/${job.id}/series-actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      setSeriesBusy('');
+      if (!res.ok) {
+        appFeedback.error(json.error || 'Unable to update this visit.');
+        return;
+      }
+      appFeedback.success(json.message || 'Visit updated.');
+      loadJob();
+      return;
+    }
+    if (!job.recurring_series_id) {
+      setSeriesBusy('');
+      return;
+    }
+
+    if (action === 'edit_future' || action === 'edit_series') {
+      const scopeLabel =
+        action === 'edit_future'
+          ? 'this visit and all future uncompleted visits'
+          : 'the series defaults and all future uncompleted visits';
+      const confirmed = window.confirm(
+        `Apply the current title, notes, price, and timezone on this form to ${scopeLabel}? Completed, paid, and historically finalized visits stay unchanged.`
+      );
+      if (!confirmed) {
+        setSeriesBusy('');
+        return;
+      }
+      const res = await fetch(`/api/recurring-jobs/${job.recurring_series_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          fromDate: job.occurrence_date || job.start_date || undefined,
+          title: job.title,
+          notes: job.notes,
+          default_price: job.revenue_amount ?? null,
+          timezone: job.timezone || null
+        })
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; updatedJobCount?: number };
+      setSeriesBusy('');
+      if (!res.ok) {
+        appFeedback.error(json.error || 'Unable to update the series.');
+        return;
+      }
+      appFeedback.success(
+        `Updated ${json.updatedJobCount ?? 0} future visit(s). Past completed visits were not changed.`
+      );
+      loadJob();
+      return;
+    }
+
+    const res = await fetch(`/api/recurring-jobs/${job.recurring_series_id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action,
+        fromDate: job.occurrence_date || job.start_date || undefined,
+        cancelFutureJobs:
+          action === 'pause'
+            ? window.confirm('Also cancel already-generated future visits? Choose Cancel to keep them scheduled.')
+            : undefined
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    setSeriesBusy('');
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to update the series.');
+      return;
+    }
+    appFeedback.success(
+      action === 'pause' ? 'Series paused.' : action === 'resume' ? 'Series resumed.' : 'Series ended.'
+    );
+    loadJob();
+  }
+
   async function bookAgain() {
     if (!job || duplicating) return;
     setDuplicating(true);
@@ -395,6 +536,39 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
         ) : null}
 
+        {job.recurring_series_id && canManage ? (
+          <div className="card" style={{ marginBottom: 18 }}>
+            <h3>Recurring series</h3>
+            <p className="muted">
+              This visit is part of a recurring series{job.occurrence_date ? ` (${job.occurrence_date})` : ''}.
+              Saving the job details below edits this visit only. Use the actions here when you intend to change future visits or the series.
+            </p>
+            <div className="button-row" style={{ flexWrap: 'wrap' }}>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('skip')}>
+                {seriesBusy === 'skip' ? 'Working…' : 'Skip this visit'}
+              </button>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('cancel_visit')}>
+                {seriesBusy === 'cancel_visit' ? 'Working…' : 'Cancel this visit'}
+              </button>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_future')}>
+                {seriesBusy === 'edit_future' ? 'Working…' : 'Edit this and future'}
+              </button>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_series')}>
+                {seriesBusy === 'edit_series' ? 'Working…' : 'Edit entire series'}
+              </button>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('pause')}>
+                {seriesBusy === 'pause' ? 'Working…' : 'Pause series'}
+              </button>
+              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('resume')}>
+                {seriesBusy === 'resume' ? 'Working…' : 'Resume series'}
+              </button>
+              <button type="button" className="btn btn-danger" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('end')}>
+                {seriesBusy === 'end' ? 'Working…' : 'End series'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="card" style={{ marginBottom: 18 }}>
           <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
           <p className="muted">{canManage ? 'Edit the job once, then manage schedule, labor, photos, and reports below.' : copy.fieldAccessCopy}</p>
@@ -409,6 +583,13 @@ export default function JobDetailPage({ params }: PageProps) {
                 <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
                 <label>{copy.customer}</label>
                 <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
+                <label>Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={job.customer_email || ''}
+                  onChange={(e) => setJob({ ...job, customer_email: e.target.value })}
+                />
                 <label>{copy.phone}</label>
                 <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
                 <AddressAutocomplete

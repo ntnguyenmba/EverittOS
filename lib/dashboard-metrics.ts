@@ -7,6 +7,7 @@ import {
   isCompletedJobMissingCompletedAt,
   type JobDateFields
 } from '@/lib/job-operational-date';
+import { calculateScheduledRevenue, isCancelledOrSkippedStatus, isCompletedLikeStatus } from '@/lib/recurring-jobs';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
@@ -65,6 +66,14 @@ export type DashboardRevenueMetrics = {
   activeCustomers: number;
   customerCount: number;
   upcomingJobs: number;
+  /**
+   * Scheduled revenue from currently generated future occurrences only.
+   * Never includes unlimited lifetime series totals or completed/collected amounts.
+   */
+  scheduledRevenue: number;
+  /** One-time vs recurring occurrence counts inside the current generated window */
+  recurringOccurrenceCount: number;
+  oneTimeJobCount: number;
   /** Contractor pay recorded/incurred in the selected period */
   contractorPayThisMonth?: number;
   /** Contractor payments actually paid in the selected period */
@@ -1040,6 +1049,9 @@ function emptyMetrics(): DashboardRevenueMetrics {
     activeCustomers: 0,
     customerCount: 0,
     upcomingJobs: 0,
+    scheduledRevenue: 0,
+    recurringOccurrenceCount: 0,
+    oneTimeJobCount: 0,
     contractorPayThisMonth: 0,
     contractorPaymentsPaid: 0,
     periodUnpaidContractorPay: 0,
@@ -1329,6 +1341,61 @@ export async function fetchDashboardRevenueMetrics(
   const messageCount = safeData(messagesRes, []).filter((row) => inRange(row.created_at, start, end)).length;
   const reportCount = safeData(reportsRes, []).filter((row) => inRange(row.created_at, start, end)).length;
 
+  // Optional recurring columns: query separately so missing migrations do not break metrics.
+  const recurringJobsRes = await supabase
+    .from('jobs')
+    .select('id, status, revenue_amount, recurring_series_id, occurrence_date, is_skipped, scheduled_start, start_date')
+    .eq('organization_id', organizationId)
+    .not('status', 'in', '(cancelled,canceled)');
+
+  const scheduleRows = recurringJobsRes.error
+    ? (safeData(jobsRes, []) as Array<{
+        id?: string | null;
+        status?: string | null;
+        revenue_amount?: unknown;
+        scheduled_start?: string | null;
+        start_date?: string | null;
+      }>).map((row) => ({
+        ...row,
+        recurring_series_id: null,
+        occurrence_date: String(row.scheduled_start || row.start_date || '').slice(0, 10) || null,
+        is_skipped: false
+      }))
+    : ((recurringJobsRes.data || []) as Array<{
+        id?: string | null;
+        status?: string | null;
+        revenue_amount?: unknown;
+        recurring_series_id?: string | null;
+        occurrence_date?: string | null;
+        is_skipped?: boolean | null;
+        scheduled_start?: string | null;
+        start_date?: string | null;
+      }>);
+
+  const scheduledRevenue = calculateScheduledRevenue(
+    scheduleRows.map((row) => ({
+      price: Number((row as { revenue_amount?: unknown }).revenue_amount || 0),
+      status: row.status,
+      is_skipped: Boolean((row as { is_skipped?: boolean | null }).is_skipped),
+      occurrence_date:
+        (row as { occurrence_date?: string | null }).occurrence_date ||
+        String(row.scheduled_start || row.start_date || '').slice(0, 10) ||
+        null
+    })),
+    today
+  );
+  const recurringOccurrenceCount = scheduleRows.filter(
+    (row) =>
+      (row as { recurring_series_id?: string | null }).recurring_series_id &&
+      !isCancelledOrSkippedStatus(row.status, (row as { is_skipped?: boolean | null }).is_skipped) &&
+      !isCompletedLikeStatus(row.status)
+  ).length;
+  const oneTimeJobCount = scheduleRows.filter(
+    (row) =>
+      !(row as { recurring_series_id?: string | null }).recurring_series_id &&
+      !isCancelledOrSkippedStatus(row.status, (row as { is_skipped?: boolean | null }).is_skipped)
+  ).length;
+
   return {
     revenueThisMonth: Number(paidToYou.toFixed(2)),
     cashCollected: Number(paidToYou.toFixed(2)),
@@ -1356,6 +1423,9 @@ export async function fetchDashboardRevenueMetrics(
     activeCustomers: activeCustomerCount,
     customerCount: activeCustomerCount,
     upcomingJobs: safeCount(upcomingJobsRes),
+    scheduledRevenue: Number(scheduledRevenue.toFixed(2)),
+    recurringOccurrenceCount,
+    oneTimeJobCount,
     contractorPayThisMonth: Number(contractorPay.toFixed(2)),
     contractorPaymentsPaid: Number(contractorPaymentsPaid.toFixed(2)),
     periodUnpaidContractorPay: Number(periodUnpaidContractorPay.toFixed(2)),

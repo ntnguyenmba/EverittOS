@@ -9,12 +9,13 @@ import {
   validateVisits,
   type VisitInput
 } from '@/lib/job-visits';
+import { generateActiveSeriesForOrganization } from '@/lib/generate-recurring-series';
 import { listWorkspaceJobs } from '@/lib/jobs-org-query';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
-import { isAdminRole, normalizeRole } from '@/lib/roles';
+import { isAdminRole, isManagerRole, normalizeRole } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
@@ -48,6 +49,11 @@ export async function GET(request: Request) {
     period === 'week' && status === 'completed'
       ? new Date(Date.now() - 7 * 86400000).toISOString()
       : undefined;
+
+  // Managers: top up recurring windows on normal app traffic (no paid cron required).
+  if (isManagerRole(normalizeRole(ctx.workspace.role))) {
+    void generateActiveSeriesForOrganization(ctx.supabase, ctx.workspace, ctx.userId).catch(() => undefined);
+  }
 
   const { jobs, error } = await listWorkspaceJobs(
     ctx.supabase,
@@ -90,6 +96,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     title?: string;
     customer_name?: string;
+    customer_email?: string;
     phone?: string;
     address?: string;
     notes?: string;
@@ -239,6 +246,7 @@ export async function POST(request: Request) {
     ...workspaceScopedFields(ctx.workspace, ctx.userId),
     title: body.title.trim(),
     customer_name: body.customer_name?.trim() || null,
+    customer_email: body.customer_email?.trim() || null,
     phone: body.phone?.trim() || null,
     address: resolvedAddress,
     notes: body.notes?.trim() || null,
@@ -286,6 +294,29 @@ export async function POST(request: Request) {
   }
 
   const createdJob = data;
+
+  // Keep jobs.assigned_to and job_assignments in sync so detail UI does not
+  // prompt managers to assign the same contractor again after create.
+  if (assignedWorkerId) {
+    const { error: assignmentError } = await ctx.supabase.from('job_assignments').upsert(
+      {
+        job_id: createdJob.id,
+        worker_id: assignedWorkerId,
+        user_id: ctx.userId,
+        organization_id: ctx.workspace.organizationId
+      },
+      { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
+    );
+    if (assignmentError) {
+      // Fallback insert without upsert options for older PostgREST schemas.
+      await ctx.supabase.from('job_assignments').insert({
+        job_id: createdJob.id,
+        worker_id: assignedWorkerId,
+        user_id: ctx.userId,
+        organization_id: ctx.workspace.organizationId
+      });
+    }
+  }
 
   if (visitsToInsert.length > 0) {
     const { error: visitInsertError } = await ctx.supabase.from('job_visits').insert(

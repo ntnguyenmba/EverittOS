@@ -8,15 +8,16 @@ export const CUSTOMER_ADDRESS_FIELDS =
   'address_line1, address_line2, city, state, postal_code, country, service_address, property_address';
 
 export const CUSTOMER_LIST_SELECT =
-  `id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, ${CUSTOMER_ADDRESS_FIELDS}`;
+  `id, company_name, contact_name, phone, email, notes, preferred_contact_method, billing_address, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, ${CUSTOMER_ADDRESS_FIELDS}`;
 
-export const CUSTOMER_SEARCH_SELECT = 'id, company_name, email';
+export const CUSTOMER_SEARCH_SELECT = 'id, company_name, contact_name, email, phone';
 
 export type CustomerRecord = {
   id: string;
   user_id?: string | null;
   organization_id?: string | null;
   company_name?: string | null;
+  contact_name?: string | null;
   phone?: string | null;
   email?: string | null;
   address_line1?: string | null;
@@ -27,6 +28,8 @@ export type CustomerRecord = {
   country?: string | null;
   service_address?: string | null;
   property_address?: string | null;
+  billing_address?: string | null;
+  preferred_contact_method?: string | null;
   notes?: string | null;
   pipeline_stage?: string | null;
   lead_source?: string | null;
@@ -81,9 +84,12 @@ export function isLeadRecord(customer: Partial<CustomerRecord> | null | undefine
 
 export type CustomerWriteInput = {
   displayName: string;
+  contactName?: string | null;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  billingAddress?: string | null;
+  preferredContactMethod?: string | null;
   notes?: string | null;
   record_type?: string;
   pipeline_stage?: string;
@@ -104,13 +110,17 @@ function addressWriteFields(address?: string | null): Record<string, unknown> {
 
 export function buildCustomerWritePayload(input: CustomerWriteInput): Record<string, unknown> {
   const label = input.displayName.trim();
+  const contact = input.contactName?.trim() || label;
   return {
     company_name: label,
+    contact_name: contact,
     name: label,
-    full_name: label,
+    full_name: contact,
     phone: input.phone?.trim() || null,
     email: input.email?.trim() || null,
     notes: input.notes?.trim() || null,
+    preferred_contact_method: input.preferredContactMethod?.trim() || null,
+    billing_address: input.billingAddress?.trim() || input.address?.trim() || null,
     assigned_to: input.assigned_to?.trim() || null,
     ...addressWriteFields(input.address),
     ...(input.record_type ? { record_type: input.record_type } : {}),
@@ -125,14 +135,27 @@ export function buildCustomerUpdatePayload(input: CustomerUpdateInput): Record<s
     const label = input.displayName.trim();
     payload.company_name = label;
     payload.name = label;
-    payload.full_name = label;
+    if (input.contactName === undefined) payload.full_name = label;
+  }
+  if (input.contactName !== undefined) {
+    payload.contact_name = input.contactName?.trim() || null;
+    payload.full_name = input.contactName?.trim() || null;
   }
   if (input.phone !== undefined) payload.phone = input.phone?.trim() || null;
   if (input.email !== undefined) payload.email = input.email?.trim() || null;
   if (input.notes !== undefined) payload.notes = input.notes?.trim() || null;
+  if (input.preferredContactMethod !== undefined) {
+    payload.preferred_contact_method = input.preferredContactMethod?.trim() || null;
+  }
+  if (input.billingAddress !== undefined) {
+    payload.billing_address = input.billingAddress?.trim() || null;
+  }
   if (input.assigned_to !== undefined) payload.assigned_to = input.assigned_to?.trim() || null;
   if (input.address !== undefined) {
     Object.assign(payload, addressWriteFields(input.address));
+    if (input.billingAddress === undefined) {
+      payload.billing_address = input.address?.trim() || null;
+    }
   }
   if (input.pipeline_stage !== undefined) payload.pipeline_stage = input.pipeline_stage;
   if (input.lead_source !== undefined) payload.lead_source = input.lead_source;
