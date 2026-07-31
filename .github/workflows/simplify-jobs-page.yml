@@ -1,0 +1,381 @@
+name: Simplify Jobs page
+
+on:
+  push:
+    paths:
+      - '.github/workflows/simplify-jobs-page.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  simplify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Simplify Jobs page
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const pagePath = 'app/jobs/page.tsx';
+          const cssPath = 'app/form-alignment-fixes.css';
+          let page = fs.readFileSync(pagePath, 'utf8');
+          let css = fs.readFileSync(cssPath, 'utf8');
+
+          function replaceExact(before, after, label) {
+            if (!page.includes(before)) throw new Error(`Missing block: ${label}`);
+            page = page.replace(before, after);
+          }
+
+          replaceExact(
+            '<AppShell plan={plan} role={role}>',
+            '<AppShell plan={plan} role={role} className="jobs-shell-minimal">',
+            'jobs shell class'
+          );
+
+          replaceExact(
+`        <div className="button-row" style={{ marginBottom: 12, flexWrap: 'wrap' }}>
+          <Link href="/jobs" className="btn">{c.all}</Link>
+          <Link href="/jobs?period=today" className="btn">{c.today}</Link>
+          <Link href="/jobs?status=active" className="btn">{c.active}</Link>
+          <Link href="/jobs?status=completed" className="btn">{c.finished}</Link>
+          {managerView ? <Link href="/jobs?filter=unassigned" className="btn">{c.needsWorker}</Link> : null}
+        </div>
+
+        <p className="muted" style={{ margin: '0 0 14px' }}>{c.liveNote}</p>`,
+`        <div className="jobs-filter-tabs" aria-label="Job filters">
+          <Link href="/jobs" className="jobs-filter-tab">{c.all}</Link>
+          <Link href="/jobs?period=today" className="jobs-filter-tab">{c.today}</Link>
+          <Link href="/jobs?status=active" className="jobs-filter-tab">{c.active}</Link>
+          <Link href="/jobs?status=completed" className="jobs-filter-tab">{c.finished}</Link>
+          {managerView ? <Link href="/jobs?filter=unassigned" className="jobs-filter-tab jobs-filter-tab-alert">{c.needsWorker}</Link> : null}
+        </div>`,
+            'filters and live note'
+          );
+
+          replaceExact(
+`                    {[c.date, c.time, c.property, c.customer, c.assignedTo, c.status, ...(canManageFinancials ? [billingCopy.billingStatus] : []), c.actions].map((label) => (
+                      <th key={label}>{label}</th>
+                    ))}`,
+`                    {[c.date, c.property, c.assignedTo, c.status, c.actions].map((label) => (
+                      <th key={label}>{label}</th>
+                    ))}`,
+            'table headers'
+          );
+
+          const oldCells = `                        <td data-label={c.date} className="jobs-col-date">{formatDate(job, localeCode, c.unscheduled)}</td>
+                        <td data-label={c.time} className="jobs-col-time">{formatTime(job, localeCode)}</td>
+                        <td data-label={c.property} className="jobs-col-property">
+                          <Link href={\`/jobs/\${job.id}\`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{job.title}</Link>
+                          <div className="muted jobs-secondary">{job.address || c.noAddress}</div>
+                          {job.photo_count ? <div className="muted jobs-photo-count">{job.photo_count} {job.photo_count === 1 ? c.photo : c.photos}</div> : null}
+                        </td>
+                        <td data-label={c.customer} className="jobs-col-customer">{job.customer_name || c.noCustomer}</td>
+                        <td data-label={c.assignedTo} className="jobs-col-assigned">
+                          <span className={!job.assigned_to && !job.assigned_email ? 'jobs-needs-worker' : undefined}>{assignment}</span>
+                        </td>
+                        <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
+                        {canManageFinancials ? (
+                          <td data-label={billingCopy.billingStatus} className="jobs-col-billing">
+                            <span className={\`jobs-billing-pill jobs-billing-\${job.billing_status || 'not_invoiced'}\`}>
+                              {billingLabel(job)}
+                            </span>
+                          </td>
+                        ) : null}
+                        <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}>
+                          <div className="button-row jobs-row-actions">
+                            {job.address ? <a href={\`https://maps.google.com/?q=\${encodeURIComponent(job.address)}\`} className="btn" target="_blank" rel="noreferrer">{c.maps}</a> : null}
+                            {managerView ? (
+                              <button type="button" className="btn" disabled={duplicatingId === job.id} onClick={() => void bookAgain(job)}>
+                                {duplicatingId === job.id ? c.creating : c.bookAgain}
+                              </button>
+                            ) : null}
+                            {showInvoice ? (
+                              <Link href={invoiceHref(job)} className="btn btn-primary">{billingCopy.createInvoice}</Link>
+                            ) : null}
+                            {managerView ? (
+                              <details className="jobs-more-menu">
+                                <summary className="btn">{c.more}</summary>
+                                <div className="jobs-more-panel">
+                                  <button type="button" className="btn btn-danger" disabled={removingId === job.id} onClick={() => void removeJob(job)}>
+                                    {removingId === job.id ? c.removing : c.remove}
+                                  </button>
+                                </div>
+                              </details>
+                            ) : null}
+                          </div>
+                        </td>`;
+
+          const newCells = `                        <td data-label={c.date} className="jobs-col-date">
+                          <strong>{formatDate(job, localeCode, c.unscheduled)}</strong>
+                          <span className="jobs-row-time">{formatTime(job, localeCode)}</span>
+                        </td>
+                        <td data-label={c.property} className="jobs-col-property">
+                          <Link href={\`/jobs/\${job.id}\`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{job.title}</Link>
+                          <div className="jobs-secondary">
+                            {[job.customer_name || c.noCustomer, job.address ? job.address.split(',').slice(-3, -1).join(',').trim() : null].filter(Boolean).join(' · ')}
+                          </div>
+                          {job.photo_count ? <div className="jobs-photo-count">{job.photo_count} {job.photo_count === 1 ? c.photo : c.photos}</div> : null}
+                        </td>
+                        <td data-label={c.assignedTo} className="jobs-col-assigned">
+                          <span className={!job.assigned_to && !job.assigned_email ? 'jobs-needs-worker' : undefined}>{assignment}</span>
+                        </td>
+                        <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
+                        <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}>
+                          <details className="jobs-more-menu">
+                            <summary className="jobs-menu-trigger" aria-label={c.more}>•••</summary>
+                            <div className="jobs-more-panel">
+                              <Link href={\`/jobs/\${job.id}\`} className="jobs-menu-item">Open job</Link>
+                              {job.address ? <a href={\`https://maps.google.com/?q=\${encodeURIComponent(job.address)}\`} className="jobs-menu-item" target="_blank" rel="noreferrer">{c.maps}</a> : null}
+                              {managerView ? <button type="button" className="jobs-menu-item" disabled={duplicatingId === job.id} onClick={() => void bookAgain(job)}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}
+                              {showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item">{billingCopy.createInvoice}</Link> : null}
+                              {managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" disabled={removingId === job.id} onClick={() => void removeJob(job)}>{removingId === job.id ? c.removing : c.remove}</button> : null}
+                            </div>
+                          </details>
+                        </td>`;
+
+          replaceExact(oldCells, newCells, 'job row cells');
+
+          page = page.replace(/\n  function billingLabel\(job: Job\) \{[\s\S]*?\n  \}\n\n  function openJob/, '\n  function openJob');
+
+          const marker = '/* Minimal Jobs page: neutral, compact, and focused */';
+          if (!css.includes(marker)) {
+            css += `
+
+${marker}
+.jobs-shell-minimal {
+  background: #f6f5f1 !important;
+}
+
+.jobs-shell-minimal .dashboard-shell-background,
+.jobs-shell-minimal .dashboard-shell-overlay {
+  display: none !important;
+}
+
+.jobs-shell-minimal .main,
+.jobs-shell-minimal .app-page-content,
+.jobs-shell-minimal .jobs-list-page {
+  background: #f6f5f1 !important;
+}
+
+.jobs-shell-minimal .sidebar {
+  background: #efeee9 !important;
+  border-right: 1px solid #dedbd2 !important;
+}
+
+.jobs-shell-minimal .everitt-cmd-trigger {
+  background: #242722 !important;
+  border-color: #242722 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.jobs-list-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.jobs-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 18px;
+  border-bottom: 1px solid #d8d5cc;
+}
+
+.jobs-filter-tab {
+  color: #4d4b45;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-bottom: 2px solid transparent;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.jobs-filter-tab:hover,
+.jobs-filter-tab:focus-visible {
+  color: #171815;
+  border-bottom-color: #7f7b71;
+}
+
+.jobs-filter-tab-alert {
+  margin-left: auto;
+}
+
+.jobs-table-card {
+  padding: 0 !important;
+  overflow: visible !important;
+  background: #fbfaf7 !important;
+  border: 1px solid #dedbd2 !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.jobs-operations-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.jobs-operations-table th {
+  background: #f1efe9 !important;
+  color: #666258 !important;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  border-bottom: 1px solid #dedbd2;
+}
+
+.jobs-operations-table td {
+  padding: 16px 14px;
+  border-bottom: 1px solid #e8e5de;
+  vertical-align: top;
+  color: #242522;
+}
+
+.jobs-operations-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.jobs-operations-row:hover,
+.jobs-operations-row:focus-visible {
+  background: #f7f5f0;
+  outline: none;
+}
+
+.jobs-col-date { width: 18%; }
+.jobs-col-property { width: 42%; }
+.jobs-col-assigned { width: 20%; }
+.jobs-col-status { width: 14%; }
+.jobs-col-actions { width: 6%; text-align: right; }
+
+.jobs-row-time,
+.jobs-secondary,
+.jobs-photo-count {
+  display: block;
+  margin-top: 4px;
+  color: #747067;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.jobs-property-link {
+  color: #1f211e !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.jobs-needs-worker,
+.jobs-shell-minimal .status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid #d8d5cc !important;
+  border-radius: 999px;
+  background: #f3f1eb !important;
+  color: #4d4b45 !important;
+  box-shadow: none !important;
+}
+
+.jobs-menu-trigger {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d8d5cc;
+  border-radius: 10px;
+  background: #fbfaf7;
+  color: #34352f;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.jobs-menu-trigger::-webkit-details-marker { display: none; }
+
+.jobs-more-menu { position: relative; }
+
+.jobs-more-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid #d8d5cc;
+  border-radius: 12px;
+  background: #fffefa;
+  box-shadow: 0 10px 30px rgba(25, 25, 22, 0.12);
+}
+
+.jobs-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #2f302c;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.jobs-menu-item:hover,
+.jobs-menu-item:focus-visible {
+  background: #f1efe9;
+}
+
+.jobs-menu-danger { color: #7a3f36; }
+
+@media (max-width: 760px) {
+  .jobs-filter-tab-alert { margin-left: 0; }
+  .jobs-operations-table thead { display: none; }
+  .jobs-operations-table,
+  .jobs-operations-table tbody,
+  .jobs-operations-table tr,
+  .jobs-operations-table td { display: block; width: 100%; }
+  .jobs-operations-row { padding: 14px 16px; border-bottom: 1px solid #e8e5de; }
+  .jobs-operations-table td { padding: 4px 0; border: 0; }
+  .jobs-col-actions { position: absolute; right: 16px; margin-top: -42px; width: auto !important; }
+  .jobs-col-property { padding-right: 52px !important; }
+}
+`;
+          }
+
+          fs.writeFileSync(pagePath, page);
+          fs.writeFileSync(cssPath, css);
+          NODE
+
+      - name: Validate
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Commit directly to main
+        run: |
+          rm .github/workflows/simplify-jobs-page.yml
+          git config user.name 'EverittOS Automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app/jobs/page.tsx app/form-alignment-fixes.css .github/workflows/simplify-jobs-page.yml
+          git commit -m 'fix: simplify jobs page design'
+          git push origin main
