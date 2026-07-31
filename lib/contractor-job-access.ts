@@ -43,7 +43,7 @@ export function isContractorJobCancelled(status: string | null | undefined): boo
 export function contractorCanAccessJob(input: {
   job: ContractorAccessJob;
   workerIds: string[];
-  userId: string;
+  userId?: string;
   shares?: ContractorAccessShare[];
   visits?: ContractorAccessVisit[];
   assignments?: ContractorAccessAssignment[];
@@ -61,11 +61,6 @@ export function contractorCanAccessJob(input: {
     if (String(visit.job_id || '') !== input.job.id) continue;
     if (visit.assigned_to && workerIdSet.has(String(visit.assigned_to))) return true;
     if (visit.worker_id && workerIdSet.has(String(visit.worker_id))) return true;
-  }
-
-  for (const share of input.shares || []) {
-    if (String(share.record_id || '') !== input.job.id) continue;
-    if (String(share.shared_with_user_id || '') === input.userId) return true;
   }
 
   return false;
@@ -132,7 +127,7 @@ export function toContractorSafeJobView(input: {
     title: String(input.title || 'Job'),
     status: String(input.status || 'new'),
     mode,
-    readOnly: mode !== 'active',
+    readOnly: true,
     scheduledDate:
       String(input.scheduled_start || '').slice(0, 10) ||
       String(input.start_date || '').slice(0, 10) ||
