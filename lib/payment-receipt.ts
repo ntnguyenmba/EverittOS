@@ -76,6 +76,11 @@ export type ReceiptCopy = {
   paymentDate?: string;
   paymentMethod?: string;
   reference?: string;
+  quotedPrice?: string;
+  amountReceived?: string;
+  paymentDifference?: string;
+  differenceReason?: string;
+  additionalAmountReceived?: string;
   remainingBalance?: string;
   thankYou?: string;
   keepCopy?: string;
@@ -84,12 +89,17 @@ export type ReceiptCopy = {
 const DEFAULT_RECEIPT_COPY: Required<ReceiptCopy> = {
   paidOnPrefix: 'Paid on',
   paidOnUnknown: 'Paid on an unknown date.',
-  amountPaid: 'Amount paid',
+  amountPaid: 'Amount received',
   customerDetails: 'Customer details',
   service: 'Service',
   paymentDate: 'Payment date',
   paymentMethod: 'Payment method',
   reference: 'Reference',
+  quotedPrice: 'Quoted price',
+  amountReceived: 'Amount received',
+  paymentDifference: 'Difference',
+  differenceReason: 'Reason',
+  additionalAmountReceived: 'Additional amount received',
   remainingBalance: 'Remaining balance',
   thankYou: 'Thank you for your payment.',
   keepCopy: 'Please keep this receipt for your records.'
@@ -120,8 +130,7 @@ export function buildReceiptNumber(paymentId: string): string {
 function formatStructuredAddress(customer: ReceiptCustomerSource | null | undefined): string[] {
   if (!customer) return [];
 
-  const dedicated =
-    trimText(customer.service_address) || trimText(customer.property_address) || null;
+  const dedicated = trimText(customer.service_address) || trimText(customer.property_address) || null;
   if (dedicated) return [dedicated];
 
   const street = [trimText(customer.address_line1), trimText(customer.address_line2)].filter(
@@ -154,15 +163,11 @@ export function resolveReceiptCustomer(input: {
   const job = input.job || null;
 
   const linkedAsRecord = linked as Partial<CustomerRecord> | null;
-  const linkedName = linked
-    ? customerDisplayName(linkedAsRecord, '') || trimText(linked.name)
-    : null;
+  const linkedName = linked ? customerDisplayName(linkedAsRecord, '') || trimText(linked.name) : null;
 
   const structured = formatStructuredAddress(linked);
   const linkedAddressFallback =
-    structured.length === 0
-      ? customerDisplayAddress(linkedAsRecord, '') || trimText(linked?.address)
-      : null;
+    structured.length === 0 ? customerDisplayAddress(linkedAsRecord, '') || trimText(linked?.address) : null;
 
   const displayName = linkedName || trimText(job?.customer_name) || null;
   const email = trimText(linked?.email) || null;
@@ -183,6 +188,9 @@ export function buildReceiptDetailRows(input: {
   serviceTitle: string;
   paymentMethod?: string | null;
   paymentReference?: string | null;
+  paymentNotes?: string | null;
+  quotedPrice?: number;
+  amountReceived?: number;
   outstanding: number;
   includePaymentDate?: boolean;
   paidAt?: string;
@@ -190,9 +198,7 @@ export function buildReceiptDetailRows(input: {
   copy?: ReceiptCopy;
 }): ReceiptDetailRow[] {
   const labels = { ...DEFAULT_RECEIPT_COPY, ...(input.copy || {}) };
-  const rows: ReceiptDetailRow[] = [
-    { label: labels.service, value: input.serviceTitle || labels.service }
-  ];
+  const rows: ReceiptDetailRow[] = [{ label: labels.service, value: input.serviceTitle || labels.service }];
 
   if (input.includePaymentDate && input.paidAt) {
     rows.push({
@@ -203,20 +209,32 @@ export function buildReceiptDetailRows(input: {
     });
   }
 
-  const method = trimText(input.paymentMethod);
-  if (method) {
-    rows.push({ label: labels.paymentMethod, value: method });
+  const quotedPrice = Math.max(0, Number(input.quotedPrice || 0));
+  const amountReceived = Math.max(0, Number(input.amountReceived || 0));
+  if (quotedPrice > 0) {
+    rows.push({ label: labels.quotedPrice, value: formatCurrency(quotedPrice) });
+    rows.push({ label: labels.amountReceived, value: formatCurrency(amountReceived) });
+    const difference = Number((amountReceived - quotedPrice).toFixed(2));
+    if (Math.abs(difference) >= 0.01) {
+      rows.push({
+        label: labels.paymentDifference,
+        value: `${difference > 0 ? '+' : '-'}${formatCurrency(Math.abs(difference))}`
+      });
+      rows.push({
+        label: labels.differenceReason,
+        value: trimText(input.paymentNotes) || labels.additionalAmountReceived
+      });
+    }
   }
+
+  const method = trimText(input.paymentMethod);
+  if (method) rows.push({ label: labels.paymentMethod, value: method });
 
   const reference = trimText(input.paymentReference);
-  if (reference) {
-    rows.push({ label: labels.reference, value: reference });
-  }
+  if (reference) rows.push({ label: labels.reference, value: reference });
 
   const outstanding = Math.max(0, Number(input.outstanding || 0));
-  if (outstanding > 0) {
-    rows.push({ label: labels.remainingBalance, value: formatCurrency(outstanding) });
-  }
+  if (outstanding > 0) rows.push({ label: labels.remainingBalance, value: formatCurrency(outstanding) });
 
   return rows;
 }
@@ -226,22 +244,17 @@ export function buildPaymentReceiptView(input: {
   job?: ReceiptJobSource | null;
   linkedCustomer?: ReceiptCustomerSource | null;
   business?: ReceiptBusinessSource | null;
+  quotedPrice?: number;
   outstanding: number;
   locale?: string;
   copy?: ReceiptCopy;
 }): PaymentReceiptView {
   const labels = { ...DEFAULT_RECEIPT_COPY, ...(input.copy || {}) };
-  const customer = resolveReceiptCustomer({
-    linkedCustomer: input.linkedCustomer,
-    job: input.job
-  });
+  const customer = resolveReceiptCustomer({ linkedCustomer: input.linkedCustomer, job: input.job });
 
-  const customerLines = [
-    customer.displayName,
-    customer.email,
-    customer.phone,
-    ...customer.addressLines
-  ].filter((line): line is string => Boolean(line));
+  const customerLines = [customer.displayName, customer.email, customer.phone, ...customer.addressLines].filter(
+    (line): line is string => Boolean(line)
+  );
 
   const businessLines = [
     trimText(input.business?.phone),
@@ -266,6 +279,9 @@ export function buildPaymentReceiptView(input: {
       serviceTitle: trimText(input.job?.title) || labels.service,
       paymentMethod: input.payment.paymentMethod,
       paymentReference: input.payment.paymentReference,
+      paymentNotes: input.payment.notes,
+      quotedPrice: input.quotedPrice,
+      amountReceived: input.payment.amount,
       outstanding,
       includePaymentDate: true,
       paidAt: input.payment.paidAt,
