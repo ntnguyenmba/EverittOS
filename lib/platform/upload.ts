@@ -50,7 +50,7 @@ async function requestSourcePermission(source: CameraSource): Promise<PhotoPickR
     if (currentState === 'granted' || currentState === 'limited') return null;
 
     const requested = await Camera.requestPermissions({ permissions: [permissionName] });
-    the requestedState = requested[permissionName];
+    const requestedState = requested[permissionName];
     if (requestedState === 'granted' || requestedState === 'limited') return null;
 
     return {

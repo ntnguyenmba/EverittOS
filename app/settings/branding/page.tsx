@@ -120,12 +120,12 @@ export default function BrandingSettingsPage() {
     <SettingsShell plan={plan} role={role} title="Branding" description="Company logo, colors, and support contact for client-facing surfaces.">
       {!canManageOrganizationSettings(role) ? (
         <div className="settings-card">
-          <p>Only workspace owners and admins can edit branding.</p>
+          <p>Only company owners and admins can edit branding.</p>
         </div>
       ) : null}
 
       {!brandingEnabled ? (
-        <div className="settings-warning">Custom branding on reports and the client portal requires Growth or higher.</div>
+        <div className="settings-warning">Custom branding on reports and the customer dashboard requires Growth or higher.</div>
       ) : null}
 
       <form className="settings-card" onSubmit={saveBranding}>
@@ -166,7 +166,7 @@ export default function BrandingSettingsPage() {
         ) : logoPath ? (
           <p className="muted">Logo saved. Refresh if preview does not appear.</p>
         ) : null}
-        <p className="muted">Branding applies to the client portal, PDF reports, invite emails, and the dashboard header.</p>
+        <p className="muted">Branding applies to the customer dashboard, PDF reports, invite emails, and the dashboard header.</p>
         <button type="submit" className="btn btn-primary" disabled={busy}>
           {buttonLabel('Save branding', FEEDBACK.loading)}
         </button>

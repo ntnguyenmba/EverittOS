@@ -103,7 +103,7 @@ export default function AiMemorySettingsPage() {
     return (
       <SettingsShell plan={plan} role={role} title="AI Memory" description="Company context for Ask Everitt.">
         <div className="settings-card">
-          <p>Only workspace owners and admins can edit AI memory.</p>
+          <p>Only company owners and admins can edit AI memory.</p>
         </div>
       </SettingsShell>
     );
@@ -114,7 +114,7 @@ export default function AiMemorySettingsPage() {
       plan={plan}
       role={role}
       title="AI Memory"
-      description="Company profile, services, and preferences used by Ask Everitt. Stored per organization."
+      description="Company profile, services, and preferences used by Ask Everitt. Stored per company."
     >
       <form className="settings-card form" onSubmit={save}>
         <label>

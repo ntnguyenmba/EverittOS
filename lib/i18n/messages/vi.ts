@@ -389,7 +389,7 @@ export const messages: Messages = {
     projects: 'Dự án',
     knowledge: 'Tri thức',
     automations: 'Tự động hóa',
-    clients: 'Khách hàng portal',
+    clients: 'Khách hàng',
     schedule: 'Lịch',
     expenses: 'Chi phí',
     workers: 'Nhóm',
@@ -751,7 +751,7 @@ export const messages: Messages = {
     upgrade: 'Nâng cấp',
     health: {
       title: 'Trạng thái thanh toán',
-      description: 'Tổng quan nhanh về cách thanh toán workspace của bạn được kết nối và đồng bộ.',
+      description: 'Tổng quan nhanh về cách thanh toán công ty của bạn được kết nối và đồng bộ.',
       loading: 'Đang tải trạng thái thanh toán…',
       loadFailed: 'Không thể tải trạng thái thanh toán lúc này. Vui lòng thử lại sau.',
       currentPlan: 'Gói hiện tại',
@@ -771,7 +771,7 @@ export const messages: Messages = {
         stripeAccount: {
           connected: {
             title: 'Tài khoản Stripe đã kết nối',
-            description: 'Workspace của bạn đã được liên kết với tài khoản khách hàng Stripe.'
+            description: 'Công ty của bạn đã được liên kết với tài khoản khách hàng Stripe.'
           },
           needs_attention: {
             title: 'Tài khoản Stripe chưa được kết nối',
@@ -799,7 +799,7 @@ export const messages: Messages = {
         billingConfiguration: {
           connected: {
             title: 'Cấu hình thanh toán đã sẵn sàng',
-            description: 'Đường nâng cấp và giá gói đã khả dụng cho workspace này.'
+            description: 'Đường nâng cấp và giá gói đã khả dụng cho công ty này.'
           },
           needs_attention: {
             title: 'Cấu hình thanh toán cần được xem xét',
@@ -827,7 +827,7 @@ export const messages: Messages = {
         billingService: {
           connected: {
             title: 'Dịch vụ thanh toán đang hoạt động',
-            description: 'EverittOS có thể giao tiếp với Stripe cho workspace này.'
+            description: 'EverittOS có thể giao tiếp với Stripe cho công ty này.'
           },
           needs_attention: {
             title: 'Dịch vụ thanh toán cần chú ý',
@@ -890,7 +890,7 @@ export const messages: Messages = {
     noRefund: {
       policyShort: 'Mọi khoản thanh toán là cuối cùng. Không hoàn tiền sau khi xử lý.',
       policyFull:
-        'Mọi khoản thanh toán là cuối cùng. EverittOS không hoàn tiền cho đăng ký, phí thiết lập, dịch vụ số, sử dụng AI, quyền truy cập workspace, tiện ích bổ sung hoặc kỳ thanh toán đã sử dụng một phần. Bạn có thể hủy bất cứ lúc nào để dừng gia hạn trong tương lai, nhưng các khoản đã thu trước đó không được hoàn lại.',
+        'Mọi khoản thanh toán là cuối cùng. EverittOS không hoàn tiền cho đăng ký, phí thiết lập, dịch vụ số, sử dụng AI, quyền truy cập công ty, tiện ích bổ sung hoặc kỳ thanh toán đã sử dụng một phần. Bạn có thể hủy bất cứ lúc nào để dừng gia hạn trong tương lai, nhưng các khoản đã thu trước đó không được hoàn lại.',
       checkoutAck: 'Tôi hiểu mọi khoản thanh toán là cuối cùng và không hoàn tiền.',
       ackRequired: 'Xác nhận chính sách không hoàn tiền trước khi thanh toán.',
       cancelNote: 'Hủy chỉ dừng gia hạn trong tương lai. Các khoản đã thu trước đó không được hoàn lại.'
@@ -907,7 +907,7 @@ export const messages: Messages = {
   aiUsage: {
     title: 'Sử dụng AI',
     description: 'Số lượng prompt, chi phí ước tính, theo dõi hạn mức và số liệu sử dụng nhân viên dành cho quản trị viên.',
-    adminOnly: 'Chỉ chủ sở hữu và quản trị viên workspace mới có thể xem số liệu sử dụng AI.'
+    adminOnly: 'Chỉ chủ sở hữu và quản trị viên công ty mới có thể xem số liệu sử dụng AI.'
   },
   language: {
     title: 'Ngôn ngữ',

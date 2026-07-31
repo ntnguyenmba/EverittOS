@@ -205,13 +205,13 @@ export default function SecuritySettingsPage() {
         <>
           <div className="settings-card">
             <h3>Company security audit</h3>
-            <p className="muted">Sign-in and security events across your workspace.</p>
-            <SecurityActivityLog events={orgEvents} emptyLabel="No organization security events recorded yet." />
+            <p className="muted">Sign-in and security events across your company.</p>
+            <SecurityActivityLog events={orgEvents} emptyLabel="No company security events recorded yet." />
           </div>
 
           <div className="settings-card">
             <h3>Admin audit log</h3>
-            <p className="muted">Team invitations, role changes, ownership changes, and workspace admin actions.</p>
+            <p className="muted">Team invitations, role changes, ownership changes, and company admin actions.</p>
             {auditLogs.length === 0 ? <p className="muted">No admin audit events recorded yet.</p> : null}
             {auditLogs.map((item) => (
               <div key={item.id} className="list-row compact">

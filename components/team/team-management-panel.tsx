@@ -459,7 +459,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm('Remove this member from the organization? They will lose access immediately.')) return;
+    if (!window.confirm('Remove this member from the company? They will lose access immediately.')) return;
     const res = await runResponse(() => fetch(`/api/team/members?userId=${userId}`, { method: 'DELETE' }), 'deleted');
     if (res) load();
   }

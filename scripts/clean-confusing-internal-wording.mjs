@@ -63,4 +63,3 @@ for (const target of TARGETS) {
 }
 
 console.log(`Done. Updated ${changed} file(s).`);
-)

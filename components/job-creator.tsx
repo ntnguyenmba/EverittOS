@@ -1050,7 +1050,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               }
             }}
           >
-            <option value="none">Does not repeat</option>
+            <option value="none">One-time</option>
             <option value="weekly">Weekly</option>
             <option value="biweekly">Every two weeks</option>
             <option value="every_four_weeks">Every four weeks</option>
@@ -1071,21 +1071,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   <option key={label} value={index}>{label}</option>
                 ))}
               </select>
-              {recurrenceFrequency === 'custom' ? (
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label>Every</label>
-                    <input className="input" type="number" min="1" max="52" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label>Unit</label>
-                    <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as 'weeks' | 'months')}>
-                      <option value="weeks">Weeks</option>
-                      <option value="months">Months</option>
-                    </select>
-                  </div>
-                </div>
-              ) : null}
               {primaryVisit ? (
                 <div className="form visit-editor" style={{ marginTop: 12 }}>
                   <label htmlFor="recurring-start-date">Start date</label>
@@ -1126,8 +1111,26 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
               <p className="muted">Filled from the property address when available. You can change it.</p>
-              <details open={showRecurrenceAdvanced} onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}>
+              <details
+                open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'}
+                onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}
+              >
                 <summary>Advanced recurrence options</summary>
+                {recurrenceFrequency === 'custom' ? (
+                  <div className="grid-2" style={{ marginTop: 8 }}>
+                    <div className="form-group">
+                      <label>Every</label>
+                      <input className="input" type="number" min="1" max="52" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label>Unit</label>
+                      <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as 'weeks' | 'months')}>
+                        <option value="weeks">Weeks</option>
+                        <option value="months">Months</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : null}
                 <label style={{ marginTop: 8 }}>End date (optional)</label>
                 <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} />
                 <label>Number of visits (optional)</label>

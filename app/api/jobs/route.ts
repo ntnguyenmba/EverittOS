@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!member) {
-      return NextResponse.json({ error: 'Assigned teammate must be an active member of this workspace.' }, { status: 400 });
+      return NextResponse.json({ error: 'Assigned teammate must be an active member of this company.' }, { status: 400 });
     }
 
     const { data: profile } = await ctx.supabase

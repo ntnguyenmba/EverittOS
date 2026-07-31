@@ -13,14 +13,14 @@ export default function ClientsPage() {
       requiredFeature="Customer dashboard"
       featureCheck={(plan) => limitsForPlan(plan).clientPortal}
       actions={[
-        { label: 'Open client portal', href: '/portal/client' },
-        { label: 'CRM records', href: '/customers' }
+        { label: 'Open customer dashboard', href: '/portal/client' },
+        { label: 'Customers', href: '/customers' }
       ]}
     >
       <div className="card">
         <p>
           Grant clients access from a job detail page. Clients can view shared jobs, invoices, proposals, and progress in
-          the portal.
+          the customer dashboard.
         </p>
         <p className="muted" style={{ marginTop: 12 }}>
           Requires Growth or higher. Manage branding under <Link href="/settings/branding">Branding</Link>.

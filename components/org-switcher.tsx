@@ -56,7 +56,7 @@ export function OrgSwitcher() {
         value={activeId}
         disabled={switching}
         onChange={(e) => void switchOrg(e.target.value)}
-        aria-label="Switch organization"
+        aria-label="Switch company"
       >
         {memberships.map((m) => (
           <option key={m.organizationId} value={m.organizationId}>

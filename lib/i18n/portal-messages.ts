@@ -45,11 +45,11 @@ export const portalMessagesEn: PortalMessages = {
   },
   legal: {
     title: 'Legal',
-    description: 'Review the policies that apply to your portal access.',
+    description: 'Review the policies that apply to your dashboard access.',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     generalDisclaimer: 'General Disclaimer',
-    customerDisclaimer: 'Customer Portal Disclaimer',
+    customerDisclaimer: 'Customer Dashboard Disclaimer',
     contractorDisclaimer: 'Contractor Disclaimer'
   },
   account: {
@@ -83,9 +83,9 @@ export const portalMessagesEn: PortalMessages = {
     calendar: {
       title: 'Calendar',
       clientDescription:
-        'Use Add to Calendar on your appointments for Google, Outlook, or Apple Calendar. This portal does not include organization integrations.',
+        'Use Add to Calendar on your appointments for Google, Outlook, or Apple Calendar. This dashboard does not include company integrations.',
       contractorDescription:
-        'Use Add to Calendar on an assigned job for a one-time calendar event. Organization-wide Google Calendar and QuickBooks connections are managed by the workspace owner.'
+        'Use Add to Calendar on an assigned job for a one-time calendar event. Company-wide Google Calendar and QuickBooks connections are managed by the company owner.'
     },
     delete: {
       dangerZone: 'Danger Zone',
@@ -95,10 +95,10 @@ export const portalMessagesEn: PortalMessages = {
         'Deleting your EverittOS account does not automatically cancel an App Store or Google Play subscription. Manage those in Apple Settings or Google Play Subscriptions.',
       activeSubscription: 'Active subscriptions must be cancelled before account deletion.',
       goToBilling: 'Go to Billing',
-      askOwnerCancel: 'Ask your workspace owner to cancel billing, or cancel any store subscription first.',
+      askOwnerCancel: 'Ask your company owner to cancel billing, or cancel any store subscription first.',
       confirmTitle: 'Delete Account',
       confirmBody:
-        'Are you sure you want to permanently delete your account? This action cannot be undone and you will lose access to your login. Organization-owned business records are retained where required.',
+        'Are you sure you want to permanently delete your account? This action cannot be undone and you will lose access to your login. Company-owned business records are retained where required.',
       typeToConfirm: 'Type DELETE to confirm',
       cancel: 'Cancel',
       deleting: 'Deleting…',
@@ -106,17 +106,17 @@ export const portalMessagesEn: PortalMessages = {
       unableToDelete: 'Unable to delete account.',
       unableToDeleteRetry: 'Unable to delete account. Please try again.',
       clientRetention:
-        'Deleting your login removes your portal access and personal profile details. Invoices, payments, completed jobs, and other service records stay with your service provider when required.',
+        'Deleting your login removes your dashboard access and personal profile details. Invoices, payments, completed jobs, and other service records stay with your service provider when required.',
       contractorRetention:
-        'Deleting your login removes your access and personal profile details. Organization job history, customer records, and payment records stay with the hiring organization.',
+        'Deleting your login removes your access and personal profile details. Company job history, customer records, and payment records stay with the hiring company.',
       defaultPortalRetention:
-        'Deleting your login removes portal access and personal profile details. Organization-owned job, invoice, payment, and audit records remain with the service provider when required.',
+        'Deleting your login removes dashboard access and personal profile details. Company-owned job, invoice, payment, and audit records remain with the service provider when required.',
       defaultOwnerRetention:
-        'Permanently delete your account and associated profile information. This action cannot be undone. Deleting your personal EverittOS account does not automatically delete a workspace you own when other ownership handling is required.'
+        'Permanently delete your account and associated profile information. This action cannot be undone. Deleting your personal EverittOS account does not automatically delete a company you own when other ownership handling is required.'
     }
   },
   client: {
-    portal: 'Customer portal',
+    portal: 'Customer dashboard',
     settingsTitle: 'Account settings',
     settingsDescription: 'Manage your profile, notifications, legal links, and account deletion.',
     yourService: 'Your service',
@@ -141,7 +141,7 @@ export const portalMessagesEn: PortalMessages = {
     jobNotFound: 'This shared job could not be found.',
     jobLoadError: 'This shared job could not be loaded. Please try again.',
     growthRequired: 'Customer dashboard requires Growth plan or higher, or a client role.',
-    wrongAccountLink: 'This portal link belongs to a different client account.',
+    wrongAccountLink: 'This dashboard link belongs to a different client account.',
     tabs: {
       dashboard: 'Overview',
       jobs: 'Appointments',
@@ -177,7 +177,7 @@ export const portalMessagesEn: PortalMessages = {
       noEmail: 'No email',
       noPhone: 'No phone',
       editAccount: 'Edit account settings',
-      customerDisclaimer: 'Customer portal disclaimer'
+      customerDisclaimer: 'Customer dashboard disclaimer'
     },
     reportsTab: {
       sharedReports: 'Shared reports',
@@ -203,7 +203,7 @@ export const portalMessagesEn: PortalMessages = {
     }
   },
   contractor: {
-    portal: 'Contractor portal',
+    portal: 'Contractor dashboard',
     accountLabel: 'Contractor account',
     settingsTitle: 'Account settings',
     settingsDescription: 'Manage your profile, notifications, legal links, and account deletion.',
@@ -263,13 +263,13 @@ export const portalMessagesEn: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Your contractor account is not linked to a worker profile yet. Ask your workspace owner to assign you on a job.',
+        'Your contractor account is not linked to a contractor profile yet. Ask your company owner to assign you on a job.',
       jobsQueryFailed: 'Could not load your assigned jobs.',
       assignmentsQueryFailed: 'Could not load your job assignments.',
       laborQueryFailed: 'Could not load your contractor pay records.',
       notificationsQueryFailed: 'Could not load your notifications.',
-      permissionDenied: 'Access to contractor pay or jobs was blocked. Contact your workspace owner.',
-      unknown: 'Your contractor dashboard could not be loaded. Refresh the page or contact your workspace owner.'
+      permissionDenied: 'Access to contractor pay or jobs was blocked. Contact your company owner.',
+      unknown: 'Your contractor dashboard could not be loaded. Refresh the page or contact your company owner.'
     }
   }
 };
@@ -285,7 +285,7 @@ export const portalMessagesEs: PortalMessages = {
     account: 'Cuenta',
     overview: 'Resumen',
     appointments: 'Citas',
-    sections: 'Secciones del portal',
+    sections: 'Secciones del panel',
     dateNotSet: 'Fecha sin definir',
     notSet: 'Sin definir',
     status: 'Estado',
@@ -319,11 +319,11 @@ export const portalMessagesEs: PortalMessages = {
   },
   legal: {
     title: 'Legal',
-    description: 'Revisa las políticas aplicables a tu acceso al portal.',
+    description: 'Revisa las políticas aplicables a tu acceso al panel.',
     privacy: 'Política de privacidad',
     terms: 'Términos del servicio',
     generalDisclaimer: 'Aviso legal general',
-    customerDisclaimer: 'Aviso del portal del cliente',
+    customerDisclaimer: 'Aviso del panel del cliente',
     contractorDisclaimer: 'Aviso del contratista'
   },
   account: {
@@ -357,9 +357,9 @@ export const portalMessagesEs: PortalMessages = {
     calendar: {
       title: 'Calendario',
       clientDescription:
-        'Usa Añadir al calendario en tus citas para Google, Outlook o Apple Calendar. Este portal no incluye integraciones de la organización.',
+        'Usa Añadir al calendario en tus citas para Google, Outlook o Apple Calendar. Este panel no incluye integraciones de la empresa.',
       contractorDescription:
-        'Usa Añadir al calendario en un trabajo asignado para crear un evento puntual. Las conexiones de Google Calendar y QuickBooks de toda la organización las gestiona el propietario del espacio de trabajo.'
+        'Usa Añadir al calendario en un trabajo asignado para crear un evento puntual. Las conexiones de Google Calendar y QuickBooks de toda la empresa las gestiona el propietario de la empresa.'
     },
     delete: {
       dangerZone: 'Zona de peligro',
@@ -370,10 +370,10 @@ export const portalMessagesEs: PortalMessages = {
       activeSubscription: 'Debes cancelar las suscripciones activas antes de eliminar la cuenta.',
       goToBilling: 'Ir a Facturación',
       askOwnerCancel:
-        'Pide al propietario del espacio de trabajo que cancele la facturación, o cancela primero cualquier suscripción de la tienda.',
+        'Pide al propietario de la empresa que cancele la facturación, o cancela primero cualquier suscripción de la tienda.',
       confirmTitle: 'Eliminar cuenta',
       confirmBody:
-        '¿Seguro que quieres eliminar permanentemente tu cuenta? Esta acción no se puede deshacer y perderás el acceso a tu inicio de sesión. Los registros comerciales de la organización se conservan cuando sea necesario.',
+        '¿Seguro que quieres eliminar permanentemente tu cuenta? Esta acción no se puede deshacer y perderás el acceso a tu inicio de sesión. Los registros comerciales de la empresa se conservan cuando sea necesario.',
       typeToConfirm: 'Escribe DELETE para confirmar',
       cancel: 'Cancelar',
       deleting: 'Eliminando…',
@@ -381,17 +381,17 @@ export const portalMessagesEs: PortalMessages = {
       unableToDelete: 'No se pudo eliminar la cuenta.',
       unableToDeleteRetry: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
       clientRetention:
-        'Eliminar tu inicio de sesión quita el acceso al portal y los datos personales de tu perfil. Las facturas, los pagos, los trabajos completados y otros registros del servicio permanecen con tu proveedor de servicios cuando sea necesario.',
+        'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales de tu perfil. Las facturas, los pagos, los trabajos completados y otros registros del servicio permanecen con tu proveedor de servicios cuando sea necesario.',
       contractorRetention:
-        'Eliminar tu inicio de sesión quita tu acceso y los datos personales de tu perfil. El historial de trabajos de la organización, los registros de clientes y los registros de pagos permanecen con la organización contratante.',
+        'Eliminar tu inicio de sesión quita tu acceso y los datos personales de tu perfil. El historial de trabajos de la empresa, los registros de clientes y los registros de pagos permanecen con la empresa contratante.',
       defaultPortalRetention:
-        'Eliminar tu inicio de sesión quita el acceso al portal y los datos personales del perfil. Los registros de trabajos, facturas, pagos y auditoría de la organización permanecen con el proveedor de servicios cuando sea necesario.',
+        'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales del perfil. Los registros de trabajos, facturas, pagos y auditoría de la empresa permanecen con el proveedor de servicios cuando sea necesario.',
       defaultOwnerRetention:
-        'Elimina permanentemente tu cuenta y la información de perfil asociada. Esta acción no se puede deshacer. Eliminar tu cuenta personal de EverittOS no elimina automáticamente un espacio de trabajo que poseas cuando se requiera otro manejo de la propiedad.'
+        'Elimina permanentemente tu cuenta y la información de perfil asociada. Esta acción no se puede deshacer. Eliminar tu cuenta personal de EverittOS no elimina automáticamente una empresa que poseas cuando se requiera otro manejo de la propiedad.'
     }
   },
   client: {
-    portal: 'Portal del cliente',
+    portal: 'Panel del cliente',
     settingsTitle: 'Configuración de la cuenta',
     settingsDescription: 'Administra tu perfil, notificaciones, enlaces legales y eliminación de la cuenta.',
     yourService: 'Tu servicio',
@@ -416,7 +416,7 @@ export const portalMessagesEs: PortalMessages = {
     jobNotFound: 'No se pudo encontrar este trabajo compartido.',
     jobLoadError: 'No se pudo cargar este trabajo compartido. Inténtalo de nuevo.',
     growthRequired: 'El panel del cliente requiere el plan Growth o superior, o un rol de cliente.',
-    wrongAccountLink: 'Este enlace del portal pertenece a otra cuenta de cliente.',
+    wrongAccountLink: 'Este enlace del panel pertenece a otra cuenta de cliente.',
     tabs: {
       dashboard: 'Resumen',
       jobs: 'Citas',
@@ -452,7 +452,7 @@ export const portalMessagesEs: PortalMessages = {
       noEmail: 'Sin correo electrónico',
       noPhone: 'Sin teléfono',
       editAccount: 'Editar configuración de la cuenta',
-      customerDisclaimer: 'Aviso del portal del cliente'
+      customerDisclaimer: 'Aviso del panel del cliente'
     },
     reportsTab: {
       sharedReports: 'Informes compartidos',
@@ -478,7 +478,7 @@ export const portalMessagesEs: PortalMessages = {
     }
   },
   contractor: {
-    portal: 'Portal del contratista',
+    portal: 'Panel del contratista',
     accountLabel: 'Cuenta de contratista',
     settingsTitle: 'Configuración de la cuenta',
     settingsDescription: 'Administra tu perfil, notificaciones, enlaces legales y eliminación de la cuenta.',
@@ -538,15 +538,15 @@ export const portalMessagesEs: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Tu cuenta de contratista aún no está vinculada a un perfil de trabajador. Pide al propietario del espacio de trabajo que te asigne a un trabajo.',
+        'Tu cuenta de contratista aún no está vinculada a un perfil de contratista. Pide al propietario de la empresa que te asigne a un trabajo.',
       jobsQueryFailed: 'No se pudieron cargar tus trabajos asignados.',
       assignmentsQueryFailed: 'No se pudieron cargar tus asignaciones de trabajo.',
       laborQueryFailed: 'No se pudieron cargar tus registros de pago de contratista.',
       notificationsQueryFailed: 'No se pudieron cargar tus notificaciones.',
       permissionDenied:
-        'Se bloqueó el acceso a los pagos o trabajos del contratista. Contacta al propietario del espacio de trabajo.',
+        'Se bloqueó el acceso a los pagos o trabajos del contratista. Contacta al propietario de la empresa.',
       unknown:
-        'No se pudo cargar tu panel de contratista. Actualiza la página o contacta al propietario del espacio de trabajo.'
+        'No se pudo cargar tu panel de contratista. Actualiza la página o contacta al propietario de la empresa.'
     }
   }
 };
@@ -562,7 +562,7 @@ export const portalMessagesVi: PortalMessages = {
     account: 'Tài khoản',
     overview: 'Tổng quan',
     appointments: 'Lịch hẹn',
-    sections: 'Các mục trong cổng thông tin',
+    sections: 'Các mục trong bảng điều khiển',
     dateNotSet: 'Chưa đặt ngày',
     notSet: 'Chưa đặt',
     status: 'Trạng thái',
@@ -596,11 +596,11 @@ export const portalMessagesVi: PortalMessages = {
   },
   legal: {
     title: 'Pháp lý',
-    description: 'Xem các chính sách áp dụng cho quyền truy cập cổng thông tin của bạn.',
+    description: 'Xem các chính sách áp dụng cho quyền truy cập bảng điều khiển của bạn.',
     privacy: 'Chính sách quyền riêng tư',
     terms: 'Điều khoản dịch vụ',
     generalDisclaimer: 'Tuyên bố miễn trừ trách nhiệm chung',
-    customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của cổng khách hàng',
+    customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của bảng điều khiển khách hàng',
     contractorDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của nhà thầu'
   },
   account: {
@@ -634,9 +634,9 @@ export const portalMessagesVi: PortalMessages = {
     calendar: {
       title: 'Lịch',
       clientDescription:
-        'Dùng Thêm vào lịch trên các lịch hẹn của bạn cho Google, Outlook hoặc Apple Calendar. Cổng thông tin này không bao gồm tích hợp của tổ chức.',
+        'Dùng Thêm vào lịch trên các lịch hẹn của bạn cho Google, Outlook hoặc Apple Calendar. Bảng điều khiển này không bao gồm tích hợp của công ty.',
       contractorDescription:
-        'Dùng Thêm vào lịch trên công việc được giao để tạo sự kiện lịch một lần. Kết nối Google Calendar và QuickBooks toàn tổ chức do chủ không gian làm việc quản lý.'
+        'Dùng Thêm vào lịch trên công việc được giao để tạo sự kiện lịch một lần. Kết nối Google Calendar và QuickBooks toàn công ty do chủ công ty quản lý.'
     },
     delete: {
       dangerZone: 'Khu vực nguy hiểm',
@@ -647,10 +647,10 @@ export const portalMessagesVi: PortalMessages = {
       activeSubscription: 'Phải hủy các gói đăng ký đang hoạt động trước khi xóa tài khoản.',
       goToBilling: 'Đến Thanh toán',
       askOwnerCancel:
-        'Yêu cầu chủ không gian làm việc hủy thanh toán, hoặc hủy trước mọi đăng ký trên cửa hàng ứng dụng.',
+        'Yêu cầu chủ công ty hủy thanh toán, hoặc hủy trước mọi đăng ký trên cửa hàng ứng dụng.',
       confirmTitle: 'Xóa tài khoản',
       confirmBody:
-        'Bạn có chắc muốn xóa vĩnh viễn tài khoản của mình không? Hành động này không thể hoàn tác và bạn sẽ mất quyền truy cập đăng nhập. Hồ sơ kinh doanh thuộc tổ chức được giữ lại khi cần thiết.',
+        'Bạn có chắc muốn xóa vĩnh viễn tài khoản của mình không? Hành động này không thể hoàn tác và bạn sẽ mất quyền truy cập đăng nhập. Hồ sơ kinh doanh thuộc công ty được giữ lại khi cần thiết.',
       typeToConfirm: 'Nhập DELETE để xác nhận',
       cancel: 'Hủy',
       deleting: 'Đang xóa…',
@@ -658,17 +658,17 @@ export const portalMessagesVi: PortalMessages = {
       unableToDelete: 'Không thể xóa tài khoản.',
       unableToDeleteRetry: 'Không thể xóa tài khoản. Vui lòng thử lại.',
       clientRetention:
-        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập cổng thông tin và thông tin hồ sơ cá nhân của bạn. Hóa đơn, thanh toán, công việc đã hoàn thành và các hồ sơ dịch vụ khác vẫn thuộc nhà cung cấp dịch vụ khi cần thiết.',
+        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân của bạn. Hóa đơn, thanh toán, công việc đã hoàn thành và các hồ sơ dịch vụ khác vẫn thuộc nhà cung cấp dịch vụ khi cần thiết.',
       contractorRetention:
-        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập và thông tin hồ sơ cá nhân của bạn. Lịch sử công việc của tổ chức, hồ sơ khách hàng và hồ sơ thanh toán vẫn thuộc tổ chức thuê.',
+        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập và thông tin hồ sơ cá nhân của bạn. Lịch sử công việc của công ty, hồ sơ khách hàng và hồ sơ thanh toán vẫn thuộc công ty thuê.',
       defaultPortalRetention:
-        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập cổng thông tin và thông tin hồ sơ cá nhân. Hồ sơ công việc, hóa đơn, thanh toán và kiểm toán thuộc tổ chức vẫn được giữ lại với nhà cung cấp dịch vụ khi cần thiết.',
+        'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân. Hồ sơ công việc, hóa đơn, thanh toán và kiểm toán thuộc công ty vẫn được giữ lại với nhà cung cấp dịch vụ khi cần thiết.',
       defaultOwnerRetention:
-        'Xóa vĩnh viễn tài khoản và thông tin hồ sơ liên quan. Hành động này không thể hoàn tác. Xóa tài khoản cá nhân EverittOS của bạn không tự động xóa không gian làm việc bạn sở hữu khi cần xử lý quyền sở hữu theo cách khác.'
+        'Xóa vĩnh viễn tài khoản và thông tin hồ sơ liên quan. Hành động này không thể hoàn tác. Xóa tài khoản cá nhân EverittOS của bạn không tự động xóa công ty bạn sở hữu khi cần xử lý quyền sở hữu theo cách khác.'
     }
   },
   client: {
-    portal: 'Cổng thông tin khách hàng',
+    portal: 'Bảng điều khiển khách hàng',
     settingsTitle: 'Cài đặt tài khoản',
     settingsDescription: 'Quản lý hồ sơ, thông báo, liên kết pháp lý và việc xóa tài khoản của bạn.',
     yourService: 'Dịch vụ của bạn',
@@ -693,7 +693,7 @@ export const portalMessagesVi: PortalMessages = {
     jobNotFound: 'Không tìm thấy công việc được chia sẻ này.',
     jobLoadError: 'Không thể tải công việc được chia sẻ này. Vui lòng thử lại.',
     growthRequired: 'Bảng điều khiển khách hàng yêu cầu gói Growth trở lên, hoặc vai trò khách hàng.',
-    wrongAccountLink: 'Liên kết cổng thông tin này thuộc về một tài khoản khách hàng khác.',
+    wrongAccountLink: 'Liên kết bảng điều khiển này thuộc về một tài khoản khách hàng khác.',
     tabs: {
       dashboard: 'Tổng quan',
       jobs: 'Lịch hẹn',
@@ -729,7 +729,7 @@ export const portalMessagesVi: PortalMessages = {
       noEmail: 'Không có email',
       noPhone: 'Không có số điện thoại',
       editAccount: 'Chỉnh sửa cài đặt tài khoản',
-      customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của cổng khách hàng'
+      customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của bảng điều khiển khách hàng'
     },
     reportsTab: {
       sharedReports: 'Báo cáo được chia sẻ',
@@ -755,7 +755,7 @@ export const portalMessagesVi: PortalMessages = {
     }
   },
   contractor: {
-    portal: 'Cổng thông tin nhà thầu',
+    portal: 'Bảng điều khiển nhà thầu',
     accountLabel: 'Tài khoản nhà thầu',
     settingsTitle: 'Cài đặt tài khoản',
     settingsDescription: 'Quản lý hồ sơ, thông báo, liên kết pháp lý và việc xóa tài khoản của bạn.',
@@ -815,15 +815,15 @@ export const portalMessagesVi: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Tài khoản nhà thầu của bạn chưa được liên kết với hồ sơ nhân viên. Hãy nhờ chủ không gian làm việc gán bạn vào một công việc.',
+        'Tài khoản nhà thầu của bạn chưa được liên kết với hồ sơ nhà thầu. Hãy nhờ chủ công ty gán bạn vào một công việc.',
       jobsQueryFailed: 'Không thể tải các công việc được giao của bạn.',
       assignmentsQueryFailed: 'Không thể tải các phân công công việc của bạn.',
       laborQueryFailed: 'Không thể tải hồ sơ thanh toán nhà thầu của bạn.',
       notificationsQueryFailed: 'Không thể tải thông báo của bạn.',
       permissionDenied:
-        'Quyền truy cập thanh toán hoặc công việc nhà thầu đã bị chặn. Hãy liên hệ chủ không gian làm việc.',
+        'Quyền truy cập thanh toán hoặc công việc nhà thầu đã bị chặn. Hãy liên hệ chủ công ty.',
       unknown:
-        'Không thể tải bảng điều khiển nhà thầu của bạn. Hãy làm mới trang hoặc liên hệ chủ không gian làm việc.'
+        'Không thể tải bảng điều khiển nhà thầu của bạn. Hãy làm mới trang hoặc liên hệ chủ công ty.'
     }
   }
 };

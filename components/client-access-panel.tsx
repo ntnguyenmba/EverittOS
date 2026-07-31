@@ -122,7 +122,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
       await navigator.clipboard.writeText(url);
       setMessage('Customer dashboard link copied.');
     } catch {
-      setMessage('Unable to copy the client portal link.');
+      setMessage('Unable to copy the customer dashboard link.');
     }
   }
 

@@ -3,12 +3,12 @@ import Link from 'next/link';
 const helpSections = [
   {
     title: 'Getting started',
-    body: 'Set up your workspace, add customers, create your first job, and invite your team when you are ready.',
+    body: 'Set up your company, add customers, create your first job, and invite your team when you are ready.',
     href: '/onboarding'
   },
   {
     title: 'Daily operations',
-    body: 'Manage jobs, schedules, photos, reports, customers, messages, and invoices from one organized workspace.',
+    body: 'Manage jobs, schedules, photos, reports, customers, messages, and invoices in one place.',
     href: '/dashboard'
   },
   {
@@ -37,7 +37,7 @@ export default function HelpCenterPage() {
       <div className="container">
         <div className="card" style={{ marginBottom: 20 }}>
           <p className="eyebrow">EverittOS Help Center</p>
-          <h1>Guidance for setting up and running your workspace.</h1>
+          <h1>Guidance for setting up and running your company.</h1>
           <p className="muted">
             Find the main setup steps, everyday workflows, connected tools, and account controls in one place.
           </p>

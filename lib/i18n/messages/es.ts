@@ -391,7 +391,7 @@ export const messages: Messages = {
     projects: 'Proyectos',
     knowledge: 'Conocimiento',
     automations: 'Automatizaciones',
-    clients: 'Clientes portal',
+    clients: 'Clientes',
     schedule: 'Horario',
     expenses: 'Gastos',
     workers: 'Equipo',
@@ -747,13 +747,13 @@ export const messages: Messages = {
     downgradeSupportNote: 'Pasar al plan gratuito requiere soporte de facturación.',
     plansFootnote:
       'Las suscripciones se renuevan automáticamente hasta cancelarlas. Todos los pagos son finales y no reembolsables una vez procesados.',
-    portalUnavailable: 'El portal de facturación aún no está configurado.',
-    portalNotConfigured: 'El portal de facturación aún no está configurado.',
+    portalUnavailable: 'La gestión de facturación aún no está configurada.',
+    portalNotConfigured: 'La gestión de facturación aún no está configurada.',
     upgradeOptions: 'Opciones de actualización',
     upgrade: 'Actualizar',
     health: {
       title: 'Estado de facturación',
-      description: 'Resumen de cómo la facturación de su workspace está conectada y sincronizada.',
+      description: 'Resumen de cómo la facturación de su empresa está conectada y sincronizada.',
       loading: 'Cargando estado de facturación…',
       loadFailed: 'No se pudo cargar el estado de facturación. Inténtelo de nuevo en un momento.',
       currentPlan: 'Plan actual',
@@ -773,7 +773,7 @@ export const messages: Messages = {
         stripeAccount: {
           connected: {
             title: 'Cuenta de Stripe conectada',
-            description: 'Su workspace está vinculado a una cuenta de cliente de Stripe.'
+            description: 'Su empresa está vinculada a una cuenta de cliente de Stripe.'
           },
           needs_attention: {
             title: 'La cuenta de Stripe aún no está conectada',
@@ -801,7 +801,7 @@ export const messages: Messages = {
         billingConfiguration: {
           connected: {
             title: 'La configuración de facturación está lista',
-            description: 'Las rutas de actualización y precios del plan están disponibles para este workspace.'
+            description: 'Las rutas de actualización y precios del plan están disponibles para esta empresa.'
           },
           needs_attention: {
             title: 'La configuración de facturación requiere revisión',
@@ -829,7 +829,7 @@ export const messages: Messages = {
         billingService: {
           connected: {
             title: 'El servicio de facturación está disponible',
-            description: 'EverittOS puede comunicarse con Stripe para este workspace.'
+            description: 'EverittOS puede comunicarse con Stripe para esta empresa.'
           },
           needs_attention: {
             title: 'El servicio de facturación requiere atención',
@@ -892,7 +892,7 @@ export const messages: Messages = {
     noRefund: {
       policyShort: 'Todos los pagos son finales. No hay reembolsos una vez procesado el pago.',
       policyFull:
-        'Todos los pagos son finales. EverittOS no ofrece reembolsos por suscripciones, tarifas de configuración, servicios digitales, uso de IA, acceso al workspace, complementos ni periodos de facturación parcialmente usados. Puede cancelar en cualquier momento para detener renovaciones futuras, pero los cargos previos no son reembolsables.',
+        'Todos los pagos son finales. EverittOS no ofrece reembolsos por suscripciones, tarifas de configuración, servicios digitales, uso de IA, acceso a la empresa, complementos ni periodos de facturación parcialmente usados. Puede cancelar en cualquier momento para detener renovaciones futuras, pero los cargos previos no son reembolsables.',
       checkoutAck: 'Entiendo que todos los pagos son finales y no reembolsables.',
       ackRequired: 'Confirme la política de no reembolso antes del pago.',
       cancelNote: 'Cancelar solo detiene renovaciones futuras. Los cargos previos no son reembolsables.'
@@ -909,7 +909,7 @@ export const messages: Messages = {
   aiUsage: {
     title: 'Uso de IA',
     description: 'Recuentos de prompts, costos estimados, seguimiento de cuotas y métricas de uso del equipo para administradores.',
-    adminOnly: 'Solo los propietarios y administradores del workspace pueden ver las métricas de uso de IA.'
+    adminOnly: 'Solo los propietarios y administradores de la empresa pueden ver las métricas de uso de IA.'
   },
   language: {
     title: 'Idioma',

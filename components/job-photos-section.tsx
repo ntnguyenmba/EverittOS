@@ -365,7 +365,9 @@ export function JobPhotosSection({
 
   const grouped = JOB_PHOTO_TAGS.map((tag) => ({
     tag,
-    items: photos.filter((p) => resolvePhotoType(p) === tag)
+    items: photos
+      .filter((p) => resolvePhotoType(p) === tag)
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
   }));
   const orderedPhotos = grouped.flatMap(({ items }) => items);
   const previewPhoto = previewIndex !== null ? orderedPhotos[previewIndex] : null;

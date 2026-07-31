@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       .eq('active', true)
       .maybeSingle();
     if (!assignee) {
-      return NextResponse.json({ error: 'Assigned team member is not active in this workspace.' }, { status: 400 });
+      return NextResponse.json({ error: 'Assigned team member is not active in this company.' }, { status: 400 });
     }
   }
 
