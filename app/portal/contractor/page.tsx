@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { ExportMenu } from '@/components/export-menu';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useTranslation } from '@/components/locale-provider';
 import { PhotoUpload } from '@/components/photo-upload';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import {
@@ -115,9 +117,11 @@ export default function ContractorPortalPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const earningsCopy = EARNINGS_COPY[locale];
+  const exportCopy = getExportCopy(locale);
   const [plan, setPlan] = useState(normalizePlan('free'));
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [exportError, setExportError] = useState('');
   const [gateMessage, setGateMessage] = useState('');
   const [errors, setErrors] = useState<ContractorLoadErrorCode[]>([]);
   const [metrics, setMetrics] = useState<ContractorDashboardMetrics>(EMPTY_METRICS);
@@ -462,10 +466,25 @@ export default function ContractorPortalPage() {
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
       <header id="overview" className="contractor-dash-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <h1>{t('portal.contractor.today')}</h1>
-        <div style={{ width: 'min(100%, 9rem)' }}>
-          <LanguageSwitcher id="contractor-portal-language" variant="compact" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <ExportMenu
+            endpoint="/api/exports/portal/contractor/jobs"
+            locale={locale}
+            labels={{
+              export: exportCopy.downloadMyJobs,
+              csv: exportCopy.downloadMyJobsCsv,
+              pdf: exportCopy.downloadMyJobsPdf
+            }}
+            disabled={loading}
+            onError={(err) => setExportError(err || exportCopy.exportFailed)}
+            onSuccess={() => setExportError('')}
+          />
+          <div style={{ width: 'min(100%, 9rem)' }}>
+            <LanguageSwitcher id="contractor-portal-language" variant="compact" />
+          </div>
         </div>
       </header>
+      {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
 
       <nav className="contractor-dash-nav" aria-label={t('portal.contractor.portal')}>
         {navItems.map((item) => <Link key={item.id} href={item.href} className="btn">{item.label}</Link>)}

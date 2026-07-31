@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalClientNav } from '@/components/portal/portal-client-nav';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
 import { translatePortalJobStatus } from '@/lib/portal-status-i18n';
 import { isClientRole, normalizeRole } from '@/lib/roles';
@@ -21,10 +23,12 @@ type ClientJob = {
 
 export default function ClientPortalJobsPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const exportCopy = getExportCopy(locale);
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -89,9 +93,27 @@ export default function ClientPortalJobsPage() {
   return (
     <AuthenticatedSection role="client">
       <header style={{ marginBottom: 20 }}>
-        <p className="eyebrow">{t('portal.client.portal')}</p>
-        <h2>{t('portal.client.sharedJobsTitle')}</h2>
-        <p className="muted">{t('portal.client.sharedJobsDescription')}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <p className="eyebrow">{t('portal.client.portal')}</p>
+            <h2 style={{ marginBottom: 6 }}>{t('portal.client.sharedJobsTitle')}</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              {t('portal.client.sharedJobsDescription')}
+            </p>
+          </div>
+          <ExportMenu
+            endpoint="/api/exports/portal/client/jobs"
+            locale={locale}
+            labels={{
+              export: exportCopy.downloadMyJobs,
+              csv: exportCopy.downloadMyJobsCsv,
+              pdf: exportCopy.downloadMyJobsPdf
+            }}
+            disabled={loading || Boolean(message)}
+            onError={(err) => setExportError(err || exportCopy.exportFailed)}
+            onSuccess={() => setExportError('')}
+          />
+        </div>
       </header>
 
       <PortalClientNav
@@ -100,6 +122,8 @@ export default function ClientPortalJobsPage() {
         appointmentsHref={clientPortalJobsPath()}
         accountHref={CLIENT_SETTINGS_PATH}
       />
+
+      {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
 
       {message ? (
         <div className="card" role="status">

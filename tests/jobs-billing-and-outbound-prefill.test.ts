@@ -118,18 +118,24 @@ describe('Invoice and receipt prefill helpers', () => {
 });
 
 describe('Jobs operations UI and permissions', () => {
-  it('jobs page includes billing column, create invoice, filters, and mobile table classes', () => {
+  it('jobs page includes create invoice action, filters, and compact mobile table', () => {
     const source = readFileSync('app/jobs/page.tsx', 'utf8');
-    assert.match(source, /billingCopy\.billingStatus/);
+    assert.doesNotMatch(source, /billingCopy\.billingStatus/);
+    assert.doesNotMatch(source, /jobs-billing-pill/);
     assert.match(source, /createInvoice/);
     assert.match(source, /jobs-operations-table/);
     assert.match(source, /jobs-mobile-table/);
+    assert.match(source, /jobs-shell-minimal/);
+    assert.match(source, /jobs-filter-tab/);
+    assert.match(source, /jobs-menu-trigger/);
     assert.match(source, /canAccessFinancials/);
     assert.match(source, /period=today/);
+    assert.match(source, /status=finished/);
     assert.match(source, /filter=unassigned/);
     assert.match(source, /missing_completion_date/);
     assert.match(source, /isAdminRole/);
     assert.match(source, /visibilitychange/);
+    assert.match(source, /\/api\/exports\/jobs/);
   });
 
   it('job completion prompt only appears for managers with financial access', () => {

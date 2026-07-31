@@ -1,6 +1,7 @@
 'use client';
 
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { useTranslation } from '@/components/locale-provider';
 import {
@@ -11,7 +12,8 @@ import {
 } from '@/lib/contractor-compensation';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { getExportCopy } from '@/lib/i18n/export-copy';
+import { canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -208,10 +210,12 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
 export default function PeoplePage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const exportCopy = getExportCopy(locale);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
+  const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -241,7 +245,21 @@ export default function PeoplePage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <h1>{t('nav.team')}</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <h1 style={{ margin: 0 }}>{t('nav.team')}</h1>
+        {canViewTeam(role) ? (
+          <ExportMenu
+            endpoint="/api/exports/team"
+            locale={locale}
+            onError={(message) => setExportError(message || exportCopy.exportFailed)}
+            onSuccess={() => setExportError('')}
+          />
+        ) : null}
+      </div>
+      {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
+      <p className="muted" style={{ marginTop: 8 }}>
+        {exportCopy.privateCompanyRecord}
+      </p>
       <TeamManagementPanel showPermissionMatrix={false} showAuditHistory={false} />
       <ContractorPanel canManage={isManagerRole(role)} />
     </AppShell>
