@@ -25,7 +25,6 @@ import {
   type ContractorLoadErrorCode,
   type ContractorPaymentHistoryRow
 } from '@/lib/contractor-dashboard';
-import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import {
   contractorJobCalendarEvent,
   downloadCalendarIcs,
@@ -418,7 +417,6 @@ export default function ContractorPortalPage() {
                   {t('portal.contractor.markComplete')}
                 </button>
               ) : null}
-              <Link className="btn" href={contractorJobDetailPath(job.id)}>{t('portal.contractor.openDetails')}</Link>
               {(() => {
                 const event = contractorJobCalendarEvent(job);
                 if (!event) return null;
@@ -565,7 +563,7 @@ export default function ContractorPortalPage() {
                   <tbody>
                     {history.map((row) => (
                       <tr key={row.laborId}>
-                        <td>{row.jobId ? <Link href={contractorJobDetailPath(row.jobId)}>{row.jobTitle}</Link> : row.jobTitle}</td>
+                        <td>{row.jobTitle}</td>
                         <td>{row.customerName}</td>
                         <td>{row.workDate || '—'}</td>
                         <td>{formatContractorMoney(row.amountEarned)}</td>
