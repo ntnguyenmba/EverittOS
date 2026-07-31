@@ -71,7 +71,7 @@
   top: 8px;
   z-index: 8;
   border-color: #dbe4e7 !important;
-  background: rgba(248, 251, 252, 0.94) !important;
+  background: rgba(248, 251, 252, 0.96) !important;
   backdrop-filter: blur(14px);
 }
 
@@ -91,11 +91,19 @@
   box-shadow: 0 1px 6px rgba(35, 62, 77, 0.1) !important;
 }
 
+.jobs-table-card,
+.jobs-mobile-table-wrap,
+.jobs-operations-table,
+.jobs-operations-table thead,
+.jobs-operations-table tbody,
+.jobs-operations-table tr {
+  background: transparent !important;
+}
+
 .jobs-table-card {
   overflow: visible !important;
   border: 0 !important;
   border-radius: 0 !important;
-  background: transparent !important;
   box-shadow: none !important;
   isolation: isolate;
 }
@@ -119,8 +127,16 @@
   height: 42px !important;
   padding: 0 18px !important;
   border: 0 !important;
-  background: transparent !important;
-  color: #71828c !important;
+  background: #eef3f5 !important;
+  color: #657985 !important;
+}
+
+.jobs-operations-table th:first-child {
+  border-radius: 12px 0 0 12px !important;
+}
+
+.jobs-operations-table th:last-child {
+  border-radius: 0 12px 12px 0 !important;
 }
 
 .jobs-operations-row {
@@ -233,31 +249,50 @@
 
 .jobs-shell-minimal .status.scheduled,
 .jobs-shell-minimal .status.pending,
-.jobs-shell-minimal .status.new {
+.jobs-shell-minimal .status.new,
+.jobs-shell-minimal .status.cancelled,
+.jobs-shell-minimal .status.canceled,
+.jobs-shell-minimal .status.overdue,
+.jobs-shell-minimal .status.unpaid {
   border-color: #d0dbe1 !important;
   background: #f1f5f7 !important;
   color: #4f6572 !important;
 }
 
-.jobs-shell-minimal .status.cancelled,
-.jobs-shell-minimal .status.canceled,
-.jobs-shell-minimal .status.overdue,
-.jobs-shell-minimal .status.unpaid {
-  border-color: #d5dde1 !important;
-  background: #eef1f3 !important;
-  color: #5d6870 !important;
-}
-
 .jobs-menu-trigger {
+  width: auto !important;
+  min-width: 74px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 14px !important;
   border-color: #d8e2e6 !important;
+  border-radius: 10px !important;
   background: #ffffff !important;
+  color: transparent !important;
+  font-size: 0 !important;
 }
 
 .jobs-menu-trigger::before {
-  width: 3px !important;
-  height: 3px !important;
-  background: #526772 !important;
-  box-shadow: 0 -6px 0 #526772, 0 6px 0 #526772 !important;
+  content: 'Actions' !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #385364 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.jobs-menu-trigger::after {
+  content: '⌄';
+  margin-left: 7px;
+  color: #6d7f89;
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .jobs-menu-trigger:hover,
@@ -277,7 +312,7 @@
   content: '';
   position: absolute;
   top: -6px;
-  right: 14px;
+  right: 24px;
   width: 10px;
   height: 10px;
   border-left: 1px solid #d7e1e5;
@@ -352,6 +387,25 @@
 
   .jobs-operations-row td:first-child::before {
     inset: 10px auto 10px 0;
+  }
+
+  .jobs-menu-trigger {
+    min-width: 40px !important;
+    width: 40px !important;
+    padding: 0 !important;
+  }
+
+  .jobs-menu-trigger::before {
+    content: 'Menu' !important;
+    font-size: 0 !important;
+  }
+
+  .jobs-menu-trigger::after {
+    content: '≡';
+    margin: 0;
+    color: #385364;
+    font-size: 1.1rem;
+    font-weight: 700;
   }
 
   .jobs-more-panel {
