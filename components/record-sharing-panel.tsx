@@ -128,13 +128,19 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
   }
 
   const shareLookup = new Map(shares.map((share) => [share.shared_with_user_id, share]));
-  const availableMembers = members.filter((member) => !shareLookup.has(member.user_id));
+  const availableMembers = members.filter((member) => {
+    if (shareLookup.has(member.user_id)) return false;
+    // Contractors receive job visibility through assignment only. Do not offer
+    // separate view/edit sharing controls that can conflict with assignments.
+    if (recordType === 'job' && normalizeRole(member.role) === 'contractor') return false;
+    return true;
+  });
 
   return (
     <div className="card" style={{ marginTop: 18 }}>
       <h3>Shared access</h3>
       <p className="muted">
-        Sharing gives a teammate permission to view or edit this {recordType}. It does not assign the job or add it to their assigned work.
+        Sharing gives a teammate permission to view or edit this {recordType}. Job contractors receive access automatically when assigned.
       </p>
 
       {canManage ? (
