@@ -34,6 +34,19 @@ type PropertySearchRow = {
   preferred_contractor_id?: string | null;
 };
 
+function escapedIlikePattern(value: string) {
+  const escaped = value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+    .replaceAll(',', '\\,')
+    .replaceAll('(', '\\(')
+    .replaceAll(')', '\\)')
+    .replaceAll('"', '\\"');
+
+  return `%${escaped}%`;
+}
+
 export async function GET(request: Request) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
@@ -45,16 +58,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ customers: [] });
   }
 
-  const pattern = `%${q}%`;
+  const pattern = escapedIlikePattern(q);
   const orgId = ctx.workspace.organizationId;
+  const customerSearchFilter = [
+    `company_name.ilike.${pattern}`,
+    `email.ilike.${pattern}`,
+    `phone.ilike.${pattern}`,
+    `address_line1.ilike.${pattern}`,
+    `service_address.ilike.${pattern}`,
+    `property_address.ilike.${pattern}`
+  ].join(',');
 
   const primaryCustomers = await ctx.supabase
     .from('customers')
     .select(CUSTOMER_LIST_SELECT)
     .eq('organization_id', orgId)
-    .or(
-      `company_name.ilike."${pattern}",email.ilike."${pattern}",phone.ilike."${pattern}",address_line1.ilike."${pattern}",service_address.ilike."${pattern}",property_address.ilike."${pattern}"`
-    )
+    .or(customerSearchFilter)
     .limit(20);
 
   const customersQuery =
@@ -65,9 +84,7 @@ export async function GET(request: Request) {
             'id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, address_line2, city, state, postal_code, country, service_address, property_address'
           )
           .eq('organization_id', orgId)
-          .or(
-            `company_name.ilike."${pattern}",email.ilike."${pattern}",phone.ilike."${pattern}",address_line1.ilike."${pattern}",service_address.ilike."${pattern}",property_address.ilike."${pattern}"`
-          )
+          .or(customerSearchFilter)
           .limit(20)
       : primaryCustomers;
 
@@ -77,14 +94,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const matchedCustomerIds = new Set((customers || []).map((c) => c.id));
+  const matchedCustomerIds = new Set((customers || []).map((customer) => customer.id));
+  const propertySearchFilter = [
+    `name.ilike.${pattern}`,
+    `formatted_address.ilike.${pattern}`,
+    `address.ilike.${pattern}`,
+    `city.ilike.${pattern}`
+  ].join(',');
 
   const propMatch = await ctx.supabase
     .from('customer_properties')
     .select(PROPERTY_SEARCH_SELECT)
     .eq('organization_id', orgId)
     .eq('is_archived', false)
-    .or(`name.ilike."${pattern}",formatted_address.ilike."${pattern}",address.ilike."${pattern}",city.ilike."${pattern}"`)
+    .or(propertySearchFilter)
     .limit(30);
 
   let propertyRows: PropertySearchRow[] = (propMatch.data || []) as unknown as PropertySearchRow[];
@@ -93,31 +116,46 @@ export async function GET(request: Request) {
       .from('customer_properties')
       .select('id, customer_id, name, address')
       .eq('organization_id', orgId)
-      .or(`name.ilike."${pattern}",address.ilike."${pattern}"`)
+      .or([`name.ilike.${pattern}`, `address.ilike.${pattern}`].join(','))
       .limit(30);
+
+    if (legacy.error) {
+      return NextResponse.json({ error: legacy.error.message }, { status: 400 });
+    }
+
     propertyRows = (legacy.data || []).map((row) => ({
       ...row,
       formatted_address: row.address,
       is_archived: false,
       is_primary: false
     }));
+  } else if (propMatch.error) {
+    return NextResponse.json({ error: propMatch.error.message }, { status: 400 });
   }
 
   for (const row of propertyRows) matchedCustomerIds.add(row.customer_id);
 
-  const missingIds = Array.from(matchedCustomerIds).filter((id) => !(customers || []).some((c) => c.id === id));
+  const currentCustomerIds = new Set((customers || []).map((customer) => customer.id));
+  const missingIds = Array.from(matchedCustomerIds).filter((id) => !currentCustomerIds.has(id));
   let allCustomers = customers || [];
+
   if (missingIds.length) {
-    const { data: more } = await ctx.supabase
+    const { data: more, error: moreError } = await ctx.supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)
       .eq('organization_id', orgId)
       .in('id', missingIds);
+
+    if (moreError) {
+      return NextResponse.json({ error: moreError.message }, { status: 400 });
+    }
+
     allCustomers = [...allCustomers, ...(more || [])];
   }
 
-  const customerIds = allCustomers.map((c) => c.id);
+  const customerIds = allCustomers.map((customer) => customer.id);
   let propertiesForCustomers = propertyRows;
+
   if (customerIds.length) {
     const allProps = await ctx.supabase
       .from('customer_properties')
@@ -137,35 +175,42 @@ export async function GET(request: Request) {
         .eq('organization_id', orgId)
         .in('customer_id', customerIds)
         .limit(120);
+
+      if (legacy.error) {
+        return NextResponse.json({ error: legacy.error.message }, { status: 400 });
+      }
+
       propertiesForCustomers = (legacy.data || []).map((row) => ({
         ...row,
         formatted_address: row.address,
         is_archived: false,
         is_primary: false
       }));
+    } else if (allProps.error) {
+      return NextResponse.json({ error: allProps.error.message }, { status: 400 });
     }
   }
 
   const results = allCustomers.map((customer) => {
     const customerProperties = propertiesForCustomers
-      .filter((p) => p.customer_id === customer.id)
-      .map((p) => ({
-        id: p.id,
-        customer_id: p.customer_id,
-        name: p.name,
-        property_type: p.property_type || 'home',
-        formatted_address: p.formatted_address || p.address || null,
-        address: p.address || p.formatted_address || null,
-        timezone: p.timezone || null,
-        is_primary: Boolean(p.is_primary),
-        default_price: p.default_price ?? null,
-        default_duration_minutes: p.default_duration_minutes ?? null,
-        access_instructions: p.access_instructions || null,
-        supply_notes: p.supply_notes || null,
-        parking_instructions: p.parking_instructions || null,
-        pet_notes: p.pet_notes || null,
-        preferred_contractor_id: p.preferred_contractor_id || null,
-        display_address: propertyDisplayAddress(p)
+      .filter((property) => property.customer_id === customer.id)
+      .map((property) => ({
+        id: property.id,
+        customer_id: property.customer_id,
+        name: property.name,
+        property_type: property.property_type || 'home',
+        formatted_address: property.formatted_address || property.address || null,
+        address: property.address || property.formatted_address || null,
+        timezone: property.timezone || null,
+        is_primary: Boolean(property.is_primary),
+        default_price: property.default_price ?? null,
+        default_duration_minutes: property.default_duration_minutes ?? null,
+        access_instructions: property.access_instructions || null,
+        supply_notes: property.supply_notes || null,
+        parking_instructions: property.parking_instructions || null,
+        pet_notes: property.pet_notes || null,
+        preferred_contractor_id: property.preferred_contractor_id || null,
+        display_address: propertyDisplayAddress(property)
       }));
 
     return {
