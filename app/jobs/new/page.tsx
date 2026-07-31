@@ -7,13 +7,19 @@ import { AppShell } from '@/components/app-shell';
 import { JobCreator } from '@/components/job-creator';
 import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { normalizeRole, type UserRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+
+type MembershipResponse = {
+  activeRole?: string | null;
+  destination?: string | null;
+};
 
 export default function NewJobPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<EverittosPlan>('free');
-  const [role, setRole] = useState<UserRole>('owner');
+  const [role, setRole] = useState<UserRole>('employee');
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -21,15 +27,40 @@ export default function NewJobPage() {
         data: { user }
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login?next=/jobs/new');
+        router.replace('/login?next=/jobs/new');
         return;
       }
-      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+
+      const [{ data: profile }, membershipsResponse] = await Promise.all([
+        supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle(),
+        fetch('/api/org/memberships', { cache: 'no-store' })
+      ]);
+
       setPlan(normalizePlan(profile?.plan));
-      setRole(normalizeRole(profile?.role));
+
+      if (!membershipsResponse.ok) {
+        router.replace('/dashboard');
+        return;
+      }
+
+      const memberships = (await membershipsResponse.json()) as MembershipResponse;
+      const activeRole = normalizeRole(memberships.activeRole || 'employee');
+      setRole(activeRole);
+
+      if (isContractorRole(activeRole) || isClientRole(activeRole)) {
+        router.replace(memberships.destination || '/dashboard');
+        return;
+      }
+
+      setAuthorized(true);
     }
+
     void load();
   }, [router]);
+
+  if (!authorized) {
+    return <p className="loading-state">Loading...</p>;
+  }
 
   return (
     <AppShell plan={plan} role={role}>
