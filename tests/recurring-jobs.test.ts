@@ -183,7 +183,8 @@ test('recurrence summary is human readable', () => {
   assert.match(summary, /Every two weeks/);
   assert.match(summary, /Thursday/);
   assert.match(summary, /10:00 AM/);
-  assert.match(summary, /365 days/);
+  assert.match(summary, /starting August 6, 2026/);
+  assert.doesNotMatch(summary, /starting \./);
 });
 
 test('job create persists contractor assignment into job_assignments', () => {

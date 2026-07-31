@@ -163,14 +163,15 @@ test('summary includes end mode wording', () => {
     occurrenceLimit: 12
   });
   assert.match(afterCount, /Tuesday and Friday/);
-  assert.match(afterCount, /ending after 12 visits/);
+  assert.match(afterCount, /for 12 visits/);
+  assert.doesNotMatch(afterCount, /starting \./);
 
   const onDate = summarizeRecurrence({
     frequency: 'monthly',
     startDate: '2026-08-15',
     endDate: '2026-12-15'
   });
-  assert.match(onDate, /ending December 15, 2026/);
+  assert.match(onDate, /and ending December 15, 2026/);
 });
 
 test('MRR normalization for weekly biweekly four-weekly monthly and daily', () => {

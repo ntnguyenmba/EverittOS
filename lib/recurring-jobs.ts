@@ -5,6 +5,7 @@ import {
   dollarsToCents,
   parseMoneyDollars
 } from '@/lib/money-decimal';
+import { getRecurrenceCopy, recurrenceLocaleTag } from '@/lib/i18n/recurrence-copy';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 
 /**
@@ -424,47 +425,122 @@ export function resolveGenerationFromDate(
   return compareCivil(startDate, today) > 0 ? startDate : today;
 }
 
-function formatDisplayDate(date: string): string {
+function formatDisplayDate(date: string, locale?: string | null): string {
   const parts = parseDateParts(date);
-  if (!parts) return date;
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
-  ];
-  return `${months[parts.m - 1]} ${parts.d}, ${parts.y}`;
+  if (!parts) return '';
+  try {
+    return new Intl.DateTimeFormat(recurrenceLocaleTag(locale), {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC'
+    }).format(new Date(Date.UTC(parts.y, parts.m - 1, parts.d)));
+  } catch {
+    return `${parts.y}-${String(parts.m).padStart(2, '0')}-${String(parts.d).padStart(2, '0')}`;
+  }
 }
 
-export function summarizeRecurrence(input: RecurringSeriesInput): string {
+function weekdayName(day: number, locale?: string | null): string {
+  // 2024-01-07 is a Sunday in UTC.
+  try {
+    return new Intl.DateTimeFormat(recurrenceLocaleTag(locale), {
+      weekday: 'long',
+      timeZone: 'UTC'
+    }).format(new Date(Date.UTC(2024, 0, 7 + day)));
+  } catch {
+    return WEEKDAY_LABELS[day] || 'day';
+  }
+}
+
+function joinWeekdayNames(names: string[], locale?: string | null): string {
+  const tag = String(locale || 'en').toLowerCase();
+  if (names.length <= 1) return names[0] || '';
+  if (tag.startsWith('es')) {
+    return names.length === 2 ? `${names[0]} y ${names[1]}` : `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
+  }
+  if (tag.startsWith('vi')) {
+    return names.join(', ');
+  }
+  return names.length === 2 ? `${names[0]} and ${names[1]}` : `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+/** Language-aware recurrence summary. Never renders “starting .” when the start date is missing. */
+export function summarizeRecurrenceForLocale(input: RecurringSeriesInput, locale?: string | null): string {
+  const copy = getRecurrenceCopy(locale);
+  const tag = String(locale || 'en').toLowerCase();
+
   if (input.frequency === 'none') {
-    return `One-time job on ${formatDisplayDate(input.startDate)}${input.preferredStartTime ? ` at ${formatTimeLabel(input.preferredStartTime)}` : ''}.`;
+    if (!parseDateParts(input.startDate)) return copy.selectStartDateToPreview;
+    const dateLabel = formatDisplayDate(input.startDate, locale);
+    const time = input.preferredStartTime ? ` ${formatTimeLabel(input.preferredStartTime)}` : '';
+    if (tag.startsWith('es')) return `Trabajo único el ${dateLabel}${time}.`;
+    if (tag.startsWith('vi')) return `Công việc một lần vào ${dateLabel}${time}.`;
+    return `One-time job on ${dateLabel}${time ? ` at${time}` : ''}.`;
+  }
+
+  if (!parseDateParts(input.startDate)) {
+    return copy.selectStartDateToPreview;
   }
 
   const { interval, intervalUnit } = resolveRecurrenceInterval(input);
   const weekdays = normalizeWeekdays(input);
-  const dayLabel =
-    weekdays.length > 1
-      ? weekdays.map((day) => WEEKDAY_LABELS[day]).join(' and ')
-      : WEEKDAY_LABELS[weekdays[0]] || 'the selected day';
+  const dayNames = weekdays.map((day) => weekdayName(day, locale));
+  const dayLabel = joinWeekdayNames(dayNames, locale);
   const hasTime = Boolean(input.preferredStartTime && /^\d{2}:\d{2}$/.test(input.preferredStartTime.trim()));
   const tzAbbrev = formatTimezoneAbbreviation(input.timezone, input.startDate, input.preferredStartTime);
   const timeLabel = hasTime
-    ? ` at ${formatTimeLabel(input.preferredStartTime!)}${tzAbbrev ? ` ${tzAbbrev}` : ''}`
+    ? ` ${formatTimeLabel(input.preferredStartTime!)}${tzAbbrev ? ` ${tzAbbrev}` : ''}`
     : '';
+  const startLabel = formatDisplayDate(input.startDate, locale);
+  const endMode = resolveRecurrenceEndMode(input);
+  const endDateLabel =
+    endMode === 'on_date' && input.endDate ? formatDisplayDate(input.endDate, locale) : '';
+  const visitCount = endMode === 'after_count' && input.occurrenceLimit ? Number(input.occurrenceLimit) : 0;
 
-  let cadence = '';
+  if (tag.startsWith('es')) {
+    let cadence = 'Cada semana';
+    if (input.frequency === 'daily' || (intervalUnit === 'days' && interval === 1)) cadence = 'Cada día';
+    else if (intervalUnit === 'days') cadence = `Cada ${interval} días`;
+    else if (input.frequency === 'biweekly' || (intervalUnit === 'weeks' && interval === 2)) cadence = 'Cada dos semanas';
+    else if (input.frequency === 'every_three_weeks' || (intervalUnit === 'weeks' && interval === 3)) cadence = 'Cada tres semanas';
+    else if (input.frequency === 'every_four_weeks' || (intervalUnit === 'weeks' && interval === 4)) cadence = 'Cada cuatro semanas';
+    else if (input.frequency === 'monthly' || intervalUnit === 'months') {
+      cadence = interval === 1 ? 'Cada mes' : `Cada ${interval} meses`;
+    } else if (intervalUnit === 'weeks' && interval !== 1) cadence = `Cada ${interval} semanas`;
+    const dayPart = intervalUnit === 'weeks' ? `, los ${dayLabel.toLowerCase()}` : '';
+    const timePart = timeLabel ? ` a las${timeLabel}` : '';
+    if (endDateLabel) return `${cadence}${dayPart}${timePart}, a partir del ${startLabel} y hasta el ${endDateLabel}.`;
+    if (visitCount > 0) return `${cadence}${dayPart}${timePart}, a partir del ${startLabel}, durante ${visitCount} visitas.`;
+    return `${cadence}${dayPart}${timePart}, a partir del ${startLabel}.`;
+  }
+
+  if (tag.startsWith('vi')) {
+    let cadence = 'Lặp lại hàng tuần';
+    if (input.frequency === 'daily' || (intervalUnit === 'days' && interval === 1)) cadence = 'Lặp lại hàng ngày';
+    else if (intervalUnit === 'days') cadence = `Lặp lại mỗi ${interval} ngày`;
+    else if (input.frequency === 'biweekly' || (intervalUnit === 'weeks' && interval === 2)) {
+      cadence = 'Lặp lại hai tuần một lần';
+    } else if (input.frequency === 'every_three_weeks' || (intervalUnit === 'weeks' && interval === 3)) {
+      cadence = 'Lặp lại ba tuần một lần';
+    } else if (input.frequency === 'every_four_weeks' || (intervalUnit === 'weeks' && interval === 4)) {
+      cadence = 'Lặp lại bốn tuần một lần';
+    } else if (input.frequency === 'monthly' || intervalUnit === 'months') {
+      cadence = interval === 1 ? 'Lặp lại hàng tháng' : `Lặp lại mỗi ${interval} tháng`;
+    } else if (intervalUnit === 'weeks' && interval !== 1) cadence = `Lặp lại mỗi ${interval} tuần`;
+    const dayPart = intervalUnit === 'weeks' ? ` vào ${dayLabel}` : '';
+    const timePart = timeLabel ? ` lúc${timeLabel}` : '';
+    if (endDateLabel) {
+      return `${cadence}${dayPart}${timePart}, bắt đầu từ ngày ${startLabel} và kết thúc vào ngày ${endDateLabel}.`;
+    }
+    if (visitCount > 0) {
+      return `${cadence}${dayPart}${timePart}, bắt đầu từ ngày ${startLabel}, trong ${visitCount} lần ghé thăm.`;
+    }
+    return `${cadence}${dayPart}${timePart}, bắt đầu từ ngày ${startLabel}.`;
+  }
+
+  let cadence = 'Every week';
   if (input.frequency === 'daily' || (intervalUnit === 'days' && interval === 1)) cadence = 'Every day';
   else if (intervalUnit === 'days') cadence = `Every ${interval} days`;
-  else if (input.frequency === 'weekly' || (intervalUnit === 'weeks' && interval === 1)) cadence = 'Every week';
   else if (input.frequency === 'biweekly' || (intervalUnit === 'weeks' && interval === 2)) cadence = 'Every two weeks';
   else if (input.frequency === 'every_three_weeks' || (intervalUnit === 'weeks' && interval === 3)) {
     cadence = 'Every three weeks';
@@ -472,20 +548,17 @@ export function summarizeRecurrence(input: RecurringSeriesInput): string {
     cadence = 'Every four weeks';
   } else if (input.frequency === 'monthly' || intervalUnit === 'months') {
     cadence = interval === 1 ? 'Every month' : `Every ${interval} months`;
-  } else cadence = `Every ${interval} weeks`;
+  } else if (intervalUnit === 'weeks' && interval !== 1) cadence = `Every ${interval} weeks`;
 
-  const usesWeekday = intervalUnit === 'weeks';
-  const dayPart = usesWeekday ? ` on ${dayLabel}` : input.frequency === 'monthly' ? ` on the ${Number(input.startDate.slice(8, 10))}` : '';
+  const dayPart = intervalUnit === 'weeks' ? ` on ${dayLabel}` : '';
+  const timePart = timeLabel ? ` at${timeLabel}` : '';
+  if (endDateLabel) return `${cadence}${dayPart}${timePart} starting ${startLabel} and ending ${endDateLabel}.`;
+  if (visitCount > 0) return `${cadence}${dayPart}${timePart} starting ${startLabel} for ${visitCount} visits.`;
+  return `${cadence}${dayPart}${timePart} starting ${startLabel}.`;
+}
 
-  let ending = '';
-  const endMode = resolveRecurrenceEndMode(input);
-  if (endMode === 'on_date' && input.endDate) ending = `, ending ${formatDisplayDate(input.endDate)}`;
-  else if (endMode === 'after_count' && input.occurrenceLimit) ending = `, ending after ${input.occurrenceLimit} visits`;
-  else {
-    ending = `. The series continues until you end it, with the next ${RECURRING_GENERATION_WINDOW_DAYS} days kept scheduled ahead`;
-  }
-
-  return `${cadence}${dayPart}${timeLabel} starting ${formatDisplayDate(input.startDate)}${ending}.`;
+export function summarizeRecurrence(input: RecurringSeriesInput, locale?: string | null): string {
+  return summarizeRecurrenceForLocale(input, locale);
 }
 
 function formatTimeLabel(value: string): string {

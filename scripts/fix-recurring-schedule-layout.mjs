@@ -35,11 +35,16 @@ if (/\|\| '09:00'/.test(source)) {
 }
 
 const scheduleIdx = source.indexOf('recurrenceCopy.scheduleType');
-const startDateIdx = source.indexOf('recurrenceCopy.startsOn', scheduleIdx);
-const startTimeIdx = source.indexOf('recurrenceCopy.startTime', startDateIdx);
-const endTimeIdx = source.indexOf('recurrenceCopy.endTime', startTimeIdx);
+const startDateIdx = source.indexOf('id="recurrence-starts-on"', scheduleIdx);
+const startTimeIdx = source.indexOf('id="recurring-start-time"', startDateIdx);
+const endTimeIdx = source.indexOf('id="recurring-end-time"', startTimeIdx);
 const timezoneIdx = source.indexOf('recurrenceCopy.jobTimezone', endTimeIdx);
 const endsIdx = source.indexOf('recurrenceCopy.ends', timezoneIdx);
+
+if (!/recurrenceStartDate/.test(source) || !/setSeriesStartDate/.test(source)) {
+  console.error('Missing dedicated recurrence start date state');
+  failed = true;
+}
 
 if (![scheduleIdx, startDateIdx, startTimeIdx, endTimeIdx, timezoneIdx, endsIdx].every((i) => i >= 0)) {
   console.error('Could not verify recurring control order');

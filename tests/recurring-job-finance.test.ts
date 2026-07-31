@@ -198,7 +198,7 @@ test('recurrence summary matches plain language example style', () => {
     preferredStartTime: '10:00'
   });
   assert.match(summary, /Every two weeks on Thursday at 10:00 AM starting August 6, 2026/);
-  assert.match(summary, /365 days/);
+  assert.doesNotMatch(summary, /starting \./);
 });
 
 test('dashboard metrics keep expected and actual finance separate', () => {

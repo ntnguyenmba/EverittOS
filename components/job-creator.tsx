@@ -24,7 +24,7 @@ import { calculateExpectedJobFinance, multiplyMoneyDollars, parseMoneyDollars } 
 import { getRecurrenceCopy } from '@/lib/i18n/recurrence-copy';
 import {
   RECURRING_GENERATION_WINDOW_DAYS,
-  summarizeRecurrence,
+  summarizeRecurrenceForLocale,
   type RecurrenceEndMode,
   type RecurrenceFrequency,
   type RecurrenceIntervalUnit
@@ -145,6 +145,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>('none');
+  const [recurrenceStartDate, setRecurrenceStartDate] = useState('');
   const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([new Date().getDay()]);
   const [recurrenceInterval, setRecurrenceInterval] = useState('1');
   const [recurrenceIntervalUnit, setRecurrenceIntervalUnit] = useState<RecurrenceIntervalUnit>('weeks');
@@ -152,6 +153,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [recurrenceLimit, setRecurrenceLimit] = useState('');
   const [showRecurrenceAdvanced, setShowRecurrenceAdvanced] = useState(false);
+  const [recurrenceFieldErrors, setRecurrenceFieldErrors] = useState<{
+    startDate?: string;
+    weekdays?: string;
+    endDate?: string;
+    limit?: string;
+    startTime?: string;
+  }>({});
   const [timeZone, setTimeZone] = useState('');
   const [clientIncome, setClientIncome] = useState('');
   const [additionalExpenses, setAdditionalExpenses] = useState('');
@@ -379,6 +387,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setVisits((rows) => rows.map((visit) => (visit.id === id ? { ...visit, ...patch } : visit)));
   }
 
+  function setSeriesStartDate(value: string) {
+    setRecurrenceStartDate(value);
+    setRecurrenceFieldErrors((current) => ({ ...current, startDate: undefined }));
+    setVisits((rows) => {
+      if (!rows[0]) return [{ ...newVisit(), visit_date: value }];
+      return rows.map((visit, index) => (index === 0 ? { ...visit, visit_date: value } : visit));
+    });
+  }
+
   function removeVisit(id: string) {
     setVisits((rows) => (rows.length === 1 ? rows : rows.filter((visit) => visit.id !== id)));
   }
@@ -489,13 +506,62 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const scheduledVisits = validVisits(visits);
+    const isRecurringJob = recurrenceFrequency !== 'none';
+    if (isRecurringJob) {
+      const needsWeekdays =
+        recurrenceFrequency === 'weekly' ||
+        recurrenceFrequency === 'biweekly' ||
+        recurrenceFrequency === 'every_three_weeks' ||
+        recurrenceFrequency === 'every_four_weeks' ||
+        (recurrenceFrequency === 'custom' && recurrenceIntervalUnit === 'weeks');
+      const nextErrors: typeof recurrenceFieldErrors = {};
+      if (!recurrenceStartDate.trim()) nextErrors.startDate = recurrenceCopy.startDateRequired;
+      if (needsWeekdays && recurrenceWeekdays.length === 0) nextErrors.weekdays = recurrenceCopy.selectWeekday;
+      if (recurrenceEndMode === 'on_date') {
+        if (!recurrenceEndDate.trim()) nextErrors.endDate = recurrenceCopy.endDateRequired;
+        else if (recurrenceStartDate && recurrenceEndDate < recurrenceStartDate) {
+          nextErrors.endDate = recurrenceCopy.endDateBeforeStart;
+        }
+      }
+      if (recurrenceEndMode === 'after_count') {
+        const count = Number(recurrenceLimit);
+        if (!recurrenceLimit.trim() || !Number.isFinite(count) || count < 1) {
+          nextErrors.limit = recurrenceCopy.occurrenceCountRequired;
+        }
+      }
+      if (!visits[0]?.start_time) nextErrors.startTime = recurrenceCopy.startTimeRequired;
+      if (Object.keys(nextErrors).length > 0) {
+        setRecurrenceFieldErrors(nextErrors);
+        return;
+      }
+      setRecurrenceFieldErrors({});
+    }
+
+    const scheduledVisits = isRecurringJob
+      ? [
+          {
+            ...(visits[0] || newVisit()),
+            visit_date: recurrenceStartDate.trim(),
+            start_time: visits[0]?.start_time || '',
+            end_time: visits[0]?.end_time || ''
+          }
+        ]
+      : validVisits(visits);
     for (const visit of scheduledVisits) {
-      if (!visit.visit_date || !visit.start_time || !visit.end_time) {
+      if (isRecurringJob) {
+        if (!visit.visit_date || !visit.start_time) {
+          setRecurrenceFieldErrors((current) => ({
+            ...current,
+            startDate: visit.visit_date ? current.startDate : recurrenceCopy.startDateRequired,
+            startTime: visit.start_time ? current.startTime : recurrenceCopy.startTimeRequired
+          }));
+          return;
+        }
+      } else if (!visit.visit_date || !visit.start_time || !visit.end_time) {
         appFeedback.error('Each visit needs a date, start time, and end time.');
         return;
       }
-      if (visit.end_time <= visit.start_time) {
+      if (visit.end_time && visit.end_time <= visit.start_time) {
         appFeedback.error('Visit end time must be after start time.');
         return;
       }
@@ -621,12 +687,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         : null;
 
     if (recurrenceFrequency !== 'none') {
-      const startDate = firstVisit?.visit_date?.trim() || '';
-      if (!startDate) {
-        setLoading(false);
-        appFeedback.error(recurrenceCopy.startDateRequired);
-        return;
-      }
+      const startDate = recurrenceStartDate.trim();
       const recurringRes = await fetch('/api/recurring-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -811,19 +872,22 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const previewProfit = previewFinance.expectedProfit;
   const isRecurring = recurrenceFrequency !== 'none';
   const primaryVisit = visits[0];
-  const recurrenceSummary = summarizeRecurrence({
-    frequency: recurrenceFrequency,
-    interval: Number(recurrenceInterval) || 1,
-    intervalUnit: recurrenceIntervalUnit,
-    weekday: recurrenceWeekdays[0] ?? null,
-    weekdays: recurrenceWeekdays,
-    startDate: primaryVisit?.visit_date || '',
-    endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
-    occurrenceLimit:
-      recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
-    preferredStartTime: primaryVisit?.start_time || null,
-    timezone: timeZone || null
-  });
+  const recurrenceSummary = summarizeRecurrenceForLocale(
+    {
+      frequency: recurrenceFrequency,
+      interval: Number(recurrenceInterval) || 1,
+      intervalUnit: recurrenceIntervalUnit,
+      weekday: recurrenceWeekdays[0] ?? null,
+      weekdays: recurrenceWeekdays,
+      startDate: recurrenceStartDate,
+      endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
+      occurrenceLimit:
+        recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
+      preferredStartTime: primaryVisit?.start_time || null,
+      timezone: timeZone || null
+    },
+    locale
+  );
   const showWeekdays =
     isRecurring &&
     (recurrenceFrequency === 'weekly' ||
@@ -1090,41 +1154,55 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
           {isRecurring ? (
             <>
-              {primaryVisit ? (
-                <div className="form visit-editor" style={{ marginTop: 12 }}>
-                  <label htmlFor="recurring-start-date">{recurrenceCopy.startsOn}</label>
-                  <input
-                    id="recurring-start-date"
-                    className="input"
-                    type="date"
-                    required
-                    value={primaryVisit.visit_date}
-                    onChange={(e) => updateVisit(primaryVisit.id, { visit_date: e.target.value })}
-                  />
-                  <div className="grid-2">
-                    <div className="form-group">
-                      <label htmlFor="recurring-start-time">{recurrenceCopy.startTime}</label>
-                      <input
-                        id="recurring-start-time"
-                        className="input"
-                        type="time"
-                        value={primaryVisit.start_time}
-                        onChange={(e) => updateVisit(primaryVisit.id, { start_time: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="recurring-end-time">{recurrenceCopy.endTime}</label>
-                      <input
-                        id="recurring-end-time"
-                        className="input"
-                        type="time"
-                        value={primaryVisit.end_time}
-                        onChange={(e) => updateVisit(primaryVisit.id, { end_time: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
+              <label htmlFor="recurrence-starts-on" style={{ marginTop: 12 }}>{recurrenceCopy.startsOn}</label>
+              <input
+                id="recurrence-starts-on"
+                name="recurrence_starts_on"
+                className="input"
+                type="date"
+                required
+                aria-required="true"
+                aria-invalid={Boolean(recurrenceFieldErrors.startDate)}
+                value={recurrenceStartDate}
+                onChange={(e) => setSeriesStartDate(e.target.value)}
+              />
+              {recurrenceFieldErrors.startDate ? (
+                <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startDate}</p>
               ) : null}
+
+              <div className="grid-2" style={{ marginTop: 12 }}>
+                <div className="form-group">
+                  <label htmlFor="recurring-start-time">{recurrenceCopy.startTime}</label>
+                  <input
+                    id="recurring-start-time"
+                    className="input"
+                    type="time"
+                    aria-invalid={Boolean(recurrenceFieldErrors.startTime)}
+                    value={primaryVisit?.start_time || ''}
+                    onChange={(e) => {
+                      if (!primaryVisit) return;
+                      setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined }));
+                      updateVisit(primaryVisit.id, { start_time: e.target.value });
+                    }}
+                  />
+                  {recurrenceFieldErrors.startTime ? (
+                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p>
+                  ) : null}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="recurring-end-time">{recurrenceCopy.endTime}</label>
+                  <input
+                    id="recurring-end-time"
+                    className="input"
+                    type="time"
+                    value={primaryVisit?.end_time || ''}
+                    onChange={(e) => {
+                      if (!primaryVisit) return;
+                      updateVisit(primaryVisit.id, { end_time: e.target.value });
+                    }}
+                  />
+                </div>
+              </div>
 
               {showWeekdays ? (
                 <fieldset style={{ marginTop: 12, border: 0, padding: 0 }}>
@@ -1139,21 +1217,25 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                           type="button"
                           className={`btn${selected ? ' btn-primary' : ''}`}
                           aria-pressed={selected}
-                          onClick={() =>
+                          onClick={() => {
+                            setRecurrenceFieldErrors((current) => ({ ...current, weekdays: undefined }));
                             setRecurrenceWeekdays((current) => {
                               if (current.includes(index)) {
                                 const next = current.filter((day) => day !== index);
                                 return next.length ? next : current;
                               }
                               return [...current, index].sort((a, b) => a - b);
-                            })
-                          }
+                            });
+                          }}
                         >
                           {label.slice(0, 3)}
                         </button>
                       );
                     })}
                   </div>
+                  {recurrenceFieldErrors.weekdays ? (
+                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.weekdays}</p>
+                  ) : null}
                 </fieldset>
               ) : null}
 
@@ -1169,7 +1251,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 id="recurrence-end-mode"
                 className="input"
                 value={recurrenceEndMode}
-                onChange={(e) => setRecurrenceEndMode(e.target.value as RecurrenceEndMode)}
+                onChange={(e) => {
+                  setRecurrenceEndMode(e.target.value as RecurrenceEndMode);
+                  setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined, limit: undefined }));
+                }}
               >
                 <option value="never">{recurrenceCopy.neverEnds}</option>
                 <option value="on_date">{recurrenceCopy.endsOnDate}</option>
@@ -1182,9 +1267,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     id="recurrence-end-date"
                     className="input"
                     type="date"
+                    aria-invalid={Boolean(recurrenceFieldErrors.endDate)}
                     value={recurrenceEndDate}
-                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setRecurrenceEndDate(e.target.value);
+                      setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined }));
+                    }}
                   />
+                  {recurrenceFieldErrors.endDate ? (
+                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.endDate}</p>
+                  ) : null}
                 </>
               ) : null}
               {recurrenceEndMode === 'after_count' ? (
@@ -1195,9 +1287,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     className="input"
                     type="number"
                     min="1"
+                    aria-invalid={Boolean(recurrenceFieldErrors.limit)}
                     value={recurrenceLimit}
-                    onChange={(e) => setRecurrenceLimit(e.target.value)}
+                    onChange={(e) => {
+                      setRecurrenceLimit(e.target.value);
+                      setRecurrenceFieldErrors((current) => ({ ...current, limit: undefined }));
+                    }}
                   />
+                  {recurrenceFieldErrors.limit ? (
+                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.limit}</p>
+                  ) : null}
                 </>
               ) : null}
 
@@ -1225,7 +1324,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 <p className="muted">{recurrenceCopy.windowHelp}</p>
               </details>
               <p className="muted" style={{ marginTop: 8 }} aria-live="polite">
-                <strong>{recurrenceCopy.summaryLabel}:</strong> {primaryVisit?.visit_date ? recurrenceSummary : '—'}
+                <strong>{recurrenceCopy.summaryLabel}:</strong> {recurrenceSummary}
               </p>
             </>
           ) : (

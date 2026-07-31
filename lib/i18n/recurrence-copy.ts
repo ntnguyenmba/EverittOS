@@ -32,7 +32,16 @@ export type RecurrenceCopy = {
   advanced: string;
   windowHelp: string;
   startDateRequired: string;
+  selectStartDate: string;
+  selectStartDateToPreview: string;
+  selectWeekday: string;
+  endDateRequired: string;
+  endDateBeforeStart: string;
+  occurrenceCountRequired: string;
+  startTimeRequired: string;
   summaryLabel: string;
+  recurringSeries: string;
+  perVisit: string;
 };
 
 const en: RecurrenceCopy = {
@@ -68,8 +77,17 @@ const en: RecurrenceCopy = {
   timezoneHelp: 'Filled from the property address when available. You can change it.',
   advanced: 'Advanced options',
   windowHelp: 'The next 365 days are kept scheduled ahead. More visits are added automatically as time passes.',
-  startDateRequired: 'Choose a start date for the recurring schedule.',
-  summaryLabel: 'Schedule summary'
+  startDateRequired: 'Select a start date.',
+  selectStartDate: 'Select a start date',
+  selectStartDateToPreview: 'Select a start date to preview this recurring schedule.',
+  selectWeekday: 'Select at least one weekday.',
+  endDateRequired: 'Select an end date.',
+  endDateBeforeStart: 'End date must be on or after the start date.',
+  occurrenceCountRequired: 'Enter a number of visits of at least 1.',
+  startTimeRequired: 'Select a start time.',
+  summaryLabel: 'Schedule summary',
+  recurringSeries: 'Recurring series',
+  perVisit: 'Per visit'
 };
 
 const es: RecurrenceCopy = {
@@ -105,8 +123,17 @@ const es: RecurrenceCopy = {
   timezoneHelp: 'Se completa desde la dirección de la propiedad cuando está disponible. Puede cambiarla.',
   advanced: 'Opciones avanzadas',
   windowHelp: 'Se mantienen programados los próximos 365 días. Se añaden más visitas automáticamente con el tiempo.',
-  startDateRequired: 'Elija una fecha de inicio para el horario recurrente.',
-  summaryLabel: 'Resumen del horario'
+  startDateRequired: 'Seleccione una fecha de inicio.',
+  selectStartDate: 'Seleccione una fecha de inicio',
+  selectStartDateToPreview: 'Seleccione una fecha de inicio para previsualizar este horario recurrente.',
+  selectWeekday: 'Seleccione al menos un día de la semana.',
+  endDateRequired: 'Seleccione una fecha de fin.',
+  endDateBeforeStart: 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
+  occurrenceCountRequired: 'Ingrese un número de visitas de al menos 1.',
+  startTimeRequired: 'Seleccione una hora de inicio.',
+  summaryLabel: 'Resumen del horario',
+  recurringSeries: 'Serie recurrente',
+  perVisit: 'Por visita'
 };
 
 const vi: RecurrenceCopy = {
@@ -142,8 +169,17 @@ const vi: RecurrenceCopy = {
   timezoneHelp: 'Được điền từ địa chỉ bất động sản khi có. Bạn có thể thay đổi.',
   advanced: 'Tùy chọn nâng cao',
   windowHelp: '365 ngày tiếp theo được giữ trên lịch. Các lần ghé thăm khác được thêm tự động theo thời gian.',
-  startDateRequired: 'Hãy chọn ngày bắt đầu cho lịch định kỳ.',
-  summaryLabel: 'Tóm tắt lịch trình'
+  startDateRequired: 'Hãy chọn ngày bắt đầu.',
+  selectStartDate: 'Chọn ngày bắt đầu',
+  selectStartDateToPreview: 'Hãy chọn ngày bắt đầu để xem trước lịch định kỳ này.',
+  selectWeekday: 'Hãy chọn ít nhất một ngày trong tuần.',
+  endDateRequired: 'Hãy chọn ngày kết thúc.',
+  endDateBeforeStart: 'Ngày kết thúc phải vào hoặc sau ngày bắt đầu.',
+  occurrenceCountRequired: 'Nhập số lần ghé thăm ít nhất là 1.',
+  startTimeRequired: 'Hãy chọn giờ bắt đầu.',
+  summaryLabel: 'Tóm tắt lịch trình',
+  recurringSeries: 'Chuỗi định kỳ',
+  perVisit: 'Mỗi lần'
 };
 
 export function getRecurrenceCopy(locale?: string | null): RecurrenceCopy {
@@ -151,4 +187,11 @@ export function getRecurrenceCopy(locale?: string | null): RecurrenceCopy {
   if (value.startsWith('es')) return es;
   if (value.startsWith('vi')) return vi;
   return en;
+}
+
+export function recurrenceLocaleTag(locale?: string | null): string {
+  const value = String(locale || 'en').toLowerCase();
+  if (value.startsWith('es')) return 'es';
+  if (value.startsWith('vi')) return 'vi';
+  return 'en-US';
 }
