@@ -89,6 +89,7 @@ export default async function PaymentReceiptPage({ params }: PageProps) {
       website: settingsRes.data?.website || null,
       address: settingsRes.data?.company_address || null
     },
+    quotedPrice: profitability.manualRevenue || profitability.invoiceTotal || profitability.expectedAmount || 0,
     outstanding: profitability.outstanding || 0,
     locale: receiptLocale,
     copy: receiptCopy
