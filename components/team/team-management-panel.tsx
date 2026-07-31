@@ -63,12 +63,12 @@ type AccordionKey =
 
 type AccordionState = Record<AccordionKey, boolean>;
 
-const TEAM_ACCORDION_STORAGE_KEY = 'everittos.settings.team.accordion.v1';
+const TEAM_ACCORDION_STORAGE_KEY = 'everittos.settings.team.accordion.v2';
 const TEAM_ACCORDION_DEFAULTS: AccordionState = {
-  'invite-by-email': true,
+  'invite-by-email': false,
   'transfer-ownership': false,
   'team-access': false,
-  'active-users': true,
+  'active-users': false,
   'pending-invitations': false,
   'revoked-invitations': false,
   'team-audit-history': false
