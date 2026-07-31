@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+// Trigger the one-time Jobs list repair workflow after the workflow file was added.
 const pageFile = 'app/jobs/page.tsx';
 let page = fs.readFileSync(pageFile, 'utf8');
 
