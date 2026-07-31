@@ -71,13 +71,17 @@ export async function POST(request: Request) {
     recordType?: string;
     recordId?: string;
     userIds?: string[];
+    email?: string;
     accessLevel?: string;
+    accessRole?: string;
   };
 
   const recordType = body.recordType || '';
   const recordId = body.recordId || '';
   const userIds = Array.isArray(body.userIds) ? body.userIds.filter(Boolean) : [];
+  const email = (body.email || '').trim().toLowerCase();
   const accessLevel = body.accessLevel || 'view';
+  const accessRole = body.accessRole?.trim() || null;
 
   if (!ALLOWED_RECORD_TYPES.has(recordType) || !recordId) {
     return NextResponse.json({ error: 'Valid record type and record ID are required.' }, { status: 400 });
@@ -85,23 +89,41 @@ export async function POST(request: Request) {
   if (!ALLOWED_ACCESS_LEVELS.has(accessLevel)) {
     return NextResponse.json({ error: 'Access level must be view or edit.' }, { status: 400 });
   }
-  if (userIds.length === 0) {
-    return NextResponse.json({ error: 'Choose at least one teammate to share with.' }, { status: 400 });
+
+  const resolvedUserIds = [...userIds];
+  if (email) {
+    const { data: profile } = await admin.from('profiles').select('id').ilike('email', email).maybeSingle();
+    if (!profile?.id) {
+      return NextResponse.json(
+        { error: 'No company person found for that email. Add them to your team first, or use Client access for customers.' },
+        { status: 400 }
+      );
+    }
+    if (!resolvedUserIds.includes(profile.id)) resolvedUserIds.push(profile.id);
+  }
+
+  if (resolvedUserIds.length === 0) {
+    return NextResponse.json({ error: 'Choose an existing person or enter their email.' }, { status: 400 });
   }
 
   const { data: members, error: memberError } = await admin
     .from('organization_members')
-    .select('user_id')
+    .select('user_id, role')
     .eq('organization_id', ctx.workspace.organizationId)
     .eq('active', true)
-    .in('user_id', userIds);
+    .in('user_id', resolvedUserIds);
 
   if (memberError) {
     return NextResponse.json({ error: memberError.message }, { status: 400 });
   }
 
-  const allowedUserIds = new Set((members || []).map((member) => member.user_id));
-  const rows = userIds
+  const allowedMembers = (members || []).filter((member) => {
+    // Assigned contractors receive job access automatically; do not create manual job shares for them.
+    if (recordType === 'job' && String(member.role || '').toLowerCase() === 'contractor') return false;
+    return true;
+  });
+  const allowedUserIds = new Set(allowedMembers.map((member) => member.user_id));
+  const rows = resolvedUserIds
     .filter((userId) => allowedUserIds.has(userId))
     .map((userId) => ({
       organization_id: ctx.workspace.organizationId,
@@ -113,7 +135,15 @@ export async function POST(request: Request) {
     }));
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'Selected users are not active members of this workspace.' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          recordType === 'job'
+            ? 'Assigned contractors already receive access automatically. Choose a manager, office staff, or other non-contractor person.'
+            : 'Selected users are not active members of this workspace.'
+      },
+      { status: 400 }
+    );
   }
 
   const { data, error } = await admin
@@ -131,8 +161,14 @@ export async function POST(request: Request) {
     recordType,
     recordId,
     'record_shared',
-    `${recordType} shared with ${rows.length} teammate${rows.length === 1 ? '' : 's'}`,
-    { recordType, recordId, userIds: rows.map((row) => row.shared_with_user_id), accessLevel }
+    `${recordType} shared with ${rows.length} person${rows.length === 1 ? '' : 's'}`,
+    {
+      recordType,
+      recordId,
+      userIds: rows.map((row) => row.shared_with_user_id),
+      accessLevel,
+      accessRole
+    }
   );
 
   await admin.from('notifications').insert(

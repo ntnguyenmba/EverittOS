@@ -21,6 +21,7 @@ type JobLaborSectionProps = {
   jobId: string;
   workers: WorkerOption[];
   canManage: boolean;
+  assignedContractorName?: string | null;
   onChange?: () => void;
 };
 
@@ -48,7 +49,13 @@ function rateLabel(basis: LaborPaymentBasis) {
   return 'Hourly rate';
 }
 
-export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLaborSectionProps) {
+export function JobLaborSection({
+  jobId,
+  workers,
+  canManage,
+  assignedContractorName = null,
+  onChange
+}: JobLaborSectionProps) {
   const { locale } = useTranslation();
   const pageCopy = getDashboardFinanceCopy(locale).contractorPayPage;
   const financeCopy = getJobFinanceCopy(locale);
@@ -61,13 +68,15 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
   const [currentProfit, setCurrentProfit] = useState(0);
   const [expectedContractorCost, setExpectedContractorCost] = useState(0);
-  const [jobPrefillNotice, setJobPrefillNotice] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingExpected, setEditingExpected] = useState(false);
+  const [expectedEditAmount, setExpectedEditAmount] = useState('');
+  const [showAddPayment, setShowAddPayment] = useState(false);
   const [workerId, setWorkerId] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [paymentBasis, setPaymentBasis] = useState<LaborPaymentBasis>('hourly');
@@ -100,22 +109,39 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       setCurrentProfit(Number(profitabilityJson.profitability?.estimatedProfit || 0));
       const expected = Number(profitabilityJson.profitability?.expectedContractorCost || 0);
       setExpectedContractorCost(expected);
-      if (!laborRows.length && expected > 0) {
-        setPaymentBasis('flat');
-        setHours('1');
-        setHourlyCost(String(expected));
-        setWorkerId('');
-        setWorkerName(pageCopy.unnamed);
-        setJobPrefillNotice(true);
-      } else {
-        setJobPrefillNotice(false);
-      }
+      setExpectedEditAmount(expected > 0 ? String(expected) : '');
+      // Do not open a duplicate payment setup form for expected pay from New Job.
+      setShowAddPayment(laborRows.length === 0 && expected <= 0);
     }
-  }, [appFeedback, jobId, pageCopy.unnamed]);
-
+  }, [appFeedback, jobId]);
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function saveExpectedPay() {
+    if (saving) return;
+    const amount = Number.parseFloat(expectedEditAmount || '0');
+    if (!Number.isFinite(amount) || amount < 0) {
+      appFeedback.error('Enter a valid contractor pay amount.');
+      return;
+    }
+    setSaving(true);
+    const res = await fetch(`/api/jobs/${jobId}/profitability`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expected_contractor_cost: amount })
+    });
+    const json = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to update contractor pay.');
+      return;
+    }
+    appFeedback.success('Contractor pay updated.');
+    setEditingExpected(false);
+    await load();
+    onChange?.();
+  }
 
   async function addLabor() {
     if (saving) return;
@@ -137,7 +163,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         worker_id: workerId || null,
-        worker_name: selected?.name || workerName.trim() || pageCopy.unnamed,
+        worker_name: selected?.name || workerName.trim() || assignedContractorName || pageCopy.unnamed,
         hours: quantity,
         hourly_cost: rate,
         payment_basis: paymentBasis,
@@ -159,6 +185,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
     setHours('');
     setHourlyCost('');
     setNotes('');
+    setShowAddPayment(false);
     await load();
     onChange?.();
   }
@@ -318,6 +345,51 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       </div>
 
       {loading ? <p className="muted">{FEEDBACK.loading}</p> : null}
+
+      {!loading && expectedContractorCost > 0 && entries.length === 0 ? (
+        <div className="finance-list-card" style={{ marginBottom: 16 }}>
+          {editingExpected ? (
+            <div className="finance-form-block compact-finance-form" style={{ width: '100%' }}>
+              <label>Expected contractor pay</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={expectedEditAmount}
+                onChange={(e) => setExpectedEditAmount(e.target.value)}
+              />
+              <div className="job-detail-actions">
+                <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveExpectedPay()}>
+                  {saving ? FEEDBACK.loading : 'Save'}
+                </button>
+                <button type="button" className="btn" disabled={saving} onClick={() => setEditingExpected(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <strong>{assignedContractorName || pageCopy.unnamed}</strong>
+                <p className="muted" style={{ margin: '6px 0' }}>
+                  Pay type: Expected · Amount: {formatCurrency(expectedContractorCost)}
+                </p>
+                <p className="muted" style={{ margin: '6px 0' }}>
+                  Planned pay from job creation. This is not recorded again as a finalized labor expense.
+                </p>
+              </div>
+              {canManage ? (
+                <div className="job-detail-actions">
+                  <button type="button" className="btn" onClick={() => setEditingExpected(true)}>
+                    Edit
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
 
       {!loading && entries.length > 0 ? (
         <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
@@ -534,15 +606,24 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
         </div>
       ) : null}
 
-      {canManage ? (
+      {canManage && !showAddPayment && (entries.length > 0 || expectedContractorCost > 0) ? (
+        <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => setShowAddPayment(true)}>
+          {pageCopy.addAnotherPayment}
+        </button>
+      ) : null}
+
+      {canManage && showAddPayment ? (
         <div className="finance-form-block compact-finance-form" style={{ marginTop: 20 }}>
-          <h4>{jobPrefillNotice || expectedContractorCost > 0 ? pageCopy.reviewPayment : pageCopy.addAnotherPayment}</h4>
-          {jobPrefillNotice ? <p className="muted">{pageCopy.initializeFromJob}</p> : null}
+          <h4>{pageCopy.addAnotherPayment}</h4>
+          <p className="muted">
+            Record a finalized payment only when needed. Expected pay from job creation is already counted once and is not
+            duplicated here automatically.
+          </p>
           {workers.length > 0 ? (
             <>
               <label>{pageCopy.contractorOrCleaner}</label>
               <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-                <option value="">{pageCopy.unnamed}</option>
+                <option value="">{assignedContractorName || pageCopy.unnamed}</option>
                 {workers.map((worker) => (
                   <option key={worker.id} value={worker.id}>
                     {worker.name}
@@ -551,7 +632,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
               </select>
             </>
           ) : (
-            <p className="muted">{workerName || pageCopy.unnamed}</p>
+            <p className="muted">{workerName || assignedContractorName || pageCopy.unnamed}</p>
           )}
           <label>{pageCopy.paymentMethodLabel}</label>
           <select
@@ -595,14 +676,16 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
           </div>
           <label>{pageCopy.notesOptional}</label>
           <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>
-            {saving ? FEEDBACK.loading : jobPrefillNotice ? pageCopy.reviewPayment : pageCopy.addAnotherPayment}
-          </button>
-          {entries.length > 0 ? (
-            <p className="muted" style={{ marginTop: 8 }}>
-              {pageCopy.addAnotherPayment}
-            </p>
-          ) : null}
+          <div className="job-detail-actions">
+            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>
+              {saving ? FEEDBACK.loading : pageCopy.addAnotherPayment}
+            </button>
+            {expectedContractorCost > 0 || entries.length > 0 ? (
+              <button type="button" className="btn" disabled={saving} onClick={() => setShowAddPayment(false)}>
+                Cancel
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

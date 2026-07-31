@@ -19,6 +19,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 const ALLOWED_FIELDS = new Set([
   'title',
   'customer_name',
+  'customer_email',
   'phone',
   'address',
   'notes',
@@ -42,6 +43,7 @@ const INTERNAL_ONLY_FIELDS = new Set(['internal_notes']);
 const MANAGER_ONLY_FIELDS = new Set([
   'title',
   'customer_name',
+  'customer_email',
   'phone',
   'address',
   'start_date',

@@ -22,6 +22,9 @@ import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { wallClockDateTime } from '@/lib/schedule-times';
+import { createAdminSupabase } from '@/lib/supabase-admin';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { grantJobClientAccess } from '@/lib/client-access-grant-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -466,6 +469,28 @@ export async function POST(request: Request) {
     expectedProfit: centsToDollars(dollarsToCents(finance.expectedProfit) * count)
   };
 
+  // Auto-grant client access on the first occurrence when a customer email is present.
+  // Failures here must not undo series creation.
+  const firstJobId = jobs[0]?.id || null;
+  const customerEmail = (body.customer_email || '').trim();
+  if (firstJobId && customerEmail) {
+    const admin = createAdminSupabase();
+    if (admin) {
+      const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
+      await grantJobClientAccess({
+        admin,
+        organizationId: ctx.workspace.organizationId,
+        organizationName: ctx.workspace.organizationName,
+        grantedByUserId: ctx.userId,
+        jobId: firstJobId,
+        jobTitle: title,
+        email: customerEmail,
+        plan,
+        sendEmail: true
+      });
+    }
+  }
+
   return NextResponse.json({
     series,
     jobs,
@@ -474,6 +499,6 @@ export async function POST(request: Request) {
     summary,
     expectedFinance: finance,
     scheduledFinance,
-    firstJobId: jobs[0]?.id || null
+    firstJobId
   });
 }

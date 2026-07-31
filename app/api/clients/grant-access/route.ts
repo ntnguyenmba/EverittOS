@@ -1,14 +1,10 @@
-import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
-import { clientPortalUrl, sendClientInviteEmail } from '@/lib/email';
-import { limitsForPlan } from '@/lib/everittos-limits';
-import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { canManageTeam } from '@/lib/roles';
-import { appUrl } from '@/lib/app-url';
-import { repairClientPortalAccessForUser } from '@/lib/client-portal-repair';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { grantJobClientAccess } from '@/lib/client-access-grant-server';
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
@@ -27,10 +23,6 @@ export async function POST(request: Request) {
   }
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  if (!limitsForPlan(plan).clientPortal) {
-    return NextResponse.json({ error: 'Client portal requires Growth plan or higher.' }, { status: 403 });
-  }
-
   const body = (await request.json()) as { email?: string; jobId?: string };
   const email = (body.email || '').trim().toLowerCase();
   const jobId = body.jobId;
@@ -50,83 +42,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Job not found in your organization.' }, { status: 404 });
   }
 
-  const { data: invite, error: inviteError } = await admin
-    .from('organization_invitations')
-    .insert({
-      organization_id: org.organizationId,
-      email,
-      role: 'client',
-      invited_by: user.id,
-      status: 'pending',
-      job_id: jobId
-    })
-    .select('token')
-    .single();
-
-  if (inviteError) {
-    return NextResponse.json({ error: inviteError.message }, { status: 400 });
-  }
-
-  const acceptUrl = appUrl(`/team/accept?token=${invite.token}`);
-  let portalUrl: string | undefined;
-
-  const { data: clientProfile } = await admin
-    .from('profiles')
-    .select('id')
-    .ilike('email', email)
-    .maybeSingle();
-
-  if (clientProfile?.id) {
-    const portalToken = randomBytes(24).toString('hex');
-    const { error: directAccessError } = await admin.from('job_client_access').upsert(
-      {
-        job_id: jobId,
-        client_user_id: clientProfile.id,
-        owner_user_id: user.id,
-        organization_id: org.organizationId,
-        portal_token: portalToken,
-        granted_at: new Date().toISOString()
-      },
-      { onConflict: 'job_id,client_user_id' }
-    );
-
-    if (directAccessError) {
-      return NextResponse.json(
-        { error: directAccessError.message || 'Could not grant client access to this job.' },
-        { status: 500 }
-      );
-    }
-
-    await admin.from('organization_members').upsert(
-      {
-        organization_id: org.organizationId,
-        user_id: clientProfile.id,
-        role: 'client',
-        active: true
-      },
-      { onConflict: 'organization_id,user_id' }
-    );
-
-    await repairClientPortalAccessForUser(admin, clientProfile.id, email);
-    portalUrl = clientPortalUrl(portalToken);
-  }
-
-  const emailResult = await sendClientInviteEmail({
-    to: email,
+  const result = await grantJobClientAccess({
+    admin,
+    organizationId: org.organizationId,
     organizationName: org.organizationName,
-    acceptUrl,
+    grantedByUserId: user.id,
+    jobId,
     jobTitle: job.title,
-    portalUrl
+    email,
+    plan,
+    sendEmail: true
   });
+
+  if (!result.ok) {
+    const status = result.code === 'plan_required' ? 403 : result.code === 'invalid_email' ? 400 : 400;
+    return NextResponse.json({ error: result.error, code: result.code }, { status });
+  }
 
   return NextResponse.json({
     ok: true,
-    emailSent: emailResult.sent,
-    accessGranted: Boolean(clientProfile?.id),
-    message: clientProfile?.id
-      ? 'Client access granted. The shared job is available now.'
-      : emailResult.sent
-        ? 'Invitation sent. Access will appear after the client accepts.'
-        : 'Invitation created. Access will appear after the client accepts.'
+    reused: result.reused,
+    emailSent: result.emailSent,
+    accessGranted: result.accessGranted,
+    message: result.message
   });
 }

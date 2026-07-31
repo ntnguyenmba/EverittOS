@@ -30,6 +30,7 @@ import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { localDateFromIso } from '@/lib/schedule-times';
 import { isValidTimeZone } from '@/lib/time-zones';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import { grantJobClientAccess } from '@/lib/client-access-grant-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -433,5 +434,34 @@ export async function POST(request: Request) {
     metadata: { jobId: createdJob.id, assignedTo: assignedWorkerId, assignedUserId, timezone: requestedTimeZone }
   });
 
-  return NextResponse.json({ ok: true, job: createdJob, message: 'Job saved successfully.' });
+  // Auto-grant client portal access when a customer email is present.
+  // Missing or invalid email must never block job creation.
+  let clientAccess: { attempted: boolean; reused?: boolean; accessGranted?: boolean } = { attempted: false };
+  const customerEmail = body.customer_email?.trim() || '';
+  if (customerEmail && admin) {
+    const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
+    const grant = await grantJobClientAccess({
+      admin,
+      organizationId: ctx.workspace.organizationId,
+      organizationName: ctx.workspace.organizationName,
+      grantedByUserId: ctx.userId,
+      jobId: createdJob.id,
+      jobTitle: body.title.trim(),
+      email: customerEmail,
+      plan,
+      sendEmail: true
+    });
+    clientAccess = {
+      attempted: true,
+      reused: grant.ok ? grant.reused : false,
+      accessGranted: grant.ok ? grant.accessGranted : false
+    };
+  }
+
+  return NextResponse.json({
+    ok: true,
+    job: createdJob,
+    clientAccess,
+    message: 'Job saved successfully.'
+  });
 }

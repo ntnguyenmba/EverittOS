@@ -13,6 +13,7 @@ import { CustomerReportSharePanel } from '@/components/customer-report-share-pan
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
 import { JobAddToCalendar } from '@/components/job-add-to-calendar';
+import { RecordSharingPanel } from '@/components/record-sharing-panel';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { AppShell } from '@/components/app-shell';
 import { canAccessFinancials } from '@/lib/finance-access';
@@ -355,30 +356,34 @@ export default function JobDetailPage({ params }: PageProps) {
     loadJob();
   }
 
-  async function saveJobFields() {
-    if (!job || !canManage || savingDetails) return;
-    if (!job.title?.trim()) {
+  async function saveJobFields(successMessage: string = FEEDBACK.saved, overrides?: Partial<Job>) {
+    if (!job || !canManage || savingDetails) return false;
+    const next = { ...job, ...overrides };
+    if (!next.title?.trim()) {
       appFeedback.error(copy.jobTitleRequired);
-      return;
+      return false;
     }
     setSavingDetails(true);
     const ok = await patchJob(
       {
-        title: job.title.trim(),
-        customer_name: job.customer_name,
-        phone: job.phone,
-        address: job.address,
-        notes: job.notes,
-        priority: job.priority,
-        internal_notes: job.internal_notes,
-        customer_notes: job.customer_notes,
-        completion_verified: job.completion_verified
+        title: next.title.trim(),
+        customer_name: next.customer_name,
+        customer_email: next.customer_email || null,
+        phone: next.phone,
+        address: next.address,
+        notes: next.notes,
+        priority: next.priority,
+        internal_notes: next.internal_notes,
+        customer_notes: next.customer_notes,
+        completion_verified: next.completion_verified
       },
-      FEEDBACK.saved
+      successMessage
     );
     setSavingDetails(false);
-    if (!ok) return;
+    if (!ok) return false;
+    setJob(next);
     loadJob();
+    return true;
   }
 
   async function runSeriesAction(action: 'skip' | 'cancel_visit' | 'pause' | 'resume' | 'end' | 'edit_future' | 'edit_series') {
@@ -522,6 +527,11 @@ export default function JobDetailPage({ params }: PageProps) {
   const priorityLabels = { low: copy.priorityLow, normal: copy.priorityNormal, high: copy.priorityHigh, urgent: copy.priorityUrgent };
   const isCancelledJob = job.status === 'cancelled';
   const refreshFinancials = () => setFinanceRefresh((key) => key + 1);
+  const assignedContractorName =
+    assignments
+      .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
+      .filter((name): name is string => Boolean(name))
+      .join(', ') || null;
 
   return (
     <AppShell plan={plan} role={userRole}>
@@ -572,134 +582,158 @@ export default function JobDetailPage({ params }: PageProps) {
           </div>
         ) : null}
 
-        {job.recurring_series_id && canManage ? (
-          <div className="card" style={{ marginBottom: 18 }}>
-            <h3>Recurring series</h3>
-            <p className="muted">
-              This visit is part of a recurring series{job.occurrence_date ? ` (${job.occurrence_date})` : ''}.
-              Saving the job details below edits this visit only. Use the actions here when you intend to change future visits or the series.
-            </p>
-            <div className="button-row" style={{ flexWrap: 'wrap' }}>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('skip')}>
-                {seriesBusy === 'skip' ? 'Working…' : 'Skip this visit'}
-              </button>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('cancel_visit')}>
-                {seriesBusy === 'cancel_visit' ? 'Working…' : 'Cancel this visit'}
-              </button>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_future')}>
-                {seriesBusy === 'edit_future' ? 'Working…' : 'Edit this and future'}
-              </button>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_series')}>
-                {seriesBusy === 'edit_series' ? 'Working…' : 'Edit entire series'}
-              </button>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('pause')}>
-                {seriesBusy === 'pause' ? 'Working…' : 'Pause series'}
-              </button>
-              <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('resume')}>
-                {seriesBusy === 'resume' ? 'Working…' : 'Resume series'}
-              </button>
-              <button type="button" className="btn btn-danger" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('end')}>
-                {seriesBusy === 'end' ? 'Working…' : 'End series'}
+        <section className="card" style={{ marginBottom: 18 }}>
+          <h3>{canManage ? 'Overview' : copy.jobDetailsReadOnly}</h3>
+          <p className="muted">
+            {canManage
+              ? 'This job was created in one step. Update details here without re-entering schedule or contractor setup.'
+              : copy.fieldAccessCopy}
+          </p>
+          {canManage ? (
+            <div className="form">
+              <label>{copy.title}</label>
+              <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
+              <label>{copy.customer}</label>
+              <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
+              <label>Email</label>
+              <input
+                className="input"
+                type="email"
+                value={job.customer_email || ''}
+                onChange={(e) => setJob({ ...job, customer_email: e.target.value })}
+              />
+              <label>{copy.phone}</label>
+              <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
+              <AddressAutocomplete
+                label={copy.address}
+                value={job.address || ''}
+                onChange={(formatted) => setJob({ ...job, address: formatted })}
+              />
+              <label>{copy.jobNotes}</label>
+              <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
+              <label>{copy.priority}</label>
+              <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
+                <option value="low">{copy.priorityLow}</option>
+                <option value="normal">{copy.priorityNormal}</option>
+                <option value="high">{copy.priorityHigh}</option>
+                <option value="urgent">{copy.priorityUrgent}</option>
+              </select>
+              <label>{copy.customerNotes}</label>
+              <textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!!job.completion_verified}
+                  onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
+                />{' '}
+                {copy.completionVerified}
+              </label>
+              <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
+                {savingDetails ? FEEDBACK.loading : copy.saveDetails}
               </button>
             </div>
-          </div>
-        ) : null}
+          ) : (
+            <>
+              <p>
+                <strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}
+              </p>
+              <p>
+                <strong>Email:</strong> {displayValue(job.customer_email, copy.notSet)}
+              </p>
+              <p>
+                <strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}
+              </p>
+              <p>
+                <strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}
+              </p>
+              <p>
+                <strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}
+              </p>
+              <p>
+                <strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}
+              </p>
+            </>
+          )}
+          <p>
+            <strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}
+          </p>
+          {canEditStatus ? (
+            <div className="job-detail-actions">
+              <button
+                className="btn"
+                type="button"
+                disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)}
+                onClick={() => updateStatus('active')}
+              >
+                {updatingStatus ? FEEDBACK.loading : copy.startJob}
+              </button>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={updatingStatus || isCancelledJob || job.status === 'completed'}
+                onClick={() => updateStatus('completed')}
+              >
+                {updatingStatus ? FEEDBACK.loading : copy.markCompleted}
+              </button>
+              {isCancelledJob ? (
+                <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>
+                  {updatingStatus ? FEEDBACK.loading : t('pages.jobs.restoreJob')}
+                </button>
+              ) : (
+                <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>
+                  {updatingStatus ? FEEDBACK.loading : t('pages.jobs.cancelJob')}
+                </button>
+              )}
+            </div>
+          ) : null}
+          {canManage ? (
+            <div className="card" style={{ marginTop: 16, padding: 12 }}>
+              <ClientAccessPanel
+                jobId={job.id}
+                plan={plan}
+                canManage={canManage}
+                customerName={job.customer_name}
+                customerEmail={job.customer_email}
+                onCustomerEmailChange={(email) => setJob({ ...job, customer_email: email })}
+                onSaveCustomerEmail={(email) => saveJobFields(FEEDBACK.saved, { customer_email: email })}
+              />
+            </div>
+          ) : null}
+        </section>
 
-        <div className="card" style={{ marginBottom: 18 }}>
-          <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
-          <p className="muted">{canManage ? 'Edit the job once, then manage schedule, labor, photos, and reports below.' : copy.fieldAccessCopy}</p>
-        </div>
-
-        <div className="grid-2">
-          <div className="card">
-            <h3>{canManage ? copy.jobDetails : copy.jobDetailsReadOnly}</h3>
-            {canManage ? (
-              <div className="form">
-                <label>{copy.title}</label>
-                <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
-                <label>{copy.customer}</label>
-                <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
-                <label>Email</label>
-                <input
-                  className="input"
-                  type="email"
-                  value={job.customer_email || ''}
-                  onChange={(e) => setJob({ ...job, customer_email: e.target.value })}
-                />
-                <label>{copy.phone}</label>
-                <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
-                <AddressAutocomplete
-                  label={copy.address}
-                  value={job.address || ''}
-                  onChange={(formatted) => setJob({ ...job, address: formatted })}
-                />
-                <label>{copy.jobNotes}</label>
-                <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
-                <label>{copy.priority}</label>
-                <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
-                  <option value="low">{copy.priorityLow}</option>
-                  <option value="normal">{copy.priorityNormal}</option>
-                  <option value="high">{copy.priorityHigh}</option>
-                  <option value="urgent">{copy.priorityUrgent}</option>
-                </select>
-                {canViewInternalNotes(userRole) ? (
-                  <>
-                    <label>{copy.internalNotes}</label>
-                    <textarea className="input" rows={3} value={job.internal_notes || ''} onChange={(e) => setJob({ ...job, internal_notes: e.target.value })} />
-                  </>
-                ) : null}
-                <label>{copy.customerNotes}</label>
-                <textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
-                <label><input type="checkbox" checked={!!job.completion_verified} onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })} /> {copy.completionVerified}</label>
-                <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? FEEDBACK.loading : copy.saveDetails}</button>
-              </div>
-            ) : (
-              <>
-                <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
-                <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
-                <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
-                <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
-                <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
-              </>
-            )}
-            <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}</p>
-            {canEditStatus ? (
-              <div className="job-detail-actions">
-                <button className="btn" type="button" disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)} onClick={() => updateStatus('active')}>{updatingStatus ? FEEDBACK.loading : copy.startJob}</button>
-                <button className="btn btn-primary" type="button" disabled={updatingStatus || isCancelledJob || job.status === 'completed'} onClick={() => updateStatus('completed')}>{updatingStatus ? FEEDBACK.loading : copy.markCompleted}</button>
-                {isCancelledJob ? (
-                  <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>{updatingStatus ? FEEDBACK.loading : t('pages.jobs.restoreJob')}</button>
-                ) : (
-                  <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>{updatingStatus ? FEEDBACK.loading : t('pages.jobs.cancelJob')}</button>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="card">
-            <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage} scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date} dueDate={job.due_date} onSaved={loadJob} />
-            <JobAddToCalendar
-              job={{
-                id: job.id,
-                title: job.title,
-                customer_name: job.customer_name,
-                address: job.address,
-                notes: job.notes,
-                customer_notes: job.customer_notes,
-                scheduled_start: job.scheduled_start,
-                scheduled_end: job.scheduled_end,
-                start_date: job.start_date,
-                due_date: job.due_date,
-                assignedNames: assignments
-                  .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
-                  .filter((name): name is string => Boolean(name))
-              }}
-            />
-          </div>
-        </div>
+        <section className="card" style={{ marginBottom: 18 }}>
+          <JobVisitsSchedule
+            jobId={job.id}
+            organizationId={orgId || job.organization_id}
+            canManage={canManage}
+            scheduledStart={job.scheduled_start}
+            scheduledEnd={job.scheduled_end}
+            startDate={job.start_date}
+            dueDate={job.due_date}
+            timezone={job.timezone}
+            onSaved={loadJob}
+          />
+          <JobAddToCalendar
+            job={{
+              id: job.id,
+              title: job.title,
+              customer_name: job.customer_name,
+              address: job.address,
+              notes: job.notes,
+              customer_notes: job.customer_notes,
+              scheduled_start: job.scheduled_start,
+              scheduled_end: job.scheduled_end,
+              start_date: job.start_date,
+              due_date: job.due_date,
+              assignedNames: assignments
+                .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
+                .filter((name): name is string => Boolean(name))
+            }}
+          />
+        </section>
 
         {orgId && limitsForPlan(plan).crewAssignment ? (
-          <div className="card" style={{ marginTop: 18 }}>
+          <section className="card" style={{ marginBottom: 18 }}>
             <JobAssignments
               jobId={job.id}
               organizationId={orgId}
@@ -711,25 +745,58 @@ export default function JobDetailPage({ params }: PageProps) {
               occurrenceDate={job.occurrence_date || job.start_date}
               onChange={loadJob}
             />
-          </div>
+          </section>
         ) : null}
 
-        {orgId ? <div className="card" style={{ marginTop: 18 }}><JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist} canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} /></div> : null}
-        <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
-        {canAccessFinancials(userRole, plan) ? (
-          <>
-            <div style={{ marginTop: 18 }}>
-              <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} refreshKey={financeRefresh} />
-            </div>
-            <div style={{ marginTop: 18 }}>
-              <JobLaborSection jobId={job.id} workers={workers} canManage={canManage} onChange={refreshFinancials} />
-            </div>
-          </>
+        <section className="card job-photos-card" style={{ marginBottom: 18 }}>
+          <h3>{copy.photosTitle}</h3>
+          <p className="muted">{copy.photosCopy}</p>
+          <JobPhotosSection
+            jobId={job.id}
+            organizationId={orgId || job.organization_id}
+            plan={plan}
+            canUpload={canUploadPhotos}
+            showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')}
+            refreshKey={photoRefresh}
+            onChange={() => {
+              setPhotoRefresh((k) => k + 1);
+              loadJob();
+            }}
+          />
+        </section>
+
+        {orgId ? (
+          <section className="card" style={{ marginBottom: 18 }}>
+            <JobChecklist
+              jobId={job.id}
+              organizationId={orgId}
+              userId={job.user_id}
+              items={checklist}
+              canEdit={canWorkJob}
+              canAddItems={canManage}
+              onChange={loadJob}
+            />
+          </section>
         ) : null}
-        {canManage ? <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} /> : null}
-        <div className="card job-photos-card" style={{ marginTop: 18 }}><h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p><JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos} showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh} onChange={() => { setPhotoRefresh((k) => k + 1); loadJob(); }} /></div>
+
+        {canAccessFinancials(userRole, plan) ? (
+          <section style={{ marginBottom: 18 }}>
+            <h3 style={{ marginBottom: 12 }}>Money</h3>
+            <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} refreshKey={financeRefresh} />
+            <div style={{ marginTop: 18 }}>
+              <JobLaborSection
+                jobId={job.id}
+                workers={workers}
+                canManage={canManage}
+                assignedContractorName={assignedContractorName}
+                onChange={refreshFinancials}
+              />
+            </div>
+          </section>
+        ) : null}
+
         {canManage ? (
-          <div className="card" style={{ marginTop: 18 }}>
+          <section className="card" style={{ marginBottom: 18 }}>
             <h3>{copy.proofReport}</h3>
             <p>{copy.proofReportCopy}</p>
             <CustomerReportSharePanel jobId={job.id} canManage={canManage} />
@@ -741,8 +808,81 @@ export default function JobDetailPage({ params }: PageProps) {
                 {copy.viewLatest}
               </Link>
             </div>
-          </div>
+          </section>
         ) : null}
+
+        <details className="card" style={{ marginBottom: 18 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>More / Advanced</summary>
+          <div style={{ marginTop: 16 }}>
+            {job.recurring_series_id && canManage ? (
+              <div style={{ marginBottom: 18 }}>
+                <h3>Recurring series</h3>
+                <p className="muted">
+                  This visit is part of a recurring series{job.occurrence_date ? ` (${job.occurrence_date})` : ''}. Use these
+                  actions only when changing future visits or the series.
+                </p>
+                <div className="button-row" style={{ flexWrap: 'wrap' }}>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('skip')}>
+                    {seriesBusy === 'skip' ? 'Working…' : 'Skip this visit'}
+                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('cancel_visit')}>
+                    {seriesBusy === 'cancel_visit' ? 'Working…' : 'Cancel this visit'}
+                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_future')}>
+                    {seriesBusy === 'edit_future' ? 'Working…' : 'Edit this and future'}
+                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_series')}>
+                    {seriesBusy === 'edit_series' ? 'Working…' : 'Edit entire series'}
+                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('pause')}>
+                    {seriesBusy === 'pause' ? 'Working…' : 'Pause series'}
+                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('resume')}>
+                    {seriesBusy === 'resume' ? 'Working…' : 'Resume series'}
+                  </button>
+                  <button type="button" className="btn btn-danger" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('end')}>
+                    {seriesBusy === 'end' ? 'Working…' : 'End series'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <JobWorkflow
+              jobId={job.id}
+              canManage={canManage}
+              canComplete={canWorkJob}
+              hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
+            />
+
+            {canManage && orgId ? (
+              <div style={{ marginTop: 18 }}>
+                <RecordSharingPanel organizationId={orgId} recordType="job" recordId={job.id} canManage={canManage} />
+              </div>
+            ) : null}
+
+            {canViewInternalNotes(userRole) ? (
+              <div className="form" style={{ marginTop: 18 }}>
+                <h3>Internal metadata</h3>
+                <label>{copy.internalNotes}</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  value={job.internal_notes || ''}
+                  onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
+                  disabled={!canManage}
+                />
+                {canManage ? (
+                  <button type="button" className="btn" disabled={savingDetails} onClick={() => void saveJobFields()}>
+                    {savingDetails ? FEEDBACK.loading : 'Save internal notes'}
+                  </button>
+                ) : null}
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Job ID: {job.id}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </details>
       </div>
     </AppShell>
   );

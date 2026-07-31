@@ -2,10 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { appUrl } from '@/lib/app-url';
-import { fetchOrganizationContext } from '@/lib/organization';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import type { EverittosPlan } from '@/lib/everittos-plans';
-import { RecordSharingPanel } from '@/components/record-sharing-panel';
 
 type AccessRow = {
   client_user_id: string;
@@ -18,27 +16,29 @@ type ClientAccessPanelProps = {
   jobId: string;
   plan: EverittosPlan;
   canManage: boolean;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  onCustomerEmailChange?: (email: string) => void;
+  onSaveCustomerEmail?: (email: string) => Promise<boolean> | boolean;
 };
 
-export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelProps) {
-  const [email, setEmail] = useState('');
-  const [orgId, setOrgId] = useState('');
+export function ClientAccessPanel({
+  jobId,
+  plan,
+  canManage,
+  customerName = null,
+  customerEmail = null,
+  onCustomerEmailChange,
+  onSaveCustomerEmail
+}: ClientAccessPanelProps) {
+  const [emailDraft, setEmailDraft] = useState(customerEmail || '');
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadingAccess, setLoadingAccess] = useState(false);
 
   const portalAllowed = limitsForPlan(plan).clientPortal;
-
-  const loadWorkspace = useCallback(async () => {
-    const { supabase } = await import('@/lib/supabase');
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const org = await fetchOrganizationContext(user.id);
-    setOrgId(org?.organizationId || '');
-  }, []);
+  const normalizedCustomerEmail = (customerEmail || '').trim();
 
   const loadAccess = useCallback(async () => {
     setLoadingAccess(true);
@@ -63,19 +63,22 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
   }, [jobId]);
 
   useEffect(() => {
-    void loadWorkspace();
-    if (portalAllowed) void loadAccess();
-  }, [loadAccess, loadWorkspace, portalAllowed]);
+    setEmailDraft(customerEmail || '');
+  }, [customerEmail]);
 
-  async function grantAccess() {
-    if (!email.trim() || busy) return;
+  useEffect(() => {
+    if (portalAllowed) void loadAccess();
+  }, [loadAccess, portalAllowed]);
+
+  async function grantAccess(emailValue: string) {
+    if (!emailValue.trim() || busy) return;
     setBusy(true);
     setMessage('');
     try {
       const res = await fetch('/api/clients/grant-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), jobId })
+        body: JSON.stringify({ email: emailValue.trim(), jobId })
       });
       const json = await res.json();
       if (!res.ok) {
@@ -83,7 +86,6 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
         return;
       }
       setMessage(json.message || 'Client access updated.');
-      setEmail('');
       await loadAccess();
     } catch {
       setMessage('Unable to grant access.');
@@ -126,69 +128,120 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     }
   }
 
+  async function saveEmailAndEnable() {
+    if (!canManage || busy) return;
+    const nextEmail = emailDraft.trim();
+    onCustomerEmailChange?.(nextEmail);
+    if (onSaveCustomerEmail) {
+      const saved = await onSaveCustomerEmail(nextEmail);
+      if (!saved) return;
+    }
+    await grantAccess(nextEmail);
+  }
+
+  if (!portalAllowed) {
+    return (
+      <div>
+        <h3 style={{ marginTop: 0 }}>Client access</h3>
+        <p className="muted">Customer dashboard access requires Growth plan or higher.</p>
+      </div>
+    );
+  }
+
+  const primaryAccess =
+    accessRows.find((row) => (row.email || '').toLowerCase() === normalizedCustomerEmail.toLowerCase()) ||
+    accessRows[0] ||
+    null;
+
   return (
-    <>
-      {orgId ? (
-        <RecordSharingPanel organizationId={orgId} recordType="job" recordId={jobId} canManage={canManage} />
+    <div>
+      <h3 style={{ marginTop: 0 }}>Client access</h3>
+
+      {loadingAccess ? <p className="muted">Checking client access...</p> : null}
+
+      {!loadingAccess && primaryAccess ? (
+        <div className="list-row">
+          <div>
+            <strong>Client access enabled</strong>
+            <p style={{ margin: '4px 0 0' }}>{customerName || 'Customer'}</p>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              {primaryAccess.email || normalizedCustomerEmail || 'Email on file'}
+            </p>
+          </div>
+          <div className="inline-actions">
+            <button type="button" className="btn" disabled={!primaryAccess.portal_token} onClick={() => void copyLink(primaryAccess.portal_token)}>
+              Copy link
+            </button>
+            {canManage ? (
+              <button type="button" className="btn" disabled={busy} onClick={() => void revokeAccess(primaryAccess.client_user_id)}>
+                {busy ? 'Updating...' : 'Disable'}
+              </button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
-      {!portalAllowed ? (
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Client access</h3>
-          <p className="muted">Customer dashboard access requires Growth plan or higher.</p>
-        </div>
-      ) : (
-        <div className="card" style={{ marginTop: 18 }}>
-          <h3>Client access</h3>
+      {!loadingAccess && !primaryAccess && normalizedCustomerEmail ? (
+        <div>
+          <p className="muted">
+            Customer email is on file ({normalizedCustomerEmail}). Enable client access if it was not created during job
+            setup.
+          </p>
           {canManage ? (
-            <div className="inline-actions">
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void grantAccess(normalizedCustomerEmail)}>
+              {busy ? 'Updating...' : 'Enable client access'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!loadingAccess && !primaryAccess && !normalizedCustomerEmail ? (
+        <div>
+          <p className="muted">No customer email available. Add one later to enable client access. Missing email does not block the job.</p>
+          {canManage ? (
+            <div className="inline-actions" style={{ marginTop: 8 }}>
               <input
                 className="input"
                 type="email"
                 autoComplete="email"
-                placeholder="Client email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void grantAccess();
+                placeholder="Customer email"
+                value={emailDraft}
+                onChange={(event) => {
+                  setEmailDraft(event.target.value);
+                  onCustomerEmailChange?.(event.target.value);
                 }}
               />
-              <button type="button" className="btn btn-primary" disabled={busy || !email.trim()} onClick={grantAccess}>
-                {busy ? 'Updating...' : 'Grant client access'}
+              <button type="button" className="btn btn-primary" disabled={busy || !emailDraft.trim()} onClick={() => void saveEmailAndEnable()}>
+                {busy ? 'Updating...' : 'Save email & enable'}
               </button>
             </div>
-          ) : (
-            <p className="muted">Only managers can grant client access.</p>
-          )}
-
-          {loadingAccess ? <p className="muted">Checking client access...</p> : null}
-          {!loadingAccess && accessRows.length === 0 ? (
-            <p className="muted">No clients have access to this job yet.</p>
           ) : null}
-          {accessRows.map((row) => (
-            <div key={row.client_user_id} className="list-row">
-              <div>
-                <strong>{row.email || row.client_user_id}</strong>
-                <p className="muted">
-                  Access granted {row.granted_at ? new Date(row.granted_at).toLocaleString() : 'recently'}
-                </p>
-              </div>
-              <div className="inline-actions">
-                <button type="button" className="btn" disabled={!row.portal_token} onClick={() => void copyLink(row.portal_token)}>
-                  Copy client link
-                </button>
-                {canManage ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => void revokeAccess(row.client_user_id)}>
-                    Revoke
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ))}
-
-          {message ? <p>{message}</p> : null}
         </div>
-      )}
-    </>
+      ) : null}
+
+      {accessRows.length > 1
+        ? accessRows
+            .filter((row) => row.client_user_id !== primaryAccess?.client_user_id)
+            .map((row) => (
+              <div key={row.client_user_id} className="list-row">
+                <div>
+                  <strong>{row.email || row.client_user_id}</strong>
+                </div>
+                <div className="inline-actions">
+                  <button type="button" className="btn" disabled={!row.portal_token} onClick={() => void copyLink(row.portal_token)}>
+                    Copy link
+                  </button>
+                  {canManage ? (
+                    <button type="button" className="btn" disabled={busy} onClick={() => void revokeAccess(row.client_user_id)}>
+                      Revoke
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ))
+        : null}
+
+      {message ? <p>{message}</p> : null}
+    </div>
   );
 }

@@ -203,8 +203,8 @@ test('job detail repairs missing assignment rows and hides reassign prompt when 
   assert.match(detail, /job_assignments/);
   const assignments = read('components/job-assignments.tsx');
   assert.match(assignments, /assignments\.length === 0/);
-  assert.match(assignments, /Assign to job/);
-  assert.match(assignments, /Add another team member/);
+  assert.match(assignments, /Assign contractor/);
+  assert.match(assignments, /Add another contractor/);
   assert.match(assignments, /jobs'\)\.update\(\{ assigned_to:/);
 });
 
