@@ -64,7 +64,7 @@ a.btn {
 
 .unified-job-form {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .job-create-section {
@@ -78,6 +78,44 @@ a.btn {
 .job-create-section h4,
 .job-create-section p {
   margin: 0;
+}
+
+/* Use short, action-oriented section names without exposing implementation language. */
+.unified-job-form > .job-create-section > h4 {
+  font-size: 0;
+}
+
+.unified-job-form > .job-create-section > h4::before {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.unified-job-form > .job-create-section:nth-of-type(1) > h4::before {
+  content: '1. Customer';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(2) > h4::before {
+  content: '2. Property';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(3) > h4::before {
+  content: '3. Job';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(4) > h4::before {
+  content: '4. Schedule';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(5) > h4::before {
+  content: '5. Assignment';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(6) > h4::before {
+  content: '6. Pricing and costs';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(7) > h4::before {
+  content: '7. Review';
 }
 
 /* Customer details are collected once in step 1. Do not repeat them in job details. */
@@ -98,6 +136,11 @@ a.btn {
   margin-left: 0.55rem;
   padding: 0.18rem 0.5rem;
   vertical-align: middle;
+}
+
+/* Keep map-provider attribution with the active results menu instead of showing it as a permanent form field. */
+.address-autocomplete > p.muted {
+  display: none;
 }
 
 .visit-editor {
