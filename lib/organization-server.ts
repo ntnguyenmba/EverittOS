@@ -16,7 +16,7 @@ export async function fetchOrganizationContextForUser(
 ): Promise<OrganizationContext | null> {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id')
     .eq('id', userId)
     .maybeSingle();
 
@@ -39,22 +39,22 @@ export async function fetchOrganizationContextForUser(
       .maybeSingle()
   ]);
 
-  if (!org) return null;
+  if (!org || !member) return null;
 
   return {
     organizationId: org.id,
     organizationName: org.name,
-    role: normalizeRole(member?.role || profile?.role),
+    role: normalizeRole(member.role),
     ownerUserId: org.owner_user_id
   };
 }
 
-/** Workspace membership role first, then profile role fallback. */
+/** Resolve the user's role from their active organization membership. */
 export async function resolveWorkspaceRoleForUser(
   supabase: SupabaseClient,
   userId: string,
-  profileRole?: string | null
+  _profileRole?: string | null
 ): Promise<UserRole> {
   const org = await fetchOrganizationContextForUser(supabase, userId);
-  return normalizeRole(org?.role || profileRole || 'owner');
+  return org?.role ?? 'employee';
 }
