@@ -5,33 +5,55 @@
   display: none !important;
 }
 
-.jobs-operations-table th:nth-child(4),
-.jobs-operations-table td.jobs-col-status {
-  width: 20% !important;
-  padding-left: 12px !important;
-  padding-right: 20px !important;
-}
-
-.jobs-operations-table th:nth-child(3),
-.jobs-operations-table td.jobs-col-assigned {
-  width: 30% !important;
-  padding-left: 8px !important;
-  padding-right: 12px !important;
-}
-
-.jobs-operations-table th:nth-child(2),
-.jobs-operations-table td.jobs-col-property {
-  width: 32% !important;
-  padding-left: 16px !important;
-  padding-right: 8px !important;
+.jobs-operations-table {
+  table-layout: fixed !important;
 }
 
 .jobs-operations-table th:first-child,
 .jobs-operations-table td.jobs-col-date {
-  width: 18% !important;
+  width: 17% !important;
+  padding-left: 16px !important;
+  padding-right: 10px !important;
+  white-space: nowrap !important;
+}
+
+.jobs-operations-table th:nth-child(2),
+.jobs-operations-table td.jobs-col-property {
+  width: 43% !important;
+  padding-left: 10px !important;
+  padding-right: 6px !important;
+}
+
+.jobs-operations-table th:nth-child(3),
+.jobs-operations-table td.jobs-col-assigned {
+  width: 25% !important;
+  padding-left: 6px !important;
+  padding-right: 8px !important;
+}
+
+.jobs-operations-table th:nth-child(4),
+.jobs-operations-table td.jobs-col-status {
+  width: 15% !important;
+  padding-left: 8px !important;
+  padding-right: 16px !important;
+  white-space: nowrap !important;
+}
+
+.jobs-col-property,
+.jobs-col-assigned {
+  overflow: hidden;
+}
+
+.jobs-col-property > *,
+.jobs-col-assigned > * {
+  max-width: 100%;
 }
 
 @media (max-width: 760px) {
+  .jobs-operations-table {
+    table-layout: auto !important;
+  }
+
   .jobs-operations-table td.jobs-col-actions {
     display: none !important;
   }
@@ -47,5 +69,6 @@
     width: auto !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    white-space: normal !important;
   }
 }
