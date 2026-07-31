@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
+import { CreateCompanyCard } from '@/components/portal/create-company-card';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAsyncAction } from '@/hooks/use-async-action';
@@ -127,6 +128,8 @@ export function PortalAccountSettings({ variant, homeHref }: PortalAccountSettin
 
   return (
     <div className="portal-account-settings">
+      <CreateCompanyCard variant={variant} />
+
       <div className="settings-card form settings-form-grid">
         <h3>{t('portal.account.profile.title')}</h3>
         <p className="muted">{t('portal.account.profile.description')}</p>
