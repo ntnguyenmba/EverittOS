@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { generateActiveSeriesForOrganization } from '@/lib/generate-recurring-series';
+import { calculateExpectedJobFinance, centsToDollars, dollarsToCents } from '@/lib/money-decimal';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import {
   generateOccurrences,
+  parseOccurrenceLocalTime,
   RECURRING_GENERATION_WINDOW_DAYS,
   resolveRecurrenceInterval,
   summarizeRecurrence,
   type RecurrenceFrequency
 } from '@/lib/recurring-jobs';
+import { occurrenceFinanceColumns, seedOccurrenceLabor } from '@/lib/seed-occurrence-finance';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
@@ -31,6 +34,13 @@ type CreateBody = {
   notes?: string | null;
   timezone?: string | null;
   default_price?: number | null;
+  expected_contractor_cost?: number | null;
+  expected_additional_expense?: number | null;
+  expected_expense_description?: string | null;
+  contractor_pay_basis?: 'hourly' | 'flat' | 'visit' | null;
+  contractor_hours?: number | null;
+  contractor_hourly_rate?: number | null;
+  contractor_name?: string | null;
   duration_minutes?: number | null;
   preferred_contractor_user_id?: string | null;
   assigned_to?: string | null;
@@ -137,6 +147,25 @@ export async function POST(request: Request) {
     );
   }
 
+  const finance = calculateExpectedJobFinance({
+    clientPrice: body.default_price,
+    contractorPay: body.expected_contractor_cost,
+    additionalExpenses: body.expected_additional_expense
+  });
+
+  const financeDefaults = {
+    expectedRevenue: finance.expectedRevenue,
+    expectedContractorCost: finance.expectedContractorCost,
+    expectedAdditionalExpense: finance.expectedAdditionalExpense,
+    expectedExpenseDescription: body.expected_expense_description?.trim() || null,
+    contractorPayBasis: body.contractor_pay_basis || 'flat',
+    contractorHours: body.contractor_hours ?? null,
+    contractorHourlyRate: body.contractor_hourly_rate ?? null,
+    contractorName: body.contractor_name?.trim() || null,
+    preferredContractorId
+  };
+  const financeColumns = occurrenceFinanceColumns(financeDefaults);
+
   const intervalInfo = resolveRecurrenceInterval({
     frequency,
     interval: recurrence.interval,
@@ -159,7 +188,14 @@ export async function POST(request: Request) {
     preferred_start_time: recurrence.preferredStartTime || null,
     duration_minutes: body.duration_minutes ?? null,
     timezone: timezone || normalizeTimeZone(null),
-    default_price: body.default_price ?? null,
+    default_price: finance.expectedRevenue || null,
+    default_contractor_cost: finance.expectedContractorCost || null,
+    default_additional_expense: finance.expectedAdditionalExpense || null,
+    default_expense_description: financeDefaults.expectedExpenseDescription,
+    default_contractor_pay_basis: financeDefaults.contractorPayBasis,
+    default_contractor_hours: financeDefaults.contractorHours,
+    default_contractor_hourly_rate: financeDefaults.contractorHourlyRate,
+    default_contractor_name: financeDefaults.contractorName,
     preferred_contractor_id: preferredContractorId,
     notes: body.notes?.trim() || null,
     customer_name: body.customer_name?.trim() || null,
@@ -191,7 +227,7 @@ export async function POST(request: Request) {
         start_date: startDate,
         due_date: startDate,
         scheduled_start: scheduledStart,
-        revenue_amount: body.default_price ?? null
+        ...financeColumns
       })
       .select('id')
       .single();
@@ -211,10 +247,16 @@ export async function POST(request: Request) {
         { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
       );
     }
+    await seedOccurrenceLabor(ctx.supabase, {
+      organizationId: ctx.workspace.organizationId,
+      jobId: job.id,
+      defaults: financeDefaults
+    });
 
     return NextResponse.json({
       oneTime: true,
       job,
+      expectedFinance: finance,
       summary: summarizeRecurrence({
         frequency: 'none',
         startDate,
@@ -256,46 +298,60 @@ export async function POST(request: Request) {
     timezone: series.timezone
   });
 
-  const jobRows = occurrences.map((occurrence) => ({
-    ...workspaceScopedFields(ctx.workspace, ctx.userId),
-    title,
-    customer_id: body.customer_id || null,
-    property_id: body.property_id || null,
-    customer_name: body.customer_name?.trim() || null,
-    customer_email: body.customer_email?.trim() || null,
-    phone: body.customer_phone?.trim() || body.phone?.trim() || null,
-    address: body.address?.trim() || null,
-    notes: body.notes?.trim() || null,
-    timezone: series.timezone,
-    assigned_to: preferredContractorId,
-    status: 'scheduled',
-    start_date: occurrence.occurrenceDate,
-    due_date: occurrence.occurrenceDate,
-    scheduled_start: occurrence.scheduledStart,
-    scheduled_end: occurrence.scheduledEnd,
-    recurring_series_id: series.id,
-    occurrence_date: occurrence.occurrenceDate,
-    is_skipped: false,
-    revenue_amount: body.default_price ?? null
-  }));
+  const jobRows = occurrences.map((occurrence) => {
+    const localTime = parseOccurrenceLocalTime(occurrence.scheduledStart, recurrence.preferredStartTime);
+    return {
+      ...workspaceScopedFields(ctx.workspace, ctx.userId),
+      title,
+      customer_id: body.customer_id || null,
+      property_id: body.property_id || null,
+      customer_name: body.customer_name?.trim() || null,
+      customer_email: body.customer_email?.trim() || null,
+      phone: body.customer_phone?.trim() || body.phone?.trim() || null,
+      address: body.address?.trim() || null,
+      notes: body.notes?.trim() || null,
+      timezone: series.timezone,
+      assigned_to: preferredContractorId,
+      status: 'scheduled',
+      start_date: occurrence.occurrenceDate,
+      due_date: occurrence.occurrenceDate,
+      scheduled_start: occurrence.scheduledStart,
+      scheduled_end: occurrence.scheduledEnd,
+      recurring_series_id: series.id,
+      occurrence_date: occurrence.occurrenceDate,
+      occurrence_local_time: localTime || null,
+      is_skipped: false,
+      ...financeColumns
+    };
+  });
 
-  const { data: createdJobs, error: jobsError } = await ctx.supabase
-    .from('jobs')
-    .upsert(jobRows, { onConflict: 'recurring_series_id,occurrence_date', ignoreDuplicates: true })
-    .select('id, occurrence_date, scheduled_start, status');
-
-  // Unique index may not be exposed as onConflict target; fall back to insert-ignore loop.
-  let jobs = createdJobs || [];
-  if (jobsError) {
-    jobs = [];
-    for (const row of jobRows) {
-      const insert = await ctx.supabase.from('jobs').insert(row).select('id, occurrence_date, scheduled_start, status').maybeSingle();
-      if (insert.data) jobs.push(insert.data);
+  let jobs: Array<{ id: string; occurrence_date?: string | null; scheduled_start?: string | null; status?: string | null }> = [];
+  for (const row of jobRows) {
+    const insert = await ctx.supabase
+      .from('jobs')
+      .insert(row)
+      .select('id, occurrence_date, scheduled_start, status')
+      .maybeSingle();
+    if (insert.error && /column|schema cache|does not exist/i.test(insert.error.message)) {
+      const legacy = { ...row } as Record<string, unknown>;
+      delete legacy.expected_contractor_cost;
+      delete legacy.expected_additional_expense;
+      delete legacy.expected_expense_description;
+      delete legacy.occurrence_local_time;
+      const retry = await ctx.supabase
+        .from('jobs')
+        .insert(legacy)
+        .select('id, occurrence_date, scheduled_start, status')
+        .maybeSingle();
+      if (retry.data) jobs.push(retry.data);
+      continue;
     }
+    if (insert.error && /duplicate|unique/i.test(insert.error.message)) continue;
+    if (insert.data) jobs.push(insert.data);
   }
 
-  if (preferredContractorId) {
-    for (const job of jobs) {
+  for (const job of jobs) {
+    if (preferredContractorId) {
       await ctx.supabase.from('job_assignments').upsert(
         {
           job_id: job.id,
@@ -306,6 +362,11 @@ export async function POST(request: Request) {
         { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
       );
     }
+    await seedOccurrenceLabor(ctx.supabase, {
+      organizationId: ctx.workspace.organizationId,
+      jobId: job.id,
+      defaults: financeDefaults
+    });
   }
 
   const nextDate = occurrences.length
@@ -338,12 +399,24 @@ export async function POST(request: Request) {
     timezone: series.timezone
   });
 
+  const count = jobs.length;
+  const scheduledFinance = {
+    perOccurrence: finance,
+    generatedCount: count,
+    scheduledRevenue: centsToDollars(dollarsToCents(finance.expectedRevenue) * count),
+    expectedContractorExpense: centsToDollars(dollarsToCents(finance.expectedContractorCost) * count),
+    expectedAdditionalExpenses: centsToDollars(dollarsToCents(finance.expectedAdditionalExpense) * count),
+    expectedProfit: centsToDollars(dollarsToCents(finance.expectedProfit) * count)
+  };
+
   return NextResponse.json({
     series,
     jobs,
     generatedCount: jobs.length,
     windowDays: RECURRING_GENERATION_WINDOW_DAYS,
     summary,
+    expectedFinance: finance,
+    scheduledFinance,
     firstJobId: jobs[0]?.id || null
   });
 }

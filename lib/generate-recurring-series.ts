@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   generateOccurrences,
+  parseOccurrenceLocalTime,
   RECURRING_GENERATION_WINDOW_DAYS,
   type RecurrenceFrequency
 } from '@/lib/recurring-jobs';
+import { occurrenceFinanceColumns, seedOccurrenceLabor, type OccurrenceFinanceDefaults } from '@/lib/seed-occurrence-finance';
 import { workspaceScopedFields, type CurrentWorkspace } from '@/lib/workspace-server';
 
-type SeriesRow = {
+export type SeriesRow = {
   id: string;
   status: string;
   title: string;
@@ -22,6 +24,13 @@ type SeriesRow = {
   preferred_start_time?: string | null;
   duration_minutes?: number | null;
   default_price?: number | null;
+  default_contractor_cost?: number | null;
+  default_additional_expense?: number | null;
+  default_expense_description?: string | null;
+  default_contractor_pay_basis?: string | null;
+  default_contractor_hours?: number | null;
+  default_contractor_hourly_rate?: number | null;
+  default_contractor_name?: string | null;
   recurrence_frequency: string;
   recurrence_interval?: number | null;
   recurrence_weekday?: number | null;
@@ -30,9 +39,28 @@ type SeriesRow = {
   occurrence_limit?: number | null;
 };
 
+function financeDefaultsFromSeries(series: SeriesRow): OccurrenceFinanceDefaults {
+  return {
+    expectedRevenue: series.default_price ?? null,
+    expectedContractorCost: series.default_contractor_cost ?? null,
+    expectedAdditionalExpense: series.default_additional_expense ?? null,
+    expectedExpenseDescription: series.default_expense_description ?? null,
+    contractorPayBasis:
+      series.default_contractor_pay_basis === 'hourly' ||
+      series.default_contractor_pay_basis === 'flat' ||
+      series.default_contractor_pay_basis === 'visit'
+        ? series.default_contractor_pay_basis
+        : 'flat',
+    contractorHours: series.default_contractor_hours ?? null,
+    contractorHourlyRate: series.default_contractor_hourly_rate ?? null,
+    contractorName: series.default_contractor_name ?? null,
+    preferredContractorId: series.preferred_contractor_id ?? null
+  };
+}
+
 /**
  * Generate missing occurrences for an active series inside the app-wide window.
- * Safe to call repeatedly — unique (series, occurrence_date) prevents duplicates.
+ * Safe to call repeatedly — unique (series, occurrence_date, local time) prevents duplicates.
  */
 export async function generateSeriesWindow(
   supabase: SupabaseClient,
@@ -61,8 +89,12 @@ export async function generateSeriesWindow(
     { fromDate: today, windowDays: RECURRING_GENERATION_WINDOW_DAYS, existingCount: 0 }
   );
 
+  const financeDefaults = financeDefaultsFromSeries(series);
+  const financeColumns = occurrenceFinanceColumns(financeDefaults);
   let created = 0;
+
   for (const occurrence of occurrences) {
+    const localTime = parseOccurrenceLocalTime(occurrence.scheduledStart, series.preferred_start_time);
     const row = {
       ...workspaceScopedFields(workspace, userId),
       title: series.title,
@@ -82,29 +114,32 @@ export async function generateSeriesWindow(
       scheduled_end: occurrence.scheduledEnd,
       recurring_series_id: series.id,
       occurrence_date: occurrence.occurrenceDate,
+      occurrence_local_time: localTime || null,
       is_skipped: false,
-      revenue_amount: series.default_price ?? null
+      ...financeColumns
     };
 
     const { data, error } = await supabase.from('jobs').insert(row).select('id').maybeSingle();
     if (error) {
+      // Unique violation = already generated; ignore. Missing-column fallback for pre-migration DBs.
       if (/duplicate|unique/i.test(error.message)) continue;
+      if (/column|schema cache|does not exist/i.test(error.message)) {
+        const legacy = { ...row } as Record<string, unknown>;
+        delete legacy.expected_contractor_cost;
+        delete legacy.expected_additional_expense;
+        delete legacy.expected_expense_description;
+        delete legacy.occurrence_local_time;
+        const retry = await supabase.from('jobs').insert(legacy).select('id').maybeSingle();
+        if (retry.error || !retry.data?.id) continue;
+        created += 1;
+        await afterOccurrenceCreated(supabase, workspace, userId, series, retry.data.id, financeDefaults);
+        continue;
+      }
       continue;
     }
     if (!data?.id) continue;
     created += 1;
-
-    if (series.preferred_contractor_id) {
-      await supabase.from('job_assignments').upsert(
-        {
-          job_id: data.id,
-          worker_id: series.preferred_contractor_id,
-          user_id: userId,
-          organization_id: workspace.organizationId
-        },
-        { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
-      );
-    }
+    await afterOccurrenceCreated(supabase, workspace, userId, series, data.id, financeDefaults);
   }
 
   const nextDate = occurrences.length
@@ -116,6 +151,32 @@ export async function generateSeriesWindow(
     .eq('id', series.id);
 
   return { created, windowDays: RECURRING_GENERATION_WINDOW_DAYS };
+}
+
+async function afterOccurrenceCreated(
+  supabase: SupabaseClient,
+  workspace: CurrentWorkspace,
+  userId: string,
+  series: SeriesRow,
+  jobId: string,
+  financeDefaults: OccurrenceFinanceDefaults
+) {
+  if (series.preferred_contractor_id) {
+    await supabase.from('job_assignments').upsert(
+      {
+        job_id: jobId,
+        worker_id: series.preferred_contractor_id,
+        user_id: userId,
+        organization_id: workspace.organizationId
+      },
+      { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
+    );
+  }
+  await seedOccurrenceLabor(supabase, {
+    organizationId: workspace.organizationId,
+    jobId,
+    defaults: financeDefaults
+  });
 }
 
 /** Top up all active series for an organization (request-time scheduler). */

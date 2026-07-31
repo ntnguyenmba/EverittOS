@@ -60,6 +60,8 @@ type Job = {
   occurrence_date?: string | null;
   is_skipped?: boolean | null;
   revenue_amount?: number | null;
+  expected_contractor_cost?: number | null;
+  expected_additional_expense?: number | null;
   timezone?: string | null;
   priority: string | null;
   internal_notes: string | null;
@@ -93,6 +95,8 @@ const SAFE_JOB_DETAIL_COLUMNS = [
   'occurrence_date',
   'is_skipped',
   'revenue_amount',
+  'expected_contractor_cost',
+  'expected_additional_expense',
   'timezone',
   'priority',
   'customer_notes',
@@ -196,7 +200,7 @@ export default function JobDetailPage({ params }: PageProps) {
       const fallback = await supabase
         .from('jobs')
         .select(
-          [...SAFE_JOB_DETAIL_COLUMNS.filter((col) => !['customer_email', 'recurring_series_id', 'occurrence_date', 'is_skipped', 'revenue_amount', 'timezone'].includes(col)), ...(canReadInternalNotes ? ['internal_notes'] : [])].join(', ')
+          [...SAFE_JOB_DETAIL_COLUMNS.filter((col) => !['customer_email', 'recurring_series_id', 'occurrence_date', 'is_skipped', 'revenue_amount', 'expected_contractor_cost', 'expected_additional_expense', 'timezone'].includes(col)), ...(canReadInternalNotes ? ['internal_notes'] : [])].join(', ')
         )
         .eq('id', jobId)
         .single();
@@ -416,6 +420,8 @@ export default function JobDetailPage({ params }: PageProps) {
           title: job.title,
           notes: job.notes,
           default_price: job.revenue_amount ?? null,
+          expected_contractor_cost: job.expected_contractor_cost ?? null,
+          expected_additional_expense: job.expected_additional_expense ?? null,
           timezone: job.timezone || null
         })
       });
@@ -664,7 +670,17 @@ export default function JobDetailPage({ params }: PageProps) {
 
         {orgId && limitsForPlan(plan).crewAssignment ? (
           <div className="card" style={{ marginTop: 18 }}>
-            <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments} canManage={canManage} onChange={loadJob} />
+            <JobAssignments
+              jobId={job.id}
+              organizationId={orgId}
+              userId={job.user_id}
+              workers={workers}
+              assignments={assignments}
+              canManage={canManage}
+              recurringSeriesId={job.recurring_series_id}
+              occurrenceDate={job.occurrence_date || job.start_date}
+              onChange={loadJob}
+            />
           </div>
         ) : null}
 

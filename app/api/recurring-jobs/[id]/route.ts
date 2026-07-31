@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isValidUuid } from '@/lib/input-validation';
+import { parseMoneyDollars } from '@/lib/money-decimal';
 import { isCompletedLikeStatus } from '@/lib/recurring-jobs';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
@@ -35,7 +36,9 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data: jobs } = await ctx.supabase
     .from('jobs')
-    .select('id, title, status, occurrence_date, scheduled_start, revenue_amount, is_skipped, assigned_to')
+    .select(
+      'id, title, status, occurrence_date, scheduled_start, revenue_amount, expected_contractor_cost, expected_additional_expense, is_skipped, assigned_to'
+    )
     .eq('recurring_series_id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .order('occurrence_date', { ascending: true });
@@ -52,16 +55,22 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!isValidUuid(id)) return NextResponse.json({ error: 'Invalid series id.' }, { status: 400 });
 
   const body = (await request.json().catch(() => ({}))) as {
-    action?: 'pause' | 'resume' | 'end' | 'edit_series' | 'edit_future';
+    action?: 'pause' | 'resume' | 'end' | 'edit_series' | 'edit_future' | 'assign_contractor';
     fromDate?: string;
     endDate?: string | null;
     title?: string;
     notes?: string | null;
     default_price?: number | null;
+    expected_contractor_cost?: number | null;
+    expected_additional_expense?: number | null;
+    expected_expense_description?: string | null;
+    preferred_contractor_id?: string | null;
     preferred_start_time?: string | null;
     duration_minutes?: number | null;
     timezone?: string | null;
     cancelFutureJobs?: boolean;
+    assignmentScope?: 'this_job_only' | 'this_and_future' | 'entire_series';
+    jobId?: string;
   };
 
   const { data: series, error } = await ctx.supabase
@@ -121,14 +130,78 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true, status: 'ended', endDate });
   }
 
+  if (action === 'assign_contractor') {
+    const workerId = body.preferred_contractor_id?.trim() || null;
+    const scope = body.assignmentScope || 'this_job_only';
+    const fromDate = body.fromDate || new Date().toISOString().slice(0, 10);
+
+    if (scope === 'entire_series' || scope === 'this_and_future') {
+      await ctx.supabase
+        .from('recurring_job_series')
+        .update({ preferred_contractor_id: workerId, updated_at: new Date().toISOString() })
+        .eq('id', id);
+    }
+
+    let jobsQuery = ctx.supabase
+      .from('jobs')
+      .select('id, status, occurrence_date')
+      .eq('recurring_series_id', id)
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('is_skipped', false);
+
+    if (scope === 'this_job_only' && body.jobId) {
+      jobsQuery = jobsQuery.eq('id', body.jobId);
+    } else if (scope === 'this_and_future') {
+      jobsQuery = jobsQuery.gte('occurrence_date', fromDate);
+    }
+
+    const { data: jobs } = await jobsQuery;
+    const updatable = (jobs || []).filter((job) => !isCompletedLikeStatus(job.status));
+    for (const job of updatable) {
+      await ctx.supabase
+        .from('jobs')
+        .update({ assigned_to: workerId })
+        .eq('id', job.id)
+        .eq('organization_id', ctx.workspace.organizationId);
+      if (workerId) {
+        await ctx.supabase.from('job_assignments').upsert(
+          {
+            job_id: job.id,
+            worker_id: workerId,
+            user_id: ctx.userId,
+            organization_id: ctx.workspace.organizationId
+          },
+          { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
+        );
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      updatedJobCount: updatable.length,
+      affectedJobIds: updatable.map((job) => job.id),
+      scope
+    });
+  }
+
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (body.title !== undefined) patch.title = String(body.title).trim();
   if (body.notes !== undefined) patch.notes = body.notes;
-  if (body.default_price !== undefined) patch.default_price = body.default_price;
+  if (body.default_price !== undefined) patch.default_price = parseMoneyDollars(body.default_price);
+  if (body.expected_contractor_cost !== undefined) {
+    patch.default_contractor_cost = parseMoneyDollars(body.expected_contractor_cost);
+  }
+  if (body.expected_additional_expense !== undefined) {
+    patch.default_additional_expense = parseMoneyDollars(body.expected_additional_expense);
+  }
+  if (body.expected_expense_description !== undefined) {
+    patch.default_expense_description = body.expected_expense_description;
+  }
   if (body.preferred_start_time !== undefined) patch.preferred_start_time = body.preferred_start_time;
   if (body.duration_minutes !== undefined) patch.duration_minutes = body.duration_minutes;
   if (body.timezone !== undefined) patch.timezone = body.timezone;
   if (body.endDate !== undefined) patch.end_date = body.endDate;
+  if (body.preferred_contractor_id !== undefined) patch.preferred_contractor_id = body.preferred_contractor_id;
 
   await ctx.supabase.from('recurring_job_series').update(patch).eq('id', id);
 
@@ -149,8 +222,18 @@ export async function PATCH(request: Request, context: RouteContext) {
   const jobPatch: Record<string, unknown> = {};
   if (body.title !== undefined) jobPatch.title = String(body.title).trim();
   if (body.notes !== undefined) jobPatch.notes = body.notes;
-  if (body.default_price !== undefined) jobPatch.revenue_amount = body.default_price;
+  if (body.default_price !== undefined) jobPatch.revenue_amount = parseMoneyDollars(body.default_price);
+  if (body.expected_contractor_cost !== undefined) {
+    jobPatch.expected_contractor_cost = parseMoneyDollars(body.expected_contractor_cost);
+  }
+  if (body.expected_additional_expense !== undefined) {
+    jobPatch.expected_additional_expense = parseMoneyDollars(body.expected_additional_expense);
+  }
+  if (body.expected_expense_description !== undefined) {
+    jobPatch.expected_expense_description = body.expected_expense_description;
+  }
   if (body.timezone !== undefined) jobPatch.timezone = body.timezone;
+  if (body.preferred_contractor_id !== undefined) jobPatch.assigned_to = body.preferred_contractor_id;
 
   if (Object.keys(jobPatch).length && updatable.length) {
     await ctx.supabase

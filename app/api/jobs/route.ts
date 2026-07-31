@@ -110,6 +110,10 @@ export async function POST(request: Request) {
     scheduled_start?: string | null;
     scheduled_end?: string | null;
     timezone?: string | null;
+    revenue_amount?: number | string | null;
+    expected_contractor_cost?: number | string | null;
+    expected_additional_expense?: number | string | null;
+    expected_expense_description?: string | null;
     visits?: VisitInput[];
   };
 
@@ -258,7 +262,20 @@ export async function POST(request: Request) {
     due_date: schedule.due_date,
     scheduled_start: schedule.scheduled_start,
     scheduled_end: schedule.scheduled_end,
-    timezone: resolvedTimeZone
+    timezone: resolvedTimeZone,
+    revenue_amount:
+      body.revenue_amount === undefined || body.revenue_amount === null || body.revenue_amount === ''
+        ? null
+        : Number(body.revenue_amount),
+    expected_contractor_cost:
+      body.expected_contractor_cost === undefined || body.expected_contractor_cost === null
+        ? null
+        : Number(body.expected_contractor_cost),
+    expected_additional_expense:
+      body.expected_additional_expense === undefined || body.expected_additional_expense === null
+        ? null
+        : Number(body.expected_additional_expense),
+    expected_expense_description: body.expected_expense_description?.trim?.() || body.expected_expense_description || null
   };
 
   if (propertyId) {
@@ -275,6 +292,9 @@ export async function POST(request: Request) {
     const fallbackPayload = { ...insertPayload };
     delete fallbackPayload.property_id;
     delete fallbackPayload.timezone;
+    delete fallbackPayload.expected_contractor_cost;
+    delete fallbackPayload.expected_additional_expense;
+    delete fallbackPayload.expected_expense_description;
     const retry = await ctx.supabase
       .from('jobs')
       .insert(fallbackPayload)

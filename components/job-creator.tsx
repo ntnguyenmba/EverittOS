@@ -20,6 +20,7 @@ import { wallClockDateTime } from '@/lib/schedule-times';
 import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 import type { StructuredAddress } from '@/lib/address/types';
 import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
+import { calculateExpectedJobFinance, multiplyMoneyDollars, parseMoneyDollars } from '@/lib/money-decimal';
 import {
   RECURRING_GENERATION_WINDOW_DAYS,
   summarizeRecurrence,
@@ -121,8 +122,7 @@ function validVisits(visits: VisitDraft[]) {
 }
 
 function moneyValue(value: string): number {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  return parseMoneyDollars(value);
 }
 
 function propertyLabel(property: PropertyOption) {
@@ -150,8 +150,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [showRecurrenceAdvanced, setShowRecurrenceAdvanced] = useState(false);
   const [timeZone, setTimeZone] = useState('');
   const [clientIncome, setClientIncome] = useState('');
+  const [additionalExpenses, setAdditionalExpenses] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
   const [contractorName, setContractorName] = useState('');
-  const [contractorPayMode, setContractorPayMode] = useState<ContractorPayMode>('hourly');
+  const [contractorPayMode, setContractorPayMode] = useState<ContractorPayMode>('flat');
   const [contractorHours, setContractorHours] = useState('');
   const [contractorHourlyRate, setContractorHourlyRate] = useState('');
   const [contractorFlatRate, setContractorFlatRate] = useState('');
@@ -599,6 +601,20 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    const expectedContractorPay =
+      contractorPayMode === 'hourly'
+        ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
+        : moneyValue(contractorFlatRate);
+    const assignedMember = teamMembers.find((member) => member.userId === assignedTo);
+    const durationMinutes =
+      firstVisit?.start_time && firstVisit?.end_time
+        ? Math.max(
+            0,
+            (Number(firstVisit.end_time.slice(0, 2)) * 60 + Number(firstVisit.end_time.slice(3, 5))) -
+              (Number(firstVisit.start_time.slice(0, 2)) * 60 + Number(firstVisit.start_time.slice(3, 5)))
+          )
+        : null;
+
     if (recurrenceFrequency !== 'none') {
       const startDate = firstVisit?.visit_date || new Date().toISOString().slice(0, 10);
       const recurringRes = await fetch('/api/recurring-jobs', {
@@ -615,6 +631,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           notes: notes.trim() || null,
           timezone: timeZone || null,
           default_price: clientIncome ? moneyValue(clientIncome) : null,
+          expected_contractor_cost: expectedContractorPay || null,
+          expected_additional_expense: additionalExpenses ? moneyValue(additionalExpenses) : null,
+          expected_expense_description: expenseDescription.trim() || null,
+          contractor_pay_basis: contractorPayMode,
+          contractor_hours: contractorPayMode === 'hourly' ? moneyValue(contractorHours) : null,
+          contractor_hourly_rate:
+            contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : expectedContractorPay || null,
+          contractor_name: contractorName.trim() || assignedMember?.label || null,
+          duration_minutes: durationMinutes,
           assigned_to: assignedTo || null,
           recurrence: {
             frequency: recurrenceFrequency,
@@ -658,6 +683,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         customer_id: customerId,
         property_id: propertyId,
         revenue_amount: clientIncome ? moneyValue(clientIncome) : null,
+        expected_contractor_cost: expectedContractorPay || null,
+        expected_additional_expense: additionalExpenses ? moneyValue(additionalExpenses) : null,
+        expected_expense_description: expenseDescription.trim() || null,
         assigned_to: assignedTo || null,
         start_date: firstVisit?.visit_date || null,
         due_date: lastVisit?.visit_date || null,
@@ -693,7 +721,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       );
     }
 
-    if (hasContractorPay) {
+    if (hasContractorPay || expectedContractorPay > 0) {
       const hours = contractorPayMode === 'hourly' ? moneyValue(contractorHours) : 1;
       const rate = contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : moneyValue(contractorFlatRate);
       followUpTasks.push(
@@ -702,12 +730,26 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             worker_id: null,
-            worker_name: contractorName.trim(),
+            worker_name: contractorName.trim() || assignedMember?.label || null,
             hours,
             hourly_cost: rate,
             notes: contractorNotes.trim() || (contractorPayMode === 'flat' ? 'Flat-rate contractor pay' : null)
           })
         })
+      );
+    }
+
+    if (additionalExpenses && moneyValue(additionalExpenses) > 0) {
+      followUpTasks.push(
+        fetch(`/api/jobs/${jobId}/profitability`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            expected_additional_expense: moneyValue(additionalExpenses),
+            expected_expense_description: expenseDescription.trim() || null,
+            expected_contractor_cost: expectedContractorPay || null
+          })
+        }).catch(() => undefined)
       );
     }
 
@@ -744,10 +786,27 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     );
   }
 
-  const previewContractorPay = contractorPayMode === 'hourly'
-    ? moneyValue(contractorHours) * moneyValue(contractorHourlyRate)
-    : moneyValue(contractorFlatRate);
-  const previewProfit = moneyValue(clientIncome) - previewContractorPay;
+  const previewFinance = calculateExpectedJobFinance({
+    clientPrice: clientIncome,
+    contractorPay:
+      contractorPayMode === 'hourly'
+        ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
+        : contractorFlatRate,
+    additionalExpenses
+  });
+  const previewContractorPay = previewFinance.expectedContractorCost;
+  const previewProfit = previewFinance.expectedProfit;
+  const recurrenceSummary = summarizeRecurrence({
+    frequency: recurrenceFrequency,
+    interval: Number(recurrenceInterval) || 1,
+    intervalUnit: recurrenceIntervalUnit,
+    weekday: recurrenceWeekday,
+    startDate: visits[0]?.visit_date || new Date().toISOString().slice(0, 10),
+    endDate: recurrenceEndDate || null,
+    occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
+    preferredStartTime: visits[0]?.start_time || '09:00',
+    timezone: timeZone || null
+  });
   const selectedProperty = selectedCustomer?.properties.find((p) => p.id === selectedPropertyId) || null;
   const addressChangedFromProperty =
     Boolean(selectedProperty) &&
@@ -976,7 +1035,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
         <section className="job-create-section">
           <h4>4. One-time or recurring</h4>
-          <label htmlFor="recurrence-frequency">Repeat</label>
+          <label htmlFor="recurrence-frequency">Repeats</label>
           <select
             id="recurrence-frequency"
             className="input"
@@ -1022,29 +1081,17 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 <summary>Advanced recurrence options</summary>
                 <label style={{ marginTop: 8 }}>End date (optional)</label>
                 <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} />
-                <label>Number of occurrences (optional)</label>
+                <label>Number of visits (optional)</label>
                 <input className="input" type="number" min="1" value={recurrenceLimit} onChange={(e) => setRecurrenceLimit(e.target.value)} />
+                <p className="muted">Leave end date and visit count blank for no end date. Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
               </details>
-              <p className="muted" style={{ marginTop: 8 }}>
-                {summarizeRecurrence({
-                  frequency: recurrenceFrequency,
-                  interval: Number(recurrenceInterval) || 1,
-                  intervalUnit: recurrenceIntervalUnit,
-                  weekday: recurrenceWeekday,
-                  startDate: visits[0]?.visit_date || new Date().toISOString().slice(0, 10),
-                  endDate: recurrenceEndDate || null,
-                  occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
-                  preferredStartTime: visits[0]?.start_time || '09:00',
-                  timezone: timeZone || null
-                })}
-              </p>
-              <p className="muted">Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
+              <p className="muted" style={{ marginTop: 8 }}>{recurrenceSummary}</p>
             </>
           ) : null}
         </section>
 
         <section className="job-create-section">
-          <h4>5. Days and hours</h4>
+          <h4>Schedule</h4>
           <p className="muted">Add one or more scheduled visits. Times are saved in the timezone selected below.</p>
           <label htmlFor="job-timezone">Job timezone</label>
           <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
@@ -1069,32 +1116,29 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </section>
 
         <section className="job-create-section">
-          <h4>Assignment and notes</h4>
-          <label htmlFor="assigned-to">Assign to</label>
+          <h4>5. Contractor</h4>
+          <label htmlFor="assigned-to">Assign contractor</label>
           <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
             <option value="">Unassigned</option>
             {teamMembers.map((member) => <option key={member.userId} value={member.userId}>{member.label} · {roleLabel(member.role)}</option>)}
           </select>
           <label>Job notes</label>
-          <textarea className="input" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <textarea className="input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </section>
 
         <section className="job-create-section">
-          <h4>Client income</h4>
-          <p className="muted">What the client will pay your business. This is separate from contractor pay.</p>
-          <label>Client income amount</label>
+          <h4>6. Financial details</h4>
+          <p className="muted">
+            Enter amounts once. For recurring jobs these become defaults on each generated visit and can be edited per visit later.
+          </p>
+          <label>Client price / expected revenue</label>
           <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
-        </section>
 
-        <section className="job-create-section">
-          <h4>Initial contractor pay</h4>
-          <p className="muted">Optional. Choose hourly or flat-rate pay so the calculation is clear.</p>
-          <label>Contractor or cleaner name</label>
-          <input className="input" value={contractorName} onChange={(e) => setContractorName(e.target.value)} />
-          <label>Pay type</label>
-          <div className="segmented-control" role="group" aria-label="Contractor pay type">
-            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly pay</button>
+          <label style={{ marginTop: 12 }}>Contractor pay / expected labor expense</label>
+          <input className="input" value={contractorName} onChange={(e) => setContractorName(e.target.value)} placeholder="Contractor or cleaner name (optional)" />
+          <div className="segmented-control" role="group" aria-label="Contractor pay type" style={{ marginTop: 8 }}>
             <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat-rate pay</button>
+            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly pay</button>
           </div>
           {contractorPayMode === 'hourly' ? (
             <div className="grid-2">
@@ -1102,14 +1146,38 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               <div className="form-group"><label>Hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
             </div>
           ) : (
-            <div className="form-group"><label>Flat-rate amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
+            <div className="form-group"><label>Contractor pay amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
           )}
           <label>Contractor pay notes</label>
           <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
-          <div className="finance-metric-grid financials-summary-grid">
-            <div className="finance-metric"><span className="finance-metric-label">Initial contractor pay</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
-            <div className="finance-metric featured"><span className="finance-metric-label">Estimated profit</span><strong>${previewProfit.toFixed(2)}</strong></div>
+
+          <label style={{ marginTop: 12 }}>Additional expected expenses</label>
+          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={additionalExpenses} onChange={(e) => setAdditionalExpenses(e.target.value)} />
+          <label>Expense description (optional)</label>
+          <input className="input" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)} placeholder="Supplies, parking, travel…" />
+
+          <div className="finance-metric-grid financials-summary-grid" style={{ marginTop: 14 }}>
+            <div className="finance-metric"><span className="finance-metric-label">Client price</span><strong>${previewFinance.expectedRevenue.toFixed(2)}</strong></div>
+            <div className="finance-metric"><span className="finance-metric-label">Contractor pay</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
+            <div className="finance-metric"><span className="finance-metric-label">Additional expenses</span><strong>${previewFinance.expectedAdditionalExpense.toFixed(2)}</strong></div>
+            <div className="finance-metric featured"><span className="finance-metric-label">Expected profit</span><strong>${previewProfit.toFixed(2)}</strong></div>
           </div>
+          <p className="muted">Expected profit = Client price − Contractor pay − Additional expected expenses</p>
+        </section>
+
+        <section className="job-create-section">
+          <h4>7. Review before saving</h4>
+          <p style={{ margin: 0 }}><strong>{recurrenceFrequency === 'none' ? 'One-time job' : 'Recurring series'}</strong></p>
+          <p className="muted" style={{ marginTop: 6 }}>{recurrenceSummary}</p>
+          {recurrenceFrequency !== 'none' ? (
+            <p className="muted">
+              Only the next {RECURRING_GENERATION_WINDOW_DAYS} days of visits are scheduled now. Financial defaults apply to each generated visit.
+            </p>
+          ) : null}
+          <p className="muted" style={{ marginTop: 6 }}>
+            Per visit: ${previewFinance.expectedRevenue.toFixed(2)} revenue · ${previewContractorPay.toFixed(2)} contractor ·
+            ${previewFinance.expectedAdditionalExpense.toFixed(2)} expenses · ${previewProfit.toFixed(2)} expected profit
+          </p>
         </section>
 
         <section className="job-create-section">

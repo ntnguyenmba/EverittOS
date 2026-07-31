@@ -127,6 +127,9 @@ const emptyRevenue = {
   jobsByStatus: {},
   totalJobs: 0,
   scheduledRevenue: 0,
+  scheduledExpectedContractorExpense: 0,
+  scheduledExpectedAdditionalExpenses: 0,
+  scheduledExpectedProfit: 0,
   recurringOccurrenceCount: 0,
   oneTimeJobCount: 0
 } satisfies DashboardRevenueMetrics;

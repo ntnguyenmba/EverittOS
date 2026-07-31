@@ -94,6 +94,9 @@ export async function POST(request: Request, context: RouteContext) {
     'due_date',
     'timezone',
     'revenue_amount',
+    'expected_contractor_cost',
+    'expected_additional_expense',
+    'expected_expense_description',
     'assigned_to'
   ]);
   const patch: Record<string, unknown> = {};

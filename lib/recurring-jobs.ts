@@ -1,7 +1,14 @@
+import {
+  addMoneyDollars,
+  calculateExpectedJobFinance,
+  centsToDollars,
+  dollarsToCents,
+  parseMoneyDollars
+} from '@/lib/money-decimal';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 
 /** Generate individual occurrences this many days ahead. Consistent app-wide window. */
-export const RECURRING_GENERATION_WINDOW_DAYS = 75;
+export const RECURRING_GENERATION_WINDOW_DAYS = 90;
 
 export const RECURRENCE_FREQUENCIES = [
   'none',
@@ -195,9 +202,29 @@ export function generateOccurrences(
   );
 }
 
+function formatDisplayDate(date: string): string {
+  const parts = parseDateParts(date);
+  if (!parts) return date;
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
+  return `${months[parts.m - 1]} ${parts.d}, ${parts.y}`;
+}
+
 export function summarizeRecurrence(input: RecurringSeriesInput): string {
   if (input.frequency === 'none') {
-    return `One-time job on ${input.startDate}${input.preferredStartTime ? ` at ${formatTimeLabel(input.preferredStartTime)}` : ''}.`;
+    return `One-time job on ${formatDisplayDate(input.startDate)}${input.preferredStartTime ? ` at ${formatTimeLabel(input.preferredStartTime)}` : ''}.`;
   }
 
   const { interval, intervalUnit } = resolveRecurrenceInterval(input);
@@ -214,11 +241,11 @@ export function summarizeRecurrence(input: RecurringSeriesInput): string {
   } else cadence = `Every ${interval} weeks`;
 
   let ending = '';
-  if (input.endDate) ending = ` until ${input.endDate}`;
+  if (input.endDate) ending = ` until ${formatDisplayDate(input.endDate)}`;
   else if (input.occurrenceLimit) ending = ` for ${input.occurrenceLimit} visits`;
   else ending = `. Only the next ${RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time`;
 
-  return `${cadence} on ${dayLabel}${timeLabel} beginning ${input.startDate}${ending}.`;
+  return `${cadence} on ${dayLabel}${timeLabel} starting ${formatDisplayDate(input.startDate)}${ending}.`;
 }
 
 function formatTimeLabel(value: string): string {
@@ -246,18 +273,93 @@ export function isCancelledOrSkippedStatus(
   return value === 'cancelled' || value === 'canceled' || value === 'skipped';
 }
 
-/** Scheduled revenue = sum of prices on future generated occurrences only (never unlimited). */
-export function calculateScheduledRevenue(
-  occurrences: Array<{ price?: number | null; status?: string | null; is_skipped?: boolean | null; occurrence_date?: string | null }>,
-  asOfDate: string
-): number {
-  let total = 0;
-  for (const row of occurrences) {
-    if (isCancelledOrSkippedStatus(row.status, row.is_skipped)) continue;
-    if (isCompletedLikeStatus(row.status)) continue;
-    if (!row.occurrence_date || compareCivil(row.occurrence_date, asOfDate) < 0) continue;
-    const price = Number(row.price || 0);
-    if (Number.isFinite(price) && price > 0) total += price;
-  }
-  return Number(total.toFixed(2));
+export type ScheduledOccurrenceFinance = {
+  price?: number | null;
+  expected_contractor_cost?: number | null;
+  expected_additional_expense?: number | null;
+  status?: string | null;
+  is_skipped?: boolean | null;
+  occurrence_date?: string | null;
+};
+
+function isActiveScheduledOccurrence(
+  row: ScheduledOccurrenceFinance,
+  asOfDate: string,
+  options?: { includePastScheduled?: boolean; periodStart?: string | null; periodEnd?: string | null }
+): boolean {
+  if (isCancelledOrSkippedStatus(row.status, row.is_skipped)) return false;
+  if (isCompletedLikeStatus(row.status)) return false;
+  if (!row.occurrence_date) return false;
+  if (!options?.includePastScheduled && compareCivil(row.occurrence_date, asOfDate) < 0) return false;
+  if (options?.periodStart && compareCivil(row.occurrence_date, options.periodStart) < 0) return false;
+  // periodEnd is exclusive (matches dashboard rangeBounds / inRange).
+  if (options?.periodEnd && compareCivil(row.occurrence_date, options.periodEnd) >= 0) return false;
+  return true;
 }
+
+/** Scheduled revenue = sum of client prices on generated active occurrences only (never unlimited). */
+export function calculateScheduledRevenue(
+  occurrences: ScheduledOccurrenceFinance[],
+  asOfDate: string,
+  options?: { includePastScheduled?: boolean; periodStart?: string | null; periodEnd?: string | null }
+): number {
+  let totalCents = 0;
+  for (const row of occurrences) {
+    if (!isActiveScheduledOccurrence(row, asOfDate, options)) continue;
+    totalCents += dollarsToCents(row.price);
+  }
+  return centsToDollars(totalCents);
+}
+
+/** Aggregate expected finance for generated active occurrences inside a period/window. */
+export function calculateScheduledExpectedFinance(
+  occurrences: ScheduledOccurrenceFinance[],
+  asOfDate: string,
+  options?: { includePastScheduled?: boolean; periodStart?: string | null; periodEnd?: string | null }
+): {
+  scheduledRevenue: number;
+  expectedContractorExpense: number;
+  expectedAdditionalExpenses: number;
+  expectedExpenses: number;
+  expectedProfit: number;
+  occurrenceCount: number;
+} {
+  let revenueCents = 0;
+  let contractorCents = 0;
+  let additionalCents = 0;
+  let occurrenceCount = 0;
+  for (const row of occurrences) {
+    if (!isActiveScheduledOccurrence(row, asOfDate, options)) continue;
+    occurrenceCount += 1;
+    const finance = calculateExpectedJobFinance({
+      clientPrice: row.price,
+      contractorPay: row.expected_contractor_cost,
+      additionalExpenses: row.expected_additional_expense
+    });
+    revenueCents += dollarsToCents(finance.expectedRevenue);
+    contractorCents += dollarsToCents(finance.expectedContractorCost);
+    additionalCents += dollarsToCents(finance.expectedAdditionalExpense);
+  }
+  const scheduledRevenue = centsToDollars(revenueCents);
+  const expectedContractorExpense = centsToDollars(contractorCents);
+  const expectedAdditionalExpenses = centsToDollars(additionalCents);
+  return {
+    scheduledRevenue,
+    expectedContractorExpense,
+    expectedAdditionalExpenses,
+    expectedExpenses: addMoneyDollars(expectedContractorExpense, expectedAdditionalExpenses),
+    expectedProfit: centsToDollars(revenueCents - contractorCents - additionalCents),
+    occurrenceCount
+  };
+}
+
+export function parseOccurrenceLocalTime(scheduledStart: string | null | undefined, preferredStartTime?: string | null): string {
+  if (preferredStartTime && /^\d{2}:\d{2}/.test(preferredStartTime.trim())) {
+    return preferredStartTime.trim().slice(0, 5);
+  }
+  if (!scheduledStart) return '';
+  const match = String(scheduledStart).match(/T(\d{2}:\d{2})/);
+  return match?.[1] || '';
+}
+
+export { parseMoneyDollars, calculateExpectedJobFinance };
