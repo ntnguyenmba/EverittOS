@@ -13,6 +13,11 @@ export const dynamic = 'force-dynamic';
 const CONTRACTOR_FIELDS =
   'id, name, email, phone, company_name, hourly_rate, contractor_classification, active, worker_type, created_at';
 
+function isMissingCompanyId(message: string | null | undefined) {
+  const lower = String(message || '').toLowerCase();
+  return lower.includes('company_id') && (lower.includes('column') || lower.includes('schema cache') || lower.includes('could not find'));
+}
+
 export async function GET() {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
@@ -71,30 +76,41 @@ export async function POST(request: Request) {
     body.contractorClassification ?? body.contractor_classification
   );
 
-  const { data, error } = await ctx.supabase
+  const baseRow = {
+    worker_type: 'contractor',
+    contractor_classification: classification,
+    name,
+    email: body.email?.trim() || null,
+    phone: body.phone?.trim() || null,
+    company_name: (body.companyName ?? body.company_name)?.trim() || null,
+    hourly_rate: parsedRate.value,
+    active: true
+  };
+
+  const scoped = workspaceScopedFields(ctx.workspace, ctx.userId);
+  let result = await ctx.supabase
     .from('workers')
-    .insert({
-      ...workspaceScopedFields(ctx.workspace, ctx.userId),
-      worker_type: 'contractor',
-      contractor_classification: classification,
-      name,
-      email: body.email?.trim() || null,
-      phone: body.phone?.trim() || null,
-      company_name: (body.companyName ?? body.company_name)?.trim() || null,
-      hourly_rate: parsedRate.value,
-      active: true
-    })
+    .insert({ ...scoped, ...baseRow })
     .select(CONTRACTOR_FIELDS)
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  if (result.error && isMissingCompanyId(result.error.message) && 'company_id' in scoped) {
+    const { company_id: _companyId, ...compatibleScope } = scoped;
+    result = await ctx.supabase
+      .from('workers')
+      .insert({ ...compatibleScope, ...baseRow })
+      .select(CONTRACTOR_FIELDS)
+      .single();
+  }
+
+  if (result.error) {
+    return NextResponse.json({ error: mapWorkspaceSaveError(result.error.message) }, { status: 400 });
   }
 
   return NextResponse.json({
     contractor: {
-      ...data,
-      contractor_classification: normalizeContractorClassification(data.contractor_classification)
+      ...result.data,
+      contractor_classification: normalizeContractorClassification(result.data.contractor_classification)
     },
     message: 'Contractor added.'
   });
