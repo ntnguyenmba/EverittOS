@@ -61,15 +61,21 @@ export async function GET(request: Request) {
   const pattern = escapedIlikePattern(q);
   const orgId = ctx.workspace.organizationId;
   const ownerUserId = ctx.workspace.ownerUserId;
+  // Current workspace + legacy owner-scoped customers. Do not filter by pipeline stage or record type.
   const customerWorkspaceFilter = [
     `organization_id.eq.${orgId}`,
     `and(organization_id.is.null,user_id.eq.${ownerUserId})`
   ].join(',');
   const customerSearchFilter = [
     `company_name.ilike.${pattern}`,
+    `contact_name.ilike.${pattern}`,
     `email.ilike.${pattern}`,
     `phone.ilike.${pattern}`,
     `address_line1.ilike.${pattern}`,
+    `address_line2.ilike.${pattern}`,
+    `city.ilike.${pattern}`,
+    `state.ilike.${pattern}`,
+    `postal_code.ilike.${pattern}`,
     `service_address.ilike.${pattern}`,
     `property_address.ilike.${pattern}`
   ].join(',');
@@ -79,31 +85,86 @@ export async function GET(request: Request) {
     .select(CUSTOMER_LIST_SELECT)
     .or(customerWorkspaceFilter)
     .or(customerSearchFilter)
-    .limit(20);
+    .limit(40);
 
-  const customersQuery =
-    primaryCustomers.error && isMissingSchemaError(primaryCustomers.error)
-      ? await ctx.supabase
-          .from('customers')
-          .select(
-            'id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, address_line2, city, state, postal_code, country, service_address, property_address'
-          )
-          .or(customerWorkspaceFilter)
-          .or(customerSearchFilter)
-          .limit(20)
-      : primaryCustomers;
+  type SearchCustomerRow = {
+    id: string;
+    company_name?: string | null;
+    contact_name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    notes?: string | null;
+    logo_path?: string | null;
+    pipeline_stage?: string | null;
+    lead_source?: string | null;
+    record_type?: string | null;
+    assigned_to?: string | null;
+    created_at?: string | null;
+    organization_id?: string | null;
+    user_id?: string | null;
+    updated_at?: string | null;
+    address_line1?: string | null;
+    address_line2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postal_code?: string | null;
+    country?: string | null;
+    service_address?: string | null;
+    property_address?: string | null;
+  };
 
-  const { data: customers, error } = customersQuery;
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  let customers: SearchCustomerRow[] = (primaryCustomers.data || []) as SearchCustomerRow[];
+  let customerError = primaryCustomers.error;
+
+  if (customerError && (isMissingSchemaError(customerError) || /contact_name|address_line2|postal_code/i.test(customerError.message))) {
+    const fallbackFilter = [
+      `company_name.ilike.${pattern}`,
+      `email.ilike.${pattern}`,
+      `phone.ilike.${pattern}`,
+      `address_line1.ilike.${pattern}`,
+      `service_address.ilike.${pattern}`,
+      `property_address.ilike.${pattern}`
+    ].join(',');
+    const fallback = await ctx.supabase
+      .from('customers')
+      .select(
+        'id, company_name, contact_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, address_line2, city, state, postal_code, country, service_address, property_address'
+      )
+      .or(customerWorkspaceFilter)
+      .or(fallbackFilter)
+      .limit(40);
+
+    if (fallback.error && isMissingSchemaError(fallback.error)) {
+      const legacy = await ctx.supabase
+        .from('customers')
+        .select(
+          'id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, service_address, property_address'
+        )
+        .or(customerWorkspaceFilter)
+        .or(fallbackFilter)
+        .limit(40);
+      customers = (legacy.data || []) as SearchCustomerRow[];
+      customerError = legacy.error;
+    } else {
+      customers = (fallback.data || []) as SearchCustomerRow[];
+      customerError = fallback.error;
+    }
   }
 
-  const matchedCustomerIds = new Set((customers || []).map((customer) => customer.id));
+  if (customerError) {
+    return NextResponse.json({ error: customerError.message }, { status: 400 });
+  }
+
+  const matchedCustomerIds = new Set(customers.map((customer) => customer.id));
   const propertySearchFilter = [
     `name.ilike.${pattern}`,
     `formatted_address.ilike.${pattern}`,
     `address.ilike.${pattern}`,
-    `city.ilike.${pattern}`
+    `address_line_1.ilike.${pattern}`,
+    `address_line_2.ilike.${pattern}`,
+    `city.ilike.${pattern}`,
+    `state.ilike.${pattern}`,
+    `postal_code.ilike.${pattern}`
   ].join(',');
 
   const propMatch = await ctx.supabase
@@ -112,7 +173,7 @@ export async function GET(request: Request) {
     .eq('organization_id', orgId)
     .eq('is_archived', false)
     .or(propertySearchFilter)
-    .limit(30);
+    .limit(40);
 
   let propertyRows: PropertySearchRow[] = (propMatch.data || []) as unknown as PropertySearchRow[];
   if (propMatch.error && isMissingSchemaError(propMatch.error)) {
@@ -121,7 +182,7 @@ export async function GET(request: Request) {
       .select('id, customer_id, name, address')
       .eq('organization_id', orgId)
       .or([`name.ilike.${pattern}`, `address.ilike.${pattern}`].join(','))
-      .limit(30);
+      .limit(40);
 
     if (legacy.error) {
       return NextResponse.json({ error: legacy.error.message }, { status: 400 });
@@ -139,9 +200,9 @@ export async function GET(request: Request) {
 
   for (const row of propertyRows) matchedCustomerIds.add(row.customer_id);
 
-  const currentCustomerIds = new Set((customers || []).map((customer) => customer.id));
+  const currentCustomerIds = new Set(customers.map((customer) => customer.id));
   const missingIds = Array.from(matchedCustomerIds).filter((id) => !currentCustomerIds.has(id));
-  let allCustomers = customers || [];
+  let allCustomers = customers;
 
   if (missingIds.length) {
     const { data: more, error: moreError } = await ctx.supabase
@@ -221,7 +282,10 @@ export async function GET(request: Request) {
       email: customer.email,
       phone: customer.phone,
       company_name: customer.company_name,
-      address: customer.service_address || customer.address_line1 || null,
+      contact_name: (customer as { contact_name?: string | null }).contact_name || null,
+      pipeline_stage: customer.pipeline_stage || null,
+      record_type: customer.record_type || null,
+      address: customer.service_address || customer.address_line1 || customer.property_address || null,
       properties: customerProperties
     };
   });

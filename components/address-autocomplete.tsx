@@ -53,11 +53,12 @@ export function AddressAutocomplete({
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [state, setState] = useState<FetchState>('idle');
-  const [attribution, setAttribution] = useState('Address search © OpenStreetMap contributors, © Komoot Photon');
+  const [attribution, setAttribution] = useState('© OpenStreetMap · © Komoot Photon');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const skipNextSearch = useRef(false);
+  const focusedRef = useRef(false);
 
   useEffect(() => {
     function onDocPointer(event: MouseEvent | TouchEvent) {
@@ -87,6 +88,7 @@ export function AddressAutocomplete({
       setSuggestions([]);
       setState('idle');
       setOpen(false);
+      setActiveIndex(-1);
       return;
     }
 
@@ -96,7 +98,8 @@ export function AddressAutocomplete({
         if (cached) {
           setSuggestions(cached);
           setState(cached.length ? 'ready' : 'empty');
-          setOpen(true);
+          // Only open when there are suggestions so empty results never block typing.
+          setOpen(Boolean(cached.length) && focusedRef.current);
           setActiveIndex(-1);
           return;
         }
@@ -104,7 +107,7 @@ export function AddressAutocomplete({
         const controller = new AbortController();
         abortRef.current = controller;
         setState('loading');
-        setOpen(true);
+        if (focusedRef.current) setOpen(true);
 
         try {
           const response = await fetch(`/api/address/autocomplete?q=${encodeURIComponent(query)}`, {
@@ -116,20 +119,35 @@ export function AddressAutocomplete({
             unavailable?: boolean;
             error?: string;
           };
-          if (json.attribution) setAttribution(json.attribution);
+          if (json.attribution) {
+            // Keep attribution short and unobtrusive in the UI.
+            setAttribution(
+              json.attribution.length > 48 ? '© OpenStreetMap · © Komoot Photon' : json.attribution
+            );
+          }
           const next = json.suggestions || [];
           writeClientCache(query, next);
           setSuggestions(next);
-          if (json.unavailable) setState('error');
-          else setState(next.length ? 'ready' : 'empty');
+          if (json.unavailable) {
+            setState('error');
+            setOpen(false);
+          } else if (next.length) {
+            setState('ready');
+            setOpen(focusedRef.current);
+          } else {
+            setState('empty');
+            setOpen(false);
+          }
           setActiveIndex(-1);
         } catch (error) {
           if ((error as Error).name === 'AbortError') return;
           setSuggestions([]);
           setState('error');
+          setOpen(false);
+          setActiveIndex(-1);
         }
       })();
-    }, 350);
+    }, 280);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -147,7 +165,17 @@ export function AddressAutocomplete({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      if (open) {
+        event.preventDefault();
+        setOpen(false);
+        setActiveIndex(-1);
+      }
+      return;
+    }
+
     if (!open) return;
+
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (!suggestions.length) return;
@@ -157,16 +185,18 @@ export function AddressAutocomplete({
       if (!suggestions.length) return;
       setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
     } else if (event.key === 'Enter') {
+      // Only consume Enter when a suggestion is actively highlighted.
       if (activeIndex >= 0 && suggestions[activeIndex]) {
         event.preventDefault();
         applySuggestion(suggestions[activeIndex]);
+      } else {
+        setOpen(false);
+        setActiveIndex(-1);
       }
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      setOpen(false);
-      setActiveIndex(-1);
     }
   }
+
+  const showMenu = open && (state === 'loading' || suggestions.length > 0);
 
   return (
     <div className="address-autocomplete" ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
@@ -180,20 +210,25 @@ export function AddressAutocomplete({
         autoComplete="street-address"
         placeholder={placeholder}
         role="combobox"
-        aria-expanded={open}
+        aria-expanded={showMenu}
         aria-controls={listboxId}
         aria-autocomplete="list"
         aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
         onChange={(event) => {
           const next = event.target.value;
+          // Manual text is always preserved; suggestions never replace unless selected.
           onChange(next, next.trim() ? structuredAddressFromManual(next) : null);
         }}
         onFocus={() => {
-          if (suggestions.length || state === 'loading' || state === 'empty' || state === 'error') setOpen(true);
+          focusedRef.current = true;
+          if (suggestions.length || state === 'loading') setOpen(true);
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
         }}
         onKeyDown={onKeyDown}
       />
-      {open ? (
+      {showMenu ? (
         <div
           id={listboxId}
           role="listbox"
@@ -201,10 +236,10 @@ export function AddressAutocomplete({
           style={{
             position: 'absolute',
             zIndex: 40,
-            top: 'calc(100% + 6px)',
+            top: 'calc(100% + 4px)',
             left: 0,
             right: 0,
-            maxHeight: 280,
+            maxHeight: 260,
             overflowY: 'auto',
             border: '1px solid var(--line)',
             borderRadius: 'var(--radius-md, 12px)',
@@ -213,9 +248,11 @@ export function AddressAutocomplete({
             boxShadow: 'var(--shadow-subtle)'
           }}
         >
-          {state === 'loading' ? <p className="muted" style={{ padding: '12px 14px', margin: 0 }}>Searching addresses…</p> : null}
-          {state === 'empty' ? <p className="muted" style={{ padding: '12px 14px', margin: 0 }}>No matches. Keep typing or enter the address manually.</p> : null}
-          {state === 'error' ? <p className="muted" style={{ padding: '12px 14px', margin: 0 }}>Address lookup is temporarily unavailable. You can enter the address manually.</p> : null}
+          {state === 'loading' ? (
+            <p className="muted" style={{ padding: '10px 12px', margin: 0 }}>
+              Searching addresses…
+            </p>
+          ) : null}
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.id}
@@ -227,7 +264,7 @@ export function AddressAutocomplete({
               style={{
                 display: 'block',
                 width: '100%',
-                padding: '12px 14px',
+                padding: '10px 12px',
                 border: 0,
                 borderBottom: '1px solid var(--line)',
                 background: index === activeIndex ? 'var(--surface-subtle)' : 'transparent',
@@ -240,13 +277,16 @@ export function AddressAutocomplete({
               onClick={() => applySuggestion(suggestion)}
             >
               <strong style={{ display: 'block' }}>{suggestion.label}</strong>
-              <span className="muted" style={{ fontSize: '0.9em' }}>{suggestion.detail}</span>
+              <span className="muted" style={{ fontSize: '0.9em' }}>
+                {suggestion.detail}
+              </span>
             </button>
           ))}
-          <p className="muted" style={{ padding: '8px 14px', margin: 0, fontSize: '0.8em' }}>{attribution}</p>
         </div>
       ) : null}
-      {!open ? <p className="muted" style={{ marginTop: 6, fontSize: '0.8em' }}>{attribution}</p> : null}
+      <p className="muted" style={{ marginTop: 4, marginBottom: 0, fontSize: '0.68em', opacity: 0.75, lineHeight: 1.3 }}>
+        {attribution}
+      </p>
     </div>
   );
 }

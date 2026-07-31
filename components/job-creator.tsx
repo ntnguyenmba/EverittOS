@@ -265,7 +265,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   async function selectCustomerById(customerId: string, propertyId?: string) {
     const { data: customer } = await supabase
       .from('customers')
-      .select('id, company_name, email, phone')
+      .select('id, company_name, contact_name, email, phone')
       .eq('id', customerId)
       .maybeSingle();
 
@@ -276,7 +276,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     const option: CustomerOption = {
       id: customer.id,
-      name: customer.company_name || customer.email || 'Customer',
+      name: customer.company_name || customer.contact_name || customer.email || 'Customer',
       email: customer.email,
       phone: customer.phone,
       company_name: customer.company_name,
@@ -430,10 +430,15 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
   }
 
-  async function ensurePropertyForJob(customerId: string): Promise<string | null> {
-    if (selectedPropertyId && addressMode !== 'save_new_property' && !creatingNewProperty) {
+  async function ensurePropertyForJob(
+    customerId: string,
+    options?: { forceNew?: boolean }
+  ): Promise<string | null> {
+    const forceNew = Boolean(options?.forceNew) || addressMode === 'save_new_property' || creatingNewProperty;
+
+    if (selectedPropertyId && !forceNew) {
       if (addressMode === 'update_selected_property' && structuredAddress) {
-        await fetch(`/api/customers/${customerId}/properties/${selectedPropertyId}`, {
+        const updateRes = await fetch(`/api/customers/${customerId}/properties/${selectedPropertyId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -453,12 +458,19 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             access_instructions: accessInstructions || null
           })
         });
+        if (!updateRes.ok) {
+          const updateJson = (await updateRes.json().catch(() => ({}))) as { error?: string };
+          throw new Error(updateJson.error || 'Unable to update property address.');
+        }
       }
       return selectedPropertyId;
     }
 
-    if (addressMode === 'save_new_property' || creatingNewProperty) {
-      const name = newPropertyName.trim() || 'Service location';
+    if (forceNew) {
+      if (!address.trim()) {
+        throw new Error('Add a service address to save the property.');
+      }
+      const name = newPropertyName.trim() || 'Primary';
       const res = await fetch(`/api/customers/${customerId}/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -634,6 +646,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     let customerId = selectedCustomer?.id || null;
     let propertyId: string | null = null;
+    let autoLinkedCustomer = false;
 
     try {
       if (!customerId && customerName.trim()) {
@@ -644,6 +657,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             displayName: customerName.trim(),
             email: customerEmail.trim() || null,
             phone: phone.trim() || null,
+            address: address.trim() || null,
             record_type: 'customer',
             pipeline_stage: 'active'
           })
@@ -656,13 +670,26 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           throw new Error(createCustomerJson.error || 'Unable to create customer.');
         }
         customerId = createCustomerJson.customer.id;
+        autoLinkedCustomer = true;
         setAddressMode('save_new_property');
       }
 
-      if (customerId && (address.trim() || selectedPropertyId || creatingNewProperty || addressMode === 'save_new_property')) {
-        propertyId = await ensurePropertyForJob(customerId);
+      const needsNewProperty =
+        Boolean(address.trim()) &&
+        (autoLinkedCustomer ||
+          creatingNewProperty ||
+          addressMode === 'save_new_property' ||
+          Boolean(customerId && !selectedPropertyId && (!selectedCustomer || selectedCustomer.properties.length === 0)));
+
+      if (customerId && (selectedPropertyId || needsNewProperty || addressMode === 'update_selected_property')) {
+        propertyId = await ensurePropertyForJob(customerId, { forceNew: needsNewProperty });
+      }
+
+      if (needsNewProperty && !propertyId) {
+        throw new Error('Unable to save property for this job.');
       }
     } catch (error) {
+      // Fail before creating the job so customer/property errors never leave a partially linked job.
       setLoading(false);
       appFeedback.error(error instanceof Error ? error.message : 'Unable to prepare customer/property.');
       return;
@@ -914,22 +941,38 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           {customerSearching ? <p className="muted" role="status">Searching…</p> : null}
           {customerResults.length > 0 ? (
             <div role="listbox" aria-label="Customer matches" style={{ border: '1px solid var(--line)', borderRadius: 12, marginTop: 8 }}>
-              {customerResults.map((customer) => (
-                <button
-                  key={customer.id}
-                  type="button"
-                  role="option"
-                  aria-selected="false"
-                  className="btn"
-                  style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }}
-                  onClick={() => applyCustomer(customer)}
-                >
-                  <strong>{customer.name}</strong>
-                  <span className="muted" style={{ display: 'block' }}>
-                    {[customer.phone, customer.email, customer.properties[0]?.display_address].filter(Boolean).join(' · ')}
-                  </span>
-                </button>
-              ))}
+              {customerResults.map((customer) => {
+                const contactLine = customer.email || customer.phone || null;
+                const property = customer.properties[0];
+                const propertyLine = property
+                  ? [property.name, property.display_address || property.formatted_address || property.address]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : customer.address || null;
+                return (
+                  <button
+                    key={customer.id}
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    className="btn"
+                    style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }}
+                    onClick={() => applyCustomer(customer)}
+                  >
+                    <strong>{customer.name}</strong>
+                    {contactLine ? (
+                      <span className="muted" style={{ display: 'block' }}>
+                        {contactLine}
+                      </span>
+                    ) : null}
+                    {propertyLine ? (
+                      <span className="muted" style={{ display: 'block', fontSize: '0.92em' }}>
+                        {propertyLine}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           ) : null}
 
@@ -1027,12 +1070,16 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             </>
           ) : null}
 
-          {(creatingNewProperty || !selectedCustomer || selectedCustomer.properties.length === 0) && selectedCustomer ? (
-            <div className="form-group" style={{ marginTop: 8 }}>
-              <label>New property name</label>
-              <input className="input" value={newPropertyName} onChange={(e) => setNewPropertyName(e.target.value)} placeholder="Home, Airbnb, Office…" />
-            </div>
-          ) : null}
+          <div className="form-group" style={{ marginTop: 8 }}>
+            <label htmlFor="property-name">Property name</label>
+            <input
+              id="property-name"
+              className="input"
+              value={newPropertyName}
+              onChange={(e) => setNewPropertyName(e.target.value)}
+              placeholder="Primary"
+            />
+          </div>
 
           <div style={{ marginTop: 12 }}>
             <AddressAutocomplete
@@ -1044,7 +1091,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 setStructuredAddress(structured);
                 if (selectedPropertyId && !creatingNewProperty) {
                   setAddressMode('job_only');
-                } else if (selectedCustomer) {
+                } else {
                   setAddressMode('save_new_property');
                 }
               }}

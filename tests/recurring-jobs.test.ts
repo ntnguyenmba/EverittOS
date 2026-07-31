@@ -34,6 +34,7 @@ test('customer search includes email and property fields', () => {
   const source = read('app/api/customers/search/route.ts');
   assert.match(source, /email\.ilike/);
   assert.match(source, /phone\.ilike/);
+  assert.match(source, /contact_name\.ilike/);
   assert.match(source, /name\.ilike/);
   assert.match(source, /formatted_address\.ilike/);
 });

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { addressesLikelySame, normalizeAddressKey, normalizeEmailKey, normalizePhoneKey } from '../lib/address/normalize';
 import { parsePhotonFeature, parsePhotonFeatures, structuredAddressFromManual } from '../lib/address/parse-photon';
@@ -96,4 +98,12 @@ test('in-memory address cache stores and expires suggestions', () => {
   assert.equal(getCachedAddressSuggestions('CHI')?.length, 1);
   clearAddressSuggestionCache();
   assert.equal(getCachedAddressSuggestions('chi'), null);
+});
+
+test('address autocomplete component supports manual entry and Enter without highlight', () => {
+  const source = readFileSync(join(process.cwd(), 'components/address-autocomplete.tsx'), 'utf8');
+  assert.match(source, /activeIndex >= 0 && suggestions\[activeIndex\]/);
+  assert.match(source, /structuredAddressFromManual/);
+  assert.match(source, /event\.key === 'Escape'/);
+  assert.match(source, /© OpenStreetMap/);
 });
