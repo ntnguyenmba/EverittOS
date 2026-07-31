@@ -133,7 +133,13 @@ export type JobProfitability = {
   paymentsReceived: number;
   outstanding: number;
   paymentStatus: JobPaymentStatus;
+  /** Effective contractor cost (labor when present, otherwise expected). */
   laborCost: number;
+  /** Planned contractor cost from the job form. */
+  expectedContractorCost?: number;
+  /** Sum of job_labor totals only. */
+  recordedLaborCost?: number;
+  assignedTo?: string | null;
   materialCost: number;
   otherExpenses: number;
   totalExpenses: number;

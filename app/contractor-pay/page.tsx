@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
+import { canAccessFinancials } from '@/lib/finance-access';
+import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/contractor-cost';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
-import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type LaborRow = {
@@ -29,7 +30,14 @@ type LaborRow = {
   created_at: string | null;
 };
 
-type JobSummary = { id: string; title: string; customer_name: string | null };
+type JobSummary = {
+  id: string;
+  title: string;
+  customer_name: string | null;
+  expected_contractor_cost?: number | null;
+  assigned_to?: string | null;
+};
+
 type Filter = 'unpaid' | 'pending' | 'paid' | 'all';
 
 function money(value: unknown) {
@@ -46,7 +54,11 @@ function ContractorPayContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedFilter = searchParams.get('status');
-  const initialFilter: Filter = requestedFilter === 'pending' || requestedFilter === 'paid' || requestedFilter === 'all' ? requestedFilter : 'unpaid';
+  const jobIdFilter = searchParams.get('jobId') || '';
+  const initialFilter: Filter =
+    requestedFilter === 'pending' || requestedFilter === 'paid' || requestedFilter === 'all'
+      ? requestedFilter
+      : 'unpaid';
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
@@ -55,11 +67,20 @@ function ContractorPayContent() {
   const [filter, setFilter] = useState<Filter>(initialFilter);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(false);
   const [message, setMessage] = useState('');
+  const [pendingJob, setPendingJob] = useState<{
+    id: string;
+    title: string;
+    customer_name: string | null;
+    expected_contractor_cost: number;
+    assigned_name: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setMessage('');
+    setPendingJob(null);
     const { data: auth } = await supabase.auth.getUser();
     const user = auth.user;
     if (!user) {
@@ -72,11 +93,13 @@ function ContractorPayContent() {
       fetchOrganizationContext(user.id)
     ]);
     const resolvedRole = normalizeRole(org?.role || profile?.role);
-    setPlan(normalizePlan(profile?.plan));
+    const resolvedPlan = normalizePlan(profile?.plan);
+    setPlan(resolvedPlan);
     setRole(resolvedRole);
-    setCanManage(isManagerRole(resolvedRole));
+    const allowed = canAccessFinancials(resolvedRole, resolvedPlan);
+    setCanManage(allowed);
 
-    if (!org?.organizationId || !isManagerRole(resolvedRole)) {
+    if (!org?.organizationId || !allowed) {
       setRows([]);
       setJobs({});
       setLoading(false);
@@ -91,8 +114,8 @@ function ContractorPayContent() {
       .eq('organization_id', org.organizationId)
       .order('created_at', { ascending: false });
 
+    let laborRows: LaborRow[] = [];
     if (error) {
-      // Older databases may not have payment_basis yet.
       if (/payment_basis/i.test(error.message || '')) {
         const fallback = await supabase
           .from('job_labor')
@@ -106,38 +129,58 @@ function ContractorPayContent() {
           setLoading(false);
           return;
         }
-        const laborRows = (fallback.data || []) as LaborRow[];
-        setRows(laborRows);
-        const jobIds = Array.from(new Set(laborRows.map((row) => row.job_id).filter(Boolean)));
-        if (jobIds.length) {
-          const { data: jobRows } = await supabase.from('jobs').select('id, title, customer_name').in('id', jobIds);
-          const map: Record<string, JobSummary> = {};
-          for (const job of (jobRows || []) as JobSummary[]) map[job.id] = job;
-          setJobs(map);
-        } else {
-          setJobs({});
-        }
+        laborRows = (fallback.data || []) as LaborRow[];
+      } else {
+        setMessage(error.message);
         setLoading(false);
         return;
       }
-      setMessage(error.message);
-      setLoading(false);
-      return;
+    } else {
+      laborRows = (data || []) as LaborRow[];
     }
-
-    const laborRows = (data || []) as LaborRow[];
     setRows(laborRows);
+
     const jobIds = Array.from(new Set(laborRows.map((row) => row.job_id).filter(Boolean)));
+    if (jobIdFilter && !jobIds.includes(jobIdFilter)) jobIds.push(jobIdFilter);
+
     if (jobIds.length) {
-      const { data: jobRows } = await supabase.from('jobs').select('id, title, customer_name').in('id', jobIds);
+      const { data: jobRows } = await supabase
+        .from('jobs')
+        .select('id, title, customer_name, expected_contractor_cost, assigned_to')
+        .eq('organization_id', org.organizationId)
+        .in('id', jobIds);
       const map: Record<string, JobSummary> = {};
       for (const job of (jobRows || []) as JobSummary[]) map[job.id] = job;
       setJobs(map);
+
+      if (jobIdFilter) {
+        const job = map[jobIdFilter];
+        const existingForJob = laborRows.filter((row) => row.job_id === jobIdFilter);
+        if (job && existingForJob.length === 0 && Number(job.expected_contractor_cost || 0) > 0) {
+          let assignedName = UNASSIGNED_CONTRACTOR_LABEL;
+          if (job.assigned_to) {
+            const { data: worker } = await supabase
+              .from('workers')
+              .select('name')
+              .eq('organization_id', org.organizationId)
+              .eq('auth_user_id', job.assigned_to)
+              .maybeSingle();
+            assignedName = worker?.name || assignedName;
+          }
+          setPendingJob({
+            id: job.id,
+            title: job.title,
+            customer_name: job.customer_name,
+            expected_contractor_cost: Number(job.expected_contractor_cost || 0),
+            assigned_name: assignedName
+          });
+        }
+      }
     } else {
       setJobs({});
     }
     setLoading(false);
-  }, [router]);
+  }, [jobIdFilter, router]);
 
   useEffect(() => {
     void load();
@@ -168,12 +211,45 @@ function ContractorPayContent() {
   }, [rows]);
 
   const visibleRows = useMemo(
-    () => rows.filter((row) => filter === 'all' || String(row.payment_status || 'unpaid').toLowerCase() === filter),
-    [filter, rows]
+    () =>
+      rows.filter((row) => {
+        if (jobIdFilter && row.job_id !== jobIdFilter) return false;
+        return filter === 'all' || String(row.payment_status || 'unpaid').toLowerCase() === filter;
+      }),
+    [filter, jobIdFilter, rows]
   );
+
+  async function initializeFromJob() {
+    if (!pendingJob || initializing) return;
+    setInitializing(true);
+    setMessage('');
+    const res = await fetch(`/api/jobs/${pendingJob.id}/labor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        worker_name: pendingJob.assigned_name,
+        hours: 1,
+        hourly_cost: pendingJob.expected_contractor_cost,
+        payment_basis: 'flat',
+        payment_status: 'unpaid',
+        notes: null
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    setInitializing(false);
+    if (!res.ok) {
+      setMessage(json.error || copy.updateError);
+      return;
+    }
+    setMessage(copy.initializeFromJob);
+    await load();
+  }
 
   async function setPaymentStatus(row: LaborRow, paymentStatus: 'unpaid' | 'pending' | 'paid') {
     if (updatingId) return;
+    if (String(row.payment_status || '').toLowerCase() === 'paid' && paymentStatus !== 'paid') {
+      // Allow reopening paid only via explicit still-owed action; do not overwrite silently elsewhere.
+    }
     setUpdatingId(row.id);
     setMessage('');
     const res = await fetch(`/api/jobs/${row.job_id}/labor/${row.id}`, {
@@ -198,20 +274,46 @@ function ContractorPayContent() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader title={copy.title} subtitle={copy.subtitle} />
+      <p className="muted" style={{ marginTop: -8, marginBottom: 16 }}>
+        {copy.privacyNotice}
+      </p>
 
       {!canManage && !loading ? <div className="card">{copy.permissionDenied}</div> : null}
 
       {canManage ? (
         <>
+          {pendingJob ? (
+            <div className="card" style={{ marginBottom: 18 }}>
+              <h3>{copy.reviewPayment}</h3>
+              <p className="muted">{copy.initializeFromJob}</p>
+              <p>
+                <strong>{pendingJob.title}</strong>
+                {pendingJob.customer_name ? ` · ${pendingJob.customer_name}` : ''}
+              </p>
+              <p className="muted">
+                {pendingJob.assigned_name} · {copy.flatRate} · {money(pendingJob.expected_contractor_cost)}
+              </p>
+              <button type="button" className="btn btn-primary" disabled={initializing} onClick={() => void initializeFromJob()}>
+                {initializing ? copy.refreshing : copy.reviewPayment}
+              </button>
+            </div>
+          ) : null}
+
           <div className="dashboard-stats-grid" style={{ marginBottom: 18 }}>
             <button type="button" className={`card stat-card ${filter === 'unpaid' ? 'is-active' : ''}`} onClick={() => setFilter('unpaid')}>
-              <span className="stat-label">{copy.stillOwed}</span><strong className="stat-value">{money(totals.unpaid)}</strong><span className="muted">{paymentCountLabel(counts.unpaid)}</span>
+              <span className="stat-label">{copy.stillOwed}</span>
+              <strong className="stat-value">{money(totals.unpaid)}</strong>
+              <span className="muted">{paymentCountLabel(counts.unpaid)}</span>
             </button>
             <button type="button" className={`card stat-card ${filter === 'pending' ? 'is-active' : ''}`} onClick={() => setFilter('pending')}>
-              <span className="stat-label">{copy.pending}</span><strong className="stat-value">{money(totals.pending)}</strong><span className="muted">{paymentCountLabel(counts.pending)}</span>
+              <span className="stat-label">{copy.pending}</span>
+              <strong className="stat-value">{money(totals.pending)}</strong>
+              <span className="muted">{paymentCountLabel(counts.pending)}</span>
             </button>
             <button type="button" className={`card stat-card ${filter === 'paid' ? 'is-active' : ''}`} onClick={() => setFilter('paid')}>
-              <span className="stat-label">{copy.paid}</span><strong className="stat-value">{money(totals.paid)}</strong><span className="muted">{paymentCountLabel(counts.paid)}</span>
+              <span className="stat-label">{copy.paid}</span>
+              <strong className="stat-value">{money(totals.paid)}</strong>
+              <span className="muted">{paymentCountLabel(counts.paid)}</span>
             </button>
           </div>
 
@@ -236,15 +338,20 @@ function ContractorPayContent() {
             </div>
             {message ? <p className="auth-message">{message}</p> : null}
             {loading ? <p className="loading-state">{copy.loading}</p> : null}
-            {!loading && visibleRows.length === 0 ? <p className="muted">{copy.empty}</p> : null}
+            {!loading && visibleRows.length === 0 && !pendingJob ? <p className="muted">{copy.empty}</p> : null}
             {visibleRows.map((row) => {
               const job = jobs[row.job_id];
               const status = String(row.payment_status || 'unpaid').toLowerCase();
               return (
                 <div key={row.id} className="list-row" style={{ alignItems: 'flex-start' }}>
                   <div>
-                    <strong>{row.worker_name || copy.unnamed} · {money(row.total_cost)}</strong>
-                    <p className="muted">{job?.title || copy.jobFallback}{job?.customer_name ? ` · ${job.customer_name}` : ''}</p>
+                    <strong>
+                      {row.worker_name || copy.unnamed} · {money(row.total_cost)}
+                    </strong>
+                    <p className="muted">
+                      {job?.title || copy.jobFallback}
+                      {job?.customer_name ? ` · ${job.customer_name}` : ''}
+                    </p>
                     <p className="muted">
                       {formatLaborPaymentLabel({
                         paymentBasis: row.payment_basis,
@@ -255,13 +362,46 @@ function ContractorPayContent() {
                       })}{' '}
                       · {status}
                     </p>
-                    {row.paid_at ? <p className="muted">{copy.paid} {new Date(row.paid_at).toLocaleDateString(locale)}</p> : null}
+                    {row.paid_at ? (
+                      <p className="muted">
+                        {copy.paid} {new Date(row.paid_at).toLocaleDateString(locale)}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="inline-actions">
-                    <Link className="btn btn-sm" href={`/jobs/${row.job_id}`}>{copy.openJob}</Link>
-                    {status !== 'pending' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'pending')}>{copy.markPending}</button> : null}
-                    {status !== 'paid' ? <button type="button" className="btn btn-primary btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'paid')}>{copy.markPaid}</button> : null}
-                    {status === 'paid' ? <button type="button" className="btn btn-sm" disabled={updatingId === row.id} onClick={() => void setPaymentStatus(row, 'unpaid')}>{copy.stillOwed}</button> : null}
+                    <Link className="btn btn-sm" href={`/jobs/${row.job_id}`}>
+                      {copy.openJob}
+                    </Link>
+                    {status !== 'pending' ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        disabled={updatingId === row.id}
+                        onClick={() => void setPaymentStatus(row, 'pending')}
+                      >
+                        {copy.markPending}
+                      </button>
+                    ) : null}
+                    {status !== 'paid' ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={updatingId === row.id}
+                        onClick={() => void setPaymentStatus(row, 'paid')}
+                      >
+                        {copy.markPaid}
+                      </button>
+                    ) : null}
+                    {status === 'paid' ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        disabled={updatingId === row.id}
+                        onClick={() => void setPaymentStatus(row, 'unpaid')}
+                      >
+                        {copy.stillOwed}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -274,5 +414,9 @@ function ContractorPayContent() {
 }
 
 export default function ContractorPayPage() {
-  return <Suspense><ContractorPayContent /></Suspense>;
+  return (
+    <Suspense>
+      <ContractorPayContent />
+    </Suspense>
+  );
 }

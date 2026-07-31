@@ -164,7 +164,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [clientIncome, setClientIncome] = useState('');
   const [additionalExpenses, setAdditionalExpenses] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
-  const [contractorName, setContractorName] = useState('');
   const [contractorPayMode, setContractorPayMode] = useState<ContractorPayMode>('flat');
   const [contractorHours, setContractorHours] = useState('');
   const [contractorHourlyRate, setContractorHourlyRate] = useState('');
@@ -567,11 +566,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       }
     }
 
-    const hasContractorPay = contractorName.trim() || contractorHours || contractorHourlyRate || contractorFlatRate;
-    if (hasContractorPay && !contractorName.trim()) {
-      appFeedback.error('Add the contractor or cleaner name.');
-      return;
-    }
+    const hasContractorPay = Boolean(contractorHours || contractorHourlyRate || contractorFlatRate);
     if (hasContractorPay && contractorPayMode === 'hourly' && (moneyValue(contractorHours) <= 0 || moneyValue(contractorHourlyRate) < 0)) {
       appFeedback.error('Enter valid contractor hours and hourly rate.');
       return;
@@ -677,6 +672,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
         : moneyValue(contractorFlatRate);
     const assignedMember = teamMembers.find((member) => member.userId === assignedTo);
+    const resolvedContractorName = assignedMember?.label || 'Unassigned contractor';
     const durationMinutes =
       firstVisit?.start_time && firstVisit?.end_time
         ? Math.max(
@@ -709,7 +705,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           contractor_hours: contractorPayMode === 'hourly' ? moneyValue(contractorHours) : null,
           contractor_hourly_rate:
             contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : expectedContractorPay || null,
-          contractor_name: contractorName.trim() || assignedMember?.label || null,
+          contractor_name: assignedTo ? resolvedContractorName : null,
           duration_minutes: durationMinutes,
           assigned_to: assignedTo || null,
           recurrence: {
@@ -743,6 +739,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    const jobNotes = [
+      notes.trim(),
+      contractorNotes.trim() ? `Contractor pay notes: ${contractorNotes.trim()}` : ''
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
     const createRes = await fetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -752,7 +755,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         customer_email: customerEmail.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
-        notes: notes.trim() || null,
+        notes: jobNotes || null,
         timezone: timeZone || null,
         customer_id: customerId,
         property_id: propertyId,
@@ -795,23 +798,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       );
     }
 
-    if (hasContractorPay || expectedContractorPay > 0) {
-      const hours = contractorPayMode === 'hourly' ? moneyValue(contractorHours) : 1;
-      const rate = contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : moneyValue(contractorFlatRate);
-      followUpTasks.push(
-        fetch(`/api/jobs/${jobId}/labor`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            worker_id: null,
-            worker_name: contractorName.trim() || assignedMember?.label || null,
-            hours,
-            hourly_cost: rate,
-            notes: contractorNotes.trim() || (contractorPayMode === 'flat' ? 'Flat-rate contractor pay' : null)
-          })
-        })
-      );
-    }
+    // Planned contractor pay is stored on the job as expected_contractor_cost only.
+    // Team Pay / labor records are created later when payment is reviewed, so metrics
+    // never count the same $200 as both expected and labor.
 
     if (additionalExpenses && moneyValue(additionalExpenses) > 0) {
       followUpTasks.push(
@@ -1373,21 +1362,26 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           <label>Client price / expected revenue</label>
           <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
 
-          <label style={{ marginTop: 12 }}>Contractor pay / expected labor expense</label>
-          <input className="input" value={contractorName} onChange={(e) => setContractorName(e.target.value)} placeholder="Contractor or cleaner name (optional)" />
-          <div className="segmented-control" role="group" aria-label="Contractor pay type" style={{ marginTop: 8 }}>
-            <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat-rate pay</button>
-            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly pay</button>
+          <label style={{ marginTop: 12 }}>Payment method</label>
+          <div className="segmented-control" role="group" aria-label="Payment method" style={{ marginTop: 8 }}>
+            <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
+            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
           </div>
           {contractorPayMode === 'hourly' ? (
-            <div className="grid-2">
-              <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
-              <div className="form-group"><label>Hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
-            </div>
+            <>
+              <div className="grid-2">
+                <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
+                <div className="form-group"><label>Hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
+              </div>
+              <div className="finance-metric" style={{ marginTop: 8 }}>
+                <span className="finance-metric-label">Calculated contractor pay</span>
+                <strong>${previewContractorPay.toFixed(2)}</strong>
+              </div>
+            </>
           ) : (
-            <div className="form-group"><label>Contractor pay amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
+            <div className="form-group"><label>Amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
           )}
-          <label>Contractor pay notes</label>
+          <label>Contractor pay notes (optional)</label>
           <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
 
           <label style={{ marginTop: 12 }}>Additional expected expenses</label>

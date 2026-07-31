@@ -11,6 +11,7 @@ import {
   resolveExpectedJobAmount,
   sumJobCollectedPayments
 } from '@/lib/finance/job-payments';
+import { effectiveContractorCost } from '@/lib/finance/contractor-cost';
 import {
   MATERIAL_EXPENSE_CATEGORIES,
   type BusinessPerformanceSummary,
@@ -190,7 +191,7 @@ export async function fetchJobProfitability(
   const [jobRes, invoiceRes, laborRes, expenseRes] = await Promise.all([
     supabase
       .from('jobs')
-      .select('revenue_amount, revenue_notes')
+      .select('revenue_amount, revenue_notes, expected_contractor_cost, assigned_to')
       .eq('organization_id', organizationId)
       .eq('id', jobId)
       .maybeSingle(),
@@ -206,7 +207,12 @@ export async function fetchJobProfitability(
   ]);
 
   const invoice = invoiceRes.data?.[0];
-  const laborCost = (laborRes.data || []).reduce((s, r) => s + num(r.total_cost), 0);
+  const recordedLaborCost = (laborRes.data || []).reduce((s, r) => s + num(r.total_cost), 0);
+  const expectedContractorCost = num(
+    (jobRes.data as { expected_contractor_cost?: unknown } | null)?.expected_contractor_cost
+  );
+  // Never count expected_contractor_cost and job_labor for the same job together.
+  const laborCost = effectiveContractorCost(expectedContractorCost, recordedLaborCost);
   const { materialCost, otherExpenses } = splitExpenseCosts((expenseRes.data || []) as ExpenseRecord[]);
   const hasInvoice = Boolean(invoice);
   const collectedAmount = hasInvoice
@@ -246,7 +252,10 @@ export async function fetchJobProfitability(
     expectedProfit: Number(expectedProfit.toFixed(2)),
     collectedProfit: Number(collectedProfit.toFixed(2)),
     estimatedProfit: Number((collectedAmount > 0 ? collectedProfit : expectedProfit).toFixed(2)),
-    revenueBasis: collectedAmount > 0 ? collectedAmount : expectedAmount
+    revenueBasis: collectedAmount > 0 ? collectedAmount : expectedAmount,
+    expectedContractorCost: Number(expectedContractorCost.toFixed(2)),
+    recordedLaborCost: Number(recordedLaborCost.toFixed(2)),
+    assignedTo: ((jobRes.data as { assigned_to?: string | null } | null)?.assigned_to as string | null) || null
   };
 }
 

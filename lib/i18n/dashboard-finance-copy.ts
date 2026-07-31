@@ -85,6 +85,7 @@ export type DashboardFinanceCopy = {
   contractorPayPage: {
     title: string;
     subtitle: string;
+    privacyNotice: string;
     permissionDenied: string;
     stillOwed: string;
     pending: string;
@@ -108,6 +109,16 @@ export type DashboardFinanceCopy = {
     contractorOrCleaner: string;
     contractorNamePlaceholder: string;
     paymentMethodLabel: string;
+    reviewPayment: string;
+    addAnotherPayment: string;
+    flatRate: string;
+    hourly: string;
+    amount: string;
+    hours: string;
+    hourlyRate: string;
+    calculatedTotal: string;
+    notesOptional: string;
+    initializeFromJob: string;
     added: string;
     updated: string;
     removed: string;
@@ -252,36 +263,47 @@ const en: DashboardFinanceCopy = {
     days: 'days'
   },
   contractorPayPage: {
-    title: 'Contractor Pay',
-    subtitle:
-      'See who needs to be paid, which job the payment belongs to, and whether it is unpaid, pending, or paid.',
-    permissionDenied: 'Only owners, admins, and managers can view contractor payments.',
+    title: 'Team Pay',
+    subtitle: 'Review contractor and employee payments linked to jobs.',
+    privacyNotice:
+      'Private company financial information. Only owners, managers, and authorized employees can view or manage team pay. Contractors and customers cannot see this section.',
+    permissionDenied: 'Only owners, admins, and managers with financial access can view team pay.',
     stillOwed: 'Still owed',
     pending: 'Pending',
     paid: 'Paid',
-    allPayments: 'All contractor payments',
-    statusPayments: '{status} contractor payments',
+    allPayments: 'All team payments',
+    statusPayments: '{status} team payments',
     changesHint: 'Changes here automatically update the dashboard totals.',
     showAll: 'Show all',
     refresh: 'Refresh',
     refreshing: 'Refreshing…',
-    loading: 'Loading contractor payments…',
-    empty: 'No contractor payments match this status.',
+    loading: 'Loading team payments…',
+    empty: 'No team payments match this status.',
     openJob: 'Open job',
     markPending: 'Mark pending',
     markPaid: 'Mark paid',
-    updateError: 'Unable to update contractor payment.',
-    markedPaid: 'Contractor payment marked paid.',
-    markedStatus: 'Contractor payment marked {status}.',
-    unnamed: 'Unnamed contractor',
+    updateError: 'Unable to update team payment.',
+    markedPaid: 'Team payment marked paid.',
+    markedStatus: 'Team payment marked {status}.',
+    unnamed: 'Unassigned contractor',
     jobFallback: 'Job',
-    contractorOrCleaner: 'Contractor or cleaner',
-    contractorNamePlaceholder: 'Contractor name',
-    paymentMethodLabel: 'Method',
-    added: 'Contractor pay added.',
-    updated: 'Contractor pay updated.',
-    removed: 'Contractor pay removed.',
-    duplicated: 'Contractor pay duplicated.'
+    contractorOrCleaner: 'Team member',
+    contractorNamePlaceholder: 'Team member name',
+    paymentMethodLabel: 'Payment method',
+    reviewPayment: 'Review payment',
+    addAnotherPayment: 'Add another payment',
+    flatRate: 'Flat rate',
+    hourly: 'Hourly',
+    amount: 'Amount',
+    hours: 'Hours',
+    hourlyRate: 'Hourly rate',
+    calculatedTotal: 'Calculated total',
+    notesOptional: 'Notes (optional)',
+    initializeFromJob: 'Payment details were filled from this job.',
+    added: 'Team payment added.',
+    updated: 'Team payment updated.',
+    removed: 'Team payment removed.',
+    duplicated: 'Team payment duplicated.'
   }
 };
 
@@ -407,36 +429,47 @@ const es: DashboardFinanceCopy = {
     days: 'días'
   },
   contractorPayPage: {
-    title: 'Pago a contratistas',
-    subtitle:
-      'Vea a quién hay que pagar, a qué trabajo pertenece y si está sin pagar, pendiente o pagado.',
-    permissionDenied: 'Solo propietarios, administradores y gerentes pueden ver estos pagos.',
+    title: 'Pago del equipo',
+    subtitle: 'Revise los pagos a contratistas y empleados vinculados a trabajos.',
+    privacyNotice:
+      'Información financiera privada de la empresa. Solo propietarios, gerentes y empleados autorizados pueden ver o gestionar el pago del equipo. Los contratistas y clientes no pueden ver esta sección.',
+    permissionDenied: 'Solo propietarios, administradores y gerentes con acceso financiero pueden ver el pago del equipo.',
     stillOwed: 'Aún adeudado',
     pending: 'Pendiente',
     paid: 'Pagado',
-    allPayments: 'Todos los pagos a contratistas',
-    statusPayments: 'Pagos a contratistas {status}',
+    allPayments: 'Todos los pagos del equipo',
+    statusPayments: 'Pagos del equipo {status}',
     changesHint: 'Los cambios aquí actualizan automáticamente los totales del panel.',
     showAll: 'Mostrar todo',
     refresh: 'Actualizar',
     refreshing: 'Actualizando…',
-    loading: 'Cargando pagos a contratistas…',
-    empty: 'No hay pagos a contratistas con este estado.',
+    loading: 'Cargando pagos del equipo…',
+    empty: 'No hay pagos del equipo con este estado.',
     openJob: 'Abrir trabajo',
     markPending: 'Marcar pendiente',
     markPaid: 'Marcar pagado',
-    updateError: 'No se pudo actualizar el pago al contratista.',
-    markedPaid: 'Pago al contratista marcado como pagado.',
-    markedStatus: 'Pago al contratista marcado como {status}.',
-    unnamed: 'Contratista sin nombre',
+    updateError: 'No se pudo actualizar el pago del equipo.',
+    markedPaid: 'Pago del equipo marcado como pagado.',
+    markedStatus: 'Pago del equipo marcado como {status}.',
+    unnamed: 'Contratista sin asignar',
     jobFallback: 'Trabajo',
-    contractorOrCleaner: 'Contratista o personal de limpieza',
-    contractorNamePlaceholder: 'Nombre del contratista',
-    paymentMethodLabel: 'Método',
-    added: 'Pago a contratista agregado.',
-    updated: 'Pago a contratista actualizado.',
-    removed: 'Pago a contratista eliminado.',
-    duplicated: 'Pago a contratista duplicado.'
+    contractorOrCleaner: 'Miembro del equipo',
+    contractorNamePlaceholder: 'Nombre del miembro del equipo',
+    paymentMethodLabel: 'Método de pago',
+    reviewPayment: 'Revisar pago',
+    addAnotherPayment: 'Agregar otro pago',
+    flatRate: 'Tarifa fija',
+    hourly: 'Por hora',
+    amount: 'Monto',
+    hours: 'Horas',
+    hourlyRate: 'Tarifa por hora',
+    calculatedTotal: 'Total calculado',
+    notesOptional: 'Notas (opcional)',
+    initializeFromJob: 'Los detalles del pago se completaron desde este trabajo.',
+    added: 'Pago del equipo agregado.',
+    updated: 'Pago del equipo actualizado.',
+    removed: 'Pago del equipo eliminado.',
+    duplicated: 'Pago del equipo duplicado.'
   }
 };
 
@@ -556,35 +589,47 @@ const vi: DashboardFinanceCopy = {
     days: 'ngày'
   },
   contractorPayPage: {
-    title: 'Trả thầu phụ',
-    subtitle: 'Xem cần trả cho ai, thuộc công việc nào, và trạng thái chưa trả, đang chờ hay đã trả.',
-    permissionDenied: 'Chỉ chủ sở hữu, quản trị và quản lý mới xem được các khoản trả này.',
+    title: 'Thanh toán nhóm',
+    subtitle: 'Xem các khoản thanh toán cho thầu phụ và nhân viên gắn với công việc.',
+    privacyNotice:
+      'Thông tin tài chính nội bộ của công ty. Chỉ chủ sở hữu, quản lý và nhân viên được ủy quyền mới xem hoặc quản lý thanh toán nhóm. Thầu phụ và khách hàng không thấy phần này.',
+    permissionDenied: 'Chỉ chủ sở hữu, quản trị và quản lý có quyền tài chính mới xem được thanh toán nhóm.',
     stillOwed: 'Còn nợ',
     pending: 'Đang chờ',
     paid: 'Đã trả',
-    allPayments: 'Tất cả khoản trả thầu phụ',
-    statusPayments: 'Khoản trả thầu phụ {status}',
+    allPayments: 'Tất cả khoản thanh toán nhóm',
+    statusPayments: 'Khoản thanh toán nhóm {status}',
     changesHint: 'Thay đổi tại đây sẽ tự cập nhật tổng trên bảng điều khiển.',
     showAll: 'Hiện tất cả',
     refresh: 'Làm mới',
     refreshing: 'Đang làm mới…',
-    loading: 'Đang tải khoản trả thầu phụ…',
-    empty: 'Không có khoản trả thầu phụ khớp trạng thái này.',
+    loading: 'Đang tải khoản thanh toán nhóm…',
+    empty: 'Không có khoản thanh toán nhóm khớp trạng thái này.',
     openJob: 'Mở công việc',
     markPending: 'Đánh dấu đang chờ',
     markPaid: 'Đánh dấu đã trả',
-    updateError: 'Không cập nhật được khoản trả thầu phụ.',
-    markedPaid: 'Đã đánh dấu khoản trả thầu phụ là đã trả.',
-    markedStatus: 'Đã đánh dấu khoản trả thầu phụ là {status}.',
-    unnamed: 'Thầu phụ chưa đặt tên',
+    updateError: 'Không cập nhật được khoản thanh toán nhóm.',
+    markedPaid: 'Đã đánh dấu khoản thanh toán nhóm là đã trả.',
+    markedStatus: 'Đã đánh dấu khoản thanh toán nhóm là {status}.',
+    unnamed: 'Thầu phụ chưa phân công',
     jobFallback: 'Công việc',
-    contractorOrCleaner: 'Thầu phụ hoặc nhân viên',
-    contractorNamePlaceholder: 'Tên thầu phụ',
-    paymentMethodLabel: 'Phương thức',
-    added: 'Đã thêm khoản trả thầu phụ.',
-    updated: 'Đã cập nhật khoản trả thầu phụ.',
-    removed: 'Đã xóa khoản trả thầu phụ.',
-    duplicated: 'Đã nhân bản khoản trả thầu phụ.'
+    contractorOrCleaner: 'Thành viên nhóm',
+    contractorNamePlaceholder: 'Tên thành viên nhóm',
+    paymentMethodLabel: 'Phương thức thanh toán',
+    reviewPayment: 'Xem lại thanh toán',
+    addAnotherPayment: 'Thêm khoản thanh toán khác',
+    flatRate: 'Trọn gói',
+    hourly: 'Theo giờ',
+    amount: 'Số tiền',
+    hours: 'Số giờ',
+    hourlyRate: 'Đơn giá theo giờ',
+    calculatedTotal: 'Tổng tính toán',
+    notesOptional: 'Ghi chú (tùy chọn)',
+    initializeFromJob: 'Chi tiết thanh toán đã được điền từ công việc này.',
+    added: 'Đã thêm khoản thanh toán nhóm.',
+    updated: 'Đã cập nhật khoản thanh toán nhóm.',
+    removed: 'Đã xóa khoản thanh toán nhóm.',
+    duplicated: 'Đã nhân bản khoản thanh toán nhóm.'
   }
 };
 

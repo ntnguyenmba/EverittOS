@@ -60,6 +60,8 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
   const appFeedback = useAppFeedback();
   const [entries, setEntries] = useState<JobLaborRecord[]>([]);
   const [currentProfit, setCurrentProfit] = useState(0);
+  const [expectedContractorCost, setExpectedContractorCost] = useState(0);
+  const [jobPrefillNotice, setJobPrefillNotice] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -92,11 +94,24 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
       appFeedback.error(laborJson.error || 'Unable to load contractor pay.');
       return;
     }
-    setEntries(laborJson.labor || []);
+    const laborRows = (laborJson.labor || []) as JobLaborRecord[];
+    setEntries(laborRows);
     if (profitabilityRes.ok) {
       setCurrentProfit(Number(profitabilityJson.profitability?.estimatedProfit || 0));
+      const expected = Number(profitabilityJson.profitability?.expectedContractorCost || 0);
+      setExpectedContractorCost(expected);
+      if (!laborRows.length && expected > 0) {
+        setPaymentBasis('flat');
+        setHours('1');
+        setHourlyCost(String(expected));
+        setWorkerId('');
+        setWorkerName(pageCopy.unnamed);
+        setJobPrefillNotice(true);
+      } else {
+        setJobPrefillNotice(false);
+      }
     }
-  }, [appFeedback, jobId]);
+  }, [appFeedback, jobId, pageCopy.unnamed]);
 
   useEffect(() => {
     void load();
@@ -521,38 +536,37 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
 
       {canManage ? (
         <div className="finance-form-block compact-finance-form" style={{ marginTop: 20 }}>
-          <h4>Add contractor pay</h4>
-          <label>{pageCopy.contractorOrCleaner}</label>
+          <h4>{jobPrefillNotice || expectedContractorCost > 0 ? pageCopy.reviewPayment : pageCopy.addAnotherPayment}</h4>
+          {jobPrefillNotice ? <p className="muted">{pageCopy.initializeFromJob}</p> : null}
           {workers.length > 0 ? (
-            <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-              <option value="">Manual name</option>
-              {workers.map((worker) => (
-                <option key={worker.id} value={worker.id}>
-                  {worker.name}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <input
-            className="input"
-            placeholder={pageCopy.contractorNamePlaceholder}
-            value={workerName}
-            onChange={(e) => setWorkerName(e.target.value)}
-          />
-          <label>Payment basis</label>
+            <>
+              <label>{pageCopy.contractorOrCleaner}</label>
+              <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
+                <option value="">{pageCopy.unnamed}</option>
+                {workers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {worker.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <p className="muted">{workerName || pageCopy.unnamed}</p>
+          )}
+          <label>{pageCopy.paymentMethodLabel}</label>
           <select
             className="input"
             value={paymentBasis}
             onChange={(e) => setPaymentBasis(e.target.value as LaborPaymentBasis)}
           >
-            <option value="flat">Flat amount</option>
-            <option value="hourly">Hourly</option>
+            <option value="flat">{pageCopy.flatRate}</option>
+            <option value="hourly">{pageCopy.hourly}</option>
             <option value="visit">Per visit</option>
           </select>
           <div className="grid-2">
             {paymentBasis !== 'flat' ? (
               <div className="form-group">
-                <label>{laborQuantityLabel(paymentBasis, locale)}</label>
+                <label>{pageCopy.hours}</label>
                 <input
                   className="input"
                   type="number"
@@ -564,7 +578,7 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
               </div>
             ) : null}
             <div className="form-group">
-              <label>{rateLabel(paymentBasis)}</label>
+              <label>{paymentBasis === 'flat' ? pageCopy.amount : pageCopy.hourlyRate}</label>
               <input
                 className="input"
                 type="number"
@@ -576,14 +590,19 @@ export function JobLaborSection({ jobId, workers, canManage, onChange }: JobLabo
             </div>
           </div>
           <div className="finance-metric" style={{ marginBottom: 12 }}>
-            <span className="finance-metric-label">Calculated total</span>
+            <span className="finance-metric-label">{pageCopy.calculatedTotal}</span>
             <strong>{formatCurrency(previewTotal)}</strong>
           </div>
-          <label>Notes</label>
+          <label>{pageCopy.notesOptional}</label>
           <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>
-            {saving ? FEEDBACK.loading : 'Add contractor pay'}
+            {saving ? FEEDBACK.loading : jobPrefillNotice ? pageCopy.reviewPayment : pageCopy.addAnotherPayment}
           </button>
+          {entries.length > 0 ? (
+            <p className="muted" style={{ marginTop: 8 }}>
+              {pageCopy.addAnotherPayment}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </section>

@@ -169,18 +169,6 @@ a.btn {
   display: none;
 }
 
-/* Hide the low-use contractor pay note field from the primary flow. */
-.unified-job-form > .job-create-section:nth-of-type(7) > label:nth-of-type(3),
-.unified-job-form > .job-create-section:nth-of-type(7) > input:nth-of-type(3) {
-  display: none;
-}
-
-/* Only show an expense description after an expense amount is entered. */
-.unified-job-form > .job-create-section:nth-of-type(7):has(> input:nth-of-type(4):placeholder-shown) > label:nth-of-type(5),
-.unified-job-form > .job-create-section:nth-of-type(7):has(> input:nth-of-type(4):placeholder-shown) > input:nth-of-type(5) {
-  display: none;
-}
-
 .segmented-control {
   display: grid;
   gap: 0.6rem;

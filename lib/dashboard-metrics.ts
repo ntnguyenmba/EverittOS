@@ -1422,17 +1422,33 @@ export async function fetchDashboardRevenueMetrics(
         start_date?: string | null;
       }>);
 
-  const occurrenceFinanceRows = scheduleRows.map((row) => ({
-    price: Number((row as { revenue_amount?: unknown }).revenue_amount || 0),
-    expected_contractor_cost: Number((row as { expected_contractor_cost?: unknown }).expected_contractor_cost || 0),
-    expected_additional_expense: Number((row as { expected_additional_expense?: unknown }).expected_additional_expense || 0),
-    status: row.status,
-    is_skipped: Boolean((row as { is_skipped?: boolean | null }).is_skipped),
-    occurrence_date:
-      (row as { occurrence_date?: string | null }).occurrence_date ||
-      String(row.scheduled_start || row.start_date || '').slice(0, 10) ||
-      null
-  }));
+  // Jobs that already have labor records should not also contribute expected contractor
+  // cost to scheduled forecasts (prevents $200 expected + $200 labor = $400).
+  const jobIdsWithLabor = new Set(
+    (safeData(laborRes, []) as Array<{ job_id?: string | null; total_cost?: unknown }>)
+      .filter((row) => Number(row.total_cost || 0) > 0 && row.job_id)
+      .map((row) => String(row.job_id))
+  );
+
+  const occurrenceFinanceRows = scheduleRows.map((row) => {
+    const jobId = String((row as { id?: string | null }).id || '');
+    const hasLabor = Boolean(jobId && jobIdsWithLabor.has(jobId));
+    return {
+      price: Number((row as { revenue_amount?: unknown }).revenue_amount || 0),
+      expected_contractor_cost: hasLabor
+        ? 0
+        : Number((row as { expected_contractor_cost?: unknown }).expected_contractor_cost || 0),
+      expected_additional_expense: Number(
+        (row as { expected_additional_expense?: unknown }).expected_additional_expense || 0
+      ),
+      status: row.status,
+      is_skipped: Boolean((row as { is_skipped?: boolean | null }).is_skipped),
+      occurrence_date:
+        (row as { occurrence_date?: string | null }).occurrence_date ||
+        String(row.scheduled_start || row.start_date || '').slice(0, 10) ||
+        null
+    };
+  });
 
   const scheduledFinance = calculateScheduledExpectedFinance(occurrenceFinanceRows, today, {
     periodStart: start,

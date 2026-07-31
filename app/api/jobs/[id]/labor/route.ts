@@ -69,10 +69,11 @@ async function resolveWorkerId(
     }
   }
 
+  // Allow planned pay before assignment using a neutral label.
   return {
     workerId: null,
-    workerName: null,
-    error: 'Enter a contractor name or select a contractor from your team list'
+    workerName: 'Unassigned contractor',
+    error: null
   };
 }
 

@@ -147,8 +147,9 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/expenses':
       return isManagerRole(role);
     case '/analytics':
-    case '/contractor-pay':
       return canSeeOrgWideData(role);
+    case '/contractor-pay':
+      return isManagerRole(role);
     case '/settings/people':
     case '/settings/team':
       return canViewTeam(role);
