@@ -80,7 +80,7 @@ a.btn {
   margin: 0;
 }
 
-/* Use short, action-oriented section names without exposing implementation language. */
+/* Short, consistent workflow labels. */
 .unified-job-form > .job-create-section > h4 {
   font-size: 0;
 }
@@ -106,26 +106,35 @@ a.btn {
   content: '4. Schedule';
 }
 
-.unified-job-form > .job-create-section:nth-of-type(5) > h4::before {
-  content: '5. Assignment';
+/* The visit editor continues step 4 instead of looking like a second schedule step. */
+.unified-job-form > .job-create-section:nth-of-type(5) > h4 {
+  display: none;
 }
 
 .unified-job-form > .job-create-section:nth-of-type(6) > h4::before {
-  content: '6. Pricing and costs';
+  content: '5. Assignment';
 }
 
 .unified-job-form > .job-create-section:nth-of-type(7) > h4::before {
+  content: '6. Pricing and costs';
+}
+
+.unified-job-form > .job-create-section:nth-of-type(8) > h4::before {
   content: '7. Review';
 }
 
-/* Customer details are collected once in step 1. Do not repeat them in job details. */
+.unified-job-form > .job-create-section:nth-of-type(9) > h4::before {
+  content: 'Photos';
+}
+
+/* Customer details are collected once in step 1. */
 .unified-job-form > .job-create-section:nth-of-type(3) > .grid-2 {
   display: none;
 }
 
-/* Contractor and financial information are workspace-only and never customer-facing. */
-.unified-job-form > .job-create-section:nth-of-type(5) > h4::after,
-.unified-job-form > .job-create-section:nth-of-type(6) > h4::after {
+/* Assignment and financial information stay inside the workspace. */
+.unified-job-form > .job-create-section:nth-of-type(6) > h4::after,
+.unified-job-form > .job-create-section:nth-of-type(7) > h4::after {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
@@ -138,7 +147,7 @@ a.btn {
   vertical-align: middle;
 }
 
-/* Keep map-provider attribution with the active results menu instead of showing it as a permanent form field. */
+/* Keep provider attribution inside active address results only. */
 .address-autocomplete > p.muted {
   display: none;
 }
@@ -152,6 +161,24 @@ a.btn {
 .visit-editor:first-of-type {
   border-top: 0;
   padding-top: 0;
+}
+
+/* Visit notes are optional and can be added after save. */
+.visit-editor > label:last-of-type,
+.visit-editor > input:last-of-type {
+  display: none;
+}
+
+/* Hide the low-use contractor pay note field from the primary flow. */
+.unified-job-form > .job-create-section:nth-of-type(7) > label:nth-of-type(3),
+.unified-job-form > .job-create-section:nth-of-type(7) > input:nth-of-type(3) {
+  display: none;
+}
+
+/* Only show an expense description after an expense amount is entered. */
+.unified-job-form > .job-create-section:nth-of-type(7):has(> input:nth-of-type(4):placeholder-shown) > label:nth-of-type(5),
+.unified-job-form > .job-create-section:nth-of-type(7):has(> input:nth-of-type(4):placeholder-shown) > input:nth-of-type(5) {
+  display: none;
 }
 
 .segmented-control {
