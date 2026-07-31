@@ -42,7 +42,9 @@ export async function GET(
     await Promise.all([
       admin
         .from('jobs')
-        .select('id, title, status, customer_notes, due_date')
+        .select(
+          'id, title, status, customer_name, customer_notes, address, scheduled_start, scheduled_end, start_date, due_date, timezone'
+        )
         .eq('id', jobId)
         .maybeSingle(),
       admin
