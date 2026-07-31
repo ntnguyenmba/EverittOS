@@ -128,6 +128,56 @@ function scopedAssignedToClause(organizationId: string, userId: string, workerId
     : `and(organization_id.eq.${organizationId},${clause})`;
 }
 
+async function enrichRowsWithAssignments(
+  supabase: SupabaseClient,
+  organizationId: string | null | undefined,
+  rows: JobListRow[]
+): Promise<JobListRow[]> {
+  if (!organizationId || rows.length === 0) return rows;
+
+  const jobIds = rows.map((job) => job.id);
+  const { data: assignments } = await supabase
+    .from('job_assignments')
+    .select('job_id, worker_id')
+    .in('job_id', jobIds);
+
+  const firstWorkerByJob = new Map<string, string>();
+  for (const assignment of assignments || []) {
+    const jobId = String(assignment.job_id || '');
+    const workerId = String(assignment.worker_id || '');
+    if (jobId && workerId && !firstWorkerByJob.has(jobId)) {
+      firstWorkerByJob.set(jobId, workerId);
+    }
+  }
+
+  const workerIds = Array.from(new Set(firstWorkerByJob.values()));
+  if (workerIds.length === 0) return rows;
+
+  const { data: workers } = await supabase
+    .from('workers')
+    .select('id, email')
+    .eq('organization_id', organizationId)
+    .in('id', workerIds);
+
+  const emailByWorker = new Map<string, string>();
+  for (const worker of workers || []) {
+    const id = String(worker.id || '');
+    const email = String(worker.email || '').trim();
+    if (id && email) emailByWorker.set(id, email);
+  }
+
+  return rows.map((job) => {
+    if (job.assigned_to || job.assigned_email) return job;
+    const workerId = firstWorkerByJob.get(job.id);
+    if (!workerId) return job;
+    return {
+      ...job,
+      assigned_to: workerId,
+      assigned_email: emailByWorker.get(workerId) || null
+    };
+  });
+}
+
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
   organizationId: string,
@@ -203,6 +253,7 @@ export async function listWorkspaceJobs(
   if (error) return { jobs: [], error: error.message };
 
   let rows = filterJobsByStatus((data || []) as JobListRow[], filters?.status);
+  rows = await enrichRowsWithAssignments(supabase, organizationId, rows);
   if (filters?.unassignedOnly) {
     rows = rows.filter((job) => job.status !== 'completed' && job.status !== 'cancelled' && !job.assigned_to && !job.assigned_email);
   }
