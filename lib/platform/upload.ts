@@ -1,4 +1,4 @@
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource, type GalleryPhoto } from '@capacitor/camera';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { validateImageUpload } from '@/lib/upload-security';
 
@@ -18,6 +18,23 @@ function dataUrlToFile(dataUrl: string, fileName: string): File | null {
   }
 
   return new File([bytes], fileName, { type: mime });
+}
+
+function extensionForMime(mime: string) {
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/heic' || mime === 'image/heif') return 'heic';
+  return 'jpg';
+}
+
+async function galleryPhotoToFile(photo: GalleryPhoto, index: number): Promise<File | null> {
+  if (!photo.webPath) return null;
+  const response = await fetch(photo.webPath);
+  if (!response.ok) return null;
+  const blob = await response.blob();
+  const mime = blob.type || photo.format || 'image/jpeg';
+  const extension = extensionForMime(mime);
+  return new File([blob], `job-photo-${Date.now()}-${index + 1}.${extension}`, { type: mime });
 }
 
 async function requestSourcePermission(source: CameraSource): Promise<PhotoPickResult | null> {
@@ -84,25 +101,58 @@ async function pickNativePhoto(source: CameraSource): Promise<PhotoPickResult> {
       source: source === CameraSource.Camera ? 'camera' : 'library'
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const lower = message.toLowerCase();
+    return photoPickerError(error, source);
+  }
+}
 
-    if (lower.includes('cancel') || lower.includes('dismiss')) {
+function photoPickerError(error: unknown, source: CameraSource): PhotoPickResult {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  if (lower.includes('cancel') || lower.includes('dismiss')) {
+    return { ok: false, error: 'Photo selection was cancelled.', code: 'cancelled' };
+  }
+
+  if (lower.includes('permission') || lower.includes('denied') || lower.includes('restricted')) {
+    return {
+      ok: false,
+      error:
+        source === CameraSource.Camera
+          ? 'Camera access is off. Open device Settings, allow Camera access for EverittOS, then try again.'
+          : 'Photo access is off. Open device Settings, allow Photos access for EverittOS, then try again.',
+      code: 'permission_denied'
+    };
+  }
+
+  return { ok: false, error: `Unable to access ${source === CameraSource.Camera ? 'the camera' : 'your photos'}.`, code: 'unsupported' };
+}
+
+async function pickNativePhotosFromLibrary(): Promise<PhotoPickResult> {
+  const permissionError = await requestSourcePermission(CameraSource.Photos);
+  if (permissionError) return permissionError;
+
+  try {
+    const result = await Camera.pickImages({ quality: 85 });
+    if (!result.photos.length) {
       return { ok: false, error: 'Photo selection was cancelled.', code: 'cancelled' };
     }
 
-    if (lower.includes('permission') || lower.includes('denied') || lower.includes('restricted')) {
-      return {
-        ok: false,
-        error:
-          source === CameraSource.Camera
-            ? 'Camera access is off. Open device Settings, allow Camera access for EverittOS, then try again.'
-            : 'Photo access is off. Open device Settings, allow Photos access for EverittOS, then try again.',
-        code: 'permission_denied'
-      };
+    const files: File[] = [];
+    for (let index = 0; index < result.photos.length; index += 1) {
+      const file = await galleryPhotoToFile(result.photos[index], index);
+      if (!file) {
+        return { ok: false, error: 'Could not process one of the selected photos.', code: 'unsupported' };
+      }
+      const validation = validateImageUpload(file);
+      if (!validation.ok) {
+        return { ok: false, error: validation.error, code: 'validation' };
+      }
+      files.push(file);
     }
 
-    return { ok: false, error: `Unable to access ${source === CameraSource.Camera ? 'the camera' : 'your photos'}.`, code: 'unsupported' };
+    return { ok: true, files, source: 'library' };
+  } catch (error) {
+    return photoPickerError(error, CameraSource.Photos);
   }
 }
 
@@ -125,8 +175,7 @@ export async function pickJobPhotos(options?: {
     return { ok: false, error: 'Use the file picker to choose photos.', code: 'unsupported' };
   }
 
-  const source = options?.preferCamera ? CameraSource.Camera : CameraSource.Photos;
-  return pickNativePhoto(source);
+  return options?.preferCamera ? pickNativePhoto(CameraSource.Camera) : pickNativePhotosFromLibrary();
 }
 
 export async function pickJobPhotoFromCamera(): Promise<PhotoPickResult> {
@@ -140,5 +189,5 @@ export async function pickJobPhotoFromLibrary(): Promise<PhotoPickResult> {
   if (!isNativePlatform()) {
     return { ok: false, error: 'Use the file picker to choose photos.', code: 'unsupported' };
   }
-  return pickNativePhoto(CameraSource.Photos);
+  return pickNativePhotosFromLibrary();
 }
