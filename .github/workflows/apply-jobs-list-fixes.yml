@@ -1,0 +1,61 @@
+name: Apply Jobs list fixes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/fix-needs-worker-status.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply Jobs fixes
+        run: node scripts/fix-needs-worker-status.mjs
+
+      - name: Fix strict date sorting
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const file = 'app/jobs/page.tsx';
+          let source = fs.readFileSync(file, 'utf8');
+          const oldBlock = `function sortJobs(rows: Job[]) {\n  const today = new Date();\n  const todayKey = \`${'${today.getFullYear()}'}-${'${String(today.getMonth() + 1).padStart(2, \'0\')}'}-${'${String(today.getDate()).padStart(2, \'0\')}'}\`;\n  return [...rows].sort((a, b) => {\n    const aValue = jobDateValue(a);\n    const bValue = jobDateValue(b);\n    if (!aValue && !bValue) return String(b.created_at || '').localeCompare(String(a.created_at || ''));\n    if (!aValue) return 1;\n    if (!bValue) return -1;\n    const aDate = aValue.slice(0, 10);\n    const bDate = bValue.slice(0, 10);\n    const aUpcoming = aDate >= todayKey;\n    const bUpcoming = bDate >= todayKey;\n    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;\n    const byDate = aUpcoming ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);\n    if (byDate !== 0) return byDate;\n    return String(b.created_at || '').localeCompare(String(a.created_at || ''));\n  });\n}`;
+          const newBlock = `function sortJobs(rows: Job[]) {\n  return [...rows].sort((a, b) => {\n    const aValue = jobDateValue(a);\n    const bValue = jobDateValue(b);\n    if (!aValue && !bValue) return String(b.created_at || '').localeCompare(String(a.created_at || ''));\n    if (!aValue) return 1;\n    if (!bValue) return -1;\n    const byDate = aValue.localeCompare(bValue);\n    if (byDate !== 0) return byDate;\n    return String(b.created_at || '').localeCompare(String(a.created_at || ''));\n  });\n}`;
+          if (!source.includes(oldBlock)) throw new Error('Existing sortJobs block not found');
+          source = source.replace(oldBlock, newBlock);
+          fs.writeFileSync(file, source);
+          NODE
+
+      - name: Verify fixes
+        run: |
+          grep -q "const finished = status === 'completed'" app/jobs/page.tsx
+          grep -q "const byDate = aValue.localeCompare(bValue);" app/jobs/page.tsx
+          grep -q "isFinishedJobStatus(job.status)" lib/exports/job-filters.ts
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: |
+          npm run typecheck
+          npm test -- --runInBand
+
+      - name: Commit fixes to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/jobs/page.tsx lib/exports/job-filters.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix Jobs date sorting and worker status"
+          git push origin main
