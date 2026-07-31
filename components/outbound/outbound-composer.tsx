@@ -2,7 +2,7 @@
 
 import type { AutosaveState } from '@/components/outbound/use-outbound-autosave';
 import { useTranslation } from '@/components/locale-provider';
-import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
+import { amountFieldLabel, composerTitle, getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import type { OutboundComposerFields, OutboundDocType } from '@/lib/outbound/types';
 
 type OutboundComposerProps = {
@@ -19,27 +19,11 @@ type OutboundComposerProps = {
   onReset?: () => void;
 };
 
-function saveLabel(state: AutosaveState): string {
-  if (state === 'saving') return 'Saving...';
-  if (state === 'saved') return 'Saved';
-  if (state === 'error') return 'Not saved. Keep typing to retry.';
-  return 'Auto-save on';
-}
-
-function composerTitle(docType: OutboundDocType): string {
-  if (docType === 'estimate') return 'New estimate';
-  if (docType === 'proposal') return 'New proposal';
-  if (docType === 'invoice') return 'New invoice';
-  if (docType === 'receipt') return 'Payment receipt';
-  return 'New message';
-}
-
-function amountLabel(docType: OutboundDocType): string {
-  if (docType === 'estimate') return 'Estimate total';
-  if (docType === 'proposal') return 'Proposal total';
-  if (docType === 'invoice') return 'Amount due';
-  if (docType === 'receipt') return 'Amount paid';
-  return 'Amount';
+function saveLabel(state: AutosaveState, billingCopy: ReturnType<typeof getBillingOpsCopy>): string {
+  if (state === 'saving') return billingCopy.savingEllipsis;
+  if (state === 'saved') return billingCopy.saved;
+  if (state === 'error') return billingCopy.notSavedRetry;
+  return billingCopy.autoSaveOn;
 }
 
 export function OutboundComposer({
@@ -61,25 +45,27 @@ export function OutboundComposer({
   return (
     <div className="card form outbound-composer">
       <div className="outbound-composer-head">
-        <h3>{composerTitle(docType)}</h3>
-        <span className={`outbound-autosave-indicator outbound-autosave-${saveState}`}>{saveLabel(saveState)}</span>
+        <h3>{composerTitle(billingCopy, docType)}</h3>
+        <span className={`outbound-autosave-indicator outbound-autosave-${saveState}`}>
+          {saveLabel(saveState, billingCopy)}
+        </span>
       </div>
 
       {!prefillReady ? <p className="muted">{billingCopy.loadingPrefill}</p> : null}
       {prefillNotice ? <p className="muted" role="status">{prefillNotice}</p> : null}
 
-      <label htmlFor={`${docType}-recipient-name`}>Customer</label>
+      <label htmlFor={`${docType}-recipient-name`}>{billingCopy.customer}</label>
       <input
         id={`${docType}-recipient-name`}
         className="input"
         type="text"
         autoComplete="name"
-        placeholder="Customer name"
+        placeholder={billingCopy.customerNamePlaceholder}
         value={fields.recipient_name}
         onChange={(event) => onFieldChange('recipient_name', event.target.value)}
       />
 
-      <label htmlFor={`${docType}-recipient-email`}>Email</label>
+      <label htmlFor={`${docType}-recipient-email`}>{billingCopy.email}</label>
       <input
         id={`${docType}-recipient-email`}
         className="input"
@@ -92,7 +78,7 @@ export function OutboundComposer({
 
       {showAmount ? (
         <>
-          <label htmlFor={`${docType}-amount`}>{amountLabel(docType)}</label>
+          <label htmlFor={`${docType}-amount`}>{amountFieldLabel(billingCopy, docType)}</label>
           <input
             id={`${docType}-amount`}
             className={`input${amountMissing ? ' outbound-amount-missing' : ''}`}
@@ -113,20 +99,20 @@ export function OutboundComposer({
         </>
       ) : null}
 
-      <label htmlFor={`${docType}-body`}>Work and message</label>
+      <label htmlFor={`${docType}-body`}>{billingCopy.workAndMessage}</label>
       <textarea
         id={`${docType}-body`}
         className="input"
         rows={6}
-        placeholder="Describe the work, price, and anything the customer needs to know."
+        placeholder={billingCopy.messagePlaceholder}
         value={fields.body}
         onChange={(event) => onFieldChange('body', event.target.value)}
       />
 
       <details>
-        <summary><strong>More</strong></summary>
+        <summary><strong>{billingCopy.more}</strong></summary>
         <div className="form" style={{ marginTop: 14 }}>
-          <label htmlFor={`${docType}-subject`}>Email subject</label>
+          <label htmlFor={`${docType}-subject`}>{billingCopy.emailSubject}</label>
           <input
             id={`${docType}-subject`}
             className="input"
@@ -135,7 +121,7 @@ export function OutboundComposer({
             onChange={(event) => onFieldChange('subject', event.target.value)}
           />
 
-          <label htmlFor={`${docType}-schedule`}>Send later</label>
+          <label htmlFor={`${docType}-schedule`}>{billingCopy.sendLater}</label>
           <input
             id={`${docType}-schedule`}
             className="input"
@@ -153,11 +139,11 @@ export function OutboundComposer({
           disabled={sending || !fields.recipient_email.trim() || !prefillReady}
           onClick={() => void onSend()}
         >
-          {sending ? 'Sending...' : fields.scheduled_at ? 'Schedule' : 'Send'}
+          {sending ? billingCopy.sending : fields.scheduled_at ? billingCopy.schedule : billingCopy.send}
         </button>
         {onReset ? (
           <button type="button" className="btn btn-sm outbound-secondary-action" disabled={sending} onClick={onReset}>
-            Start over
+            {billingCopy.startOver}
           </button>
         ) : null}
       </div>

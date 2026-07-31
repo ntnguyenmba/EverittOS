@@ -65,7 +65,7 @@ export default function ReceiptsPage() {
   const { locale } = useTranslation();
   const billingCopy = getBillingOpsCopy(locale);
   return (
-    <Suspense fallback={<p className="muted">{billingCopy.paymentReceipt}…</p>}>
+    <Suspense fallback={<p className="muted">{billingCopy.loading}</p>}>
       <ReceiptsPageContent />
     </Suspense>
   );

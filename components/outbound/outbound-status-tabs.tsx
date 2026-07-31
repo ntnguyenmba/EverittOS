@@ -1,13 +1,8 @@
 'use client';
 
+import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import type { OutboundTab } from '@/lib/outbound/types';
-
-const TABS: { id: OutboundTab; label: string }[] = [
-  { id: 'sent', label: 'Sent' },
-  { id: 'scheduled', label: 'Scheduled' },
-  { id: 'drafts', label: 'Drafts' },
-  { id: 'failed', label: 'Failed' }
-];
 
 type OutboundStatusTabsProps = {
   active: OutboundTab;
@@ -16,9 +11,18 @@ type OutboundStatusTabsProps = {
 };
 
 export function OutboundStatusTabs({ active, onChange, counts }: OutboundStatusTabsProps) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
+  const tabs: { id: OutboundTab; label: string }[] = [
+    { id: 'sent', label: billingCopy.tabSent },
+    { id: 'scheduled', label: billingCopy.tabScheduled },
+    { id: 'drafts', label: billingCopy.tabDrafts },
+    { id: 'failed', label: billingCopy.tabFailed }
+  ];
+
   return (
-    <div className="outbound-status-tabs" role="tablist" aria-label="Document status">
-      {TABS.map((tab) => (
+    <div className="outbound-status-tabs" role="tablist" aria-label={billingCopy.documentStatus}>
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"

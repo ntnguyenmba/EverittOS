@@ -9,6 +9,24 @@ export const dynamic = 'force-dynamic';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+function paymentErrorCode(error: string): string | undefined {
+  const message = String(error || '').trim();
+  if (message === 'You do not have permission to record payments.') return 'permission_denied';
+  if (message === 'Permission denied' || message === 'Permission denied.') return 'permission_denied';
+  if (message === 'Invalid invoice id.') return 'invalid_invoice_id';
+  if (message === 'Invoice not found.' || message === 'Invoice not found') return 'invoice_not_found';
+  if (message === 'Enter a positive payment amount.' || message === 'Enter a positive payment amount') {
+    return 'enter_positive_payment';
+  }
+  if (message === 'Unable to record payment') return 'unable_to_record_payment';
+  return undefined;
+}
+
+function paymentErrorResponse(error: string, status: number) {
+  const code = paymentErrorCode(error);
+  return NextResponse.json(code ? { error, code } : { error }, { status });
+}
+
 /**
  * Canonical customer payment API.
  * POST /api/invoices/[id]/payment
@@ -18,16 +36,16 @@ type RouteParams = { params: Promise<{ id: string }> };
 export async function POST(request: Request, { params }: RouteParams) {
   const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+    return paymentErrorResponse(ctx.error, ctx.status);
   }
 
   if (!ctx.canManage) {
-    return NextResponse.json({ error: 'You do not have permission to record payments.' }, { status: 403 });
+    return paymentErrorResponse('You do not have permission to record payments.', 403);
   }
 
   const { id } = await params;
   if (!isValidUuid(id)) {
-    return NextResponse.json({ error: 'Invalid invoice id.' }, { status: 400 });
+    return paymentErrorResponse('Invalid invoice id.', 400);
   }
 
   const body = (await request.json()) as {
@@ -51,7 +69,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    return paymentErrorResponse(result.error, result.status);
   }
 
   const activityAction =

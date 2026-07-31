@@ -1,3 +1,11 @@
+import {
+  getBillingOpsCopy,
+  localizedInvoiceBody,
+  localizedInvoiceSubject,
+  localizedReceiptSubject
+} from '@/lib/i18n/billing-ops-copy';
+import { normalizeLocale, type Locale } from '@/lib/i18n/config';
+
 export const OUTBOUND_DOC_TYPES = ['review', 'proposal', 'estimate', 'invoice', 'message', 'receipt'] as const;
 export type OutboundDocType = (typeof OUTBOUND_DOC_TYPES)[number];
 
@@ -51,8 +59,59 @@ export type OutboundComposerFields = {
   scheduled_at: string;
 };
 
-export function defaultComposerFields(docType: OutboundDocType): OutboundComposerFields {
-  const defaults: Record<OutboundDocType, Partial<OutboundComposerFields>> = {
+function localizedDefaultTemplates(locale: Locale): Record<OutboundDocType, Partial<OutboundComposerFields>> {
+  const billing = getBillingOpsCopy(locale);
+  if (locale === 'es') {
+    return {
+      review: {
+        subject: 'Nos encantaría tu opinión',
+        body: 'Gracias por elegirnos. Esperamos que hayas tenido una gran experiencia. Nos encantaría conocer tu opinión. Tómate un momento para completar nuestro breve formulario.\n\nCompartir opinión: https://docs.google.com/forms/d/e/1FAIpQLScKoDhMAuGu8RyvFQE9dBbrazjpGhPxm-C7lAlrdnDurGhDgQ/viewform?usp=header'
+      },
+      proposal: {
+        subject: 'Propuesta para tu proyecto',
+        body: 'A continuación encontrarás nuestra propuesta. Avísanos si tienes alguna pregunta.'
+      },
+      estimate: {
+        subject: 'Presupuesto para tu proyecto',
+        body: 'Aquí está el presupuesto del trabajo que comentamos. Esta cotización es válida por 30 días.'
+      },
+      invoice: {
+        subject: billing.invoiceForCompletedWork,
+        body: billing.thankYouBusiness
+      },
+      message: { subject: '', body: '' },
+      receipt: {
+        subject: localizedReceiptSubject(locale),
+        body: billing.thankYouPaymentReceived
+      }
+    };
+  }
+  if (locale === 'vi') {
+    return {
+      review: {
+        subject: 'Chúng tôi rất muốn nhận phản hồi của bạn',
+        body: 'Cảm ơn bạn đã chọn chúng tôi. Hy vọng bạn có trải nghiệm tốt. Hãy dành chút thời gian hoàn thành biểu mẫu phản hồi ngắn.\n\nGửi phản hồi: https://docs.google.com/forms/d/e/1FAIpQLScKoDhMAuGu8RyvFQE9dBbrazjpGhPxm-C7lAlrdnDurGhDgQ/viewform?usp=header'
+      },
+      proposal: {
+        subject: 'Đề xuất cho dự án của bạn',
+        body: 'Dưới đây là đề xuất của chúng tôi. Hãy cho chúng tôi biết nếu bạn có câu hỏi.'
+      },
+      estimate: {
+        subject: 'Báo giá cho dự án của bạn',
+        body: 'Đây là báo giá cho công việc đã thảo luận. Báo giá có hiệu lực trong 30 ngày.'
+      },
+      invoice: {
+        subject: billing.invoiceForCompletedWork,
+        body: billing.thankYouBusiness
+      },
+      message: { subject: '', body: '' },
+      receipt: {
+        subject: localizedReceiptSubject(locale),
+        body: billing.thankYouPaymentReceived
+      }
+    };
+  }
+  return {
     review: {
       subject: 'We would love your feedback',
       body: 'Thank you for choosing us. We hope you had a great experience. We would love to hear your feedback. Please take a moment to complete our short feedback form.\n\nShare Feedback: https://docs.google.com/forms/d/e/1FAIpQLScKoDhMAuGu8RyvFQE9dBbrazjpGhPxm-C7lAlrdnDurGhDgQ/viewform?usp=header'
@@ -66,18 +125,22 @@ export function defaultComposerFields(docType: OutboundDocType): OutboundCompose
       body: 'Here is the estimate for the work we discussed. This quote is valid for 30 days.'
     },
     invoice: {
-      subject: 'Invoice for completed work',
-      body: 'Thank you for your business. Please find your invoice details below.'
+      subject: billing.invoiceForCompletedWork,
+      body: billing.thankYouBusiness
     },
-    message: {
-      subject: '',
-      body: ''
-    },
+    message: { subject: '', body: '' },
     receipt: {
-      subject: 'Payment receipt',
-      body: 'Thank you. We received your payment.'
+      subject: localizedReceiptSubject(locale),
+      body: billing.thankYouPaymentReceived
     }
   };
+}
+
+export function defaultComposerFields(
+  docType: OutboundDocType,
+  locale: Locale | string | null | undefined = 'en'
+): OutboundComposerFields {
+  const defaults = localizedDefaultTemplates(normalizeLocale(locale));
 
   return {
     recipient_email: '',
@@ -97,24 +160,45 @@ export function tabToStatus(tab: OutboundTab): OutboundStatus | OutboundStatus[]
   return tab;
 }
 
-export function docTypeLabel(docType: OutboundDocType): string {
-  const labels: Record<OutboundDocType, string> = {
-    review: 'Review request',
-    proposal: 'Proposal',
-    estimate: 'Estimate',
-    invoice: 'Invoice',
-    message: 'Message',
-    receipt: 'Payment receipt'
+export function docTypeLabel(
+  docType: OutboundDocType,
+  locale: Locale | string | null | undefined = 'en'
+): string {
+  const key = normalizeLocale(locale);
+  const billing = getBillingOpsCopy(key);
+  const labels: Record<Locale, Record<OutboundDocType, string>> = {
+    en: {
+      review: 'Review request',
+      proposal: 'Proposal',
+      estimate: 'Estimate',
+      invoice: 'Invoice',
+      message: 'Message',
+      receipt: billing.paymentReceipt
+    },
+    es: {
+      review: 'Solicitud de reseña',
+      proposal: 'Propuesta',
+      estimate: 'Presupuesto',
+      invoice: 'Factura',
+      message: 'Mensaje',
+      receipt: billing.paymentReceipt
+    },
+    vi: {
+      review: 'Yêu cầu đánh giá',
+      proposal: 'Đề xuất',
+      estimate: 'Báo giá',
+      invoice: 'Hóa đơn',
+      message: 'Tin nhắn',
+      receipt: billing.paymentReceipt
+    }
   };
-  return labels[docType];
+  return labels[key][docType];
 }
 
-export function invoiceSubjectForJob(jobTitle: string): string {
-  const title = jobTitle.trim() || 'completed work';
-  return `Invoice for ${title}`;
+export function invoiceSubjectForJob(jobTitle: string, locale: Locale | string | null | undefined = 'en'): string {
+  return localizedInvoiceSubject(locale, jobTitle);
 }
 
-export function invoiceBodyForJob(jobTitle: string): string {
-  const title = jobTitle.trim() || 'your job';
-  return `Thank you for your business. Please find the invoice for ${title} below.`;
+export function invoiceBodyForJob(jobTitle: string, locale: Locale | string | null | undefined = 'en'): string {
+  return localizedInvoiceBody(locale, jobTitle);
 }

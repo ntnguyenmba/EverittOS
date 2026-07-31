@@ -350,7 +350,7 @@ function JobsList() {
     setDuplicatingId('');
     setOpenMenuId('');
     if (!res.ok || !json.job?.id) {
-      appFeedback.error(json.error || 'Unable to create a similar job.');
+      appFeedback.error(json.error || (locale === 'es' ? 'No se pudo crear un trabajo similar.' : locale === 'vi' ? 'Không thể tạo công việc tương tự.' : 'Unable to create a similar job.'));
       return;
     }
     router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);

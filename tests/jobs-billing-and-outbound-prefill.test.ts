@@ -109,7 +109,9 @@ describe('Invoice and receipt prefill helpers', () => {
     const source = readFileSync('app/api/outbound/prefill/route.ts', 'utf8');
     assert.match(source, /invoice_payments/);
     assert.match(source, /payment_id/);
-    assert.match(source, /Thank you\. We received your payment of/);
+    assert.match(source, /localizedReceiptBody/);
+    assert.match(source, /normalizeLocale/);
+    assert.match(source, /formatMoneyUsd/);
     const receiptRoute = readFileSync('app/api/invoices/[id]/receipt/route.ts', 'utf8');
     assert.match(receiptRoute, /doc_type: 'receipt'/);
     assert.match(receiptRoute, /payment_id/);

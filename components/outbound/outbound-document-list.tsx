@@ -3,8 +3,16 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
-import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
-import { invoiceDeliveryPaymentLabel, INVOICE_PAYMENT_METHODS } from '@/lib/outbound/invoice-payment';
+import { resolveApiError } from '@/lib/i18n/api-error-copy';
+import {
+  deliveryStatusLabel,
+  emptyTabMessage,
+  getBillingOpsCopy,
+  invoiceDeliveryPaymentLabelLocalized,
+  removeActionLabel
+} from '@/lib/i18n/billing-ops-copy';
+import { formatDateTimeLocale, formatMoneyUsd } from '@/lib/i18n/locale-format';
+import { INVOICE_PAYMENT_METHODS } from '@/lib/outbound/invoice-payment';
 import type { OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
 export type InvoicePaymentFilter = 'all' | 'unpaid' | 'overdue' | 'paid' | 'history';
@@ -31,44 +39,6 @@ function matchesPaymentFilter(doc: OutboundDocument, filter: InvoicePaymentFilte
   if (filter === 'paid') return status === 'paid' || (stillOwed <= 0 && Number(doc.amount_paid || 0) > 0);
   if (filter === 'history') return Number(doc.amount_paid || 0) > 0;
   return true;
-}
-
-function formatWhen(doc: OutboundDocument): string {
-  const iso = doc.sent_at || doc.scheduled_at || doc.failed_at || doc.updated_at;
-  if (!iso) return '';
-  return new Date(iso).toLocaleString();
-}
-
-function amountLabel(doc: OutboundDocument): string {
-  if (doc.amount == null) return '';
-  const amount = Number(doc.amount);
-  if (!Number.isFinite(amount)) return '';
-  return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-}
-
-function statusLabel(doc: OutboundDocument): string {
-  if (doc.doc_type === 'invoice') {
-    return invoiceDeliveryPaymentLabel({
-      deliveryStatus: doc.status,
-      paymentStatus: doc.payment_status as import('@/lib/outbound/invoice-payment').InvoicePaymentStatus | null,
-      amount: doc.amount,
-      amountPaid: doc.amount_paid
-    });
-  }
-  if (doc.status === 'failed') return 'Delivery failed';
-  if (doc.status === 'scheduled') return 'Scheduled';
-  if (doc.status === 'draft') return 'Draft';
-  return 'Sent';
-}
-
-function removeLabel(tab: OutboundTab): string {
-  if (tab === 'sent') return 'Hide from history';
-  if (tab === 'scheduled') return 'Cancel schedule';
-  return 'Delete draft';
-}
-
-function money(value: number): string {
-  return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
 function RecordPaymentForm({
@@ -113,7 +83,7 @@ function RecordPaymentForm({
     const json = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setError(json.error || 'Unable to record payment');
+      setError(resolveApiError(json, locale));
       return;
     }
     const invoiceId =
@@ -148,20 +118,20 @@ function RecordPaymentForm({
     <div className="outbound-payment-form" style={{ marginTop: 8 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
         <div>
-          <span className="muted" style={{ display: 'block' }}>Invoice total</span>
-          <strong>{money(invoiceTotal)}</strong>
+          <span className="muted" style={{ display: 'block' }}>{billingCopy.invoiceTotal}</span>
+          <strong>{formatMoneyUsd(invoiceTotal, locale)}</strong>
         </div>
         <div>
-          <span className="muted" style={{ display: 'block' }}>Paid</span>
-          <strong>{money(paid)}</strong>
+          <span className="muted" style={{ display: 'block' }}>{billingCopy.paid}</span>
+          <strong>{formatMoneyUsd(paid, locale)}</strong>
         </div>
         <div>
-          <span className="muted" style={{ display: 'block' }}>Still owed</span>
-          <strong>{money(stillOwed)}</strong>
+          <span className="muted" style={{ display: 'block' }}>{billingCopy.stillOwed}</span>
+          <strong>{formatMoneyUsd(stillOwed, locale)}</strong>
         </div>
       </div>
       <p className="muted" style={{ marginTop: 8 }}>
-        Record this payment once. Dashboard, reports, and cash metrics update automatically.
+        {billingCopy.recordPaymentOnce}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
         <input
@@ -169,29 +139,29 @@ function RecordPaymentForm({
           type="number"
           min="0"
           step="0.01"
-          placeholder="Payment amount"
-          aria-label="Payment amount"
+          placeholder={billingCopy.paymentAmount}
+          aria-label={billingCopy.paymentAmount}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
         <input
           className="input"
           type="date"
-          aria-label="Payment date"
+          aria-label={billingCopy.paymentDate}
           value={paidDate}
           onChange={(e) => setPaidDate(e.target.value)}
         />
-        <select className="input" aria-label="Payment method" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <select className="input" aria-label={billingCopy.paymentMethod} value={method} onChange={(e) => setMethod(e.target.value)}>
           {INVOICE_PAYMENT_METHODS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {billingCopy.paymentMethods[m] || m}
             </option>
           ))}
         </select>
         <input
           className="input"
-          placeholder="Reference number"
-          aria-label="Reference number"
+          placeholder={billingCopy.referenceNumber}
+          aria-label={billingCopy.referenceNumber}
           value={reference}
           onChange={(e) => setReference(e.target.value)}
         />
@@ -199,14 +169,14 @@ function RecordPaymentForm({
       <input
         className="input"
         style={{ marginTop: 8, width: '100%' }}
-        placeholder="Notes"
-        aria-label="Payment notes"
+        placeholder={billingCopy.notes}
+        aria-label={billingCopy.notes}
         value={note}
         onChange={(e) => setNote(e.target.value)}
       />
       {error ? <span className="outbound-document-error">{error}</span> : null}
       <button type="button" className="btn btn-sm btn-primary" style={{ marginTop: 8 }} disabled={saving} onClick={() => void submit()}>
-        {saving ? 'Saving…' : 'Save payment'}
+        {saving ? billingCopy.savingEllipsis : billingCopy.savePayment}
       </button>
     </div>
   );
@@ -224,38 +194,47 @@ export function OutboundDocumentList({
   onRetry,
   onPaymentRecorded
 }: OutboundDocumentListProps) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const visibleDocuments = documents.filter((doc) => matchesPaymentFilter(doc, paymentFilter));
 
-  if (loading) return <p className="muted">Loading…</p>;
+  if (loading) return <p className="muted">{billingCopy.loading}</p>;
   if (!documents.length) {
-    const empty: Record<OutboundTab, string> = {
-      sent: 'Nothing sent yet. Compose above and tap Send.',
-      scheduled: 'No scheduled items.',
-      drafts: 'No drafts. Your work saves automatically while you type.',
-      failed: 'No failed deliveries.'
-    };
-    return <p className="muted">{empty[tab]}</p>;
+    return <p className="muted">{emptyTabMessage(billingCopy, tab)}</p>;
   }
   if (!visibleDocuments.length) {
-    return <p className="muted">No invoices match this payment filter.</p>;
+    return <p className="muted">{billingCopy.noInvoicesMatchFilter}</p>;
   }
 
   return (
     <div className="outbound-document-list">
       {tab === 'sent' ? (
         <p className="muted" style={{ marginBottom: 12 }}>
-          Sent items cannot be unsent. Hiding an item only removes it from this history list. Use Record payment when a customer pays.
+          {billingCopy.sentHistoryHint}
         </p>
       ) : null}
       {tab === 'failed' ? (
         <p className="muted" style={{ marginBottom: 12 }}>
-          Failed deliveries were not sent. Fix the recipient or email settings, then retry.
+          {billingCopy.failedHistoryHint}
         </p>
       ) : null}
       {visibleDocuments.map((doc) => {
-        const amount = amountLabel(doc);
+        const amount =
+          doc.amount == null || !Number.isFinite(Number(doc.amount))
+            ? ''
+            : formatMoneyUsd(Number(doc.amount), locale);
         const stillOwed = Math.max(0, Number(doc.amount || 0) - Number(doc.amount_paid || 0));
+        const whenIso = doc.sent_at || doc.scheduled_at || doc.failed_at || doc.updated_at;
+        const status =
+          doc.doc_type === 'invoice'
+            ? invoiceDeliveryPaymentLabelLocalized(locale, {
+                deliveryStatus: doc.status,
+                paymentStatus: doc.payment_status,
+                amount: doc.amount,
+                amountPaid: doc.amount_paid
+              })
+            : deliveryStatusLabel(locale, doc.status);
         const showPayment =
           canManage &&
           tab === 'sent' &&
@@ -267,20 +246,24 @@ export function OutboundDocumentList({
         return (
           <div key={doc.id} className="outbound-document-row">
             <div className="outbound-document-main">
-              <strong>{doc.subject || doc.recipient_email || 'Untitled'}</strong>
+              <strong>{doc.subject || doc.recipient_email || billingCopy.untitled}</strong>
               <span className="muted">
-                {doc.recipient_email || 'No recipient'}
-                {amount ? ` · Invoice total ${amount}` : ''}
+                {doc.recipient_email || billingCopy.noRecipient}
+                {amount ? ` · ${billingCopy.invoiceTotal} ${amount}` : ''}
                 {doc.amount_paid != null && Number(doc.amount_paid) > 0
-                  ? ` · Paid ${Number(doc.amount_paid).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
+                  ? ` · ${billingCopy.paid} ${formatMoneyUsd(Number(doc.amount_paid), locale)}`
                   : ''}
                 {doc.doc_type === 'invoice' && stillOwed > 0
-                  ? ` · Still owed ${stillOwed.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}`
+                  ? ` · ${billingCopy.stillOwed} ${formatMoneyUsd(stillOwed, locale)}`
                   : ''}
               </span>
-              <span className="muted">{statusLabel(doc)}</span>
-              <span className="muted outbound-document-time">{formatWhen(doc)}</span>
-              {doc.failure_reason ? <span className="outbound-document-error">Reason: {doc.failure_reason}</span> : null}
+              <span className="muted">{status}</span>
+              <span className="muted outbound-document-time">{formatDateTimeLocale(whenIso, locale)}</span>
+              {doc.failure_reason ? (
+                <span className="outbound-document-error">
+                  {billingCopy.reasonPrefix} {doc.failure_reason}
+                </span>
+              ) : null}
               {showPayment && recordingId === doc.id ? (
                 <RecordPaymentForm
                   doc={doc}
@@ -295,26 +278,26 @@ export function OutboundDocumentList({
               <div className="outbound-document-actions">
                 {showPayment && recordingId !== doc.id ? (
                   <button type="button" className="btn btn-sm" onClick={() => setRecordingId(doc.id)}>
-                    Record payment
+                    {billingCopy.recordPayment}
                   </button>
                 ) : null}
                 {tab === 'drafts' || tab === 'scheduled' ? (
                   <button type="button" className="btn btn-sm btn-primary" onClick={() => onSend(doc.id)}>
-                    Send
+                    {billingCopy.send}
                   </button>
                 ) : null}
                 {tab === 'failed' ? (
                   <button type="button" className="btn btn-sm btn-primary" onClick={() => onRetry(doc.id)}>
-                    Retry
+                    {billingCopy.retry}
                   </button>
                 ) : null}
                 {tab !== 'sent' ? (
                   <button type="button" className="btn btn-sm" onClick={() => onEdit(doc)}>
-                    Edit
+                    {billingCopy.edit}
                   </button>
                 ) : null}
                 <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(doc.id)}>
-                  {removeLabel(tab)}
+                  {removeActionLabel(billingCopy, tab)}
                 </button>
               </div>
             ) : null}

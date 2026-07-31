@@ -8,6 +8,7 @@ import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { RecurringInvoicesPanel } from '@/components/recurring-invoices-panel';
 import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -15,7 +16,8 @@ import { supabase } from '@/lib/supabase';
 
 function InvoicesPageContent() {
   const searchParams = useSearchParams();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
   const forceNew = searchParams.get('action') === 'new' || searchParams.get('forceNew') === '1';
@@ -51,11 +53,9 @@ function InvoicesPageContent() {
   return (
     <AppShell plan={plan} role={role}>
       <header className="page-header">
-        <h1>{focusOutstanding ? 'Outstanding balances' : t('pages.invoices.title')}</h1>
+        <h1>{focusOutstanding ? billingCopy.outstandingBalances : t('pages.invoices.title')}</h1>
         <p className="page-subtitle">
-          {focusOutstanding
-            ? 'See exactly which invoices are unpaid or overdue. Uninvoiced job balances are reviewed from Jobs.'
-            : t('pages.invoices.subtitle')}
+          {focusOutstanding ? billingCopy.outstandingSubtitle : t('pages.invoices.subtitle')}
         </p>
       </header>
 
@@ -75,12 +75,12 @@ function InvoicesPageContent() {
       {canManage ? (
         <details style={{ marginTop: 24 }}>
           <summary>
-            <strong>Payment connections</strong>
+            <strong>{billingCopy.paymentConnections}</strong>
           </summary>
           <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
             <div className="card">
               <Link className="btn" href="/settings/billing">
-                Subscription
+                {billingCopy.subscription}
               </Link>
             </div>
             <QuickBooksIntegrationPanel canManage={canManage} />

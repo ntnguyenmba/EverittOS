@@ -1,3 +1,8 @@
+import {
+  invoiceDeliveryPaymentLabelLocalized,
+  paymentStatusLabelLocalized
+} from '@/lib/i18n/billing-ops-copy';
+
 export type InvoicePaymentStatus = 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
 
 /** Document/delivery status values used on invoices and outbound documents. */
@@ -83,20 +88,11 @@ export function calculateBalanceDue(amount: number | null | undefined, amountPai
   return roundMoney(Number(amount || 0) - Number(amountPaid || 0));
 }
 
-export function paymentStatusLabel(status: InvoicePaymentStatus | 'overdue' | null | undefined): string {
-  switch (status) {
-    case 'paid':
-      return 'Paid';
-    case 'partially_paid':
-      return 'Partially paid';
-    case 'overdue':
-      return 'Overdue';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'unpaid':
-    default:
-      return 'Unpaid';
-  }
+export function paymentStatusLabel(
+  status: InvoicePaymentStatus | 'overdue' | null | undefined,
+  locale: string | null | undefined = 'en'
+): string {
+  return paymentStatusLabelLocalized(locale, status);
 }
 
 export function invoiceDeliveryPaymentLabel(input: {
@@ -105,29 +101,9 @@ export function invoiceDeliveryPaymentLabel(input: {
   documentStatus?: string | null;
   amount?: number | null;
   amountPaid?: number | null;
+  locale?: string | null;
 }): string {
-  if (input.deliveryStatus === 'failed') {
-    return 'Delivery failed';
-  }
-  if (input.paymentStatus === 'cancelled' || input.documentStatus === 'cancelled') {
-    return 'Cancelled';
-  }
-  if (input.paymentStatus === 'paid' || input.documentStatus === 'paid') {
-    return 'Paid';
-  }
-  if (input.documentStatus === 'overdue' || input.paymentStatus === 'overdue') {
-    return 'Overdue';
-  }
-  if (input.paymentStatus === 'partially_paid') {
-    return 'Partially paid';
-  }
-  if (input.deliveryStatus === 'sent' || input.deliveryStatus === 'scheduled') {
-    const paid = Number(input.amountPaid || 0);
-    if (paid <= 0) {
-      return 'Invoice sent, payment not recorded';
-    }
-  }
-  return paymentStatusLabel(input.paymentStatus);
+  return invoiceDeliveryPaymentLabelLocalized(input.locale || 'en', input);
 }
 
 export const INVOICE_PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'ACH', 'Zelle', 'Venmo', 'Other'] as const;

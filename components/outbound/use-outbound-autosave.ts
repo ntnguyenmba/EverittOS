@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
-import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
+import { resolveApiError } from '@/lib/i18n/api-error-copy';
+import { getBillingOpsCopy, localizedReceiptSubject } from '@/lib/i18n/billing-ops-copy';
 import {
   defaultComposerFields,
   invoiceBodyForJob,
@@ -76,8 +77,12 @@ function hasComposerContent(fields: OutboundComposerFields): boolean {
   );
 }
 
-function isDefaultTemplate(docType: OutboundDocType, fields: OutboundComposerFields): boolean {
-  const defaults = defaultComposerFields(docType);
+function isDefaultTemplate(
+  docType: OutboundDocType,
+  fields: OutboundComposerFields,
+  locale: string
+): boolean {
+  const defaults = defaultComposerFields(docType, locale);
   return fields.subject === defaults.subject && fields.body === defaults.body;
 }
 
@@ -94,7 +99,7 @@ export function useOutboundAutosave({
   const billingCopy = getBillingOpsCopy(locale);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [fields, setFields] = useState<OutboundComposerFields>(() => {
-    const base = defaultComposerFields(docType);
+    const base = defaultComposerFields(docType, locale);
     return {
       ...base,
       job_id: initialJobId || base.job_id,
@@ -125,7 +130,7 @@ export function useOutboundAutosave({
       return;
     }
 
-    const key = `${docType}:${initialJobId}:${initialCustomerId}:${initialInvoiceId}:${initialPaymentId}:${forceNew ? '1' : '0'}`;
+    const key = `${docType}:${initialJobId}:${initialCustomerId}:${initialInvoiceId}:${initialPaymentId}:${forceNew ? '1' : '0'}:${locale}`;
     if (prefillKeyRef.current === key) return;
     prefillKeyRef.current = key;
     loadedExistingRef.current = false;
@@ -134,6 +139,7 @@ export function useOutboundAutosave({
 
     const params = new URLSearchParams();
     params.set('docType', docType);
+    params.set('locale', locale);
     if (initialJobId) params.set('jobId', initialJobId);
     if (initialCustomerId) params.set('customerId', initialCustomerId);
     if (initialInvoiceId) params.set('invoiceId', initialInvoiceId);
@@ -143,8 +149,8 @@ export function useOutboundAutosave({
     let cancelled = false;
     void fetch(`/api/outbound/prefill?${params.toString()}`, { cache: 'no-store' })
       .then(async (response) => {
-        const json = (await response.json()) as PrefillResponse & { error?: string };
-        if (!response.ok) throw new Error(json.error || 'Unable to load document details.');
+        const json = (await response.json()) as PrefillResponse & { error?: string; code?: string };
+        if (!response.ok) throw new Error(resolveApiError(json, locale));
         return json;
       })
       .then(async (json) => {
@@ -192,7 +198,7 @@ export function useOutboundAutosave({
 
         skipNextSaveRef.current = true;
         setFields((current) => {
-          const defaults = defaultComposerFields(docType);
+          const defaults = defaultComposerFields(docType, locale);
           const jobLabel = prefill.job_title?.trim() || '';
           const canReplaceSubject =
             !userEditedRef.current.subject &&
@@ -206,18 +212,18 @@ export function useOutboundAutosave({
             subject =
               prefill.subject ||
               (docType === 'invoice' && jobLabel
-                ? invoiceSubjectForJob(jobLabel)
+                ? invoiceSubjectForJob(jobLabel, locale)
                 : docType === 'receipt'
-                  ? 'Payment receipt'
+                  ? localizedReceiptSubject(locale)
                   : current.subject);
           }
           if (canReplaceBody) {
             body =
               prefill.body ||
               (docType === 'invoice' && jobLabel
-                ? invoiceBodyForJob(jobLabel)
+                ? invoiceBodyForJob(jobLabel, locale)
                 : docType === 'receipt'
-                  ? 'Thank you. We received your payment.'
+                  ? billingCopy.thankYouPaymentReceived
                   : current.body);
           }
 
@@ -251,20 +257,22 @@ export function useOutboundAutosave({
   }, [
     billingCopy.existingInvoiceFound,
     billingCopy.existingReceiptFound,
+    billingCopy.thankYouPaymentReceived,
     docType,
     enabled,
     forceNew,
     initialCustomerId,
     initialInvoiceId,
     initialJobId,
-    initialPaymentId
+    initialPaymentId,
+    locale
   ]);
 
   const resetComposer = useCallback(() => {
     skipNextSaveRef.current = true;
     setDocumentId(null);
     setFields({
-      ...defaultComposerFields(docType),
+      ...defaultComposerFields(docType, locale),
       job_id: initialJobId || '',
       customer_id: initialCustomerId || ''
     });
@@ -275,7 +283,7 @@ export function useOutboundAutosave({
     userEditedRef.current = {};
     loadedExistingRef.current = false;
     receiptMetaRef.current = {};
-  }, [docType, initialCustomerId, initialJobId]);
+  }, [docType, initialCustomerId, initialJobId, locale]);
 
   const persist = useCallback(
     async (nextFields: OutboundComposerFields, id: string | null) => {
@@ -313,7 +321,7 @@ export function useOutboundAutosave({
             body: JSON.stringify(payload)
           });
           const json = await res.json();
-          if (!res.ok) throw new Error(json.error || 'Auto-save failed');
+          if (!res.ok) throw new Error(resolveApiError(json, locale));
           setSaveState('saved');
           return id;
         }
@@ -324,7 +332,7 @@ export function useOutboundAutosave({
           body: JSON.stringify(payload)
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Auto-save failed');
+        if (!res.ok) throw new Error(resolveApiError(json, locale));
         const newId = json.document?.id as string | undefined;
         if (newId) setDocumentId(newId);
         setSaveState('saved');
@@ -334,7 +342,7 @@ export function useOutboundAutosave({
         return id;
       }
     },
-    [docType, enabled, initialInvoiceId, prefillReady]
+    [docType, enabled, initialInvoiceId, locale, prefillReady]
   );
 
   useEffect(() => {
@@ -345,7 +353,12 @@ export function useOutboundAutosave({
     }
     if (!hasComposerContent(fields)) return;
     // Avoid creating empty/default drafts before the user edits or prefill settles.
-    if (!documentId && isDefaultTemplate(docType, fields) && !fields.recipient_email.trim() && !fields.amount.trim()) {
+    if (
+      !documentId &&
+      isDefaultTemplate(docType, fields, locale) &&
+      !fields.recipient_email.trim() &&
+      !fields.amount.trim()
+    ) {
       return;
     }
 
@@ -359,7 +372,7 @@ export function useOutboundAutosave({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [fields, documentId, enabled, persist, prefillReady, docType]);
+  }, [fields, documentId, enabled, persist, prefillReady, docType, locale]);
 
   const updateField = useCallback(<K extends keyof OutboundComposerFields>(key: K, value: OutboundComposerFields[K]) => {
     userEditedRef.current[key] = true;
@@ -376,17 +389,17 @@ export function useOutboundAutosave({
     try {
       const id = await persist(fields, documentId);
       if (!id) {
-        throw new Error('Add a recipient and message before sending.');
+        throw new Error(billingCopy.addRecipientAndMessage);
       }
       const res = await fetch(`/api/outbound/${id}/send`, { method: 'POST' });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Send failed');
+      if (!res.ok) throw new Error(resolveApiError(json, locale));
       resetComposer();
       return json as { message?: string; deliveryNote?: string; document?: OutboundDocument };
     } finally {
       setSending(false);
     }
-  }, [documentId, fields, persist, resetComposer, sending]);
+  }, [billingCopy.addRecipientAndMessage, documentId, fields, locale, persist, resetComposer, sending]);
 
   const loadDocument = useCallback((doc: OutboundDocument) => {
     skipNextSaveRef.current = true;

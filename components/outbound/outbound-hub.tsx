@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { OutboundComposer } from '@/components/outbound/outbound-composer';
 import { OutboundDocumentList } from '@/components/outbound/outbound-document-list';
 import { OutboundStatusTabs } from '@/components/outbound/outbound-status-tabs';
 import { useOutboundAutosave } from '@/components/outbound/use-outbound-autosave';
 import type { InvoicePaymentFilter } from '@/components/outbound/outbound-document-list';
+import { resolveApiError } from '@/lib/i18n/api-error-copy';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import type { OutboundDocType, OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
 type OutboundHubProps = {
@@ -37,6 +40,8 @@ export function OutboundHub({
   focusOutstanding = false,
   footer
 }: OutboundHubProps) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
   const appFeedback = useAppFeedback();
   const [tab, setTab] = useState<OutboundTab>('sent');
   const [documents, setDocuments] = useState<OutboundDocument[]>([]);
@@ -60,7 +65,7 @@ export function OutboundHub({
     const json = await res.json();
     setLoading(false);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to load documents');
+      appFeedback.error(resolveApiError(json, locale));
       setSchemaReady(true);
       return;
     }
@@ -71,7 +76,7 @@ export function OutboundHub({
     }
     setSchemaReady(true);
     setDocuments((json.documents || []) as OutboundDocument[]);
-  }, [appFeedback, docType, tab]);
+  }, [appFeedback, docType, locale, tab]);
 
   useEffect(() => {
     void loadDocuments();
@@ -80,14 +85,16 @@ export function OutboundHub({
   async function handleSendFromComposer() {
     if (autosave.sending) return;
     if (!autosave.fields.recipient_email.trim()) {
-      appFeedback.error('Enter a recipient email before sending.');
+      appFeedback.error(billingCopy.enterRecipientEmail);
       return;
     }
     try {
       const result = await autosave.sendNow();
       if (!result) return;
       if (result.document?.status === 'failed' || result.deliveryNote) {
-        appFeedback.error(result.deliveryNote || result.message || 'Email failed. Check the Failed tab to retry.');
+        appFeedback.error(
+          result.deliveryNote || result.message || billingCopy.emailFailed
+        );
         setTab('failed');
         void loadDocuments();
         return;
@@ -96,7 +103,11 @@ export function OutboundHub({
       setTab('sent');
       void loadDocuments();
     } catch (err) {
-      appFeedback.error(err instanceof Error ? err.message : 'Send failed');
+      appFeedback.error(
+        err instanceof Error
+          ? resolveApiError({ error: err.message }, locale)
+          : billingCopy.sendFailed
+      );
       setTab('failed');
       void loadDocuments();
     }
@@ -107,13 +118,13 @@ export function OutboundHub({
     const res = await fetch(`/api/outbound/${id}/send`, { method: 'POST' });
     const json = await res.json();
     if (!res.ok) {
-      appFeedback.error(json.error || 'Send failed');
+      appFeedback.error(resolveApiError(json, locale));
       setTab('failed');
       void loadDocuments();
       return;
     }
     if (json.document?.status === 'failed' || json.deliveryNote) {
-      appFeedback.error(json.deliveryNote || json.message || 'Email failed. Check the Failed tab to retry.');
+      appFeedback.error(json.deliveryNote || json.message || billingCopy.emailFailed);
       setTab('failed');
       void loadDocuments();
       return;
@@ -125,13 +136,13 @@ export function OutboundHub({
 
   async function handleDelete(id: string) {
     if (deletingId) return;
-    if (!window.confirm('Remove this item?')) return;
+    if (!window.confirm(billingCopy.removeItemConfirm)) return;
     setDeletingId(id);
     const res = await fetch(`/api/outbound/${id}`, { method: 'DELETE' });
     const json = await res.json();
     setDeletingId(null);
     if (!res.ok) {
-      appFeedback.error(json.error || 'Delete failed');
+      appFeedback.error(resolveApiError(json, locale));
       return;
     }
     appFeedback.deleted();
@@ -142,6 +153,17 @@ export function OutboundHub({
     autosave.loadDocument(doc);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  const historyTitle =
+    docType === 'invoice'
+      ? focusOutstanding
+        ? paymentFilter === 'overdue'
+          ? billingCopy.overdueInvoices
+          : billingCopy.whoStillOwesYou
+        : billingCopy.invoices
+      : docType === 'receipt'
+        ? billingCopy.receipts
+        : billingCopy.sentHistory;
 
   const composer = canManage && schemaReady ? (
     <OutboundComposer
@@ -162,31 +184,19 @@ export function OutboundHub({
   const history = (
     <div className="card outbound-history-card">
       <div className="outbound-history-head">
-        <h3>
-          {docType === 'invoice'
-            ? focusOutstanding
-              ? paymentFilter === 'overdue'
-                ? 'Overdue invoices'
-                : 'Who still owes you'
-              : 'Invoices'
-            : docType === 'receipt'
-              ? 'Receipts'
-              : 'Sent history'}
-        </h3>
+        <h3>{historyTitle}</h3>
         {docType === 'invoice' && paymentFilter !== 'all' ? (
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            {focusOutstanding
-              ? 'Each row below shows the customer, invoice, amount billed, amount paid, and remaining balance.'
-              : `Showing ${paymentFilter === 'history' ? 'payment history' : paymentFilter} invoices. Record payment here once and every dashboard metric updates from this.`}
+            {focusOutstanding ? billingCopy.outstandingRowHint : billingCopy.paymentFilterHint}
           </p>
         ) : null}
         {focusOutstanding ? (
           <div className="inline-actions" style={{ marginTop: 12 }}>
             <Link className="btn btn-sm" href="/jobs?status=completed">
-              Review uninvoiced jobs
+              {billingCopy.reviewUninvoicedJobs}
             </Link>
             <Link className="btn btn-sm" href="/invoices">
-              Create an invoice
+              {billingCopy.createAnInvoice}
             </Link>
           </div>
         ) : null}
@@ -211,10 +221,7 @@ export function OutboundHub({
     <>
       {!schemaReady ? (
         <div className="card outbound-schema-notice" role="status">
-          <p>
-            Outbound tables are not set up in this database yet. Run{' '}
-            <code>supabase/manual_schema_repair.sql</code> in the Supabase SQL Editor, then refresh this page.
-          </p>
+          <p>{billingCopy.schemaNotice}</p>
         </div>
       ) : null}
 

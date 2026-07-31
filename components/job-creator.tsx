@@ -21,6 +21,7 @@ import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 import type { StructuredAddress } from '@/lib/address/types';
 import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
 import { calculateExpectedJobFinance, multiplyMoneyDollars, parseMoneyDollars } from '@/lib/money-decimal';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import { getRecurrenceCopy } from '@/lib/i18n/recurrence-copy';
 import {
   RECURRING_GENERATION_WINDOW_DAYS,
@@ -1363,7 +1364,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
 
           <label style={{ marginTop: 12 }}>Payment method</label>
-          <div className="segmented-control" role="group" aria-label="Payment method" style={{ marginTop: 8 }}>
+          <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
             <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
             <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
           </div>

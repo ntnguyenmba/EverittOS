@@ -1,21 +1,18 @@
 import { NextResponse } from 'next/server';
+import {
+  getBillingOpsCopy,
+  localizedInvoiceBody,
+  localizedInvoiceSubject,
+  localizedReceiptBody,
+  localizedReceiptSubject
+} from '@/lib/i18n/billing-ops-copy';
+import { normalizeLocale } from '@/lib/i18n/config';
+import { formatDateLocale, formatMoneyUsd } from '@/lib/i18n/locale-format';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
-import { invoiceBodyForJob, invoiceSubjectForJob } from '@/lib/outbound/types';
 import { isValidUuid } from '@/lib/input-validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-}
-
-function formatDate(value: string | null | undefined) {
-  if (!value) return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
 
 export async function GET(request: Request) {
   const ctx = await requireOutboundApiAccess();
@@ -24,6 +21,8 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  const locale = normalizeLocale(url.searchParams.get('locale'));
+  const billingCopy = getBillingOpsCopy(locale);
   const jobId = url.searchParams.get('jobId')?.trim() || '';
   const customerId = url.searchParams.get('customerId')?.trim() || '';
   const invoiceId = url.searchParams.get('invoiceId')?.trim() || '';
@@ -32,21 +31,33 @@ export async function GET(request: Request) {
   const forceNew = url.searchParams.get('forceNew') === '1';
 
   if (jobId && !isValidUuid(jobId)) {
-    return NextResponse.json({ error: 'Invalid job id.' }, { status: 400 });
+    return NextResponse.json(
+      { error: billingCopy.invalidJobId, code: 'invalid_job_id' },
+      { status: 400 }
+    );
   }
   if (customerId && !isValidUuid(customerId)) {
-    return NextResponse.json({ error: 'Invalid customer id.' }, { status: 400 });
+    return NextResponse.json(
+      { error: billingCopy.invalidCustomerId, code: 'invalid_customer_id' },
+      { status: 400 }
+    );
   }
   if (invoiceId && !isValidUuid(invoiceId)) {
-    return NextResponse.json({ error: 'Invalid invoice id.' }, { status: 400 });
+    return NextResponse.json(
+      { error: billingCopy.invalidInvoiceId, code: 'invalid_invoice_id' },
+      { status: 400 }
+    );
   }
   if (paymentId && !isValidUuid(paymentId)) {
-    return NextResponse.json({ error: 'Invalid payment id.' }, { status: 400 });
+    return NextResponse.json(
+      { error: billingCopy.invalidPaymentId, code: 'invalid_payment_id' },
+      { status: 400 }
+    );
   }
 
   // Receipt prefill from invoice / payment
   if (docType === 'receipt' || invoiceId || paymentId) {
-    return prefillReceipt(ctx, { invoiceId, paymentId, jobId, customerId });
+    return prefillReceipt(ctx, { invoiceId, paymentId, jobId, customerId, locale });
   }
 
   let job: {
@@ -70,7 +81,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     if (!data) {
-      return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
+      return NextResponse.json(
+        { error: billingCopy.jobNotFound, code: 'job_not_found' },
+        { status: 404 }
+      );
     }
     job = data;
   }
@@ -128,10 +142,8 @@ export async function GET(request: Request) {
       recipient_email: customer?.email || job?.customer_email || '',
       amount,
       job_title: jobTitle,
-      subject: jobTitle ? invoiceSubjectForJob(jobTitle) : 'Invoice for completed work',
-      body: jobTitle
-        ? invoiceBodyForJob(jobTitle)
-        : 'Thank you for your business. Please find your invoice details below.',
+      subject: jobTitle ? localizedInvoiceSubject(locale, jobTitle) : billingCopy.invoiceForCompletedWork,
+      body: jobTitle ? localizedInvoiceBody(locale, jobTitle) : billingCopy.thankYouBusiness,
       amount_missing: !(Number(amount) > 0)
     },
     existing_invoice: existingInvoice
@@ -149,8 +161,15 @@ export async function GET(request: Request) {
 
 async function prefillReceipt(
   ctx: Extract<Awaited<ReturnType<typeof requireOutboundApiAccess>>, { ok: true }>,
-  input: { invoiceId: string; paymentId: string; jobId: string; customerId: string }
+  input: {
+    invoiceId: string;
+    paymentId: string;
+    jobId: string;
+    customerId: string;
+    locale: ReturnType<typeof normalizeLocale>;
+  }
 ) {
+  const billingCopy = getBillingOpsCopy(input.locale);
   let invoiceRow: Record<string, unknown> | null = null;
   let outboundInvoice: Record<string, unknown> | null = null;
   let paymentRow: Record<string, unknown> | null = null;
@@ -163,7 +182,12 @@ async function prefillReceipt(
       .eq('organization_id', ctx.organizationId)
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    if (!data) return NextResponse.json({ error: 'Payment not found.' }, { status: 404 });
+    if (!data) {
+      return NextResponse.json(
+        { error: billingCopy.paymentNotFound, code: 'payment_not_found' },
+        { status: 404 }
+      );
+    }
     paymentRow = data as Record<string, unknown>;
   }
 
@@ -203,7 +227,10 @@ async function prefillReceipt(
   }
 
   if (!invoiceRow && !outboundInvoice && !paymentRow) {
-    return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 });
+    return NextResponse.json(
+      { error: billingCopy.invoiceNotFound, code: 'invoice_not_found' },
+      { status: 404 }
+    );
   }
 
   const jobId =
@@ -294,12 +321,17 @@ async function prefillReceipt(
     (invoiceRow?.invoice_number as string) ||
     (resolvedInvoiceId ? `INV-${resolvedInvoiceId.slice(0, 8).toUpperCase()}` : 'Invoice');
 
-  const money = formatMoney(amountPaid);
-  const when = formatDate(paymentDate);
-  const forJob = jobTitle ? ` for ${jobTitle}` : '';
-  let body = `Thank you. We received your payment of ${money}${forJob} on ${when}.`;
-  if (paymentMethod) body += `\nPayment method: ${paymentMethod}`;
-  if (paymentReference) body += `\nReference: ${paymentReference}`;
+  const money = formatMoneyUsd(amountPaid, input.locale);
+  const when = formatDateLocale(paymentDate, input.locale);
+  const methodLabel =
+    (paymentMethod && billingCopy.paymentMethods[paymentMethod]) || paymentMethod;
+  const body = localizedReceiptBody(input.locale, {
+    amountLabel: money,
+    whenLabel: when,
+    jobTitle,
+    paymentMethod: methodLabel,
+    paymentReference
+  });
 
   // Duplicate receipt check
   let existingReceipt: { id: string; status: string | null } | null = null;
@@ -331,7 +363,7 @@ async function prefillReceipt(
       recipient_email: recipientEmail,
       amount: amountPaid > 0 ? amountPaid : null,
       job_title: jobTitle,
-      subject: 'Payment receipt',
+      subject: localizedReceiptSubject(input.locale),
       body,
       invoice_id: invoiceRow ? String(invoiceRow.id) : resolvedInvoiceId || null,
       invoice_number: invoiceNumber,
