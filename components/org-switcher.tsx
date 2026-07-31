@@ -1,12 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import type { OrgMembership } from '@/lib/os-types';
+import { roleDisplayName } from '@/lib/role-routes';
+import { normalizeRole } from '@/lib/roles';
+
+type SwitchOrganizationResponse = {
+  destination?: string;
+};
 
 export function OrgSwitcher() {
-  const router = useRouter();
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [activeId, setActiveId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,16 +36,21 @@ export function OrgSwitcher() {
   async function switchOrg(organizationId: string) {
     if (organizationId === activeId || switching) return;
     setSwitching(true);
+
     const res = await fetch('/api/org/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ organizationId })
     });
-    setSwitching(false);
-    if (!res.ok) return;
+
+    if (!res.ok) {
+      setSwitching(false);
+      return;
+    }
+
+    const json = (await res.json().catch(() => ({}))) as SwitchOrganizationResponse;
     setActiveId(organizationId);
-    router.refresh();
-    window.location.reload();
+    window.location.assign(json.destination || '/dashboard');
   }
 
   if (!isFeatureEnabled('multiOrgSwitcher')) return null;
@@ -55,14 +64,17 @@ export function OrgSwitcher() {
         className="input org-switcher-select"
         value={activeId}
         disabled={switching}
-        onChange={(e) => void switchOrg(e.target.value)}
+        onChange={(event) => void switchOrg(event.target.value)}
         aria-label="Switch company"
       >
-        {memberships.map((m) => (
-          <option key={m.organizationId} value={m.organizationId}>
-            {m.organizationName}
-          </option>
-        ))}
+        {memberships.map((membership) => {
+          const roleName = roleDisplayName(normalizeRole(membership.role));
+          return (
+            <option key={membership.organizationId} value={membership.organizationId}>
+              {membership.organizationName} — {roleName}
+            </option>
+          );
+        })}
       </select>
     </label>
   );
