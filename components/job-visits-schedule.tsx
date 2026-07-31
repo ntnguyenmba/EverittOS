@@ -186,13 +186,13 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
         <label>Job timezone</label>
         {canManage ? (
           <select className="input" value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
-            <option value="">Use workspace default</option>
+            <option value="">Use company default</option>
             {TIME_ZONE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
         ) : (
-          <p>{TIME_ZONE_OPTIONS.find((option) => option.value === timeZone)?.label || 'Workspace default'}</p>
+          <p>{TIME_ZONE_OPTIONS.find((option) => option.value === timeZone)?.label || 'Company default'}</p>
         )}
         <p className="muted">Visit times and connected calendar events use the selected location timezone.</p>
       </div>

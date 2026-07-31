@@ -30,7 +30,7 @@ export const messages: Messages = {
     progressTitle: 'Your progress',
     advancedTools: 'More tools',
     helperSchedule: 'See what is on the calendar and assign work.',
-    helperAnalytics: 'Business performance and trends for your workspace.',
+    helperAnalytics: 'Business performance and trends for your company.',
     helperBilling: 'Invoices, payments, and your subscription.',
     pageTitles: {
       schedule: 'Calendar & work',
@@ -42,7 +42,7 @@ export const messages: Messages = {
   },
   onboarding: {
     progress: 'Step {current} of {total}',
-    loading: 'Loading your workspace…',
+    loading: 'Loading your company…',
     calendarLater: 'Calendar integration can be connected later.',
     calendarNotConfigured:
       'Calendar connection is not configured yet. You can continue and add it later from Settings.',
@@ -57,7 +57,7 @@ export const messages: Messages = {
     steps: {
       welcome: {
         title: 'Welcome to EverittOS',
-        subtitle: 'A few quick steps to set up your workspace.'
+        subtitle: 'A few quick steps to set up your company.'
       },
       business: {
         title: 'Business profile',
@@ -89,7 +89,7 @@ export const messages: Messages = {
         date: 'Date'
       },
       complete: {
-        title: 'Your workspace is ready',
+        title: 'Your company is ready',
         message:
           'You can now manage jobs, customers, schedules, team, and operations from your dashboard.'
       }
@@ -140,7 +140,7 @@ export const messages: Messages = {
       description: 'Optional setup. Skip anytime.',
       dismiss: 'Dismiss',
       continue: 'Continue setup',
-      settings: 'Workspace settings',
+      settings: 'Company settings',
       steps: [
         'Welcome',
         'Business profile',
@@ -271,10 +271,10 @@ export const messages: Messages = {
       title: 'Privacy & data',
       description: 'Control your data, communications, and compliance preferences.',
       disclosureTitle: 'What we collect',
-      disclosureBody: 'EverittOS collects only what is needed to operate your workspace.',
-      collectProfile: 'Account profile: email, role, business name, and workspace settings.',
+      disclosureBody: 'EverittOS collects only what is needed to operate your company.',
+      collectProfile: 'Account profile: email, role, business name, and company settings.',
       collectOperations: 'Operational data: jobs, customers, team, schedules, and photos you create.',
-      collectActivity: 'Activity logs: actions taken in your workspace for audit and support.',
+      collectActivity: 'Activity logs: actions taken in your company for audit and support.',
       collectPasskeys:
         'Passkey support is not enabled yet. If added later, credentials would stay on your device. EverittOS would not receive or store biometric data.',
       retention: 'Data is retained while your account is active and deleted per your account deletion request.',
@@ -330,17 +330,17 @@ export const messages: Messages = {
       active: 'Active',
       disabled: 'Disabled',
       manageBilling: 'Manage billing',
-      workspaceSettings: 'Workspace settings',
+      workspaceSettings: 'Company settings',
       subscription: 'Subscription',
       subscriptionNote: 'Cancel, resume, or change plans from billing settings.',
-      subscriptionOwnerOnly: 'Only workspace owners and admins can change billing.',
+      subscriptionOwnerOnly: 'Only company owners and admins can change billing.',
       openBilling: 'Open billing settings',
       languageTitle: 'Language',
       languageNote: 'Applies to navigation, dashboard, jobs, customers, bookings, team, schedule, billing, settings, and common buttons.',
       disableTitle: 'Disable account',
       disableNote:
-        'Disabling signs you out and blocks sign-in. Your organization data stays stored. Nothing is deleted.',
-      ownerDisableWarning: 'You are the workspace owner. Disabling only blocks your account. Transfer ownership on',
+        'Disabling signs you out and blocks sign-in. Your company data stays stored. Nothing is deleted.',
+      ownerDisableWarning: 'You are the company owner. Disabling only blocks your account. Transfer ownership on',
       restoreContact: 'Contact support to restore access:',
       disabling: 'Disabling…',
       disableConfirmTitle: 'Disable your account?',
@@ -400,8 +400,8 @@ export const messages: Messages = {
     notifications: 'Notifications',
     billing: 'Plans & billing',
     settings: 'Settings',
-    clientPortal: 'Client portal',
-    contractorPortal: 'Contractor portal',
+    clientPortal: 'Customer dashboard',
+    contractorPortal: 'Contractor dashboard',
     sectionTools: 'Tools',
     sectionInsights: 'Insights',
     inventory: 'Inventory',
@@ -409,7 +409,7 @@ export const messages: Messages = {
     photos: 'Photos'
   },
   settingsNav: {
-    workspace: 'Workspace',
+    workspace: 'Company',
     team: 'Team',
     branding: 'Branding',
     integrations: 'Integrations',
@@ -513,7 +513,7 @@ export const messages: Messages = {
       closedLeads: 'Closed leads',
       closedLeadsHelp: 'Won, closed lost, and cancelled leads.',
       activeCustomers: 'Active customers',
-      activeCustomersHelp: 'Customers currently active in your workspace.',
+      activeCustomersHelp: 'Customers currently active in your company.',
       recurringCustomers: 'Recurring customers',
       recurringCustomersHelp: 'Customers marked as recurring service accounts.',
       inactiveCustomers: 'Inactive customers',
@@ -628,10 +628,10 @@ export const messages: Messages = {
       }
     },
     role: {
-      workspaceTitle: 'Your workspace',
+      workspaceTitle: 'Your company',
       workspaceTitleTeam: 'Team command center',
       workspaceIntro: 'Track your active work, schedule, photos, reports, and team activity.',
-      workspaceIntroTeam: 'Owner and admin view across this workspace only. Each card opens the records behind the number.',
+      workspaceIntroTeam: 'Owner and admin view across this company only. Each card opens the records behind the number.',
       viewTeam: 'View team',
       manageAccess: 'Manage access',
       teamOverview: 'Team overview',
@@ -708,7 +708,7 @@ export const messages: Messages = {
     title: 'Plans & billing',
     description: 'Manage your subscription, compare plans, and upgrade when you are ready.',
     pricingTitle: 'Plans and pricing',
-    pricingSubtitle: 'Compare plans side by side. Choose any paid plan that fits your workspace.',
+    pricingSubtitle: 'Compare plans side by side. Choose any paid plan that fits your company.',
     pricingPublicLead:
       'Compare plans side by side. Start free or upgrade when you are ready — subscriptions renew monthly until canceled.',
     pricingLoading: 'Loading plans…',
@@ -717,7 +717,7 @@ export const messages: Messages = {
     cancelViaPortal: 'Canceling keeps access until the end of the current billing period. Cancellations are final and non-refundable.',
     upgradeDowngradeViaPortal:
       'To upgrade or downgrade an existing subscription, open Manage billing and change your plan in Stripe.',
-    openingPortal: 'Opening billing portal…',
+    openingPortal: 'Opening billing…',
     pricingNav: {
       signIn: 'Sign in',
       createAccount: 'Create account',
@@ -743,13 +743,13 @@ export const messages: Messages = {
     downgradeSupportNote: 'Moving to the free plan requires billing support.',
     plansFootnote:
       'Subscriptions renew automatically until canceled. All payments are final and non-refundable once processed.',
-    portalUnavailable: 'Billing portal is not configured yet.',
-    portalNotConfigured: 'Billing portal is not configured yet.',
+    portalUnavailable: 'Billing management is not configured yet.',
+    portalNotConfigured: 'Billing management is not configured yet.',
     upgradeOptions: 'Upgrade options',
     upgrade: 'Upgrade',
     health: {
       title: 'Billing status',
-      description: 'A quick overview of how your workspace billing is connected and syncing.',
+      description: 'A quick overview of how your company billing is connected and syncing.',
       loading: 'Loading billing status…',
       loadFailed: 'Unable to load billing status right now. Please try again in a moment.',
       currentPlan: 'Current plan',
@@ -769,7 +769,7 @@ export const messages: Messages = {
         stripeAccount: {
           connected: {
             title: 'Stripe account connected',
-            description: 'Your workspace is linked to a Stripe customer account.'
+            description: 'Your company is linked to a Stripe customer account.'
           },
           needs_attention: {
             title: 'Stripe account not connected yet',
@@ -797,7 +797,7 @@ export const messages: Messages = {
         billingConfiguration: {
           connected: {
             title: 'Billing configuration is ready',
-            description: 'Upgrade paths and plan pricing are available for this workspace.'
+            description: 'Upgrade paths and plan pricing are available for this company.'
           },
           needs_attention: {
             title: 'Billing configuration requires review',
@@ -825,7 +825,7 @@ export const messages: Messages = {
         billingService: {
           connected: {
             title: 'Billing service is available',
-            description: 'EverittOS can communicate with Stripe for this workspace.'
+            description: 'EverittOS can communicate with Stripe for this company.'
           },
           needs_attention: {
             title: 'Billing service needs attention',
@@ -888,7 +888,7 @@ export const messages: Messages = {
     noRefund: {
       policyShort: 'All payments are final. No refunds once payment is processed.',
       policyFull:
-        'All payments are final. EverittOS does not offer refunds for subscriptions, setup fees, digital services, AI usage, workspace access, add-ons, or partially used billing periods. You may cancel anytime to stop future renewals, but prior charges are non-refundable.',
+        'All payments are final. EverittOS does not offer refunds for subscriptions, setup fees, digital services, AI usage, company access, add-ons, or partially used billing periods. You may cancel anytime to stop future renewals, but prior charges are non-refundable.',
       checkoutAck: 'I understand all payments are final and non-refundable.',
       ackRequired: 'Confirm the no-refund policy before checkout.',
       cancelNote: 'Canceling stops future renewals only. Prior charges are non-refundable.'
@@ -904,8 +904,8 @@ export const messages: Messages = {
   },
   aiUsage: {
     title: 'AI Usage',
-    description: 'Prompt counts, estimated costs, quota tracking, and staff usage metrics for workspace admins.',
-    adminOnly: 'Only workspace owners and admins can view AI usage metrics.'
+    description: 'Prompt counts, estimated costs, quota tracking, and staff usage metrics for company admins.',
+    adminOnly: 'Only company owners and admins can view AI usage metrics.'
   },
   language: {
     title: 'Language',

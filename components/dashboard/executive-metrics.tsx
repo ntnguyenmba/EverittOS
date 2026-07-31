@@ -70,7 +70,7 @@ export function ExecutiveMetricsPanel() {
   return (
     <section className="executive-metrics">
       <h3 className="card-title-sm">Executive overview</h3>
-      <p className="muted">Organization performance from your workspace data.</p>
+      <p className="muted">Company performance from your business data.</p>
 
       <div className="stats-grid executive-stats">
         <div className="stat-card">
@@ -86,7 +86,7 @@ export function ExecutiveMetricsPanel() {
           <strong>{metrics.reportCompletionRatePct}%</strong>
         </div>
         <div className="stat-card">
-          <span>Client portal views (30d)</span>
+          <span>Customer dashboard views (30d)</span>
           <strong>{metrics.clientPortalViews30d}</strong>
         </div>
         {metrics.mrrUsd > 0 ? (

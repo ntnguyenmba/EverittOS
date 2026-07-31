@@ -168,14 +168,16 @@ export function buildOccurrenceSchedule(
   durationMinutes: number | null | undefined,
   timezone: string | null | undefined
 ): GeneratedOccurrence {
-  const time = (preferredStartTime || '09:00').trim();
-  const match = time.match(/^(\d{2}):(\d{2})$/);
-  const hh = match?.[1] || '09';
+  const match = String(preferredStartTime || '')
+    .trim()
+    .match(/^(\d{2}):(\d{2})$/);
+  // No silent 9:00 AM default. Missing time uses midnight wall-clock storage only.
+  const hh = match?.[1] || '00';
   const mm = match?.[2] || '00';
   const scheduledStart = `${occurrenceDate}T${hh}:${mm}:00`;
   const minutes = Number(durationMinutes);
   let scheduledEnd: string | null = null;
-  if (Number.isFinite(minutes) && minutes > 0) {
+  if (match && Number.isFinite(minutes) && minutes > 0) {
     const parts = parseDateParts(occurrenceDate);
     if (parts) {
       const startUtc = Date.UTC(parts.y, parts.m - 1, parts.d, Number(hh), Number(mm));
@@ -190,6 +192,26 @@ export function buildOccurrenceSchedule(
     scheduledStart,
     scheduledEnd
   };
+}
+
+export function formatTimezoneAbbreviation(
+  timezone: string | null | undefined,
+  date: string,
+  time?: string | null
+): string {
+  if (!timezone || !isValidTimeZone(timezone)) return '';
+  try {
+    const clock = /^\d{2}:\d{2}$/.test(String(time || '').trim()) ? String(time).trim().slice(0, 5) : '12:00';
+    // Interpret the civil local time in the property timezone for the abbreviation (handles DST).
+    const probe = new Date(`${date}T${clock}:00`);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short'
+    }).formatToParts(Number.isNaN(probe.getTime()) ? new Date() : probe);
+    return parts.find((part) => part.type === 'timeZoneName')?.value || '';
+  } catch {
+    return '';
+  }
 }
 
 export function generateOccurrences(
@@ -230,7 +252,11 @@ export function summarizeRecurrence(input: RecurringSeriesInput): string {
   const { interval, intervalUnit } = resolveRecurrenceInterval(input);
   const weekday = input.weekday ?? weekdayCivil(input.startDate);
   const dayLabel = WEEKDAY_LABELS[weekday] || 'the selected day';
-  const timeLabel = input.preferredStartTime ? ` at ${formatTimeLabel(input.preferredStartTime)}` : '';
+  const hasTime = Boolean(input.preferredStartTime && /^\d{2}:\d{2}$/.test(input.preferredStartTime.trim()));
+  const tzAbbrev = formatTimezoneAbbreviation(input.timezone, input.startDate, input.preferredStartTime);
+  const timeLabel = hasTime
+    ? ` at ${formatTimeLabel(input.preferredStartTime!)}${tzAbbrev ? ` ${tzAbbrev}` : ''}`
+    : '';
   let cadence = '';
   if (input.frequency === 'weekly' || (intervalUnit === 'weeks' && interval === 1)) cadence = 'Every week';
   else if (input.frequency === 'biweekly' || (intervalUnit === 'weeks' && interval === 2)) cadence = 'Every two weeks';

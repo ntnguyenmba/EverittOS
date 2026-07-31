@@ -8,9 +8,9 @@ export default function ClientsPage() {
   return (
     <OsModulePage
       title="Clients"
-      description="Client portal access, shared jobs, and secure client-facing records."
+      description="Customer dashboard access, shared jobs, and secure customer-facing records."
       requiredPlan="growth"
-      requiredFeature="Client portal"
+      requiredFeature="Customer dashboard"
       featureCheck={(plan) => limitsForPlan(plan).clientPortal}
       actions={[
         { label: 'Open client portal', href: '/portal/client' },

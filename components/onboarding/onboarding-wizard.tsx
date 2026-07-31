@@ -80,7 +80,7 @@ export function OnboardingWizard() {
 
   const requireWorkspace = useCallback(() => {
     if (orgId) return true;
-    setFeedback(errorFeedback('Workspace is still loading. Wait a moment and try again.'));
+    setFeedback(errorFeedback('Your company is still loading. Wait a moment and try again.'));
     return false;
   }, [orgId]);
 
@@ -209,7 +209,7 @@ export function OnboardingWizard() {
       }
 
       if (!org) {
-        setWorkspaceError('Could not load your workspace. Refresh the page or sign in again.');
+        setWorkspaceError('Could not load your company. Refresh the page or sign in again.');
       }
 
       if (org) {

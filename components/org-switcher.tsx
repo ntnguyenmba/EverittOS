@@ -50,7 +50,7 @@ export function OrgSwitcher() {
 
   return (
     <label className="org-switcher">
-      <span className="org-switcher-label">Workspace</span>
+      <span className="org-switcher-label">Company</span>
       <select
         className="input org-switcher-select"
         value={activeId}

@@ -45,7 +45,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load workspace deletion details.');
+      setMessage(json.error || 'Unable to load company deletion details.');
       return;
     }
 
@@ -70,13 +70,13 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to delete workspace.');
+      setMessage(json.error || 'Unable to delete company.');
       return;
     }
 
     dialogRef.current?.close();
     setPreview({ ...preview, scheduledForDeletion: true, deletionScheduledAt: json.deletionScheduledAt || null });
-    setMessage('This workspace is scheduled for deletion.');
+    setMessage('This company is scheduled for deletion.');
   }
 
   async function restoreWorkspace() {
@@ -87,7 +87,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to restore workspace.');
+      setMessage(json.error || 'Unable to restore company.');
       return;
     }
 
@@ -96,17 +96,17 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
         ? { ...current, scheduledForDeletion: false, deletionScheduledAt: null }
         : current
     );
-    setMessage('Workspace deletion canceled. Your workspace has been restored.');
+    setMessage('Company deletion canceled. Your company has been restored.');
   }
 
   if (!canManage) return null;
 
   return (
     <section className="settings-card settings-danger-zone">
-      <h3>Delete workspace</h3>
+      <h3>Delete company</h3>
       {preview?.scheduledForDeletion ? (
         <>
-          <p className="settings-warning">This workspace is scheduled for deletion.</p>
+          <p className="settings-warning">This company is scheduled for deletion.</p>
           <p className="muted">
             You can restore it during the {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery window
             {preview.deletionScheduledAt
@@ -116,14 +116,14 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
           </p>
           <div className="settings-actions">
             <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void restoreWorkspace()}>
-              Restore workspace
+              Restore company
             </button>
           </div>
         </>
       ) : (
         <>
           <p className="muted">
-            Permanently remove this workspace and its customers, jobs, bookings, files, templates, and team access
+            Permanently remove this company and its customers, jobs, bookings, files, templates, and team access
             after a {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery window.
           </p>
           {preview?.hasActivePaidSubscription ? (
@@ -133,7 +133,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
           ) : null}
           <div className="settings-actions">
             <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void loadPreview()}>
-              Delete workspace
+              Delete company
             </button>
           </div>
         </>
@@ -143,7 +143,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
 
       <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="delete-workspace-title">
         <form method="dialog" className="confirm-dialog-body" onSubmit={(event) => event.preventDefault()}>
-          <h3 id="delete-workspace-title">Delete workspace?</h3>
+          <h3 id="delete-workspace-title">Delete company?</h3>
           {preview ? (
             <>
               <p className="muted">
@@ -160,7 +160,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
                 <li>{preview.teamMembers} team members</li>
               </ul>
               <label className="settings-field">
-                <span>Type the workspace name to continue</span>
+                <span>Type the company name to continue</span>
                 <input
                   className="input"
                   value={confirmation}

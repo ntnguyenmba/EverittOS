@@ -465,7 +465,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
       </details>
 
       <details className="card" style={{ marginBottom: 18 }}>
-        <summary><strong>Portal access</strong></summary>
+        <summary><strong>Customer dashboard access</strong></summary>
         <div style={{ marginTop: 16 }}>
           {!limitsForPlan(plan).clientPortal ? (
             <p className="muted">Available on Growth and higher plans.</p>

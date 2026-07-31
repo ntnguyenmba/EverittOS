@@ -185,7 +185,7 @@ export default function JobReportPage({ params }: PageProps) {
             {!customerView ? <p>Assigned email: {job?.assigned_email?.trim() || 'Not set'}</p> : null}
             {!customerView && departmentName ? <p>Department: {departmentName}</p> : null}
             <p>Notes: {job.customer_notes || job.notes || 'None'}</p>
-            {showInternalNotes && job.internal_notes ? <p>Internal notes: {job.internal_notes}</p> : null}
+            {showInternalNotes && job.internal_notes ? <p>Team notes: {job.internal_notes}</p> : null}
             <p>Start: {job.scheduled_start || job.start_date || 'Not set'}</p>
             <p>End: {job.scheduled_end || job.due_date || 'Not set'}</p>
             <p>Completed: {job.completed_at ? new Date(job.completed_at).toLocaleString() : 'Not completed'}</p>

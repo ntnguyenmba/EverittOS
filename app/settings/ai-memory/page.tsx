@@ -85,7 +85,7 @@ export default function AiMemorySettingsPage() {
 
   if (loading) {
     return (
-      <SettingsShell plan={plan} role={role} title="AI Memory" description="Organization context for Ask Everitt.">
+      <SettingsShell plan={plan} role={role} title="AI Memory" description="Company context for Ask Everitt.">
         <p>Loading...</p>
       </SettingsShell>
     );
@@ -93,7 +93,7 @@ export default function AiMemorySettingsPage() {
 
   if (!canAccessFeature(plan, 'aiAccess')) {
     return (
-      <SettingsShell plan={plan} role={role} title="AI Memory" description="Organization context for Ask Everitt.">
+      <SettingsShell plan={plan} role={role} title="AI Memory" description="Company context for Ask Everitt.">
         <PlanLockedMessage feature="AI Memory" requiredPlan="Business" />
       </SettingsShell>
     );
@@ -101,7 +101,7 @@ export default function AiMemorySettingsPage() {
 
   if (!canManageOrganizationSettings(role)) {
     return (
-      <SettingsShell plan={plan} role={role} title="AI Memory" description="Organization context for Ask Everitt.">
+      <SettingsShell plan={plan} role={role} title="AI Memory" description="Company context for Ask Everitt.">
         <div className="settings-card">
           <p>Only workspace owners and admins can edit AI memory.</p>
         </div>

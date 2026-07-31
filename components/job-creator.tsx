@@ -649,7 +649,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             startDate,
             endDate: recurrenceEndDate || null,
             occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
-            preferredStartTime: firstVisit?.start_time || '09:00'
+            preferredStartTime: firstVisit?.start_time || null
           }
         })
       });
@@ -796,15 +796,17 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   });
   const previewContractorPay = previewFinance.expectedContractorCost;
   const previewProfit = previewFinance.expectedProfit;
+  const isRecurring = recurrenceFrequency !== 'none';
+  const primaryVisit = visits[0];
   const recurrenceSummary = summarizeRecurrence({
     frequency: recurrenceFrequency,
     interval: Number(recurrenceInterval) || 1,
     intervalUnit: recurrenceIntervalUnit,
     weekday: recurrenceWeekday,
-    startDate: visits[0]?.visit_date || new Date().toISOString().slice(0, 10),
+    startDate: primaryVisit?.visit_date || new Date().toISOString().slice(0, 10),
     endDate: recurrenceEndDate || null,
     occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
-    preferredStartTime: visits[0]?.start_time || '09:00',
+    preferredStartTime: primaryVisit?.start_time || null,
     timezone: timeZone || null
   });
   const selectedProperty = selectedCustomer?.properties.find((p) => p.id === selectedPropertyId) || null;
@@ -1034,13 +1036,19 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </section>
 
         <section className="job-create-section">
-          <h4>4. One-time or recurring</h4>
-          <label htmlFor="recurrence-frequency">Repeats</label>
+          <h4>4. Schedule</h4>
+          <label htmlFor="recurrence-frequency">Schedule type</label>
           <select
             id="recurrence-frequency"
             className="input"
             value={recurrenceFrequency}
-            onChange={(e) => setRecurrenceFrequency(e.target.value as RecurrenceFrequency)}
+            onChange={(e) => {
+              const next = e.target.value as RecurrenceFrequency;
+              setRecurrenceFrequency(next);
+              if (next !== 'none' && visits.length > 1) {
+                setVisits((rows) => [rows[0]]);
+              }
+            }}
           >
             <option value="none">Does not repeat</option>
             <option value="weekly">Weekly</option>
@@ -1049,7 +1057,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             <option value="monthly">Monthly</option>
             <option value="custom">Custom</option>
           </select>
-          {recurrenceFrequency !== 'none' ? (
+
+          {isRecurring ? (
             <>
               <label htmlFor="recurrence-weekday">Weekday</label>
               <select
@@ -1077,42 +1086,81 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   </div>
                 </div>
               ) : null}
+              {primaryVisit ? (
+                <div className="form visit-editor" style={{ marginTop: 12 }}>
+                  <label htmlFor="recurring-start-date">Start date</label>
+                  <input
+                    id="recurring-start-date"
+                    className="input"
+                    type="date"
+                    value={primaryVisit.visit_date}
+                    onChange={(e) => updateVisit(primaryVisit.id, { visit_date: e.target.value })}
+                  />
+                  <div className="grid-2">
+                    <div className="form-group">
+                      <label htmlFor="recurring-start-time">Start time</label>
+                      <input
+                        id="recurring-start-time"
+                        className="input"
+                        type="time"
+                        value={primaryVisit.start_time}
+                        onChange={(e) => updateVisit(primaryVisit.id, { start_time: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="recurring-end-time">End time</label>
+                      <input
+                        id="recurring-end-time"
+                        className="input"
+                        type="time"
+                        value={primaryVisit.end_time}
+                        onChange={(e) => updateVisit(primaryVisit.id, { end_time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <label htmlFor="job-timezone">Job timezone</label>
+              <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                <option value="">Use company default</option>
+                {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <p className="muted">Filled from the property address when available. You can change it.</p>
               <details open={showRecurrenceAdvanced} onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}>
                 <summary>Advanced recurrence options</summary>
                 <label style={{ marginTop: 8 }}>End date (optional)</label>
                 <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} />
                 <label>Number of visits (optional)</label>
                 <input className="input" type="number" min="1" value={recurrenceLimit} onChange={(e) => setRecurrenceLimit(e.target.value)} />
-                <p className="muted">Leave end date and visit count blank for no end date. Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
+                <p className="muted">Leave blank for no end date. Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
               </details>
               <p className="muted" style={{ marginTop: 8 }}>{recurrenceSummary}</p>
             </>
-          ) : null}
-        </section>
-
-        <section className="job-create-section">
-          <h4>Schedule</h4>
-          <p className="muted">Add one or more scheduled visits. Times are saved in the timezone selected below.</p>
-          <label htmlFor="job-timezone">Job timezone</label>
-          <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
-            <option value="">Use workspace default</option>
-            {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <p className="muted">Timezone is filled from the property address when available.</p>
-          {visits.map((visit, index) => (
-            <div key={visit.id} className="form visit-editor">
-              <label>Visit {index + 1}</label>
-              <input className="input" type="date" value={visit.visit_date} onChange={(e) => updateVisit(visit.id, { visit_date: e.target.value })} />
-              <div className="grid-2">
-                <div className="form-group"><label>Start time</label><input className="input" type="time" value={visit.start_time} onChange={(e) => updateVisit(visit.id, { start_time: e.target.value })} /></div>
-                <div className="form-group"><label>End time</label><input className="input" type="time" value={visit.end_time} onChange={(e) => updateVisit(visit.id, { end_time: e.target.value })} /></div>
-              </div>
-              <label>Visit notes</label>
-              <input className="input" value={visit.notes} onChange={(e) => updateVisit(visit.id, { notes: e.target.value })} />
-              {visits.length > 1 ? <button className="btn" type="button" onClick={() => removeVisit(visit.id)}>Remove visit</button> : null}
-            </div>
-          ))}
-          <button className="btn" type="button" onClick={() => setVisits((rows) => [...rows, newVisit()])}>Add another visit</button>
+          ) : (
+            <>
+              <p className="muted">Add one or more visits. Times use the job timezone below.</p>
+              <label htmlFor="job-timezone">Job timezone</label>
+              <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                <option value="">Use company default</option>
+                {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <p className="muted">Filled from the property address when available. You can change it.</p>
+              {visits.map((visit, index) => (
+                <div key={visit.id} className="form visit-editor">
+                  <label>Visit {index + 1}</label>
+                  <input className="input" type="date" value={visit.visit_date} onChange={(e) => updateVisit(visit.id, { visit_date: e.target.value })} />
+                  <div className="grid-2">
+                    <div className="form-group"><label>Start time</label><input className="input" type="time" value={visit.start_time} onChange={(e) => updateVisit(visit.id, { start_time: e.target.value })} /></div>
+                    <div className="form-group"><label>End time</label><input className="input" type="time" value={visit.end_time} onChange={(e) => updateVisit(visit.id, { end_time: e.target.value })} /></div>
+                  </div>
+                  <label>Visit notes</label>
+                  <input className="input" value={visit.notes} onChange={(e) => updateVisit(visit.id, { notes: e.target.value })} />
+                  {visits.length > 1 ? <button className="btn" type="button" onClick={() => removeVisit(visit.id)}>Remove visit</button> : null}
+                </div>
+              ))}
+              <button className="btn" type="button" onClick={() => setVisits((rows) => [...rows, newVisit()])}>Add another visit</button>
+            </>
+          )}
         </section>
 
         <section className="job-create-section">

@@ -330,7 +330,7 @@ export const messages: Messages = {
       active: 'Đang hoạt động',
       disabled: 'Đã vô hiệu hóa',
       manageBilling: 'Quản lý thanh toán',
-      workspaceSettings: 'Cài đặt không gian làm việc',
+      workspaceSettings: 'Cài đặt công ty',
       subscription: 'Đăng ký',
       subscriptionNote: 'Hủy, tiếp tục hoặc đổi gói trong cài đặt thanh toán.',
       subscriptionOwnerOnly: 'Chỉ chủ sở hữu và quản trị viên mới có thể thay đổi thanh toán.',
@@ -400,8 +400,8 @@ export const messages: Messages = {
     notifications: 'Thông báo',
     billing: 'Gói & thanh toán',
     settings: 'Cài đặt',
-    clientPortal: 'Cổng khách hàng',
-    contractorPortal: 'Cổng nhà thầu',
+    clientPortal: 'Bảng điều khiển khách hàng',
+    contractorPortal: 'Bảng điều khiển nhà thầu',
     sectionTools: 'Công cụ',
     sectionInsights: 'Phân tích',
     inventory: 'Kho hàng',
@@ -409,7 +409,7 @@ export const messages: Messages = {
     photos: 'Ảnh'
   },
   settingsNav: {
-    workspace: 'Không gian làm việc',
+    workspace: 'Công ty',
     team: 'Nhóm',
     branding: 'Thương hiệu',
     integrations: 'Tích hợp',
@@ -628,7 +628,7 @@ export const messages: Messages = {
       }
     },
     role: {
-      workspaceTitle: 'Không gian làm việc của bạn',
+      workspaceTitle: 'Công ty của bạn',
       workspaceTitleTeam: 'Trung tâm điều phối nhóm',
       workspaceIntro: 'Theo dõi công việc, lịch, ảnh, báo cáo và hoạt động nhóm.',
       workspaceIntroTeam: 'Góc nhìn chủ sở hữu và quản trị trong không gian này. Mỗi thẻ mở bản ghi đằng sau con số.',
@@ -718,7 +718,7 @@ export const messages: Messages = {
       'Hủy vẫn giữ quyền truy cập đến hết kỳ thanh toán hiện tại. Việc hủy là cuối cùng và không hoàn tiền.',
     upgradeDowngradeViaPortal:
       'Để nâng cấp hoặc hạ cấp đăng ký hiện có, mở Quản lý thanh toán và đổi gói trên Stripe.',
-    openingPortal: 'Đang mở cổng thanh toán…',
+    openingPortal: 'Đang mở thanh toán…',
     pricingNav: {
       signIn: 'Đăng nhập',
       createAccount: 'Tạo tài khoản',

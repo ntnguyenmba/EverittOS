@@ -61,7 +61,7 @@ export default function HelpCenterPage() {
         </div>
 
         <div className="card" style={{ marginTop: 20 }}>
-          <h2>Workspace setup checklist</h2>
+          <h2>Company setup checklist</h2>
           <ul>
             {setupChecks.map((item) => (
               <li key={item}>{item}</li>

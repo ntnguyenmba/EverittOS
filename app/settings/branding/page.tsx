@@ -129,7 +129,7 @@ export default function BrandingSettingsPage() {
       ) : null}
 
       <form className="settings-card" onSubmit={saveBranding}>
-        <h3>Organization branding</h3>
+        <h3>Company branding</h3>
         <label className="auth-field">
           <span>Company name</span>
           <input className="input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />

@@ -204,7 +204,7 @@ export default function SecuritySettingsPage() {
       {canManageOrganizationSettings(role) ? (
         <>
           <div className="settings-card">
-            <h3>Organization security audit</h3>
+            <h3>Company security audit</h3>
             <p className="muted">Sign-in and security events across your workspace.</p>
             <SecurityActivityLog events={orgEvents} emptyLabel="No organization security events recorded yet." />
           </div>

@@ -332,7 +332,7 @@ export const messages: Messages = {
       active: 'Activa',
       disabled: 'Desactivada',
       manageBilling: 'Gestionar facturación',
-      workspaceSettings: 'Configuración del espacio',
+      workspaceSettings: 'Configuración de la empresa',
       subscription: 'Suscripción',
       subscriptionNote: 'Cancele, reanude o cambie planes desde facturación.',
       subscriptionOwnerOnly: 'Solo propietarios y administradores pueden cambiar la facturación.',
@@ -402,8 +402,8 @@ export const messages: Messages = {
     notifications: 'Notificaciones',
     billing: 'Planes y facturación',
     settings: 'Configuración',
-    clientPortal: 'Portal del cliente',
-    contractorPortal: 'Portal del contratista',
+    clientPortal: 'Panel del cliente',
+    contractorPortal: 'Panel del contratista',
     sectionTools: 'Herramientas',
     sectionInsights: 'Información',
     inventory: 'Inventario',
@@ -411,7 +411,7 @@ export const messages: Messages = {
     photos: 'Fotos'
   },
   settingsNav: {
-    workspace: 'Espacio de trabajo',
+    workspace: 'Empresa',
     team: 'Equipo',
     branding: 'Marca',
     integrations: 'Integraciones',
@@ -630,7 +630,7 @@ export const messages: Messages = {
       }
     },
     role: {
-      workspaceTitle: 'Su espacio de trabajo',
+      workspaceTitle: 'Su empresa',
       workspaceTitleTeam: 'Centro de mando del equipo',
       workspaceIntro: 'Siga su trabajo activo, horario, fotos, informes y actividad del equipo.',
       workspaceIntroTeam: 'Vista de propietario y administrador solo en este espacio. Cada tarjeta abre los registros detrás del número.',
@@ -720,7 +720,7 @@ export const messages: Messages = {
       'Cancelar mantiene el acceso hasta el final del periodo de facturación actual. Las cancelaciones son finales y no reembolsables.',
     upgradeDowngradeViaPortal:
       'Para actualizar o degradar una suscripción existente, abra Gestionar facturación y cambie su plan en Stripe.',
-    openingPortal: 'Abriendo portal de facturación…',
+    openingPortal: 'Abriendo facturación…',
     pricingNav: {
       signIn: 'Iniciar sesión',
       createAccount: 'Crear cuenta',

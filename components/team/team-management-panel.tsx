@@ -311,7 +311,7 @@ export function TeamManagementPanel({ showAuditHistory = false }: TeamManagement
     const org = await ensureOrganizationForUser(user.id);
     if (!org) {
       setLoading(false);
-      feedback.error('Workspace is still setting up. Refresh the page or open the dashboard to continue.');
+      feedback.error('Your company is still setting up. Refresh the page or open the dashboard to continue.');
       return;
     }
 

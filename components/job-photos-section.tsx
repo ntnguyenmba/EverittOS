@@ -7,7 +7,7 @@ import { FEEDBACK } from '@/lib/feedback-labels';
 import { EmptyState } from '@/components/empty-state';
 import { EMPTY_COPY } from '@/lib/empty-copy';
 import { compressImageFile } from '@/lib/image-compress';
-import { JOB_PHOTO_TAGS, photoTagLabel, type JobPhotoTag } from '@/lib/job-photo-tags';
+import { JOB_PHOTO_TAGS, type JobPhotoTag } from '@/lib/job-photo-tags';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import {
   fetchJobPhotosWithUrls,
@@ -82,7 +82,9 @@ export function JobPhotosSection({
   const [dragOverTag, setDragOverTag] = useState<JobPhotoTag | null>(null);
   const [currentUserId, setCurrentUserId] = useState('');
   const [canDeleteAny, setCanDeleteAny] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const normalizedPlan = normalizePlan(plan);
 
   const loadPhotos = useCallback(async () => {
@@ -276,7 +278,23 @@ export function JobPhotosSection({
   function photoCategoryLabel(tag: JobPhotoTag) {
     if (tag === 'before') return financeCopy.photoBefore;
     if (tag === 'after') return financeCopy.photoAfter;
-    return financeCopy.photoOther;
+    return financeCopy.photoProgress;
+  }
+
+  function sectionTitle(tag: JobPhotoTag, count: number) {
+    const label =
+      tag === 'before' ? 'Before photos' : tag === 'after' ? 'After photos' : 'Progress photos';
+    return count > 0 ? `${label} (${count})` : label;
+  }
+
+  function actionLabels(tag: JobPhotoTag) {
+    if (tag === 'before') {
+      return { camera: 'Take before photo', library: 'Choose before photos' };
+    }
+    if (tag === 'after') {
+      return { camera: 'Take after photo', library: 'Choose after photos' };
+    }
+    return { camera: 'Take progress photo', library: 'Add progress photos' };
   }
 
   async function deletePhoto(photoId: string) {
@@ -299,9 +317,14 @@ export function JobPhotosSection({
     onChange?.();
   }
 
-  function openFilePicker(tag: JobPhotoTag) {
+  function openLibraryPicker(tag: JobPhotoTag) {
     setActiveTag(tag);
-    fileInputRef.current?.click();
+    libraryInputRef.current?.click();
+  }
+
+  function openCameraPicker(tag: JobPhotoTag) {
+    setActiveTag(tag);
+    cameraInputRef.current?.click();
   }
 
   async function openNativeCamera(tag: JobPhotoTag) {
@@ -313,11 +336,7 @@ export function JobPhotosSection({
       }
       return;
     }
-    const list = new DataTransfer();
-    for (const file of result.files) {
-      list.items.add(file);
-    }
-    await uploadFiles(list.files, tag);
+    await uploadFiles(result.files, tag);
   }
 
   async function openNativeLibrary(tag: JobPhotoTag) {
@@ -329,11 +348,10 @@ export function JobPhotosSection({
       }
       return;
     }
-    const list = new DataTransfer();
-    for (const file of result.files) {
-      list.items.add(file);
+    if (result.skippedInvalid) {
+      appFeedback.error(`${result.skippedInvalid} file(s) could not be used and were skipped.`);
     }
-    await uploadFiles(list.files, tag);
+    await uploadFiles(result.files, tag);
   }
 
   function onDrop(event: React.DragEvent, tag: JobPhotoTag) {
@@ -349,6 +367,8 @@ export function JobPhotosSection({
     tag,
     items: photos.filter((p) => resolvePhotoType(p) === tag)
   }));
+  const orderedPhotos = grouped.flatMap(({ items }) => items);
+  const previewPhoto = previewIndex !== null ? orderedPhotos[previewIndex] : null;
 
   const progressLabel = uploadProgress
     ? uploadProgress.step === 'compressing'
@@ -358,67 +378,74 @@ export function JobPhotosSection({
         : `Saving ${uploadProgress.current} of ${uploadProgress.total}…`
     : null;
 
+  const uploadTags: JobPhotoTag[] = [...PRIMARY_PHOTO_TYPES, 'progress'];
+
   return (
-    <section className="job-photos-section" aria-label="Before and after photos">
+    <section className="job-photos-section" aria-label="Job photos">
       {showComparison && photos.length > 0 ? <PhotoComparisonSection photos={photos} /> : null}
 
       {uploadEnabled ? (
         <div className="before-after-upload-grid">
-          {PRIMARY_PHOTO_TYPES.map((tag) => (
-            <div
-              key={tag}
-              className={`photo-dropzone photo-dropzone-${tag}${dragOverTag === tag ? ' photo-dropzone-active' : ''}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOverTag(tag);
-                setActiveTag(tag);
-              }}
-              onDragLeave={() => setDragOverTag(null)}
-              onDrop={(e) => onDrop(e, tag)}
-            >
-              <p className="photo-dropzone-title">{photoTagLabel(tag)} photos</p>
-              <p className="muted">
-                Drag images here or use your camera. Large files are compressed automatically before upload.
-              </p>
-              <button
-                type="button"
-                className="btn btn-primary photo-capture-btn"
-                disabled={uploading}
-                onClick={() => (isNativePlatform() ? void openNativeCamera(tag) : openFilePicker(tag))}
+          {uploadTags.map((tag) => {
+            const labels = actionLabels(tag);
+            const count = photos.filter((photo) => resolvePhotoType(photo) === tag).length;
+            return (
+              <div
+                key={tag}
+                className={`photo-dropzone photo-dropzone-${tag}${dragOverTag === tag ? ' photo-dropzone-active' : ''}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverTag(tag);
+                  setActiveTag(tag);
+                }}
+                onDragLeave={() => setDragOverTag(null)}
+                onDrop={(e) => onDrop(e, tag)}
               >
-                {uploading && activeTag === tag ? FEEDBACK.loading : `Add ${photoTagLabel(tag).toLowerCase()} photo`}
-              </button>
-              {isNativePlatform() ? (
+                <p className="photo-dropzone-title">{sectionTitle(tag, count)}</p>
+                <p className="muted">
+                  {tag === 'progress'
+                    ? 'Optional photos during the job. Large files are compressed automatically.'
+                    : 'Drag images here, take a photo, or choose from your library.'}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary photo-capture-btn"
+                  disabled={uploading}
+                  onClick={() => (isNativePlatform() ? void openNativeCamera(tag) : openCameraPicker(tag))}
+                >
+                  {uploading && activeTag === tag ? FEEDBACK.loading : labels.camera}
+                </button>
                 <button
                   type="button"
                   className="btn photo-capture-btn"
                   disabled={uploading}
-                  onClick={() => void openNativeLibrary(tag)}
+                  onClick={() => (isNativePlatform() ? void openNativeLibrary(tag) : openLibraryPicker(tag))}
                 >
-                  Choose from library
+                  {labels.library}
                 </button>
-              ) : null}
-            </div>
-          ))}
+              </div>
+            );
+          })}
 
-          <div className="photo-progress-upload">
-            <p className="muted">Optional progress photos during the job:</p>
-            <button
-              type="button"
-              className="btn photo-capture-btn"
-              disabled={uploading}
-              onClick={() => (isNativePlatform() ? void openNativeLibrary('progress') : openFilePicker('progress'))}
-            >
-              {uploading ? FEEDBACK.loading : 'Add progress photo'}
-            </button>
-          </div>
-
+          {/* Library: multiple selection, no forced camera capture (iPhone Albums). */}
           <input
-            ref={fileInputRef}
+            ref={libraryInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="photo-file-input"
+            disabled={uploading}
+            onChange={(e) => {
+              void uploadFiles(e.target.files, activeTag);
+              e.target.value = '';
+            }}
+          />
+          {/* Camera: single capture when supported by the browser. */}
+          <input
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
-            multiple
             className="photo-file-input"
             disabled={uploading}
             onChange={(e) => {
@@ -453,15 +480,23 @@ export function JobPhotosSection({
         grouped.map(({ tag, items }) =>
           items.length > 0 ? (
             <div key={tag} className="photo-tag-group">
-              <h4>{photoTagLabel(tag)} ({items.length})</h4>
-              <div className="photo-grid">
+              <h4>{sectionTitle(tag, items.length)}</h4>
+              <div className="photo-grid photo-grid-large">
                 {items.map((photo) => {
                   const canDelete = canDeleteAny || photo.user_id === currentUserId;
                   const photoType = resolvePhotoType(photo);
+                  const absoluteIndex = orderedPhotos.findIndex((row) => row.id === photo.id);
                   return (
                     <figure key={photo.id} className="photo-thumb">
                       {photo.url ? (
-                        <img src={photo.url} alt={`${photoTagLabel(photoType)} photo`} loading="lazy" />
+                        <button
+                          type="button"
+                          className="photo-thumb-open"
+                          onClick={() => setPreviewIndex(absoluteIndex)}
+                          aria-label={`Open ${photoCategoryLabel(photoType)} photo`}
+                        >
+                          <img src={photo.url} alt={`${photoCategoryLabel(photoType)} photo`} loading="lazy" />
+                        </button>
                       ) : (
                         <div className="before-after-empty">Preview unavailable</div>
                       )}
@@ -474,7 +509,6 @@ export function JobPhotosSection({
                         {photo.uploader_display_name ? (
                           <span className="photo-meta-line">By {photo.uploader_display_name}</span>
                         ) : null}
-                        {photo.file_name ? <span className="photo-meta-line">{photo.file_name}</span> : null}
                         {photo.file_size_bytes ? (
                           <span className="photo-meta-line">{formatFileSize(photo.file_size_bytes)}</span>
                         ) : null}
@@ -529,6 +563,59 @@ export function JobPhotosSection({
             </div>
           ) : null
         )}
+
+      {previewPhoto?.url ? (
+        <div
+          className="photo-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo preview"
+          onClick={() => setPreviewIndex(null)}
+        >
+          <div className="photo-lightbox-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="photo-lightbox-toolbar">
+              <span>
+                {photoCategoryLabel(resolvePhotoType(previewPhoto))}
+                {previewPhoto.uploader_display_name ? ` · By ${previewPhoto.uploader_display_name}` : ''}
+              </span>
+              <button type="button" className="btn" onClick={() => setPreviewIndex(null)}>
+                Close
+              </button>
+            </div>
+            <img src={previewPhoto.url} alt={`${photoCategoryLabel(resolvePhotoType(previewPhoto))} photo preview`} />
+            <div className="photo-lightbox-nav">
+              <button
+                type="button"
+                className="btn"
+                disabled={previewIndex === null || previewIndex <= 0}
+                onClick={() => setPreviewIndex((current) => (current === null ? current : Math.max(0, current - 1)))}
+              >
+                Previous
+              </button>
+              <span className="muted">
+                {(previewIndex ?? 0) + 1} of {orderedPhotos.length}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                disabled={previewIndex === null || previewIndex >= orderedPhotos.length - 1}
+                onClick={() =>
+                  setPreviewIndex((current) =>
+                    current === null ? current : Math.min(orderedPhotos.length - 1, current + 1)
+                  )
+                }
+              >
+                Next
+              </button>
+            </div>
+            <p className="muted">
+              {[formatPhotoWhen(previewPhoto.created_at), formatFileSize(previewPhoto.file_size_bytes)]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

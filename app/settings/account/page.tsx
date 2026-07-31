@@ -292,7 +292,7 @@ export default function AccountSettingsPage() {
         role={role}
         retentionNote={
           isPortalMember
-            ? 'Deleting your login removes portal access and personal profile details. Organization-owned job, invoice, payment, and audit records remain with the service provider when required.'
+            ? 'Deleting your login removes dashboard access and personal profile details. Company-owned job, invoice, payment, and audit records remain with the service provider when required.'
             : undefined
         }
       />

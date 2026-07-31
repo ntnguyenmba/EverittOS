@@ -180,7 +180,7 @@ test('client price contractor pay and expenses copied onto occurrences', () => {
 
 test('job creator exposes Repeats Every two weeks and expected profit review', () => {
   const source = read('components/job-creator.tsx');
-  assert.match(source, />Repeats</);
+  assert.match(source, /Schedule type/);
   assert.match(source, /Every two weeks/);
   assert.match(source, /Expected profit/);
   assert.match(source, /Additional expected expenses/);

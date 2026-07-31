@@ -120,7 +120,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
     try {
       const url = appUrl(`/portal/client?token=${token}`);
       await navigator.clipboard.writeText(url);
-      setMessage('Client portal link copied.');
+      setMessage('Customer dashboard link copied.');
     } catch {
       setMessage('Unable to copy the client portal link.');
     }
@@ -135,7 +135,7 @@ export function ClientAccessPanel({ jobId, plan, canManage }: ClientAccessPanelP
       {!portalAllowed ? (
         <div className="card" style={{ marginTop: 18 }}>
           <h3>Client access</h3>
-          <p className="muted">Client portal access requires Growth plan or higher.</p>
+          <p className="muted">Customer dashboard access requires Growth plan or higher.</p>
         </div>
       ) : (
         <div className="card" style={{ marginTop: 18 }}>

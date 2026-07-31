@@ -208,7 +208,9 @@ export async function POST(request: Request) {
 
   // One-time jobs skip the series table.
   if (frequency === 'none') {
-    const scheduledStart = wallClockDateTime(startDate, recurrence.preferredStartTime || '09:00');
+    const scheduledStart = recurrence.preferredStartTime
+      ? wallClockDateTime(startDate, recurrence.preferredStartTime)
+      : wallClockDateTime(startDate, '00:00');
     const { data: job, error } = await ctx.supabase
       .from('jobs')
       .insert({

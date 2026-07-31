@@ -53,6 +53,7 @@ export type JobFinanceCopy = {
   photoCustomerReport: string;
   photoBefore: string;
   photoAfter: string;
+  photoProgress: string;
   photoOther: string;
   photoVisibilityHelper: string;
   photoVisibilitySaved: string;
@@ -127,7 +128,8 @@ const copy: Record<Locale, JobFinanceCopy> = {
     photoCustomerReport: 'Show customer',
     photoBefore: 'Before',
     photoAfter: 'After',
-    photoOther: 'Other',
+    photoProgress: 'Progress',
+    photoOther: 'Progress',
     photoVisibilityHelper: 'Only selected photos appear in the report.',
     photoVisibilitySaved: 'Photo updated.',
     noCustomerPhotosYet: 'Choose photos for the customer report.',
@@ -199,7 +201,8 @@ const copy: Record<Locale, JobFinanceCopy> = {
     photoCustomerReport: 'Mostrar al cliente',
     photoBefore: 'Antes',
     photoAfter: 'Después',
-    photoOther: 'Otro',
+    photoProgress: 'Progreso',
+    photoOther: 'Progreso',
     photoVisibilityHelper: 'Solo las fotos elegidas aparecen en el informe.',
     photoVisibilitySaved: 'Foto actualizada.',
     noCustomerPhotosYet: 'Elige fotos para el informe.',
@@ -271,7 +274,8 @@ const copy: Record<Locale, JobFinanceCopy> = {
     photoCustomerReport: 'Cho khách xem',
     photoBefore: 'Trước',
     photoAfter: 'Sau',
-    photoOther: 'Khác',
+    photoProgress: 'Tiến độ',
+    photoOther: 'Tiến độ',
     photoVisibilityHelper: 'Chỉ ảnh đã chọn xuất hiện trong báo cáo.',
     photoVisibilitySaved: 'Đã cập nhật ảnh.',
     noCustomerPhotosYet: 'Chọn ảnh cho báo cáo khách hàng.',

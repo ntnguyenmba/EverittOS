@@ -6,17 +6,17 @@ import { useTranslation } from '@/components/locale-provider';
 import type { Locale } from '@/lib/i18n/config';
 import type { JobPhotoView } from '@/lib/job-photos-types';
 import { fetchJobPhotosWithUrls, resolvePhotoType } from '@/lib/job-photos-client';
-import { photoTagLabel } from '@/lib/job-photo-tags';
+import { JOB_PHOTO_TAGS, photoTagLabel } from '@/lib/job-photo-tags';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type PhotoGalleryProps = {
   jobId: string;
   refreshKey?: number;
   showComparison?: boolean;
   showMetadata?: boolean;
-  /** When false, show a message instead of photos (client portal sharing). */
+  /** When false, show a message instead of photos (customer dashboard sharing). */
   canView?: boolean;
   /** Only load photos explicitly marked for customer visibility. */
   customerOnly?: boolean;
@@ -29,6 +29,9 @@ type PhotoGalleryCopy = {
   emptyDescription: string;
   photoAlt: string;
   by: string;
+  close: string;
+  previous: string;
+  next: string;
 };
 
 const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
@@ -38,7 +41,10 @@ const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
     emptyTitle: 'No photos yet',
     emptyDescription: 'Before and after photos will appear here when they are shared.',
     photoAlt: 'photo',
-    by: 'By'
+    by: 'By',
+    close: 'Close',
+    previous: 'Previous',
+    next: 'Next'
   },
   es: {
     notShared: 'No se compartieron fotos para este trabajo.',
@@ -46,7 +52,10 @@ const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
     emptyTitle: 'Aún no hay fotos',
     emptyDescription: 'Las fotos del antes y después aparecerán aquí cuando se compartan.',
     photoAlt: 'foto',
-    by: 'Por'
+    by: 'Por',
+    close: 'Cerrar',
+    previous: 'Anterior',
+    next: 'Siguiente'
   },
   vi: {
     notShared: 'Hình ảnh chưa được chia sẻ cho công việc này.',
@@ -54,13 +63,23 @@ const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
     emptyTitle: 'Chưa có hình ảnh',
     emptyDescription: 'Hình ảnh trước và sau khi hoàn thành sẽ xuất hiện tại đây khi được chia sẻ.',
     photoAlt: 'hình ảnh',
-    by: 'Bởi'
+    by: 'Bởi',
+    close: 'Đóng',
+    previous: 'Trước',
+    next: 'Sau'
   }
 };
 
 function formatPhotoWhen(value: string | null, locale: Locale) {
   if (!value) return '';
   return new Date(value).toLocaleString(locale);
+}
+
+function formatFileSize(bytes: number | null | undefined) {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function PhotoGallery({
@@ -76,6 +95,7 @@ export function PhotoGallery({
   const [photos, setPhotos] = useState<JobPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!canView) {
@@ -102,6 +122,17 @@ export function PhotoGallery({
     void load();
   }, [jobId, refreshKey, canView, customerOnly]);
 
+  const orderedPhotos = useMemo(
+    () =>
+      JOB_PHOTO_TAGS.flatMap((tag) =>
+        photos
+          .filter((photo) => resolvePhotoType(photo) === tag)
+          .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      ),
+    [photos]
+  );
+  const previewPhoto = previewIndex !== null ? orderedPhotos[previewIndex] : null;
+
   if (!canView) {
     return <p className="muted">{copy.notShared}</p>;
   }
@@ -121,30 +152,104 @@ export function PhotoGallery({
   return (
     <div className="photo-gallery-readonly">
       {showComparison ? <PhotoComparisonSection photos={photos} /> : null}
-      <div className="photo-grid">
-        {photos.map((photo) => {
-          const photoType = resolvePhotoType(photo);
-          return (
-            <figure key={photo.id} className="photo-thumb">
-              <img src={photo.url} alt={`${photoTagLabel(photoType)} ${copy.photoAlt}`} loading="lazy" />
-              <figcaption>
-                <span className="photo-tag-pill">{photoTagLabel(photoType)}</span>
-                {showMetadata ? (
-                  <>
-                    <span className="photo-meta-line">{formatPhotoWhen(photo.created_at, locale)}</span>
-                    {photo.uploader_display_name ? (
-                      <span className="photo-meta-line">{copy.by} {photo.uploader_display_name}</span>
-                    ) : null}
-                    {photo.file_name ? <span className="photo-meta-line">{photo.file_name}</span> : null}
-                  </>
-                ) : (
-                  <span className="photo-meta-line">{photoTagLabel(photoType)}</span>
-                )}
-              </figcaption>
-            </figure>
-          );
-        })}
-      </div>
+      {JOB_PHOTO_TAGS.map((tag) => {
+        const items = orderedPhotos.filter((photo) => resolvePhotoType(photo) === tag);
+        if (!items.length) return null;
+        return (
+          <div key={tag} className="photo-tag-group">
+            <h4>
+              {photoTagLabel(tag)} ({items.length})
+            </h4>
+            <div className="photo-grid photo-grid-large">
+              {items.map((photo) => {
+                const photoType = resolvePhotoType(photo);
+                const absoluteIndex = orderedPhotos.findIndex((row) => row.id === photo.id);
+                return (
+                  <figure key={photo.id} className="photo-thumb">
+                    <button
+                      type="button"
+                      className="photo-thumb-open"
+                      onClick={() => setPreviewIndex(absoluteIndex)}
+                      aria-label={`${photoTagLabel(photoType)} ${copy.photoAlt}`}
+                    >
+                      <img src={photo.url} alt={`${photoTagLabel(photoType)} ${copy.photoAlt}`} loading="lazy" />
+                    </button>
+                    <figcaption>
+                      <span className="photo-tag-pill">{photoTagLabel(photoType)}</span>
+                      {showMetadata ? (
+                        <>
+                          <span className="photo-meta-line">{formatPhotoWhen(photo.created_at, locale)}</span>
+                          {photo.uploader_display_name ? (
+                            <span className="photo-meta-line">
+                              {copy.by} {photo.uploader_display_name}
+                            </span>
+                          ) : null}
+                          {photo.file_size_bytes ? (
+                            <span className="photo-meta-line">{formatFileSize(photo.file_size_bytes)}</span>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {previewPhoto?.url ? (
+        <div
+          className="photo-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo preview"
+          onClick={() => setPreviewIndex(null)}
+        >
+          <div className="photo-lightbox-panel" onClick={(event) => event.stopPropagation()}>
+            <div className="photo-lightbox-toolbar">
+              <span>
+                {photoTagLabel(resolvePhotoType(previewPhoto))}
+                {previewPhoto.uploader_display_name ? ` · ${copy.by} ${previewPhoto.uploader_display_name}` : ''}
+              </span>
+              <button type="button" className="btn" onClick={() => setPreviewIndex(null)}>
+                {copy.close}
+              </button>
+            </div>
+            <img src={previewPhoto.url} alt={`${photoTagLabel(resolvePhotoType(previewPhoto))} ${copy.photoAlt}`} />
+            <div className="photo-lightbox-nav">
+              <button
+                type="button"
+                className="btn"
+                disabled={previewIndex === null || previewIndex <= 0}
+                onClick={() => setPreviewIndex((current) => (current === null ? current : Math.max(0, current - 1)))}
+              >
+                {copy.previous}
+              </button>
+              <span className="muted">
+                {(previewIndex ?? 0) + 1} / {orderedPhotos.length}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                disabled={previewIndex === null || previewIndex >= orderedPhotos.length - 1}
+                onClick={() =>
+                  setPreviewIndex((current) =>
+                    current === null ? current : Math.min(orderedPhotos.length - 1, current + 1)
+                  )
+                }
+              >
+                {copy.next}
+              </button>
+            </div>
+            <p className="muted">
+              {[formatPhotoWhen(previewPhoto.created_at, locale), formatFileSize(previewPhoto.file_size_bytes)]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
