@@ -24,21 +24,21 @@
 .jobs-operations-table td.jobs-col-date {
   width: 17% !important;
   padding-left: 16px !important;
-  padding-right: 10px !important;
+  padding-right: 8px !important;
   white-space: nowrap !important;
 }
 
 .jobs-operations-table th:nth-child(2),
 .jobs-operations-table td.jobs-col-property {
-  width: 45% !important;
-  padding-left: 10px !important;
-  padding-right: 4px !important;
+  width: 36% !important;
+  padding-left: 8px !important;
+  padding-right: 0 !important;
 }
 
 .jobs-operations-table th:nth-child(3),
 .jobs-operations-table td.jobs-col-assigned {
-  width: 24% !important;
-  padding-left: 4px !important;
+  width: 33% !important;
+  padding-left: 0 !important;
   padding-right: 6px !important;
 }
 
