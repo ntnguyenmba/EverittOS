@@ -90,7 +90,7 @@ describe('Invoice and receipt prefill helpers', () => {
     const source = readFileSync('app/api/outbound/prefill/route.ts', 'utf8');
     assert.match(source, /recipient_name: customer\?\.name \|\| job\?\.customer_name/);
     assert.match(source, /recipient_email: customer\?\.email \|\| job\?\.customer_email/);
-    assert.match(source, /amount: job\?\.revenue_amount/);
+    assert.match(source, /const amount = job\?\.revenue_amount/);
     assert.match(source, /existing_invoice/);
     assert.match(source, /existing_receipt/);
   });
