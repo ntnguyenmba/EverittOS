@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+// Focused, idempotent patch for the job creator scheduling UX.
 const path = 'components/job-creator.tsx';
 let source = fs.readFileSync(path, 'utf8');
 
