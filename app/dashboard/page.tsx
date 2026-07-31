@@ -131,7 +131,12 @@ const emptyRevenue = {
   scheduledExpectedAdditionalExpenses: 0,
   scheduledExpectedProfit: 0,
   recurringOccurrenceCount: 0,
-  oneTimeJobCount: 0
+  oneTimeJobCount: 0,
+  activeRecurringScheduleCount: 0,
+  pausedRecurringScheduleCount: 0,
+  recurringCustomerCount: 0,
+  completedRecurringOccurrenceCount: 0,
+  cancelledRecurringOccurrenceCount: 0
 } satisfies DashboardRevenueMetrics;
 
 const TIMEOUT_MS = 7000;
@@ -280,6 +285,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void loadDashboard();
+    const onFocus = () => {
+      void loadDashboard();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void loadDashboard();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   if (!ready) {

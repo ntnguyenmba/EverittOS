@@ -2,7 +2,18 @@
 
 Plain-language definitions used by the EverittOS dashboard and related summaries.
 
+Canonical implementation: `lib/dashboard-metrics.ts` and `lib/recurring-jobs.ts`.
 Canonical architecture (payment workflow, ledger, clickable cards): see [financial-architecture.md](./financial-architecture.md).
+
+## Shared rules
+
+- Date ranges use `rangeBounds` / `inRange` with local calendar days: start inclusive, end exclusive.
+- Expected revenue prefers collectible invoice totals for the period, then uninvoiced job revenue. Never double-count invoice + job for the same work.
+- Collected revenue counts successful payments only (`invoice_payments` / direct `job_payments`).
+- Outstanding is unpaid collectible invoice balance (plus uninvoiced job amounts in the still-owed total). Draft/void/cancelled invoices are excluded.
+- Profit (expected) = expected revenue − accrued contractor cost − recorded expenses.
+- Cash after paid costs = collected − contractor cash paid − expenses.
+- Recurring schedule definitions are never counted as completed jobs. Generated occurrences are counted once. Recurring customers are counted once per customer.
 
 ## Labels
 

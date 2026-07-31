@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { generateSeriesWindow } from '@/lib/generate-recurring-series';
 import { isValidUuid } from '@/lib/input-validation';
 import { parseMoneyDollars } from '@/lib/money-decimal';
 import { isCompletedLikeStatus } from '@/lib/recurring-jobs';
@@ -109,7 +110,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       .from('recurring_job_series')
       .update({ status: 'active', updated_at: new Date().toISOString() })
       .eq('id', id);
-    return NextResponse.json({ ok: true, status: 'active' });
+    const generation = await generateSeriesWindow(ctx.supabase, ctx.workspace, ctx.userId, {
+      ...(series as Record<string, unknown>),
+      id,
+      status: 'active'
+    } as Parameters<typeof generateSeriesWindow>[3]);
+    return NextResponse.json({ ok: true, status: 'active', generation });
   }
 
   if (action === 'end') {

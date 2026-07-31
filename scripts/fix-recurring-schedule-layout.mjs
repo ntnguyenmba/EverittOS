@@ -9,17 +9,16 @@ const path = 'components/job-creator.tsx';
 const source = fs.readFileSync(path, 'utf8');
 
 const checks = [
-  [/Schedule type/, 'Schedule type label'],
-  [/One-time/, 'One-time schedule option'],
-  [/Weekday/, 'Weekday control'],
-  [/Start date/, 'Start date control'],
-  [/Start time/, 'Start time control'],
-  [/End time/, 'End time control'],
-  [/Job timezone/, 'Job timezone control'],
-  [/Advanced recurrence options/, 'Advanced recurrence options'],
-  [/Use company default/, 'Company default timezone option'],
+  [/scheduleType|Repeats/, 'Repeats / schedule type label'],
+  [/Starts on|startsOn/, 'Starts on control'],
+  [/Start time|startTime/, 'Start time control'],
+  [/End time|endTime/, 'End time control'],
+  [/Job timezone|jobTimezone/, 'Job timezone control'],
+  [/neverEnds|Never/, 'Never ends option'],
+  [/companyDefaultTimezone|Use company default/, 'Company default timezone option'],
   [/preferredStartTime: firstVisit\?\.start_time \|\| null/, 'No fake 9:00 AM preferred start time'],
   [/isRecurring/, 'Recurring branch'],
+  [/recurrenceEndMode/, 'End mode control'],
 ];
 
 let failed = false;
@@ -35,18 +34,17 @@ if (/\|\| '09:00'/.test(source)) {
   failed = true;
 }
 
-const scheduleIdx = source.indexOf('Schedule type');
-const weekdayIdx = source.indexOf('Weekday', scheduleIdx);
-const startDateIdx = source.indexOf('Start date', weekdayIdx);
-const startTimeIdx = source.indexOf('Start time', startDateIdx);
-const endTimeIdx = source.indexOf('End time', startTimeIdx);
-const timezoneIdx = source.indexOf('Job timezone', endTimeIdx);
-const advancedIdx = source.indexOf('Advanced recurrence options', timezoneIdx);
+const scheduleIdx = source.indexOf('recurrenceCopy.scheduleType');
+const startDateIdx = source.indexOf('recurrenceCopy.startsOn', scheduleIdx);
+const startTimeIdx = source.indexOf('recurrenceCopy.startTime', startDateIdx);
+const endTimeIdx = source.indexOf('recurrenceCopy.endTime', startTimeIdx);
+const timezoneIdx = source.indexOf('recurrenceCopy.jobTimezone', endTimeIdx);
+const endsIdx = source.indexOf('recurrenceCopy.ends', timezoneIdx);
 
-if (![scheduleIdx, weekdayIdx, startDateIdx, startTimeIdx, endTimeIdx, timezoneIdx, advancedIdx].every((i) => i >= 0)) {
+if (![scheduleIdx, startDateIdx, startTimeIdx, endTimeIdx, timezoneIdx, endsIdx].every((i) => i >= 0)) {
   console.error('Could not verify recurring control order');
   failed = true;
-} else if (!(scheduleIdx < weekdayIdx && weekdayIdx < startDateIdx && startDateIdx < startTimeIdx && startTimeIdx < endTimeIdx && endTimeIdx < timezoneIdx && timezoneIdx < advancedIdx)) {
+} else if (!(scheduleIdx < startDateIdx && startDateIdx < startTimeIdx && startTimeIdx < endTimeIdx && endTimeIdx < timezoneIdx && timezoneIdx < endsIdx)) {
   console.error('Recurring schedule controls are out of the required order');
   failed = true;
 }

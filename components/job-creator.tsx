@@ -21,10 +21,13 @@ import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
 import type { StructuredAddress } from '@/lib/address/types';
 import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
 import { calculateExpectedJobFinance, multiplyMoneyDollars, parseMoneyDollars } from '@/lib/money-decimal';
+import { getRecurrenceCopy } from '@/lib/i18n/recurrence-copy';
 import {
   RECURRING_GENERATION_WINDOW_DAYS,
   summarizeRecurrence,
-  type RecurrenceFrequency
+  type RecurrenceEndMode,
+  type RecurrenceFrequency,
+  type RecurrenceIntervalUnit
 } from '@/lib/recurring-jobs';
 
 type JobCreatorProps = {
@@ -142,9 +145,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>('none');
-  const [recurrenceWeekday, setRecurrenceWeekday] = useState<number>(new Date().getDay());
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([new Date().getDay()]);
   const [recurrenceInterval, setRecurrenceInterval] = useState('1');
-  const [recurrenceIntervalUnit, setRecurrenceIntervalUnit] = useState<'weeks' | 'months'>('weeks');
+  const [recurrenceIntervalUnit, setRecurrenceIntervalUnit] = useState<RecurrenceIntervalUnit>('weeks');
+  const [recurrenceEndMode, setRecurrenceEndMode] = useState<RecurrenceEndMode>('never');
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [recurrenceLimit, setRecurrenceLimit] = useState('');
   const [showRecurrenceAdvanced, setShowRecurrenceAdvanced] = useState(false);
@@ -180,7 +184,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const preloadDone = useRef(false);
 
   const appFeedback = useAppFeedback();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const recurrenceCopy = getRecurrenceCopy(locale);
 
   useEffect(() => {
     async function loadTeamMembers() {
@@ -616,7 +621,12 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         : null;
 
     if (recurrenceFrequency !== 'none') {
-      const startDate = firstVisit?.visit_date || new Date().toISOString().slice(0, 10);
+      const startDate = firstVisit?.visit_date?.trim() || '';
+      if (!startDate) {
+        setLoading(false);
+        appFeedback.error(recurrenceCopy.startDateRequired);
+        return;
+      }
       const recurringRes = await fetch('/api/recurring-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -645,10 +655,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             frequency: recurrenceFrequency,
             interval: Number(recurrenceInterval) || 1,
             intervalUnit: recurrenceIntervalUnit,
-            weekday: recurrenceWeekday,
+            weekday: recurrenceWeekdays[0] ?? null,
+            weekdays: recurrenceWeekdays,
             startDate,
-            endDate: recurrenceEndDate || null,
-            occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
+            endMode: recurrenceEndMode,
+            endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
+            occurrenceLimit:
+              recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
             preferredStartTime: firstVisit?.start_time || null
           }
         })
@@ -802,13 +815,23 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     frequency: recurrenceFrequency,
     interval: Number(recurrenceInterval) || 1,
     intervalUnit: recurrenceIntervalUnit,
-    weekday: recurrenceWeekday,
-    startDate: primaryVisit?.visit_date || new Date().toISOString().slice(0, 10),
-    endDate: recurrenceEndDate || null,
-    occurrenceLimit: recurrenceLimit ? Number(recurrenceLimit) : null,
+    weekday: recurrenceWeekdays[0] ?? null,
+    weekdays: recurrenceWeekdays,
+    startDate: primaryVisit?.visit_date || '',
+    endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
+    occurrenceLimit:
+      recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
     preferredStartTime: primaryVisit?.start_time || null,
     timezone: timeZone || null
   });
+  const showWeekdays =
+    isRecurring &&
+    (recurrenceFrequency === 'weekly' ||
+      recurrenceFrequency === 'biweekly' ||
+      recurrenceFrequency === 'every_three_weeks' ||
+      recurrenceFrequency === 'every_four_weeks' ||
+      (recurrenceFrequency === 'custom' && recurrenceIntervalUnit === 'weeks'));
+  const weekdayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const selectedProperty = selectedCustomer?.properties.find((p) => p.id === selectedPropertyId) || null;
   const addressChangedFromProperty =
     Boolean(selectedProperty) &&
@@ -1036,8 +1059,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         </section>
 
         <section className="job-create-section">
-          <h4>4. Schedule</h4>
-          <label htmlFor="recurrence-frequency">Schedule type</label>
+          <h4>{recurrenceCopy.scheduleHeading}</h4>
+          <label htmlFor="recurrence-frequency">{recurrenceCopy.scheduleType}</label>
           <select
             id="recurrence-frequency"
             className="input"
@@ -1048,42 +1071,39 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               if (next !== 'none' && visits.length > 1) {
                 setVisits((rows) => [rows[0]]);
               }
+              if (next === 'daily') setRecurrenceIntervalUnit('days');
+              if (next === 'monthly') setRecurrenceIntervalUnit('months');
+              if (next === 'weekly' || next === 'biweekly' || next === 'every_three_weeks' || next === 'every_four_weeks') {
+                setRecurrenceIntervalUnit('weeks');
+              }
             }}
           >
-            <option value="none">One-time</option>
-            <option value="weekly">Weekly</option>
-            <option value="biweekly">Every two weeks</option>
-            <option value="every_four_weeks">Every four weeks</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom</option>
+            <option value="none">{recurrenceCopy.oneTime}</option>
+            <option value="daily">{recurrenceCopy.daily}</option>
+            <option value="weekly">{recurrenceCopy.weekly}</option>
+            <option value="biweekly">{recurrenceCopy.everyTwoWeeks}</option>
+            <option value="every_three_weeks">{recurrenceCopy.everyThreeWeeks}</option>
+            <option value="every_four_weeks">{recurrenceCopy.everyFourWeeks}</option>
+            <option value="monthly">{recurrenceCopy.monthly}</option>
+            <option value="custom">{recurrenceCopy.custom}</option>
           </select>
 
           {isRecurring ? (
             <>
-              <label htmlFor="recurrence-weekday">Weekday</label>
-              <select
-                id="recurrence-weekday"
-                className="input"
-                value={recurrenceWeekday}
-                onChange={(e) => setRecurrenceWeekday(Number(e.target.value))}
-              >
-                {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((label, index) => (
-                  <option key={label} value={index}>{label}</option>
-                ))}
-              </select>
               {primaryVisit ? (
                 <div className="form visit-editor" style={{ marginTop: 12 }}>
-                  <label htmlFor="recurring-start-date">Start date</label>
+                  <label htmlFor="recurring-start-date">{recurrenceCopy.startsOn}</label>
                   <input
                     id="recurring-start-date"
                     className="input"
                     type="date"
+                    required
                     value={primaryVisit.visit_date}
                     onChange={(e) => updateVisit(primaryVisit.id, { visit_date: e.target.value })}
                   />
                   <div className="grid-2">
                     <div className="form-group">
-                      <label htmlFor="recurring-start-time">Start time</label>
+                      <label htmlFor="recurring-start-time">{recurrenceCopy.startTime}</label>
                       <input
                         id="recurring-start-time"
                         className="input"
@@ -1093,7 +1113,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="recurring-end-time">End time</label>
+                      <label htmlFor="recurring-end-time">{recurrenceCopy.endTime}</label>
                       <input
                         id="recurring-end-time"
                         className="input"
@@ -1105,39 +1125,108 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   </div>
                 </div>
               ) : null}
-              <label htmlFor="job-timezone">Job timezone</label>
+
+              {showWeekdays ? (
+                <fieldset style={{ marginTop: 12, border: 0, padding: 0 }}>
+                  <legend style={{ fontWeight: 600 }}>{recurrenceCopy.weekdays}</legend>
+                  <p className="muted">{recurrenceCopy.weekdaysHelp}</p>
+                  <div className="segmented-control" role="group" aria-label={recurrenceCopy.weekdays} style={{ flexWrap: 'wrap' }}>
+                    {weekdayLabels.map((label, index) => {
+                      const selected = recurrenceWeekdays.includes(index);
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          className={`btn${selected ? ' btn-primary' : ''}`}
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setRecurrenceWeekdays((current) => {
+                              if (current.includes(index)) {
+                                const next = current.filter((day) => day !== index);
+                                return next.length ? next : current;
+                              }
+                              return [...current, index].sort((a, b) => a - b);
+                            })
+                          }
+                        >
+                          {label.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              ) : null}
+
+              <label htmlFor="job-timezone">{recurrenceCopy.jobTimezone}</label>
               <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
-                <option value="">Use company default</option>
+                <option value="">{recurrenceCopy.companyDefaultTimezone}</option>
                 {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
-              <p className="muted">Filled from the property address when available. You can change it.</p>
+              <p className="muted">{recurrenceCopy.timezoneHelp}</p>
+
+              <label htmlFor="recurrence-end-mode" style={{ marginTop: 12 }}>{recurrenceCopy.ends}</label>
+              <select
+                id="recurrence-end-mode"
+                className="input"
+                value={recurrenceEndMode}
+                onChange={(e) => setRecurrenceEndMode(e.target.value as RecurrenceEndMode)}
+              >
+                <option value="never">{recurrenceCopy.neverEnds}</option>
+                <option value="on_date">{recurrenceCopy.endsOnDate}</option>
+                <option value="after_count">{recurrenceCopy.endsAfterCount}</option>
+              </select>
+              {recurrenceEndMode === 'on_date' ? (
+                <>
+                  <label htmlFor="recurrence-end-date">{recurrenceCopy.endDate}</label>
+                  <input
+                    id="recurrence-end-date"
+                    className="input"
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                  />
+                </>
+              ) : null}
+              {recurrenceEndMode === 'after_count' ? (
+                <>
+                  <label htmlFor="recurrence-limit">{recurrenceCopy.occurrenceCount}</label>
+                  <input
+                    id="recurrence-limit"
+                    className="input"
+                    type="number"
+                    min="1"
+                    value={recurrenceLimit}
+                    onChange={(e) => setRecurrenceLimit(e.target.value)}
+                  />
+                </>
+              ) : null}
+
               <details
                 open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'}
                 onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}
               >
-                <summary>Advanced recurrence options</summary>
+                <summary>{recurrenceCopy.advanced}</summary>
                 {recurrenceFrequency === 'custom' ? (
                   <div className="grid-2" style={{ marginTop: 8 }}>
                     <div className="form-group">
-                      <label>Every</label>
-                      <input className="input" type="number" min="1" max="52" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
+                      <label>{recurrenceCopy.every}</label>
+                      <input className="input" type="number" min="1" max="365" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
                     </div>
                     <div className="form-group">
-                      <label>Unit</label>
-                      <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as 'weeks' | 'months')}>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
+                      <label>{recurrenceCopy.unit}</label>
+                      <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as RecurrenceIntervalUnit)}>
+                        <option value="days">{recurrenceCopy.days}</option>
+                        <option value="weeks">{recurrenceCopy.weeks}</option>
+                        <option value="months">{recurrenceCopy.months}</option>
                       </select>
                     </div>
                   </div>
                 ) : null}
-                <label style={{ marginTop: 8 }}>End date (optional)</label>
-                <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} />
-                <label>Number of visits (optional)</label>
-                <input className="input" type="number" min="1" value={recurrenceLimit} onChange={(e) => setRecurrenceLimit(e.target.value)} />
-                <p className="muted">Leave blank for no end date. Only the next {RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time.</p>
+                <p className="muted">{recurrenceCopy.windowHelp}</p>
               </details>
-              <p className="muted" style={{ marginTop: 8 }}>{recurrenceSummary}</p>
+              <p className="muted" style={{ marginTop: 8 }} aria-live="polite">
+                <strong>{recurrenceCopy.summaryLabel}:</strong> {primaryVisit?.visit_date ? recurrenceSummary : '—'}
+              </p>
             </>
           ) : (
             <>

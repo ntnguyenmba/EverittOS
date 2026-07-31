@@ -7,9 +7,13 @@ import {
   generateOccurrences,
   parseOccurrenceLocalTime,
   RECURRING_GENERATION_WINDOW_DAYS,
+  resolveGenerationFromDate,
+  resolveRecurrenceEndMode,
   resolveRecurrenceInterval,
   summarizeRecurrence,
-  type RecurrenceFrequency
+  type RecurrenceEndMode,
+  type RecurrenceFrequency,
+  type RecurrenceIntervalUnit
 } from '@/lib/recurring-jobs';
 import { occurrenceFinanceColumns, seedOccurrenceLabor } from '@/lib/seed-occurrence-finance';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
@@ -47,11 +51,13 @@ type CreateBody = {
   recurrence?: {
     frequency?: RecurrenceFrequency;
     interval?: number;
-    intervalUnit?: 'weeks' | 'months';
+    intervalUnit?: RecurrenceIntervalUnit;
     weekday?: number | null;
+    weekdays?: number[] | null;
     startDate?: string;
     endDate?: string | null;
     occurrenceLimit?: number | null;
+    endMode?: RecurrenceEndMode | null;
     preferredStartTime?: string | null;
   };
 };
@@ -185,6 +191,23 @@ export async function POST(request: Request) {
     intervalUnit: recurrence.intervalUnit,
     startDate
   });
+  const weekdays = Array.from(
+    new Set(
+      (recurrence.weekdays?.length ? recurrence.weekdays : recurrence.weekday != null ? [recurrence.weekday] : [])
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6)
+    )
+  ).sort((a, b) => a - b);
+  const endMode = resolveRecurrenceEndMode({
+    endMode: recurrence.endMode,
+    endDate: recurrence.endDate,
+    occurrenceLimit: recurrence.occurrenceLimit
+  });
+  const endDate = endMode === 'on_date' ? recurrence.endDate || null : null;
+  const occurrenceLimit =
+    endMode === 'after_count' && recurrence.occurrenceLimit && recurrence.occurrenceLimit > 0
+      ? Number(recurrence.occurrenceLimit)
+      : null;
 
   const seriesPayload = {
     organization_id: ctx.workspace.organizationId,
@@ -194,10 +217,12 @@ export async function POST(request: Request) {
     title,
     recurrence_frequency: frequency === 'none' ? 'weekly' : frequency,
     recurrence_interval: intervalInfo.interval,
-    recurrence_weekday: recurrence.weekday ?? null,
+    recurrence_interval_unit: intervalInfo.intervalUnit,
+    recurrence_weekday: weekdays[0] ?? recurrence.weekday ?? null,
+    recurrence_weekdays: weekdays.length ? weekdays : null,
     start_date: startDate,
-    end_date: recurrence.endDate || null,
-    occurrence_limit: recurrence.occurrenceLimit || null,
+    end_date: endDate,
+    occurrence_limit: occurrenceLimit,
     preferred_start_time: recurrence.preferredStartTime || null,
     duration_minutes: body.duration_minutes ?? null,
     timezone: timezone || normalizeTimeZone(null),
@@ -289,11 +314,21 @@ export async function POST(request: Request) {
     });
   }
 
-  const { data: series, error: seriesError } = await ctx.supabase
-    .from('recurring_job_series')
-    .insert(seriesPayload)
-    .select('*')
-    .single();
+  let seriesInsert = await ctx.supabase.from('recurring_job_series').insert(seriesPayload).select('*').single();
+  if (
+    seriesInsert.error &&
+    /recurrence_interval_unit|recurrence_weekdays|column|schema cache|does not exist/i.test(
+      seriesInsert.error.message || ''
+    )
+  ) {
+    const legacyPayload = { ...seriesPayload } as Record<string, unknown>;
+    delete legacyPayload.recurrence_interval_unit;
+    delete legacyPayload.recurrence_weekdays;
+    seriesInsert = await ctx.supabase.from('recurring_job_series').insert(legacyPayload).select('*').single();
+  }
+
+  const series = seriesInsert.data;
+  const seriesError = seriesInsert.error;
 
   if (seriesError || !series) {
     if (seriesError && isMissingSchemaError(seriesError)) {
@@ -308,18 +343,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const occurrences = generateOccurrences({
-    frequency,
-    interval: recurrence.interval,
-    intervalUnit: recurrence.intervalUnit,
-    weekday: recurrence.weekday,
-    startDate,
-    endDate: recurrence.endDate,
-    occurrenceLimit: recurrence.occurrenceLimit,
-    preferredStartTime: recurrence.preferredStartTime,
-    durationMinutes: body.duration_minutes,
-    timezone: series.timezone
-  });
+  const fromDate = resolveGenerationFromDate(startDate, series.timezone);
+  const occurrences = generateOccurrences(
+    {
+      frequency,
+      interval: intervalInfo.interval,
+      intervalUnit: intervalInfo.intervalUnit,
+      weekday: weekdays[0] ?? recurrence.weekday ?? null,
+      weekdays,
+      startDate,
+      endDate,
+      occurrenceLimit,
+      preferredStartTime: recurrence.preferredStartTime,
+      durationMinutes: body.duration_minutes,
+      timezone: series.timezone
+    },
+    { fromDate, windowDays: RECURRING_GENERATION_WINDOW_DAYS, existingCount: 0, skipOverdueToday: true }
+  );
 
   const jobRows = occurrences.map((occurrence) => {
     const localTime = parseOccurrenceLocalTime(occurrence.scheduledStart, recurrence.preferredStartTime);
@@ -405,12 +445,13 @@ export async function POST(request: Request) {
 
   const summary = summarizeRecurrence({
     frequency,
-    interval: recurrence.interval,
-    intervalUnit: recurrence.intervalUnit,
-    weekday: recurrence.weekday,
+    interval: intervalInfo.interval,
+    intervalUnit: intervalInfo.intervalUnit,
+    weekday: weekdays[0] ?? recurrence.weekday ?? null,
+    weekdays,
     startDate,
-    endDate: recurrence.endDate,
-    occurrenceLimit: recurrence.occurrenceLimit,
+    endDate,
+    occurrenceLimit,
     preferredStartTime: recurrence.preferredStartTime,
     timezone: series.timezone
   });

@@ -122,7 +122,7 @@ test('generation window stays within configured days and never unlimited', () =>
   const end = new Date(`${last}T00:00:00Z`).getTime();
   const days = (end - start) / (1000 * 60 * 60 * 24);
   assert.ok(days <= RECURRING_GENERATION_WINDOW_DAYS);
-  assert.equal(RECURRING_GENERATION_WINDOW_DAYS, 90);
+  assert.equal(RECURRING_GENERATION_WINDOW_DAYS, 365);
 
   const openEnded = generateOccurrenceDates({
     frequency: 'weekly',
@@ -182,7 +182,7 @@ test('recurrence summary is human readable', () => {
   assert.match(summary, /Every two weeks/);
   assert.match(summary, /Thursday/);
   assert.match(summary, /10:00 AM/);
-  assert.match(summary, /90 days/);
+  assert.match(summary, /365 days/);
 });
 
 test('job create persists contractor assignment into job_assignments', () => {

@@ -3,7 +3,10 @@ import {
   generateOccurrences,
   parseOccurrenceLocalTime,
   RECURRING_GENERATION_WINDOW_DAYS,
-  type RecurrenceFrequency
+  resolveGenerationFromDate,
+  resolveRecurrenceInterval,
+  type RecurrenceFrequency,
+  type RecurrenceIntervalUnit
 } from '@/lib/recurring-jobs';
 import { occurrenceFinanceColumns, seedOccurrenceLabor, type OccurrenceFinanceDefaults } from '@/lib/seed-occurrence-finance';
 import { workspaceScopedFields, type CurrentWorkspace } from '@/lib/workspace-server';
@@ -33,7 +36,9 @@ export type SeriesRow = {
   default_contractor_name?: string | null;
   recurrence_frequency: string;
   recurrence_interval?: number | null;
+  recurrence_interval_unit?: string | null;
   recurrence_weekday?: number | null;
+  recurrence_weekdays?: number[] | null;
   start_date: string;
   end_date?: string | null;
   occurrence_limit?: number | null;
@@ -58,9 +63,38 @@ function financeDefaultsFromSeries(series: SeriesRow): OccurrenceFinanceDefaults
   };
 }
 
+function seriesIntervalUnit(series: SeriesRow): RecurrenceIntervalUnit {
+  if (series.recurrence_interval_unit === 'days' || series.recurrence_interval_unit === 'months') {
+    return series.recurrence_interval_unit;
+  }
+  if (series.recurrence_frequency === 'monthly') return 'months';
+  if (series.recurrence_frequency === 'daily') return 'days';
+  return 'weeks';
+}
+
+/**
+ * Count successfully generated jobs for a series.
+ * Includes skipped/cancelled rows so occurrence_limit cannot be bypassed by skipping.
+ * Failed inserts are never counted.
+ */
+export async function countGeneratedOccurrencesForSeries(
+  supabase: SupabaseClient,
+  organizationId: string,
+  seriesId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('recurring_series_id', seriesId);
+  if (error) return 0;
+  return count || 0;
+}
+
 /**
  * Generate missing occurrences for an active series inside the app-wide window.
  * Safe to call repeatedly — unique (series, occurrence_date, local time) prevents duplicates.
+ * Paused/ended series create nothing.
  */
 export async function generateSeriesWindow(
   supabase: SupabaseClient,
@@ -72,13 +106,27 @@ export async function generateSeriesWindow(
     return { created: 0, windowDays: RECURRING_GENERATION_WINDOW_DAYS };
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const fromDate = resolveGenerationFromDate(series.start_date, series.timezone);
+  const existingCount = await countGeneratedOccurrencesForSeries(
+    supabase,
+    workspace.organizationId,
+    series.id
+  );
+  const intervalUnit = seriesIntervalUnit(series);
+  const resolved = resolveRecurrenceInterval({
+    frequency: series.recurrence_frequency as RecurrenceFrequency,
+    interval: series.recurrence_interval ?? 1,
+    intervalUnit,
+    startDate: series.start_date
+  });
+
   const occurrences = generateOccurrences(
     {
       frequency: series.recurrence_frequency as RecurrenceFrequency,
-      interval: series.recurrence_interval ?? 1,
-      intervalUnit: series.recurrence_frequency === 'monthly' ? 'months' : 'weeks',
+      interval: series.recurrence_interval ?? resolved.interval,
+      intervalUnit: resolved.intervalUnit,
       weekday: series.recurrence_weekday,
+      weekdays: series.recurrence_weekdays,
       startDate: series.start_date,
       endDate: series.end_date,
       occurrenceLimit: series.occurrence_limit,
@@ -86,7 +134,12 @@ export async function generateSeriesWindow(
       durationMinutes: series.duration_minutes,
       timezone: series.timezone
     },
-    { fromDate: today, windowDays: RECURRING_GENERATION_WINDOW_DAYS, existingCount: 0 }
+    {
+      fromDate,
+      windowDays: RECURRING_GENERATION_WINDOW_DAYS,
+      existingCount,
+      skipOverdueToday: true
+    }
   );
 
   const financeDefaults = financeDefaultsFromSeries(series);

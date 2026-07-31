@@ -7,27 +7,42 @@ import {
 } from '@/lib/money-decimal';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 
-/** Keep a full year of individual occurrences scheduled ahead. The series itself may continue indefinitely. */
+/**
+ * Rolling generation window for materialised recurring occurrences.
+ * Keep a full year scheduled ahead. The series itself may continue indefinitely.
+ * Centralized so create, top-up, and UI copy stay aligned.
+ */
 export const RECURRING_GENERATION_WINDOW_DAYS = 365;
 
 export const RECURRENCE_FREQUENCIES = [
   'none',
+  'daily',
   'weekly',
   'biweekly',
+  'every_three_weeks',
   'every_four_weeks',
   'monthly',
   'custom'
 ] as const;
 
 export type RecurrenceFrequency = (typeof RECURRENCE_FREQUENCIES)[number];
+export type RecurrenceIntervalUnit = 'days' | 'weeks' | 'months';
+export type RecurrenceEndMode = 'never' | 'on_date' | 'after_count';
 
 export type RecurringSeriesInput = {
   frequency: RecurrenceFrequency;
-  interval?: number; // for custom: every X weeks/months
-  intervalUnit?: 'weeks' | 'months';
-  weekday?: number | null; // 0=Sun .. 6=Sat
+  interval?: number;
+  intervalUnit?: RecurrenceIntervalUnit;
+  /** Single weekday (legacy). Prefer weekdays when multiple days are selected. */
+  weekday?: number | null;
+  /** Selected weekdays 0=Sun..6=Sat for weekly-style schedules. */
+  weekdays?: number[] | null;
   startDate: string; // YYYY-MM-DD
   endDate?: string | null;
+  /**
+   * Max successfully generated jobs for the series.
+   * Counts inserted rows including skipped/cancelled. Failed inserts do not count.
+   */
   occurrenceLimit?: number | null;
   preferredStartTime?: string | null; // HH:mm
   durationMinutes?: number | null;
@@ -60,14 +75,16 @@ function addDaysCivil(date: string, days: number): string {
   return formatDateParts(utc.getUTCFullYear(), utc.getUTCMonth() + 1, utc.getUTCDate());
 }
 
-function addMonthsCivil(date: string, months: number): string {
+function addMonthsCivil(date: string, months: number, anchorDay?: number): string {
   const parts = parseDateParts(date);
   if (!parts) return date;
   const utc = new Date(Date.UTC(parts.y, parts.m - 1 + months, 1));
   const year = utc.getUTCFullYear();
   const month = utc.getUTCMonth();
   const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  const day = Math.min(parts.d, lastDay);
+  // Prefer the original series day-of-month so Jan 31 → Feb 28 → Mar 31.
+  const desiredDay = anchorDay && anchorDay >= 1 && anchorDay <= 31 ? anchorDay : parts.d;
+  const day = Math.min(desiredDay, lastDay);
   return formatDateParts(year, month + 1, day);
 }
 
@@ -81,16 +98,79 @@ function compareCivil(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
+function daysBetweenCivil(from: string, to: string): number {
+  const a = parseDateParts(from);
+  const b = parseDateParts(to);
+  if (!a || !b) return 0;
+  const ms =
+    Date.UTC(b.y, b.m - 1, b.d) - Date.UTC(a.y, a.m - 1, a.d);
+  return Math.round(ms / 86_400_000);
+}
+
+export function civilDateInTimeZone(timeZone: string | null | undefined, now = new Date()): string {
+  const tz = timeZone && isValidTimeZone(timeZone) ? timeZone : normalizeTimeZone(timeZone);
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(now);
+    const y = parts.find((p) => p.type === 'year')?.value;
+    const m = parts.find((p) => p.type === 'month')?.value;
+    const d = parts.find((p) => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    // fall through
+  }
+  return formatDateParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
+}
+
+export function localTimeHHmmInTimeZone(timeZone: string | null | undefined, now = new Date()): string {
+  const tz = timeZone && isValidTimeZone(timeZone) ? timeZone : normalizeTimeZone(timeZone);
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(now);
+    const hour = parts.find((p) => p.type === 'hour')?.value || '00';
+    const minute = parts.find((p) => p.type === 'minute')?.value || '00';
+    return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+  } catch {
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+}
+
+export function normalizeWeekdays(input: RecurringSeriesInput): number[] {
+  const fromList = (input.weekdays || [])
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
+  if (fromList.length) {
+    return Array.from(new Set(fromList)).sort((a, b) => a - b);
+  }
+  if (input.weekday != null && input.weekday >= 0 && input.weekday <= 6) {
+    return [input.weekday];
+  }
+  return [weekdayCivil(input.startDate)];
+}
+
 export function resolveRecurrenceInterval(input: RecurringSeriesInput): {
   frequency: RecurrenceFrequency;
   interval: number;
-  intervalUnit: 'weeks' | 'months';
+  intervalUnit: RecurrenceIntervalUnit;
 } {
+  const customInterval = Math.min(365, Math.max(1, Number(input.interval || 1)));
   switch (input.frequency) {
+    case 'daily':
+      return { frequency: 'daily', interval: 1, intervalUnit: 'days' };
     case 'weekly':
       return { frequency: 'weekly', interval: 1, intervalUnit: 'weeks' };
     case 'biweekly':
       return { frequency: 'biweekly', interval: 2, intervalUnit: 'weeks' };
+    case 'every_three_weeks':
+      return { frequency: 'every_three_weeks', interval: 3, intervalUnit: 'weeks' };
     case 'every_four_weeks':
       return { frequency: 'every_four_weeks', interval: 4, intervalUnit: 'weeks' };
     case 'monthly':
@@ -98,12 +178,26 @@ export function resolveRecurrenceInterval(input: RecurringSeriesInput): {
     case 'custom':
       return {
         frequency: 'custom',
-        interval: Math.max(1, Number(input.interval || 1)),
-        intervalUnit: input.intervalUnit === 'months' ? 'months' : 'weeks'
+        interval: customInterval,
+        intervalUnit:
+          input.intervalUnit === 'days' || input.intervalUnit === 'months' ? input.intervalUnit : 'weeks'
       };
     default:
       return { frequency: 'none', interval: 1, intervalUnit: 'weeks' };
   }
+}
+
+export function resolveRecurrenceEndMode(input: {
+  endDate?: string | null;
+  occurrenceLimit?: number | null;
+  endMode?: RecurrenceEndMode | null;
+}): RecurrenceEndMode {
+  if (input.endMode === 'never' || input.endMode === 'on_date' || input.endMode === 'after_count') {
+    return input.endMode;
+  }
+  if (input.occurrenceLimit && input.occurrenceLimit > 0) return 'after_count';
+  if (input.endDate) return 'on_date';
+  return 'never';
 }
 
 export function alignStartToWeekday(startDate: string, weekday: number | null | undefined): string {
@@ -116,13 +210,34 @@ export function alignStartToWeekday(startDate: string, weekday: number | null | 
   return startDate;
 }
 
+export function alignStartToWeekdays(startDate: string, weekdays: number[]): string {
+  if (!weekdays.length) return startDate;
+  let cursor = startDate;
+  for (let i = 0; i < 7; i += 1) {
+    if (weekdays.includes(weekdayCivil(cursor))) return cursor;
+    cursor = addDaysCivil(cursor, 1);
+  }
+  return startDate;
+}
+
 export function windowEndDate(startFrom: string, windowDays = RECURRING_GENERATION_WINDOW_DAYS): string {
   return addDaysCivil(startFrom, windowDays);
 }
 
+function advanceCursor(
+  cursor: string,
+  interval: number,
+  intervalUnit: RecurrenceIntervalUnit,
+  anchorDay?: number
+): string {
+  if (intervalUnit === 'months') return addMonthsCivil(cursor, interval, anchorDay);
+  if (intervalUnit === 'days') return addDaysCivil(cursor, interval);
+  return addDaysCivil(cursor, interval * 7);
+}
+
 /**
- * Generate occurrence dates in the series timezone calendar (civil dates).
- * Does not use the browser timezone for cadence math.
+ * Generate occurrence dates using civil calendar math in the series timezone context.
+ * Never emits dates before startDate. End date is inclusive. Rolling window caps output.
  */
 export function generateOccurrenceDates(
   input: RecurringSeriesInput,
@@ -131,32 +246,72 @@ export function generateOccurrenceDates(
   if (input.frequency === 'none') return [input.startDate];
 
   const { interval, intervalUnit } = resolveRecurrenceInterval(input);
-  const timezone = normalizeTimeZone(input.timezone);
-  void timezone; // cadence uses civil dates; wall-clock applied separately
-
-  const weekday = input.weekday ?? weekdayCivil(input.startDate);
-  let cursor = alignStartToWeekday(input.startDate, weekday);
+  const weekdays = normalizeWeekdays(input);
   const fromDate = options?.fromDate || input.startDate;
   const hardWindowEnd = windowEndDate(fromDate, options?.windowDays ?? RECURRING_GENERATION_WINDOW_DAYS);
-  const seriesEnd = input.endDate && compareCivil(input.endDate, hardWindowEnd) < 0 ? input.endDate : hardWindowEnd;
+  const seriesEnd =
+    input.endDate && compareCivil(input.endDate, hardWindowEnd) < 0 ? input.endDate : hardWindowEnd;
   const limit = input.occurrenceLimit && input.occurrenceLimit > 0 ? input.occurrenceLimit : null;
   let produced = options?.existingCount || 0;
   const dates: string[] = [];
 
-  // Advance cursor until it reaches the generation-from date.
-  while (compareCivil(cursor, fromDate) < 0) {
-    cursor =
-      intervalUnit === 'months' ? addMonthsCivil(cursor, interval) : addDaysCivil(cursor, interval * 7);
-    if (dates.length > 1000) break;
+  // Daily / custom days / monthly: single stream.
+  if (intervalUnit === 'days' || intervalUnit === 'months' || weekdays.length <= 1) {
+    const weekday = weekdays[0] ?? weekdayCivil(input.startDate);
+    const anchorDay = parseDateParts(input.startDate)?.d;
+    let cursor =
+      intervalUnit === 'weeks' ? alignStartToWeekday(input.startDate, weekday) : input.startDate;
+
+    let guard = 0;
+    while (compareCivil(cursor, fromDate) < 0) {
+      cursor = advanceCursor(cursor, interval, intervalUnit, anchorDay);
+      guard += 1;
+      if (guard > 1000) break;
+    }
+
+    while (compareCivil(cursor, seriesEnd) <= 0) {
+      if (limit != null && produced >= limit) break;
+      if (compareCivil(cursor, input.startDate) >= 0) {
+        dates.push(cursor);
+        produced += 1;
+      }
+      cursor = advanceCursor(cursor, interval, intervalUnit, anchorDay);
+      if (dates.length > 200) break;
+    }
+    return dates;
   }
 
+  // Weekly-style multi-weekday: include each selected weekday on matching week intervals.
+  const first = alignStartToWeekdays(input.startDate, weekdays);
+  let cursor = first;
+  // Rewind to the start of the first aligned week cycle if fromDate is later.
+  if (compareCivil(cursor, fromDate) < 0) {
+    const deltaDays = daysBetweenCivil(first, fromDate);
+    const weekBlocks = Math.floor(deltaDays / (7 * interval)) * interval;
+    cursor = addDaysCivil(first, weekBlocks * 7);
+    while (compareCivil(cursor, fromDate) < 0) {
+      cursor = addDaysCivil(cursor, 1);
+      if (daysBetweenCivil(first, cursor) > 4000) break;
+    }
+  }
+
+  let emitGuard = 0;
   while (compareCivil(cursor, seriesEnd) <= 0) {
     if (limit != null && produced >= limit) break;
-    dates.push(cursor);
-    produced += 1;
-    cursor =
-      intervalUnit === 'months' ? addMonthsCivil(cursor, interval) : addDaysCivil(cursor, interval * 7);
-    if (dates.length > 200) break;
+    const weeksFromStart = Math.floor(daysBetweenCivil(first, cursor) / 7);
+    const onCadence = weeksFromStart % interval === 0;
+    if (
+      onCadence &&
+      weekdays.includes(weekdayCivil(cursor)) &&
+      compareCivil(cursor, input.startDate) >= 0 &&
+      compareCivil(cursor, fromDate) >= 0
+    ) {
+      dates.push(cursor);
+      produced += 1;
+    }
+    cursor = addDaysCivil(cursor, 1);
+    emitGuard += 1;
+    if (emitGuard > 800 || dates.length > 200) break;
   }
 
   return dates;
@@ -168,6 +323,7 @@ export function buildOccurrenceSchedule(
   durationMinutes: number | null | undefined,
   timezone: string | null | undefined
 ): GeneratedOccurrence {
+  void timezone;
   const match = String(preferredStartTime || '')
     .trim()
     .match(/^(\d{2}):(\d{2})$/);
@@ -194,6 +350,32 @@ export function buildOccurrenceSchedule(
   };
 }
 
+/**
+ * Drop today's occurrence when its local start time has already passed.
+ * Prefers the next valid occurrence over creating an immediately overdue job.
+ */
+export function skipOverdueTodayOccurrences(
+  occurrences: GeneratedOccurrence[],
+  options: {
+    timezone?: string | null;
+    preferredStartTime?: string | null;
+    now?: Date;
+  }
+): GeneratedOccurrence[] {
+  const tz = options.timezone;
+  const today = civilDateInTimeZone(tz, options.now);
+  const nowHm = localTimeHHmmInTimeZone(tz, options.now);
+  const preferred = String(options.preferredStartTime || '').trim().slice(0, 5);
+  const hasTime = /^\d{2}:\d{2}$/.test(preferred);
+
+  return occurrences.filter((occurrence) => {
+    if (compareCivil(occurrence.occurrenceDate, today) < 0) return false;
+    if (compareCivil(occurrence.occurrenceDate, today) > 0) return true;
+    if (!hasTime) return true;
+    return preferred > nowHm;
+  });
+}
+
 export function formatTimezoneAbbreviation(
   timezone: string | null | undefined,
   date: string,
@@ -202,7 +384,6 @@ export function formatTimezoneAbbreviation(
   if (!timezone || !isValidTimeZone(timezone)) return '';
   try {
     const clock = /^\d{2}:\d{2}$/.test(String(time || '').trim()) ? String(time).trim().slice(0, 5) : '12:00';
-    // Interpret the civil local time in the property timezone for the abbreviation (handles DST).
     const probe = new Date(`${date}T${clock}:00`);
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
@@ -216,12 +397,30 @@ export function formatTimezoneAbbreviation(
 
 export function generateOccurrences(
   input: RecurringSeriesInput,
-  options?: { fromDate?: string; windowDays?: number; existingCount?: number }
+  options?: { fromDate?: string; windowDays?: number; existingCount?: number; now?: Date; skipOverdueToday?: boolean }
 ): GeneratedOccurrence[] {
   const tz = input.timezone && isValidTimeZone(input.timezone) ? input.timezone.trim() : normalizeTimeZone(input.timezone);
-  return generateOccurrenceDates(input, options).map((date) =>
+  let rows = generateOccurrenceDates(input, options).map((date) =>
     buildOccurrenceSchedule(date, input.preferredStartTime, input.durationMinutes, tz)
   );
+  if (options?.skipOverdueToday !== false) {
+    rows = skipOverdueTodayOccurrences(rows, {
+      timezone: tz,
+      preferredStartTime: input.preferredStartTime,
+      now: options?.now
+    });
+  }
+  return rows;
+}
+
+/** Generation fromDate for an active series: never before start, never before local today. */
+export function resolveGenerationFromDate(
+  startDate: string,
+  timezone?: string | null,
+  now = new Date()
+): string {
+  const today = civilDateInTimeZone(timezone, now);
+  return compareCivil(startDate, today) > 0 ? startDate : today;
 }
 
 function formatDisplayDate(date: string): string {
@@ -250,28 +449,42 @@ export function summarizeRecurrence(input: RecurringSeriesInput): string {
   }
 
   const { interval, intervalUnit } = resolveRecurrenceInterval(input);
-  const weekday = input.weekday ?? weekdayCivil(input.startDate);
-  const dayLabel = WEEKDAY_LABELS[weekday] || 'the selected day';
+  const weekdays = normalizeWeekdays(input);
+  const dayLabel =
+    weekdays.length > 1
+      ? weekdays.map((day) => WEEKDAY_LABELS[day]).join(' and ')
+      : WEEKDAY_LABELS[weekdays[0]] || 'the selected day';
   const hasTime = Boolean(input.preferredStartTime && /^\d{2}:\d{2}$/.test(input.preferredStartTime.trim()));
   const tzAbbrev = formatTimezoneAbbreviation(input.timezone, input.startDate, input.preferredStartTime);
   const timeLabel = hasTime
     ? ` at ${formatTimeLabel(input.preferredStartTime!)}${tzAbbrev ? ` ${tzAbbrev}` : ''}`
     : '';
+
   let cadence = '';
-  if (input.frequency === 'weekly' || (intervalUnit === 'weeks' && interval === 1)) cadence = 'Every week';
+  if (input.frequency === 'daily' || (intervalUnit === 'days' && interval === 1)) cadence = 'Every day';
+  else if (intervalUnit === 'days') cadence = `Every ${interval} days`;
+  else if (input.frequency === 'weekly' || (intervalUnit === 'weeks' && interval === 1)) cadence = 'Every week';
   else if (input.frequency === 'biweekly' || (intervalUnit === 'weeks' && interval === 2)) cadence = 'Every two weeks';
-  else if (input.frequency === 'every_four_weeks' || (intervalUnit === 'weeks' && interval === 4)) {
+  else if (input.frequency === 'every_three_weeks' || (intervalUnit === 'weeks' && interval === 3)) {
+    cadence = 'Every three weeks';
+  } else if (input.frequency === 'every_four_weeks' || (intervalUnit === 'weeks' && interval === 4)) {
     cadence = 'Every four weeks';
   } else if (input.frequency === 'monthly' || intervalUnit === 'months') {
     cadence = interval === 1 ? 'Every month' : `Every ${interval} months`;
   } else cadence = `Every ${interval} weeks`;
 
-  let ending = '';
-  if (input.endDate) ending = ` until ${formatDisplayDate(input.endDate)}`;
-  else if (input.occurrenceLimit) ending = ` for ${input.occurrenceLimit} visits`;
-  else ending = `. The series continues until you end it, with the next ${RECURRING_GENERATION_WINDOW_DAYS} days kept scheduled ahead`;
+  const usesWeekday = intervalUnit === 'weeks';
+  const dayPart = usesWeekday ? ` on ${dayLabel}` : input.frequency === 'monthly' ? ` on the ${Number(input.startDate.slice(8, 10))}` : '';
 
-  return `${cadence} on ${dayLabel}${timeLabel} starting ${formatDisplayDate(input.startDate)}${ending}.`;
+  let ending = '';
+  const endMode = resolveRecurrenceEndMode(input);
+  if (endMode === 'on_date' && input.endDate) ending = `, ending ${formatDisplayDate(input.endDate)}`;
+  else if (endMode === 'after_count' && input.occurrenceLimit) ending = `, ending after ${input.occurrenceLimit} visits`;
+  else {
+    ending = `. The series continues until you end it, with the next ${RECURRING_GENERATION_WINDOW_DAYS} days kept scheduled ahead`;
+  }
+
+  return `${cadence}${dayPart}${timeLabel} starting ${formatDisplayDate(input.startDate)}${ending}.`;
 }
 
 function formatTimeLabel(value: string): string {
@@ -283,6 +496,20 @@ function formatTimeLabel(value: string): string {
   hour = hour % 12;
   if (hour === 0) hour = 12;
   return `${hour}:${minute} ${suffix}`;
+}
+
+/**
+ * Normalize active schedule value to approximate monthly recurring revenue.
+ * Not used for generated occurrence totals. Excludes paused/ended schedules in callers.
+ */
+export function normalizeScheduleToMrr(amount: number, input: RecurringSeriesInput): number {
+  const value = Number(amount || 0);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  const { interval, intervalUnit } = resolveRecurrenceInterval(input);
+  const safeInterval = Math.max(1, interval);
+  if (intervalUnit === 'days') return (value * (365 / safeInterval)) / 12;
+  if (intervalUnit === 'weeks') return (value * (52 / safeInterval)) / 12;
+  return value / safeInterval;
 }
 
 export function isCompletedLikeStatus(status: string | null | undefined): boolean {
@@ -306,6 +533,7 @@ export type ScheduledOccurrenceFinance = {
   status?: string | null;
   is_skipped?: boolean | null;
   occurrence_date?: string | null;
+  recurring_series_id?: string | null;
 };
 
 function isActiveScheduledOccurrence(
@@ -388,4 +616,4 @@ export function parseOccurrenceLocalTime(scheduledStart: string | null | undefin
   return match?.[1] || '';
 }
 
-export { parseMoneyDollars, calculateExpectedJobFinance };
+export { parseMoneyDollars, calculateExpectedJobFinance, compareCivil, addDaysCivil, addMonthsCivil };

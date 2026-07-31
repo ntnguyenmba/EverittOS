@@ -433,6 +433,7 @@ export async function fetchBusinessPerformance(
     paymentsThisMonth: Number(paymentsThisMonth.toFixed(2)),
     outstandingInvoices: Number(outstandingInvoices.toFixed(2)),
     expensesThisMonth: Number(expensesThisMonth.toFixed(2)),
+    cashAfterPaidCosts: Number((dashboardMetrics.cashAfterPaidCosts || 0).toFixed(2)),
     estimatedProfitThisMonth: Number(estimatedProfitThisMonth.toFixed(2)),
     topCustomer: Array.from(customerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: customerMap.get(id) || 'Customer', revenue: Number(revenue.toFixed(2)) }))[0] || null,
     topWorker: Array.from(workerRevenue.entries()).sort((a, b) => b[1] - a[1]).map(([id, revenue]) => ({ name: workerMap.get(id) || 'Team member', revenue: Number(revenue.toFixed(2)) }))[0] || null,

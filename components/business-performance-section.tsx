@@ -40,7 +40,11 @@ export function BusinessPerformanceSection() {
     data.revenueByMonth.some((p) => p.value > 0) ||
     data.revenueByCustomer.length > 0 ||
     data.expensesByCategory.length > 0;
-  const cashAfterExpenses = data.paymentsThisMonth - data.expensesThisMonth;
+  // Prefer shared dashboard cash definition: payments − contractor cash paid − expenses.
+  const cashAfterExpenses =
+    typeof data.cashAfterPaidCosts === 'number'
+      ? data.cashAfterPaidCosts
+      : data.paymentsThisMonth - data.expensesThisMonth;
 
   return (
     <section className="finance-performance-section">
@@ -60,9 +64,9 @@ export function BusinessPerformanceSection() {
         <MetricCard label="Outstanding invoices" value={formatCurrency(data.outstandingInvoices)} loading={loading} />
         <MetricCard label="Expenses this month" value={formatCurrency(data.expensesThisMonth)} loading={loading} />
         <MetricCard
-          label="Cash after expenses"
+          label="Cash after paid costs"
           value={formatCurrency(cashAfterExpenses)}
-          hint="Payments received minus expenses this month"
+          hint="Payments received minus contractor payments and expenses this month"
           loading={loading}
         />
         <MetricCard

@@ -32,19 +32,18 @@ test('job photo section separates camera capture from multi library selection', 
 
 test('recurring schedule UI has one schedule block and no fake 9:00 AM default', () => {
   const source = read('components/job-creator.tsx');
-  assert.match(source, /Schedule type/);
-  assert.match(source, /One-time/);
+  assert.match(source, /recurrenceCopy\.scheduleType/);
+  assert.match(source, /recurrenceCopy\.oneTime/);
   assert.match(source, /isRecurring/);
   assert.match(source, /preferredStartTime: firstVisit\?\.start_time \|\| null/);
-  assert.match(source, /Use company default/);
-  assert.match(source, /Advanced recurrence options/);
+  assert.match(source, /companyDefaultTimezone/);
+  assert.match(source, /recurrenceEndMode/);
   assert.doesNotMatch(source, /\|\| '09:00'/);
-  const scheduleIdx = source.indexOf('Schedule type');
-  const weekdayIdx = source.indexOf('Weekday', scheduleIdx);
-  const startDateIdx = source.indexOf('Start date', weekdayIdx);
-  const timezoneIdx = source.indexOf('Job timezone', startDateIdx);
-  const advancedIdx = source.indexOf('Advanced recurrence options', timezoneIdx);
-  assert.ok(scheduleIdx < weekdayIdx && weekdayIdx < startDateIdx && startDateIdx < timezoneIdx && timezoneIdx < advancedIdx);
+  const scheduleIdx = source.indexOf('recurrenceCopy.scheduleType');
+  const startDateIdx = source.indexOf('recurrenceCopy.startsOn', scheduleIdx);
+  const timezoneIdx = source.indexOf('recurrenceCopy.jobTimezone', startDateIdx);
+  const endsIdx = source.indexOf('recurrenceCopy.ends', timezoneIdx);
+  assert.ok(scheduleIdx < startDateIdx && startDateIdx < timezoneIdx && timezoneIdx < endsIdx);
 });
 
 test('recurrence summary omits time until chosen and can include timezone abbrev', () => {

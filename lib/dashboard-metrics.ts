@@ -82,9 +82,23 @@ export type DashboardRevenueMetrics = {
   scheduledExpectedAdditionalExpenses: number;
   /** Scheduled expected profit = scheduled revenue − expected contractor − expected additional */
   scheduledExpectedProfit: number;
-  /** One-time vs recurring occurrence counts inside the current generated window */
+  /**
+   * Generated recurring occurrences attributed to the selected period
+   * (active/upcoming in range; never counts the series definition itself).
+   */
   recurringOccurrenceCount: number;
+  /** One-time jobs attributed to the selected period (non-cancelled). */
   oneTimeJobCount: number;
+  /** Active recurring schedule definitions (not job occurrences). */
+  activeRecurringScheduleCount: number;
+  /** Paused recurring schedule definitions. */
+  pausedRecurringScheduleCount: number;
+  /** Distinct customers with at least one recurring series (active or paused). */
+  recurringCustomerCount: number;
+  /** Completed recurring occurrences in the selected period. */
+  completedRecurringOccurrenceCount: number;
+  /** Cancelled/skipped recurring occurrences in the selected period. */
+  cancelledRecurringOccurrenceCount: number;
   /** Contractor pay recorded/incurred in the selected period */
   contractorPayThisMonth?: number;
   /** Contractor payments actually paid in the selected period */
@@ -1066,6 +1080,11 @@ function emptyMetrics(): DashboardRevenueMetrics {
     scheduledExpectedProfit: 0,
     recurringOccurrenceCount: 0,
     oneTimeJobCount: 0,
+    activeRecurringScheduleCount: 0,
+    pausedRecurringScheduleCount: 0,
+    recurringCustomerCount: 0,
+    completedRecurringOccurrenceCount: 0,
+    cancelledRecurringOccurrenceCount: 0,
     contractorPayThisMonth: 0,
     contractorPaymentsPaid: 0,
     periodUnpaidContractorPay: 0,
@@ -1420,17 +1439,80 @@ export async function fetchDashboardRevenueMetrics(
     periodEnd: end
   });
   const scheduledRevenue = scheduledFinance.scheduledRevenue;
+
+  const occurrenceDateFor = (row: (typeof scheduleRows)[number]) =>
+    (row as { occurrence_date?: string | null }).occurrence_date ||
+    String(row.scheduled_start || row.start_date || '').slice(0, 10) ||
+    null;
+
+  const inPeriodOccurrence = (row: (typeof scheduleRows)[number]) => {
+    const date = occurrenceDateFor(row);
+    if (!date) return false;
+    return range === 'all_time' || inRange(date, start, end);
+  };
+
+  // Count generated occurrences in the selected period — never the series definition row.
   const recurringOccurrenceCount = scheduleRows.filter(
     (row) =>
       (row as { recurring_series_id?: string | null }).recurring_series_id &&
       !isCancelledOrSkippedStatus(row.status, (row as { is_skipped?: boolean | null }).is_skipped) &&
-      !isCompletedLikeStatus(row.status)
+      !isCompletedLikeStatus(row.status) &&
+      inPeriodOccurrence(row)
   ).length;
   const oneTimeJobCount = scheduleRows.filter(
     (row) =>
       !(row as { recurring_series_id?: string | null }).recurring_series_id &&
-      !isCancelledOrSkippedStatus(row.status, (row as { is_skipped?: boolean | null }).is_skipped)
+      !isCancelledOrSkippedStatus(row.status, (row as { is_skipped?: boolean | null }).is_skipped) &&
+      inPeriodOccurrence(row)
   ).length;
+  const completedRecurringOccurrenceCount = scheduleRows.filter(
+    (row) =>
+      (row as { recurring_series_id?: string | null }).recurring_series_id &&
+      isCompletedLikeStatus(row.status) &&
+      inPeriodOccurrence(row)
+  ).length;
+  let cancelledRecurringOccurrenceCount = 0;
+  const cancelledRecurringRes = await supabase
+    .from('jobs')
+    .select('id, occurrence_date, scheduled_start, start_date, is_skipped, status')
+    .eq('organization_id', organizationId)
+    .not('recurring_series_id', 'is', null)
+    .or('status.in.(cancelled,canceled),is_skipped.eq.true');
+  if (!cancelledRecurringRes.error) {
+    cancelledRecurringOccurrenceCount = ((cancelledRecurringRes.data || []) as Array<{
+      occurrence_date?: string | null;
+      scheduled_start?: string | null;
+      start_date?: string | null;
+      is_skipped?: boolean | null;
+      status?: string | null;
+    }>).filter((row) => {
+      const date =
+        row.occurrence_date || String(row.scheduled_start || row.start_date || '').slice(0, 10) || null;
+      if (!date) return false;
+      return range === 'all_time' || inRange(date, start, end);
+    }).length;
+  }
+
+  let activeRecurringScheduleCount = 0;
+  let pausedRecurringScheduleCount = 0;
+  let recurringCustomerCount = 0;
+  const seriesRes = await supabase
+    .from('recurring_job_series')
+    .select('id, status, customer_id')
+    .eq('organization_id', organizationId)
+    .in('status', ['active', 'paused']);
+  if (!seriesRes.error) {
+    const seriesRows = (seriesRes.data || []) as Array<{
+      id?: string;
+      status?: string | null;
+      customer_id?: string | null;
+    }>;
+    activeRecurringScheduleCount = seriesRows.filter((row) => row.status === 'active').length;
+    pausedRecurringScheduleCount = seriesRows.filter((row) => row.status === 'paused').length;
+    recurringCustomerCount = new Set(
+      seriesRows.map((row) => String(row.customer_id || '').trim()).filter(Boolean)
+    ).size;
+  }
 
   return {
     revenueThisMonth: Number(paidToYou.toFixed(2)),
@@ -1465,6 +1547,11 @@ export async function fetchDashboardRevenueMetrics(
     scheduledExpectedProfit: Number(scheduledFinance.expectedProfit.toFixed(2)),
     recurringOccurrenceCount,
     oneTimeJobCount,
+    activeRecurringScheduleCount,
+    pausedRecurringScheduleCount,
+    recurringCustomerCount,
+    completedRecurringOccurrenceCount,
+    cancelledRecurringOccurrenceCount,
     contractorPayThisMonth: Number(contractorPay.toFixed(2)),
     contractorPaymentsPaid: Number(contractorPaymentsPaid.toFixed(2)),
     periodUnpaidContractorPay: Number(periodUnpaidContractorPay.toFixed(2)),

@@ -58,7 +58,7 @@ test('actual profit uses only collected and actual costs', () => {
 });
 
 test('weekly every-two-weeks every-four-weeks monthly and custom recurrence', () => {
-  assert.equal(RECURRING_GENERATION_WINDOW_DAYS, 90);
+  assert.equal(RECURRING_GENERATION_WINDOW_DAYS, 365);
 
   const weekly = generateOccurrenceDates({ frequency: 'weekly', startDate: '2026-08-06', weekday: 4 });
   assert.ok(weekly.length >= 12);
@@ -86,7 +86,7 @@ test('weekly every-two-weeks every-four-weeks monthly and custom recurrence', ()
   assert.equal(custom[1].occurrenceDate, '2026-08-25');
 });
 
-test('property timezone wall-clock and 90-day window without unlimited generation', () => {
+test('property timezone wall-clock and rolling window without unlimited generation', () => {
   const dates = generateOccurrenceDates({
     frequency: 'weekly',
     startDate: '2026-08-06',
@@ -180,8 +180,8 @@ test('client price contractor pay and expenses copied onto occurrences', () => {
 
 test('job creator exposes Repeats Every two weeks and expected profit review', () => {
   const source = read('components/job-creator.tsx');
-  assert.match(source, /Schedule type/);
-  assert.match(source, /Every two weeks/);
+  assert.match(source, /recurrenceCopy\.scheduleType/);
+  assert.match(source, /everyTwoWeeks|every_three_weeks/);
   assert.match(source, /Expected profit/);
   assert.match(source, /Additional expected expenses/);
   assert.match(source, /calculateExpectedJobFinance/);
@@ -197,7 +197,7 @@ test('recurrence summary matches plain language example style', () => {
     preferredStartTime: '10:00'
   });
   assert.match(summary, /Every two weeks on Thursday at 10:00 AM starting August 6, 2026/);
-  assert.match(summary, /90 days/);
+  assert.match(summary, /365 days/);
 });
 
 test('dashboard metrics keep expected and actual finance separate', () => {
