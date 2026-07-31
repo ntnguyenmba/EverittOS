@@ -3,6 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { recordInvoicePaymentByInvoiceId } from '@/lib/finance/record-invoice-payment';
 import { isValidUuid } from '@/lib/input-validation';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -72,13 +73,18 @@ export async function POST(request: Request, { params }: RouteParams) {
       payment_increment: result.paymentIncrement,
       payment_status: result.paymentStatus,
       payment_method: body.payment_method || null,
-      payment_reference: body.payment_reference || null
+      payment_reference: body.payment_reference || null,
+      payment_id: result.paymentId
     }
   );
 
   return NextResponse.json({
     invoice: result.invoice,
     document: result.document,
+    invoice_id: result.invoiceId,
+    outbound_document_id: result.outboundDocumentId,
+    payment_id: result.paymentId,
+    payment_increment: result.paymentIncrement,
     payment_status: result.paymentStatus,
     amount_paid: result.amountPaid,
     balance_due: result.balanceDue
