@@ -6,6 +6,7 @@ import { logAuthStep, workspaceDiagnostics } from '@/lib/auth-diagnostics';
 import { diagnoseLoginFailure } from '@/lib/auth-user-diagnostics';
 import { mapAuthError } from '@/lib/auth-errors';
 import { isValidEmail, normalizeEmail, validatePasswordLength } from '@/lib/input-validation';
+import { resolveLoginWorkspaceRole } from '@/lib/login-workspace-role';
 import { sanitizeAuthErrorPayload, safeErrorMessage } from '@/lib/safe-api-error';
 import { repairClientPortalAccessForUser } from '@/lib/client-portal-repair';
 import { postAuthRedirectPath } from '@/lib/post-auth-redirect';
@@ -117,7 +118,6 @@ export async function POST(request: Request) {
       const diagnosis = needsDeepDiagnosis ? await diagnoseLoginFailure(email) : null;
       const meta = requestClientMeta(request);
 
-      // Failure logging must not delay the auth error response beyond a short budget.
       await withTimeout(
         logSecurityEvent({
           eventType: isFetchFailure ? 'suspicious_activity' : 'login_failed',
@@ -184,7 +184,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Session cookie writing is handled by jsonWithAuthSession; skip redundant getUser().
     logAuthStep(ROUTE, 'workspace_bootstrap', { userId: user.id });
     let bootstrap = await ensureUserWorkspace(user.id, email, user.user_metadata || undefined, supabase);
 
@@ -290,8 +289,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Repair incomplete client invite relationships from the prior subscription-wall bug.
-    // Owners/managers/contractors are skipped by the repair routine.
     let effectiveRole = profile.role;
     let effectiveOrganizationId = profile.organization_id;
     let clientRepairRedirect: string | null = null;
@@ -308,6 +305,13 @@ export async function POST(request: Request) {
     } catch {
       // Login must still succeed even if repair is unavailable.
     }
+
+    effectiveRole = await resolveLoginWorkspaceRole(
+      supabase,
+      user.id,
+      effectiveOrganizationId,
+      effectiveRole
+    );
 
     let onboardingCompleted = true;
     let onboardingSkipped = false;
@@ -334,11 +338,10 @@ export async function POST(request: Request) {
     });
 
     const meta = requestClientMeta(request);
-    // Side-effects must not block a successful login response.
     await Promise.allSettled([
       withTimeout(
         logSecurityEvent({
-          organizationId: profile.organization_id,
+          organizationId: effectiveOrganizationId,
           userId: user.id,
           eventType: 'login_success',
           message: 'User signed in',
@@ -349,7 +352,7 @@ export async function POST(request: Request) {
       ),
       withTimeout(
         trackProductEventServer(supabase, 'login', {
-          organizationId: profile.organization_id,
+          organizationId: effectiveOrganizationId,
           userId: user.id
         }),
         SIDE_EFFECT_TIMEOUT_MS
