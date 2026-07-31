@@ -20,8 +20,6 @@ import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/po
 import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
-type JobDetailError = 'job_not_found' | 'no_access';
-
 type WorkerRow = {
   id?: string | null;
   auth_user_id?: string | null;
@@ -37,12 +35,12 @@ export default function ContractorJobDetailPage() {
   const { t } = useTranslation();
   const jobId = String(params?.id || '');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<JobDetailError | ''>('');
+  const [notFound, setNotFound] = useState(false);
   const [view, setView] = useState<ContractorSafeJobView | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setNotFound(false);
     setView(null);
 
     const {
@@ -81,7 +79,7 @@ export default function ContractorJobDetailPage() {
     const identity = contractorIdentityFromWorkers(user.id, workers, lookupEmail, displayName);
     const workerIds = identity.workerIds || [];
 
-    const [{ data: job }, { data: assignments }, { data: shares }] = await Promise.all([
+    const [{ data: job }, { data: assignments }] = await Promise.all([
       supabase
         .from('jobs')
         .select(
@@ -89,17 +87,11 @@ export default function ContractorJobDetailPage() {
         )
         .eq('id', jobId)
         .maybeSingle(),
-      supabase.from('job_assignments').select('job_id, worker_id').eq('job_id', jobId),
-      supabase
-        .from('record_shares')
-        .select('record_id, shared_with_user_id, access_level')
-        .eq('record_type', 'job')
-        .eq('record_id', jobId)
-        .eq('shared_with_user_id', user.id)
+      supabase.from('job_assignments').select('job_id, worker_id').eq('job_id', jobId)
     ]);
 
     if (!job) {
-      setError('job_not_found');
+      setNotFound(true);
       setLoading(false);
       return;
     }
@@ -107,14 +99,11 @@ export default function ContractorJobDetailPage() {
     const allowed = contractorCanAccessJob({
       job: { id: job.id, status: job.status, assigned_to: job.assigned_to },
       workerIds,
-      userId: user.id,
-      assignments: assignments || [],
-      shares: shares || []
+      assignments: assignments || []
     });
 
     if (!allowed) {
-      setError('no_access');
-      setLoading(false);
+      router.replace(CONTRACTOR_HOME_PATH);
       return;
     }
 
@@ -155,15 +144,6 @@ export default function ContractorJobDetailPage() {
     void load();
   }, [load]);
 
-  function errorText(code: JobDetailError): string {
-    switch (code) {
-      case 'job_not_found':
-        return t('portal.contractor.jobNotFound');
-      case 'no_access':
-        return t('portal.contractor.noAccess');
-    }
-  }
-
   return (
     <AuthenticatedSection role="contractor">
       <div style={{ marginBottom: 16 }}>
@@ -173,9 +153,9 @@ export default function ContractorJobDetailPage() {
       </div>
 
       {loading ? <div className="card">{t('portal.contractor.loading')}</div> : null}
-      {!loading && error ? (
+      {!loading && notFound ? (
         <div className="card" role="alert">
-          <p style={{ margin: 0 }}>{errorText(error)}</p>
+          <p style={{ margin: 0 }}>{t('portal.contractor.jobNotFound')}</p>
           <Link href={CONTRACTOR_HOME_PATH} className="btn" style={{ marginTop: 12 }}>
             {t('portal.contractor.myJobs')}
           </Link>
@@ -188,8 +168,8 @@ export default function ContractorJobDetailPage() {
             <div>
               <h1 style={{ margin: 0, fontSize: 28 }}>{view.title}</h1>
               <p className="muted" style={{ margin: '8px 0 0' }}>
-                {view.scheduledDate || t('portal.common.dateNotSet')} · {translatePortalJobStatus(t, view.status)}
-                {view.readOnly ? ` · ${t('portal.contractor.viewOnly')}` : ''}
+                {view.scheduledDate || t('portal.common.dateNotSet')} · {translatePortalJobStatus(t, view.status)} ·{' '}
+                {t('portal.contractor.viewOnly')}
               </p>
             </div>
             {view.mode === 'cancelled' ? <span className="badge">{t('portal.contractor.cancelled')}</span> : null}
