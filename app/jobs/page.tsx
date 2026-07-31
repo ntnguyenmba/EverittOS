@@ -138,6 +138,7 @@ type Job = {
   scheduled_start?: string | null;
   scheduled_end?: string | null;
   timezone?: string | null;
+  created_at?: string | null;
   revenue_amount?: number | null;
   billing_status?: JobBillingStatus | string | null;
   photo_count?: number;
@@ -168,12 +169,14 @@ function formatTime(job: Job, locale: string) {
 
 function sortJobs(rows: Job[]) {
   return [...rows].sort((a, b) => {
-    const aValue = a.scheduled_start || a.start_date || a.due_date;
-    const bValue = b.scheduled_start || b.start_date || b.due_date;
+    const aValue = a.scheduled_start || a.start_date || a.due_date || a.created_at || '';
+    const bValue = b.scheduled_start || b.start_date || b.due_date || b.created_at || '';
     if (!aValue && !bValue) return a.title.localeCompare(b.title);
     if (!aValue) return 1;
     if (!bValue) return -1;
-    return aValue.localeCompare(bValue);
+    const byDate = bValue.localeCompare(aValue);
+    if (byDate !== 0) return byDate;
+    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
   });
 }
 
