@@ -73,13 +73,26 @@ async function resolveWorkerId(
   );
 }
 
+function hasMissingColumnError(message?: string | null): boolean {
+  return /column|schema cache|does not exist/i.test(String(message || ''));
+}
+
+function legacyJobPayload(row: Record<string, unknown>): Record<string, unknown> {
+  const legacy = { ...row };
+  delete legacy.timezone;
+  delete legacy.expected_contractor_cost;
+  delete legacy.expected_additional_expense;
+  delete legacy.expected_expense_description;
+  delete legacy.occurrence_local_time;
+  return legacy;
+}
+
 export async function GET() {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
   }
 
-  // Request-time top-up so series stay populated without a paid external scheduler.
   const generation = await generateActiveSeriesForOrganization(ctx.supabase, ctx.workspace, ctx.userId);
 
   const { data, error } = await ctx.supabase
@@ -206,36 +219,44 @@ export async function POST(request: Request) {
     next_generation_date: startDate
   };
 
-  // One-time jobs skip the series table.
   if (frequency === 'none') {
     const scheduledStart = recurrence.preferredStartTime
       ? wallClockDateTime(startDate, recurrence.preferredStartTime)
       : wallClockDateTime(startDate, '00:00');
-    const { data: job, error } = await ctx.supabase
-      .from('jobs')
-      .insert({
-        ...workspaceScopedFields(ctx.workspace, ctx.userId),
-        title,
-        customer_id: body.customer_id || null,
-        property_id: body.property_id || null,
-        customer_name: body.customer_name?.trim() || null,
-        customer_email: body.customer_email?.trim() || null,
-        phone: body.customer_phone?.trim() || body.phone?.trim() || null,
-        address: body.address?.trim() || null,
-        notes: body.notes?.trim() || null,
-        timezone,
-        assigned_to: preferredContractorId,
-        status: 'new',
-        start_date: startDate,
-        due_date: startDate,
-        scheduled_start: scheduledStart,
-        ...financeColumns
-      })
-      .select('id')
-      .single();
+    const jobPayload = {
+      ...workspaceScopedFields(ctx.workspace, ctx.userId),
+      title,
+      customer_id: body.customer_id || null,
+      property_id: body.property_id || null,
+      customer_name: body.customer_name?.trim() || null,
+      customer_email: body.customer_email?.trim() || null,
+      phone: body.customer_phone?.trim() || body.phone?.trim() || null,
+      address: body.address?.trim() || null,
+      notes: body.notes?.trim() || null,
+      timezone,
+      assigned_to: preferredContractorId,
+      status: 'new',
+      start_date: startDate,
+      due_date: startDate,
+      scheduled_start: scheduledStart,
+      ...financeColumns
+    };
 
-    if (error || !job) {
-      return NextResponse.json({ error: mapWorkspaceSaveError(error?.message || 'Unable to create job.') }, { status: 400 });
+    let insert = await ctx.supabase.from('jobs').insert(jobPayload).select('id').single();
+    if (insert.error && hasMissingColumnError(insert.error.message)) {
+      insert = await ctx.supabase
+        .from('jobs')
+        .insert(legacyJobPayload(jobPayload))
+        .select('id')
+        .single();
+    }
+
+    const job = insert.data;
+    if (insert.error || !job) {
+      return NextResponse.json(
+        { error: mapWorkspaceSaveError(insert.error?.message || 'Unable to create job.') },
+        { status: 400 }
+      );
     }
 
     if (preferredContractorId) {
@@ -327,26 +348,19 @@ export async function POST(request: Request) {
     };
   });
 
-  let jobs: Array<{ id: string; occurrence_date?: string | null; scheduled_start?: string | null; status?: string | null }> = [];
+  const jobs: Array<{ id: string; occurrence_date?: string | null; scheduled_start?: string | null; status?: string | null }> = [];
   for (const row of jobRows) {
-    const insert = await ctx.supabase
+    let insert = await ctx.supabase
       .from('jobs')
       .insert(row)
       .select('id, occurrence_date, scheduled_start, status')
       .maybeSingle();
-    if (insert.error && /column|schema cache|does not exist/i.test(insert.error.message)) {
-      const legacy = { ...row } as Record<string, unknown>;
-      delete legacy.expected_contractor_cost;
-      delete legacy.expected_additional_expense;
-      delete legacy.expected_expense_description;
-      delete legacy.occurrence_local_time;
-      const retry = await ctx.supabase
+    if (insert.error && hasMissingColumnError(insert.error.message)) {
+      insert = await ctx.supabase
         .from('jobs')
-        .insert(legacy)
+        .insert(legacyJobPayload(row))
         .select('id, occurrence_date, scheduled_start, status')
         .maybeSingle();
-      if (retry.data) jobs.push(retry.data);
-      continue;
     }
     if (insert.error && /duplicate|unique/i.test(insert.error.message)) continue;
     if (insert.data) jobs.push(insert.data);
