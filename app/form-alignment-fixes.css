@@ -210,6 +210,19 @@ code {
   overflow-wrap: anywhere;
 }
 
+/* Contractor job details are entered only from the Jobs workflow. */
+.contractor-job-card a[href*='/portal/contractor/jobs/'] {
+  display: none;
+}
+
+/* Earnings history is informational and job names are not navigation controls. */
+#earnings a[href*='/portal/contractor/jobs/'] {
+  color: inherit;
+  cursor: default;
+  pointer-events: none;
+  text-decoration: none;
+}
+
 @media (max-width: 720px) {
   .grid-2,
   .segmented-control {
