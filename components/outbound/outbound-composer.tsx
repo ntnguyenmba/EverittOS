@@ -1,6 +1,8 @@
 'use client';
 
 import type { AutosaveState } from '@/components/outbound/use-outbound-autosave';
+import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import type { OutboundComposerFields, OutboundDocType } from '@/lib/outbound/types';
 
 type OutboundComposerProps = {
@@ -53,6 +55,9 @@ export function OutboundComposer({
   onSend,
   onReset
 }: OutboundComposerProps) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
+
   return (
     <div className="card form outbound-composer">
       <div className="outbound-composer-head">
@@ -60,7 +65,7 @@ export function OutboundComposer({
         <span className={`outbound-autosave-indicator outbound-autosave-${saveState}`}>{saveLabel(saveState)}</span>
       </div>
 
-      {!prefillReady ? <p className="muted">Loading customer and job details…</p> : null}
+      {!prefillReady ? <p className="muted">{billingCopy.loadingPrefill}</p> : null}
       {prefillNotice ? <p className="muted" role="status">{prefillNotice}</p> : null}
 
       <label htmlFor={`${docType}-recipient-name`}>Customer</label>
@@ -102,7 +107,7 @@ export function OutboundComposer({
           />
           {amountMissing ? (
             <p className="muted" style={{ marginTop: 4 }}>
-              Missing amount — enter the amount before sending.
+              {billingCopy.missingAmountHint}
             </p>
           ) : null}
         </>

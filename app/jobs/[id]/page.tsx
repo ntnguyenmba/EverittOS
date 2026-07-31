@@ -551,7 +551,7 @@ export default function JobDetailPage({ params }: PageProps) {
         {completionPrompt && canAccessFinancials(userRole, plan) ? (
           <div className="card" style={{ marginBottom: 18 }} role="status">
             <h3>{billingCopy.jobCompleted}</h3>
-            <p className="muted">{billingCopy.createInvoice}</p>
+            <p className="muted">{billingCopy.jobCompletedHint}</p>
             <div className="button-row" style={{ flexWrap: 'wrap', marginTop: 10 }}>
               <Link
                 className="btn btn-primary"

@@ -45,13 +45,7 @@ function ReceiptsPageContent() {
     <AppShell plan={plan} role={role}>
       <header className="page-header">
         <h1>{billingCopy.paymentReceipt}</h1>
-        <p className="page-subtitle">
-          {locale === 'es'
-            ? 'Envía recibos de pago a tus clientes. Los detalles se completan desde la factura pagada.'
-            : locale === 'vi'
-              ? 'Gửi biên nhận thanh toán cho khách hàng. Chi tiết được điền từ hóa đơn đã thanh toán.'
-              : 'Send payment receipts to customers. Details are filled from the paid invoice.'}
-        </p>
+        <p className="page-subtitle">{billingCopy.receiptsSubtitle}</p>
       </header>
 
       <OutboundHub

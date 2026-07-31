@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import {
   defaultComposerFields,
   invoiceBodyForJob,
@@ -88,6 +90,8 @@ export function useOutboundAutosave({
   forceNew = false,
   enabled = true
 }: UseOutboundAutosaveOptions) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [fields, setFields] = useState<OutboundComposerFields>(() => {
     const base = defaultComposerFields(docType);
@@ -163,7 +167,7 @@ export function useOutboundAutosave({
             setFields(fieldsFromDocument(existingJson.document as OutboundDocument));
             setSaveState('saved');
             setPrefillNotice(
-              docType === 'receipt' ? 'Existing receipt found' : 'Existing invoice found'
+              docType === 'receipt' ? billingCopy.existingReceiptFound : billingCopy.existingInvoiceFound
             );
             setAmountMissing(!(Number(existingJson.document.amount) > 0));
             setPrefillReady(true);
@@ -245,6 +249,8 @@ export function useOutboundAutosave({
       cancelled = true;
     };
   }, [
+    billingCopy.existingInvoiceFound,
+    billingCopy.existingReceiptFound,
     docType,
     enabled,
     forceNew,

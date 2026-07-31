@@ -16,9 +16,13 @@ export type BillingOpsCopy = {
   later: string;
   billingStatus: string;
   missingAmount: string;
+  missingAmountHint: string;
   existingInvoiceFound: string;
   existingReceiptFound: string;
+  loadingPrefill: string;
   jobCompleted: string;
+  jobCompletedHint: string;
+  receiptsSubtitle: string;
   createAnotherInvoice: string;
   billing: Record<JobBillingStatus, string>;
 };
@@ -39,9 +43,13 @@ const copy: Record<Locale, BillingOpsCopy> = {
     later: 'Later',
     billingStatus: 'Billing status',
     missingAmount: 'Missing amount',
+    missingAmountHint: 'Missing amount — enter the amount before sending.',
     existingInvoiceFound: 'Existing invoice found',
     existingReceiptFound: 'Existing receipt found',
+    loadingPrefill: 'Loading customer and job details…',
     jobCompleted: 'Job completed',
+    jobCompletedHint: 'Create an invoice for this completed job when you are ready.',
+    receiptsSubtitle: 'Send payment receipts to customers. Details are filled from the paid invoice.',
     createAnotherInvoice: 'Create another invoice',
     billing: {
       not_invoiced: 'Not invoiced',
@@ -67,9 +75,13 @@ const copy: Record<Locale, BillingOpsCopy> = {
     later: 'Más tarde',
     billingStatus: 'Estado de facturación',
     missingAmount: 'Monto faltante',
+    missingAmountHint: 'Monto faltante: ingresa el monto antes de enviar.',
     existingInvoiceFound: 'Factura existente encontrada',
     existingReceiptFound: 'Recibo existente encontrado',
+    loadingPrefill: 'Cargando datos del cliente y del trabajo…',
     jobCompleted: 'Trabajo completado',
+    jobCompletedHint: 'Crea una factura para este trabajo completado cuando estés listo.',
+    receiptsSubtitle: 'Envía recibos de pago a tus clientes. Los detalles se completan desde la factura pagada.',
     createAnotherInvoice: 'Crear otra factura',
     billing: {
       not_invoiced: 'Sin facturar',
@@ -95,9 +107,13 @@ const copy: Record<Locale, BillingOpsCopy> = {
     later: 'Để sau',
     billingStatus: 'Trạng thái thanh toán',
     missingAmount: 'Thiếu số tiền',
+    missingAmountHint: 'Thiếu số tiền — hãy nhập số tiền trước khi gửi.',
     existingInvoiceFound: 'Đã tìm thấy hóa đơn hiện có',
     existingReceiptFound: 'Đã tìm thấy biên nhận hiện có',
+    loadingPrefill: 'Đang tải thông tin khách hàng và công việc…',
     jobCompleted: 'Công việc đã hoàn thành',
+    jobCompletedHint: 'Tạo hóa đơn cho công việc đã hoàn thành khi bạn sẵn sàng.',
+    receiptsSubtitle: 'Gửi biên nhận thanh toán cho khách hàng. Chi tiết được điền từ hóa đơn đã thanh toán.',
     createAnotherInvoice: 'Tạo hóa đơn khác',
     billing: {
       not_invoiced: 'Chưa xuất hóa đơn',
