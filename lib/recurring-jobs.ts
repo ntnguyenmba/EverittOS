@@ -7,8 +7,8 @@ import {
 } from '@/lib/money-decimal';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 
-/** Generate individual occurrences this many days ahead. Consistent app-wide window. */
-export const RECURRING_GENERATION_WINDOW_DAYS = 90;
+/** Keep a full year of individual occurrences scheduled ahead. The series itself may continue indefinitely. */
+export const RECURRING_GENERATION_WINDOW_DAYS = 365;
 
 export const RECURRENCE_FREQUENCIES = [
   'none',
@@ -269,7 +269,7 @@ export function summarizeRecurrence(input: RecurringSeriesInput): string {
   let ending = '';
   if (input.endDate) ending = ` until ${formatDisplayDate(input.endDate)}`;
   else if (input.occurrenceLimit) ending = ` for ${input.occurrenceLimit} visits`;
-  else ending = `. Only the next ${RECURRING_GENERATION_WINDOW_DAYS} days are scheduled at one time`;
+  else ending = `. The series continues until you end it, with the next ${RECURRING_GENERATION_WINDOW_DAYS} days kept scheduled ahead`;
 
   return `${cadence} on ${dayLabel}${timeLabel} starting ${formatDisplayDate(input.startDate)}${ending}.`;
 }
