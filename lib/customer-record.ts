@@ -44,8 +44,10 @@ export function customerDisplayName(
   customer: Partial<CustomerRecord> | null | undefined,
   fallback = 'Unnamed contact'
 ): string {
-  const label = customer?.company_name?.trim();
-  if (label) return label;
+  const company = customer?.company_name?.trim();
+  if (company) return company;
+  const contact = customer?.contact_name?.trim();
+  if (contact) return contact;
   const email = customer?.email?.trim();
   if (email) return email;
   const phone = customer?.phone?.trim();
