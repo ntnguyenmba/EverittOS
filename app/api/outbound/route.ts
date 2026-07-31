@@ -17,6 +17,70 @@ function parseDocType(value: string | null): OutboundDocType | null {
   return OUTBOUND_DOC_TYPES.includes(value as OutboundDocType) ? (value as OutboundDocType) : null;
 }
 
+function metadataString(metadata: Record<string, unknown> | undefined, key: string): string {
+  const value = metadata?.[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+async function findExistingDocument(
+  ctx: Extract<Awaited<ReturnType<typeof requireOutboundApiAccess>>, { ok: true }>,
+  input: {
+    docType: OutboundDocType;
+    jobId: string | null;
+    sourceEntityId: string | null;
+    metadata: Record<string, unknown>;
+  }
+) {
+  if (input.docType === 'invoice' && input.jobId) {
+    const { data } = await ctx.supabase
+      .from('outbound_documents')
+      .select('*')
+      .eq('organization_id', ctx.organizationId)
+      .eq('doc_type', 'invoice')
+      .eq('job_id', input.jobId)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+
+    return (
+      (data || []).find((doc) => {
+        const paymentStatus = String(doc.payment_status || '').toLowerCase();
+        const status = String(doc.status || '').toLowerCase();
+        return paymentStatus !== 'cancelled' && status !== 'cancelled' && status !== 'canceled';
+      }) || null
+    );
+  }
+
+  if (input.docType === 'receipt') {
+    const paymentId = metadataString(input.metadata, 'payment_id');
+    const invoiceId = metadataString(input.metadata, 'invoice_id') || input.sourceEntityId || '';
+
+    if (!paymentId && !invoiceId) return null;
+
+    const { data } = await ctx.supabase
+      .from('outbound_documents')
+      .select('*')
+      .eq('organization_id', ctx.organizationId)
+      .eq('doc_type', 'receipt')
+      .order('updated_at', { ascending: false })
+      .limit(100);
+
+    return (
+      (data || []).find((doc) => {
+        const metadata = (doc.metadata || {}) as Record<string, unknown>;
+        const existingPaymentId = metadataString(metadata, 'payment_id');
+        const existingInvoiceId =
+          metadataString(metadata, 'invoice_id') ||
+          (typeof doc.source_entity_id === 'string' ? doc.source_entity_id.trim() : '');
+
+        if (paymentId) return existingPaymentId === paymentId;
+        return Boolean(invoiceId) && existingInvoiceId === invoiceId && !existingPaymentId;
+      }) || null
+    );
+  }
+
+  return null;
+}
+
 export async function GET(request: Request) {
   const ctx = await requireOutboundApiAccess();
   if (!ctx.ok) {
@@ -80,6 +144,7 @@ export async function POST(request: Request) {
     source_entity_type?: string | null;
     source_entity_id?: string | null;
     metadata?: Record<string, unknown>;
+    force_new?: boolean;
   };
 
   const docType = parseDocType(body.doc_type || null);
@@ -95,14 +160,29 @@ export async function POST(request: Request) {
         : null;
 
   const status = body.scheduled_at ? 'scheduled' : body.status || 'draft';
+  const jobId = body.job_id || null;
+  const sourceEntityId = body.source_entity_id || null;
+  const metadata = body.metadata || {};
 
-  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, body.job_id);
+  const jobError = await assertJobInOrganization(ctx.supabase, ctx.organizationId, jobId);
   if (jobError) {
     return NextResponse.json({ error: jobError }, { status: 400 });
   }
   const customerError = await assertCustomerInOrganization(ctx.supabase, ctx.organizationId, body.customer_id);
   if (customerError) {
     return NextResponse.json({ error: customerError }, { status: 400 });
+  }
+
+  if (!body.force_new && (docType === 'invoice' || docType === 'receipt')) {
+    const existing = await findExistingDocument(ctx, {
+      docType,
+      jobId,
+      sourceEntityId,
+      metadata
+    });
+    if (existing) {
+      return NextResponse.json({ document: existing, reused: true });
+    }
   }
 
   const { data, error } = await ctx.supabase
@@ -117,11 +197,11 @@ export async function POST(request: Request) {
       body: body.body?.trim() || null,
       amount,
       customer_id: body.customer_id || null,
-      job_id: body.job_id || null,
+      job_id: jobId,
       scheduled_at: body.scheduled_at || null,
       source_entity_type: body.source_entity_type || null,
-      source_entity_id: body.source_entity_id || null,
-      metadata: body.metadata || {},
+      source_entity_id: sourceEntityId,
+      metadata,
       created_by: ctx.userId
     })
     .select('*')
@@ -134,5 +214,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ document: data });
+  return NextResponse.json({ document: data, reused: false });
 }
