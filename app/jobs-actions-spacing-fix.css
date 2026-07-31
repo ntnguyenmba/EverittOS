@@ -1,33 +1,42 @@
 /* Jobs actions column spacing fix only. */
 
 .jobs-operations-table th.jobs-col-actions,
-.jobs-operations-table td.jobs-col-actions {
-  width: 132px !important;
-  min-width: 132px !important;
-  max-width: 132px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-  text-align: center !important;
-}
-
+.jobs-operations-table td.jobs-col-actions,
 .jobs-operations-table th:last-child {
-  width: 132px !important;
-  min-width: 132px !important;
-  max-width: 132px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  width: 156px !important;
+  min-width: 156px !important;
+  max-width: 156px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
   text-align: center !important;
+  white-space: nowrap !important;
 }
 
 .jobs-col-actions .jobs-more-menu {
   display: inline-flex !important;
-  width: auto !important;
+  width: 118px !important;
+  max-width: 118px !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
 .jobs-col-actions .jobs-menu-trigger {
+  width: 118px !important;
+  min-width: 118px !important;
+  max-width: 118px !important;
   margin: 0 auto !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.jobs-col-actions .jobs-menu-trigger::before {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
 }
 
 .jobs-more-panel {
@@ -48,6 +57,13 @@
     min-width: 0 !important;
     max-width: none !important;
     padding: 0 !important;
+  }
+
+  .jobs-col-actions .jobs-more-menu,
+  .jobs-col-actions .jobs-menu-trigger {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
   }
 
   .jobs-more-panel {
