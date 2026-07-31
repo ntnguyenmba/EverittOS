@@ -386,7 +386,7 @@ export default function ContractorPortalPage() {
             <div style={{ minWidth: 0 }}>
               <h3 style={{ fontSize: 17, margin: 0 }}>{job.title}</h3>
               <p className="muted" style={{ margin: '6px 0 0' }}>
-                {[job.date, job.time, job.address].filter(Boolean).join(' · ')}
+                {[job.date, job.address].filter(Boolean).join(' · ')}
               </p>
             </div>
             <span className="badge">{translatePortalJobStatus(t, job.status)}</span>

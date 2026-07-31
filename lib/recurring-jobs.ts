@@ -276,7 +276,8 @@ export function generateOccurrenceDates(
         produced += 1;
       }
       cursor = advanceCursor(cursor, interval, intervalUnit, anchorDay);
-      if (dates.length > 200) break;
+      // Cap above a 365-day daily stream so the rolling window is fully materialisable.
+      if (dates.length > 400) break;
     }
     return dates;
   }
@@ -311,7 +312,7 @@ export function generateOccurrenceDates(
     }
     cursor = addDaysCivil(cursor, 1);
     emitGuard += 1;
-    if (emitGuard > 800 || dates.length > 200) break;
+    if (emitGuard > 1400 || dates.length > 400) break;
   }
 
   return dates;

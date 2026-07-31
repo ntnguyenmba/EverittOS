@@ -96,7 +96,8 @@ test('property timezone wall-clock and rolling window without unlimited generati
   const end = new Date(`${dates[dates.length - 1]}T00:00:00Z`).getTime();
   const days = (end - start) / (1000 * 60 * 60 * 24);
   assert.ok(days <= RECURRING_GENERATION_WINDOW_DAYS);
-  assert.ok(dates.length < 20);
+  // Weekly over a 365-day window produces about 53 visits, never unlimited.
+  assert.ok(dates.length > 40 && dates.length < 60);
 });
 
 test('example forecast for four every-two-weeks occurrences', () => {

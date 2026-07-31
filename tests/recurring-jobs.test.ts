@@ -129,7 +129,8 @@ test('generation window stays within configured days and never unlimited', () =>
     startDate: '2026-01-01',
     weekday: 4
   });
-  assert.ok(openEnded.length < 20);
+  // Weekly over a 365-day window produces about 53 visits, never unlimited.
+  assert.ok(openEnded.length > 40 && openEnded.length < 60);
 });
 
 test('duplicate occurrence prevention uses unique series+date index in migration', () => {

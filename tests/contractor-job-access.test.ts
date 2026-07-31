@@ -27,7 +27,7 @@ describe('contractor job access', () => {
     );
   });
 
-  it('allows visit-assigned and explicitly shared contractors', () => {
+  it('allows visit-assigned contractors and blocks share-only access', () => {
     assert.equal(
       contractorCanAccessJob({
         job: { id: 'job-2', status: 'new', assigned_to: null },
@@ -37,6 +37,7 @@ describe('contractor job access', () => {
       }),
       true
     );
+    // Explicit record shares are not a contractor access path; assignment is required.
     assert.equal(
       contractorCanAccessJob({
         job: { id: 'job-3', status: 'new', assigned_to: null },
@@ -44,7 +45,7 @@ describe('contractor job access', () => {
         userId: 'u3',
         shares: [{ record_id: 'job-3', shared_with_user_id: 'u3', access_level: 'view' }]
       }),
-      true
+      false
     );
   });
 
