@@ -10,6 +10,43 @@ import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const ALLOWED_PIPELINE_STAGES = new Set([
+  'open',
+  'contacted',
+  'qualified',
+  'proposal_sent',
+  'negotiation',
+  'won',
+  'closed_lost',
+  'cancelled',
+  'reopened',
+  'active',
+  'recurring',
+  'inactive',
+  'former',
+  'archived',
+  'past'
+]);
+
+function normalizePipelineStage(value: string | undefined, recordType: string): string {
+  const normalized = value?.trim().toLowerCase().replace(/[\s-]+/g, '_') || '';
+
+  const legacyAliases: Record<string, string> = {
+    customer: 'active',
+    current: 'active',
+    new_customer: 'active',
+    lead: 'open',
+    new_lead: 'open',
+    proposal: 'proposal_sent',
+    lost: 'closed_lost',
+    closed: 'closed_lost'
+  };
+
+  const mapped = legacyAliases[normalized] || normalized;
+  if (ALLOWED_PIPELINE_STAGES.has(mapped)) return mapped;
+  return recordType === 'lead' ? 'open' : 'active';
+}
+
 export async function POST(request: Request) {
   const ctx = await requireWorkspaceSession({ requireManager: true });
   if (!ctx.ok) {
@@ -50,6 +87,9 @@ export async function POST(request: Request) {
     }
   }
 
+  const recordType = body.record_type === 'lead' ? 'lead' : 'customer';
+  const pipelineStage = normalizePipelineStage(body.pipeline_stage, recordType);
+
   const insertResult = await insertCustomerRecord({
     supabase: ctx.supabase,
     userId: ctx.userId,
@@ -62,8 +102,8 @@ export async function POST(request: Request) {
         email: body.email,
         address: body.address,
         notes: body.notes,
-        record_type: body.record_type || 'customer',
-        pipeline_stage: body.pipeline_stage,
+        record_type: recordType,
+        pipeline_stage: pipelineStage,
         lead_source: body.lead_source,
         assigned_to: body.assigned_to || null
       })
@@ -74,7 +114,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: insertResult.error, code: insertResult.code }, { status: 400 });
   }
 
-  const isLead = body.record_type === 'lead';
+  const isLead = recordType === 'lead';
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
     ctx.userId,
