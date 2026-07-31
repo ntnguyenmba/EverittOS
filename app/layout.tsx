@@ -44,6 +44,7 @@ import './contractor-portal.css';
 import './native-tablet-release-polish.css';
 import './everitt-visual-system.css';
 import './final-layout-guard.css';
+import './jobs-visual-final.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
