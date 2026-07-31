@@ -80,6 +80,26 @@ a.btn {
   margin: 0;
 }
 
+/* Customer details are collected once in step 1. Do not repeat them in job details. */
+.unified-job-form > .job-create-section:nth-of-type(3) > .grid-2 {
+  display: none;
+}
+
+/* Contractor and financial information are workspace-only and never customer-facing. */
+.unified-job-form > .job-create-section:nth-of-type(5) > h4::after,
+.unified-job-form > .job-create-section:nth-of-type(6) > h4::after {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  content: 'Internal only';
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-left: 0.55rem;
+  padding: 0.18rem 0.5rem;
+  vertical-align: middle;
+}
+
 .visit-editor {
   border-top: 1px solid var(--line);
   gap: 0.75rem;
