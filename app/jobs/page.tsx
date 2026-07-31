@@ -23,21 +23,21 @@ const copy = {
     filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…',
     unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.',
     noCustomer: 'No customer', noAddress: 'No address', photo: 'photo', photos: 'photos', openJob: 'Open job', maps: 'Maps',
-    more: 'More', removing: 'Removing…', remove: 'Remove'
+    more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…'
   },
   es: {
     newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador',
     filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…',
     unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.',
     noCustomer: 'Sin cliente', noAddress: 'Sin dirección', photo: 'foto', photos: 'fotos', openJob: 'Abrir trabajo', maps: 'Mapas',
-    more: 'Más', removing: 'Eliminando…', remove: 'Eliminar'
+    more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…'
   },
   vi: {
     newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự',
     filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…',
     unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.',
     noCustomer: 'Không có khách hàng', noAddress: 'Không có địa chỉ', photo: 'ảnh', photos: 'ảnh', openJob: 'Mở công việc', maps: 'Bản đồ',
-    more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa'
+    more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…'
   }
 } as const;
 
@@ -71,6 +71,7 @@ function JobsList() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [removingId, setRemovingId] = useState('');
+  const [duplicatingId, setDuplicatingId] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -131,6 +132,18 @@ function JobsList() {
     setJobs((rows) => rows.filter((row) => row.id !== job.id));
   }
 
+  async function bookAgain(job: Job) {
+    setDuplicatingId(job.id);
+    const res = await fetch(`/api/jobs/${job.id}/duplicate`, { method: 'POST' });
+    const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
+    setDuplicatingId('');
+    if (!res.ok || !json.job?.id) {
+      appFeedback.error(json.error || 'Unable to create a similar job.');
+      return;
+    }
+    router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
+  }
+
   const filtered = Boolean(assignedToFilter || statusFilter || createdFromFilter || assignmentFilter);
 
   return (
@@ -173,6 +186,11 @@ function JobsList() {
                 <div className="button-row" style={{ marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Link href={`/jobs/${job.id}`} className="btn btn-primary" aria-label={`${c.openJob} ${job.title}`}>{c.openJob}</Link>
                   {job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="btn" target="_blank" rel="noreferrer">{c.maps}</a> : null}
+                  {isManagerRole(role) ? (
+                    <button type="button" className="btn" disabled={duplicatingId === job.id} onClick={() => void bookAgain(job)}>
+                      {duplicatingId === job.id ? c.creating : c.bookAgain}
+                    </button>
+                  ) : null}
                   {isManagerRole(role) ? (
                     <details style={{ marginLeft: 'auto' }}>
                       <summary className="btn">{c.more}</summary>

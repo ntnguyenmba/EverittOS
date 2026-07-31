@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { JobAddressAutocomplete } from '@/components/job-address-autocomplete';
 import { JobCreator } from '@/components/job-creator';
 import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -43,7 +42,6 @@ export default function NewJobPage() {
           </Link>
         }
       />
-      <JobAddressAutocomplete />
       <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
         <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
       </Suspense>

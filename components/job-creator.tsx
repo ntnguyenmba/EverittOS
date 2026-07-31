@@ -1,7 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { supabase } from '@/lib/supabase';
 import { Button } from './ui/button';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
@@ -17,6 +18,8 @@ import { insertJobPhotoRow } from '@/lib/job-photos-client';
 import { buildSafePhotoStoragePath, validateImageUpload } from '@/lib/upload-security';
 import { wallClockDateTime } from '@/lib/schedule-times';
 import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
+import type { StructuredAddress } from '@/lib/address/types';
+import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
 
 type JobCreatorProps = {
   onJobCreated?: (jobId: string) => void;
@@ -49,6 +52,37 @@ type ProfileRow = {
 };
 
 type ContractorPayMode = 'hourly' | 'flat';
+
+type PropertyOption = {
+  id: string;
+  customer_id: string;
+  name: string;
+  property_type?: string | null;
+  formatted_address?: string | null;
+  address?: string | null;
+  display_address?: string | null;
+  timezone?: string | null;
+  is_primary?: boolean;
+  default_price?: number | null;
+  default_duration_minutes?: number | null;
+  access_instructions?: string | null;
+  supply_notes?: string | null;
+  parking_instructions?: string | null;
+  pet_notes?: string | null;
+  preferred_contractor_id?: string | null;
+};
+
+type CustomerOption = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  company_name?: string | null;
+  address?: string | null;
+  properties: PropertyOption[];
+};
+
+type AddressMode = 'job_only' | 'save_new_property' | 'update_selected_property';
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -86,10 +120,18 @@ function moneyValue(value: string): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
+function propertyLabel(property: PropertyOption) {
+  const type = (property.property_type || 'home') as PropertyType;
+  const typeLabel = PROPERTY_TYPE_LABELS[type] || 'Property';
+  const address = property.display_address || property.formatted_address || property.address || 'No address';
+  return `${property.name} · ${typeLabel} · ${address}`;
+}
+
 export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const searchParams = useSearchParams();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
+  const [structuredAddress, setStructuredAddress] = useState<StructuredAddress | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -108,6 +150,20 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [loadingTeam, setLoadingTeam] = useState(true);
   const [loading, setLoading] = useState(false);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
+
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerResults, setCustomerResults] = useState<CustomerOption[]>([]);
+  const [customerSearching, setCustomerSearching] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
+  const [creatingNewProperty, setCreatingNewProperty] = useState(false);
+  const [addressMode, setAddressMode] = useState<AddressMode>('job_only');
+  const [showAdvancedProperty, setShowAdvancedProperty] = useState(false);
+  const [newPropertyName, setNewPropertyName] = useState('');
+  const [accessInstructions, setAccessInstructions] = useState('');
+  const customerSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preloadDone = useRef(false);
+
   const appFeedback = useAppFeedback();
   const { t } = useTranslation();
 
@@ -161,6 +217,137 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     void loadTeamMembers();
   }, []);
 
+  useEffect(() => {
+    if (preloadDone.current) return;
+    const customerId = searchParams.get('customerId') || searchParams.get('customer_id');
+    const propertyId = searchParams.get('propertyId') || searchParams.get('property_id');
+
+    async function preload() {
+      if (customerId && isUuid(customerId)) {
+        preloadDone.current = true;
+        await selectCustomerById(customerId, propertyId && isUuid(propertyId) ? propertyId : undefined);
+      }
+    }
+
+    void preload();
+    // Prefill from query params once on mount / param change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectCustomerById is stable for this page lifecycle
+  }, [searchParams]);
+
+  async function selectCustomerById(customerId: string, propertyId?: string) {
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('id, company_name, email, phone')
+      .eq('id', customerId)
+      .maybeSingle();
+
+    const propsRes = await fetch(`/api/customers/${customerId}/properties`);
+    const propsJson = (await propsRes.json().catch(() => ({}))) as { properties?: PropertyOption[] };
+
+    if (!customer) return;
+
+    const option: CustomerOption = {
+      id: customer.id,
+      name: customer.company_name || customer.email || 'Customer',
+      email: customer.email,
+      phone: customer.phone,
+      company_name: customer.company_name,
+      properties: (propsJson.properties || []).map((p) => ({
+        ...p,
+        display_address: p.formatted_address || p.address || null
+      }))
+    };
+    applyCustomer(option, propertyId);
+  }
+
+  function applyCustomer(customer: CustomerOption, propertyId?: string) {
+    setSelectedCustomer(customer);
+    setCustomerQuery(customer.name);
+    setCustomerName(customer.name);
+    setPhone(customer.phone || '');
+    setCustomerResults([]);
+    setCreatingNewProperty(false);
+
+    const preferred =
+      (propertyId && customer.properties.find((p) => p.id === propertyId)) ||
+      customer.properties.find((p) => p.is_primary) ||
+      customer.properties[0] ||
+      null;
+
+    if (preferred) {
+      applyProperty(preferred);
+    } else {
+      setSelectedPropertyId('');
+      setCreatingNewProperty(true);
+      setAddressMode('save_new_property');
+      setNewPropertyName('Primary');
+    }
+  }
+
+  function applyProperty(property: PropertyOption) {
+    setSelectedPropertyId(property.id);
+    setCreatingNewProperty(false);
+    setAddressMode('job_only');
+    const nextAddress = property.display_address || property.formatted_address || property.address || '';
+    setAddress(nextAddress);
+    setStructuredAddress(null);
+    if (property.timezone) setTimeZone(property.timezone);
+    if (property.default_price != null && !clientIncome) setClientIncome(String(property.default_price));
+    if (property.preferred_contractor_id) setAssignedTo(property.preferred_contractor_id);
+
+    const noteBits = [
+      property.access_instructions?.trim() ? `Access: ${property.access_instructions.trim()}` : null,
+      property.parking_instructions?.trim() ? `Parking: ${property.parking_instructions.trim()}` : null,
+      property.pet_notes?.trim() ? `Pets: ${property.pet_notes.trim()}` : null,
+      property.supply_notes?.trim() ? `Supplies: ${property.supply_notes.trim()}` : null
+    ].filter(Boolean);
+    if (noteBits.length) {
+      setNotes((current) => {
+        const existing = current.trim();
+        const addition = noteBits.join('\n');
+        if (!existing) return addition;
+        if (existing.includes(addition)) return existing;
+        return `${existing}\n\n${addition}`;
+      });
+    }
+    setAccessInstructions(property.access_instructions || '');
+  }
+
+  useEffect(() => {
+    if (customerSearchTimer.current) clearTimeout(customerSearchTimer.current);
+    if (selectedCustomer && customerQuery === selectedCustomer.name) {
+      setCustomerResults([]);
+      return;
+    }
+    if (customerQuery.trim().length < 1) {
+      setCustomerResults([]);
+      return;
+    }
+    customerSearchTimer.current = setTimeout(() => {
+      void (async () => {
+        setCustomerSearching(true);
+        const res = await fetch(`/api/customers/search?q=${encodeURIComponent(customerQuery.trim())}`);
+        const json = (await res.json().catch(() => ({}))) as { customers?: CustomerOption[] };
+        setCustomerResults(json.customers || []);
+        setCustomerSearching(false);
+      })();
+    }, 250);
+    return () => {
+      if (customerSearchTimer.current) clearTimeout(customerSearchTimer.current);
+    };
+  }, [customerQuery, selectedCustomer]);
+
+  async function resolveTimezoneFromCoords(lat: number | null, lng: number | null) {
+    if (lat == null || lng == null) return;
+    try {
+      const res = await fetch(`/api/address/timezone?lat=${lat}&lng=${lng}`);
+      const json = (await res.json().catch(() => ({}))) as { timezone?: string };
+      if (json.timezone) setTimeZone(json.timezone);
+    } catch {
+      // Manual timezone selection remains available.
+    }
+  }
+
   function updateVisit(id: string, patch: Partial<VisitDraft>) {
     setVisits((rows) => rows.map((visit) => (visit.id === id ? { ...visit, ...patch } : visit)));
   }
@@ -197,6 +384,68 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       });
       if (rowError) await supabase.storage.from('job-photos').remove([path]);
     }
+  }
+
+  async function ensurePropertyForJob(customerId: string): Promise<string | null> {
+    if (selectedPropertyId && addressMode !== 'save_new_property' && !creatingNewProperty) {
+      if (addressMode === 'update_selected_property' && structuredAddress) {
+        await fetch(`/api/customers/${customerId}/properties/${selectedPropertyId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            formatted_address: structuredAddress.formattedAddress,
+            address_line_1: structuredAddress.addressLine1,
+            address_line_2: structuredAddress.addressLine2,
+            city: structuredAddress.city,
+            county: structuredAddress.county,
+            state: structuredAddress.state,
+            state_code: structuredAddress.stateCode,
+            postal_code: structuredAddress.postalCode,
+            country: structuredAddress.country,
+            country_code: structuredAddress.countryCode,
+            latitude: structuredAddress.latitude,
+            longitude: structuredAddress.longitude,
+            timezone: timeZone || null,
+            access_instructions: accessInstructions || null
+          })
+        });
+      }
+      return selectedPropertyId;
+    }
+
+    if (addressMode === 'save_new_property' || creatingNewProperty) {
+      const name = newPropertyName.trim() || 'Service location';
+      const res = await fetch(`/api/customers/${customerId}/properties`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          property_type: 'home',
+          formatted_address: structuredAddress?.formattedAddress || address,
+          address_line_1: structuredAddress?.addressLine1 || address,
+          address_line_2: structuredAddress?.addressLine2 || null,
+          city: structuredAddress?.city || null,
+          county: structuredAddress?.county || null,
+          state: structuredAddress?.state || null,
+          state_code: structuredAddress?.stateCode || null,
+          postal_code: structuredAddress?.postalCode || null,
+          country: structuredAddress?.country || null,
+          country_code: structuredAddress?.countryCode || null,
+          latitude: structuredAddress?.latitude ?? null,
+          longitude: structuredAddress?.longitude ?? null,
+          timezone: timeZone || null,
+          access_instructions: accessInstructions || null,
+          is_primary: !(selectedCustomer?.properties?.length)
+        })
+      });
+      const json = (await res.json().catch(() => ({}))) as { property?: { id: string }; error?: string };
+      if (!res.ok || !json.property?.id) {
+        throw new Error(json.error || 'Unable to save property.');
+      }
+      return json.property.id;
+    }
+
+    return selectedPropertyId || null;
   }
 
   async function createJob(event?: FormEvent) {
@@ -289,6 +538,41 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
+    let customerId = selectedCustomer?.id || null;
+    let propertyId: string | null = null;
+
+    try {
+      if (!customerId && customerName.trim()) {
+        const createCustomerRes = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName: customerName.trim(),
+            phone: phone.trim() || null,
+            record_type: 'customer',
+            pipeline_stage: 'active'
+          })
+        });
+        const createCustomerJson = (await createCustomerRes.json().catch(() => ({}))) as {
+          customer?: { id: string };
+          error?: string;
+        };
+        if (!createCustomerRes.ok || !createCustomerJson.customer?.id) {
+          throw new Error(createCustomerJson.error || 'Unable to create customer.');
+        }
+        customerId = createCustomerJson.customer.id;
+        setAddressMode('save_new_property');
+      }
+
+      if (customerId && (address.trim() || selectedPropertyId || creatingNewProperty || addressMode === 'save_new_property')) {
+        propertyId = await ensurePropertyForJob(customerId);
+      }
+    } catch (error) {
+      setLoading(false);
+      appFeedback.error(error instanceof Error ? error.message : 'Unable to prepare customer/property.');
+      return;
+    }
+
     const createRes = await fetch('/api/jobs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -299,6 +583,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         address: address.trim() || null,
         notes: notes.trim() || null,
         timezone: timeZone || null,
+        customer_id: customerId,
+        property_id: propertyId,
         revenue_amount: clientIncome ? moneyValue(clientIncome) : null,
         assigned_to: assignedTo || null,
         start_date: firstVisit?.visit_date || null,
@@ -390,33 +676,214 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     ? moneyValue(contractorHours) * moneyValue(contractorHourlyRate)
     : moneyValue(contractorFlatRate);
   const previewProfit = moneyValue(clientIncome) - previewContractorPay;
+  const selectedProperty = selectedCustomer?.properties.find((p) => p.id === selectedPropertyId) || null;
+  const addressChangedFromProperty =
+    Boolean(selectedProperty) &&
+    Boolean(address.trim()) &&
+    address.trim() !== (selectedProperty?.display_address || selectedProperty?.formatted_address || selectedProperty?.address || '').trim();
 
   return (
     <div className="card">
       <h3>{t('pages.jobs.createTitle')}</h3>
-      <p className="muted">Enter the initial job information below. Everything is saved together with one button.</p>
+      <p className="muted">Select a customer and property first, then confirm the schedule. Most fields fill automatically.</p>
       <form className="form unified-job-form" onSubmit={createJob}>
         <section className="job-create-section">
-          <h4>Job and customer</h4>
-          <label>Job title *</label>
-          <input className="input" placeholder="Example: Move-out cleaning" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          <div className="grid-2">
-            <div className="form-group"><label>Customer name</label><input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
-            <div className="form-group"><label>Phone</label><input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          </div>
-          <label>Address</label>
-          <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <h4>1. Customer</h4>
+          <label htmlFor="customer-search">Search customers</label>
+          <input
+            id="customer-search"
+            className="input"
+            value={customerQuery}
+            placeholder="Name, phone, email, company, or property address"
+            autoComplete="off"
+            onChange={(e) => {
+              setCustomerQuery(e.target.value);
+              if (selectedCustomer) setSelectedCustomer(null);
+            }}
+          />
+          {customerSearching ? <p className="muted" role="status">Searching…</p> : null}
+          {customerResults.length > 0 ? (
+            <div role="listbox" aria-label="Customer matches" style={{ border: '1px solid var(--line)', borderRadius: 12, marginTop: 8 }}>
+              {customerResults.map((customer) => (
+                <button
+                  key={customer.id}
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  className="btn"
+                  style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }}
+                  onClick={() => applyCustomer(customer)}
+                >
+                  <strong>{customer.name}</strong>
+                  <span className="muted" style={{ display: 'block' }}>
+                    {[customer.phone, customer.email, customer.properties[0]?.display_address].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {!selectedCustomer ? (
+            <div className="grid-2" style={{ marginTop: 12 }}>
+              <div className="form-group">
+                <label>New customer name</label>
+                <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Phone</label>
+                <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <p>
+                <strong>{selectedCustomer.name}</strong>
+                {selectedCustomer.phone ? <span className="muted"> · {selectedCustomer.phone}</span> : null}
+                {selectedCustomer.email ? <span className="muted"> · {selectedCustomer.email}</span> : null}
+              </p>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setSelectedCustomer(null);
+                  setSelectedPropertyId('');
+                  setCustomerQuery('');
+                }}
+              >
+                Change customer
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="job-create-section">
-          <h4>Days and hours</h4>
+          <h4>2. Property / service location</h4>
+          {selectedCustomer && selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
+            <>
+              <label htmlFor="property-select">Saved properties</label>
+              <select
+                id="property-select"
+                className="input"
+                value={selectedPropertyId}
+                onChange={(e) => {
+                  const property = selectedCustomer.properties.find((p) => p.id === e.target.value);
+                  if (property) applyProperty(property);
+                }}
+              >
+                {selectedCustomer.properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {propertyLabel(property)}
+                  </option>
+                ))}
+              </select>
+              <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
+                setCreatingNewProperty(true);
+                setSelectedPropertyId('');
+                setAddressMode('save_new_property');
+                setAddress('');
+                setStructuredAddress(null);
+                setNewPropertyName('');
+                setAccessInstructions('');
+              }}>
+                Add another property
+              </button>
+            </>
+          ) : null}
+
+          {(creatingNewProperty || !selectedCustomer || selectedCustomer.properties.length === 0) && selectedCustomer ? (
+            <div className="form-group" style={{ marginTop: 8 }}>
+              <label>New property name</label>
+              <input className="input" value={newPropertyName} onChange={(e) => setNewPropertyName(e.target.value)} placeholder="Home, Airbnb, Office…" />
+            </div>
+          ) : null}
+
+          <div style={{ marginTop: 12 }}>
+            <AddressAutocomplete
+              id="job-address"
+              label="Service address"
+              value={address}
+              onChange={(formatted, structured) => {
+                setAddress(formatted);
+                setStructuredAddress(structured);
+                if (selectedPropertyId && !creatingNewProperty) {
+                  setAddressMode('job_only');
+                } else if (selectedCustomer) {
+                  setAddressMode('save_new_property');
+                }
+              }}
+              onSelect={(suggestion) => {
+                void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude);
+              }}
+            />
+          </div>
+
+          {selectedPropertyId && addressChangedFromProperty ? (
+            <fieldset style={{ marginTop: 12, border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
+              <legend>Address changed</legend>
+              <p className="muted">Choose how to use this address. Saved property data is never overwritten silently.</p>
+              <label style={{ display: 'block' }}>
+                <input
+                  type="radio"
+                  name="address-mode"
+                  checked={addressMode === 'job_only'}
+                  onChange={() => setAddressMode('job_only')}
+                />{' '}
+                Use only for this job
+              </label>
+              <label style={{ display: 'block' }}>
+                <input
+                  type="radio"
+                  name="address-mode"
+                  checked={addressMode === 'save_new_property'}
+                  onChange={() => {
+                    setAddressMode('save_new_property');
+                    setCreatingNewProperty(true);
+                    setNewPropertyName(newPropertyName || 'New property');
+                  }}
+                />{' '}
+                Save as a new property
+              </label>
+              <label style={{ display: 'block' }}>
+                <input
+                  type="radio"
+                  name="address-mode"
+                  checked={addressMode === 'update_selected_property'}
+                  onChange={() => setAddressMode('update_selected_property')}
+                />{' '}
+                Update the selected property
+              </label>
+            </fieldset>
+          ) : null}
+
+          <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
+            <summary>Access instructions and notes</summary>
+            <label style={{ marginTop: 10 }}>Access instructions</label>
+            <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
+            <p className="muted">Gate and lockbox codes stay on the property record. They are not shown in search previews or notifications.</p>
+          </details>
+        </section>
+
+        <section className="job-create-section">
+          <h4>3. Job details</h4>
+          <label>Job title *</label>
+          <input className="input" placeholder="Example: Move-out cleaning" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          {selectedCustomer ? null : (
+            <div className="grid-2">
+              <div className="form-group"><label>Customer name</label><input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
+              <div className="form-group"><label>Phone</label><input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+            </div>
+          )}
+        </section>
+
+        <section className="job-create-section">
+          <h4>4. Days and hours</h4>
           <p className="muted">Add one or more scheduled visits. Times are saved in the timezone selected below.</p>
           <label htmlFor="job-timezone">Job timezone</label>
           <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
             <option value="">Use workspace default</option>
             {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
-          <p className="muted">Only choose a different timezone when this job is outside your normal service area.</p>
+          <p className="muted">Timezone is filled from the property address when available.</p>
           {visits.map((visit, index) => (
             <div key={visit.id} className="form visit-editor">
               <label>Visit {index + 1}</label>

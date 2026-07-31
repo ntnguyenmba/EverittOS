@@ -65,8 +65,11 @@ describe('portal localization', () => {
     assert.match(nav, /portal\.common\.signOut/);
     assert.match(nav, /\/login/);
 
+    // Root client portal route redirects into the jobs list; Sign Out lives on pages that render the nav.
+    const root = readFileSync(join(process.cwd(), 'app/portal/client/page.tsx'), 'utf8');
+    assert.match(root, /redirect\(clientPortalJobsPath\(\)\)/);
+
     for (const file of [
-      'app/portal/client/page.tsx',
       'app/portal/client/jobs/page.tsx',
       'app/portal/client/jobs/[id]/page.tsx',
       'app/portal/client/settings/page.tsx'

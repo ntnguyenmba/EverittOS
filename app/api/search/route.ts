@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchOrganizationContextForUser } from '@/lib/organization-server';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import type { SearchResultItem } from '@/lib/os-types';
-import { CUSTOMER_SEARCH_SELECT, customerDisplayName } from '@/lib/customer-record';
+import { customerDisplayName } from '@/lib/customer-record';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
@@ -29,19 +29,42 @@ export async function GET(request: Request) {
   const pattern = `%${q}%`;
   const orgId = org.organizationId;
 
-  const [customers, jobs, tasks, docs, templates, forms] = await Promise.all([
+  const [customers, properties, jobs, invoices, contractors, tasks, docs, templates, forms] = await Promise.all([
     supabase
       .from('customers')
-      .select(CUSTOMER_SEARCH_SELECT)
+      .select('id, company_name, email, phone')
       .eq('organization_id', orgId)
-      .or(`company_name.ilike."${pattern}",email.ilike."${pattern}"`)
+      .or(
+        `company_name.ilike."${pattern}",email.ilike."${pattern}",phone.ilike."${pattern}",address_line1.ilike."${pattern}",service_address.ilike."${pattern}"`
+      )
+      .limit(8),
+    supabase
+      .from('customer_properties')
+      .select('id, customer_id, name, formatted_address, address, city, property_type')
+      .eq('organization_id', orgId)
+      .eq('is_archived', false)
+      .or(
+        `name.ilike."${pattern}",formatted_address.ilike."${pattern}",address.ilike."${pattern}",city.ilike."${pattern}"`
+      )
       .limit(8),
     supabase
       .from('jobs')
-      .select('id, title, customer_name')
+      .select('id, title, customer_name, address, phone')
       .eq('organization_id', orgId)
-      .or(`title.ilike."${pattern}",customer_name.ilike."${pattern}"`)
+      .or(`title.ilike."${pattern}",customer_name.ilike."${pattern}",address.ilike."${pattern}",phone.ilike."${pattern}"`)
       .limit(8),
+    supabase
+      .from('invoices')
+      .select('id, invoice_number, customer_name, status')
+      .eq('organization_id', orgId)
+      .or(`invoice_number.ilike."${pattern}",customer_name.ilike."${pattern}"`)
+      .limit(6),
+    supabase
+      .from('workers')
+      .select('id, name, phone, email')
+      .eq('organization_id', orgId)
+      .or(`name.ilike."${pattern}",phone.ilike."${pattern}",email.ilike."${pattern}"`)
+      .limit(6),
     supabase
       .from('os_tasks')
       .select('id, title, status')
@@ -75,19 +98,57 @@ export async function GET(request: Request) {
       id: c.id,
       type: 'customer',
       title: customerDisplayName(c),
-      subtitle: c.email,
+      subtitle: [c.email, c.phone].filter(Boolean).join(' · ') || null,
       href: `/customers/${c.id}`
     });
   }
+
+  if (!properties.error || !isMissingSchemaError(properties.error)) {
+    for (const p of properties.data || []) {
+      results.push({
+        id: p.id,
+        type: 'property',
+        title: p.name,
+        subtitle: p.formatted_address || p.address || p.city || p.property_type || null,
+        href: `/customers/${p.customer_id}?propertyId=${p.id}`
+      });
+    }
+  }
+
   for (const j of jobs.data || []) {
     results.push({
       id: j.id,
       type: 'job',
       title: j.title,
-      subtitle: j.customer_name,
+      subtitle: [j.customer_name, j.address].filter(Boolean).join(' · ') || null,
       href: `/jobs/${j.id}`
     });
   }
+
+  if (!invoices.error || !isMissingSchemaError(invoices.error)) {
+    for (const invoice of invoices.data || []) {
+      results.push({
+        id: invoice.id,
+        type: 'invoice',
+        title: invoice.invoice_number || `Invoice ${invoice.id.slice(0, 8)}`,
+        subtitle: [invoice.customer_name, invoice.status].filter(Boolean).join(' · ') || null,
+        href: `/invoices/${invoice.id}`
+      });
+    }
+  }
+
+  if (!contractors.error || !isMissingSchemaError(contractors.error)) {
+    for (const worker of contractors.data || []) {
+      results.push({
+        id: worker.id,
+        type: 'contractor',
+        title: worker.name || 'Contractor',
+        subtitle: [worker.email, worker.phone].filter(Boolean).join(' · ') || null,
+        href: `/team?workerId=${worker.id}`
+      });
+    }
+  }
+
   for (const t of tasks.error && isMissingSchemaError(tasks.error) ? [] : tasks.data || []) {
     results.push({
       id: t.id,
@@ -125,5 +186,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json({ results: results.slice(0, 20) });
+  return NextResponse.json({ results: results.slice(0, 24) });
 }

@@ -20,6 +20,7 @@ import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-se
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { localDateFromIso } from '@/lib/schedule-times';
 import { isValidTimeZone } from '@/lib/time-zones';
+import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
     address?: string;
     notes?: string;
     customer_id?: string | null;
+    property_id?: string | null;
     assigned_to?: string | null;
     assigned_email?: string | null;
     status?: string;
@@ -193,42 +195,103 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data, error } = await ctx.supabase
+  let propertyId = body.property_id?.trim() || null;
+  let resolvedTimeZone = requestedTimeZone;
+  let resolvedAddress = body.address?.trim() || null;
+  let resolvedCustomerId = body.customer_id?.trim() || null;
+
+  if (propertyId) {
+    const { data: property } = await ctx.supabase
+      .from('customer_properties')
+      .select('id, customer_id, formatted_address, address, timezone, is_archived')
+      .eq('id', propertyId)
+      .eq('organization_id', ctx.workspace.organizationId)
+      .maybeSingle();
+
+    if (!property || property.is_archived) {
+      return NextResponse.json({ error: 'Selected property was not found.' }, { status: 400 });
+    }
+
+    if (resolvedCustomerId && property.customer_id !== resolvedCustomerId) {
+      return NextResponse.json({ error: 'Property does not belong to the selected customer.' }, { status: 400 });
+    }
+
+    resolvedCustomerId = property.customer_id;
+    resolvedAddress = resolvedAddress || property.formatted_address || property.address || null;
+    if (!resolvedTimeZone && property.timezone) {
+      resolvedTimeZone = property.timezone;
+    }
+  }
+
+  if (resolvedCustomerId) {
+    const { data: customer } = await ctx.supabase
+      .from('customers')
+      .select('id')
+      .eq('id', resolvedCustomerId)
+      .eq('organization_id', ctx.workspace.organizationId)
+      .maybeSingle();
+    if (!customer) {
+      return NextResponse.json({ error: 'Selected customer was not found.' }, { status: 400 });
+    }
+  }
+
+  const insertPayload: Record<string, unknown> = {
+    ...workspaceScopedFields(ctx.workspace, ctx.userId),
+    title: body.title.trim(),
+    customer_name: body.customer_name?.trim() || null,
+    phone: body.phone?.trim() || null,
+    address: resolvedAddress,
+    notes: body.notes?.trim() || null,
+    customer_id: resolvedCustomerId,
+    assigned_to: assignedWorkerId,
+    assigned_email: emailCheck.email,
+    status: body.status?.trim() || 'new',
+    start_date: schedule.start_date,
+    due_date: schedule.due_date,
+    scheduled_start: schedule.scheduled_start,
+    scheduled_end: schedule.scheduled_end,
+    timezone: resolvedTimeZone
+  };
+
+  if (propertyId) {
+    insertPayload.property_id = propertyId;
+  }
+
+  let { data, error } = await ctx.supabase
     .from('jobs')
-    .insert({
-      ...workspaceScopedFields(ctx.workspace, ctx.userId),
-      title: body.title.trim(),
-      customer_name: body.customer_name?.trim() || null,
-      phone: body.phone?.trim() || null,
-      address: body.address?.trim() || null,
-      notes: body.notes?.trim() || null,
-      customer_id: body.customer_id || null,
-      assigned_to: assignedWorkerId,
-      assigned_email: emailCheck.email,
-      status: body.status?.trim() || 'new',
-      start_date: schedule.start_date,
-      due_date: schedule.due_date,
-      scheduled_start: schedule.scheduled_start,
-      scheduled_end: schedule.scheduled_end,
-      timezone: requestedTimeZone
-    })
-    .select('id, timezone')
+    .insert(insertPayload)
+    .select('id, timezone, property_id, customer_id')
     .single();
 
-  if (error) {
+  if (error && isMissingSchemaError(error)) {
+    const fallbackPayload = { ...insertPayload };
+    delete fallbackPayload.property_id;
+    delete fallbackPayload.timezone;
+    const retry = await ctx.supabase
+      .from('jobs')
+      .insert(fallbackPayload)
+      .select('id, customer_id')
+      .single();
+    data = retry.data as typeof data;
+    error = retry.error;
+  }
+
+  if (error || !data) {
     logJobFlowEvent('job_create_failed', {
       userId: ctx.userId,
       organizationId: ctx.workspace.organizationId,
-      reason: error.message
+      reason: error?.message || 'Job insert returned no row'
     });
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+    return NextResponse.json({ error: mapWorkspaceSaveError(error?.message || 'Unable to save job.') }, { status: 400 });
   }
+
+  const createdJob = data;
 
   if (visitsToInsert.length > 0) {
     const { error: visitInsertError } = await ctx.supabase.from('job_visits').insert(
       visitsToInsert.map((visit) => ({
         organization_id: ctx.workspace.organizationId,
-        job_id: data.id,
+        job_id: createdJob.id,
         visit_date: visit.visit_date,
         start_time: visit.start_time,
         end_time: visit.end_time,
@@ -237,7 +300,7 @@ export async function POST(request: Request) {
     );
 
     if (visitInsertError) {
-      await ctx.supabase.from('jobs').delete().eq('id', data.id).eq('organization_id', ctx.workspace.organizationId);
+      await ctx.supabase.from('jobs').delete().eq('id', createdJob.id).eq('organization_id', ctx.workspace.organizationId);
       logJobFlowEvent('job_create_failed', {
         userId: ctx.userId,
         organizationId: ctx.workspace.organizationId,
@@ -249,20 +312,20 @@ export async function POST(request: Request) {
 
   const admin = createAdminSupabase();
   if (admin && (schedule.scheduled_start || visitsToInsert.length > 0)) {
-    await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, data.id);
+    await syncJobToGoogleCalendarSafe(admin, ctx.workspace.organizationId, createdJob.id);
   }
 
   logJobFlowEvent('job_create_succeeded', {
     userId: ctx.userId,
     organizationId: ctx.workspace.organizationId,
-    jobId: data.id
+    jobId: createdJob.id
   });
 
   await logWorkspaceActivity(
     ctx.workspace.organizationId,
     ctx.userId,
     'job',
-    data.id,
+    createdJob.id,
     'job_created',
     `Job created: ${body.title.trim()}`,
     { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email, timezone: requestedTimeZone }
@@ -275,14 +338,14 @@ export async function POST(request: Request) {
       type: 'assignment',
       title: 'New job assigned',
       body: body.title.trim(),
-      related_job_id: data.id
+      related_job_id: createdJob.id
     });
 
     await logWorkspaceActivity(
       ctx.workspace.organizationId,
       ctx.userId,
       'job',
-      data.id,
+      createdJob.id,
       'job_assigned',
       'Job assigned to a teammate',
       { assignedTo: assignedWorkerId, assignedUserId, assignedEmail: emailCheck.email }
@@ -292,8 +355,8 @@ export async function POST(request: Request) {
   await trackProductEventServer(ctx.supabase, 'job_created', {
     organizationId: ctx.workspace.organizationId,
     userId: ctx.userId,
-    metadata: { jobId: data.id, assignedTo: assignedWorkerId, assignedUserId, timezone: requestedTimeZone }
+    metadata: { jobId: createdJob.id, assignedTo: assignedWorkerId, assignedUserId, timezone: requestedTimeZone }
   });
 
-  return NextResponse.json({ ok: true, job: data, message: 'Job saved successfully.' });
+  return NextResponse.json({ ok: true, job: createdJob, message: 'Job saved successfully.' });
 }

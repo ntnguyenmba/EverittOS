@@ -6,8 +6,11 @@ import { isFeatureEnabled } from '@/lib/feature-flags';
 import type { SearchResultItem } from '@/lib/os-types';
 
 const TYPE_LABELS: Record<SearchResultItem['type'], string> = {
-  customer: 'CRM',
+  customer: 'Customer',
+  property: 'Property',
   job: 'Job',
+  invoice: 'Invoice',
+  contractor: 'Contractor',
   task: 'Task',
   document: 'Document',
   template: 'Template',

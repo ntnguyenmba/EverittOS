@@ -100,7 +100,7 @@ export type OrgMembership = {
 
 export type SearchResultItem = {
   id: string;
-  type: 'customer' | 'job' | 'task' | 'document' | 'template' | 'form';
+  type: 'customer' | 'property' | 'job' | 'invoice' | 'contractor' | 'task' | 'document' | 'template' | 'form';
   title: string;
   subtitle: string | null;
   href: string;

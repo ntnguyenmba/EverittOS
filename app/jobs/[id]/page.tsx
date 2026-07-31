@@ -13,6 +13,7 @@ import { CustomerReportSharePanel } from '@/components/customer-report-share-pan
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
 import { JobAddToCalendar } from '@/components/job-add-to-calendar';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { AppShell } from '@/components/app-shell';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -113,6 +114,7 @@ function isActiveStatus(status: string | null | undefined) {
 
 export default function JobDetailPage({ params }: PageProps) {
   const router = useRouter();
+  const [confirmSchedule, setConfirmSchedule] = useState(false);
   const [jobId, setJobId] = useState('');
   const [job, setJob] = useState<Job | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -126,6 +128,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [canUploadPhotos, setCanUploadPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingReport, setCreatingReport] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [financeRefresh, setFinanceRefresh] = useState(0);
   const [loadError, setLoadError] = useState('');
@@ -138,6 +141,11 @@ export default function JobDetailPage({ params }: PageProps) {
   useEffect(() => {
     params.then((p) => setJobId(p.id));
   }, [params]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setConfirmSchedule(new URLSearchParams(window.location.search).get('confirmSchedule') === '1');
+  }, []);
 
   async function loadJob() {
     if (!jobId) return;
@@ -307,6 +315,20 @@ export default function JobDetailPage({ params }: PageProps) {
     loadJob();
   }
 
+  async function bookAgain() {
+    if (!job || duplicating) return;
+    setDuplicating(true);
+    const res = await fetch(`/api/jobs/${job.id}/duplicate`, { method: 'POST' });
+    const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
+    setDuplicating(false);
+    if (!res.ok || !json.job?.id) {
+      appFeedback.error(json.error || 'Unable to create a similar job.');
+      return;
+    }
+    appFeedback.success('Draft job created. Confirm the date and time.');
+    router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
+  }
+
   async function createReport() {
     if (!job || creatingReport) return;
     const {
@@ -356,8 +378,22 @@ export default function JobDetailPage({ params }: PageProps) {
             <h2>{job.title}</h2>
             <p>{job.address || copy.noAddressAdded}</p>
           </div>
-          <StatusPill status={job.status} />
+          <div className="button-row" style={{ flexWrap: 'wrap' }}>
+            {canManage ? (
+              <button type="button" className="btn btn-primary" disabled={duplicating} onClick={() => void bookAgain()}>
+                {duplicating ? 'Creating…' : 'Book again'}
+              </button>
+            ) : null}
+            <StatusPill status={job.status} />
+          </div>
         </div>
+
+        {confirmSchedule ? (
+          <div className="card" style={{ marginBottom: 18, borderColor: 'var(--accent, #0f766e)' }}>
+            <h3>Confirm date and time</h3>
+            <p className="muted">This draft was created from a past job. Choose the visit date and time before the work is scheduled.</p>
+          </div>
+        ) : null}
 
         <div className="card" style={{ marginBottom: 18 }}>
           <h3>{canManage ? copy.managementAccess : copy.fieldAccess}</h3>
@@ -375,8 +411,11 @@ export default function JobDetailPage({ params }: PageProps) {
                 <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
                 <label>{copy.phone}</label>
                 <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
-                <label>{copy.address}</label>
-                <input className="input" value={job.address || ''} onChange={(e) => setJob({ ...job, address: e.target.value })} />
+                <AddressAutocomplete
+                  label={copy.address}
+                  value={job.address || ''}
+                  onChange={(formatted) => setJob({ ...job, address: formatted })}
+                />
                 <label>{copy.jobNotes}</label>
                 <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
                 <label>{copy.priority}</label>

@@ -7,6 +7,8 @@ import { AppShell } from '@/components/app-shell';
 import { ContactLink } from '@/components/contact-link';
 import { CustomerLogo } from '@/components/customer-logo';
 import { RecordSharingPanel } from '@/components/record-sharing-panel';
+import { CustomerPropertiesPanel } from '@/components/customer-properties-panel';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { isManagerRole, normalizeRole } from '@/lib/roles';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -42,15 +44,24 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const [notes, setNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [pipelineStage, setPipelineStage] = useState('active');
-  const [properties, setProperties] = useState<{ id: string; name: string; address: string | null }[]>([]);
-  const [jobs, setJobs] = useState<{ id: string; title: string; status: string | null }[]>([]);
+  const [jobs, setJobs] = useState<
+    {
+      id: string;
+      title: string;
+      status: string | null;
+      property_id?: string | null;
+      scheduled_start?: string | null;
+      start_date?: string | null;
+      completed_at?: string | null;
+      created_at?: string | null;
+    }[]
+  >([]);
   const [reports, setReports] = useState<{ id: string; title: string; job_id: string }[]>([]);
   const [portalAccess, setPortalAccess] = useState<
     { job_id: string; client_user_id: string; portal_token: string | null; profiles?: { email: string | null } | null }[]
   >([]);
-  const [propName, setPropName] = useState('');
-  const [propAddress, setPropAddress] = useState('');
   const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [duplicatingJobId, setDuplicatingJobId] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [savingCustomer, setSavingCustomer] = useState(false);
   const [movingToLead, setMovingToLead] = useState(false);
@@ -106,21 +117,15 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
     const { data: jobRows } = await supabase
       .from('jobs')
-      .select('id, title, status')
+      .select('id, title, status, property_id, scheduled_start, start_date, completed_at, created_at')
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false });
 
     const jobIds = (jobRows || []).map((j: { id: string }) => j.id);
-    const [{ data: props }, { data: reportRows }] = await Promise.all([
-      resolvedOrgId
-        ? supabase.from('customer_properties').select('id, name, address').eq('customer_id', customerId)
-        : Promise.resolve({ data: [] }),
-      jobIds.length
-        ? supabase.from('job_reports').select('id, title, job_id').in('job_id', jobIds)
-        : Promise.resolve({ data: [] })
-    ]);
+    const { data: reportRows } = jobIds.length
+      ? await supabase.from('job_reports').select('id, title, job_id').in('job_id', jobIds)
+      : { data: [] };
 
-    setProperties(props || []);
     setJobs(jobRows || []);
     setReports(reportRows || []);
 
@@ -258,22 +263,16 @@ export default function CustomerDetailPage({ params }: PageProps) {
     void load();
   }
 
-  async function addProperty() {
-    if (!propName.trim()) return;
-    const res = await fetch(`/api/customers/${customerId}/properties`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: propName.trim(), address: propAddress.trim() || null })
-    });
-    const json = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to create property.');
+  async function bookAgain(jobId: string) {
+    setDuplicatingJobId(jobId);
+    const res = await fetch(`/api/jobs/${jobId}/duplicate`, { method: 'POST' });
+    const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
+    setDuplicatingJobId(null);
+    if (!res.ok || !json.job?.id) {
+      appFeedback.error(json.error || 'Unable to create a similar job.');
       return;
     }
-    setPropName('');
-    setPropAddress('');
-    appFeedback.success('Property created.');
-    void load();
+    router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
   }
 
   if (loading) {
@@ -336,8 +335,13 @@ export default function CustomerDetailPage({ params }: PageProps) {
           <input id="customer-phone" className="input" type="tel" autoComplete="tel" inputMode="tel" value={phone} disabled={!canEdit} onChange={(e) => setPhone(e.target.value)} />
           <label htmlFor="customer-email">Email</label>
           <input id="customer-email" className="input" type="email" autoComplete="email" inputMode="email" value={email} disabled={!canEdit} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="customer-address">Address</label>
-          <input id="customer-address" className="input" autoComplete="street-address" value={address} disabled={!canEdit} onChange={(e) => setAddress(e.target.value)} />
+          <AddressAutocomplete
+            id="customer-address"
+            label="Address"
+            value={address}
+            disabled={!canEdit}
+            onChange={(formatted) => setAddress(formatted)}
+          />
           <label>Assign to</label>
           <select className="input" value={assignedTo} disabled={!canEdit || teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
             <option value="">Unassigned</option>
@@ -375,29 +379,24 @@ export default function CustomerDetailPage({ params }: PageProps) {
         </div>
         {jobs.length === 0 ? <p className="muted">No jobs yet.</p> : null}
         {jobs.map((job) => (
-          <div key={job.id} className="list-row">
+          <div key={job.id} className="list-row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <Link href={`/jobs/${job.id}`}>{job.title}</Link>
             <span>{job.status}</span>
+            {canEdit ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={duplicatingJobId === job.id}
+                onClick={() => void bookAgain(job.id)}
+              >
+                {duplicatingJobId === job.id ? 'Creating…' : 'Book again'}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>
 
-      <details className="card" style={{ marginBottom: 18 }}>
-        <summary><strong>Properties</strong></summary>
-        <div style={{ marginTop: 16 }}>
-          {properties.length === 0 ? <p className="muted">No properties yet.</p> : null}
-          {properties.map((property) => (
-            <p key={property.id}><strong>{property.name}</strong> · {property.address || 'No address'}</p>
-          ))}
-          {canEdit ? (
-            <div className="form">
-              <input className="input" placeholder="Property name" value={propName} onChange={(e) => setPropName(e.target.value)} />
-              <input className="input" placeholder="Address" value={propAddress} onChange={(e) => setPropAddress(e.target.value)} />
-              <button type="button" className="btn" onClick={addProperty}>Add property</button>
-            </div>
-          ) : null}
-        </div>
-      </details>
+      <CustomerPropertiesPanel customerId={customerId} customerName={displayName} canEdit={canEdit} jobs={jobs} />
 
       {orgId ? (
         <details className="card" style={{ marginBottom: 18 }}>

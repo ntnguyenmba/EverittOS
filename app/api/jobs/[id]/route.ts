@@ -33,6 +33,7 @@ const ALLOWED_FIELDS = new Set([
   'customer_notes',
   'completion_verified',
   'customer_id',
+  'property_id',
   'timezone'
 ]);
 
@@ -53,6 +54,7 @@ const MANAGER_ONLY_FIELDS = new Set([
   'customer_notes',
   'completion_verified',
   'customer_id',
+  'property_id',
   'internal_notes',
   'timezone'
 ]);

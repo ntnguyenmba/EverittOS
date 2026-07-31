@@ -15,7 +15,8 @@ describe('job calendar export', () => {
       notes: 'Gate code 1234',
       scheduled_start: '2026-07-28T15:00:00.000Z',
       scheduled_end: '2026-07-28T17:00:00.000Z',
-      assignedNames: ['Sam']
+      assignedNames: ['Sam'],
+      timezone: 'America/Chicago'
     });
 
     assert.ok(event);
@@ -28,17 +29,18 @@ describe('job calendar export', () => {
     assert.ok(outlookCalendarEventUrl(event!).includes('outlook.live.com'));
   });
 
-  it('preserves UTC instants in Apple and Outlook ICS output', () => {
+  it('treats stored Z timestamps as job wall-clock values for ICS output', () => {
     const event = jobCalendarEvent({
       id: 'job-utc',
       title: 'UTC job',
       scheduled_start: '2026-07-31T15:00:00.000Z',
-      scheduled_end: '2026-07-31T17:30:00.000Z'
+      scheduled_end: '2026-07-31T17:30:00.000Z',
+      timezone: 'America/Chicago'
     });
 
     assert.ok(event);
-    assert.equal(event.startsAt, '2026-07-31T15:00:00.000Z');
-    assert.equal(event.endsAt, '2026-07-31T17:30:00.000Z');
+    assert.equal(event.startsAt, '2026-07-31T15:00:00');
+    assert.equal(event.endsAt, '2026-07-31T17:30:00');
 
     const ics = generateBookingIcs({
       uid: event.id,
@@ -48,17 +50,18 @@ describe('job calendar export', () => {
       timeZone: 'America/Chicago'
     });
 
-    assert.match(ics, /DTSTART:20260731T150000Z/);
-    assert.match(ics, /DTEND:20260731T173000Z/);
-    assert.doesNotMatch(ics, /DTSTART;TZID=America\/Chicago:20260731T150000/);
+    assert.match(ics, /DTSTART;TZID=America\/Chicago:20260731T150000/);
+    assert.match(ics, /DTEND;TZID=America\/Chicago:20260731T173000/);
+    assert.doesNotMatch(ics, /DTSTART:20260731T150000Z/);
   });
 
-  it('converts explicit offsets to the same UTC instant', () => {
+  it('keeps clock components from offset timestamps as wall-clock values', () => {
     const event = jobCalendarEvent({
       id: 'job-offset',
       title: 'Offset job',
       scheduled_start: '2026-07-31T10:00:00-05:00',
-      scheduled_end: '2026-07-31T12:00:00-05:00'
+      scheduled_end: '2026-07-31T12:00:00-05:00',
+      timezone: 'America/Chicago'
     });
 
     assert.ok(event);
@@ -70,8 +73,8 @@ describe('job calendar export', () => {
       timeZone: 'America/Chicago'
     });
 
-    assert.match(ics, /DTSTART:20260731T150000Z/);
-    assert.match(ics, /DTEND:20260731T170000Z/);
+    assert.match(ics, /DTSTART;TZID=America\/Chicago:20260731T100000/);
+    assert.match(ics, /DTEND;TZID=America\/Chicago:20260731T120000/);
   });
 
   it('uses the workspace timezone only for timezone-less wall-clock values', () => {
@@ -103,8 +106,8 @@ describe('job calendar export', () => {
     });
 
     assert.ok(event);
-    assert.equal(event.startsAt, '2026-07-31T15:00:00.000Z');
-    assert.equal(event.endsAt, '2026-07-31T17:00:00.000Z');
+    assert.equal(event.startsAt, '2026-07-31T15:00:00');
+    assert.equal(event.endsAt, '2026-07-31T17:00:00');
   });
 
   it('returns null when the job has no schedule date', () => {
@@ -118,7 +121,7 @@ describe('job calendar export', () => {
     );
   });
 
-  it('masks calendar feed tokens', () => {
+  it('masks calendar tokens for logs', () => {
     assert.equal(maskCalendarToken('abcdefghijklmnop'), 'abcdef…mnop');
   });
 });

@@ -35,7 +35,7 @@ function mockAdmin(jobs: JobRow[]): SupabaseClient {
 }
 
 describe('authorized calendar feed', () => {
-  it('generates a complete Apple and Outlook compatible ICS feed without shifting UTC jobs', async () => {
+  it('generates a complete Apple and Outlook compatible ICS feed using job wall-clock times', async () => {
     const ics = await buildAuthorizedCalendarFeedIcs({
       admin: mockAdmin([
         {
@@ -61,12 +61,12 @@ describe('authorized calendar feed', () => {
     assert.match(ics, /X-WR-TIMEZONE:America\/Chicago/);
     assert.match(ics, /REFRESH-INTERVAL;VALUE=DURATION:PT15M/);
     assert.match(ics, /BEGIN:VEVENT/);
-    assert.match(ics, /UID:job-utc-tz2@everittos\.com/);
-    assert.match(ics, /DTSTART:20260731T150000Z/);
-    assert.match(ics, /DTEND:20260731T193000Z/);
-    assert.doesNotMatch(ics, /DTSTART;TZID=America\/Chicago:20260731T150000/);
+    assert.match(ics, /UID:job-utc-tz\d+@everittos\.com/);
+    assert.match(ics, /DTSTART;TZID=America\/Chicago:20260731T150000/);
+    assert.match(ics, /DTEND;TZID=America\/Chicago:20260731T193000/);
+    assert.doesNotMatch(ics, /DTSTART:20260731T150000Z/);
     assert.match(ics, /SUMMARY:Little Elm turnover/);
-    assert.match(ics, /LOCATION:2708 Sunlight Ln\, Little Elm\, TX/);
+    assert.match(ics, /LOCATION:2708 Sunlight Ln\\, Little Elm\\, TX/);
     assert.match(ics, /Customer: Urban Bliss Ventures/);
     assert.match(ics, /Finish before guest check-in/);
     assert.match(ics, /END:VEVENT\r\nEND:VCALENDAR\r\n$/);
@@ -122,7 +122,7 @@ describe('authorized calendar feed', () => {
     assert.equal((ics.match(/END:VCALENDAR/g) || []).length, 1);
     assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 2);
     assert.equal((ics.match(/END:VEVENT/g) || []).length, 2);
-    assert.match(ics, /DTSTART:20260801T140000Z/);
-    assert.match(ics, /DTSTART:20260802T150000Z/);
+    assert.match(ics, /DTSTART;TZID=America\/Chicago:20260801T140000/);
+    assert.match(ics, /DTSTART;TZID=America\/Chicago:20260802T150000/);
   });
 });

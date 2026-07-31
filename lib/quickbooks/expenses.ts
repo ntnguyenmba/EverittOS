@@ -248,7 +248,7 @@ async function reconcileQuickBooksPayments(
   let invoicesReconciled = 0;
   let unmatchedPayments = 0;
 
-  for (const [quickbooksInvoiceId, aggregate] of totalsByInvoice) {
+  for (const [quickbooksInvoiceId, aggregate] of Array.from(totalsByInvoice.entries())) {
     const { data: invoice, error } = await admin
       .from('invoices')
       .select('id, amount')

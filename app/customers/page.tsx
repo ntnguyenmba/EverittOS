@@ -334,6 +334,11 @@ function CustomersPageContent() {
           subtitle={t('ux.pageTitles.customers')}
           action={
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {isManagerRole(role) ? (
+                <Link className="btn" href="/customers/import">
+                  Import CSV
+                </Link>
+              ) : null}
               <div ref={exportMenuRef} style={{ position: 'relative' }}>
                 <button
                   className="btn"

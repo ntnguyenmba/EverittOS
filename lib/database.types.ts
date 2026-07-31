@@ -64,6 +64,7 @@ export type Job = {
   id: string;
   user_id: string;
   customer_id: string | null;
+  property_id?: string | null;
   title: string;
   customer_name: string | null;
   phone: string | null;
@@ -75,6 +76,7 @@ export type Job = {
   crew_id: string | null;
   assigned_to: string | null;
   scheduled_at: string | null;
+  timezone?: string | null;
   price_estimate: number | null;
   before_photo_url: string | null;
   after_photo_url: string | null;
@@ -83,6 +85,46 @@ export type Job = {
   completed_at: string | null;
   workers?: Worker | null;
   customers?: Customer | null;
+};
+
+export type CustomerProperty = {
+  id: string;
+  organization_id: string;
+  customer_id: string;
+  user_id?: string | null;
+  name: string;
+  property_type?: string | null;
+  address?: string | null;
+  address_line_1?: string | null;
+  address_line_2?: string | null;
+  city?: string | null;
+  county?: string | null;
+  state?: string | null;
+  state_code?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  country_code?: string | null;
+  formatted_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
+  access_instructions?: string | null;
+  gate_code?: string | null;
+  lockbox_code?: string | null;
+  parking_instructions?: string | null;
+  pet_notes?: string | null;
+  supply_notes?: string | null;
+  internal_notes?: string | null;
+  notes?: string | null;
+  default_price?: number | null;
+  default_duration_minutes?: number | null;
+  default_checklist_id?: string | null;
+  preferred_contractor_id?: string | null;
+  preferred_team_id?: string | null;
+  is_primary?: boolean | null;
+  is_archived?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type Expense = {
