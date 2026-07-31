@@ -1,0 +1,22 @@
+name: Patch recurring job creator
+
+on:
+  push:
+    paths:
+      - .github/workflows/patch-recurring-job-creator.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+     
