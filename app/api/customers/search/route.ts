@@ -54,12 +54,17 @@ export async function GET(request: Request) {
   }
 
   const q = new URL(request.url).searchParams.get('q')?.trim() || '';
-  if (q.length < 1) {
+  if (!q) {
     return NextResponse.json({ customers: [] });
   }
 
   const pattern = escapedIlikePattern(q);
   const orgId = ctx.workspace.organizationId;
+  const ownerUserId = ctx.workspace.ownerUserId;
+  const customerWorkspaceFilter = [
+    `organization_id.eq.${orgId}`,
+    `and(organization_id.is.null,user_id.eq.${ownerUserId})`
+  ].join(',');
   const customerSearchFilter = [
     `company_name.ilike.${pattern}`,
     `email.ilike.${pattern}`,
@@ -72,7 +77,7 @@ export async function GET(request: Request) {
   const primaryCustomers = await ctx.supabase
     .from('customers')
     .select(CUSTOMER_LIST_SELECT)
-    .eq('organization_id', orgId)
+    .or(customerWorkspaceFilter)
     .or(customerSearchFilter)
     .limit(20);
 
@@ -83,13 +88,12 @@ export async function GET(request: Request) {
           .select(
             'id, company_name, phone, email, notes, logo_path, pipeline_stage, lead_source, record_type, assigned_to, created_at, organization_id, user_id, updated_at, address_line1, address_line2, city, state, postal_code, country, service_address, property_address'
           )
-          .eq('organization_id', orgId)
+          .or(customerWorkspaceFilter)
           .or(customerSearchFilter)
           .limit(20)
       : primaryCustomers;
 
   const { data: customers, error } = customersQuery;
-
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
@@ -143,7 +147,7 @@ export async function GET(request: Request) {
     const { data: more, error: moreError } = await ctx.supabase
       .from('customers')
       .select(CUSTOMER_LIST_SELECT)
-      .eq('organization_id', orgId)
+      .or(customerWorkspaceFilter)
       .in('id', missingIds);
 
     if (moreError) {
@@ -160,7 +164,6 @@ export async function GET(request: Request) {
     const allProps = await ctx.supabase
       .from('customer_properties')
       .select(PROPERTY_SEARCH_SELECT)
-      .eq('organization_id', orgId)
       .in('customer_id', customerIds)
       .eq('is_archived', false)
       .order('is_primary', { ascending: false })
@@ -172,7 +175,6 @@ export async function GET(request: Request) {
       const legacy = await ctx.supabase
         .from('customer_properties')
         .select('id, customer_id, name, address')
-        .eq('organization_id', orgId)
         .in('customer_id', customerIds)
         .limit(120);
 
