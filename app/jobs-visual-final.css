@@ -1,4 +1,14 @@
-/* Final Jobs page visual layer. Loaded last so page-specific polish wins. */
+/* Final Jobs page visual layer. Cool slate palette only, with card-style rows. */
+
+.jobs-shell-minimal {
+  background: #f4f7f8 !important;
+}
+
+.jobs-shell-minimal .main,
+.jobs-shell-minimal .app-page-content,
+.jobs-shell-minimal .jobs-list-page {
+  background: transparent !important;
+}
 
 .jobs-shell-minimal .main {
   padding-top: 12px !important;
@@ -7,19 +17,18 @@
 .jobs-shell-minimal .everitt-cmd-trigger {
   width: min(560px, 100%) !important;
   min-height: 46px !important;
-  margin-bottom: 22px !important;
-  border: 1px solid #d9dfdf !important;
+  margin-bottom: 20px !important;
+  border: 1px solid #d8e1e5 !important;
   border-radius: 13px !important;
-  background: rgba(255, 255, 255, 0.88) !important;
-  color: #53616a !important;
-  box-shadow: 0 5px 18px rgba(31, 45, 53, 0.06) !important;
+  background: #ffffff !important;
+  color: #536571 !important;
+  box-shadow: 0 5px 18px rgba(31, 49, 61, 0.06) !important;
 }
 
 .jobs-shell-minimal .everitt-cmd-trigger:hover,
 .jobs-shell-minimal .everitt-cmd-trigger:focus-visible {
-  border-color: #bfcacc !important;
-  background: #ffffff !important;
-  color: #263943 !important;
+  border-color: #b9c9d0 !important;
+  color: #253b48 !important;
   outline: none !important;
 }
 
@@ -29,41 +38,75 @@
 
 .jobs-list-page .page-header {
   min-height: auto !important;
+  margin-bottom: 16px !important;
 }
 
 .jobs-list-page .page-header h1 {
   margin: 0 !important;
+  color: #1c2d37 !important;
 }
 
 .jobs-header-actions .btn:not(.btn-primary) {
-  border-color: #d8dedf !important;
+  border-color: #d7e0e4 !important;
   background: #ffffff !important;
-  color: #314651 !important;
-  box-shadow: 0 2px 7px rgba(31, 45, 53, 0.04) !important;
+  color: #314b5a !important;
+  box-shadow: 0 2px 7px rgba(31, 49, 61, 0.04) !important;
 }
 
 .jobs-header-actions .btn-primary {
-  border-color: #294f69 !important;
-  background: #294f69 !important;
+  border-color: #315f79 !important;
+  background: #315f79 !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 16px rgba(41, 79, 105, 0.18) !important;
+  box-shadow: 0 6px 16px rgba(49, 95, 121, 0.18) !important;
 }
 
 .jobs-header-actions .btn-primary:hover,
 .jobs-header-actions .btn-primary:focus-visible {
-  background: #203f55 !important;
-  border-color: #203f55 !important;
+  border-color: #274d63 !important;
+  background: #274d63 !important;
 }
 
 .jobs-filter-tabs {
   position: sticky;
   top: 8px;
   z-index: 8;
+  border-color: #dbe4e7 !important;
+  background: rgba(248, 251, 252, 0.94) !important;
   backdrop-filter: blur(14px);
 }
 
+.jobs-filter-tab {
+  color: #647681 !important;
+}
+
+.jobs-filter-tab:hover,
+.jobs-filter-tab:focus-visible {
+  background: #edf3f5 !important;
+  color: #243d4c !important;
+}
+
+.jobs-filter-tab-active {
+  background: #ffffff !important;
+  color: #244d65 !important;
+  box-shadow: 0 1px 6px rgba(35, 62, 77, 0.1) !important;
+}
+
 .jobs-table-card {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   isolation: isolate;
+}
+
+.jobs-mobile-table-wrap {
+  overflow: visible !important;
+}
+
+.jobs-operations-table {
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
 }
 
 .jobs-operations-table thead {
@@ -72,22 +115,50 @@
   z-index: 6;
 }
 
-.jobs-operations-table th:first-child {
-  border-top-left-radius: 17px;
+.jobs-operations-table th {
+  height: 42px !important;
+  padding: 0 18px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #71828c !important;
 }
 
-.jobs-operations-table th:last-child {
-  border-top-right-radius: 17px;
+.jobs-operations-row {
+  filter: drop-shadow(0 7px 16px rgba(36, 55, 67, 0.045));
+  transition: filter 150ms ease, transform 150ms ease;
 }
 
-.jobs-operations-row td:first-child {
+.jobs-operations-row:hover,
+.jobs-operations-row:focus-visible {
+  filter: drop-shadow(0 12px 24px rgba(36, 55, 67, 0.09));
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.jobs-operations-table td {
+  padding: 17px 18px !important;
+  border-top: 1px solid #dde6e9 !important;
+  border-bottom: 1px solid #dde6e9 !important;
+  background: #ffffff !important;
+  color: #253741 !important;
+  vertical-align: middle !important;
+}
+
+.jobs-operations-table td:first-child {
   position: relative;
+  border-left: 1px solid #dde6e9 !important;
+  border-radius: 15px 0 0 15px;
+}
+
+.jobs-operations-table td:last-child {
+  border-right: 1px solid #dde6e9 !important;
+  border-radius: 0 15px 15px 0;
 }
 
 .jobs-operations-row td:first-child::before {
   content: '';
   position: absolute;
-  inset: 12px auto 12px 0;
+  inset: 13px auto 13px 0;
   width: 3px;
   border-radius: 999px;
   background: transparent;
@@ -95,21 +166,37 @@
 
 .jobs-operations-row:hover td:first-child::before,
 .jobs-operations-row:focus-visible td:first-child::before {
-  background: #7b9aaa;
+  background: #6f9db4;
 }
 
 .jobs-col-date strong {
-  color: #1f3441;
+  color: #1f3948;
   font-size: 0.94rem;
   letter-spacing: -0.01em;
 }
 
+.jobs-row-time,
+.jobs-secondary,
+.jobs-photo-count {
+  color: #72838d !important;
+}
+
+.jobs-property-link {
+  color: #1f313b !important;
+}
+
 .jobs-property-link:hover,
 .jobs-property-link:focus-visible {
-  color: #28627f !important;
+  color: #2d6b8c !important;
   text-decoration: underline;
-  text-decoration-color: #b8cbd4;
+  text-decoration-color: #b4ccd8;
   text-underline-offset: 4px;
+}
+
+.jobs-col-assigned > span:not(.jobs-needs-worker) {
+  border-color: #d6e2e7 !important;
+  background: #f4f8fa !important;
+  color: #31566a !important;
 }
 
 .jobs-col-assigned > span:not(.jobs-needs-worker)::before {
@@ -118,52 +205,72 @@
   height: 8px;
   margin-right: 8px;
   border-radius: 50%;
-  background: #7a9bad;
-  box-shadow: 0 0 0 3px #e7eff2;
+  background: #7299ad;
+  box-shadow: 0 0 0 3px #e4eef2;
   flex: 0 0 auto;
+}
+
+.jobs-needs-worker {
+  border-color: #cfd9de !important;
+  background: #eef2f4 !important;
+  color: #536570 !important;
 }
 
 .jobs-shell-minimal .status.completed,
 .jobs-shell-minimal .status.finished,
 .jobs-shell-minimal .status.paid {
-  border-color: #cfe0cf !important;
-  background: #eef7ed !important;
-  color: #3f6944 !important;
+  border-color: #c9dfd3 !important;
+  background: #edf7f1 !important;
+  color: #35634a !important;
 }
 
 .jobs-shell-minimal .status.active,
 .jobs-shell-minimal .status.in-progress {
-  border-color: #cadde6 !important;
-  background: #edf5f8 !important;
-  color: #315f75 !important;
+  border-color: #c5dbe6 !important;
+  background: #edf6fa !important;
+  color: #315f78 !important;
 }
 
 .jobs-shell-minimal .status.scheduled,
 .jobs-shell-minimal .status.pending,
 .jobs-shell-minimal .status.new {
-  border-color: #dfd9c6 !important;
-  background: #faf6e9 !important;
-  color: #766536 !important;
+  border-color: #d0dbe1 !important;
+  background: #f1f5f7 !important;
+  color: #4f6572 !important;
 }
 
 .jobs-shell-minimal .status.cancelled,
 .jobs-shell-minimal .status.canceled,
 .jobs-shell-minimal .status.overdue,
 .jobs-shell-minimal .status.unpaid {
-  border-color: #ead5d1 !important;
-  background: #fbf0ee !important;
-  color: #8a5047 !important;
+  border-color: #d5dde1 !important;
+  background: #eef1f3 !important;
+  color: #5d6870 !important;
 }
 
 .jobs-menu-trigger {
-  border-color: #dce2e3 !important;
+  border-color: #d8e2e6 !important;
   background: #ffffff !important;
 }
 
 .jobs-menu-trigger::before {
   width: 3px !important;
   height: 3px !important;
-  box-shadow: 0 -6px 0 #56636c, 0 6px 0 #56636c !important;
+  background: #526772 !important;
+  box-shadow: 0 -6px 0 #526772, 0 6px 0 #526772 !important;
+}
+
+.jobs-menu-trigger:hover,
+.jobs-menu-trigger:focus-visible,
+.jobs-menu-trigger[aria-expanded='true'] {
+  border-color: #bfd0d7 !important;
+  background: #edf3f5 !important;
+}
+
+.jobs-more-panel {
+  border-color: #d7e1e5 !important;
+  background: #ffffff !important;
+  box-shadow: 0 18px 44px rgba(29, 46, 57, 0.16) !important;
 }
 
 .jobs-more-panel::before {
@@ -173,21 +280,36 @@
   right: 14px;
   width: 10px;
   height: 10px;
-  border-left: 1px solid #dfe2df;
-  border-top: 1px solid #dfe2df;
+  border-left: 1px solid #d7e1e5;
+  border-top: 1px solid #d7e1e5;
   background: #ffffff;
   transform: rotate(45deg);
 }
 
-.jobs-menu-item + .jobs-menu-item {
-  margin-top: 2px;
+.jobs-menu-item:hover,
+.jobs-menu-item:focus-visible {
+  background: #edf3f5 !important;
 }
 
 .jobs-menu-danger {
   margin-top: 6px !important;
-  border-top: 1px solid #ececea;
-  border-radius: 0 0 9px 9px;
   padding-top: 12px;
+  border-top: 1px solid #e5ecef;
+  border-radius: 0 0 9px 9px;
+  color: #56646c !important;
+}
+
+.jobs-shell-minimal .sidebar {
+  border-right-color: #dce5e8 !important;
+  background: #f7fafb !important;
+}
+
+.jobs-shell-minimal .sidebar a[aria-current='page'],
+.jobs-shell-minimal .sidebar .active {
+  border-color: transparent !important;
+  background: #e6eff3 !important;
+  color: #214b62 !important;
+  box-shadow: inset 3px 0 0 #4d839d;
 }
 
 @media (max-width: 760px) {
@@ -199,17 +321,33 @@
     margin-bottom: 16px !important;
   }
 
-  .jobs-filter-tabs {
-    position: static;
-  }
-
+  .jobs-filter-tabs,
   .jobs-operations-table thead {
     position: static;
   }
 
-  .jobs-operations-row:hover,
-  .jobs-operations-row:focus-visible {
-    transform: none;
+  .jobs-operations-table {
+    border-spacing: 0 !important;
+  }
+
+  .jobs-operations-table tbody {
+    gap: 12px !important;
+  }
+
+  .jobs-operations-row {
+    filter: none;
+    transform: none !important;
+    border: 1px solid #dbe5e8 !important;
+    background: #ffffff !important;
+    box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06) !important;
+  }
+
+  .jobs-operations-table td,
+  .jobs-operations-table td:first-child,
+  .jobs-operations-table td:last-child {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
 
   .jobs-operations-row td:first-child::before {
@@ -226,7 +364,7 @@
     max-height: min(70vh, 520px);
     overflow-y: auto;
     border-radius: 18px !important;
-    box-shadow: 0 22px 70px rgba(21, 32, 38, 0.24) !important;
+    box-shadow: 0 22px 70px rgba(21, 35, 44, 0.24) !important;
   }
 
   .jobs-more-panel::before {
