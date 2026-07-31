@@ -17,6 +17,7 @@ export const CLIENT_PAYMENT_METHODS = [
   'Debit Card',
   'Stripe',
   'Square',
+  'Airbnb',
   'Property Management Portal',
   'Other'
 ] as const;
