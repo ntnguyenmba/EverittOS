@@ -34,6 +34,20 @@ type JobAssignmentsProps = {
 
 type AssignmentScope = 'this_job_only' | 'this_and_future' | 'entire_series';
 
+type ManualContractorForm = {
+  name: string;
+  phone: string;
+  email: string;
+  companyName: string;
+};
+
+const EMPTY_MANUAL_CONTRACTOR: ManualContractorForm = {
+  name: '',
+  phone: '',
+  email: '',
+  companyName: ''
+};
+
 function workerLabel(worker?: Worker) {
   if (!worker) return 'Contractor';
   const type = worker.worker_type === 'contractor' ? 'Contractor' : 'Team';
@@ -56,6 +70,8 @@ export function JobAssignments({
   const [workerId, setWorkerId] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [manualContractor, setManualContractor] = useState<ManualContractorForm>(EMPTY_MANUAL_CONTRACTOR);
   const assignedIds = new Set(assignments.map((assignment) => assignment.worker_id));
   const availableWorkers = workers.filter((worker) => !assignedIds.has(worker.id));
   const busy = Boolean(busyId);
@@ -94,47 +110,92 @@ export function JobAssignments({
     return true;
   }
 
-  async function addAssignment() {
-    if (!workerId || !canManage || busy) return;
-    setBusyId('new');
+  async function assignWorker(nextWorkerId: string, workerName: string) {
     const scope = chooseAssignmentScope('this_job_only');
-    if (!scope) {
-      setBusyId(null);
-      return;
-    }
+    if (!scope) return false;
+
     if (recurringSeriesId && scope !== 'this_job_only') {
-      const ok = await applySeriesAssignment(workerId, scope);
-      setBusyId(null);
-      if (ok) {
-        setWorkerId('');
-        setShowAdd(false);
-        onChange();
-      }
-      return;
+      return applySeriesAssignment(nextWorkerId, scope);
     }
+
     const { error } = await supabase.from('job_assignments').insert({
       job_id: jobId,
-      worker_id: workerId,
+      worker_id: nextWorkerId,
       user_id: userId,
       organization_id: organizationId
     });
     if (error) {
-      setBusyId(null);
       appFeedback.error(error.message);
-      return;
+      return false;
     }
-    // Keep canonical jobs.assigned_to aligned with the first/primary assignee.
+
     if (assignments.length === 0) {
-      await supabase.from('jobs').update({ assigned_to: workerId }).eq('id', jobId).eq('organization_id', organizationId);
+      await supabase
+        .from('jobs')
+        .update({ assigned_to: nextWorkerId })
+        .eq('id', jobId)
+        .eq('organization_id', organizationId);
     }
-    setBusyId(null);
-    const worker = workers.find((item) => item.id === workerId);
-    await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${worker?.name || 'contractor'}`, {
-      worker_id: workerId
+
+    await logClientActivity(organizationId, 'job', jobId, 'worker_assigned', `Assigned ${workerName}`, {
+      worker_id: nextWorkerId
     });
-    appFeedback.success('Contractor assigned. They receive job access automatically.');
+    return true;
+  }
+
+  async function addAssignment() {
+    if (!workerId || !canManage || busy) return;
+    setBusyId('new');
+    const worker = workers.find((item) => item.id === workerId);
+    const ok = await assignWorker(workerId, worker?.name || 'contractor');
+    setBusyId(null);
+    if (!ok) return;
+
+    appFeedback.success('Contractor assigned. Account access is granted only when the contractor has a login.');
     setWorkerId('');
     setShowAdd(false);
+    onChange();
+  }
+
+  async function addManualContractor() {
+    if (!canManage || busy) return;
+    const name = manualContractor.name.trim();
+    if (!name) {
+      appFeedback.error('Enter the contractor name.');
+      return;
+    }
+
+    setBusyId('manual');
+    const res = await fetch('/api/contractors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        phone: manualContractor.phone.trim() || null,
+        email: manualContractor.email.trim() || null,
+        companyName: manualContractor.companyName.trim() || null,
+        contractorClassification: 'contractor'
+      })
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      contractor?: Worker;
+      error?: string;
+    };
+
+    if (!res.ok || !json.contractor?.id) {
+      setBusyId(null);
+      appFeedback.error(json.error || 'Unable to add contractor.');
+      return;
+    }
+
+    const ok = await assignWorker(json.contractor.id, json.contractor.name || name);
+    setBusyId(null);
+    if (!ok) return;
+
+    setManualContractor(EMPTY_MANUAL_CONTRACTOR);
+    setShowManual(false);
+    setShowAdd(false);
+    appFeedback.success('Manual contractor added and assigned. No EverittOS account is required.');
     onChange();
   }
 
@@ -163,7 +224,7 @@ export function JobAssignments({
     <div className="form">
       <h3 style={{ marginTop: 0 }}>Assigned contractors</h3>
       <p className="muted">
-        Contractors selected when the job was created appear here automatically and receive access when assigned.
+        Assign an existing contractor or add someone manually. Manual contractors do not need an EverittOS account and still count in job history and contractor metrics.
       </p>
 
       {assignments.length === 0 ? (
@@ -176,7 +237,7 @@ export function JobAssignments({
               <div>
                 <strong>{workerLabel(assignedWorker)}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
-                  Access granted through assignment
+                  {assignedWorker ? 'Included in job and contractor metrics' : 'Assigned contractor'}
                 </p>
               </div>
               {canManage ? (
@@ -194,40 +255,106 @@ export function JobAssignments({
         })
       )}
 
-      {canManage && availableWorkers.length > 0 ? (
-        showAdd || assignments.length === 0 ? (
-          <div style={{ marginTop: 12 }}>
-            <label htmlFor="add-contractor">Add another contractor</label>
-            <select
-              id="add-contractor"
-              className="input"
-              value={workerId}
-              disabled={busy}
-              onChange={(event) => setWorkerId(event.target.value)}
-            >
-              <option value="">Select contractor</option>
-              {availableWorkers.map((worker) => (
-                <option key={worker.id} value={worker.id}>
-                  {workerLabel(worker)}
-                </option>
-              ))}
-            </select>
-            <div className="button-row" style={{ marginTop: 8 }}>
-              <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={() => void addAssignment()}>
-                {busyId === 'new' ? FEEDBACK.loading : assignments.length === 0 ? 'Assign contractor' : 'Add contractor'}
+      {canManage ? (
+        <div style={{ marginTop: 12 }}>
+          {!showAdd && !showManual ? (
+            <div className="button-row">
+              <button type="button" className="btn" onClick={() => setShowAdd(true)}>
+                Assign existing contractor
               </button>
-              {assignments.length > 0 ? (
+              <button type="button" className="btn" onClick={() => setShowManual(true)}>
+                Add manual contractor
+              </button>
+            </div>
+          ) : null}
+
+          {showAdd ? (
+            <div className="card" style={{ marginTop: 10 }}>
+              <label htmlFor="add-contractor">Existing contractor</label>
+              <select
+                id="add-contractor"
+                className="input"
+                value={workerId}
+                disabled={busy}
+                onChange={(event) => setWorkerId(event.target.value)}
+              >
+                <option value="">Select contractor</option>
+                {availableWorkers.map((worker) => (
+                  <option key={worker.id} value={worker.id}>
+                    {workerLabel(worker)}
+                  </option>
+                ))}
+              </select>
+              {availableWorkers.length === 0 ? <p className="muted">No other active contractors found.</p> : null}
+              <div className="button-row" style={{ marginTop: 8 }}>
+                <button type="button" className="btn btn-primary" disabled={busy || !workerId} onClick={() => void addAssignment()}>
+                  {busyId === 'new' ? FEEDBACK.loading : 'Assign contractor'}
+                </button>
                 <button type="button" className="btn" disabled={busy} onClick={() => setShowAdd(false)}>
                   Cancel
                 </button>
-              ) : null}
+              </div>
             </div>
-          </div>
-        ) : (
-          <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => setShowAdd(true)}>
-            Add another contractor
-          </button>
-        )
+          ) : null}
+
+          {showManual ? (
+            <div className="card" style={{ marginTop: 10 }}>
+              <h4 style={{ marginTop: 0 }}>Manual contractor</h4>
+              <p className="muted">Add and assign someone without creating a login.</p>
+              <div className="grid-2">
+                <label>
+                  Name
+                  <input
+                    className="input"
+                    value={manualContractor.name}
+                    onChange={(event) => setManualContractor({ ...manualContractor, name: event.target.value })}
+                  />
+                </label>
+                <label>
+                  Phone
+                  <input
+                    className="input"
+                    value={manualContractor.phone}
+                    onChange={(event) => setManualContractor({ ...manualContractor, phone: event.target.value })}
+                    placeholder="Optional"
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    className="input"
+                    type="email"
+                    value={manualContractor.email}
+                    onChange={(event) => setManualContractor({ ...manualContractor, email: event.target.value })}
+                    placeholder="Optional"
+                  />
+                </label>
+                <label>
+                  Company
+                  <input
+                    className="input"
+                    value={manualContractor.companyName}
+                    onChange={(event) => setManualContractor({ ...manualContractor, companyName: event.target.value })}
+                    placeholder="Optional"
+                  />
+                </label>
+              </div>
+              <div className="button-row" style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy || !manualContractor.name.trim()}
+                  onClick={() => void addManualContractor()}
+                >
+                  {busyId === 'manual' ? FEEDBACK.loading : 'Add and assign'}
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => setShowManual(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
