@@ -77,6 +77,9 @@ export async function POST(request: Request) {
     job_id?: string | null;
     scheduled_at?: string | null;
     status?: OutboundStatus;
+    source_entity_type?: string | null;
+    source_entity_id?: string | null;
+    metadata?: Record<string, unknown>;
   };
 
   const docType = parseDocType(body.doc_type || null);
@@ -116,6 +119,9 @@ export async function POST(request: Request) {
       customer_id: body.customer_id || null,
       job_id: body.job_id || null,
       scheduled_at: body.scheduled_at || null,
+      source_entity_type: body.source_entity_type || null,
+      source_entity_id: body.source_entity_id || null,
+      metadata: body.metadata || {},
       created_by: ctx.userId
     })
     .select('*')

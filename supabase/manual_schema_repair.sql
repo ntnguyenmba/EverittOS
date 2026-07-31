@@ -261,7 +261,7 @@ create table if not exists public.outbound_documents (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint outbound_documents_doc_type_check check (
-    doc_type in ('review', 'proposal', 'estimate', 'invoice', 'message')
+    doc_type in ('review', 'proposal', 'estimate', 'invoice', 'message', 'receipt')
   ),
   constraint outbound_documents_status_check check (
     status in ('draft', 'scheduled', 'sent', 'failed')

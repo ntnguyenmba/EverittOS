@@ -39,6 +39,7 @@ export type RecordPaymentResult =
       balanceDue: number;
       paymentStatus: InvoicePaymentStatus;
       paymentIncrement: number;
+      paymentId: string | null;
       invoice: Record<string, unknown> | null;
       document: Record<string, unknown> | null;
     }
@@ -151,23 +152,27 @@ async function insertLedgerRow(
     notes: string | null;
     userId: string;
   }
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { error } = await supabase.from('invoice_payments').insert({
-    organization_id: input.organizationId,
-    invoice_id: input.invoiceId,
-    outbound_document_id: input.outboundDocumentId,
-    amount: input.amount,
-    paid_at: input.paidAt,
-    payment_method: input.paymentMethod,
-    payment_reference: input.paymentReference,
-    notes: input.notes,
-    source: 'recorded',
-    created_by: input.userId
-  });
+): Promise<{ ok: true; paymentId: string | null } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from('invoice_payments')
+    .insert({
+      organization_id: input.organizationId,
+      invoice_id: input.invoiceId,
+      outbound_document_id: input.outboundDocumentId,
+      amount: input.amount,
+      paid_at: input.paidAt,
+      payment_method: input.paymentMethod,
+      payment_reference: input.paymentReference,
+      notes: input.notes,
+      source: 'recorded',
+      created_by: input.userId
+    })
+    .select('id')
+    .single();
   if (error) {
     return { ok: false, error: error.message || 'Unable to record payment ledger entry.' };
   }
-  return { ok: true };
+  return { ok: true, paymentId: data?.id ? String(data.id) : null };
 }
 
 async function syncOutboundForInvoice(
@@ -256,6 +261,7 @@ export async function recordInvoicePaymentByInvoiceId(
     summary.patch
   );
 
+  let paymentId: string | null = null;
   if (!input.cancel && summary.paymentIncrement > 0) {
     const ledger = await insertLedgerRow(supabase, {
       organizationId: input.organizationId,
@@ -271,6 +277,7 @@ export async function recordInvoicePaymentByInvoiceId(
     if (!ledger.ok) {
       return { ok: false, error: ledger.error, status: 400 };
     }
+    paymentId = ledger.paymentId;
   }
 
   return {
@@ -281,6 +288,7 @@ export async function recordInvoicePaymentByInvoiceId(
     balanceDue: summary.balanceDue,
     paymentStatus: summary.paymentStatus,
     paymentIncrement: summary.paymentIncrement,
+    paymentId,
     invoice: updatedInvoice,
     document: updatedDocument
   };
@@ -369,6 +377,7 @@ export async function recordInvoicePaymentByOutboundId(
   if (updateError) return { ok: false, error: updateError.message, status: 400 };
 
   let updatedInvoice: Record<string, unknown> | null = null;
+  let paymentId: string | null = null;
   if (invoiceId) {
     updatedInvoice = await syncInvoice(supabase, input.organizationId, invoiceId, summary.patch);
     if (!input.cancel && summary.paymentIncrement > 0) {
@@ -386,6 +395,7 @@ export async function recordInvoicePaymentByOutboundId(
       if (!ledger.ok) {
         return { ok: false, error: ledger.error, status: 400 };
       }
+      paymentId = ledger.paymentId;
     }
   }
 
@@ -397,6 +407,7 @@ export async function recordInvoicePaymentByOutboundId(
     balanceDue: summary.balanceDue,
     paymentStatus: summary.paymentStatus,
     paymentIncrement: summary.paymentIncrement,
+    paymentId,
     invoice: updatedInvoice,
     document: updatedDocument as Record<string, unknown>
   };

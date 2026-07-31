@@ -1,4 +1,4 @@
-export const OUTBOUND_DOC_TYPES = ['review', 'proposal', 'estimate', 'invoice', 'message'] as const;
+export const OUTBOUND_DOC_TYPES = ['review', 'proposal', 'estimate', 'invoice', 'message', 'receipt'] as const;
 export type OutboundDocType = (typeof OUTBOUND_DOC_TYPES)[number];
 
 export const OUTBOUND_STATUSES = ['draft', 'scheduled', 'sent', 'failed'] as const;
@@ -72,6 +72,10 @@ export function defaultComposerFields(docType: OutboundDocType): OutboundCompose
     message: {
       subject: '',
       body: ''
+    },
+    receipt: {
+      subject: 'Payment receipt',
+      body: 'Thank you. We received your payment.'
     }
   };
 
@@ -99,7 +103,18 @@ export function docTypeLabel(docType: OutboundDocType): string {
     proposal: 'Proposal',
     estimate: 'Estimate',
     invoice: 'Invoice',
-    message: 'Message'
+    message: 'Message',
+    receipt: 'Payment receipt'
   };
   return labels[docType];
+}
+
+export function invoiceSubjectForJob(jobTitle: string): string {
+  const title = jobTitle.trim() || 'completed work';
+  return `Invoice for ${title}`;
+}
+
+export function invoiceBodyForJob(jobTitle: string): string {
+  const title = jobTitle.trim() || 'your job';
+  return `Thank you for your business. Please find the invoice for ${title} below.`;
 }

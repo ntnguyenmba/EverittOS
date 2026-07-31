@@ -27,6 +27,7 @@ import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import { canAccessWorkspaceRecord } from '@/lib/workspace-record-access';
 import { contractorIdentityFromWorkers } from '@/lib/contractor-dashboard';
 import { contractorJobDetailPath } from '@/lib/contractor-job-access';
@@ -151,9 +152,11 @@ export default function JobDetailPage({ params }: PageProps) {
   const [loadError, setLoadError] = useState('');
   const [savingDetails, setSavingDetails] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [completionPrompt, setCompletionPrompt] = useState(false);
   const appFeedback = useAppFeedback();
   const { t, locale } = useTranslation();
   const copy = getJobDetailCopy(locale);
+  const billingCopy = getBillingOpsCopy(locale);
 
   useEffect(() => {
     params.then((p) => setJobId(p.id));
@@ -345,6 +348,9 @@ export default function JobDetailPage({ params }: PageProps) {
         data: { user: u }
       } = await supabase.auth.getUser();
       if (u) await createNotification(orgId, u.id, 'completion', copy.jobCompletedTitle, job?.title || copy.jobMarkedCompleted, jobId);
+      if (canAccessFinancials(userRole, plan) && isManagerRole(userRole)) {
+        setCompletionPrompt(true);
+      }
     }
     loadJob();
   }
@@ -539,6 +545,30 @@ export default function JobDetailPage({ params }: PageProps) {
           <div className="card" style={{ marginBottom: 18, borderColor: 'var(--accent, #0f766e)' }}>
             <h3>Confirm date and time</h3>
             <p className="muted">This draft was created from a past job. Choose the visit date and time before the work is scheduled.</p>
+          </div>
+        ) : null}
+
+        {completionPrompt && canAccessFinancials(userRole, plan) ? (
+          <div className="card" style={{ marginBottom: 18 }} role="status">
+            <h3>{billingCopy.jobCompleted}</h3>
+            <p className="muted">{billingCopy.createInvoice}</p>
+            <div className="button-row" style={{ flexWrap: 'wrap', marginTop: 10 }}>
+              <Link
+                className="btn btn-primary"
+                href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}
+              >
+                {billingCopy.createInvoice}
+              </Link>
+              <Link
+                className="btn"
+                href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}
+              >
+                {billingCopy.createDraft}
+              </Link>
+              <button type="button" className="btn" onClick={() => setCompletionPrompt(false)}>
+                {billingCopy.later}
+              </button>
+            </div>
           </div>
         ) : null}
 

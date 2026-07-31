@@ -9,6 +9,9 @@ type OutboundComposerProps = {
   saveState: AutosaveState;
   sending: boolean;
   showAmount?: boolean;
+  amountMissing?: boolean;
+  prefillNotice?: string;
+  prefillReady?: boolean;
   onFieldChange: <K extends keyof OutboundComposerFields>(key: K, value: OutboundComposerFields[K]) => void;
   onSend: () => void;
   onReset?: () => void;
@@ -25,6 +28,7 @@ function composerTitle(docType: OutboundDocType): string {
   if (docType === 'estimate') return 'New estimate';
   if (docType === 'proposal') return 'New proposal';
   if (docType === 'invoice') return 'New invoice';
+  if (docType === 'receipt') return 'Payment receipt';
   return 'New message';
 }
 
@@ -32,6 +36,7 @@ function amountLabel(docType: OutboundDocType): string {
   if (docType === 'estimate') return 'Estimate total';
   if (docType === 'proposal') return 'Proposal total';
   if (docType === 'invoice') return 'Amount due';
+  if (docType === 'receipt') return 'Amount paid';
   return 'Amount';
 }
 
@@ -41,6 +46,9 @@ export function OutboundComposer({
   saveState,
   sending,
   showAmount = false,
+  amountMissing = false,
+  prefillNotice = '',
+  prefillReady = true,
   onFieldChange,
   onSend,
   onReset
@@ -51,6 +59,9 @@ export function OutboundComposer({
         <h3>{composerTitle(docType)}</h3>
         <span className={`outbound-autosave-indicator outbound-autosave-${saveState}`}>{saveLabel(saveState)}</span>
       </div>
+
+      {!prefillReady ? <p className="muted">Loading customer and job details…</p> : null}
+      {prefillNotice ? <p className="muted" role="status">{prefillNotice}</p> : null}
 
       <label htmlFor={`${docType}-recipient-name`}>Customer</label>
       <input
@@ -79,7 +90,7 @@ export function OutboundComposer({
           <label htmlFor={`${docType}-amount`}>{amountLabel(docType)}</label>
           <input
             id={`${docType}-amount`}
-            className="input"
+            className={`input${amountMissing ? ' outbound-amount-missing' : ''}`}
             type="number"
             min={docType === 'invoice' ? '0.01' : '0'}
             step="0.01"
@@ -87,7 +98,13 @@ export function OutboundComposer({
             placeholder="0.00"
             value={fields.amount}
             onChange={(event) => onFieldChange('amount', event.target.value)}
+            aria-invalid={amountMissing || undefined}
           />
+          {amountMissing ? (
+            <p className="muted" style={{ marginTop: 4 }}>
+              Missing amount — enter the amount before sending.
+            </p>
+          ) : null}
         </>
       ) : null}
 
@@ -128,7 +145,7 @@ export function OutboundComposer({
         <button
           type="button"
           className="btn btn-primary"
-          disabled={sending || !fields.recipient_email.trim()}
+          disabled={sending || !fields.recipient_email.trim() || !prefillReady}
           onClick={() => void onSend()}
         >
           {sending ? 'Sending...' : fields.scheduled_at ? 'Schedule' : 'Send'}

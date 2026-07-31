@@ -81,6 +81,8 @@ export async function POST(request: Request, context: RouteContext) {
     invoice: result.invoice,
     payment_status: result.paymentStatus,
     amount_paid: result.amountPaid,
-    balance_due: result.balanceDue
+    balance_due: result.balanceDue,
+    payment_increment: result.paymentIncrement,
+    payment_id: result.paymentId
   });
 }

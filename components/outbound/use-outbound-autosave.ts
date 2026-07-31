@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   defaultComposerFields,
+  invoiceBodyForJob,
+  invoiceSubjectForJob,
   type OutboundComposerFields,
   type OutboundDocType,
   type OutboundDocument
@@ -14,6 +16,9 @@ type UseOutboundAutosaveOptions = {
   docType: OutboundDocType;
   initialJobId?: string;
   initialCustomerId?: string;
+  initialInvoiceId?: string;
+  initialPaymentId?: string;
+  forceNew?: boolean;
   enabled?: boolean;
 };
 
@@ -25,7 +30,25 @@ type PrefillResponse = {
     recipient_email?: string;
     amount?: number | null;
     job_title?: string;
+    subject?: string;
+    body?: string;
+    invoice_id?: string | null;
+    payment_id?: string | null;
+    payment_date?: string | null;
+    payment_method?: string | null;
+    payment_reference?: string | null;
+    amount_missing?: boolean;
   };
+  existing_invoice?: {
+    id: string;
+    status: string | null;
+    payment_status?: string | null;
+    is_paid?: boolean;
+  } | null;
+  existing_receipt?: {
+    id: string;
+    status: string | null;
+  } | null;
 };
 
 function fieldsFromDocument(doc: OutboundDocument): OutboundComposerFields {
@@ -51,10 +74,18 @@ function hasComposerContent(fields: OutboundComposerFields): boolean {
   );
 }
 
+function isDefaultTemplate(docType: OutboundDocType, fields: OutboundComposerFields): boolean {
+  const defaults = defaultComposerFields(docType);
+  return fields.subject === defaults.subject && fields.body === defaults.body;
+}
+
 export function useOutboundAutosave({
   docType,
   initialJobId = '',
   initialCustomerId = '',
+  initialInvoiceId = '',
+  initialPaymentId = '',
+  forceNew = false,
   enabled = true
 }: UseOutboundAutosaveOptions) {
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -68,53 +99,160 @@ export function useOutboundAutosave({
   });
   const [saveState, setSaveState] = useState<AutosaveState>('idle');
   const [sending, setSending] = useState(false);
+  const [prefillNotice, setPrefillNotice] = useState('');
+  const [amountMissing, setAmountMissing] = useState(false);
+  const [prefillReady, setPrefillReady] = useState(
+    !(initialJobId || initialCustomerId || initialInvoiceId || initialPaymentId)
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSaveRef = useRef(false);
   const prefillKeyRef = useRef('');
+  const userEditedRef = useRef<Partial<Record<keyof OutboundComposerFields, boolean>>>({});
+  const loadedExistingRef = useRef(false);
+  const receiptMetaRef = useRef<Record<string, unknown>>({});
 
   useEffect(() => {
-    if (!enabled || (!initialJobId && !initialCustomerId)) return;
-    const key = `${docType}:${initialJobId}:${initialCustomerId}`;
+    if (!enabled) {
+      setPrefillReady(true);
+      return;
+    }
+    if (!initialJobId && !initialCustomerId && !initialInvoiceId && !initialPaymentId) {
+      setPrefillReady(true);
+      return;
+    }
+
+    const key = `${docType}:${initialJobId}:${initialCustomerId}:${initialInvoiceId}:${initialPaymentId}:${forceNew ? '1' : '0'}`;
     if (prefillKeyRef.current === key) return;
     prefillKeyRef.current = key;
+    loadedExistingRef.current = false;
+    setPrefillReady(false);
+    setPrefillNotice('');
 
     const params = new URLSearchParams();
+    params.set('docType', docType);
     if (initialJobId) params.set('jobId', initialJobId);
     if (initialCustomerId) params.set('customerId', initialCustomerId);
+    if (initialInvoiceId) params.set('invoiceId', initialInvoiceId);
+    if (initialPaymentId) params.set('paymentId', initialPaymentId);
+    if (forceNew) params.set('forceNew', '1');
 
     let cancelled = false;
     void fetch(`/api/outbound/prefill?${params.toString()}`, { cache: 'no-store' })
       .then(async (response) => {
         const json = (await response.json()) as PrefillResponse & { error?: string };
-        if (!response.ok) throw new Error(json.error || 'Unable to load invoice details.');
-        return json.prefill;
+        if (!response.ok) throw new Error(json.error || 'Unable to load document details.');
+        return json;
       })
-      .then((prefill) => {
-        if (cancelled || !prefill) return;
+      .then(async (json) => {
+        if (cancelled) return;
+
+        const existingId =
+          docType === 'receipt'
+            ? json.existing_receipt?.id
+            : !forceNew
+              ? json.existing_invoice?.id
+              : undefined;
+
+        if (existingId && !forceNew) {
+          const res = await fetch(`/api/outbound/${existingId}`, { cache: 'no-store' });
+          const existingJson = await res.json();
+          if (res.ok && existingJson.document) {
+            loadedExistingRef.current = true;
+            skipNextSaveRef.current = true;
+            setDocumentId(existingJson.document.id);
+            setFields(fieldsFromDocument(existingJson.document as OutboundDocument));
+            setSaveState('saved');
+            setPrefillNotice(
+              docType === 'receipt' ? 'Existing receipt found' : 'Existing invoice found'
+            );
+            setAmountMissing(!(Number(existingJson.document.amount) > 0));
+            setPrefillReady(true);
+            return;
+          }
+        }
+
+        const prefill = json.prefill;
+        if (!prefill) {
+          setPrefillReady(true);
+          return;
+        }
+
+        receiptMetaRef.current = {
+          invoice_id: prefill.invoice_id || null,
+          payment_id: prefill.payment_id || null,
+          payment_date: prefill.payment_date || null,
+          payment_method: prefill.payment_method || null,
+          payment_reference: prefill.payment_reference || null,
+          receipt: docType === 'receipt'
+        };
+
         skipNextSaveRef.current = true;
         setFields((current) => {
-          const jobLabel = prefill.job_title?.trim();
-          const subject =
-            docType === 'invoice' && jobLabel && current.subject === defaultComposerFields('invoice').subject
-              ? `Invoice for ${jobLabel}`
-              : current.subject;
+          const defaults = defaultComposerFields(docType);
+          const jobLabel = prefill.job_title?.trim() || '';
+          const canReplaceSubject =
+            !userEditedRef.current.subject &&
+            (current.subject === defaults.subject || !current.subject.trim());
+          const canReplaceBody =
+            !userEditedRef.current.body && (current.body === defaults.body || !current.body.trim());
+
+          let subject = current.subject;
+          let body = current.body;
+          if (canReplaceSubject) {
+            subject =
+              prefill.subject ||
+              (docType === 'invoice' && jobLabel
+                ? invoiceSubjectForJob(jobLabel)
+                : docType === 'receipt'
+                  ? 'Payment receipt'
+                  : current.subject);
+          }
+          if (canReplaceBody) {
+            body =
+              prefill.body ||
+              (docType === 'invoice' && jobLabel
+                ? invoiceBodyForJob(jobLabel)
+                : docType === 'receipt'
+                  ? 'Thank you. We received your payment.'
+                  : current.body);
+          }
+
           return {
             ...current,
-            recipient_name: current.recipient_name || prefill.recipient_name || '',
-            recipient_email: current.recipient_email || prefill.recipient_email || '',
-            amount: current.amount || (prefill.amount != null ? String(prefill.amount) : ''),
+            recipient_name: userEditedRef.current.recipient_name
+              ? current.recipient_name
+              : current.recipient_name || prefill.recipient_name || '',
+            recipient_email: userEditedRef.current.recipient_email
+              ? current.recipient_email
+              : current.recipient_email || prefill.recipient_email || '',
+            amount: userEditedRef.current.amount
+              ? current.amount
+              : current.amount || (prefill.amount != null ? String(prefill.amount) : ''),
             customer_id: current.customer_id || prefill.customer_id || '',
             job_id: current.job_id || prefill.job_id || '',
-            subject
+            subject,
+            body
           };
         });
+        setAmountMissing(Boolean(prefill.amount_missing));
+        setPrefillReady(true);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setPrefillReady(true);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [docType, enabled, initialCustomerId, initialJobId]);
+  }, [
+    docType,
+    enabled,
+    forceNew,
+    initialCustomerId,
+    initialInvoiceId,
+    initialJobId,
+    initialPaymentId
+  ]);
 
   const resetComposer = useCallback(() => {
     skipNextSaveRef.current = true;
@@ -125,15 +263,21 @@ export function useOutboundAutosave({
       customer_id: initialCustomerId || ''
     });
     setSaveState('idle');
+    setPrefillNotice('');
+    setAmountMissing(false);
     prefillKeyRef.current = '';
+    userEditedRef.current = {};
+    loadedExistingRef.current = false;
+    receiptMetaRef.current = {};
   }, [docType, initialCustomerId, initialJobId]);
 
   const persist = useCallback(
     async (nextFields: OutboundComposerFields, id: string | null) => {
-      if (!enabled || !hasComposerContent(nextFields)) return id;
+      if (!enabled || !prefillReady || !hasComposerContent(nextFields)) return id;
+      if (loadedExistingRef.current && !id) return id;
 
       setSaveState('saving');
-      const payload = {
+      const payload: Record<string, unknown> = {
         doc_type: docType,
         recipient_email: nextFields.recipient_email,
         recipient_name: nextFields.recipient_name,
@@ -145,6 +289,15 @@ export function useOutboundAutosave({
         scheduled_at: nextFields.scheduled_at ? new Date(nextFields.scheduled_at).toISOString() : null,
         status: nextFields.scheduled_at ? 'scheduled' : 'draft'
       };
+
+      if (docType === 'receipt') {
+        payload.source_entity_type = 'invoice_receipt';
+        payload.source_entity_id = receiptMetaRef.current.invoice_id || initialInvoiceId || null;
+        payload.metadata = {
+          ...receiptMetaRef.current,
+          receipt: true
+        };
+      }
 
       try {
         if (id) {
@@ -175,16 +328,20 @@ export function useOutboundAutosave({
         return id;
       }
     },
-    [docType, enabled]
+    [docType, enabled, initialInvoiceId, prefillReady]
   );
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !prefillReady) return;
     if (skipNextSaveRef.current) {
       skipNextSaveRef.current = false;
       return;
     }
     if (!hasComposerContent(fields)) return;
+    // Avoid creating empty/default drafts before the user edits or prefill settles.
+    if (!documentId && isDefaultTemplate(docType, fields) && !fields.recipient_email.trim() && !fields.amount.trim()) {
+      return;
+    }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -196,10 +353,14 @@ export function useOutboundAutosave({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [fields, documentId, enabled, persist]);
+  }, [fields, documentId, enabled, persist, prefillReady, docType]);
 
   const updateField = useCallback(<K extends keyof OutboundComposerFields>(key: K, value: OutboundComposerFields[K]) => {
+    userEditedRef.current[key] = true;
     setFields((current) => ({ ...current, [key]: value }));
+    if (key === 'amount') {
+      setAmountMissing(!(Number(value) > 0));
+    }
     if (saveState === 'saved') setSaveState('idle');
   }, [saveState]);
 
@@ -223,9 +384,12 @@ export function useOutboundAutosave({
 
   const loadDocument = useCallback((doc: OutboundDocument) => {
     skipNextSaveRef.current = true;
+    loadedExistingRef.current = true;
     setDocumentId(doc.id);
     setFields(fieldsFromDocument(doc));
     setSaveState('saved');
+    setPrefillReady(true);
+    setAmountMissing(!(Number(doc.amount) > 0));
   }, []);
 
   return {
@@ -236,6 +400,9 @@ export function useOutboundAutosave({
     sending,
     sendNow,
     resetComposer,
-    loadDocument
+    loadDocument,
+    prefillReady,
+    prefillNotice,
+    amountMissing
   };
 }

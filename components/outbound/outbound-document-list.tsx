@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
+import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import { invoiceDeliveryPaymentLabel, INVOICE_PAYMENT_METHODS } from '@/lib/outbound/invoice-payment';
 import type { OutboundDocument, OutboundTab } from '@/lib/outbound/types';
 
@@ -75,6 +78,8 @@ function RecordPaymentForm({
   doc: OutboundDocument;
   onDone: () => void;
 }) {
+  const { locale } = useTranslation();
+  const billingCopy = getBillingOpsCopy(locale);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('Cash');
   const [reference, setReference] = useState('');
@@ -82,6 +87,10 @@ function RecordPaymentForm({
   const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [receiptPrompt, setReceiptPrompt] = useState<{
+    invoiceId: string;
+    paymentId: string;
+  } | null>(null);
 
   const invoiceTotal = Math.max(0, Number(doc.amount || 0));
   const paid = Math.max(0, Number(doc.amount_paid || 0));
@@ -107,7 +116,32 @@ function RecordPaymentForm({
       setError(json.error || 'Unable to record payment');
       return;
     }
-    onDone();
+    const invoiceId =
+      (json.invoice?.id as string | undefined) ||
+      (doc.source_entity_id as string | undefined) ||
+      doc.id;
+    const paymentId = (json.payment_id as string | undefined) || '';
+    setReceiptPrompt({ invoiceId, paymentId });
+  }
+
+  if (receiptPrompt) {
+    const params = new URLSearchParams({ invoiceId: receiptPrompt.invoiceId });
+    if (receiptPrompt.paymentId) params.set('paymentId', receiptPrompt.paymentId);
+    if (doc.job_id) params.set('jobId', doc.job_id);
+    if (doc.customer_id) params.set('customerId', doc.customer_id);
+    return (
+      <div className="outbound-payment-prompt card" style={{ marginTop: 8, padding: 12 }}>
+        <strong>{billingCopy.paymentRecorded}</strong>
+        <div className="button-row" style={{ marginTop: 10 }}>
+          <Link className="btn btn-primary" href={`/receipts?${params.toString()}`}>
+            {billingCopy.sendReceipt}
+          </Link>
+          <button type="button" className="btn" onClick={() => onDone()}>
+            {billingCopy.later}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

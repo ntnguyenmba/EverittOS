@@ -21,7 +21,8 @@ function defaultSubject(docType: OutboundDocType, subject: string | null): strin
     proposal: 'Your proposal',
     estimate: 'Your estimate',
     invoice: 'Your invoice',
-    message: 'Message from your service team'
+    message: 'Message from your service team',
+    receipt: 'Payment receipt'
   };
   return fallbacks[docType];
 }
@@ -163,7 +164,8 @@ export async function sendOutboundDocument(input: {
     proposal: 'proposal_sent',
     estimate: 'estimate_sent',
     invoice: 'invoice_created',
-    message: 'message_sent'
+    message: 'message_sent',
+    receipt: 'receipt_sent'
   };
 
   await logActivityServer({

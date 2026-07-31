@@ -10,7 +10,10 @@ import {
   type VisitInput
 } from '@/lib/job-visits';
 import { generateActiveSeriesForOrganization } from '@/lib/generate-recurring-series';
+import { fetchJobBillingStatuses } from '@/lib/jobs/billing-status';
 import { listWorkspaceJobs } from '@/lib/jobs-org-query';
+import { canAccessFinancials } from '@/lib/finance-access';
+import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import { trackProductEventServer } from '@/lib/product-analytics-server';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
@@ -80,10 +83,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unable to load jobs. Try refreshing the page.' }, { status: 500 });
   }
 
+  let enrichedJobs = jobs;
+  const { plan } = await resolveOrganizationPlan(ctx.supabase, ctx.userId);
+  const canSeeBilling = canAccessFinancials(ctx.workspace.role, plan);
+  if (canSeeBilling && ctx.workspace.organizationId && jobs.length) {
+    const billing = await fetchJobBillingStatuses(
+      ctx.supabase,
+      ctx.workspace.organizationId,
+      jobs.map((job) => job.id)
+    );
+    enrichedJobs = jobs.map((job) => ({
+      ...job,
+      billing_status: billing[job.id] || 'not_invoiced'
+    }));
+  }
+
   return NextResponse.json({
-    jobs,
+    jobs: enrichedJobs,
     organizationId: ctx.workspace.organizationId,
-    total: jobs.length
+    total: enrichedJobs.length
   });
 }
 

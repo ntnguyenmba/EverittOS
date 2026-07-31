@@ -7,7 +7,7 @@ import {
 } from '@/lib/worker-assignment';
 
 export const JOB_LIST_COLUMNS =
-  'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, start_date, due_date, scheduled_start, scheduled_end, timezone';
+  'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, start_date, due_date, scheduled_start, scheduled_end, timezone, revenue_amount';
 
 export type JobListRow = {
   id: string;
@@ -27,6 +27,8 @@ export type JobListRow = {
   scheduled_start?: string | null;
   scheduled_end?: string | null;
   timezone?: string | null;
+  revenue_amount?: number | null;
+  billing_status?: string | null;
 };
 
 export type JobListFilters = {

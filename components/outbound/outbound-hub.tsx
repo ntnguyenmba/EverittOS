@@ -16,6 +16,9 @@ type OutboundHubProps = {
   showAmount?: boolean;
   initialJobId?: string;
   initialCustomerId?: string;
+  initialInvoiceId?: string;
+  initialPaymentId?: string;
+  forceNew?: boolean;
   paymentFilter?: InvoicePaymentFilter;
   focusOutstanding?: boolean;
   footer?: React.ReactNode;
@@ -27,6 +30,9 @@ export function OutboundHub({
   showAmount = false,
   initialJobId,
   initialCustomerId,
+  initialInvoiceId,
+  initialPaymentId,
+  forceNew = false,
   paymentFilter = 'all',
   focusOutstanding = false,
   footer
@@ -42,6 +48,9 @@ export function OutboundHub({
     docType,
     initialJobId,
     initialCustomerId,
+    initialInvoiceId,
+    initialPaymentId,
+    forceNew,
     enabled: canManage
   });
 
@@ -141,6 +150,9 @@ export function OutboundHub({
       saveState={autosave.saveState}
       sending={autosave.sending}
       showAmount={showAmount}
+      amountMissing={autosave.amountMissing}
+      prefillNotice={autosave.prefillNotice}
+      prefillReady={autosave.prefillReady}
       onFieldChange={autosave.updateField}
       onSend={() => void handleSendFromComposer()}
       onReset={autosave.resetComposer}
@@ -157,7 +169,9 @@ export function OutboundHub({
                 ? 'Overdue invoices'
                 : 'Who still owes you'
               : 'Invoices'
-            : 'Sent history'}
+            : docType === 'receipt'
+              ? 'Receipts'
+              : 'Sent history'}
         </h3>
         {docType === 'invoice' && paymentFilter !== 'all' ? (
           <p className="muted" style={{ margin: '6px 0 0' }}>

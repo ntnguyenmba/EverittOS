@@ -18,6 +18,7 @@ function InvoicesPageContent() {
   const { t } = useTranslation();
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
+  const forceNew = searchParams.get('action') === 'new' || searchParams.get('forceNew') === '1';
   const paymentParam = (searchParams.get('payment') || 'all').toLowerCase();
   const focusOutstanding = searchParams.get('focus') === 'outstanding';
   const paymentFilter =
@@ -64,6 +65,7 @@ function InvoicesPageContent() {
         showAmount
         initialJobId={jobId}
         initialCustomerId={customerId}
+        forceNew={forceNew}
         paymentFilter={paymentFilter}
         focusOutstanding={focusOutstanding}
       />

@@ -600,3 +600,144 @@ main,
 .app-mobile-nav {
   padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
 }
+
+/* ---------- Jobs operations table ---------- */
+
+.jobs-table-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.jobs-operations-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+  background: #fffaf5;
+}
+
+.jobs-operations-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3f3a35;
+  background: #f7f1ea;
+  border-bottom: 1px solid #e6ddd2;
+  white-space: nowrap;
+}
+
+.jobs-operations-table tbody td {
+  padding: 14px;
+  border-bottom: 1px solid #ebe3da;
+  color: #2b2622;
+  vertical-align: top;
+}
+
+.jobs-operations-row {
+  cursor: pointer;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+
+.jobs-operations-row:hover,
+.jobs-operations-row:focus-visible {
+  background: #f3ebe3;
+}
+
+.jobs-property-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.jobs-property-link:hover,
+.jobs-property-link:focus-visible {
+  text-decoration: underline;
+}
+
+.jobs-secondary {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.jobs-needs-worker {
+  font-weight: 700;
+}
+
+.jobs-billing-pill {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid #ddd2c6;
+  border-radius: 999px;
+  background: #fff;
+  color: #3f3a35;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.jobs-billing-not_invoiced {
+  background: #fff8ef;
+}
+
+.jobs-billing-draft_invoice,
+.jobs-billing-invoice_sent {
+  background: #f4f0ea;
+}
+
+.jobs-billing-partially_paid {
+  background: #f7f1e4;
+}
+
+.jobs-billing-paid,
+.jobs-billing-receipt_sent {
+  background: #eef5ef;
+}
+
+.jobs-row-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jobs-more-menu {
+  position: relative;
+}
+
+.jobs-more-panel {
+  position: absolute;
+  right: 0;
+  margin-top: 8px;
+  z-index: 5;
+}
+
+.outbound-amount-missing {
+  border-color: #b45309 !important;
+  box-shadow: 0 0 0 1px rgba(180, 83, 9, 0.18);
+}
+
+@media (max-width: 720px) {
+  .jobs-operations-table {
+    min-width: 0;
+    background: transparent;
+  }
+
+  .jobs-operations-table tbody td {
+    border-bottom: 1px solid #ebe3da;
+  }
+
+  .jobs-col-actions .button-row,
+  .jobs-row-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .jobs-col-actions .btn,
+  .jobs-col-actions a.btn {
+    width: 100%;
+  }
+}
