@@ -17,6 +17,17 @@ type UseOutboundAutosaveOptions = {
   enabled?: boolean;
 };
 
+type PrefillResponse = {
+  prefill?: {
+    job_id?: string | null;
+    customer_id?: string | null;
+    recipient_name?: string;
+    recipient_email?: string;
+    amount?: number | null;
+    job_title?: string;
+  };
+};
+
 function fieldsFromDocument(doc: OutboundDocument): OutboundComposerFields {
   return {
     recipient_email: doc.recipient_email || '',
@@ -59,6 +70,51 @@ export function useOutboundAutosave({
   const [sending, setSending] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSaveRef = useRef(false);
+  const prefillKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!enabled || (!initialJobId && !initialCustomerId)) return;
+    const key = `${docType}:${initialJobId}:${initialCustomerId}`;
+    if (prefillKeyRef.current === key) return;
+    prefillKeyRef.current = key;
+
+    const params = new URLSearchParams();
+    if (initialJobId) params.set('jobId', initialJobId);
+    if (initialCustomerId) params.set('customerId', initialCustomerId);
+
+    let cancelled = false;
+    void fetch(`/api/outbound/prefill?${params.toString()}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const json = (await response.json()) as PrefillResponse & { error?: string };
+        if (!response.ok) throw new Error(json.error || 'Unable to load invoice details.');
+        return json.prefill;
+      })
+      .then((prefill) => {
+        if (cancelled || !prefill) return;
+        skipNextSaveRef.current = true;
+        setFields((current) => {
+          const jobLabel = prefill.job_title?.trim();
+          const subject =
+            docType === 'invoice' && jobLabel && current.subject === defaultComposerFields('invoice').subject
+              ? `Invoice for ${jobLabel}`
+              : current.subject;
+          return {
+            ...current,
+            recipient_name: current.recipient_name || prefill.recipient_name || '',
+            recipient_email: current.recipient_email || prefill.recipient_email || '',
+            amount: current.amount || (prefill.amount != null ? String(prefill.amount) : ''),
+            customer_id: current.customer_id || prefill.customer_id || '',
+            job_id: current.job_id || prefill.job_id || '',
+            subject
+          };
+        });
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [docType, enabled, initialCustomerId, initialJobId]);
 
   const resetComposer = useCallback(() => {
     skipNextSaveRef.current = true;
@@ -69,6 +125,7 @@ export function useOutboundAutosave({
       customer_id: initialCustomerId || ''
     });
     setSaveState('idle');
+    prefillKeyRef.current = '';
   }, [docType, initialCustomerId, initialJobId]);
 
   const persist = useCallback(
