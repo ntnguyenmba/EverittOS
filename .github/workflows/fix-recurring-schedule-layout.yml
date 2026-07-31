@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/fix-recurring-schedule-layout.mjs
+      - .github/workflows/fix-recurring-schedule-layout.yml
 
 permissions:
   contents: write
@@ -20,6 +21,10 @@ jobs:
           node-version: 20
       - name: Apply focused Job Creator patch
         run: node scripts/fix-recurring-schedule-layout.mjs
+      - name: Validate TypeScript
+        run: |
+          npm ci
+          npm run typecheck
       - name: Commit patched component
         run: |
           if git diff --quiet -- components/job-creator.tsx; then
