@@ -89,21 +89,15 @@ async function contractorAccessibleJobIds(
   const workerIds = (workers || []).map((row) => String(row.id));
 
   if (workerIds.length) {
-    const [{ data: assignments }, { data: visits }] = await Promise.all([
+    const [{ data: directlyAssigned }, { data: assignments }, { data: visits }] = await Promise.all([
+      admin.from('jobs').select('id').eq('organization_id', organizationId).in('assigned_to', workerIds),
       admin.from('job_assignments').select('job_id').eq('organization_id', organizationId).in('worker_id', workerIds),
       admin.from('job_visits').select('job_id').eq('organization_id', organizationId).in('worker_id', workerIds)
     ]);
+    for (const row of directlyAssigned || []) if (row.id) ids.add(String(row.id));
     for (const row of assignments || []) if (row.job_id) ids.add(String(row.job_id));
     for (const row of visits || []) if (row.job_id) ids.add(String(row.job_id));
   }
-
-  const { data: shares } = await admin
-    .from('record_shares')
-    .select('record_id')
-    .eq('organization_id', organizationId)
-    .eq('record_type', 'job')
-    .eq('shared_with_user_id', userId);
-  for (const row of shares || []) if (row.record_id) ids.add(String(row.record_id));
 
   return ids;
 }
