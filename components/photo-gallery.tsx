@@ -9,7 +9,7 @@ import { fetchJobPhotosWithUrls, resolvePhotoType } from '@/lib/job-photos-clien
 import { JOB_PHOTO_TAGS, photoTagLabel } from '@/lib/job-photo-tags';
 import { friendlyErrorMessage } from '@/lib/user-errors';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type PhotoGalleryProps = {
   jobId: string;
@@ -70,6 +70,8 @@ const PHOTO_GALLERY_COPY: Record<Locale, PhotoGalleryCopy> = {
   }
 };
 
+const SWIPE_THRESHOLD_PX = 48;
+
 function formatPhotoWhen(value: string | null, locale: Locale) {
   if (!value) return '';
   return new Date(value).toLocaleString(locale);
@@ -96,6 +98,7 @@ export function PhotoGallery({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (!canView) {
@@ -132,6 +135,60 @@ export function PhotoGallery({
     [photos]
   );
   const previewPhoto = previewIndex !== null ? orderedPhotos[previewIndex] : null;
+
+  useEffect(() => {
+    if (previewIndex === null) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setPreviewIndex(null);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        setPreviewIndex((current) => (current === null ? current : Math.max(0, current - 1)));
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        setPreviewIndex((current) =>
+          current === null ? current : Math.min(orderedPhotos.length - 1, current + 1)
+        );
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [previewIndex, orderedPhotos.length]);
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (touchStartX.current === null) return;
+    const endX = event.changedTouches[0]?.clientX;
+    if (endX === undefined) {
+      touchStartX.current = null;
+      return;
+    }
+
+    const distance = endX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(distance) < SWIPE_THRESHOLD_PX) return;
+
+    if (distance > 0) {
+      setPreviewIndex((current) => (current === null ? current : Math.max(0, current - 1)));
+      return;
+    }
+    setPreviewIndex((current) =>
+      current === null ? current : Math.min(orderedPhotos.length - 1, current + 1)
+    );
+  }
 
   if (!canView) {
     return <p className="muted">{copy.notShared}</p>;
@@ -206,13 +263,18 @@ export function PhotoGallery({
           aria-label="Photo preview"
           onClick={() => setPreviewIndex(null)}
         >
-          <div className="photo-lightbox-panel" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="photo-lightbox-panel"
+            onClick={(event) => event.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <div className="photo-lightbox-toolbar">
               <span>
                 {photoTagLabel(resolvePhotoType(previewPhoto))}
                 {previewPhoto.uploader_display_name ? ` · ${copy.by} ${previewPhoto.uploader_display_name}` : ''}
               </span>
-              <button type="button" className="btn" onClick={() => setPreviewIndex(null)}>
+              <button type="button" className="btn" onClick={() => setPreviewIndex(null)} autoFocus>
                 {copy.close}
               </button>
             </div>
