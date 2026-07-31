@@ -386,16 +386,15 @@ export default function ContractorPortalPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
             <div style={{ minWidth: 0 }}>
               <h3 style={{ fontSize: 17, margin: 0 }}>{job.title}</h3>
-              <p className="muted" style={{ margin: '5px 0 0' }}>
-                {job.customerName} · {job.date || t('portal.common.dateNotSet')}
+              <p className="muted" style={{ margin: '6px 0 0' }}>
+                {[job.date, job.time, job.address].filter(Boolean).join(' · ')}
               </p>
-              <p className="muted" style={{ margin: '4px 0 0' }}>{job.address}</p>
             </div>
-            <span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>{expanded ? '−' : '+'}</span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
             <span className="badge">{translatePortalJobStatus(t, job.status)}</span>
-            {job.paymentStatus !== 'none' ? (
+          </div>
+          <div className="inline-actions" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
+            <span className="badge">{t('portal.contractor.customer')}: {job.customerName || '—'}</span>
+            {job.payAmount > 0 ? (
               <>
                 <span className="badge">{t('portal.contractor.pay')}: {formatContractorMoney(job.payAmount)}</span>
                 <span className="badge">
@@ -503,7 +502,7 @@ export default function ContractorPortalPage() {
             )}
           </section>
 
-          <details id="schedule" className="card" open style={{ marginBottom: 16 }}>
+          <details id="schedule" className="card" style={{ marginBottom: 16 }}>
             <summary
               style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
             >
