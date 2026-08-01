@@ -21,8 +21,6 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-const HERO_IMAGE = 'https://www.everittventures.com/assets/images/hero.jpg';
-
 export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
@@ -55,7 +53,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           position: relative;
           isolation: isolate;
           min-height: 100svh;
-          background: #e8e5df;
+          background: #dfe8ee;
         }
 
         .dashboard-shell-background {
@@ -63,10 +61,14 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           inset: 0;
           z-index: 0;
           pointer-events: none;
-          background: url('${HERO_IMAGE}') center / cover no-repeat;
-          opacity: 0.46;
-          filter: saturate(0.58) contrast(0.95) brightness(0.98);
-          transform: scale(1.012);
+          background-color: #dfe8ee;
+          background-image: url('/hero.jpg');
+          background-repeat: no-repeat;
+          background-size: cover;
+          background-position: center;
+          opacity: 0.58;
+          filter: saturate(0.74) contrast(0.98) brightness(0.86);
+          transform: scale(1.015);
         }
 
         .dashboard-shell-overlay {
@@ -75,8 +77,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           z-index: 1;
           pointer-events: none;
           background:
-            linear-gradient(90deg, rgba(246,243,238,0.56), rgba(246,243,238,0.7) 20%, rgba(246,243,238,0.7) 80%, rgba(246,243,238,0.56)),
-            linear-gradient(180deg, rgba(249,247,243,0.48), rgba(238,234,228,0.62));
+            linear-gradient(90deg, rgba(221, 231, 238, 0.18), rgba(237, 242, 246, 0.5) 21%, rgba(237, 242, 246, 0.5) 79%, rgba(221, 231, 238, 0.18)),
+            linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
         }
 
         .dashboard-shell > .sidebar,
@@ -86,137 +88,48 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           z-index: 2;
         }
 
-        .dashboard-shell > .sidebar {
-          padding-left: 18px !important;
-          padding-right: 18px !important;
-        }
-
         .dashboard-shell > .main,
         .dashboard-shell .main,
         .dashboard-shell .app-page-content,
         .dashboard-shell .today-page,
-        .dashboard-shell .dashboard-home,
-        .dashboard-shell .authenticated-section,
-        .dashboard-shell .portal-page {
+        .dashboard-shell .dashboard-home {
           background: transparent !important;
           background-color: transparent !important;
         }
 
-        .dashboard-shell .card,
-        .dashboard-shell .panel,
-        .dashboard-shell .stat,
-        .dashboard-shell .dashboard-revenue-metric,
-        .dashboard-shell .table-wrap,
-        .dashboard-shell .settings-card {
-          background: rgba(255,255,255,0.82);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-
-        .dashboard-home > .page-header {
-          position: relative;
-          min-height: clamp(220px, 30vw, 360px);
-          margin: 0 0 24px;
-          padding: clamp(30px, 5vw, 58px);
-          overflow: hidden;
-          align-items: flex-end;
-          border: 1px solid rgba(43,54,62,0.16);
-          border-radius: 26px;
-          background:
-            linear-gradient(90deg, rgba(28,39,46,0.78), rgba(28,39,46,0.42) 56%, rgba(28,39,46,0.08)),
-            url('${HERO_IMAGE}') center / cover no-repeat;
-          box-shadow: 0 22px 60px rgba(30,38,43,0.14);
-        }
-
-        .dashboard-home > .page-header::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(255,255,255,0.05) 32px),
-            repeating-linear-gradient(90deg, transparent 0, transparent 31px, rgba(255,255,255,0.05) 32px);
-        }
-
-        .dashboard-home > .page-header > * {
-          position: relative;
-          z-index: 1;
-        }
-
-        .dashboard-home > .page-header h1,
-        .dashboard-home > .page-header h2 {
-          margin: 0;
-          color: #f8f5ef;
-          font-family: var(--font-display, Georgia, serif);
-          font-size: clamp(42px, 6vw, 70px);
-          font-weight: 500;
-          line-height: 1;
-          letter-spacing: -0.04em;
-        }
-
-        .dashboard-home > .page-header .page-subtitle,
-        .dashboard-home > .page-header p {
-          color: rgba(248,245,239,0.84);
-        }
-
-        .dashboard-shell .everitt-cmd-trigger {
-          width: 100%;
-          max-width: 620px;
-          min-height: 52px;
-          padding: 10px 14px;
-          gap: 12px;
-          justify-content: flex-start;
-          background: rgba(255,255,255,0.84);
-          border-color: rgba(48,55,61,0.14);
-          backdrop-filter: blur(10px);
-        }
-
-        @media (min-width: 901px) {
+        @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
-            display: grid !important;
-            grid-template-columns: 280px minmax(0, 1fr) !important;
-            grid-template-rows: 1fr !important;
-            grid-template-areas: 'side main' !important;
-          }
-
-          .dashboard-shell-mobile {
-            display: none !important;
-          }
-
-          .dashboard-shell > .sidebar {
-            display: block !important;
-            grid-area: side;
-          }
-
-          .dashboard-shell > .main {
-            grid-area: main;
-            width: 100% !important;
-            max-width: 1280px !important;
-            margin: 0 auto !important;
-            padding: 28px 34px 42px !important;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .dashboard-shell {
-            --mobile-gutter-left: max(18px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(18px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(36px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(36px, env(safe-area-inset-right));
             display: block !important;
             width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
             margin: 0 !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+            grid-template-areas: 'mobile' 'main' !important;
           }
 
           .dashboard-shell-background {
-            opacity: 0.28;
             background-position: 56% center;
+            opacity: 0.44;
           }
 
           .dashboard-shell-overlay {
-            background: rgba(247,244,239,0.78);
+            background: rgba(231, 238, 243, 0.61);
           }
 
           .dashboard-shell > .sidebar {
             display: none !important;
+            position: absolute !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
           }
 
           .dashboard-shell-mobile {
@@ -231,55 +144,129 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
-            min-height: 64px !important;
-            padding: 9px var(--mobile-gutter-right) 9px var(--mobile-gutter-left) !important;
-            background: rgba(249,247,243,0.88) !important;
-            backdrop-filter: blur(14px) !important;
+            min-height: 68px !important;
+            padding-top: 10px !important;
+            padding-right: var(--mobile-gutter-right) !important;
+            padding-bottom: 10px !important;
+            padding-left: var(--mobile-gutter-left) !important;
+            box-sizing: border-box !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo {
+            margin: 0 !important;
+            min-width: 0 !important;
+            gap: 9px !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-image {
+            width: 26px !important;
+            height: 26px !important;
+            border-radius: 7px !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-name {
+            font-size: 19px !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.025em !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-bar-actions {
+            margin: 0 !important;
+            flex: 0 0 auto !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-menu-btn {
-            width: 42px !important;
-            height: 42px !important;
-            flex: 0 0 42px !important;
+            width: 44px !important;
+            height: 44px !important;
+            flex: 0 0 44px !important;
             margin: 0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(36, 63, 83, 0.14) !important;
           }
 
           .dashboard-shell > .main,
           .dashboard-shell .main {
+            display: block !important;
             width: 100% !important;
             max-width: none !important;
+            min-width: 0 !important;
             margin: 0 !important;
-            padding: 16px var(--mobile-gutter-right) 32px var(--mobile-gutter-left) !important;
-            overflow-x: hidden !important;
+            margin-left: 0 !important;
+            padding-top: 14px !important;
+            padding-right: var(--mobile-gutter-right) !important;
+            padding-bottom: 32px !important;
+            padding-left: var(--mobile-gutter-left) !important;
+            translate: none !important;
+            transform: none !important;
           }
 
-          .dashboard-shell .app-page-content,
-          .dashboard-shell .today-page,
-          .dashboard-shell .dashboard-home {
+          .dashboard-shell .app-page-top {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 10px !important;
+            min-height: 0 !important;
+            margin: 0 0 8px !important;
+            padding: 0 !important;
+          }
+
+          .dashboard-shell .app-page-top-actions {
+            order: -1 !important;
+            margin: 0 !important;
+          }
+
+          .dashboard-shell .org-switcher {
+            margin-left: auto !important;
+          }
+
+          .dashboard-shell .app-back-button {
+            min-height: 38px !important;
+            padding: 6px 10px !important;
+            border: 0 !important;
+            border-radius: 10px !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            color: var(--text-secondary) !important;
+            font-size: 15px !important;
+            font-weight: 600 !important;
+          }
+
+          .dashboard-shell .app-page-content {
             width: 100% !important;
             max-width: none !important;
             min-width: 0 !important;
             margin: 0 !important;
             gap: 14px !important;
+            translate: none !important;
+            transform: none !important;
           }
 
           .dashboard-shell .everitt-cmd-trigger {
-            max-width: none !important;
-            min-height: 48px !important;
+            width: 100% !important;
+            min-height: 50px !important;
             margin: 0 !important;
-            padding: 8px 11px !important;
+            padding: 10px 14px !important;
+            border-radius: 13px !important;
+            font-size: 15px !important;
           }
 
-          .dashboard-home > .page-header {
-            min-height: 190px;
-            padding: 24px 20px;
-            border-radius: 18px;
-            background-position: 60% center;
+          .dashboard-shell .today-page,
+          .dashboard-shell .dashboard-home {
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin-inline: 0 !important;
+            gap: 14px !important;
+            translate: none !important;
+            transform: none !important;
           }
+        }
 
-          .dashboard-home > .page-header h1,
-          .dashboard-home > .page-header h2 {
-            font-size: clamp(34px, 12vw, 52px);
+        @media (min-width: 720px) and (max-width: 1100px) and (pointer: coarse),
+          (min-width: 720px) and (max-width: 1100px) and (hover: none) {
+          .dashboard-shell {
+            --mobile-gutter-left: max(48px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(48px, env(safe-area-inset-right));
           }
         }
       `}</style>
