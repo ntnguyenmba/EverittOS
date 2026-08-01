@@ -5,11 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { PlanCheckoutButton } from '@/components/plan-checkout-button';
 import { NativeStoreSubscribeButton } from '@/components/native-store-subscribe-button';
-import {
-  BILLING_UI_BUILD_ID,
-  resolveBillingPlanCardUi,
-  type PaidPlanKey
-} from '@/lib/billing-plan-card';
+import { resolveBillingPlanCardUi, type PaidPlanKey } from '@/lib/billing-plan-card';
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { resolveBillingVisibility, nativeBillingNotice } from '@/lib/platform/billing';
@@ -38,15 +34,6 @@ const introStyle: CSSProperties = {
   gap: 6,
   margin: '0 0 18px',
   maxWidth: 760
-};
-
-const hiddenBuildStyle: CSSProperties = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  opacity: 0,
-  pointerEvents: 'none'
 };
 
 const gridStyle: CSSProperties = {
@@ -119,6 +106,28 @@ const featuresStyle: CSSProperties = {
   color: 'var(--text)',
   fontSize: 13,
   lineHeight: 1.45
+};
+
+const limitsStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 6,
+  marginTop: 16,
+  paddingTop: 14,
+  borderTop: '1px solid rgba(37, 54, 74, 0.08)'
+};
+
+const limitStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  minHeight: 28,
+  padding: '5px 9px',
+  border: '1px solid rgba(37, 54, 74, 0.1)',
+  borderRadius: 999,
+  background: 'rgba(37, 54, 74, 0.035)',
+  color: 'var(--muted)',
+  fontSize: 11,
+  lineHeight: 1.3
 };
 
 const footerStyle: CSSProperties = {
@@ -199,14 +208,10 @@ export function BillingPlansGrid({
   }, []);
 
   return (
-    <section className="billing-plans-grid-wrap" data-billing-build={BILLING_UI_BUILD_ID} style={shellStyle}>
+    <section className="billing-plans-grid-wrap" style={shellStyle}>
       <div style={introStyle}>
         <p style={noteStyle}>{t('billing.planChangeIntro')}</p>
       </div>
-
-      <p className="billing-build-marker" data-testid="billing-build-marker" style={hiddenBuildStyle}>
-        Billing UI {BILLING_UI_BUILD_ID}
-      </p>
 
       <div className="billing-plans-grid" style={gridStyle}>
         {BILLING_PLANS.map((tier) => {
@@ -269,6 +274,11 @@ export function BillingPlansGrid({
                     <li key={feature} style={{ margin: 0, overflowWrap: 'anywhere' }}>{feature}</li>
                   ))}
                 </ul>
+                <div className="billing-plan-limits" aria-label={`${tier.name} plan limits`} style={limitsStyle}>
+                  {tier.limits.map((limit) => (
+                    <span key={limit} style={limitStyle}>{limit}</span>
+                  ))}
+                </div>
               </div>
 
               <div className="billing-plan-card-footer" style={footerStyle}>
