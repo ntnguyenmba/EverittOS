@@ -108,17 +108,47 @@ export function parsePhotonFeatures(features: PhotonFeature[] | undefined | null
   return suggestions;
 }
 
+function normalizeAddressSearchPart(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 export function filterAddressSuggestionsForQuery(
   suggestions: AddressSuggestion[],
   query: string
 ): AddressSuggestion[] {
-  const typedHouseNumber = query.trim().match(/^(\d+[a-zA-Z]?)(?:\s|$)/)?.[1]?.toLowerCase();
+  const normalizedQuery = normalizeAddressSearchPart(query);
+  const typedHouseNumber = normalizedQuery.match(/^(\d+[a-z]?)(?:\s|$)/)?.[1];
   if (!typedHouseNumber) return suggestions;
 
-  return suggestions.filter((suggestion) => {
-    const suggestedHouseNumber = suggestion.addressLine1.trim().match(/^(\d+[a-zA-Z]?)(?:\s|$)/)?.[1]?.toLowerCase();
-    return suggestedHouseNumber === typedHouseNumber;
-  });
+  const queryWithoutHouseNumber = normalizedQuery.replace(/^\d+[a-z]?(?:\s|$)/, '').trim();
+  const exactHouseNumber: AddressSuggestion[] = [];
+  const sameStreet: AddressSuggestion[] = [];
+  const remaining: AddressSuggestion[] = [];
+
+  for (const suggestion of suggestions) {
+    const normalizedLine = normalizeAddressSearchPart(suggestion.addressLine1);
+    const suggestedHouseNumber = normalizedLine.match(/^(\d+[a-z]?)(?:\s|$)/)?.[1];
+    const lineWithoutHouseNumber = normalizedLine.replace(/^\d+[a-z]?(?:\s|$)/, '').trim();
+
+    if (suggestedHouseNumber === typedHouseNumber) {
+      exactHouseNumber.push(suggestion);
+    } else if (
+      queryWithoutHouseNumber &&
+      (lineWithoutHouseNumber.includes(queryWithoutHouseNumber) ||
+        queryWithoutHouseNumber.includes(lineWithoutHouseNumber))
+    ) {
+      sameStreet.push(suggestion);
+    } else {
+      remaining.push(suggestion);
+    }
+  }
+
+  // Prefer the exact house number, but never hide useful street suggestions when
+  // Photon only returns a street-level result for a fully typed address.
+  return [...exactHouseNumber, ...sameStreet, ...remaining];
 }
 
 export function structuredAddressFromManual(value: string): StructuredAddress {
