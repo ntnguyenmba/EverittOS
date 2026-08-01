@@ -29,7 +29,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
   const showEmbeddedAskEveritt = className?.split(/\s+/).includes('jobs-shell-minimal') ?? false;
 
   return (
-    <div className={className ? `dashboard-shell ${className}` : 'dashboard-shell'}>
+    <div className="dashboard-shell">
       <div className="dashboard-shell-background" aria-hidden="true" />
       <div className="dashboard-shell-overlay" aria-hidden="true" />
       <UnsavedChangesGuard />
