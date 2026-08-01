@@ -18,7 +18,6 @@ export type NavSectionDef = {
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Jobs', href: '/jobs' },
-  { label: 'Schedule', href: '/schedule' },
   { label: 'Customers', href: '/customers' },
   { label: 'Team', href: '/people' },
   { label: 'Expenses', href: '/expenses' },
