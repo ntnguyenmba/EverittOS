@@ -26,7 +26,7 @@ async function resolveJob(
   return job as ResolvedJob | null;
 }
 
-function withPlannedExpenses(
+export function withPlannedExpenses(
   profitability: JobProfitability,
   expectedAdditionalExpense: number | null | undefined
 ): JobProfitability & { expectedAdditionalExpense: number } {
@@ -38,7 +38,7 @@ function withPlannedExpenses(
   const expectedAmount = Math.max(0, Number(profitability.expectedAmount || 0));
   const collectedAmount = Math.max(0, Number(profitability.collectedAmount || 0));
   const expectedProfit = Number((expectedAmount - totalExpenses).toFixed(2));
-  const collectedProfit = Number((collectedAmount - totalExpenses).toFixed(2));
+  const collectedProfit = Number(Math.max(0, collectedAmount - totalExpenses).toFixed(2));
 
   return {
     ...profitability,
