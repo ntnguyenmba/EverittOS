@@ -108,6 +108,19 @@ export function parsePhotonFeatures(features: PhotonFeature[] | undefined | null
   return suggestions;
 }
 
+export function filterAddressSuggestionsForQuery(
+  suggestions: AddressSuggestion[],
+  query: string
+): AddressSuggestion[] {
+  const typedHouseNumber = query.trim().match(/^(\d+[a-zA-Z]?)(?:\s|$)/)?.[1]?.toLowerCase();
+  if (!typedHouseNumber) return suggestions;
+
+  return suggestions.filter((suggestion) => {
+    const suggestedHouseNumber = suggestion.addressLine1.trim().match(/^(\d+[a-zA-Z]?)(?:\s|$)/)?.[1]?.toLowerCase();
+    return suggestedHouseNumber === typedHouseNumber;
+  });
+}
+
 export function structuredAddressFromManual(value: string): StructuredAddress {
   const formattedAddress = value.trim();
   return {
