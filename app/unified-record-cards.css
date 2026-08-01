@@ -77,6 +77,38 @@
   border-top: 1px solid rgba(37, 54, 74, 0.09) !important;
 }
 
+/* Team members: each person gets the same compact white box. */
+.team-management-panel + section > div[style*='display: grid'] {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.team-management-panel + section .list-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.team-management-panel + section .list-row + .list-row {
+  margin-top: 0 !important;
+}
+
+.team-management-panel + section .list-row p {
+  margin-top: 0 !important;
+  margin-bottom: 2px !important;
+}
+
 /* Client portal remains as compact white cards. */
 .client-job-card-list {
   display: grid !important;
@@ -142,11 +174,13 @@
 
 @media (max-width: 680px) {
   .customer-card-row,
-  .client-job-card {
+  .client-job-card,
+  .team-management-panel + section .list-row {
     align-items: flex-start !important;
   }
 
-  .client-job-card {
+  .client-job-card,
+  .team-management-panel + section .list-row {
     flex-direction: column !important;
     gap: 12px !important;
   }
