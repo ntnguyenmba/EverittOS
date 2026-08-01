@@ -162,6 +162,7 @@ export default function ClientPortalJobsPage() {
           <h3>{job.title}</h3>
           {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
           {location ? <p className="client-job-secondary">{location}</p> : null}
+          {job.status ? <p className="client-job-secondary">{job.status.replace(/_/g, ' ')}</p> : null}
         </div>
         {(date || time) ? (
           <div className="client-job-schedule">
@@ -173,19 +174,19 @@ export default function ClientPortalJobsPage() {
     );
   }
 
-  function renderSection(id: string, title: string, rows: ClientJob[], emptyText: string) {
+  function renderSection(id: string, title: string, rows: ClientJob[], emptyText: string, open = false) {
     return (
-      <section id={id} className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
+      <details id={id} className="card" style={{ marginBottom: 16 }} open={open}>
+        <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>{title}</h2>
           <span className="muted">{rows.length}</span>
-        </div>
+        </summary>
         {rows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>{emptyText}</p>
         ) : (
           <div className="client-job-card-list" style={{ marginTop: 12 }}>{rows.map(renderJobCard)}</div>
         )}
-      </section>
+      </details>
     );
   }
 
@@ -233,7 +234,7 @@ export default function ClientPortalJobsPage() {
         </div>
       ) : (
         <>
-          {renderSection('current-jobs', t('portal.contractor.todaysJobs'), groupedJobs.current, t('portal.contractor.nothingToday'))}
+          {renderSection('current-jobs', t('portal.contractor.todaysJobs'), groupedJobs.current, t('portal.contractor.nothingToday'), true)}
           {renderSection('upcoming-jobs', t('portal.contractor.upcomingJobs'), groupedJobs.upcoming, t('portal.contractor.noUpcoming'))}
           {renderSection('past-jobs', t('portal.contractor.pastJobs'), groupedJobs.past, t('portal.contractor.noCompleted'))}
         </>
