@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getCachedAddressSuggestions, setCachedAddressSuggestions } from '@/lib/address/photon-cache';
-import { parsePhotonFeatures, type PhotonFeature } from '@/lib/address/parse-photon';
+import {
+  filterAddressSuggestionsForQuery,
+  parsePhotonFeatures,
+  type PhotonFeature
+} from '@/lib/address/parse-photon';
 import { createServerSupabase } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
@@ -36,7 +40,7 @@ export async function GET(request: Request) {
   const cached = getCachedAddressSuggestions(q);
   if (cached) {
     return NextResponse.json({
-      suggestions: cached,
+      suggestions: filterAddressSuggestionsForQuery(cached, q).slice(0, LIMIT),
       attribution: 'Address search © OpenStreetMap contributors, © Komoot Photon',
       provider: 'photon',
       cached: true
@@ -69,8 +73,9 @@ export async function GET(request: Request) {
     }
 
     const payload = (await response.json()) as { features?: PhotonFeature[] };
-    const suggestions = parsePhotonFeatures(payload.features || []).slice(0, LIMIT);
-    setCachedAddressSuggestions(q, suggestions);
+    const parsedSuggestions = parsePhotonFeatures(payload.features || []);
+    setCachedAddressSuggestions(q, parsedSuggestions);
+    const suggestions = filterAddressSuggestionsForQuery(parsedSuggestions, q).slice(0, LIMIT);
 
     return NextResponse.json({
       suggestions,
