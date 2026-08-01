@@ -77,13 +77,20 @@
   border-top: 1px solid rgba(37, 54, 74, 0.09) !important;
 }
 
-/* Team members: each person gets the same compact white box. */
-.team-management-panel + section > div[style*='display: grid'] {
+/* Team members: target the real member-row variants only. */
+.team-members-list,
+.team-member-list,
+.team-list {
   display: grid !important;
   gap: 12px !important;
 }
 
-.team-management-panel + section .list-row {
+.team-member-row,
+.team-members-list > .list-row,
+.team-member-list > .list-row,
+.team-list > .list-row,
+[data-team-member],
+section[aria-labelledby='team-members-heading'] .list-row {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -100,13 +107,31 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
-.team-management-panel + section .list-row + .list-row {
-  margin-top: 0 !important;
-}
-
-.team-management-panel + section .list-row p {
+.team-member-row p,
+.team-members-list > .list-row p,
+.team-member-list > .list-row p,
+.team-list > .list-row p,
+[data-team-member] p,
+section[aria-labelledby='team-members-heading'] .list-row p {
   margin-top: 0 !important;
   margin-bottom: 2px !important;
+}
+
+/* Fallback for the current Team page structure: only direct member rows after the Team members heading block. */
+.team-management-panel ~ section .list-row,
+.team-management-panel ~ div .list-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 0 12px !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
 }
 
 /* Client portal remains as compact white cards. */
@@ -175,12 +200,26 @@
 @media (max-width: 680px) {
   .customer-card-row,
   .client-job-card,
-  .team-management-panel + section .list-row {
+  .team-member-row,
+  .team-members-list > .list-row,
+  .team-member-list > .list-row,
+  .team-list > .list-row,
+  [data-team-member],
+  section[aria-labelledby='team-members-heading'] .list-row,
+  .team-management-panel ~ section .list-row,
+  .team-management-panel ~ div .list-row {
     align-items: flex-start !important;
   }
 
   .client-job-card,
-  .team-management-panel + section .list-row {
+  .team-member-row,
+  .team-members-list > .list-row,
+  .team-member-list > .list-row,
+  .team-list > .list-row,
+  [data-team-member],
+  section[aria-labelledby='team-members-heading'] .list-row,
+  .team-management-panel ~ section .list-row,
+  .team-management-panel ~ div .list-row {
     flex-direction: column !important;
     gap: 12px !important;
   }
