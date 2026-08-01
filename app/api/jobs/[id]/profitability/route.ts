@@ -2,19 +2,54 @@ import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
+import type { JobProfitability } from '@/lib/finance-types';
 import { isValidUuid } from '@/lib/input-validation';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-async function resolveJob(ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>, jobId: string) {
+type ResolvedJob = {
+  id: string;
+  expected_additional_expense: number | null;
+};
+
+async function resolveJob(
+  ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>,
+  jobId: string
+): Promise<ResolvedJob | null> {
   if (!ctx.ok) return null;
   const { data: job } = await ctx.supabase
     .from('jobs')
-    .select('id')
+    .select('id, expected_additional_expense')
     .eq('id', jobId)
     .eq('organization_id', ctx.organizationId)
     .maybeSingle();
-  return job;
+  return job as ResolvedJob | null;
+}
+
+function withPlannedExpenses(
+  profitability: JobProfitability,
+  expectedAdditionalExpense: number | null | undefined
+): JobProfitability & { expectedAdditionalExpense: number } {
+  const planned = Math.max(0, Number(expectedAdditionalExpense || 0));
+  const actualNonLabor = Math.max(0, Number(profitability.materialCost || 0) + Number(profitability.otherExpenses || 0));
+  const effectiveNonLabor = actualNonLabor > 0 ? actualNonLabor : planned;
+  const laborCost = Math.max(0, Number(profitability.laborCost || 0));
+  const totalExpenses = Number((laborCost + effectiveNonLabor).toFixed(2));
+  const expectedAmount = Math.max(0, Number(profitability.expectedAmount || 0));
+  const collectedAmount = Math.max(0, Number(profitability.collectedAmount || 0));
+  const expectedProfit = Number((expectedAmount - totalExpenses).toFixed(2));
+  const collectedProfit = Number((collectedAmount - totalExpenses).toFixed(2));
+
+  return {
+    ...profitability,
+    materialCost: actualNonLabor > 0 ? Number(profitability.materialCost || 0) : 0,
+    otherExpenses: actualNonLabor > 0 ? Number(profitability.otherExpenses || 0) : planned,
+    totalExpenses,
+    expectedProfit,
+    collectedProfit,
+    estimatedProfit: collectedAmount > 0 ? collectedProfit : expectedProfit,
+    expectedAdditionalExpense: Number(planned.toFixed(2))
+  };
 }
 
 export async function GET(_request: Request, { params }: RouteParams) {
@@ -33,7 +68,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
-  const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+  const baseProfitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+  const profitability = withPlannedExpenses(baseProfitability, job.expected_additional_expense);
   const history = await fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId);
   return NextResponse.json({ profitability: { ...profitability, payments: history.payments } });
 }
@@ -105,9 +141,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .eq('organization_id', ctx.organizationId);
 
   if (error) {
-    return NextResponse.json({ error: error.message || 'Unable to save revenue.' }, { status: 400 });
+    return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
   }
 
-  const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+  const updatedJob = await resolveJob(ctx, jobId);
+  const baseProfitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+  const profitability = withPlannedExpenses(baseProfitability, updatedJob?.expected_additional_expense);
   return NextResponse.json({ ok: true, profitability });
 }
