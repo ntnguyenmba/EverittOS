@@ -25,6 +25,10 @@ type JobLaborSectionProps = {
   onChange?: () => void;
 };
 
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function paymentStatusLabel(
   status: ContractorPaymentStatus | null | undefined,
   labels: { paid: string; pending: string; unpaid: string }
@@ -36,17 +40,11 @@ function paymentStatusLabel(
 
 function formatPaidDate(value: string | null | undefined) {
   if (!value) return '';
-  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function rateLabel(basis: LaborPaymentBasis) {
-  if (basis === 'flat') return 'Flat amount';
-  if (basis === 'visit') return 'Rate per visit';
-  return 'Hourly rate';
+  return new Date(value).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 }
 
 export function JobLaborSection({
@@ -59,36 +57,30 @@ export function JobLaborSection({
   const { locale } = useTranslation();
   const pageCopy = getDashboardFinanceCopy(locale).contractorPayPage;
   const financeCopy = getJobFinanceCopy(locale);
+  const appFeedback = useAppFeedback();
+
+  const [entries, setEntries] = useState<JobLaborRecord[]>([]);
+  const [expectedContractorCost, setExpectedContractorCost] = useState(0);
+  const [currentProfit, setCurrentProfit] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  const [editingExpected, setEditingExpected] = useState(false);
+  const [expectedEditAmount, setExpectedEditAmount] = useState('');
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
+
+  const [workerId, setWorkerId] = useState('');
+  const [workerName, setWorkerName] = useState('');
+  const [paymentBasis, setPaymentBasis] = useState<LaborPaymentBasis>('flat');
+  const [quantity, setQuantity] = useState('');
+  const [rate, setRate] = useState('');
+  const [notes, setNotes] = useState('');
+
   const statusLabels = {
     paid: financeCopy.statusPaid,
     pending: pageCopy.pending,
     unpaid: financeCopy.statusUnpaid
   };
-  const appFeedback = useAppFeedback();
-  const [entries, setEntries] = useState<JobLaborRecord[]>([]);
-  const [currentProfit, setCurrentProfit] = useState(0);
-  const [expectedContractorCost, setExpectedContractorCost] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingExpected, setEditingExpected] = useState(false);
-  const [expectedEditAmount, setExpectedEditAmount] = useState('');
-  const [showAddPayment, setShowAddPayment] = useState(false);
-  const [workerId, setWorkerId] = useState('');
-  const [workerName, setWorkerName] = useState('');
-  const [paymentBasis, setPaymentBasis] = useState<LaborPaymentBasis>('hourly');
-  const [hours, setHours] = useState('');
-  const [hourlyCost, setHourlyCost] = useState('');
-  const [notes, setNotes] = useState('');
-  const [editWorkerId, setEditWorkerId] = useState('');
-  const [editWorkerName, setEditWorkerName] = useState('');
-  const [editPaymentBasis, setEditPaymentBasis] = useState<LaborPaymentBasis>('hourly');
-  const [editHours, setEditHours] = useState('');
-  const [editHourlyCost, setEditHourlyCost] = useState('');
-  const [editNotes, setEditNotes] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,24 +91,32 @@ export function JobLaborSection({
     const laborJson = await laborRes.json().catch(() => ({}));
     const profitabilityJson = await profitabilityRes.json().catch(() => ({}));
     setLoading(false);
+
     if (!laborRes.ok) {
       appFeedback.error(laborJson.error || 'Unable to load contractor pay.');
       return;
     }
+
     const laborRows = (laborJson.labor || []) as JobLaborRecord[];
     setEntries(laborRows);
+
     if (profitabilityRes.ok) {
-      setCurrentProfit(Number(profitabilityJson.profitability?.estimatedProfit || 0));
-      const expected = Number(profitabilityJson.profitability?.expectedContractorCost || 0);
+      const profitability = profitabilityJson.profitability || {};
+      const expected = Number(profitability.expectedContractorCost || 0);
       setExpectedContractorCost(expected);
       setExpectedEditAmount(expected > 0 ? String(expected) : '');
-      // Do not open a duplicate payment setup form for expected pay from New Job.
-      setShowAddPayment(laborRows.length === 0 && expected <= 0);
+      setCurrentProfit(Number(profitability.estimatedProfit || 0));
     }
   }, [appFeedback, jobId]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function refreshAll() {
+    await load();
+    onChange?.();
+  }
 
   async function saveExpectedPay() {
     if (saving) return;
@@ -125,6 +125,7 @@ export function JobLaborSection({
       appFeedback.error('Enter a valid contractor pay amount.');
       return;
     }
+
     setSaving(true);
     const res = await fetch(`/api/jobs/${jobId}/profitability`, {
       method: 'PATCH',
@@ -133,158 +134,63 @@ export function JobLaborSection({
     });
     const json = await res.json().catch(() => ({}));
     setSaving(false);
+
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to update contractor pay.');
       return;
     }
-    appFeedback.success('Contractor pay updated.');
+
     setEditingExpected(false);
-    await load();
-    onChange?.();
+    appFeedback.success('Contractor pay updated.');
+    await refreshAll();
   }
 
-  async function addLabor() {
-    if (saving) return;
-    const quantity = paymentBasis === 'flat' ? 1 : Number.parseFloat(hours);
-    const rate = Number.parseFloat(hourlyCost || '0');
-    if (paymentBasis !== 'flat' && (!Number.isFinite(quantity) || quantity <= 0)) {
-      appFeedback.error('Enter a quantity greater than zero.');
-      return;
-    }
-    if (!Number.isFinite(rate) || rate < 0) {
-      appFeedback.error('Enter a valid amount.');
-      return;
-    }
-
+  async function markPlannedPayPaid() {
+    if (saving || expectedContractorCost <= 0) return;
     setSaving(true);
-    const selected = workers.find((w) => w.id === workerId);
-    const res = await fetch(`/api/jobs/${jobId}/labor`, {
+
+    const matchedWorker = workers.find(
+      (worker) => worker.name.trim().toLowerCase() === (assignedContractorName || '').trim().toLowerCase()
+    );
+
+    const laborRes = await fetch(`/api/jobs/${jobId}/labor`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        worker_id: workerId || null,
-        worker_name: selected?.name || workerName.trim() || assignedContractorName || pageCopy.unnamed,
-        hours: quantity,
-        hourly_cost: rate,
-        payment_basis: paymentBasis,
-        notes: notes.trim() || null
+        worker_id: matchedWorker?.id || null,
+        worker_name: assignedContractorName || pageCopy.unnamed,
+        hours: 1,
+        hourly_cost: expectedContractorCost,
+        payment_basis: 'flat',
+        payment_status: 'paid',
+        paid_at: `${todayInputValue()}T12:00:00.000Z`,
+        notes: 'Finalized from planned contractor pay'
       })
     });
-    const json = await res.json().catch(() => ({}));
-    setSaving(false);
+    const laborJson = await laborRes.json().catch(() => ({}));
 
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to save contractor pay.');
+    if (!laborRes.ok) {
+      setSaving(false);
+      appFeedback.error(laborJson.error || 'Unable to mark contractor pay as paid.');
       return;
     }
 
-    appFeedback.success(pageCopy.added);
-    setWorkerId('');
-    setWorkerName('');
-    setPaymentBasis('hourly');
-    setHours('');
-    setHourlyCost('');
-    setNotes('');
-    setShowAddPayment(false);
-    await load();
-    onChange?.();
-  }
-
-  function startEdit(entry: JobLaborRecord) {
-    setEditingId(entry.id);
-    setEditWorkerId(entry.worker_id || '');
-    setEditWorkerName(entry.worker_name || '');
-    setEditPaymentBasis(normalizeLaborPaymentBasis(entry.payment_basis, entry.hours));
-    setEditHours(String(entry.hours ?? ''));
-    setEditHourlyCost(String(entry.hourly_cost ?? ''));
-    setEditNotes(entry.notes || '');
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-  }
-
-  async function updateEntry(entryId: string) {
-    if (saving) return;
-    const quantity = editPaymentBasis === 'flat' ? 1 : Number.parseFloat(editHours);
-    const rate = Number.parseFloat(editHourlyCost || '0');
-    if (editPaymentBasis !== 'flat' && (!Number.isFinite(quantity) || quantity <= 0)) {
-      appFeedback.error('Enter a quantity greater than zero.');
-      return;
-    }
-    if (!Number.isFinite(rate) || rate < 0) {
-      appFeedback.error('Enter a valid amount.');
-      return;
-    }
-
-    setSaving(true);
-    const selected = workers.find((w) => w.id === editWorkerId);
-    const res = await fetch(`/api/jobs/${jobId}/labor/${entryId}`, {
+    const clearRes = await fetch(`/api/jobs/${jobId}/profitability`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        worker_id: editWorkerId || null,
-        worker_name: selected?.name || editWorkerName.trim() || pageCopy.unnamed,
-        hours: quantity,
-        hourly_cost: rate,
-        payment_basis: editPaymentBasis,
-        notes: editNotes.trim() || null
-      })
+      body: JSON.stringify({ expected_contractor_cost: 0 })
     });
-    const json = await res.json().catch(() => ({}));
+    const clearJson = await clearRes.json().catch(() => ({}));
     setSaving(false);
 
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to update contractor pay.');
+    if (!clearRes.ok) {
+      appFeedback.error(clearJson.error || 'Payment was recorded, but planned pay could not be cleared.');
+      await refreshAll();
       return;
     }
 
-    appFeedback.success(json.migrationWarning || pageCopy.updated);
-    setEditingId(null);
-    await load();
-    onChange?.();
-  }
-
-  async function removeEntry(entryId: string) {
-    if (deletingId) return;
-    setDeletingId(entryId);
-    const res = await fetch(`/api/jobs/${jobId}/labor/${entryId}`, { method: 'DELETE' });
-    const json = await res.json().catch(() => ({}));
-    setDeletingId(null);
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to remove contractor pay.');
-      return;
-    }
-    appFeedback.success(pageCopy.removed);
-    await load();
-    onChange?.();
-  }
-
-  async function duplicateEntry(entryId: string) {
-    const entry = entries.find((row) => row.id === entryId);
-    if (!entry || duplicatingId) return;
-    setDuplicatingId(entryId);
-    const res = await fetch(`/api/jobs/${jobId}/labor`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        worker_id: entry.worker_id,
-        worker_name: entry.worker_name,
-        hours: entry.hours,
-        hourly_cost: entry.hourly_cost,
-        payment_basis: normalizeLaborPaymentBasis(entry.payment_basis, entry.hours),
-        notes: entry.notes
-      })
-    });
-    const json = await res.json().catch(() => ({}));
-    setDuplicatingId(null);
-    if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to duplicate contractor pay.');
-      return;
-    }
-    appFeedback.success(pageCopy.duplicated);
-    await load();
-    onChange?.();
+    appFeedback.success('Contractor pay marked paid.');
+    await refreshAll();
   }
 
   async function updatePaymentStatus(entryId: string, paymentStatus: ContractorPaymentStatus) {
@@ -300,68 +206,111 @@ export function JobLaborSection({
     });
     const json = await res.json().catch(() => ({}));
     setUpdatingPaymentId(null);
+
     if (!res.ok) {
       appFeedback.error(json.error || 'Unable to update payment status.');
       return;
     }
-    appFeedback.success(json.migrationWarning || 'Payment status updated.');
-    await load();
-    onChange?.();
+
+    appFeedback.success('Payment status updated.');
+    await refreshAll();
   }
 
-  const totalLabor = entries.reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
-  const unpaidLabor = entries
-    .filter((entry) => (entry.payment_status || 'unpaid') === 'unpaid')
-    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
-  const pendingLabor = entries
-    .filter((entry) => entry.payment_status === 'pending')
-    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
-  const paidLabor = entries
-    .filter((entry) => entry.payment_status === 'paid')
-    .reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0);
+  async function addLabor() {
+    if (saving) return;
+    const parsedQuantity = paymentBasis === 'flat' ? 1 : Number.parseFloat(quantity);
+    const parsedRate = Number.parseFloat(rate || '0');
 
-  const previewQuantity = paymentBasis === 'flat' ? 1 : Number.parseFloat(hours);
-  const previewRate = Number.parseFloat(hourlyCost || '0');
+    if (paymentBasis !== 'flat' && (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0)) {
+      appFeedback.error('Enter a quantity greater than zero.');
+      return;
+    }
+    if (!Number.isFinite(parsedRate) || parsedRate <= 0) {
+      appFeedback.error('Enter a valid contractor pay amount.');
+      return;
+    }
+
+    setSaving(true);
+    const selected = workers.find((worker) => worker.id === workerId);
+    const res = await fetch(`/api/jobs/${jobId}/labor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        worker_id: workerId || null,
+        worker_name: selected?.name || workerName.trim() || assignedContractorName || pageCopy.unnamed,
+        hours: parsedQuantity,
+        hourly_cost: parsedRate,
+        payment_basis: paymentBasis,
+        notes: notes.trim() || null
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    setSaving(false);
+
+    if (!res.ok) {
+      appFeedback.error(json.error || 'Unable to save contractor pay.');
+      return;
+    }
+
+    setWorkerId('');
+    setWorkerName('');
+    setPaymentBasis('flat');
+    setQuantity('');
+    setRate('');
+    setNotes('');
+    setShowAddPayment(false);
+    appFeedback.success(pageCopy.added);
+    await refreshAll();
+  }
+
+  const totalLabor = useMemo(
+    () => entries.reduce((sum, entry) => sum + Number(entry.total_cost || 0), 0),
+    [entries]
+  );
+  const effectiveContractorCost = entries.length > 0 ? totalLabor : expectedContractorCost;
+  const previewQuantity = paymentBasis === 'flat' ? 1 : Number.parseFloat(quantity);
+  const previewRate = Number.parseFloat(rate || '0');
   const previewTotal =
     Number.isFinite(previewQuantity) && Number.isFinite(previewRate) ? previewQuantity * previewRate : 0;
-
-  const contractorTotals = useMemo(() => {
-    const map = new Map<string, { name: string; total: number }>();
-    for (const row of entries) {
-      const name = row.worker_name || pageCopy.unnamed;
-      const key = name.toLowerCase();
-      const current = map.get(key) || { name, total: 0 };
-      current.total += Number(row.total_cost || 0);
-      map.set(key, current);
-    }
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [entries, pageCopy.unnamed]);
 
   return (
     <section className="card finance-section">
       <div className="section-heading">
         <h3>{pageCopy.title}</h3>
-        <p className="muted">{pageCopy.subtitle}</p>
+        <p className="muted">Review contractor pay already linked to this job.</p>
       </div>
 
       {loading ? <p className="muted">{FEEDBACK.loading}</p> : null}
+
+      {!loading ? (
+        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
+          <div className="finance-metric">
+            <span className="finance-metric-label">Contractor cost</span>
+            <strong>{formatCurrency(effectiveContractorCost)}</strong>
+          </div>
+          <div className="finance-metric featured">
+            <span className="finance-metric-label">Current profit</span>
+            <strong>{formatCurrency(currentProfit)}</strong>
+          </div>
+        </div>
+      ) : null}
 
       {!loading && expectedContractorCost > 0 && entries.length === 0 ? (
         <div className="finance-list-card" style={{ marginBottom: 16 }}>
           {editingExpected ? (
             <div className="finance-form-block compact-finance-form" style={{ width: '100%' }}>
-              <label>Expected contractor pay</label>
+              <label>Flat-rate contractor pay</label>
               <input
                 className="input"
                 type="number"
                 min="0"
                 step="0.01"
                 value={expectedEditAmount}
-                onChange={(e) => setExpectedEditAmount(e.target.value)}
+                onChange={(event) => setExpectedEditAmount(event.target.value)}
               />
               <div className="job-detail-actions">
                 <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveExpectedPay()}>
-                  {saving ? FEEDBACK.loading : 'Save'}
+                  {saving ? FEEDBACK.loading : 'Save contractor pay'}
                 </button>
                 <button type="button" className="btn" disabled={saving} onClick={() => setEditingExpected(false)}>
                   Cancel
@@ -373,15 +322,18 @@ export function JobLaborSection({
               <div>
                 <strong>{assignedContractorName || pageCopy.unnamed}</strong>
                 <p className="muted" style={{ margin: '6px 0' }}>
-                  Pay type: Expected · Amount: {formatCurrency(expectedContractorCost)}
+                  Flat rate: {formatCurrency(expectedContractorCost)}
                 </p>
                 <p className="muted" style={{ margin: '6px 0' }}>
-                  Planned pay from job creation. This is not recorded again as a finalized labor expense.
+                  Status: Planned. This amount is already included in profit and does not need to be entered again.
                 </p>
               </div>
               {canManage ? (
                 <div className="job-detail-actions">
-                  <button type="button" className="btn" onClick={() => setEditingExpected(true)}>
+                  <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void markPlannedPayPaid()}>
+                    {saving ? FEEDBACK.loading : pageCopy.markPaid}
+                  </button>
+                  <button type="button" className="btn" disabled={saving} onClick={() => setEditingExpected(true)}>
                     Edit
                   </button>
                 </div>
@@ -392,269 +344,120 @@ export function JobLaborSection({
       ) : null}
 
       {!loading && entries.length > 0 ? (
-        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 16 }}>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{financeCopy.statusUnpaid}</span>
-            <strong>{formatCurrency(unpaidLabor)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{pageCopy.pending}</span>
-            <strong>{formatCurrency(pendingLabor)}</strong>
-          </div>
-          <div className="finance-metric">
-            <span className="finance-metric-label">{pageCopy.paid}</span>
-            <strong>{formatCurrency(paidLabor)}</strong>
-          </div>
-          <div className="finance-metric featured">
-            <span className="finance-metric-label">Total contractor cost</span>
-            <strong>{formatCurrency(totalLabor)}</strong>
-          </div>
-        </div>
-      ) : null}
-
-      {!loading && contractorTotals.length > 0 ? (
-        <div className="finance-metric-grid financials-summary-grid" style={{ marginBottom: 24 }}>
-          {contractorTotals.map((contractor) => (
-            <div key={contractor.name.toLowerCase()} className="finance-metric">
-              <span className="finance-metric-label">{contractor.name}</span>
-              <strong>{formatCurrency(contractor.total)}</strong>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {!loading && entries.length > 0 ? (
         <div className="finance-list" style={{ marginTop: 4 }}>
           <h4>Saved contractor pay</h4>
           {entries.map((entry) => {
-            const isEditing = editingId === entry.id;
-            const editedQuantity = editPaymentBasis === 'flat' ? 1 : Number.parseFloat(editHours);
-            const editedRate = Number.parseFloat(editHourlyCost);
-            const editedCost =
-              Number.isFinite(editedQuantity) && Number.isFinite(editedRate) ? editedQuantity * editedRate : 0;
-            const editedProfit = currentProfit + Number(entry.total_cost || 0) - editedCost;
             const paymentStatus = entry.payment_status || 'unpaid';
             return (
               <div key={entry.id} className="finance-list-card">
-                {isEditing ? (
-                  <div className="finance-form-block compact-finance-form" style={{ width: '100%' }}>
-                    <label>{pageCopy.contractorOrCleaner}</label>
-                    {workers.length > 0 ? (
-                      <select className="input" value={editWorkerId} onChange={(e) => setEditWorkerId(e.target.value)}>
-                        <option value="">Manual name</option>
-                        {workers.map((worker) => (
-                          <option key={worker.id} value={worker.id}>
-                            {worker.name}
-                          </option>
-                        ))}
-                      </select>
+                <div>
+                  <strong>{entry.worker_name || pageCopy.unnamed}</strong>
+                  <p className="muted" style={{ margin: '6px 0' }}>
+                    {formatLaborPaymentLabel({
+                      paymentBasis: entry.payment_basis,
+                      quantity: entry.hours,
+                      rate: entry.hourly_cost,
+                      total: entry.total_cost,
+                      locale
+                    })}
+                  </p>
+                  <p className="muted" style={{ margin: '6px 0' }}>
+                    {financeCopy.paymentStatus}: {paymentStatusLabel(paymentStatus, statusLabels)}
+                    {entry.paid_at ? ` · ${pageCopy.paid} ${formatPaidDate(entry.paid_at)}` : ''}
+                  </p>
+                  {entry.notes ? <p className="muted" style={{ margin: '6px 0' }}>{entry.notes}</p> : null}
+                </div>
+                {canManage ? (
+                  <div className="job-detail-actions">
+                    {paymentStatus !== 'paid' ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={updatingPaymentId === entry.id}
+                        onClick={() => void updatePaymentStatus(entry.id, 'paid')}
+                      >
+                        {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.markPaid}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={updatingPaymentId === entry.id}
+                        onClick={() => void updatePaymentStatus(entry.id, 'unpaid')}
+                      >
+                        {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.stillOwed}
+                      </button>
+                    )}
+                    {paymentStatus === 'unpaid' ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={updatingPaymentId === entry.id}
+                        onClick={() => void updatePaymentStatus(entry.id, 'pending')}
+                      >
+                        {pageCopy.markPending}
+                      </button>
                     ) : null}
-                    <input
-                      className="input"
-                      placeholder={pageCopy.contractorNamePlaceholder}
-                      value={editWorkerName}
-                      onChange={(e) => setEditWorkerName(e.target.value)}
-                    />
-                    <label>Payment basis</label>
-                    <select
-                      className="input"
-                      value={editPaymentBasis}
-                      onChange={(e) => setEditPaymentBasis(e.target.value as LaborPaymentBasis)}
-                    >
-                      <option value="flat">Flat amount</option>
-                      <option value="hourly">Hourly</option>
-                      <option value="visit">Per visit</option>
-                    </select>
-                    <div className="grid-2">
-                      {editPaymentBasis !== 'flat' ? (
-                        <div className="form-group">
-                          <label>{laborQuantityLabel(editPaymentBasis, locale)}</label>
-                          <input
-                            className="input"
-                            type="number"
-                            min="0"
-                            step="0.25"
-                            value={editHours}
-                            onChange={(e) => setEditHours(e.target.value)}
-                          />
-                        </div>
-                      ) : null}
-                      <div className="form-group">
-                        <label>{rateLabel(editPaymentBasis)}</label>
-                        <input
-                          className="input"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editHourlyCost}
-                          onChange={(e) => setEditHourlyCost(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="finance-metric-grid financials-summary-grid">
-                      <div className="finance-metric">
-                        <span className="finance-metric-label">Updated contractor pay</span>
-                        <strong>{formatCurrency(editedCost)}</strong>
-                      </div>
-                      <div className="finance-metric featured">
-                        <span className="finance-metric-label">Profit after update</span>
-                        <strong>{formatCurrency(editedProfit)}</strong>
-                      </div>
-                    </div>
-                    <label>Notes</label>
-                    <input className="input" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
-                    <div className="job-detail-actions">
-                      <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void updateEntry(entry.id)}>
-                        {saving ? FEEDBACK.loading : 'Save contractor pay'}
-                      </button>
-                      <button type="button" className="btn" disabled={saving} onClick={cancelEdit}>
-                        Cancel
-                      </button>
-                    </div>
                   </div>
-                ) : (
-                  <>
-                    <div>
-                      <strong>{entry.worker_name || pageCopy.unnamed}</strong>
-                      <p className="muted" style={{ margin: '6px 0' }}>
-                        {formatLaborPaymentLabel({
-                          paymentBasis: entry.payment_basis,
-                          quantity: entry.hours,
-                          rate: entry.hourly_cost,
-                          total: entry.total_cost,
-                          locale
-                        })}
-                      </p>
-                      <p className="muted" style={{ margin: '6px 0' }}>
-                        {financeCopy.paymentStatus}: {paymentStatusLabel(paymentStatus, statusLabels)}
-                        {entry.paid_at ? ` · ${pageCopy.paid} ${formatPaidDate(entry.paid_at)}` : ''}
-                      </p>
-                      {entry.payment_method ? (
-                        <p className="muted" style={{ margin: '6px 0' }}>
-                          {pageCopy.paymentMethodLabel}: {entry.payment_method}
-                        </p>
-                      ) : null}
-                      {entry.payment_reference ? (
-                        <p className="muted" style={{ margin: '6px 0' }}>
-                          Reference: {entry.payment_reference}
-                        </p>
-                      ) : null}
-                      {entry.notes ? <p className="muted" style={{ margin: '6px 0' }}>{entry.notes}</p> : null}
-                    </div>
-                    {canManage ? (
-                      <div className="job-detail-actions">
-                        {paymentStatus !== 'paid' ? (
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={updatingPaymentId === entry.id}
-                            onClick={() => void updatePaymentStatus(entry.id, 'paid')}
-                          >
-                            {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.markPaid}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn"
-                            disabled={updatingPaymentId === entry.id}
-                            onClick={() => void updatePaymentStatus(entry.id, 'unpaid')}
-                          >
-                            {updatingPaymentId === entry.id ? FEEDBACK.loading : pageCopy.stillOwed}
-                          </button>
-                        )}
-                        {paymentStatus === 'unpaid' ? (
-                          <button
-                            type="button"
-                            className="btn"
-                            disabled={updatingPaymentId === entry.id}
-                            onClick={() => void updatePaymentStatus(entry.id, 'pending')}
-                          >
-                            {pageCopy.markPending}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={saving || Boolean(deletingId) || Boolean(duplicatingId)}
-                          onClick={() => startEdit(entry)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={duplicatingId === entry.id || Boolean(deletingId)}
-                          onClick={() => void duplicateEntry(entry.id)}
-                        >
-                          {duplicatingId === entry.id ? FEEDBACK.loading : 'Duplicate'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={deletingId === entry.id || Boolean(duplicatingId)}
-                          onClick={() => void removeEntry(entry.id)}
-                        >
-                          {deletingId === entry.id ? FEEDBACK.loading : 'Remove'}
-                        </button>
-                      </div>
-                    ) : null}
-                  </>
-                )}
+                ) : null}
               </div>
             );
           })}
         </div>
       ) : null}
 
-      {canManage && !showAddPayment && (entries.length > 0 || expectedContractorCost > 0) ? (
+      {canManage && !showAddPayment ? (
         <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => setShowAddPayment(true)}>
-          {pageCopy.addAnotherPayment}
+          Add a separate payment
         </button>
       ) : null}
 
       {canManage && showAddPayment ? (
         <div className="finance-form-block compact-finance-form" style={{ marginTop: 20 }}>
-          <h4>{pageCopy.addAnotherPayment}</h4>
-          <p className="muted">
-            Record a finalized payment only when needed. Expected pay from job creation is already counted once and is not
-            duplicated here automatically.
-          </p>
+          <h4>Add a separate payment</h4>
+          <p className="muted">Use this only for an additional cleaner, bonus, or separate labor payment.</p>
+
+          <label>{pageCopy.contractorOrCleaner}</label>
           {workers.length > 0 ? (
-            <>
-              <label>{pageCopy.contractorOrCleaner}</label>
-              <select className="input" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
-                <option value="">{assignedContractorName || pageCopy.unnamed}</option>
-                {workers.map((worker) => (
-                  <option key={worker.id} value={worker.id}>
-                    {worker.name}
-                  </option>
-                ))}
-              </select>
-            </>
+            <select className="input" value={workerId} onChange={(event) => setWorkerId(event.target.value)}>
+              <option value="">{assignedContractorName || pageCopy.unnamed}</option>
+              {workers.map((worker) => (
+                <option key={worker.id} value={worker.id}>
+                  {worker.name}
+                </option>
+              ))}
+            </select>
           ) : (
-            <p className="muted">{workerName || assignedContractorName || pageCopy.unnamed}</p>
+            <input
+              className="input"
+              value={workerName}
+              placeholder={assignedContractorName || pageCopy.contractorNamePlaceholder}
+              onChange={(event) => setWorkerName(event.target.value)}
+            />
           )}
-          <label>{pageCopy.paymentMethodLabel}</label>
+
+          <label>Payment type</label>
           <select
             className="input"
             value={paymentBasis}
-            onChange={(e) => setPaymentBasis(e.target.value as LaborPaymentBasis)}
+            onChange={(event) => setPaymentBasis(event.target.value as LaborPaymentBasis)}
           >
             <option value="flat">{pageCopy.flatRate}</option>
             <option value="hourly">{pageCopy.hourly}</option>
             <option value="visit">Per visit</option>
           </select>
+
           <div className="grid-2">
             {paymentBasis !== 'flat' ? (
               <div className="form-group">
-                <label>{pageCopy.hours}</label>
+                <label>{laborQuantityLabel(paymentBasis, locale)}</label>
                 <input
                   className="input"
                   type="number"
                   min="0"
                   step="0.25"
-                  value={hours}
-                  onChange={(e) => setHours(e.target.value)}
+                  value={quantity}
+                  onChange={(event) => setQuantity(event.target.value)}
                 />
               </div>
             ) : null}
@@ -665,26 +468,27 @@ export function JobLaborSection({
                 type="number"
                 min="0"
                 step="0.01"
-                value={hourlyCost}
-                onChange={(e) => setHourlyCost(e.target.value)}
+                value={rate}
+                onChange={(event) => setRate(event.target.value)}
               />
             </div>
           </div>
+
           <div className="finance-metric" style={{ marginBottom: 12 }}>
             <span className="finance-metric-label">{pageCopy.calculatedTotal}</span>
             <strong>{formatCurrency(previewTotal)}</strong>
           </div>
+
           <label>{pageCopy.notesOptional}</label>
-          <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <input className="input" value={notes} onChange={(event) => setNotes(event.target.value)} />
+
           <div className="job-detail-actions">
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addLabor()}>
-              {saving ? FEEDBACK.loading : pageCopy.addAnotherPayment}
+              {saving ? FEEDBACK.loading : 'Save separate payment'}
             </button>
-            {expectedContractorCost > 0 || entries.length > 0 ? (
-              <button type="button" className="btn" disabled={saving} onClick={() => setShowAddPayment(false)}>
-                Cancel
-              </button>
-            ) : null}
+            <button type="button" className="btn" disabled={saving} onClick={() => setShowAddPayment(false)}>
+              Cancel
+            </button>
           </div>
         </div>
       ) : null}
