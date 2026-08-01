@@ -10,7 +10,7 @@ import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
 import { isClientRole, normalizeRole } from '@/lib/roles';
-import { wallClockFromTimestamp } from '@/lib/schedule-times';
+import { localToday, wallClockFromTimestamp } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 
 type ClientJob = {
@@ -27,13 +27,10 @@ type ClientJob = {
   created_at: string | null;
 };
 
-const INITIAL_VISIBLE_JOBS = 6;
-
 function cityState(address: string | null) {
   if (!address) return '';
   const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
-  if (parts.length >= 2) return parts.slice(-2).join(', ');
-  return address;
+  return parts.length >= 2 ? parts.slice(-2).join(', ') : address;
 }
 
 function operationalDate(job: ClientJob) {
@@ -46,43 +43,39 @@ function operationalDate(job: ClientJob) {
   );
 }
 
+function normalizedStatus(job: ClientJob) {
+  return String(job.status || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
 function isFinished(job: ClientJob) {
-  return ['completed', 'complete', 'finished', 'done'].includes(String(job.status || '').toLowerCase());
+  return ['completed', 'complete', 'finished', 'done'].includes(normalizedStatus(job));
 }
 
 function isCancelled(job: ClientJob) {
-  return ['cancelled', 'canceled'].includes(String(job.status || '').toLowerCase());
+  return ['cancelled', 'canceled'].includes(normalizedStatus(job));
 }
 
-function sortClientJobs(rows: ClientJob[]) {
-  return rows.slice().sort((a, b) => {
-    const aGroup = isCancelled(a) ? 2 : isFinished(a) ? 1 : 0;
-    const bGroup = isCancelled(b) ? 2 : isFinished(b) ? 1 : 0;
-    if (aGroup !== bGroup) return aGroup - bGroup;
-
-    if (aGroup === 0) return operationalDate(a).localeCompare(operationalDate(b));
-
-    const aDate = (a.completed_at || a.scheduled_start || a.start_date || a.due_date || a.created_at || '').slice(0, 19);
-    const bDate = (b.completed_at || b.scheduled_start || b.start_date || b.due_date || b.created_at || '').slice(0, 19);
-    return bDate.localeCompare(aDate);
-  });
+function isActive(job: ClientJob) {
+  return ['in_progress', 'started'].includes(normalizedStatus(job));
 }
 
 function jobDate(job: ClientJob, locale: string) {
   const value = operationalDate(job);
   if (!value) return '';
-  const parsed = new Date(`${value.slice(0, 10)}T12:00:00`);
-  return parsed.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString(locale, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 function jobTime(job: ClientJob, locale: string) {
   const start = wallClockFromTimestamp(job.scheduled_start);
   const end = wallClockFromTimestamp(job.scheduled_end);
   if (!start?.time) return '';
-  const format = (time: string) => {
-    const parsed = new Date(`2000-01-01T${time}:00`);
-    return parsed.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  };
+  const format = (time: string) =>
+    new Date(`2000-01-01T${time}:00`).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   return end?.time ? `${format(start.time)} – ${format(end.time)}` : format(start.time);
 }
 
@@ -95,7 +88,6 @@ export default function ClientPortalJobsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [exportError, setExportError] = useState('');
-  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -123,7 +115,6 @@ export default function ClientPortalJobsPage() {
       const jobIds = ((access || []) as Array<{ job_id: string }>).map((row) => String(row.job_id)).filter(Boolean);
 
       if (jobIds.length === 0) {
-        setJobs([]);
         setMessage(t('portal.client.noSharedMessage'));
         setLoading(false);
         return;
@@ -134,21 +125,74 @@ export default function ClientPortalJobsPage() {
         .select('id, title, status, customer_name, address, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
         .in('id', jobIds);
 
-      setJobs(sortClientJobs((jobRows || []) as ClientJob[]));
+      setJobs((jobRows || []) as ClientJob[]);
       setLoading(false);
     }
 
     void load();
   }, [router, t]);
 
-  const visibleJobs = useMemo(() => (showAll ? jobs : jobs.slice(0, INITIAL_VISIBLE_JOBS)), [jobs, showAll]);
+  const groupedJobs = useMemo(() => {
+    const today = localToday();
+    const current: ClientJob[] = [];
+    const upcoming: ClientJob[] = [];
+    const past: ClientJob[] = [];
+
+    for (const job of jobs) {
+      const date = operationalDate(job);
+      if (isFinished(job) || isCancelled(job) || (date && date < today)) past.push(job);
+      else if (isActive(job) || date === today) current.push(job);
+      else upcoming.push(job);
+    }
+
+    current.sort((a, b) => operationalDate(a).localeCompare(operationalDate(b)));
+    upcoming.sort((a, b) => operationalDate(a).localeCompare(operationalDate(b)));
+    past.sort((a, b) => operationalDate(b).localeCompare(operationalDate(a)));
+    return { current, upcoming, past };
+  }, [jobs]);
+
+  function renderJobCard(job: ClientJob) {
+    const date = jobDate(job, localeCode);
+    const time = jobTime(job, localeCode);
+    const location = cityState(job.address);
+    return (
+      <article key={job.id} className="client-job-card" aria-label={job.title}>
+        <div className="client-job-card-main">
+          <p className="eyebrow">{t('portal.contractor.job')}</p>
+          <h3>{job.title}</h3>
+          {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
+          {location ? <p className="client-job-secondary">{location}</p> : null}
+        </div>
+        {(date || time) ? (
+          <div className="client-job-schedule">
+            {date ? <strong>{date}</strong> : null}
+            {time ? <span>{time}</span> : null}
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  function renderSection(id: string, title: string, rows: ClientJob[], emptyText: string) {
+    return (
+      <section id={id} className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{title}</h2>
+          <span className="muted">{rows.length}</span>
+        </div>
+        {rows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>{emptyText}</p>
+        ) : (
+          <div className="client-job-card-list" style={{ marginTop: 12 }}>{rows.map(renderJobCard)}</div>
+        )}
+      </section>
+    );
+  }
 
   if (loading) {
     return (
       <AuthenticatedSection role="client">
-        <div className="card" role="status" aria-live="polite">
-          {t('portal.client.loadingSharedJobs')}
-        </div>
+        <div className="card" role="status" aria-live="polite">{t('portal.client.loadingSharedJobs')}</div>
       </AuthenticatedSection>
     );
   }
@@ -189,34 +233,9 @@ export default function ClientPortalJobsPage() {
         </div>
       ) : (
         <>
-          <div className="client-job-card-list">
-            {visibleJobs.map((job) => {
-              const date = jobDate(job, localeCode);
-              const time = jobTime(job, localeCode);
-              const location = cityState(job.address);
-              return (
-                <article key={job.id} className="client-job-card" aria-label={job.title}>
-                  <div className="client-job-card-main">
-                    <p className="eyebrow">{t('portal.contractor.job')}</p>
-                    <h3>{job.title}</h3>
-                    {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
-                    {location ? <p className="client-job-secondary">{location}</p> : null}
-                  </div>
-                  {(date || time) ? (
-                    <div className="client-job-schedule">
-                      {date ? <strong>{date}</strong> : null}
-                      {time ? <span>{time}</span> : null}
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
-          {jobs.length > INITIAL_VISIBLE_JOBS ? (
-            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => setShowAll((current) => !current)} aria-expanded={showAll}>
-              {showAll ? 'Show fewer jobs' : `Show all ${jobs.length} jobs`}
-            </button>
-          ) : null}
+          {renderSection('current-jobs', t('portal.contractor.todaysJobs'), groupedJobs.current, t('portal.contractor.nothingToday'))}
+          {renderSection('upcoming-jobs', t('portal.contractor.upcomingJobs'), groupedJobs.upcoming, t('portal.contractor.noUpcoming'))}
+          {renderSection('past-jobs', t('portal.contractor.pastJobs'), groupedJobs.past, t('portal.contractor.noCompleted'))}
         </>
       )}
     </AuthenticatedSection>
