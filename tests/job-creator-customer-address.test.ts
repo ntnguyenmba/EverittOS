@@ -6,12 +6,36 @@ import {
   findMatchingCustomer,
   normalizeCustomerNameKey
 } from '../lib/customer-find-or-create';
-import { structuredAddressFromManual } from '../lib/address/parse-photon';
+import {
+  filterAddressSuggestionsForQuery,
+  structuredAddressFromManual
+} from '../lib/address/parse-photon';
+import type { AddressSuggestion } from '../lib/address/types';
 
 const root = process.cwd();
 
 function read(path: string) {
   return readFileSync(join(root, path), 'utf8');
+}
+
+function suggestion(addressLine1: string): AddressSuggestion {
+  return {
+    id: addressLine1,
+    label: addressLine1,
+    detail: 'Rhome, TX 76078',
+    formattedAddress: `${addressLine1}, Rhome, TX 76078`,
+    addressLine1,
+    addressLine2: null,
+    city: 'Rhome',
+    county: 'Wise County',
+    state: 'Texas',
+    stateCode: 'TX',
+    postalCode: '76078',
+    country: 'United States',
+    countryCode: 'US',
+    latitude: 33.05,
+    longitude: -97.47
+  };
 }
 
 test('manual address entry keeps typed value without selecting a suggestion', () => {
@@ -27,12 +51,39 @@ test('manual address entry keeps typed value without selecting a suggestion', ()
   assert.doesNotMatch(source, /onChange\('',\s*null\)/);
 });
 
+test('full address search ranks the exact house number first', () => {
+  const results = filterAddressSuggestionsForQuery(
+    [suggestion('145 Sandie Drive'), suggestion('147 Sandie Drive'), suggestion('Sandie Drive')],
+    '147 Sandie Drive, Rhome Texas 76078'
+  );
+
+  assert.equal(results[0]?.addressLine1, '147 Sandie Drive');
+  assert.equal(results.length, 3);
+});
+
+test('full address search keeps street results when exact house number is unavailable', () => {
+  const results = filterAddressSuggestionsForQuery(
+    [suggestion('Sandie Drive'), suggestion('145 Sandie Drive'), suggestion('Main Street')],
+    '147 Sandie Drive, Rhome Texas 76078'
+  );
+
+  assert.equal(results.length, 3);
+  assert.ok(results.some((result) => result.addressLine1.includes('Sandie Drive')));
+});
+
+test('address API requests a larger provider pool but displays a short list', () => {
+  const source = read('app/api/address/autocomplete/route.ts');
+  assert.match(source, /const DISPLAY_LIMIT = 8/);
+  assert.match(source, /const PROVIDER_LIMIT = 24/);
+  assert.match(source, /photonUrl\.searchParams\.set\('limit', String\(PROVIDER_LIMIT\)\)/);
+  assert.match(source, /slice\(0, DISPLAY_LIMIT\)/);
+});
+
 test('Enter key selects a suggestion only when one is highlighted', () => {
   const source = read('components/address-autocomplete.tsx');
   assert.match(source, /Only consume Enter when a suggestion is actively highlighted/);
   assert.match(source, /if \(activeIndex >= 0 && suggestions\[activeIndex\]\)/);
   assert.match(source, /event\.preventDefault\(\)/);
-  // When nothing is highlighted, menu closes and Enter is not blocked for form submit.
   assert.match(source, /setOpen\(false\)/);
   assert.match(source, /setActiveIndex\(-1\)/);
 });
@@ -43,10 +94,10 @@ test('address autocomplete leaves manual value intact on Escape and outside clic
   assert.match(source, /mousedown/);
   assert.match(source, /setOpen\(false\)/);
   assert.match(source, /setActiveIndex\(-1\)/);
-  // Empty/no-match results close the menu and never clear or replace typed text.
   assert.match(source, /setState\('empty'\)/);
   assert.match(source, /Manual text is always preserved/);
 });
+
 test('customer search includes contact name, property fields, and all company customers', () => {
   const source = read('app/api/customers/search/route.ts');
   assert.match(source, /contact_name\.ilike/);
@@ -142,13 +193,23 @@ test('job creator auto-creates and links customer and primary property without p
   assert.match(source, /Unable to prepare customer\/property/);
   assert.match(source, /customer_id: customerId/);
   assert.match(source, /property_id: propertyId/);
-  // Property/customer failures must return before /api/jobs or recurring create.
   const prepareCatch = source.indexOf('Unable to prepare customer/property');
   const jobsPost = source.indexOf("fetch('/api/jobs'");
   const recurringPost = source.indexOf("fetch('/api/recurring-jobs'");
   assert.ok(prepareCatch > 0);
   assert.ok(jobsPost > prepareCatch);
   assert.ok(recurringPost > prepareCatch);
+});
+
+test('selected address saves structured property location fields', () => {
+  const source = read('components/job-creator.tsx');
+  assert.match(source, /formatted_address: structuredAddress\?\.formattedAddress \|\| address/);
+  assert.match(source, /city: structuredAddress\?\.city \|\| null/);
+  assert.match(source, /state_code: structuredAddress\?\.stateCode \|\| null/);
+  assert.match(source, /postal_code: structuredAddress\?\.postalCode \|\| null/);
+  assert.match(source, /latitude: structuredAddress\?\.latitude \?\? null/);
+  assert.match(source, /longitude: structuredAddress\?\.longitude \?\? null/);
+  assert.match(source, /resolveTimezoneFromCoords/);
 });
 
 test('job creator keeps property name free text and service address editable', () => {
