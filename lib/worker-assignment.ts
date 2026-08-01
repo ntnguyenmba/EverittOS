@@ -49,6 +49,27 @@ export function formatLocalDateOnly(date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+function formatStoredSchedule(value: string | null | undefined): string | null {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const date = raw.slice(0, 10);
+  const timeMatch = raw.match(/[T\s](\d{2}):(\d{2})/);
+  if (!timeMatch) return date || null;
+
+  const hour24 = Number(timeMatch[1]);
+  const minute = timeMatch[2];
+  if (!Number.isFinite(hour24) || hour24 < 0 || hour24 > 23) return date || null;
+
+  const period = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 || 12;
+  return `${date} · ${hour12}:${minute} ${period}`;
+}
+
+function scheduleDateKey(value: string | null | undefined): string {
+  return String(value || '').slice(0, 10);
+}
+
 /** Canonical assigned worker/user id from a job row. */
 export function getAssignedWorkerId(job: Pick<AssignableJob, 'assigned_to'>): string | null {
   const value = typeof job.assigned_to === 'string' ? job.assigned_to.trim() : '';
@@ -89,13 +110,13 @@ export function isJobAssignedToWorker(
 }
 
 /**
- * Effective schedule date for assignment summaries.
- * Prefers scheduled_start, then start_date, then due_date.
+ * Effective contractor-facing schedule.
+ * Prefers scheduled_start and keeps its time, then start_date, then due_date.
  */
 export function getEffectiveJobSchedule(
   job: Pick<AssignableJob, 'scheduled_start' | 'start_date' | 'due_date'>
 ): string | null {
-  const scheduled = String(job.scheduled_start || '').slice(0, 10);
+  const scheduled = formatStoredSchedule(job.scheduled_start);
   if (scheduled) return scheduled;
   const start = String(job.start_date || '').slice(0, 10);
   if (start) return start;
@@ -153,9 +174,9 @@ export function getWorkerAssignmentSummary(
       continue;
     }
 
-    // Active / unknown open work
     active += 1;
-    const scheduleDate = getEffectiveJobSchedule(job);
+    const schedule = getEffectiveJobSchedule(job);
+    const scheduleDate = scheduleDateKey(schedule);
     if (!scheduleDate) {
       unscheduled += 1;
       continue;
@@ -165,11 +186,11 @@ export function getWorkerAssignmentSummary(
     if (scheduleDate < today) overdue += 1;
 
     if (scheduleDate >= today) {
-      if (!nextAssignment || scheduleDate < nextAssignment.date) {
+      if (!nextAssignment || scheduleDate < scheduleDateKey(nextAssignment.date)) {
         nextAssignment = {
           id: String(job.id || ''),
           title: String(job.title || 'Untitled job'),
-          date: scheduleDate
+          date: schedule || scheduleDate
         };
       }
     }
