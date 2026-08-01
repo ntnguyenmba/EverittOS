@@ -171,6 +171,75 @@
   color: #72838d !important;
 }
 
+/* Jobs detail */
+.job-detail-shell {
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.job-detail-shell > .page-head {
+  margin-bottom: 4px !important;
+  padding: 0 !important;
+}
+
+.job-detail-shell > .page-head h2,
+.job-detail-shell > .page-head p {
+  margin-top: 0 !important;
+}
+
+.job-detail-shell > .card,
+.job-detail-shell > details.card,
+.job-detail-shell > section.card,
+.job-detail-shell .job-photos-card {
+  margin-bottom: 0 !important;
+  padding: 20px 22px !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.job-detail-shell > section:not(.card) {
+  margin-bottom: 0 !important;
+  padding: 20px 22px !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.job-detail-shell h3 {
+  margin-top: 0 !important;
+}
+
+.job-detail-shell .form {
+  gap: 12px !important;
+}
+
+.job-detail-shell .job-detail-actions,
+.job-detail-shell .button-row {
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.job-detail-shell .card .card {
+  margin-top: 14px !important;
+  border-radius: 14px !important;
+  background: rgba(247, 250, 252, 0.96) !important;
+  box-shadow: none !important;
+}
+
+.job-detail-shell details.card > summary {
+  cursor: pointer !important;
+  font-weight: 700 !important;
+}
+
 @media (max-width: 680px) {
   .customer-card-row,
   .client-job-card,
@@ -193,6 +262,18 @@
   }
 
   .schedule-views article.card > div:first-child {
+    align-items: flex-start !important;
+  }
+
+  .job-detail-shell > .card,
+  .job-detail-shell > details.card,
+  .job-detail-shell > section.card,
+  .job-detail-shell > section:not(.card),
+  .job-detail-shell .job-photos-card {
+    padding: 18px !important;
+  }
+
+  .job-detail-shell > .page-head {
     align-items: flex-start !important;
   }
 }
