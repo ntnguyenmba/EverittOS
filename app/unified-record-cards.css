@@ -1,6 +1,6 @@
-/* Final shared record-card treatment for Customers, Schedule, Client, and Team views. */
+/* Shared floating record treatment inspired by the Team page. */
 
-/* Customers */
+/* Customers: float directly over the architectural background like Team members. */
 .customer-card-row {
   display: flex !important;
   align-items: center !important;
@@ -8,15 +8,16 @@
   width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
-  padding: 20px 22px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 26px rgba(37, 54, 74, 0.08) !important;
+  padding: 18px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(37, 54, 74, 0.14) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .customer-card-row + .customer-card-row {
-  margin-top: 12px !important;
+  margin-top: 0 !important;
 }
 
 .customer-card-row > div:last-child {
@@ -24,36 +25,32 @@
   min-width: 0 !important;
 }
 
-.customer-card-row h3,
-.customer-card-row p {
-  margin-top: 0 !important;
-}
-
 .customer-card-row h3 {
-  margin-bottom: 4px !important;
+  margin: 0 0 4px !important;
   font-size: 1.04rem !important;
 }
 
 .customer-card-row p {
-  margin-bottom: 3px !important;
+  margin: 0 0 3px !important;
   overflow-wrap: anywhere !important;
 }
 
 .customer-card-row .record-actions {
-  margin-top: 12px !important;
+  margin-top: 10px !important;
 }
 
-/* Schedule */
+/* Schedule: remove the boxed card look and use floating rows. */
 .schedule-views > section > div[style*='display: grid'] {
-  gap: 12px !important;
+  gap: 0 !important;
 }
 
 .schedule-views article.card {
-  padding: 20px 22px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 26px rgba(37, 54, 74, 0.08) !important;
+  padding: 18px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(37, 54, 74, 0.14) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .schedule-views article.card > div:first-child {
@@ -80,7 +77,7 @@
   border-top: 1px solid rgba(37, 54, 74, 0.09) !important;
 }
 
-/* Client portal */
+/* Client portal remains as compact white cards. */
 .client-job-card-list {
   display: grid !important;
   gap: 12px !important;
@@ -143,78 +140,9 @@
   color: #72838d !important;
 }
 
-/* Team */
-.settings-card,
-.team-management-panel .settings-card {
-  width: 100% !important;
-  min-width: 0 !important;
-  padding: 20px 22px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 26px rgba(37, 54, 74, 0.08) !important;
-}
-
-.team-management-panel,
-.team-management-panel + section {
-  display: grid !important;
-  gap: 12px !important;
-}
-
-.team-management-panel .settings-card + .settings-card {
-  margin-top: 0 !important;
-}
-
-.team-management-panel .settings-card h3,
-.team-management-panel .settings-card p {
-  margin-top: 0 !important;
-}
-
-.team-management-panel button[aria-expanded] {
-  min-height: 28px !important;
-}
-
-.team-management-panel + section > details.card {
-  margin: 0 0 12px !important;
-  padding: 20px 22px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 26px rgba(37, 54, 74, 0.08) !important;
-}
-
-.team-management-panel + section > div[style*='display: grid'] {
-  display: grid !important;
-  gap: 12px !important;
-}
-
-.team-management-panel + section .list-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  padding: 20px 22px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 26px rgba(37, 54, 74, 0.08) !important;
-}
-
-.team-management-panel + section .list-row + .list-row {
-  margin-top: 0 !important;
-}
-
-.team-management-panel + section .list-row p {
-  margin-top: 0 !important;
-  margin-bottom: 2px !important;
-}
-
 @media (max-width: 680px) {
   .customer-card-row,
-  .client-job-card,
-  .team-management-panel + section .list-row {
+  .client-job-card {
     align-items: flex-start !important;
   }
 
@@ -232,9 +160,5 @@
 
   .schedule-views article.card > div:first-child {
     align-items: flex-start !important;
-  }
-
-  .team-management-panel + section .list-row {
-    flex-direction: column !important;
   }
 }
