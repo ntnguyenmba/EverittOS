@@ -117,8 +117,34 @@
   }
 
   .jobs-operations-row {
+    position: relative !important;
     padding: 18px 20px !important;
     gap: 14px !important;
+  }
+
+  .jobs-operations-row::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 8px;
+    bottom: 18px;
+    width: 3px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  .jobs-operations-row:has(.jobs-needs-worker)::before {
+    background: #8a6f55;
+  }
+
+  .jobs-operations-row:has(.status.overdue)::before,
+  .jobs-operations-row:has(.status.unpaid)::before {
+    background: #9a5d5d;
+  }
+
+  .jobs-operations-row:has(.status.cancelled)::before,
+  .jobs-operations-row:has(.status.canceled)::before {
+    background: #87939a;
   }
 
   .jobs-col-property {
