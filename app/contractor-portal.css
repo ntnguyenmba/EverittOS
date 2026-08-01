@@ -26,23 +26,7 @@
 
 .contractor-job-card > button {
   position: relative;
-  padding: 18px 46px 18px 20px !important;
-}
-
-.contractor-job-card > button::after {
-  content: '›';
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  color: #71838d;
-  font-size: 1.45rem;
-  line-height: 1;
-  transform: translateY(-50%) rotate(90deg);
-  transition: transform 160ms ease;
-}
-
-.contractor-job-card > button[aria-expanded='true']::after {
-  transform: translateY(-50%) rotate(-90deg);
+  padding: 18px 20px !important;
 }
 
 .contractor-job-card > button > div:first-child > .badge,
@@ -68,6 +52,10 @@
   background: #fbfcfc;
 }
 
+.contractor-dashboard #earnings summary .muted {
+  display: none;
+}
+
 .client-job-card-list {
   display: grid;
   gap: 14px;
@@ -86,16 +74,6 @@
   box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
 }
 
-.client-job-card::after {
-  content: '›';
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  color: #71838d;
-  font-size: 1.45rem;
-  line-height: 1;
-}
-
 .client-job-card:hover,
 .client-job-card:focus-visible,
 .contractor-job-card:focus-within {
@@ -105,7 +83,7 @@
 }
 
 .client-job-card-main {
-  padding-right: 34px;
+  padding-right: 0;
 }
 
 .client-job-card .eyebrow {
@@ -155,15 +133,6 @@
   .contractor-job-card > button,
   .client-job-card {
     padding: 18px !important;
-  }
-
-  .contractor-job-card > button {
-    padding-right: 44px !important;
-  }
-
-  .client-job-card::after,
-  .contractor-job-card > button::after {
-    right: 17px;
   }
 
   .client-job-card-list {
