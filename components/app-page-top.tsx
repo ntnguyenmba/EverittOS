@@ -18,12 +18,11 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   const homeHref = dashboardPathForRole(normalizedRole);
   const isFocusedPortal = isClientRole(normalizedRole) || isContractorRole(normalizedRole);
 
-  // Customer and contractor portals are focused one-page dashboards. They do not
-  // need workspace switching or a back button, but language remains easy to reach.
+  // Customer and contractor portals already show the EverittOS brand in the
+  // shared navigation header, so this row only keeps the language control.
   if (isFocusedPortal) {
     return (
-      <div className="app-page-top app-page-top-branded">
-        <BrandLogo href={homeHref} size={34} showName className="app-page-brand" />
+      <div className="app-page-top app-page-top-portal">
         <div className="app-page-top-language">
           <LanguageSwitcher
             id={isContractorRole(normalizedRole) ? 'contractor-portal-top-language' : 'client-portal-language'}
@@ -32,31 +31,13 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
         </div>
 
         <style jsx global>{`
-          .app-page-top-branded {
+          .app-page-top-portal {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 16px;
+            justify-content: flex-end;
             width: 100%;
-            margin: 0 0 20px;
+            margin: 0 0 14px;
             padding: 0;
-          }
-
-          .app-page-brand {
-            min-width: 0;
-            gap: 10px;
-          }
-
-          .app-page-brand .brand-logo-image {
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-          }
-
-          .app-page-brand .brand-logo-name {
-            font-size: 20px;
-            font-weight: 650;
-            letter-spacing: -0.025em;
           }
 
           .app-page-top-language {
@@ -65,17 +46,8 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
           }
 
           @media (max-width: 640px) {
-            .app-page-top-branded {
-              margin-bottom: 14px;
-            }
-
-            .app-page-brand .brand-logo-image {
-              width: 30px;
-              height: 30px;
-            }
-
-            .app-page-brand .brand-logo-name {
-              font-size: 18px;
+            .app-page-top-portal {
+              margin-bottom: 10px;
             }
 
             .app-page-top-language {
