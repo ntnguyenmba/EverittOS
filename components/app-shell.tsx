@@ -92,23 +92,60 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         .dashboard-shell .main,
         .dashboard-shell .app-page-content,
         .dashboard-shell .today-page,
-        .dashboard-shell .dashboard-home {
+        .dashboard-shell .dashboard-home,
+        .dashboard-shell .portal-page,
+        .dashboard-shell .authenticated-portal {
           background: transparent !important;
           background-color: transparent !important;
         }
 
-        @media (pointer: coarse), (hover: none) {
+        .dashboard-shell .app-page-content,
+        .dashboard-shell .today-page,
+        .dashboard-shell .dashboard-home,
+        .dashboard-shell .portal-page,
+        .dashboard-shell .authenticated-portal {
+          width: 100% !important;
+          max-width: none !important;
+          min-width: 0 !important;
+          margin-inline: 0 !important;
+        }
+
+        @media (min-width: 901px) {
           .dashboard-shell {
-            --mobile-gutter-left: max(36px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(36px, env(safe-area-inset-right));
+            display: grid !important;
+            grid-template-columns: 272px minmax(0, 1fr) !important;
+            grid-template-areas: 'side main' !important;
+          }
+
+          .dashboard-shell-mobile {
+            display: none !important;
+          }
+
+          .dashboard-shell > .sidebar {
+            display: block !important;
+            grid-area: side !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+          }
+
+          .dashboard-shell > .main {
+            grid-area: main !important;
+            width: 100% !important;
+            max-width: 1280px !important;
+            margin: 0 auto !important;
+            padding: 26px 32px 40px !important;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .dashboard-shell {
+            --mobile-gutter-left: max(24px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(24px, env(safe-area-inset-right));
             display: block !important;
             width: 100% !important;
             max-width: none !important;
             min-width: 0 !important;
             margin: 0 !important;
-            grid-template-columns: minmax(0, 1fr) !important;
-            grid-template-rows: auto minmax(0, 1fr) !important;
-            grid-template-areas: 'mobile' 'main' !important;
           }
 
           .dashboard-shell-background {
@@ -122,14 +159,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell > .sidebar {
             display: none !important;
-            position: absolute !important;
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
           }
 
           .dashboard-shell-mobile {
@@ -145,15 +174,16 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
             min-height: 68px !important;
-            padding-top: 10px !important;
-            padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 10px !important;
-            padding-left: var(--mobile-gutter-left) !important;
+            padding: 10px var(--mobile-gutter-right) !important;
             box-sizing: border-box !important;
           }
 
-          .dashboard-shell-mobile .mobile-nav-brand-logo {
+          .dashboard-shell-mobile .mobile-nav-brand-logo,
+          .dashboard-shell-mobile .mobile-nav-bar-actions {
             margin: 0 !important;
+          }
+
+          .dashboard-shell-mobile .mobile-nav-brand-logo {
             min-width: 0 !important;
             gap: 9px !important;
           }
@@ -168,11 +198,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             font-size: 19px !important;
             font-weight: 600 !important;
             letter-spacing: -0.025em !important;
-          }
-
-          .dashboard-shell-mobile .mobile-nav-bar-actions {
-            margin: 0 !important;
-            flex: 0 0 auto !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-menu-btn {
@@ -191,12 +216,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             max-width: none !important;
             min-width: 0 !important;
             margin: 0 !important;
-            margin-left: 0 !important;
-            padding-top: 14px !important;
-            padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 32px !important;
-            padding-left: var(--mobile-gutter-left) !important;
-            translate: none !important;
+            padding: 14px var(--mobile-gutter-right) 32px var(--mobile-gutter-left) !important;
             transform: none !important;
           }
 
@@ -237,8 +257,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             gap: 14px !important;
-            translate: none !important;
-            transform: none !important;
           }
 
           .dashboard-shell .everitt-cmd-trigger {
@@ -249,24 +267,12 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             border-radius: 13px !important;
             font-size: 15px !important;
           }
-
-          .dashboard-shell .today-page,
-          .dashboard-shell .dashboard-home {
-            width: 100% !important;
-            max-width: none !important;
-            min-width: 0 !important;
-            margin-inline: 0 !important;
-            gap: 14px !important;
-            translate: none !important;
-            transform: none !important;
-          }
         }
 
-        @media (min-width: 720px) and (max-width: 1100px) and (pointer: coarse),
-          (min-width: 720px) and (max-width: 1100px) and (hover: none) {
+        @media (min-width: 720px) and (max-width: 900px) {
           .dashboard-shell {
-            --mobile-gutter-left: max(48px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(48px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(36px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(36px, env(safe-area-inset-right));
           }
         }
       `}</style>
