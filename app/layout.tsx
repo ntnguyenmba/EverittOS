@@ -46,6 +46,7 @@ import './everitt-visual-system.css';
 import './final-layout-guard.css';
 import './jobs-visual-final.css';
 import './jobs-actions-spacing-fix.css';
+import './unified-record-cards.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
