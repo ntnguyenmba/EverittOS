@@ -174,7 +174,13 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
       {message ? <p className="muted">{message}</p> : null}
       {loading ? <p className="loading-state">Loading...</p> : null}
-      {!loading && contractors.length === 0 ? <p className="muted">No team members yet.</p> : null}
+      {!loading && contractors.length === 0 ? (
+        <p className="muted">
+          {canManage
+            ? 'No team members yet. Open Add team member above to add your first contractor or employee.'
+            : 'No team members have been added yet.'}
+        </p>
+      ) : null}
 
       {contractors.length > 0 ? (
         <div className="team-member-list">
