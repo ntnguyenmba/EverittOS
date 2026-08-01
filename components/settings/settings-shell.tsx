@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
-import { isNavLinkActive, settingsLinksForRole, type SettingsNavLink } from '@/lib/nav-access';
+import { isNavLinkActive, settingsLinksForRole } from '@/lib/nav-access';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canManageBilling, canViewTeam, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -30,14 +30,6 @@ const CLEAR_SETTINGS_LABELS: Record<string, string> = {
   '/settings/billing': 'Billing'
 };
 
-function addLinkOnce(links: SettingsNavLink[], link: SettingsNavLink, afterHref?: string): SettingsNavLink[] {
-  if (links.some((item) => item.href === link.href)) return links;
-  if (!afterHref) return [...links, link];
-  const index = links.findIndex((item) => item.href === afterHref);
-  if (index < 0) return [...links, link];
-  return [...links.slice(0, index + 1), link, ...links.slice(index + 1)];
-}
-
 export function SettingsShell({ plan = 'free', title, description, role: roleProp, children }: SettingsShellProps) {
   const pathname = usePathname();
   const normalizedPlan = normalizePlan(plan);
@@ -61,22 +53,21 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     void loadRole();
   }, [roleProp]);
 
-  const links = useMemo(() => {
-    let next = settingsLinksForRole(role, normalizedPlan).map((link) => ({
-      ...link,
-      label: CLEAR_SETTINGS_LABELS[link.href] || link.label
-    }));
+  const links = settingsLinksForRole(role, normalizedPlan).map((link) => ({
+    ...link,
+    label: CLEAR_SETTINGS_LABELS[link.href] || link.label
+  }));
 
-    if (canViewTeam(role)) {
-      next = addLinkOnce(next, { href: '/settings/team', label: 'Team' }, '/settings');
-    }
+  if (canViewTeam(role) && !links.some((link) => link.href === '/settings/team')) {
+    const organizationIndex = links.findIndex((link) => link.href === '/settings');
+    const teamLink = { href: '/settings/team', label: 'Team' };
+    if (organizationIndex >= 0) links.splice(organizationIndex + 1, 0, teamLink);
+    else links.push(teamLink);
+  }
 
-    if (canManageBilling(role)) {
-      next = addLinkOnce(next, { href: '/settings/billing', label: 'Billing' }, '/settings/team');
-    }
-
-    return next;
-  }, [normalizedPlan, role]);
+  if (canManageBilling(role) && !links.some((link) => link.href === '/settings/billing')) {
+    links.push({ href: '/settings/billing', label: 'Billing' });
+  }
 
   const showBillingShortcut = canManageBilling(role) && pathname !== '/settings/billing';
 
