@@ -25,57 +25,78 @@ const VALID_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'a
 const copy = {
   en: {
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
-    collected: 'Collected', balanceDue: 'Balance Due', cash: 'Cash', jobsToday: "Today's Jobs", jobsWeek: 'Jobs This Week',
-    jobsMonth: 'Jobs This Month', jobsYear: 'Jobs This Year', jobsAllTime: 'All-Time Jobs',
-    financialDetails: 'Financial Details', revenue: 'Revenue', costs: 'Costs', profit: 'Profit', priorities: "Today's Priorities",
-    expectedRevenue: 'Expected Revenue', scheduledRevenue: 'Scheduled Revenue', contractorCost: 'Contractor Cost',
-    contractorsPaid: 'Contractors Paid', expenses: 'Expenses', expectedProfit: 'Expected Profit', scheduledProfit: 'Scheduled Profit',
-    scheduledLabor: 'Scheduled Labor', scheduledExpenses: 'Scheduled Expenses', recurringJobs: 'Recurring Jobs', oneTimeJobs: 'One-Time Jobs',
-    unpaidInvoices: 'unpaid invoices', overdueInvoices: 'overdue invoices', recurringVisits: 'recurring visits scheduled', jobsInPeriod: 'jobs in this period',
-    noUrgentItems: 'Nothing urgent needs attention.',
-    collectedDesc: 'Customer payments received in this period.', balanceDesc: 'Customer balances tied to the selected period.',
-    cashDesc: 'Collected minus paid contractor costs and paid expenses.', jobsDesc: 'Non-cancelled jobs in the selected period.',
-    expectedRevenueDesc: 'Expected customer revenue without double counting.', scheduledRevenueDesc: 'Expected revenue from generated future visits.',
-    contractorCostDesc: 'All contractor labor tied to this period.', contractorsPaidDesc: 'Contractor payments marked paid in this period.',
-    expensesDesc: 'Non-contractor business expenses.', expectedProfitDesc: 'Expected revenue minus contractor cost and expenses.',
-    scheduledProfitDesc: 'Scheduled revenue minus scheduled labor and expenses.', scheduledLaborDesc: 'Expected contractor pay on generated active visits.',
-    scheduledExpensesDesc: 'Expected non-labor expenses on generated active visits.'
+    collected: 'Collected', customerBalanceDue: 'Customer balance due', cashAfterPaidCosts: 'Cash after paid costs',
+    jobsToday: "Today's Jobs", jobsWeek: 'Jobs This Week', jobsMonth: 'Jobs This Month', jobsYear: 'Jobs This Year', jobsAllTime: 'All-Time Jobs',
+    jobsDesc: 'Non-cancelled jobs whose working date falls in the selected period.',
+    financialDetails: 'Financial Details', contractorsPaid: 'Contractors paid', totalContractorCost: 'Total contractor cost',
+    expectedRevenue: 'Expected revenue', expectedProfit: 'Expected profit', businessExpenses: 'Business expenses',
+    collectedDesc: 'Customer payments received in this period.', currentBalances: 'All current customer balances.', periodBalances: 'Customer balances tied to this period.',
+    cashDesc: 'Collected minus contractor payments paid and expenses paid.', contractorsPaidDesc: 'Contractor payments actually marked paid in this period.',
+    contractorCostDesc: 'All contractor labor tied to this period, whether paid or still awaiting payment.',
+    expectedRevenueDesc: 'Expected customer revenue for this period, including invoiced and direct job payment activity without double counting.',
+    expectedProfitDesc: 'Expected revenue minus total contractor cost and business expenses.', expensesDesc: 'Non-contractor business expenses recorded in this period.',
+    scheduledRevenue: 'Scheduled revenue',
+    scheduledRevenueDesc: 'Expected client price on currently generated future visits only in the selected period. Not money already collected.',
+    expectedContractorExpense: 'Expected contractor expense',
+    expectedContractorExpenseDesc: 'Expected contractor pay on generated active visits in the selected period.',
+    expectedAdditionalExpenses: 'Expected additional expenses',
+    expectedAdditionalExpensesDesc: 'Expected non-labor expenses on generated active visits in the selected period.',
+    scheduledExpectedProfit: 'Scheduled expected profit',
+    scheduledExpectedProfitDesc: 'Scheduled revenue minus expected contractor pay and additional expenses.',
+    recurringJobs: 'Recurring visits',
+    recurringJobsDesc: 'Generated recurring occurrences in the selected period.',
+    oneTimeJobs: 'One-time jobs',
+    oneTimeJobsDesc: 'One-time jobs in the selected period.'
   },
   es: {
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
-    collected: 'Cobrado', balanceDue: 'Saldo pendiente', cash: 'Efectivo', jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana',
-    jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
-    financialDetails: 'Detalles financieros', revenue: 'Ingresos', costs: 'Costos', profit: 'Ganancia', priorities: 'Prioridades de hoy',
-    expectedRevenue: 'Ingresos esperados', scheduledRevenue: 'Ingresos programados', contractorCost: 'Costo de contratistas',
-    contractorsPaid: 'Contratistas pagados', expenses: 'Gastos', expectedProfit: 'Ganancia esperada', scheduledProfit: 'Ganancia programada',
-    scheduledLabor: 'Mano de obra programada', scheduledExpenses: 'Gastos programados', recurringJobs: 'Trabajos recurrentes', oneTimeJobs: 'Trabajos únicos',
-    unpaidInvoices: 'facturas sin pagar', overdueInvoices: 'facturas vencidas', recurringVisits: 'visitas recurrentes programadas', jobsInPeriod: 'trabajos en este período',
-    noUrgentItems: 'Nada urgente necesita atención.',
-    collectedDesc: 'Pagos de clientes recibidos en este período.', balanceDesc: 'Saldos de clientes relacionados con el período seleccionado.',
-    cashDesc: 'Cobrado menos costos pagados a contratistas y gastos pagados.', jobsDesc: 'Trabajos no cancelados en el período seleccionado.',
-    expectedRevenueDesc: 'Ingresos esperados sin duplicar pagos.', scheduledRevenueDesc: 'Ingresos esperados de visitas futuras generadas.',
-    contractorCostDesc: 'Toda la mano de obra de contratistas del período.', contractorsPaidDesc: 'Pagos a contratistas marcados como pagados.',
-    expensesDesc: 'Gastos del negocio no relacionados con contratistas.', expectedProfitDesc: 'Ingresos esperados menos costos y gastos.',
-    scheduledProfitDesc: 'Ingresos programados menos mano de obra y gastos.', scheduledLaborDesc: 'Pago esperado a contratistas en visitas activas.',
-    scheduledExpensesDesc: 'Gastos no laborales esperados en visitas activas.'
+    collected: 'Cobrado', customerBalanceDue: 'Saldo pendiente del cliente', cashAfterPaidCosts: 'Efectivo después de costos pagados',
+    jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
+    jobsDesc: 'Trabajos no cancelados cuya fecha de trabajo pertenece al período seleccionado.',
+    financialDetails: 'Detalles financieros', contractorsPaid: 'Contratistas pagados', totalContractorCost: 'Costo total de contratistas',
+    expectedRevenue: 'Ingresos esperados', expectedProfit: 'Ganancia esperada', businessExpenses: 'Gastos del negocio',
+    collectedDesc: 'Pagos de clientes recibidos en este período.', currentBalances: 'Todos los saldos actuales de clientes.', periodBalances: 'Saldos de clientes relacionados con este período.',
+    cashDesc: 'Cobrado menos pagos a contratistas y gastos pagados.', contractorsPaidDesc: 'Pagos a contratistas marcados como pagados en este período.',
+    contractorCostDesc: 'Toda la mano de obra de contratistas asociada con este período, pagada o pendiente.',
+    expectedRevenueDesc: 'Ingresos esperados de clientes para este período sin duplicar facturas ni pagos directos.',
+    expectedProfitDesc: 'Ingresos esperados menos costo total de contratistas y gastos del negocio.', expensesDesc: 'Gastos del negocio no relacionados con contratistas registrados en este período.',
+    scheduledRevenue: 'Ingresos programados',
+    scheduledRevenueDesc: 'Precio esperado del cliente en visitas futuras generadas dentro del período seleccionado. No es dinero cobrado.',
+    expectedContractorExpense: 'Gasto esperado de contratista',
+    expectedContractorExpenseDesc: 'Pago esperado al contratista en visitas activas generadas del período.',
+    expectedAdditionalExpenses: 'Gastos adicionales esperados',
+    expectedAdditionalExpensesDesc: 'Gastos no laborales esperados en visitas activas generadas del período.',
+    scheduledExpectedProfit: 'Ganancia esperada programada',
+    scheduledExpectedProfitDesc: 'Ingresos programados menos pago esperado al contratista y gastos adicionales.',
+    recurringJobs: 'Visitas recurrentes',
+    recurringJobsDesc: 'Ocurrencias recurrentes generadas dentro del período seleccionado.',
+    oneTimeJobs: 'Trabajos únicos',
+    oneTimeJobsDesc: 'Trabajos únicos dentro del período seleccionado.'
   },
   vi: {
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
-    collected: 'Đã thu', balanceDue: 'Số dư còn nợ', cash: 'Tiền mặt', jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này',
-    jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
-    financialDetails: 'Chi tiết tài chính', revenue: 'Doanh thu', costs: 'Chi phí', profit: 'Lợi nhuận', priorities: 'Ưu tiên hôm nay',
-    expectedRevenue: 'Doanh thu dự kiến', scheduledRevenue: 'Doanh thu đã lên lịch', contractorCost: 'Chi phí nhà thầu',
-    contractorsPaid: 'Đã trả nhà thầu', expenses: 'Chi phí', expectedProfit: 'Lợi nhuận dự kiến', scheduledProfit: 'Lợi nhuận đã lên lịch',
-    scheduledLabor: 'Nhân công đã lên lịch', scheduledExpenses: 'Chi phí đã lên lịch', recurringJobs: 'Công việc định kỳ', oneTimeJobs: 'Công việc một lần',
-    unpaidInvoices: 'hóa đơn chưa thanh toán', overdueInvoices: 'hóa đơn quá hạn', recurringVisits: 'lịch định kỳ sắp tới', jobsInPeriod: 'công việc trong kỳ này',
-    noUrgentItems: 'Không có việc khẩn cấp cần chú ý.',
-    collectedDesc: 'Khoản thanh toán của khách hàng đã nhận trong kỳ.', balanceDesc: 'Số dư khách hàng trong khoảng thời gian đã chọn.',
-    cashDesc: 'Tiền đã thu trừ chi phí nhà thầu và chi phí đã trả.', jobsDesc: 'Công việc chưa hủy trong khoảng thời gian đã chọn.',
-    expectedRevenueDesc: 'Doanh thu dự kiến không tính trùng.', scheduledRevenueDesc: 'Doanh thu dự kiến từ các lần ghé thăm tương lai.',
-    contractorCostDesc: 'Toàn bộ chi phí lao động nhà thầu trong kỳ.', contractorsPaidDesc: 'Khoản trả nhà thầu đã được đánh dấu đã trả.',
-    expensesDesc: 'Chi phí kinh doanh không phải nhà thầu.', expectedProfitDesc: 'Doanh thu dự kiến trừ chi phí và tiền công.',
-    scheduledProfitDesc: 'Doanh thu đã lên lịch trừ nhân công và chi phí.', scheduledLaborDesc: 'Tiền công nhà thầu dự kiến trên các lần ghé thăm đang hoạt động.',
-    scheduledExpensesDesc: 'Chi phí ngoài lao động dự kiến trên các lần ghé thăm đang hoạt động.'
+    collected: 'Đã thu', customerBalanceDue: 'Số dư khách hàng còn nợ', cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả',
+    jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
+    jobsDesc: 'Các công việc chưa hủy có ngày thực hiện nằm trong khoảng thời gian đã chọn.',
+    financialDetails: 'Chi tiết tài chính', contractorsPaid: 'Đã trả nhà thầu', totalContractorCost: 'Tổng chi phí nhà thầu',
+    expectedRevenue: 'Doanh thu dự kiến', expectedProfit: 'Lợi nhuận dự kiến', businessExpenses: 'Chi phí kinh doanh',
+    collectedDesc: 'Khoản thanh toán của khách hàng đã nhận trong khoảng thời gian này.', currentBalances: 'Tất cả số dư hiện tại của khách hàng.', periodBalances: 'Số dư khách hàng liên quan đến khoảng thời gian này.',
+    cashDesc: 'Tiền đã thu trừ khoản đã trả cho nhà thầu và chi phí đã thanh toán.', contractorsPaidDesc: 'Khoản thanh toán cho nhà thầu đã được đánh dấu là đã trả trong khoảng thời gian này.',
+    contractorCostDesc: 'Toàn bộ chi phí lao động nhà thầu trong khoảng thời gian này, dù đã trả hay đang chờ thanh toán.',
+    expectedRevenueDesc: 'Doanh thu khách hàng dự kiến trong khoảng thời gian này, không tính trùng hóa đơn và thanh toán trực tiếp.',
+    expectedProfitDesc: 'Doanh thu dự kiến trừ tổng chi phí nhà thầu và chi phí kinh doanh.', expensesDesc: 'Chi phí kinh doanh không phải nhà thầu được ghi nhận trong khoảng thời gian này.',
+    scheduledRevenue: 'Doanh thu đã lên lịch',
+    scheduledRevenueDesc: 'Giá khách dự kiến trên các lần ghé thăm tương lai đã tạo trong khoảng thời gian đã chọn. Không phải tiền đã thu.',
+    expectedContractorExpense: 'Chi phí nhà thầu dự kiến',
+    expectedContractorExpenseDesc: 'Tiền công nhà thầu dự kiến trên các lần ghé thăm đang hoạt động trong kỳ.',
+    expectedAdditionalExpenses: 'Chi phí phát sinh dự kiến',
+    expectedAdditionalExpensesDesc: 'Chi phí ngoài lao động dự kiến trên các lần ghé thăm đang hoạt động trong kỳ.',
+    scheduledExpectedProfit: 'Lợi nhuận dự kiến đã lên lịch',
+    scheduledExpectedProfitDesc: 'Doanh thu đã lên lịch trừ tiền công nhà thầu và chi phí phát sinh dự kiến.',
+    recurringJobs: 'Lịch định kỳ',
+    recurringJobsDesc: 'Các lần định kỳ đã tạo trong khoảng thời gian đã chọn.',
+    oneTimeJobs: 'Công việc một lần',
+    oneTimeJobsDesc: 'Công việc một lần trong khoảng thời gian đã chọn.'
   }
 } as const;
 
@@ -83,32 +104,8 @@ type MetricItem = {
   label: string;
   value: string;
   href: string;
-  description: string;
-  tone?: 'default' | 'positive' | 'warning' | 'attention';
+  description?: string;
 };
-
-type MetricGroup = {
-  title: string;
-  items: MetricItem[];
-};
-
-function MetricCard({ item, busy, primary = false }: { item: MetricItem; busy: boolean; primary?: boolean }) {
-  return (
-    <Link
-      href={item.href}
-      title={item.description}
-      aria-label={`${item.label}: ${item.value}. ${item.description}`}
-      className={`dashboard-revenue-metric${primary ? ' is-primary' : ''} dashboard-metric-tone-${item.tone || 'default'}`}
-      style={{ minHeight: primary ? 116 : 82, pointerEvents: busy ? 'none' : 'auto' }}
-    >
-      <span className="dashboard-revenue-metric-label">
-        {item.label}
-        <span aria-hidden="true" title={item.description} style={{ marginLeft: 6, opacity: 0.55 }}>?</span>
-      </span>
-      <strong className="dashboard-revenue-metric-value">{item.value}</strong>
-    </Link>
-  );
-}
 
 export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: DashboardRevenueSnapshotProps) {
   const { locale } = useTranslation();
@@ -162,9 +159,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   }, [range, loading]);
 
   const collected = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? 0;
-  const outstanding = range === 'all_time'
-    ? activeMetrics.stillOwed ?? 0
-    : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
+  const outstanding = range === 'all_time' ? activeMetrics.stillOwed ?? 0 : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
   const cashAfterPaidCosts = activeMetrics.cashAfterPaidCosts ?? activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? 0;
   const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
   const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
@@ -183,263 +178,104 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     { id: 'all_time', label: c.allTime }
   ];
 
-  const jobsLabel = range === 'today'
-    ? c.jobsToday
-    : range === 'week'
-      ? c.jobsWeek
-      : range === 'month'
-        ? c.jobsMonth
-        : range === 'year'
-          ? c.jobsYear
-          : c.jobsAllTime;
+  const jobsLabel =
+    range === 'today'
+      ? c.jobsToday
+      : range === 'week'
+        ? c.jobsWeek
+        : range === 'month'
+          ? c.jobsMonth
+          : range === 'year'
+            ? c.jobsYear
+            : c.jobsAllTime;
 
   const primaryItems: MetricItem[] = [
-    { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc, tone: 'positive' },
-    { label: c.balanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: c.balanceDesc, tone: outstanding > 0 ? 'warning' : 'default' },
-    { label: c.cash, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc, tone: cashAfterPaidCosts >= 0 ? 'positive' : 'attention' },
-    { label: jobsLabel, value: String(selectedJobs), href: '/jobs', description: c.jobsDesc, tone: selectedJobs === 0 ? 'attention' : 'default' }
+    { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc },
+    { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
+    { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
+    { label: jobsLabel, value: String(selectedJobs), href: '/jobs', description: c.jobsDesc }
   ];
 
-  const financialGroups: MetricGroup[] = [
+  const detailItems: MetricItem[] = [
+    { label: c.contractorsPaid, value: formatCurrency(contractorPaid), href: DASHBOARD_LINKS.contractorPay, description: c.contractorsPaidDesc },
+    { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
+    { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedRevenueDesc },
+    { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc },
+    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc },
     {
-      title: c.revenue,
-      items: [
-        { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedRevenueDesc },
-        { label: c.scheduledRevenue, value: formatCurrency(activeMetrics.scheduledRevenue ?? 0), href: '/schedule', description: c.scheduledRevenueDesc }
-      ]
+      label: c.scheduledRevenue,
+      value: formatCurrency(activeMetrics.scheduledRevenue ?? 0),
+      href: '/schedule',
+      description: c.scheduledRevenueDesc
     },
     {
-      title: c.costs,
-      items: [
-        { label: c.contractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
-        { label: c.contractorsPaid, value: formatCurrency(contractorPaid), href: DASHBOARD_LINKS.contractorPay, description: c.contractorsPaidDesc },
-        { label: c.expenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc },
-        { label: c.scheduledLabor, value: formatCurrency(activeMetrics.scheduledExpectedContractorExpense ?? 0), href: '/schedule', description: c.scheduledLaborDesc },
-        { label: c.scheduledExpenses, value: formatCurrency(activeMetrics.scheduledExpectedAdditionalExpenses ?? 0), href: '/schedule', description: c.scheduledExpensesDesc }
-      ]
+      label: c.expectedContractorExpense,
+      value: formatCurrency(activeMetrics.scheduledExpectedContractorExpense ?? 0),
+      href: '/schedule',
+      description: c.expectedContractorExpenseDesc
     },
     {
-      title: c.profit,
-      items: [
-        { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc, tone: expectedProfit >= 0 ? 'positive' : 'attention' },
-        { label: c.scheduledProfit, value: formatCurrency(activeMetrics.scheduledExpectedProfit ?? 0), href: '/schedule', description: c.scheduledProfitDesc, tone: (activeMetrics.scheduledExpectedProfit ?? 0) >= 0 ? 'positive' : 'attention' }
-      ]
+      label: c.expectedAdditionalExpenses,
+      value: formatCurrency(activeMetrics.scheduledExpectedAdditionalExpenses ?? 0),
+      href: '/schedule',
+      description: c.expectedAdditionalExpensesDesc
+    },
+    {
+      label: c.scheduledExpectedProfit,
+      value: formatCurrency(activeMetrics.scheduledExpectedProfit ?? 0),
+      href: '/schedule',
+      description: c.scheduledExpectedProfitDesc
+    },
+    {
+      label: c.recurringJobs,
+      value: String(activeMetrics.recurringOccurrenceCount ?? 0),
+      href: '/schedule',
+      description: c.recurringJobsDesc
+    },
+    {
+      label: c.oneTimeJobs,
+      value: String(activeMetrics.oneTimeJobCount ?? 0),
+      href: '/jobs',
+      description: c.oneTimeJobsDesc
     }
   ];
 
-  const priorities = [
-    activeMetrics.overdueInvoiceCount ? { value: activeMetrics.overdueInvoiceCount, label: c.overdueInvoices, href: '/invoices' } : null,
-    activeMetrics.outstandingInvoiceCount ? { value: activeMetrics.outstandingInvoiceCount, label: c.unpaidInvoices, href: '/invoices' } : null,
-    activeMetrics.recurringOccurrenceCount ? { value: activeMetrics.recurringOccurrenceCount, label: c.recurringVisits, href: '/schedule' } : null,
-    selectedJobs ? { value: selectedJobs, label: c.jobsInPeriod, href: '/jobs' } : null
-  ].filter(Boolean) as Array<{ value: number; label: string; href: string }>;
-
   return (
     <section aria-label="Dashboard" aria-busy={busy}>
-      <div className="dashboard-period-pills" role="group" aria-label={c.period}>
-        {rangeOptions.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={range === option.id ? 'active' : undefined}
-            disabled={busy}
-            aria-pressed={range === option.id}
-            onClick={() => setRange(option.id)}
-          >
-            {option.label}
-          </button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+        <label className="sr-only" htmlFor="dashboard-period">{c.period}</label>
+        <select id="dashboard-period" className="input" value={range} disabled={busy} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 140 }}>
+          {rangeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+        </select>
+      </div>
+
+      <div className="dashboard-revenue-grid" style={{ opacity: busy ? 0.58 : 1 }}>
+        {primaryItems.map((item) => (
+          <Link key={item.label} href={item.href} className="dashboard-revenue-metric is-primary" style={{ minHeight: 120, pointerEvents: busy ? 'none' : 'auto' }}>
+            <span className="dashboard-revenue-metric-label">{item.label}</span>
+            <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+            {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}
+          </Link>
         ))}
       </div>
 
-      <div className="dashboard-revenue-grid dashboard-primary-grid" style={{ opacity: busy ? 0.58 : 1 }}>
-        {primaryItems.map((item) => <MetricCard key={item.label} item={item} busy={busy} primary />)}
-      </div>
-
-      <section className="dashboard-priorities" aria-labelledby="dashboard-priorities-title">
-        <div className="dashboard-section-heading">
-          <div>
-            <span className="dashboard-section-kicker">Operations</span>
-            <h3 id="dashboard-priorities-title">{c.priorities}</h3>
-          </div>
-        </div>
-        {priorities.length ? (
-          <div className="dashboard-priority-list">
-            {priorities.map((item) => (
-              <Link key={`${item.label}-${item.value}`} href={item.href} className="dashboard-priority-row">
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="muted" style={{ margin: 0 }}>{c.noUrgentItems}</p>
-        )}
-      </section>
-
       <div style={{ marginTop: 18 }}>
-        <button
-          type="button"
-          className="button secondary"
-          disabled={busy}
-          aria-expanded={showFinancialDetails}
-          onClick={() => setShowFinancialDetails((current) => !current)}
-        >
+        <button type="button" className="button secondary" disabled={busy} aria-expanded={showFinancialDetails} onClick={() => setShowFinancialDetails((current) => !current)}>
           {c.financialDetails}
         </button>
       </div>
 
       {showFinancialDetails ? (
-        <div className="dashboard-financial-groups" style={{ opacity: busy ? 0.58 : 1 }}>
-          {financialGroups.map((group) => (
-            <section key={group.title} className="dashboard-financial-group" aria-label={group.title}>
-              <h3>{group.title}</h3>
-              <div className="dashboard-financial-list">
-                {group.items.map((item) => <MetricCard key={item.label} item={item} busy={busy} />)}
-              </div>
-            </section>
+        <div className="dashboard-revenue-grid" style={{ marginTop: 14, opacity: busy ? 0.58 : 1 }}>
+          {detailItems.map((item) => (
+            <Link key={item.label} href={item.href} className="dashboard-revenue-metric" style={{ minHeight: 100, pointerEvents: busy ? 'none' : 'auto' }}>
+              <span className="dashboard-revenue-metric-label">{item.label}</span>
+              <strong className="dashboard-revenue-metric-value">{item.value}</strong>
+              {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}
+            </Link>
           ))}
-          <section className="dashboard-financial-group" aria-label="Business snapshot">
-            <h3>Business Snapshot</h3>
-            <div className="dashboard-financial-list">
-              <MetricCard item={{ label: c.recurringJobs, value: String(activeMetrics.recurringOccurrenceCount ?? 0), href: '/schedule', description: c.recurringVisits }} busy={busy} />
-              <MetricCard item={{ label: c.oneTimeJobs, value: String(activeMetrics.oneTimeJobCount ?? 0), href: '/jobs', description: c.jobsInPeriod }} busy={busy} />
-            </div>
-          </section>
         </div>
       ) : null}
-
-      <style jsx global>{`
-        .dashboard-period-pills {
-          display: flex;
-          width: fit-content;
-          max-width: 100%;
-          margin: 0 0 16px auto;
-          padding: 4px;
-          gap: 3px;
-          overflow-x: auto;
-          border: 1px solid rgba(43, 54, 62, 0.12);
-          border-radius: 999px;
-          background: rgba(255,255,255,0.68);
-          backdrop-filter: blur(10px);
-        }
-        .dashboard-period-pills button {
-          min-height: 34px;
-          padding: 6px 13px;
-          border: 0;
-          border-radius: 999px;
-          background: transparent;
-          color: var(--text-secondary);
-          font-size: 13px;
-          font-weight: 600;
-          white-space: nowrap;
-          cursor: pointer;
-        }
-        .dashboard-period-pills button.active {
-          background: var(--navy-primary);
-          color: var(--text-on-dark);
-          box-shadow: 0 3px 12px rgba(35, 48, 61, 0.16);
-        }
-        .dashboard-primary-grid .dashboard-revenue-metric-value {
-          font-size: clamp(30px, 4vw, 42px);
-        }
-        .dashboard-revenue-metric {
-          position: relative;
-          overflow: hidden;
-        }
-        .dashboard-revenue-metric::before {
-          content: '';
-          position: absolute;
-          inset: 0 auto 0 0;
-          width: 3px;
-          background: transparent;
-        }
-        .dashboard-metric-tone-positive::before { background: rgba(74, 99, 84, 0.72); }
-        .dashboard-metric-tone-warning::before { background: rgba(151, 112, 52, 0.72); }
-        .dashboard-metric-tone-attention::before { background: rgba(143, 72, 63, 0.72); }
-        .dashboard-priorities {
-          margin-top: 18px;
-          padding: 20px;
-          border: 1px solid rgba(43, 54, 62, 0.12);
-          border-radius: 18px;
-          background: rgba(255,255,255,0.78);
-          backdrop-filter: blur(10px);
-        }
-        .dashboard-section-heading h3,
-        .dashboard-financial-group h3 {
-          margin: 0;
-          font-family: var(--font-display, Georgia, serif);
-          font-size: 22px;
-          font-weight: 500;
-        }
-        .dashboard-section-kicker {
-          display: block;
-          margin-bottom: 3px;
-          color: var(--text-secondary);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-        }
-        .dashboard-priority-list {
-          display: grid;
-          margin-top: 14px;
-          border-top: 1px solid var(--line);
-        }
-        .dashboard-priority-row {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 12px;
-          min-height: 48px;
-          border-bottom: 1px solid var(--line);
-        }
-        .dashboard-priority-row strong {
-          min-width: 34px;
-          font-size: 20px;
-          color: var(--text);
-        }
-        .dashboard-priority-row span:last-child { color: var(--muted); }
-        .dashboard-financial-groups {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-          margin-top: 14px;
-        }
-        .dashboard-financial-group {
-          padding: 16px;
-          border: 1px solid rgba(43, 54, 62, 0.12);
-          border-radius: 16px;
-          background: rgba(255,255,255,0.72);
-          backdrop-filter: blur(10px);
-        }
-        .dashboard-financial-list {
-          display: grid;
-          gap: 8px;
-          margin-top: 12px;
-        }
-        .dashboard-financial-list .dashboard-revenue-metric {
-          min-height: 76px !important;
-          padding: 13px 14px;
-          box-shadow: none;
-          background: rgba(255,255,255,0.68);
-        }
-        .dashboard-financial-list .dashboard-revenue-metric-value {
-          font-size: 25px;
-        }
-        @media (max-width: 900px) {
-          .dashboard-financial-groups { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 620px) {
-          .dashboard-period-pills {
-            width: 100%;
-            margin-left: 0;
-          }
-          .dashboard-period-pills button { flex: 1 0 auto; }
-          .dashboard-financial-groups { grid-template-columns: 1fr; }
-          .dashboard-priorities { padding: 16px; }
-        }
-      `}</style>
     </section>
   );
 }
