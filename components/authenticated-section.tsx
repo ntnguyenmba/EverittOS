@@ -9,7 +9,7 @@ type AuthenticatedSectionProps = {
   className?: string;
 };
 
-/** Shared authenticated portal surface with a restrained Everitt property backdrop. */
+/** Shared authenticated portal surface using the same Everitt background as the main app. */
 export function AuthenticatedSection({ role, children, className }: AuthenticatedSectionProps) {
   return (
     <main className={className ? `section authenticated-portal ${className}` : 'section authenticated-portal'}>
@@ -61,20 +61,19 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           z-index: 2;
           width: min(1200px, calc(100% - 48px));
           padding: clamp(18px, 3vw, 34px);
-          border: 1px solid rgba(255, 255, 255, 0.92);
-          border-radius: 24px;
-          background: rgba(247, 250, 252, 0.95);
-          box-shadow: 0 24px 70px rgba(28, 48, 63, 0.2);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          background: transparent;
         }
 
         .authenticated-portal-container :global(.card),
         .authenticated-portal-container :global(.panel),
-        .authenticated-portal-container :global(.stat) {
-          background: rgba(255, 255, 255, 0.99);
+        .authenticated-portal-container :global(.stat),
+        .authenticated-portal-container :global(.contractor-job-card),
+        .authenticated-portal-container :global(.client-job-card) {
+          background: rgba(255, 255, 255, 0.97);
           border-color: rgba(37, 54, 74, 0.13);
-          box-shadow: 0 1px 3px rgba(37, 54, 74, 0.08), 0 8px 24px rgba(37, 54, 74, 0.045);
+          box-shadow: 0 1px 3px rgba(37, 54, 74, 0.08), 0 8px 24px rgba(37, 54, 74, 0.055);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
         }
 
         .authenticated-portal-container :global(h1),
@@ -103,15 +102,16 @@ export function AuthenticatedSection({ role, children, className }: Authenticate
           .authenticated-portal-container {
             width: min(100% - 20px, 1200px);
             padding: 14px;
-            border-radius: 18px;
-            background: rgba(248, 250, 252, 0.965);
-            backdrop-filter: blur(7px);
-            -webkit-backdrop-filter: blur(7px);
+            background: transparent;
           }
         }
 
         @media (prefers-reduced-transparency: reduce) {
-          .authenticated-portal-container {
+          .authenticated-portal-container :global(.card),
+          .authenticated-portal-container :global(.panel),
+          .authenticated-portal-container :global(.stat),
+          .authenticated-portal-container :global(.contractor-job-card),
+          .authenticated-portal-container :global(.client-job-card) {
             background: rgba(247, 250, 252, 0.985);
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
