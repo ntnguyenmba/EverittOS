@@ -19,6 +19,7 @@ type ClientJob = {
   status: string | null;
   customer_name: string | null;
   address: string | null;
+  revenue_amount: number | null;
   scheduled_start: string | null;
   scheduled_end: string | null;
   start_date: string | null;
@@ -79,6 +80,11 @@ function jobTime(job: ClientJob, locale: string) {
   return end?.time ? `${format(start.time)} – ${format(end.time)}` : format(start.time);
 }
 
+function formatMoney(value: number | null, locale: string) {
+  if (value == null || !Number.isFinite(Number(value))) return '';
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(Number(value));
+}
+
 export default function ClientPortalJobsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
@@ -122,7 +128,7 @@ export default function ClientPortalJobsPage() {
 
       const { data: jobRows } = await supabase
         .from('jobs')
-        .select('id, title, status, customer_name, address, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
+        .select('id, title, status, customer_name, address, revenue_amount, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
         .in('id', jobIds);
 
       setJobs((jobRows || []) as ClientJob[]);
@@ -155,6 +161,7 @@ export default function ClientPortalJobsPage() {
     const date = jobDate(job, localeCode);
     const time = jobTime(job, localeCode);
     const location = cityState(job.address);
+    const amount = formatMoney(job.revenue_amount, localeCode);
     return (
       <article key={job.id} className="client-job-card" aria-label={job.title}>
         <div className="client-job-card-main">
@@ -163,6 +170,7 @@ export default function ClientPortalJobsPage() {
           {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
           {location ? <p className="client-job-secondary">{location}</p> : null}
           {job.status ? <p className="client-job-secondary">{job.status.replace(/_/g, ' ')}</p> : null}
+          {amount ? <p className="client-job-secondary"><strong>Service amount:</strong> {amount}</p> : null}
         </div>
         {(date || time) ? (
           <div className="client-job-schedule">
@@ -234,7 +242,7 @@ export default function ClientPortalJobsPage() {
         </div>
       ) : (
         <>
-          {renderSection('current-jobs', t('portal.contractor.todaysJobs'), groupedJobs.current, t('portal.contractor.nothingToday'), true)}
+          {renderSection('current-jobs', 'Current Jobs', groupedJobs.current, t('portal.contractor.nothingToday'), true)}
           {renderSection('upcoming-jobs', t('portal.contractor.upcomingJobs'), groupedJobs.upcoming, t('portal.contractor.noUpcoming'))}
           {renderSection('past-jobs', t('portal.contractor.pastJobs'), groupedJobs.past, t('portal.contractor.noCompleted'))}
         </>
