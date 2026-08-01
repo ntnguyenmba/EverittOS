@@ -96,6 +96,81 @@
   display: block;
 }
 
+.contractor-dashboard #history .table-wrap {
+  overflow: visible !important;
+}
+
+.contractor-dashboard #history .data-table,
+.contractor-dashboard #history .data-table tbody {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.contractor-dashboard #history .data-table thead {
+  display: none;
+}
+
+.contractor-dashboard #history .data-table tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(110px, auto);
+  gap: 10px 18px;
+  padding: 16px 18px;
+  border: 1px solid #dbe5e8;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(35, 52, 63, 0.05);
+}
+
+.contractor-dashboard #history .data-table td {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  color: #233845;
+}
+
+.contractor-dashboard #history .data-table td::before {
+  color: #71838d;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.contractor-dashboard #history .data-table td:nth-child(1)::before {
+  content: 'Job';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(2)::before {
+  content: 'Customer';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(3)::before {
+  content: 'Work date';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(4)::before {
+  content: 'Earned';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(5)::before {
+  content: 'Status';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(6)::before {
+  content: 'Paid date';
+}
+
+.contractor-dashboard #history .data-table td:nth-child(1) {
+  font-weight: 700;
+}
+
+.contractor-dashboard #history .data-table td:nth-child(4) {
+  font-weight: 700;
+}
+
 .client-job-card-list {
   display: grid;
   gap: 14px;
@@ -177,5 +252,16 @@
 
   .client-job-card-list {
     gap: 12px;
+  }
+
+  .contractor-dashboard #history .data-table tr {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    padding: 16px;
+  }
+
+  .contractor-dashboard #history .data-table td:nth-child(1),
+  .contractor-dashboard #history .data-table td:nth-child(2) {
+    grid-column: 1 / -1;
   }
 }
