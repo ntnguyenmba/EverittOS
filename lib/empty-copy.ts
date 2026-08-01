@@ -2,34 +2,34 @@
 export const EMPTY_COPY = {
   workers: {
     title: 'No team members yet',
-    description: 'Invite teammates so you can assign jobs and track labor.'
+    description: 'Add your first contractor or employee, then assign them to jobs from the schedule.'
   },
   customers: {
     title: 'No customers yet',
-    description: 'Add a customer to schedule work and send invoices.'
+    description: 'Add your first customer to create jobs, schedule visits, and keep their history in one place.'
   },
   jobs: {
     title: 'No jobs yet',
-    description: 'Create a job with a date and time to build your schedule.'
+    description: 'Create your first job with a customer, date, and time so it appears on the schedule.'
   },
   schedule: {
     title: 'Nothing scheduled',
-    description: 'Scheduled visits will show here by day and time.'
+    description: 'Create or schedule a job and its visit will appear here by date and time.'
   },
   activity: {
     title: 'No activity yet',
-    description: 'Job updates, assignments, and payments will appear here.'
+    description: 'Job updates, assignments, customer payments, and team changes will appear here.'
   },
   notifications: {
-    title: 'No notifications yet',
-    description: 'Assignments, invites, and billing updates will appear here.'
+    title: 'You are all caught up',
+    description: 'New assignments, invitations, job updates, and billing notices will appear here.'
   },
   workflows: {
     title: 'No workflows yet',
-    description: 'Create a checklist when you want the same steps on every job.'
+    description: 'Create a reusable checklist when you want the same steps followed on every job.'
   },
   photos: {
     title: 'No photos yet',
-    description: 'Upload before and after photos to document completed work.'
+    description: 'Open a job and upload before and after photos to document the work.'
   }
 } as const;
