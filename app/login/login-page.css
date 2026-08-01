@@ -92,6 +92,14 @@
     border-radius: 20px;
   }
 
+  .login-origin-story,
+  .auth-tech-card:has(.login-origin-story) .auth-card-heading,
+  .auth-tech-card:has(.login-origin-story) .auth-methods-note,
+  .auth-tech-card:has(.login-origin-story) .auth-links,
+  .auth-tech-card:has(.login-origin-story) .auth-legal-note {
+    text-align: center;
+  }
+
   .login-origin-story {
     padding-bottom: 17px;
     margin-bottom: 17px;
@@ -105,9 +113,21 @@
     font-size: 14px;
   }
 
+  .login-origin-actions {
+    justify-content: center;
+  }
+
   .auth-tech-card:has(.login-origin-story) .auth-card-heading {
     padding-bottom: 16px;
     margin-bottom: 16px;
+  }
+
+  .auth-tech-card:has(.login-origin-story) .auth-form,
+  .auth-tech-card:has(.login-origin-story) .auth-field,
+  .auth-tech-card:has(.login-origin-story) .password-field,
+  .auth-tech-card:has(.login-origin-story) .auth-field label,
+  .auth-tech-card:has(.login-origin-story) .password-field label {
+    text-align: left;
   }
 }
 
