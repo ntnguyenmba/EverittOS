@@ -5,6 +5,7 @@ import {
   getEffectiveJobSchedule,
   normalizeJobStatus
 } from '@/lib/worker-assignment';
+import { normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 
 export const JOB_LIST_COLUMNS =
   'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, start_date, due_date, scheduled_start, scheduled_end, timezone, revenue_amount';
@@ -178,6 +179,14 @@ async function enrichRowsWithAssignments(
   });
 }
 
+function normalizeJobListSchedule(job: JobListRow): JobListRow {
+  return {
+    ...job,
+    scheduled_start: normalizeJobScheduleTimestamp(job.scheduled_start),
+    scheduled_end: normalizeJobScheduleTimestamp(job.scheduled_end)
+  };
+}
+
 export async function countOrganizationJobs(
   supabase: SupabaseClient,
   organizationId: string,
@@ -261,7 +270,7 @@ export async function listWorkspaceJobs(
     rows = rows.filter((job) => String(job.status || '').toLowerCase() === 'completed' && !String(job.completed_at || '').trim());
   }
 
-  return { jobs: rows, error: null };
+  return { jobs: rows.map(normalizeJobListSchedule), error: null };
 }
 
 export function resolveWorkspaceRole(
