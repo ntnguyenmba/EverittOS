@@ -108,6 +108,11 @@
   margin-bottom: 2px !important;
 }
 
+/* Contractor and client portals use the shared slide-out menu only. */
+.contractor-dash-nav {
+  display: none !important;
+}
+
 /* Client portal */
 .client-job-card-list {
   display: grid !important;
