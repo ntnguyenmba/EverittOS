@@ -77,20 +77,13 @@
   border-top: 1px solid rgba(37, 54, 74, 0.09) !important;
 }
 
-/* Team members: target the real member-row variants only. */
-.team-members-list,
-.team-member-list,
-.team-list {
+/* Team members: explicit stable classes from app/people/page.tsx. */
+.team-member-list {
   display: grid !important;
   gap: 12px !important;
 }
 
-.team-member-row,
-.team-members-list > .list-row,
-.team-member-list > .list-row,
-.team-list > .list-row,
-[data-team-member],
-section[aria-labelledby='team-members-heading'] .list-row {
+.team-member-card {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -103,35 +96,13 @@ section[aria-labelledby='team-members-heading'] .list-row {
   border-radius: 16px !important;
   background: rgba(255, 255, 255, 0.94) !important;
   box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
-.team-member-row p,
-.team-members-list > .list-row p,
-.team-member-list > .list-row p,
-.team-list > .list-row p,
-[data-team-member] p,
-section[aria-labelledby='team-members-heading'] .list-row p {
+.team-member-card p {
   margin-top: 0 !important;
   margin-bottom: 2px !important;
-}
-
-/* Fallback for the current Team page structure: only direct member rows after the Team members heading block. */
-.team-management-panel ~ section .list-row,
-.team-management-panel ~ div .list-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  margin: 0 0 12px !important;
-  padding: 18px 20px !important;
-  border: 1px solid rgba(37, 54, 74, 0.12) !important;
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
 }
 
 /* Client portal remains as compact white cards. */
@@ -200,26 +171,12 @@ section[aria-labelledby='team-members-heading'] .list-row p {
 @media (max-width: 680px) {
   .customer-card-row,
   .client-job-card,
-  .team-member-row,
-  .team-members-list > .list-row,
-  .team-member-list > .list-row,
-  .team-list > .list-row,
-  [data-team-member],
-  section[aria-labelledby='team-members-heading'] .list-row,
-  .team-management-panel ~ section .list-row,
-  .team-management-panel ~ div .list-row {
+  .team-member-card {
     align-items: flex-start !important;
   }
 
   .client-job-card,
-  .team-member-row,
-  .team-members-list > .list-row,
-  .team-member-list > .list-row,
-  .team-list > .list-row,
-  [data-team-member],
-  section[aria-labelledby='team-members-heading'] .list-row,
-  .team-management-panel ~ section .list-row,
-  .team-management-panel ~ div .list-row {
+  .team-member-card {
     flex-direction: column !important;
     gap: 12px !important;
   }
