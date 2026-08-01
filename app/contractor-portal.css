@@ -96,6 +96,14 @@
   display: block;
 }
 
+.contractor-dashboard #history .contractor-job-card {
+  display: none !important;
+}
+
+.contractor-dashboard #history > div:not(.table-wrap) {
+  margin-top: 0 !important;
+}
+
 .contractor-dashboard #history .table-wrap {
   overflow: visible !important;
 }
