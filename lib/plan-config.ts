@@ -178,7 +178,7 @@ export const PLAN_TIER_ROWS: PlanTierRow[] = [
     contractorPortal: true,
     brandedReports: true,
     beforeAfterPhotos: true,
-    aiAccess: false,
+    aiAccess: true,
     aiUnlimited: false,
     apiAccess: true,
     prioritySupport: true,
