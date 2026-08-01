@@ -33,7 +33,7 @@ const loginCopy = {
     createAccount: 'Create account',
     startFree: 'Start free',
     storyTitle: 'Built from real work.',
-    storyBody: "We couldn't find software we actually wanted to use, so we built our own.",
+    storyBody: 'We built the software we always wanted to use.',
     storyClose: 'Today we use it every day. Now you can too.',
     selectedPlan: 'Selected plan:',
     continueSetup: 'Sign in to continue setup.',
