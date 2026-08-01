@@ -93,14 +93,14 @@
     table-layout: auto !important;
   }
 
-  .jobs-operations-table td.jobs-col-actions {
+  .jobs-operations-table td.jobs-col-actions,
+  .jobs-operations-table td.jobs-col-assigned,
+  .jobs-operations-table td.jobs-col-status {
     display: none !important;
   }
 
   .jobs-operations-table th:nth-child(4),
-  .jobs-operations-table td.jobs-col-status,
   .jobs-operations-table th:nth-child(3),
-  .jobs-operations-table td.jobs-col-assigned,
   .jobs-operations-table th:nth-child(2),
   .jobs-operations-table td.jobs-col-property,
   .jobs-operations-table th:first-child,
@@ -116,7 +116,30 @@
     padding-bottom: 0 !important;
   }
 
-  .jobs-col-assigned > span:not(.jobs-needs-worker) {
-    max-width: 100% !important;
+  .jobs-operations-row {
+    padding: 18px 20px !important;
+    gap: 14px !important;
+  }
+
+  .jobs-col-property {
+    margin-bottom: 2px !important;
+  }
+
+  .jobs-col-date {
+    padding-top: 2px !important;
+    border-top: 1px solid #e2e9ec !important;
+  }
+
+  .jobs-col-date::before,
+  .jobs-col-property::before {
+    display: none !important;
+  }
+
+  .jobs-col-date strong {
+    font-size: 1rem !important;
+  }
+
+  .jobs-row-time {
+    margin-top: 5px !important;
   }
 }
