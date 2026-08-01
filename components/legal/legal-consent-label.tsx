@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
+import { supportMailtoHref } from '@/lib/support';
 
 type LegalConsentLabelProps = {
   idPrefix?: string;
@@ -47,17 +48,37 @@ export function AuthContinuingLegalNote() {
   );
 }
 
-/** Secondary legal links for auth pages. */
+/** Store-review and legal links for public authentication pages. */
 export function AuthLegalFooterLinks() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const additionalCopy = {
+    en: { support: 'Support', accountDeletion: 'Account deletion' },
+    es: { support: 'Soporte', accountDeletion: 'Eliminar cuenta' },
+    vi: { support: 'Hỗ trợ', accountDeletion: 'Xóa tài khoản' }
+  };
+  const copy = additionalCopy[locale] || additionalCopy.en;
+  const links = [
+    { href: '/terms', label: t('legal.termsOfService') },
+    { href: '/privacy', label: t('legal.privacyPolicy') },
+    { href: '/cookies', label: t('legal.cookies') },
+    { href: '/security', label: t('legal.security') },
+    { href: supportMailtoHref(), label: copy.support },
+    { href: '/account-deletion', label: copy.accountDeletion }
+  ];
 
   return (
     <nav className="auth-legal-footer" aria-label={t('legal.footerNav')}>
-      <Link href="/cookies">{t('legal.cookies')}</Link>
-      <span className="auth-legal-footer-sep" aria-hidden="true">
-        ·
-      </span>
-      <Link href="/security">{t('legal.security')}</Link>
+      {links.map((link, index) => (
+        <span key={link.href}>
+          {index > 0 ? (
+            <span className="auth-legal-footer-sep" aria-hidden="true">
+              {' '}
+              ·{' '}
+            </span>
+          ) : null}
+          <Link href={link.href}>{link.label}</Link>
+        </span>
+      ))}
     </nav>
   );
 }
