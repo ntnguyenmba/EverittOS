@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
 import { ExportMenu } from '@/components/export-menu';
@@ -27,6 +27,8 @@ type ClientJob = {
   completed_at: string | null;
   created_at: string | null;
 };
+
+const INITIAL_VISIBLE_JOBS = 6;
 
 function cityState(address: string | null) {
   if (!address) return '';
@@ -96,6 +98,7 @@ export default function ClientPortalJobsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [exportError, setExportError] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -145,6 +148,11 @@ export default function ClientPortalJobsPage() {
 
     void load();
   }, [router, t]);
+
+  const visibleJobs = useMemo(
+    () => (showAll ? jobs : jobs.slice(0, INITIAL_VISIBLE_JOBS)),
+    [jobs, showAll]
+  );
 
   if (loading) {
     return (
@@ -197,29 +205,42 @@ export default function ClientPortalJobsPage() {
           <p>{message}</p>
         </div>
       ) : (
-        <div className="client-job-card-list">
-          {jobs.map((job) => {
-            const date = jobDate(job, localeCode);
-            const time = jobTime(job, localeCode);
-            const location = cityState(job.address);
-            return (
-              <Link key={job.id} href={clientPortalJobsPath(job.id)} className="client-job-card">
-                <div className="client-job-card-main">
-                  <p className="eyebrow">{t('portal.contractor.job')}</p>
-                  <h3>{job.title}</h3>
-                  {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
-                  {location ? <p className="client-job-secondary">{location}</p> : null}
-                </div>
-                {(date || time) ? (
-                  <div className="client-job-schedule">
-                    {date ? <strong>{date}</strong> : null}
-                    {time ? <span>{time}</span> : null}
+        <>
+          <div className="client-job-card-list">
+            {visibleJobs.map((job) => {
+              const date = jobDate(job, localeCode);
+              const time = jobTime(job, localeCode);
+              const location = cityState(job.address);
+              return (
+                <Link key={job.id} href={clientPortalJobsPath(job.id)} className="client-job-card">
+                  <div className="client-job-card-main">
+                    <p className="eyebrow">{t('portal.contractor.job')}</p>
+                    <h3>{job.title}</h3>
+                    {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
+                    {location ? <p className="client-job-secondary">{location}</p> : null}
                   </div>
-                ) : null}
-              </Link>
-            );
-          })}
-        </div>
+                  {(date || time) ? (
+                    <div className="client-job-schedule">
+                      {date ? <strong>{date}</strong> : null}
+                      {time ? <span>{time}</span> : null}
+                    </div>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+          {jobs.length > INITIAL_VISIBLE_JOBS ? (
+            <button
+              type="button"
+              className="btn"
+              style={{ marginTop: 16 }}
+              onClick={() => setShowAll((current) => !current)}
+              aria-expanded={showAll}
+            >
+              {showAll ? 'Show fewer jobs' : `Show all ${jobs.length} jobs`}
+            </button>
+          ) : null}
+        </>
       )}
     </AuthenticatedSection>
   );
