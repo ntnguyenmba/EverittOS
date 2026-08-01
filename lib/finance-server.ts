@@ -101,7 +101,7 @@ export function computeJobProfitability(input: {
       : calculateOutstandingBalance(expectedAmount, collectedAmount);
   const paymentStatus = calculateJobPaymentStatus(expectedAmount, collectedAmount);
   const expectedProfit = expectedAmount - totalExpenses;
-  const collectedProfit = collectedAmount - totalExpenses;
+  const collectedProfit = Math.max(0, collectedAmount - totalExpenses);
   const revenueBasis = collectedAmount > 0 ? collectedAmount : expectedAmount;
   const estimatedProfit = collectedAmount > 0 ? collectedProfit : expectedProfit;
 
@@ -232,7 +232,7 @@ export async function fetchJobProfitability(
       ? Math.max(0, expectedAmount - collectedAmount)
       : calculateOutstandingBalance(expectedAmount, collectedAmount);
   const expectedProfit = expectedAmount - totalExpenses;
-  const collectedProfit = collectedAmount - totalExpenses;
+  const collectedProfit = Math.max(0, collectedAmount - totalExpenses);
 
   return {
     ...computeJobProfitability({
