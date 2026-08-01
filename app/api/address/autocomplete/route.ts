@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 const PHOTON_ENDPOINT = 'https://photon.komoot.io/api/';
 const MIN_QUERY_LENGTH = 3;
-const LIMIT = 8;
+const DISPLAY_LIMIT = 8;
+const PROVIDER_LIMIT = 24;
 
 /**
  * Server-side Photon (OpenStreetMap) autocomplete proxy.
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
   const cached = getCachedAddressSuggestions(q);
   if (cached) {
     return NextResponse.json({
-      suggestions: filterAddressSuggestionsForQuery(cached, q).slice(0, LIMIT),
+      suggestions: filterAddressSuggestionsForQuery(cached, q).slice(0, DISPLAY_LIMIT),
       attribution: 'Address search © OpenStreetMap contributors, © Komoot Photon',
       provider: 'photon',
       cached: true
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
   try {
     const photonUrl = new URL(PHOTON_ENDPOINT);
     photonUrl.searchParams.set('q', q);
-    photonUrl.searchParams.set('limit', String(LIMIT));
+    photonUrl.searchParams.set('limit', String(PROVIDER_LIMIT));
     photonUrl.searchParams.set('lang', 'en');
 
     const response = await fetch(photonUrl.toString(), {
@@ -75,7 +76,7 @@ export async function GET(request: Request) {
     const payload = (await response.json()) as { features?: PhotonFeature[] };
     const parsedSuggestions = parsePhotonFeatures(payload.features || []);
     setCachedAddressSuggestions(q, parsedSuggestions);
-    const suggestions = filterAddressSuggestionsForQuery(parsedSuggestions, q).slice(0, LIMIT);
+    const suggestions = filterAddressSuggestionsForQuery(parsedSuggestions, q).slice(0, DISPLAY_LIMIT);
 
     return NextResponse.json({
       suggestions,
