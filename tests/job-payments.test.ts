@@ -49,6 +49,25 @@ describe('direct job payments', () => {
     assert.equal(result.expectedProfit, 825);
   });
 
+  it('does not show negative paid profit before any customer payment', () => {
+    const result = computeJobProfitability({
+      hasInvoice: false,
+      invoiceTotal: 0,
+      manualRevenue: 105,
+      collectedAmount: 0,
+      laborCost: 90,
+      materialCost: 0,
+      otherExpenses: 0,
+      payments: []
+    });
+
+    assert.equal(result.totalExpenses, 90);
+    assert.equal(result.expectedProfit, 15);
+    assert.equal(result.collectedProfit, 0);
+    assert.equal(result.outstanding, 105);
+    assert.equal(result.paymentStatus, 'unpaid');
+  });
+
   it('uses invoice total as expected amount when an invoice exists', () => {
     const expected = resolveExpectedJobAmount({
       manualRevenue: 800,
