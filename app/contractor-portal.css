@@ -52,8 +52,17 @@
   background: #fbfcfc;
 }
 
+.contractor-dashboard #earnings summary {
+  cursor: default !important;
+  pointer-events: none;
+}
+
 .contractor-dashboard #earnings summary .muted {
   display: none;
+}
+
+.contractor-dashboard #earnings:not([open]) > :not(summary) {
+  display: block;
 }
 
 .client-job-card-list {
