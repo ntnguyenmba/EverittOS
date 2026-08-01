@@ -27,6 +27,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
   const resolvedRole = workspacePlan?.role ?? normalizeRole(role);
   const normalizedRole = normalizeRole(resolvedRole);
   const showAi = !isClientRole(normalizedRole) && !isContractorRole(normalizedRole);
+  const showEmbeddedAskEveritt = className?.split(/\s+/).includes('jobs-shell-minimal') ?? false;
 
   return (
     <div className={className ? `dashboard-shell ${className}` : 'dashboard-shell'}>
@@ -41,7 +42,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       <main id="main-content" className="main">
         <AppPageTop role={resolvedRole} showBackButton={showBackButton} />
         <AppPageContent>
-          {showAi ? <AskEverittCommand plan={resolvedPlan} /> : null}
+          {showAi ? <AskEverittCommand plan={resolvedPlan} embedded={showEmbeddedAskEveritt} /> : null}
           {children}
         </AppPageContent>
         <AppFooter />
