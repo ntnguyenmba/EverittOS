@@ -10,21 +10,53 @@ import { PortalClientNav } from '@/components/portal/portal-client-nav';
 import { CLIENT_SETTINGS_PATH } from '@/lib/client-portal';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { clientPortalJobsPath, CLIENT_PORTAL_HOME } from '@/lib/portal-access';
-import { translatePortalJobStatus } from '@/lib/portal-status-i18n';
 import { isClientRole, normalizeRole } from '@/lib/roles';
+import { wallClockFromTimestamp } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 
 type ClientJob = {
   id: string;
   title: string;
   status: string | null;
+  customer_name: string | null;
+  address: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  start_date: string | null;
   due_date: string | null;
 };
+
+function cityState(address: string | null) {
+  if (!address) return '';
+  const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= 2) return parts.slice(-2).join(', ');
+  return address;
+}
+
+function jobDate(job: ClientJob, locale: string) {
+  const wall = wallClockFromTimestamp(job.scheduled_start);
+  const value = wall?.date || job.start_date || job.due_date;
+  if (!value) return '';
+  const parsed = new Date(`${value.slice(0, 10)}T12:00:00`);
+  return parsed.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function jobTime(job: ClientJob, locale: string) {
+  const start = wallClockFromTimestamp(job.scheduled_start);
+  const end = wallClockFromTimestamp(job.scheduled_end);
+  if (!start?.time) return '';
+  const format = (time: string) => {
+    const parsed = new Date(`2000-01-01T${time}:00`);
+    return parsed.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  };
+  return end?.time ? `${format(start.time)} – ${format(end.time)}` : format(start.time);
+}
 
 export default function ClientPortalJobsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const exportCopy = getExportCopy(locale);
+  const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
   const [jobs, setJobs] = useState<ClientJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -69,9 +101,9 @@ export default function ClientPortalJobsPage() {
 
       const { data: jobRows } = await supabase
         .from('jobs')
-        .select('id, title, status, due_date')
+        .select('id, title, status, customer_name, address, scheduled_start, scheduled_end, start_date, due_date')
         .in('id', jobIds)
-        .order('created_at', { ascending: false });
+        .order('scheduled_start', { ascending: true, nullsFirst: false });
 
       setJobs((jobRows || []) as ClientJob[]);
       setLoading(false);
@@ -91,7 +123,7 @@ export default function ClientPortalJobsPage() {
   }
 
   return (
-    <AuthenticatedSection role="client">
+    <AuthenticatedSection role="client" className="client-portal-jobs">
       <header style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
@@ -131,22 +163,29 @@ export default function ClientPortalJobsPage() {
           <p>{message}</p>
         </div>
       ) : (
-        jobs.map((job) => (
-          <article key={job.id} className="card" style={{ marginTop: 16 }}>
-            <div className="list-row">
-              <div>
-                <strong>{job.title}</strong>
-                <p className="muted">
-                  {translatePortalJobStatus(t, job.status)}
-                  {job.due_date ? ` · ${job.due_date}` : ''}
-                </p>
-              </div>
-              <Link className="btn btn-primary" href={clientPortalJobsPath(job.id)}>
-                {t('portal.client.openJob')}
+        <div className="client-job-card-list">
+          {jobs.map((job) => {
+            const date = jobDate(job, localeCode);
+            const time = jobTime(job, localeCode);
+            const location = cityState(job.address);
+            return (
+              <Link key={job.id} href={clientPortalJobsPath(job.id)} className="client-job-card">
+                <div className="client-job-card-main">
+                  <p className="eyebrow">{t('portal.contractor.job')}</p>
+                  <h3>{job.title}</h3>
+                  {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
+                  {location ? <p className="client-job-secondary">{location}</p> : null}
+                </div>
+                {(date || time) ? (
+                  <div className="client-job-schedule">
+                    {date ? <strong>{date}</strong> : null}
+                    {time ? <span>{time}</span> : null}
+                  </div>
+                ) : null}
               </Link>
-            </div>
-          </article>
-        ))
+            );
+          })}
+        </div>
       )}
     </AuthenticatedSection>
   );
