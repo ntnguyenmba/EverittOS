@@ -5,7 +5,7 @@ import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { OrgSwitcher } from '@/components/org-switcher';
 import { dashboardPathForRole } from '@/lib/dashboard-nav';
-import { isClientRole, normalizeRole } from '@/lib/roles';
+import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 type AppPageTopProps = {
   role?: string | null;
@@ -16,16 +16,19 @@ type AppPageTopProps = {
 export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   const normalizedRole = normalizeRole(role);
   const homeHref = dashboardPathForRole(normalizedRole);
+  const isFocusedPortal = isClientRole(normalizedRole) || isContractorRole(normalizedRole);
 
-  // Client portal pages keep focused navigation and never show workspace switching.
-  // Keep the language selector visible on every client-facing portal view so invited
-  // clients can change language without opening account settings first.
-  if (isClientRole(normalizedRole)) {
+  // Customer and contractor portals are focused one-page dashboards. They do not
+  // need workspace switching or a back button, but language remains easy to reach.
+  if (isFocusedPortal) {
     return (
       <div className="app-page-top app-page-top-branded">
         <BrandLogo href={homeHref} size={34} showName className="app-page-brand" />
         <div className="app-page-top-language">
-          <LanguageSwitcher id="client-portal-language" variant="compact" />
+          <LanguageSwitcher
+            id={isContractorRole(normalizedRole) ? 'contractor-portal-top-language' : 'client-portal-language'}
+            variant="compact"
+          />
         </div>
 
         <style jsx global>{`
