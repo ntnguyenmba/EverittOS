@@ -1,18 +1,4 @@
-/* Jobs uses the shared authenticated shell and only defines job-list presentation. */
-
-.jobs-shell-minimal,
-.jobs-shell-minimal .main,
-.jobs-shell-minimal .app-page-content,
-.jobs-shell-minimal .jobs-list-page,
-.jobs-shell-minimal .jobs-table-card,
-.jobs-shell-minimal .jobs-mobile-table-wrap,
-.jobs-shell-minimal .jobs-operations-table,
-.jobs-shell-minimal .jobs-operations-table thead,
-.jobs-shell-minimal .jobs-operations-table tbody,
-.jobs-shell-minimal .jobs-operations-table tr {
-  background: transparent !important;
-  background-color: transparent !important;
-}
+/* Jobs presentation only. The shared AppShell owns the page background, header and spacing. */
 
 .jobs-list-page {
   width: 100% !important;
@@ -21,25 +7,12 @@
 
 .jobs-list-page .page-header {
   min-height: auto !important;
-  margin: 0 0 16px !important;
+  margin: 0 0 14px !important;
 }
 
 .jobs-list-page .page-header h1 {
   margin: 0 !important;
   color: #1c2d37 !important;
-}
-
-.jobs-shell-minimal .everitt-cmd-trigger {
-  width: min(560px, 100%) !important;
-  min-height: 46px !important;
-  margin-bottom: 18px !important;
-  border: 1px solid rgba(37, 54, 74, 0.13) !important;
-  border-radius: 13px !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  color: #536571 !important;
-  box-shadow: 0 8px 24px rgba(37, 54, 74, 0.08) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .jobs-header-actions .btn:not(.btn-primary) {
@@ -55,11 +28,10 @@
 }
 
 .jobs-filter-tabs {
-  position: sticky;
-  top: 92px;
-  z-index: 8;
+  position: static !important;
   margin-bottom: 14px !important;
   border: 1px solid rgba(37, 54, 74, 0.13) !important;
+  border-radius: 16px !important;
   background: rgba(255, 255, 255, 0.94) !important;
   box-shadow: 0 8px 24px rgba(37, 54, 74, 0.06) !important;
   backdrop-filter: blur(12px);
@@ -82,6 +54,15 @@
   box-shadow: 0 1px 6px rgba(35, 62, 77, 0.1) !important;
 }
 
+.jobs-table-card,
+.jobs-mobile-table-wrap,
+.jobs-operations-table,
+.jobs-operations-table tbody,
+.jobs-operations-table tr {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 .jobs-table-card {
   overflow: visible !important;
   padding: 0 !important;
@@ -95,151 +76,146 @@
 }
 
 .jobs-operations-table {
+  display: block !important;
   width: 100% !important;
-  border-collapse: separate !important;
-  border-spacing: 0 10px !important;
+  border: 0 !important;
 }
 
 .jobs-operations-table thead {
-  position: sticky;
-  top: 150px;
-  z-index: 6;
+  display: none !important;
 }
 
-.jobs-operations-table th {
-  height: 42px !important;
-  padding: 0 18px !important;
-  border: 0 !important;
-  background: rgba(238, 243, 245, 0.96) !important;
-  color: #657985 !important;
-}
-
-.jobs-operations-table th:first-child {
-  border-radius: 12px 0 0 12px !important;
-}
-
-.jobs-operations-table th:last-child {
-  border-radius: 0 12px 12px 0 !important;
+.jobs-operations-table tbody {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px !important;
 }
 
 .jobs-operations-row {
-  filter: drop-shadow(0 8px 22px rgba(37, 54, 74, 0.06));
-  transition: filter 150ms ease, transform 150ms ease;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'job date'
+    'job time';
+  gap: 4px 24px !important;
+  min-height: 118px;
+  padding: 20px 22px !important;
+  border: 1px solid rgba(37, 54, 74, 0.13) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 10px 28px rgba(37, 54, 74, 0.08) !important;
+  transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
 .jobs-operations-row:hover,
 .jobs-operations-row:focus-visible {
-  filter: drop-shadow(0 12px 28px rgba(37, 54, 74, 0.1));
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(37, 54, 74, 0.12) !important;
   outline: none;
 }
 
-.jobs-operations-table td {
-  padding: 17px 18px !important;
-  border-top: 1px solid rgba(37, 54, 74, 0.13) !important;
-  border-bottom: 1px solid rgba(37, 54, 74, 0.13) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  color: #253741 !important;
-  vertical-align: middle !important;
-}
-
-.jobs-operations-table td:first-child {
-  position: relative;
-  border-left: 1px solid rgba(37, 54, 74, 0.13) !important;
-  border-radius: 15px 0 0 15px;
-}
-
+.jobs-operations-table td,
+.jobs-operations-table td:first-child,
 .jobs-operations-table td:last-child {
-  border-right: 1px solid rgba(37, 54, 74, 0.13) !important;
-  border-radius: 0 15px 15px 0;
+  display: block !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 
-.jobs-col-date strong,
+.jobs-col-property {
+  grid-area: job;
+  align-self: center;
+  min-width: 0;
+}
+
 .jobs-property-link {
+  display: block;
+  margin-bottom: 8px;
   color: #1f313b !important;
+  font-size: 1.03rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none !important;
 }
 
-.jobs-row-time,
-.jobs-secondary,
-.jobs-photo-count {
+.jobs-property-link:hover,
+.jobs-property-link:focus-visible {
+  color: #2d617f !important;
+}
+
+.jobs-col-property .jobs-secondary:first-of-type,
+.jobs-photo-count,
+.jobs-col-assigned,
+.jobs-col-status,
+.jobs-col-actions {
+  display: none !important;
+}
+
+.jobs-col-property .jobs-secondary {
+  display: block;
+  color: #6c7d88 !important;
+  font-size: 0.92rem;
+}
+
+.jobs-col-date {
+  grid-area: date;
+  align-self: end;
+  text-align: right;
+}
+
+.jobs-col-date strong {
+  display: block;
+  color: #263d4b !important;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.jobs-row-time {
+  grid-area: time;
+  align-self: start;
   color: #72838d !important;
+  font-size: 0.9rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
-.jobs-menu-trigger {
-  min-height: 38px !important;
-  border-color: rgba(37, 54, 74, 0.13) !important;
-  border-radius: 10px !important;
-  background: #ffffff !important;
-}
-
+.jobs-menu-trigger,
 .jobs-more-panel {
-  border-color: rgba(37, 54, 74, 0.13) !important;
-  background: #ffffff !important;
-  box-shadow: 0 18px 44px rgba(29, 46, 57, 0.16) !important;
+  display: none !important;
 }
 
-@media (max-width: 760px) {
-  .jobs-shell-minimal .everitt-cmd-trigger {
-    width: 100% !important;
-    margin-bottom: 14px !important;
-  }
-
-  .jobs-filter-tabs,
-  .jobs-operations-table thead {
-    position: static !important;
-  }
-
-  .jobs-operations-table {
-    border-spacing: 0 !important;
-  }
-
+@media (max-width: 900px) {
   .jobs-operations-table tbody {
-    display: grid !important;
-    gap: 12px !important;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .jobs-filter-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
   }
 
   .jobs-operations-row {
-    display: grid !important;
-    gap: 12px !important;
-    padding: 17px 18px !important;
-    border: 1px solid rgba(37, 54, 74, 0.13) !important;
-    border-radius: 16px !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    box-shadow: 0 8px 22px rgba(37, 54, 74, 0.06) !important;
-    filter: none !important;
-    transform: none !important;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'job'
+      'date'
+      'time';
+    gap: 8px !important;
+    min-height: 0;
+    padding: 18px !important;
   }
 
-  .jobs-operations-table td,
-  .jobs-operations-table td:first-child,
-  .jobs-operations-table td:last-child {
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-  }
-
-  .jobs-col-assigned,
-  .jobs-col-status,
-  .jobs-col-actions,
-  .jobs-photo-count,
-  .jobs-col-property .jobs-secondary:first-of-type {
-    display: none !important;
+  .jobs-col-date,
+  .jobs-row-time {
+    text-align: left;
   }
 
   .jobs-col-date {
     padding-top: 10px !important;
     border-top: 1px solid rgba(37, 54, 74, 0.1) !important;
-  }
-
-  .jobs-more-panel {
-    position: fixed !important;
-    left: 14px !important;
-    right: 14px !important;
-    top: auto !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    max-height: min(70vh, 520px);
-    overflow-y: auto;
-    border-radius: 18px !important;
   }
 }
