@@ -56,10 +56,6 @@ function isCancelled(job: ClientJob) {
   return ['cancelled', 'canceled'].includes(normalizedStatus(job));
 }
 
-function isActive(job: ClientJob) {
-  return ['in_progress', 'started'].includes(normalizedStatus(job));
-}
-
 function jobDate(job: ClientJob, locale: string) {
   const value = operationalDate(job);
   if (!value) return '';
@@ -141,20 +137,17 @@ export default function ClientPortalJobsPage() {
   const groupedJobs = useMemo(() => {
     const today = localToday();
     const current: ClientJob[] = [];
-    const upcoming: ClientJob[] = [];
-    const past: ClientJob[] = [];
+    const history: ClientJob[] = [];
 
     for (const job of jobs) {
       const date = operationalDate(job);
-      if (isFinished(job) || isCancelled(job) || (date && date < today)) past.push(job);
-      else if (isActive(job) || date === today) current.push(job);
-      else upcoming.push(job);
+      if (isFinished(job) || isCancelled(job) || (date && date < today)) history.push(job);
+      else current.push(job);
     }
 
     current.sort((a, b) => operationalDate(a).localeCompare(operationalDate(b)));
-    upcoming.sort((a, b) => operationalDate(a).localeCompare(operationalDate(b)));
-    past.sort((a, b) => operationalDate(b).localeCompare(operationalDate(a)));
-    return { current, upcoming, past };
+    history.sort((a, b) => operationalDate(b).localeCompare(operationalDate(a)));
+    return { current, history };
   }, [jobs]);
 
   function renderJobCard(job: ClientJob) {
@@ -242,9 +235,8 @@ export default function ClientPortalJobsPage() {
         </div>
       ) : (
         <>
-          {renderSection('current-jobs', 'Current Jobs', groupedJobs.current, t('portal.contractor.nothingToday'), true)}
-          {renderSection('upcoming-jobs', t('portal.contractor.upcomingJobs'), groupedJobs.upcoming, t('portal.contractor.noUpcoming'))}
-          {renderSection('past-jobs', t('portal.contractor.pastJobs'), groupedJobs.past, t('portal.contractor.noCompleted'))}
+          {renderSection('current-jobs', 'Current Jobs', groupedJobs.current, t('portal.contractor.noUpcoming'), true)}
+          {renderSection('history', 'History', groupedJobs.history, t('portal.contractor.noCompleted'))}
         </>
       )}
     </AuthenticatedSection>
