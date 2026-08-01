@@ -19,10 +19,15 @@ type DashboardRevenueSnapshotProps = {
   loading?: boolean;
 };
 
+const DASHBOARD_RANGE_STORAGE_KEY = 'everittos-dashboard-range';
+const VALID_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'all_time'];
+
 const copy = {
   en: {
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
-    collected: 'Collected', customerBalanceDue: 'Customer balance due', cashAfterPaidCosts: 'Cash after paid costs', todaysJobs: "Today's Jobs",
+    collected: 'Collected', customerBalanceDue: 'Customer balance due', cashAfterPaidCosts: 'Cash after paid costs',
+    jobsToday: "Today's Jobs", jobsWeek: 'Jobs This Week', jobsMonth: 'Jobs This Month', jobsYear: 'Jobs This Year', jobsAllTime: 'All-Time Jobs',
+    jobsDesc: 'Non-cancelled jobs whose working date falls in the selected period.',
     financialDetails: 'Financial Details', contractorsPaid: 'Contractors paid', totalContractorCost: 'Total contractor cost',
     expectedRevenue: 'Expected revenue', expectedProfit: 'Expected profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Customer payments received in this period.', currentBalances: 'All current customer balances.', periodBalances: 'Customer balances tied to this period.',
@@ -31,7 +36,7 @@ const copy = {
     expectedRevenueDesc: 'Expected customer revenue for this period, including invoiced and direct job payment activity without double counting.',
     expectedProfitDesc: 'Expected revenue minus total contractor cost and business expenses.', expensesDesc: 'Non-contractor business expenses recorded in this period.',
     scheduledRevenue: 'Scheduled revenue',
-    scheduledRevenueDesc: 'Expected client price on currently generated future visits only (next 90 days). Not money already collected.',
+    scheduledRevenueDesc: 'Expected client price on currently generated future visits only in the selected period. Not money already collected.',
     expectedContractorExpense: 'Expected contractor expense',
     expectedContractorExpenseDesc: 'Expected contractor pay on generated active visits in the selected period.',
     expectedAdditionalExpenses: 'Expected additional expenses',
@@ -39,13 +44,15 @@ const copy = {
     scheduledExpectedProfit: 'Scheduled expected profit',
     scheduledExpectedProfitDesc: 'Scheduled revenue minus expected contractor pay and additional expenses.',
     recurringJobs: 'Recurring visits',
-    recurringJobsDesc: 'Generated recurring occurrences still scheduled in the current window.',
+    recurringJobsDesc: 'Generated recurring occurrences in the selected period.',
     oneTimeJobs: 'One-time jobs',
-    oneTimeJobsDesc: 'Jobs that are not part of a recurring series.'
+    oneTimeJobsDesc: 'One-time jobs in the selected period.'
   },
   es: {
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
-    collected: 'Cobrado', customerBalanceDue: 'Saldo pendiente del cliente', cashAfterPaidCosts: 'Efectivo después de costos pagados', todaysJobs: 'Trabajos de hoy',
+    collected: 'Cobrado', customerBalanceDue: 'Saldo pendiente del cliente', cashAfterPaidCosts: 'Efectivo después de costos pagados',
+    jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
+    jobsDesc: 'Trabajos no cancelados cuya fecha de trabajo pertenece al período seleccionado.',
     financialDetails: 'Detalles financieros', contractorsPaid: 'Contratistas pagados', totalContractorCost: 'Costo total de contratistas',
     expectedRevenue: 'Ingresos esperados', expectedProfit: 'Ganancia esperada', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Pagos de clientes recibidos en este período.', currentBalances: 'Todos los saldos actuales de clientes.', periodBalances: 'Saldos de clientes relacionados con este período.',
@@ -54,7 +61,7 @@ const copy = {
     expectedRevenueDesc: 'Ingresos esperados de clientes para este período sin duplicar facturas ni pagos directos.',
     expectedProfitDesc: 'Ingresos esperados menos costo total de contratistas y gastos del negocio.', expensesDesc: 'Gastos del negocio no relacionados con contratistas registrados en este período.',
     scheduledRevenue: 'Ingresos programados',
-    scheduledRevenueDesc: 'Precio esperado del cliente solo en visitas futuras ya generadas (próximos 90 días). No es dinero cobrado.',
+    scheduledRevenueDesc: 'Precio esperado del cliente en visitas futuras generadas dentro del período seleccionado. No es dinero cobrado.',
     expectedContractorExpense: 'Gasto esperado de contratista',
     expectedContractorExpenseDesc: 'Pago esperado al contratista en visitas activas generadas del período.',
     expectedAdditionalExpenses: 'Gastos adicionales esperados',
@@ -62,13 +69,15 @@ const copy = {
     scheduledExpectedProfit: 'Ganancia esperada programada',
     scheduledExpectedProfitDesc: 'Ingresos programados menos pago esperado al contratista y gastos adicionales.',
     recurringJobs: 'Visitas recurrentes',
-    recurringJobsDesc: 'Ocurrencias recurrentes generadas que siguen programadas en la ventana actual.',
+    recurringJobsDesc: 'Ocurrencias recurrentes generadas dentro del período seleccionado.',
     oneTimeJobs: 'Trabajos únicos',
-    oneTimeJobsDesc: 'Trabajos que no forman parte de una serie recurrente.'
+    oneTimeJobsDesc: 'Trabajos únicos dentro del período seleccionado.'
   },
   vi: {
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
-    collected: 'Đã thu', customerBalanceDue: 'Số dư khách hàng còn nợ', cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả', todaysJobs: 'Công việc hôm nay',
+    collected: 'Đã thu', customerBalanceDue: 'Số dư khách hàng còn nợ', cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả',
+    jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
+    jobsDesc: 'Các công việc chưa hủy có ngày thực hiện nằm trong khoảng thời gian đã chọn.',
     financialDetails: 'Chi tiết tài chính', contractorsPaid: 'Đã trả nhà thầu', totalContractorCost: 'Tổng chi phí nhà thầu',
     expectedRevenue: 'Doanh thu dự kiến', expectedProfit: 'Lợi nhuận dự kiến', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Khoản thanh toán của khách hàng đã nhận trong khoảng thời gian này.', currentBalances: 'Tất cả số dư hiện tại của khách hàng.', periodBalances: 'Số dư khách hàng liên quan đến khoảng thời gian này.',
@@ -77,7 +86,7 @@ const copy = {
     expectedRevenueDesc: 'Doanh thu khách hàng dự kiến trong khoảng thời gian này, không tính trùng hóa đơn và thanh toán trực tiếp.',
     expectedProfitDesc: 'Doanh thu dự kiến trừ tổng chi phí nhà thầu và chi phí kinh doanh.', expensesDesc: 'Chi phí kinh doanh không phải nhà thầu được ghi nhận trong khoảng thời gian này.',
     scheduledRevenue: 'Doanh thu đã lên lịch',
-    scheduledRevenueDesc: 'Giá khách dự kiến chỉ trên các lần ghé thăm tương lai đã tạo (90 ngày tới). Không phải tiền đã thu.',
+    scheduledRevenueDesc: 'Giá khách dự kiến trên các lần ghé thăm tương lai đã tạo trong khoảng thời gian đã chọn. Không phải tiền đã thu.',
     expectedContractorExpense: 'Chi phí nhà thầu dự kiến',
     expectedContractorExpenseDesc: 'Tiền công nhà thầu dự kiến trên các lần ghé thăm đang hoạt động trong kỳ.',
     expectedAdditionalExpenses: 'Chi phí phát sinh dự kiến',
@@ -85,9 +94,9 @@ const copy = {
     scheduledExpectedProfit: 'Lợi nhuận dự kiến đã lên lịch',
     scheduledExpectedProfitDesc: 'Doanh thu đã lên lịch trừ tiền công nhà thầu và chi phí phát sinh dự kiến.',
     recurringJobs: 'Lịch định kỳ',
-    recurringJobsDesc: 'Các lần định kỳ đã tạo và vẫn còn lên lịch trong cửa sổ hiện tại.',
+    recurringJobsDesc: 'Các lần định kỳ đã tạo trong khoảng thời gian đã chọn.',
     oneTimeJobs: 'Công việc một lần',
-    oneTimeJobsDesc: 'Công việc không thuộc chuỗi định kỳ.'
+    oneTimeJobsDesc: 'Công việc một lần trong khoảng thời gian đã chọn.'
   }
 } as const;
 
@@ -105,6 +114,15 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   const [activeMetrics, setActiveMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
   const [showFinancialDetails, setShowFinancialDetails] = useState(false);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(DASHBOARD_RANGE_STORAGE_KEY) as DashboardDateRange | null;
+    if (saved && VALID_RANGES.includes(saved)) setRange(saved);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(DASHBOARD_RANGE_STORAGE_KEY, range);
+  }, [range]);
 
   useEffect(() => {
     if (range === 'month') setActiveMetrics(metrics);
@@ -149,6 +167,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   const expectedRevenue = range === 'all_time' ? Math.max(recordedExpectedRevenue, collected + outstanding) : recordedExpectedRevenue;
   const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
   const expectedProfit = Number((expectedRevenue - contractorCost - expenses).toFixed(2));
+  const selectedJobs = activeMetrics.totalJobs ?? (range === 'today' ? todayJobs : 0);
   const busy = Boolean(loading || rangeLoading);
 
   const rangeOptions: Array<{ id: DashboardDateRange; label: string }> = [
@@ -159,11 +178,22 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     { id: 'all_time', label: c.allTime }
   ];
 
+  const jobsLabel =
+    range === 'today'
+      ? c.jobsToday
+      : range === 'week'
+        ? c.jobsWeek
+        : range === 'month'
+          ? c.jobsMonth
+          : range === 'year'
+            ? c.jobsYear
+            : c.jobsAllTime;
+
   const primaryItems: MetricItem[] = [
     { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc },
     { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
     { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
-    { label: c.todaysJobs, value: String(todayJobs), href: '/schedule' }
+    { label: jobsLabel, value: String(selectedJobs), href: '/jobs', description: c.jobsDesc }
   ];
 
   const detailItems: MetricItem[] = [
