@@ -14,15 +14,15 @@ type AuthShellProps = {
 const authIntroCopy = {
   en: {
     subtitle: 'Run your business from one place.',
-    description: 'Customers, jobs, scheduling, teams, photos, reports, and payments in one clear workspace.'
+    description: 'Customers, jobs, scheduling, teams, photos, payments, and financial tracking in one clear workspace.'
   },
   es: {
     subtitle: 'Gestione su negocio desde un solo lugar.',
-    description: 'Clientes, trabajos, horarios, equipos, fotos, reportes y pagos en un espacio de trabajo claro.'
+    description: 'Clientes, trabajos, horarios, equipos, fotos, pagos y seguimiento financiero en un espacio de trabajo claro.'
   },
   vi: {
     subtitle: 'Quản lý doanh nghiệp của bạn ở một nơi.',
-    description: 'Khách hàng, công việc, lịch, đội nhóm, ảnh, báo cáo và thanh toán trong một không gian rõ ràng.'
+    description: 'Khách hàng, công việc, lịch, đội nhóm, ảnh, thanh toán và theo dõi tài chính trong một không gian rõ ràng.'
   }
 };
 
