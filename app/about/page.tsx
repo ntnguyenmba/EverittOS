@@ -46,6 +46,9 @@ export default function AboutPage() {
           <li>
             <Link href="/settings/billing">Subscription and purchases</Link>
           </li>
+          <li>
+            <Link href="/third-party-notices">Third-party notices</Link>
+          </li>
         </ul>
 
         <h3>Company</h3>
