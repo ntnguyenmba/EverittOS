@@ -177,11 +177,11 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
       {!loading && contractors.length === 0 ? <p className="muted">No team members yet.</p> : null}
 
       {contractors.length > 0 ? (
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div className="team-member-list">
           {contractors.map((contractor) => {
             const contact = contractor.phone || contractor.email;
             return (
-              <article key={contractor.id} className="list-row" style={{ alignItems: 'center', gap: 12 }}>
+              <article key={contractor.id} className="list-row team-member-card">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong>{contractor.name}</strong>
                   <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>
