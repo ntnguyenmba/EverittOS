@@ -106,6 +106,73 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           -webkit-backdrop-filter: blur(10px);
         }
 
+        .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header,
+        .dashboard-shell .jobs-list-page > .page-header,
+        .dashboard-shell .portal-page > .page-header,
+        .dashboard-shell .authenticated-section > .page-header {
+          position: relative;
+          min-height: 126px;
+          margin: 0 0 18px;
+          padding: 24px 26px;
+          overflow: hidden;
+          align-items: flex-end;
+          border: 1px solid rgba(43, 54, 62, 0.14);
+          border-radius: 20px;
+          background:
+            linear-gradient(90deg, rgba(29, 40, 47, 0.82), rgba(29, 40, 47, 0.48) 62%, rgba(29, 40, 47, 0.16)),
+            url('${HERO_IMAGE}') center 48% / cover no-repeat;
+          box-shadow: 0 14px 38px rgba(30, 38, 43, 0.1);
+        }
+
+        .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header::after,
+        .dashboard-shell .jobs-list-page > .page-header::after,
+        .dashboard-shell .portal-page > .page-header::after,
+        .dashboard-shell .authenticated-section > .page-header::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(255,255,255,0.045) 32px),
+            repeating-linear-gradient(90deg, transparent 0, transparent 31px, rgba(255,255,255,0.045) 32px);
+        }
+
+        .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header > *,
+        .dashboard-shell .jobs-list-page > .page-header > *,
+        .dashboard-shell .portal-page > .page-header > *,
+        .dashboard-shell .authenticated-section > .page-header > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header h1,
+        .dashboard-shell .jobs-list-page > .page-header h1,
+        .dashboard-shell .portal-page > .page-header h1,
+        .dashboard-shell .authenticated-section > .page-header h1 {
+          margin: 0;
+          color: #f8f5ef;
+          font-family: var(--font-display, Georgia, serif);
+          font-size: clamp(30px, 4vw, 44px);
+          font-weight: 500;
+          line-height: 1;
+          letter-spacing: -0.035em;
+        }
+
+        .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header .page-subtitle,
+        .dashboard-shell .jobs-list-page > .page-header .page-subtitle,
+        .dashboard-shell .portal-page > .page-header .page-subtitle,
+        .dashboard-shell .authenticated-section > .page-header .page-subtitle {
+          color: rgba(248, 245, 239, 0.82);
+        }
+
+        .dashboard-shell .page-header-action .btn:not(.btn-primary),
+        .dashboard-shell .page-header-action button:not(.btn-primary) {
+          background: rgba(255,255,255,0.84);
+          border-color: rgba(255,255,255,0.42);
+          color: var(--text);
+          backdrop-filter: blur(10px);
+        }
+
         .dashboard-home > .page-header {
           position: relative;
           min-height: clamp(210px, 28vw, 340px);
@@ -300,6 +367,23 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             margin: 0 !important;
             padding: 8px 11px !important;
             font-size: 13px !important;
+          }
+
+          .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header,
+          .dashboard-shell .jobs-list-page > .page-header,
+          .dashboard-shell .portal-page > .page-header,
+          .dashboard-shell .authenticated-section > .page-header {
+            min-height: 104px;
+            padding: 20px;
+            border-radius: 16px;
+            background-position: 58% center;
+          }
+
+          .dashboard-shell .app-page-content > :not(.dashboard-home) .page-header h1,
+          .dashboard-shell .jobs-list-page > .page-header h1,
+          .dashboard-shell .portal-page > .page-header h1,
+          .dashboard-shell .authenticated-section > .page-header h1 {
+            font-size: 30px;
           }
 
           .dashboard-home > .page-header {
