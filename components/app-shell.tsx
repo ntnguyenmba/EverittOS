@@ -21,7 +21,7 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-const HERO_IMAGE = 'https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/hero.jpg';
+const HERO_IMAGE = 'https://www.everittventures.com/assets/images/hero.jpg';
 
 export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
