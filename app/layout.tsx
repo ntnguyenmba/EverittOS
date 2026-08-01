@@ -19,6 +19,7 @@ import { PwaRegistration } from '@/components/pwa-registration';
 import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
+import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import './everitt-theme.css';
 import './everitt-app-polish.css';
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <WorkspaceBootstrap />
                 <SkipToMain />
                 <SiteChrome />
+                <ContractorStaticSections />
                 {children}
                 <AnalyticsGate />
                 <CookieConsentBanner />
