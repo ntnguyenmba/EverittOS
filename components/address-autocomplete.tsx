@@ -20,19 +20,28 @@ type FetchState = 'idle' | 'loading' | 'empty' | 'error' | 'ready';
 
 const CLIENT_CACHE = new Map<string, { expiresAt: number; suggestions: AddressSuggestion[] }>();
 const CLIENT_CACHE_TTL = 1000 * 60 * 20;
+const CLIENT_CACHE_VERSION = 'v2';
+
+function cacheKey(query: string): string {
+  return `${CLIENT_CACHE_VERSION}:${query.trim().toLowerCase()}`;
+}
 
 function readClientCache(query: string): AddressSuggestion[] | null {
-  const entry = CLIENT_CACHE.get(query.toLowerCase());
+  const key = cacheKey(query);
+  const entry = CLIENT_CACHE.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
-    CLIENT_CACHE.delete(query.toLowerCase());
+    CLIENT_CACHE.delete(key);
     return null;
   }
   return entry.suggestions;
 }
 
 function writeClientCache(query: string, suggestions: AddressSuggestion[]) {
-  CLIENT_CACHE.set(query.toLowerCase(), { expiresAt: Date.now() + CLIENT_CACHE_TTL, suggestions });
+  // Never cache a failed or empty lookup. The provider may return a useful result
+  // on the next request, especially for newly corrected full street addresses.
+  if (!suggestions.length) return;
+  CLIENT_CACHE.set(cacheKey(query), { expiresAt: Date.now() + CLIENT_CACHE_TTL, suggestions });
 }
 
 export function AddressAutocomplete({
@@ -97,9 +106,8 @@ export function AddressAutocomplete({
         const cached = readClientCache(query);
         if (cached) {
           setSuggestions(cached);
-          setState(cached.length ? 'ready' : 'empty');
-          // Only open when there are suggestions so empty results never block typing.
-          setOpen(Boolean(cached.length) && focusedRef.current);
+          setState('ready');
+          setOpen(focusedRef.current);
           setActiveIndex(-1);
           return;
         }
@@ -120,7 +128,6 @@ export function AddressAutocomplete({
             error?: string;
           };
           if (json.attribution) {
-            // Keep attribution short and unobtrusive in the UI.
             setAttribution(
               json.attribution.length > 48 ? '© OpenStreetMap · © Komoot Photon' : json.attribution
             );
@@ -185,7 +192,6 @@ export function AddressAutocomplete({
       if (!suggestions.length) return;
       setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
     } else if (event.key === 'Enter') {
-      // Only consume Enter when a suggestion is actively highlighted.
       if (activeIndex >= 0 && suggestions[activeIndex]) {
         event.preventDefault();
         applySuggestion(suggestions[activeIndex]);
@@ -216,7 +222,6 @@ export function AddressAutocomplete({
         aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
         onChange={(event) => {
           const next = event.target.value;
-          // Manual text is always preserved; suggestions never replace unless selected.
           onChange(next, next.trim() ? structuredAddressFromManual(next) : null);
         }}
         onFocus={() => {
