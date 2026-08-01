@@ -134,7 +134,6 @@ export function AppNavItems({
     const links = [
       { label: t('portal.contractor.nav.dashboard'), href: CONTRACTOR_PORTAL_HOME },
       { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#jobs` },
-      { label: t('portal.contractor.nav.schedule'), href: `${CONTRACTOR_PORTAL_HOME}#schedule` },
       { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#earnings` },
       { label: t('portal.contractor.nav.settings'), href: CONTRACTOR_PORTAL_SETTINGS }
     ];
