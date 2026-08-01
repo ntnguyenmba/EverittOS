@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
@@ -61,9 +60,7 @@ function sortClientJobs(rows: ClientJob[]) {
     const bGroup = isCancelled(b) ? 2 : isFinished(b) ? 1 : 0;
     if (aGroup !== bGroup) return aGroup - bGroup;
 
-    if (aGroup === 0) {
-      return operationalDate(a).localeCompare(operationalDate(b));
-    }
+    if (aGroup === 0) return operationalDate(a).localeCompare(operationalDate(b));
 
     const aDate = (a.completed_at || a.scheduled_start || a.start_date || a.due_date || a.created_at || '').slice(0, 19);
     const bDate = (b.completed_at || b.scheduled_start || b.start_date || b.due_date || b.created_at || '').slice(0, 19);
@@ -125,11 +122,6 @@ export default function ClientPortalJobsPage() {
       const { data: access } = await supabase.from('job_client_access').select('job_id').eq('client_user_id', user.id);
       const jobIds = ((access || []) as Array<{ job_id: string }>).map((row) => String(row.job_id)).filter(Boolean);
 
-      if (jobIds.length === 1) {
-        router.replace(clientPortalJobsPath(jobIds[0]));
-        return;
-      }
-
       if (jobIds.length === 0) {
         setJobs([]);
         setMessage(t('portal.client.noSharedMessage'));
@@ -149,10 +141,7 @@ export default function ClientPortalJobsPage() {
     void load();
   }, [router, t]);
 
-  const visibleJobs = useMemo(
-    () => (showAll ? jobs : jobs.slice(0, INITIAL_VISIBLE_JOBS)),
-    [jobs, showAll]
-  );
+  const visibleJobs = useMemo(() => (showAll ? jobs : jobs.slice(0, INITIAL_VISIBLE_JOBS)), [jobs, showAll]);
 
   if (loading) {
     return (
@@ -171,18 +160,12 @@ export default function ClientPortalJobsPage() {
           <div>
             <p className="eyebrow">{t('portal.client.portal')}</p>
             <h2 style={{ marginBottom: 6 }}>{t('portal.client.sharedJobsTitle')}</h2>
-            <p className="muted" style={{ margin: 0 }}>
-              {t('portal.client.sharedJobsDescription')}
-            </p>
+            <p className="muted" style={{ margin: 0 }}>{t('portal.client.sharedJobsDescription')}</p>
           </div>
           <ExportMenu
             endpoint="/api/exports/portal/client/jobs"
             locale={locale}
-            labels={{
-              export: exportCopy.downloadMyJobs,
-              csv: exportCopy.downloadMyJobsCsv,
-              pdf: exportCopy.downloadMyJobsPdf
-            }}
+            labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
             disabled={loading || Boolean(message)}
             onError={(err) => setExportError(err || exportCopy.exportFailed)}
             onSuccess={() => setExportError('')}
@@ -212,7 +195,7 @@ export default function ClientPortalJobsPage() {
               const time = jobTime(job, localeCode);
               const location = cityState(job.address);
               return (
-                <Link key={job.id} href={clientPortalJobsPath(job.id)} className="client-job-card">
+                <article key={job.id} className="client-job-card" aria-label={job.title}>
                   <div className="client-job-card-main">
                     <p className="eyebrow">{t('portal.contractor.job')}</p>
                     <h3>{job.title}</h3>
@@ -225,18 +208,12 @@ export default function ClientPortalJobsPage() {
                       {time ? <span>{time}</span> : null}
                     </div>
                   ) : null}
-                </Link>
+                </article>
               );
             })}
           </div>
           {jobs.length > INITIAL_VISIBLE_JOBS ? (
-            <button
-              type="button"
-              className="btn"
-              style={{ marginTop: 16 }}
-              onClick={() => setShowAll((current) => !current)}
-              aria-expanded={showAll}
-            >
+            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={() => setShowAll((current) => !current)} aria-expanded={showAll}>
               {showAll ? 'Show fewer jobs' : `Show all ${jobs.length} jobs`}
             </button>
           ) : null}
