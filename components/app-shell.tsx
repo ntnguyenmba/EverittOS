@@ -21,6 +21,8 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
+const HERO_IMAGE = 'https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/hero.jpg';
+
 export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
@@ -53,7 +55,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           position: relative;
           isolation: isolate;
           min-height: 100svh;
-          background: #dfe8ee;
+          background: #e8e5df;
         }
 
         .dashboard-shell-background {
@@ -61,13 +63,9 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           inset: 0;
           z-index: 0;
           pointer-events: none;
-          background-color: #dfe8ee;
-          background-image: url('/hero.jpg');
-          background-repeat: no-repeat;
-          background-size: cover;
-          background-position: center;
-          opacity: 0.58;
-          filter: saturate(0.74) contrast(0.98) brightness(0.86);
+          background: url('${HERO_IMAGE}') center / cover no-repeat;
+          opacity: 0.28;
+          filter: saturate(0.5) contrast(0.92) brightness(1.02);
           transform: scale(1.015);
         }
 
@@ -76,9 +74,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background:
-            linear-gradient(90deg, rgba(221, 231, 238, 0.18), rgba(237, 242, 246, 0.5) 21%, rgba(237, 242, 246, 0.5) 79%, rgba(221, 231, 238, 0.18)),
-            linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
+          background: rgba(246, 243, 238, 0.76);
         }
 
         .dashboard-shell > .sidebar,
@@ -92,15 +88,73 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         .dashboard-shell .main,
         .dashboard-shell .app-page-content,
         .dashboard-shell .today-page,
-        .dashboard-shell .dashboard-home {
+        .dashboard-shell .dashboard-home,
+        .dashboard-shell .authenticated-section,
+        .dashboard-shell .portal-page {
           background: transparent !important;
           background-color: transparent !important;
         }
 
+        .dashboard-shell .card,
+        .dashboard-shell .panel,
+        .dashboard-shell .stat,
+        .dashboard-shell .dashboard-revenue-metric,
+        .dashboard-shell .table-wrap,
+        .dashboard-shell .settings-card {
+          background: rgba(255, 255, 255, 0.82);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .dashboard-home > .page-header {
+          position: relative;
+          min-height: clamp(210px, 28vw, 340px);
+          margin: 0 0 22px;
+          padding: clamp(26px, 4vw, 48px);
+          overflow: hidden;
+          align-items: flex-end;
+          border: 1px solid rgba(43, 54, 62, 0.14);
+          border-radius: 24px;
+          background:
+            linear-gradient(90deg, rgba(29, 40, 47, 0.8), rgba(29, 40, 47, 0.42) 58%, rgba(29, 40, 47, 0.1)),
+            url('${HERO_IMAGE}') center / cover no-repeat;
+          box-shadow: 0 18px 50px rgba(30, 38, 43, 0.12);
+        }
+
+        .dashboard-home > .page-header::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            repeating-linear-gradient(0deg, transparent 0, transparent 31px, rgba(255,255,255,0.06) 32px),
+            repeating-linear-gradient(90deg, transparent 0, transparent 31px, rgba(255,255,255,0.06) 32px);
+        }
+
+        .dashboard-home > .page-header > * {
+          position: relative;
+          z-index: 1;
+        }
+
+        .dashboard-home > .page-header h1,
+        .dashboard-home > .page-header h2 {
+          color: #f8f5ef;
+          font-family: var(--font-display, Georgia, serif);
+          font-size: clamp(38px, 6vw, 68px);
+          font-weight: 500;
+          line-height: 1;
+          letter-spacing: -0.04em;
+        }
+
+        .dashboard-home > .page-header .page-subtitle,
+        .dashboard-home > .page-header p {
+          color: rgba(248, 245, 239, 0.82);
+        }
+
         @media (pointer: coarse), (hover: none) {
           .dashboard-shell {
-            --mobile-gutter-left: max(36px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(36px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(18px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(18px, env(safe-area-inset-right));
             display: block !important;
             width: 100% !important;
             max-width: none !important;
@@ -113,11 +167,11 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-background {
             background-position: 56% center;
-            opacity: 0.44;
+            opacity: 0.2;
           }
 
           .dashboard-shell-overlay {
-            background: rgba(231, 238, 243, 0.61);
+            background: rgba(247, 244, 239, 0.82);
           }
 
           .dashboard-shell > .sidebar {
@@ -144,18 +198,17 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell-mobile .mobile-nav-bar {
             width: 100% !important;
-            min-height: 68px !important;
-            padding-top: 10px !important;
-            padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 10px !important;
-            padding-left: var(--mobile-gutter-left) !important;
+            min-height: 62px !important;
+            padding: 8px var(--mobile-gutter-right) 8px var(--mobile-gutter-left) !important;
             box-sizing: border-box !important;
+            background: rgba(249,247,243,0.86) !important;
+            backdrop-filter: blur(14px) !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-brand-logo {
             margin: 0 !important;
             min-width: 0 !important;
-            gap: 9px !important;
+            gap: 8px !important;
           }
 
           .dashboard-shell-mobile .mobile-nav-brand-logo .brand-logo-image {
@@ -176,12 +229,11 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           }
 
           .dashboard-shell-mobile .mobile-nav-menu-btn {
-            width: 44px !important;
-            height: 44px !important;
-            flex: 0 0 44px !important;
+            width: 40px !important;
+            height: 40px !important;
+            flex: 0 0 40px !important;
             margin: 0 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 4px 12px rgba(36, 63, 83, 0.14) !important;
+            box-shadow: none !important;
           }
 
           .dashboard-shell > .main,
@@ -192,10 +244,8 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             min-width: 0 !important;
             margin: 0 !important;
             margin-left: 0 !important;
-            padding-top: 14px !important;
-            padding-right: var(--mobile-gutter-right) !important;
-            padding-bottom: 32px !important;
-            padding-left: var(--mobile-gutter-left) !important;
+            padding: 12px var(--mobile-gutter-right) 30px var(--mobile-gutter-left) !important;
+            overflow-x: hidden !important;
             translate: none !important;
             transform: none !important;
           }
@@ -231,7 +281,9 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
             font-weight: 600 !important;
           }
 
-          .dashboard-shell .app-page-content {
+          .dashboard-shell .app-page-content,
+          .dashboard-shell .today-page,
+          .dashboard-shell .dashboard-home {
             width: 100% !important;
             max-width: none !important;
             min-width: 0 !important;
@@ -243,30 +295,31 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
 
           .dashboard-shell .everitt-cmd-trigger {
             width: 100% !important;
-            min-height: 50px !important;
+            max-width: none !important;
+            min-height: 48px !important;
             margin: 0 !important;
-            padding: 10px 14px !important;
-            border-radius: 13px !important;
-            font-size: 15px !important;
+            padding: 8px 11px !important;
+            font-size: 13px !important;
           }
 
-          .dashboard-shell .today-page,
-          .dashboard-shell .dashboard-home {
-            width: 100% !important;
-            max-width: none !important;
-            min-width: 0 !important;
-            margin-inline: 0 !important;
-            gap: 14px !important;
-            translate: none !important;
-            transform: none !important;
+          .dashboard-home > .page-header {
+            min-height: 190px;
+            padding: 24px;
+            border-radius: 18px;
+            background-position: 60% center;
+          }
+
+          .dashboard-home > .page-header h1,
+          .dashboard-home > .page-header h2 {
+            font-size: clamp(34px, 12vw, 52px);
           }
         }
 
         @media (min-width: 720px) and (max-width: 1100px) and (pointer: coarse),
           (min-width: 720px) and (max-width: 1100px) and (hover: none) {
           .dashboard-shell {
-            --mobile-gutter-left: max(48px, env(safe-area-inset-left));
-            --mobile-gutter-right: max(48px, env(safe-area-inset-right));
+            --mobile-gutter-left: max(32px, env(safe-area-inset-left));
+            --mobile-gutter-right: max(32px, env(safe-area-inset-right));
           }
         }
       `}</style>
