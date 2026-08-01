@@ -12,6 +12,36 @@
   color: var(--text);
 }
 
+.contractor-dashboard details > summary,
+.client-portal-jobs details > summary {
+  position: relative;
+  padding-right: 32px;
+  list-style: none;
+}
+
+.contractor-dashboard details > summary::-webkit-details-marker,
+.client-portal-jobs details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.contractor-dashboard details:not(#earnings) > summary::after,
+.client-portal-jobs details > summary::after {
+  content: '+';
+  position: absolute;
+  top: 50%;
+  right: 0;
+  color: #71838d;
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.contractor-dashboard details:not(#earnings)[open] > summary::after,
+.client-portal-jobs details[open] > summary::after {
+  content: '−';
+}
+
 .contractor-job-card {
   position: relative;
   border-color: #dbe5e8 !important;
@@ -55,6 +85,7 @@
 .contractor-dashboard #earnings summary {
   cursor: default !important;
   pointer-events: none;
+  padding-right: 0;
 }
 
 .contractor-dashboard #earnings summary .muted {
