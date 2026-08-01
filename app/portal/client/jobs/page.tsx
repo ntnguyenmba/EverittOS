@@ -24,6 +24,8 @@ type ClientJob = {
   scheduled_end: string | null;
   start_date: string | null;
   due_date: string | null;
+  completed_at: string | null;
+  created_at: string | null;
 };
 
 function cityState(address: string | null) {
@@ -33,9 +35,42 @@ function cityState(address: string | null) {
   return address;
 }
 
+function operationalDate(job: ClientJob) {
+  return (
+    wallClockFromTimestamp(job.scheduled_start)?.date ||
+    job.start_date?.slice(0, 10) ||
+    job.due_date?.slice(0, 10) ||
+    job.created_at?.slice(0, 10) ||
+    ''
+  );
+}
+
+function isFinished(job: ClientJob) {
+  return ['completed', 'complete', 'finished', 'done'].includes(String(job.status || '').toLowerCase());
+}
+
+function isCancelled(job: ClientJob) {
+  return ['cancelled', 'canceled'].includes(String(job.status || '').toLowerCase());
+}
+
+function sortClientJobs(rows: ClientJob[]) {
+  return rows.slice().sort((a, b) => {
+    const aGroup = isCancelled(a) ? 2 : isFinished(a) ? 1 : 0;
+    const bGroup = isCancelled(b) ? 2 : isFinished(b) ? 1 : 0;
+    if (aGroup !== bGroup) return aGroup - bGroup;
+
+    if (aGroup === 0) {
+      return operationalDate(a).localeCompare(operationalDate(b));
+    }
+
+    const aDate = (a.completed_at || a.scheduled_start || a.start_date || a.due_date || a.created_at || '').slice(0, 19);
+    const bDate = (b.completed_at || b.scheduled_start || b.start_date || b.due_date || b.created_at || '').slice(0, 19);
+    return bDate.localeCompare(aDate);
+  });
+}
+
 function jobDate(job: ClientJob, locale: string) {
-  const wall = wallClockFromTimestamp(job.scheduled_start);
-  const value = wall?.date || job.start_date || job.due_date;
+  const value = operationalDate(job);
   if (!value) return '';
   const parsed = new Date(`${value.slice(0, 10)}T12:00:00`);
   return parsed.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -101,11 +136,10 @@ export default function ClientPortalJobsPage() {
 
       const { data: jobRows } = await supabase
         .from('jobs')
-        .select('id, title, status, customer_name, address, scheduled_start, scheduled_end, start_date, due_date')
-        .in('id', jobIds)
-        .order('scheduled_start', { ascending: true, nullsFirst: false });
+        .select('id, title, status, customer_name, address, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
+        .in('id', jobIds);
 
-      setJobs((jobRows || []) as ClientJob[]);
+      setJobs(sortClientJobs((jobRows || []) as ClientJob[]));
       setLoading(false);
     }
 
