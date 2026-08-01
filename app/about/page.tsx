@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { LegalNotice } from '@/components/legal-notice';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || process.env.npm_package_version || '1.0.0';
+const BUILD_NUMBER = process.env.NEXT_PUBLIC_BUILD_NUMBER || process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || '';
 
 export default function AboutPage() {
   return (
@@ -16,6 +17,7 @@ export default function AboutPage() {
           <strong>EverittOS</strong>
           <br />
           Version {APP_VERSION}
+          {BUILD_NUMBER ? ` (${BUILD_NUMBER})` : ''}
         </p>
 
         <h3>Support</h3>
@@ -40,6 +42,9 @@ export default function AboutPage() {
           </li>
           <li>
             <Link href="/account-deletion">Account deletion</Link>
+          </li>
+          <li>
+            <Link href="/settings/billing">Subscription and purchases</Link>
           </li>
         </ul>
 
