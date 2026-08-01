@@ -72,9 +72,11 @@ export async function POST(request: Request) {
 
   if (Array.isArray(body.visits)) {
     const visits = sortVisits(cleanVisits(body.visits));
-    const visitError = validateVisits(visits);
-    if (visitError) {
-      return NextResponse.json({ error: visitError }, { status: 400 });
+    if (visits.length > 0) {
+      const visitError = validateVisits(visits);
+      if (visitError) {
+        return NextResponse.json({ error: visitError }, { status: 400 });
+      }
     }
 
     visitCount = visits.length;
@@ -87,20 +89,29 @@ export async function POST(request: Request) {
 
     if (deleteError) return NextResponse.json({ error: mapWorkspaceSaveError(deleteError.message) }, { status: 400 });
 
-    const { error: insertError } = await admin.from('job_visits').insert(
-      visits.map((visit) => ({
-        organization_id: ctx.workspace.organizationId,
-        job_id: body.jobId,
-        visit_date: visit.visit_date,
-        start_time: visit.start_time,
-        end_time: visit.end_time,
-        notes: visit.notes
-      }))
-    );
+    if (visits.length > 0) {
+      const { error: insertError } = await admin.from('job_visits').insert(
+        visits.map((visit) => ({
+          organization_id: ctx.workspace.organizationId,
+          job_id: body.jobId,
+          visit_date: visit.visit_date,
+          start_time: visit.start_time,
+          end_time: visit.end_time,
+          notes: visit.notes
+        }))
+      );
 
-    if (insertError) return NextResponse.json({ error: mapWorkspaceSaveError(insertError.message) }, { status: 400 });
+      if (insertError) return NextResponse.json({ error: mapWorkspaceSaveError(insertError.message) }, { status: 400 });
 
-    Object.assign(update, scheduleFieldsFromVisits(visits));
+      Object.assign(update, scheduleFieldsFromVisits(visits));
+    } else {
+      Object.assign(update, {
+        scheduled_start: null,
+        scheduled_end: null,
+        start_date: null,
+        due_date: null
+      });
+    }
   } else {
     const normalizedStart = normalizeJobScheduleTimestamp(body.scheduled_start);
     const normalizedEnd = normalizeJobScheduleTimestamp(body.scheduled_end);
@@ -155,8 +166,10 @@ export async function POST(request: Request) {
     'job',
     body.jobId,
     'schedule_changed',
-    `Schedule updated: ${job.title || 'Job'}`,
-    { timezone: body.timezone ?? null }
+    Array.isArray(body.visits) && visitCount === 0
+      ? `Schedule cleared: ${job.title || 'Job'}`
+      : `Schedule updated: ${job.title || 'Job'}`,
+    { timezone: body.timezone ?? null, visitCount }
   );
 
   await trackProductEventServer(ctx.supabase, 'appointment_scheduled', {
@@ -165,5 +178,12 @@ export async function POST(request: Request) {
     metadata: { jobId: body.jobId, visitCount, timezone: body.timezone ?? null }
   });
 
-  return NextResponse.json({ ok: true, message: Array.isArray(body.visits) ? 'Visits saved successfully.' : 'Schedule saved successfully.' });
+  return NextResponse.json({
+    ok: true,
+    message: Array.isArray(body.visits)
+      ? visitCount === 0
+        ? 'Schedule cleared successfully.'
+        : 'Visits saved successfully.'
+      : 'Schedule saved successfully.'
+  });
 }
