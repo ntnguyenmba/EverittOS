@@ -27,7 +27,8 @@ const CLEAR_SETTINGS_LABELS: Record<string, string> = {
   '/settings/privacy': 'Privacy',
   '/terms': 'Terms',
   '/settings/privacy#delete-account': 'Delete Account',
-  '/settings/billing': 'Billing'
+  '/settings/billing': 'Billing',
+  '/about': 'About'
 };
 
 export function SettingsShell({ plan = 'free', title, description, role: roleProp, children }: SettingsShellProps) {
@@ -67,6 +68,10 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
 
   if (canManageBilling(role) && !links.some((link) => link.href === '/settings/billing')) {
     links.push({ href: '/settings/billing', label: 'Billing' });
+  }
+
+  if (!links.some((link) => link.href === '/about')) {
+    links.push({ href: '/about', label: 'About' });
   }
 
   const showBillingShortcut = canManageBilling(role) && pathname !== '/settings/billing';
