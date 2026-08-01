@@ -87,14 +87,14 @@
 @media (max-width: 760px) {
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
     width: min(500px, calc(100vw - 24px));
-    margin: 18px auto;
+    margin: 16px auto 18px;
     padding: 24px 20px;
     border-radius: 20px;
   }
 
   .login-origin-story {
-    padding-bottom: 20px;
-    margin-bottom: 20px;
+    padding-bottom: 17px;
+    margin-bottom: 17px;
   }
 
   .login-origin-story h2 {
@@ -104,19 +104,24 @@
   .login-origin-story p {
     font-size: 14px;
   }
+
+  .auth-tech-card:has(.login-origin-story) .auth-card-heading {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
 }
 
 @media (max-width: 520px) {
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
     width: calc(100vw - 20px);
-    margin: 14px auto 18px;
+    margin: 10px auto 18px;
     padding: 22px 18px;
     border-radius: 18px;
   }
 
   .login-origin-story {
-    padding-bottom: 18px;
-    margin-bottom: 18px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
   }
 
   .login-origin-story h2 {
@@ -126,10 +131,16 @@
   .login-origin-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    margin-top: 14px;
   }
 
   .login-origin-actions .btn {
     width: 100%;
+  }
+
+  .auth-tech-card:has(.login-origin-story) .auth-card-heading {
+    padding-bottom: 14px;
+    margin-bottom: 14px;
   }
 }
 
