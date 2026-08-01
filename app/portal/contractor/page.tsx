@@ -36,7 +36,6 @@ import {
 import { performClientLogout } from '@/lib/client-logout';
 import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 import { isContractorRole, normalizeRole } from '@/lib/roles';
-import { localToday } from '@/lib/schedule-times';
 import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { buildAssignmentWorkerIdsByJob } from '@/lib/worker-assignment';
@@ -140,18 +139,18 @@ export default function ContractorPortalPage() {
   );
 
   const groupedJobs = useMemo(() => {
-    const active: ContractorJobCardModel[] = [];
-    const upcoming: ContractorJobCardModel[] = [];
+    const current: ContractorJobCardModel[] = [];
     const completed: ContractorJobCardModel[] = [];
 
     for (const job of jobCards) {
       const status = normalizedJobStatus(job.status);
       if (status === 'completed' || status === 'complete' || status === 'done') completed.push(job);
-      else if (status === 'in_progress' || status === 'started') active.push(job);
-      else upcoming.push(job);
+      else current.push(job);
     }
 
-    return { active, upcoming, completed };
+    current.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    completed.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    return { current, completed };
   }, [jobCards]);
 
   const load = useCallback(async () => {
@@ -453,14 +452,6 @@ export default function ContractorPortalPage() {
   }
 
   const hasDataError = errors.length > 0;
-  const today = localToday();
-  const todaysJobs = [...groupedJobs.active, ...groupedJobs.upcoming].filter(
-    (job) => String(job.date || '').slice(0, 10) === today
-  );
-  const upcomingOnly = groupedJobs.upcoming.filter((job) => String(job.date || '').slice(0, 10) !== today);
-  const completedJobs = groupedJobs.completed
-    .slice()
-    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   return (
     <AuthenticatedSection role="contractor" className="contractor-dashboard">
@@ -510,51 +501,26 @@ export default function ContractorPortalPage() {
             </div>
           ) : null}
 
-          <section id="jobs" className="card" aria-label={t('portal.contractor.todaysJobs')} style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.todaysJobs')}</h2>
-            {todaysJobs.length === 0 && groupedJobs.active.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.nothingToday')}</p>
-            ) : (
-              <div style={{ marginTop: 8 }}>{(todaysJobs.length ? todaysJobs : groupedJobs.active).map(renderJobCard)}</div>
-            )}
-          </section>
-
-          <details id="schedule" className="card" style={{ marginBottom: 16 }}>
+          <details id="current-jobs" className="card" style={{ marginBottom: 16 }} open>
             <summary
               style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
             >
-              <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.upcomingJobs')}</h2>
-              <span className="muted">{upcomingOnly.length}</span>
+              <h2 style={{ fontSize: 18, margin: 0 }}>Current Jobs</h2>
+              <span className="muted">{groupedJobs.current.length}</span>
             </summary>
-            {upcomingOnly.length === 0 ? (
+            {groupedJobs.current.length === 0 ? (
               <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noUpcoming')}</p>
             ) : (
-              <div style={{ marginTop: 8 }}>
-                {upcomingOnly.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).map(renderJobCard)}
-              </div>
+              <div style={{ marginTop: 8 }}>{groupedJobs.current.map(renderJobCard)}</div>
             )}
           </details>
 
-          <details id="past-jobs" className="card" style={{ marginBottom: 16 }}>
-            <summary
-              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
-            >
-              <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.pastJobs')}</h2>
-              <span className="muted">{metrics.completedJobs} {t('portal.contractor.completed')}</span>
-            </summary>
-            {completedJobs.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noCompleted')}</p>
-            ) : (
-              <div style={{ marginTop: 8 }}>{completedJobs.map(renderJobCard)}</div>
-            )}
-          </details>
-
-          <details id="earnings" className="card" style={{ marginBottom: 16 }}>
+          <details id="history" className="card" style={{ marginBottom: 16 }}>
             <summary
               style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
             >
               <div>
-                <h2 style={{ fontSize: 18, margin: 0 }}>{t('portal.contractor.earnings')}</h2>
+                <h2 style={{ fontSize: 18, margin: 0 }}>History</h2>
                 <span className="muted">{metrics.completedJobs} {earningsCopy.completedWork}</span>
               </div>
               {history.length > 0 ? (
@@ -562,12 +528,18 @@ export default function ContractorPortalPage() {
               ) : null}
             </summary>
 
+            {groupedJobs.completed.length === 0 ? (
+              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noCompleted')}</p>
+            ) : (
+              <div style={{ marginTop: 8 }}>{groupedJobs.completed.map(renderJobCard)}</div>
+            )}
+
             {history.length === 0 && !hasDataError ? (
-              <p className="muted" style={{ marginTop: 12 }}>{earningsCopy.paymentRecordsPending}</p>
+              <p className="muted" style={{ marginTop: 16 }}>{earningsCopy.paymentRecordsPending}</p>
             ) : null}
 
             {history.length > 0 ? (
-              <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 12 }}>
+              <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 18 }}>
                 <table className="table data-table">
                   <thead>
                     <tr>
