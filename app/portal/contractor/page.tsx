@@ -515,7 +515,7 @@ export default function ContractorPortalPage() {
             )}
           </details>
 
-          <details id="history" className="card" style={{ marginBottom: 16 }}>
+          <details id="history" className="card" style={{ marginBottom: 16 }} open>
             <summary
               style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
             >
@@ -528,42 +528,42 @@ export default function ContractorPortalPage() {
               ) : null}
             </summary>
 
-            {groupedJobs.completed.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noCompleted')}</p>
-            ) : (
-              <div style={{ marginTop: 8 }}>{groupedJobs.completed.map(renderJobCard)}</div>
-            )}
-
             {history.length === 0 && !hasDataError ? (
               <p className="muted" style={{ marginTop: 16 }}>{earningsCopy.paymentRecordsPending}</p>
             ) : null}
 
             {history.length > 0 ? (
-              <div className="table-wrap" style={{ overflowX: 'auto', marginTop: 18 }}>
-                <table className="table data-table">
-                  <thead>
-                    <tr>
-                      <th>{t('portal.contractor.job')}</th>
-                      <th>{t('portal.contractor.customer')}</th>
-                      <th>{t('portal.contractor.workDate')}</th>
-                      <th>{t('portal.contractor.earned')}</th>
-                      <th>{t('portal.common.status')}</th>
-                      <th>{t('portal.contractor.paidDate')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map((row) => (
-                      <tr key={row.laborId}>
-                        <td>{row.jobTitle}</td>
-                        <td>{row.customerName}</td>
-                        <td>{row.workDate || '—'}</td>
-                        <td>{formatContractorMoney(row.amountEarned)}</td>
-                        <td>{translatePortalPaymentStatus(t, row.paymentStatus)}</td>
-                        <td>{row.paidDate || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="contractor-history-list" style={{ display: 'grid', gap: 12, marginTop: 18 }}>
+                {history.map((row) => (
+                  <article
+                    key={row.laborId}
+                    className="contractor-history-card"
+                    style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 18, background: 'var(--surface)' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
+                        <h3 style={{ margin: '5px 0 0', fontSize: 17 }}>{row.jobTitle}</h3>
+                        <p className="muted" style={{ margin: '7px 0 0' }}>{row.customerName || '—'}</p>
+                      </div>
+                      <strong style={{ fontSize: 18 }}>{formatContractorMoney(row.amountEarned)}</strong>
+                    </div>
+                    <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14, margin: '16px 0 0' }}>
+                      <div>
+                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.contractor.workDate')}</dt>
+                        <dd style={{ margin: '5px 0 0' }}>{row.workDate || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.common.status')}</dt>
+                        <dd style={{ margin: '5px 0 0' }}>{translatePortalPaymentStatus(t, row.paymentStatus)}</dd>
+                      </div>
+                      <div>
+                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.contractor.paidDate')}</dt>
+                        <dd style={{ margin: '5px 0 0' }}>{row.paidDate || '—'}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
               </div>
             ) : null}
           </details>
