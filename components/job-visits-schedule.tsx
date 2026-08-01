@@ -128,7 +128,6 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
         setFromDatabase(true);
         setEditing(false);
       } else if (scheduledStart || startDate) {
-        // Schedule was saved on the job during create; show it as the saved visit.
         setVisits([fallbackVisit(fallbackProps)]);
         setFromDatabase(false);
         setEditing(false);
@@ -169,7 +168,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
 
   function removeVisit(index: number) {
     setEditing(true);
-    setVisits((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
+    setVisits((current) => current.filter((_, i) => i !== index));
   }
 
   async function saveVisits() {
@@ -193,7 +192,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId, visits: cleanVisits, timezone: timeZone || null })
     });
-    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
     setSaving(false);
 
     if (!res.ok) {
@@ -201,9 +200,10 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       return;
     }
 
-    feedback.success('Schedule saved. Connected calendars will update automatically.');
+    const cleared = cleanVisits.length === 0;
+    feedback.success(json.message || (cleared ? 'Schedule cleared.' : 'Schedule saved. Connected calendars will update automatically.'));
     setEditing(false);
-    setFromDatabase(true);
+    setFromDatabase(!cleared);
     onSaved?.();
   }
 
@@ -217,7 +217,9 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
           <p className="muted">
             {hasSavedSchedule && !editing
               ? 'Saved visits for this job.'
-              : 'Set each visit date and time, then save.'}
+              : visits.length === 0
+                ? 'No visits are scheduled. Save to clear this job from the schedule.'
+                : 'Set each visit date and time, then save.'}
           </p>
         </div>
         {canManage ? (
@@ -280,7 +282,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
                 </p>
               </div>
               {canManage ? (
-                <button className="btn" type="button" disabled={visits.length === 1} onClick={() => removeVisit(index)}>
+                <button className="btn" type="button" onClick={() => removeVisit(index)}>
                   Remove visit
                 </button>
               ) : null}
@@ -324,7 +326,6 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
                 <button
                   className="btn job-visit-remove"
                   type="button"
-                  disabled={visits.length === 1}
                   onClick={() => removeVisit(index)}
                 >
                   Remove visit
@@ -344,7 +345,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       {canManage && editing ? (
         <div className="button-row" style={{ flexWrap: 'wrap' }}>
           <button className="btn btn-primary job-visits-save" type="button" onClick={() => void saveVisits()} disabled={saving}>
-            {saving ? 'Saving...' : 'Save schedule'}
+            {saving ? 'Saving...' : visits.length === 0 ? 'Save and clear schedule' : 'Save schedule'}
           </button>
           {hasSavedSchedule ? (
             <button className="btn" type="button" disabled={saving} onClick={() => setEditing(false)}>
