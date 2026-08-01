@@ -17,7 +17,7 @@
 
 .jobs-header-actions .btn:not(.btn-primary) {
   border-color: rgba(37, 54, 74, 0.13) !important;
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.94) !important;
   color: #314b5a !important;
 }
 
@@ -30,10 +30,12 @@
 .jobs-filter-tabs {
   position: static !important;
   margin-bottom: 16px !important;
-  border: 1px solid rgba(37, 54, 74, 0.13) !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
   border-radius: 16px !important;
-  background: #ffffff !important;
-  box-shadow: 0 8px 24px rgba(37, 54, 74, 0.07) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
 .jobs-filter-tab {
@@ -79,7 +81,7 @@
 .jobs-operations-table tbody {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 16px !important;
+  gap: 12px !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row {
@@ -89,22 +91,24 @@
     'job date'
     'job status' !important;
   align-items: start !important;
-  gap: 14px 24px !important;
+  gap: 12px 20px !important;
   min-width: 0 !important;
-  min-height: 168px !important;
-  padding: 24px !important;
-  border: 1px solid rgba(37, 54, 74, 0.13) !important;
-  border-radius: 20px !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 28px rgba(37, 54, 74, 0.09) !important;
+  min-height: 150px !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(37, 54, 74, 0.12) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(37, 54, 74, 0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   transition: transform 150ms ease, box-shadow 150ms ease !important;
   overflow: hidden !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row:hover,
 .jobs-operations-table tbody > .jobs-operations-row:focus-visible {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 15px 36px rgba(37, 54, 74, 0.13) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 12px 28px rgba(37, 54, 74, 0.12) !important;
   outline: none !important;
 }
 
@@ -125,9 +129,9 @@
 
 .jobs-property-link {
   display: block !important;
-  margin: 0 0 10px !important;
+  margin: 0 0 8px !important;
   color: #1f313b !important;
-  font-size: 1.08rem !important;
+  font-size: 1.04rem !important;
   font-weight: 700 !important;
   line-height: 1.3 !important;
   text-decoration: none !important;
@@ -146,7 +150,6 @@
   line-height: 1.45 !important;
 }
 
-/* Keep city, hide customer and photo count. */
 .jobs-col-property .jobs-secondary:first-of-type,
 .jobs-photo-count {
   display: none !important;
@@ -175,7 +178,6 @@
   white-space: nowrap !important;
 }
 
-/* Worker details and action menu belong inside Job Details. */
 .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-assigned,
 .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-actions,
 .jobs-menu-trigger,
@@ -216,7 +218,7 @@
       'status' !important;
     gap: 12px !important;
     min-height: 0 !important;
-    padding: 20px !important;
+    padding: 18px !important;
   }
 
   .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-date {
