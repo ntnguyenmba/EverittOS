@@ -32,30 +32,44 @@ const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
   jobs: '/jobs/new',
   customers: '/customers/new',
   leads: '/leads/new',
-  schedule: '/schedule',
+  schedule: '/jobs/new',
   workers: '/people',
-  reviews: '/reviews',
   forms: '/forms',
   templates: '/templates',
   expenses: '/expenses',
   invoices: '/invoices',
-  analytics: '/dashboard'
+  analytics: '/dashboard',
+  workflows: '/workflows/new',
+  photos: '/jobs'
+};
+
+const SIMPLE_ACTION_LABELS: Partial<Record<EmptyKey, string>> = {
+  jobs: 'Create job',
+  customers: 'Add customer',
+  leads: 'Add lead',
+  schedule: 'Create job',
+  workers: 'Add team member',
+  forms: 'Create form',
+  templates: 'Create template',
+  expenses: 'Add expense',
+  invoices: 'Create invoice',
+  analytics: 'Open dashboard',
+  workflows: 'Create workflow',
+  photos: 'Open jobs'
 };
 
 export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
-  const actionLabel = t(`empty.${emptyKey}.action`);
-  const secondaryActionLabel = t(`empty.${emptyKey}.secondaryAction`);
+  const translatedActionLabel = t(`empty.${emptyKey}.action`);
+  const actionLabel = SIMPLE_ACTION_LABELS[emptyKey] || translatedActionLabel;
   const actionHref = ACTION_HREFS[emptyKey];
-  const hasActionLabel = !actionLabel.startsWith('[');
-  const hasLinkedAction = actionHref && hasActionLabel;
-  const hasSecondaryAction = emptyKey === 'leads' && !secondaryActionLabel.startsWith('[');
+  const hasActionLabel = Boolean(actionLabel) && !actionLabel.startsWith('[');
 
   const primaryAction = onPrimaryClick && hasActionLabel ? (
     <button type="button" className="btn btn-primary" onClick={onPrimaryClick}>
       {actionLabel}
     </button>
-  ) : hasLinkedAction ? (
+  ) : actionHref && hasActionLabel ? (
     <Link className="btn btn-primary" href={actionHref}>
       {actionLabel}
     </Link>
@@ -64,17 +78,10 @@ export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }:
   return (
     <EmptyState
       title={t(`empty.${emptyKey}.title`)}
-      description={t(`empty.${emptyKey}.description`)}
+      description=""
       compact={compact}
       icon={icon}
       action={primaryAction}
-      secondaryAction={
-        hasSecondaryAction ? (
-          <Link className="btn" href="/forms">
-            {secondaryActionLabel}
-          </Link>
-        ) : undefined
-      }
     />
   );
 }
