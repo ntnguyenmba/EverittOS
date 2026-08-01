@@ -18,6 +18,7 @@ import { useTranslation } from '@/components/locale-provider';
 import { normalizeEmail } from '@/lib/input-validation';
 import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 import { PasskeySignInButton } from '@/components/passkey-sign-in-button';
+import './login-page.css';
 
 const loginCopy = {
   en: {
@@ -30,6 +31,10 @@ const loginCopy = {
     signIn: 'Sign in',
     forgotPassword: 'Forgot password',
     createAccount: 'Create account',
+    startFree: 'Start free',
+    storyTitle: 'Built from real work.',
+    storyBody: "We couldn't find software we actually wanted to use, so we built our own.",
+    storyClose: 'Today we use it every day. Now you can too.',
     selectedPlan: 'Selected plan:',
     continueSetup: 'Sign in to continue setup.',
     accountDeleted: 'Your account has been permanently deleted.',
@@ -48,6 +53,10 @@ const loginCopy = {
     signIn: 'Iniciar sesión',
     forgotPassword: 'Olvidé mi contraseña',
     createAccount: 'Crear cuenta',
+    startFree: 'Comenzar gratis',
+    storyTitle: 'Creado a partir del trabajo real.',
+    storyBody: 'No encontramos un software que realmente quisiéramos usar, así que creamos el nuestro.',
+    storyClose: 'Hoy lo usamos todos los días. Ahora usted también puede usarlo.',
     selectedPlan: 'Plan seleccionado:',
     continueSetup: 'Inicie sesión para continuar la configuración.',
     accountDeleted: 'Su cuenta se eliminó permanentemente.',
@@ -66,6 +75,10 @@ const loginCopy = {
     signIn: 'Đăng nhập',
     forgotPassword: 'Quên mật khẩu',
     createAccount: 'Tạo tài khoản',
+    startFree: 'Bắt đầu miễn phí',
+    storyTitle: 'Được xây dựng từ công việc thực tế.',
+    storyBody: 'Chúng tôi không tìm thấy phần mềm mình thực sự muốn dùng, nên đã tự xây dựng một hệ thống riêng.',
+    storyClose: 'Chúng tôi dùng nó mỗi ngày. Giờ bạn cũng có thể dùng.',
     selectedPlan: 'Gói đã chọn:',
     continueSetup: 'Đăng nhập để tiếp tục thiết lập.',
     accountDeleted: 'Tài khoản của bạn đã bị xóa vĩnh viễn.',
@@ -84,7 +97,6 @@ function LoginForm() {
 
   const accessBlock = useMemo(() => {
     const reason = searchParams.get('reason');
-    const detail = searchParams.get('detail');
     if (!reason) return null;
     const mapped = mapAccessError(reason);
     return { title: mapped.title, message: mapped.message };
@@ -199,16 +211,20 @@ function LoginForm() {
 
   return (
     <AuthShell title={copy.title}>
-      {configError ? (
-        <AuthMessages
-          errorTitle={copy.configTitle}
-          error={copy.configMessage}
-        />
-      ) : null}
+      <section className="login-origin-story" aria-label="About EverittOS">
+        <h2>{copy.storyTitle}</h2>
+        <p>{copy.storyBody}</p>
+        <p>{copy.storyClose}</p>
+        <div className="login-origin-actions">
+          <Link className="btn btn-primary" href="/signup?plan=free">
+            {copy.startFree}
+          </Link>
+        </div>
+      </section>
 
-      {accessBlock ? (
-        <AuthMessages errorTitle={accessBlock.title} error={accessBlock.message} />
-      ) : null}
+      {configError ? <AuthMessages errorTitle={copy.configTitle} error={copy.configMessage} /> : null}
+
+      {accessBlock ? <AuthMessages errorTitle={accessBlock.title} error={accessBlock.message} /> : null}
 
       {selectedPlan !== 'free' ? (
         <p className="auth-plan-note">
@@ -229,7 +245,7 @@ function LoginForm() {
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             disabled={loading}
           />
         </div>
