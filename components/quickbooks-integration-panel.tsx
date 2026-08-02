@@ -32,10 +32,15 @@ type QuickBooksStatus = {
 };
 
 const REQUEST_TIMEOUT_MS = 12000;
+const SYNC_REQUEST_TIMEOUT_MS = 65000;
 
-async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(input, {
       ...init,
@@ -167,7 +172,11 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     if (busy) return;
     setBusy(true);
     try {
-      const res = await fetchWithTimeout('/api/integrations/quickbooks/sync-now', { method: 'POST' });
+      const res = await fetchWithTimeout(
+        '/api/integrations/quickbooks/sync-now',
+        { method: 'POST' },
+        SYNC_REQUEST_TIMEOUT_MS
+      );
       const json = await readJson(res);
       if (!res.ok) {
         appFeedback.error(typeof json.error === 'string' ? json.error : 'QuickBooks sync failed.');
@@ -178,7 +187,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       await load();
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      appFeedback.error(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks sync failed.');
+      appFeedback.error(timedOut ? 'QuickBooks sync is still taking too long. Please try again.' : 'QuickBooks sync failed.');
     } finally {
       setBusy(false);
     }
