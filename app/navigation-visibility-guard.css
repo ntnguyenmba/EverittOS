@@ -1,4 +1,35 @@
 /* Final navigation guard for every authenticated role and viewport. */
+.dashboard-shell-background,
+.dashboard-shell-overlay {
+  pointer-events: none !important;
+}
+
+.dashboard-shell > .sidebar,
+.dashboard-shell > .dashboard-shell-header,
+.dashboard-shell > .main,
+.dashboard-shell .mobile-nav,
+.dashboard-shell .mobile-nav-bar,
+.dashboard-shell .sidebar-nav,
+.dashboard-shell .sidebar-footer,
+.mobile-nav-overlay-portal,
+.mobile-nav-drawer {
+  pointer-events: auto !important;
+}
+
+.dashboard-shell a,
+.dashboard-shell button,
+.dashboard-shell select,
+.dashboard-shell input,
+.dashboard-shell textarea,
+.dashboard-shell [role='button'],
+.mobile-nav-overlay-portal a,
+.mobile-nav-overlay-portal button,
+.mobile-nav-overlay-portal select,
+.mobile-nav-overlay-portal [role='button'] {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
 @media (min-width: 1024px) {
   .dashboard-shell {
     display: grid !important;
@@ -24,6 +55,7 @@
     overflow-y: auto !important;
     transform: none !important;
     z-index: 45 !important;
+    pointer-events: auto !important;
   }
 
   .dashboard-shell > .sidebar > *,
@@ -34,6 +66,7 @@
   .dashboard-shell > .sidebar .sidebar-language-compact {
     visibility: visible !important;
     opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .dashboard-shell > .dashboard-shell-header {
@@ -43,12 +76,14 @@
     opacity: 1 !important;
     position: sticky !important;
     top: 0 !important;
-    z-index: 44 !important;
+    z-index: 46 !important;
     width: 100% !important;
     padding: 12px clamp(24px, 4vw, 56px) 0 !important;
     box-sizing: border-box !important;
+    pointer-events: auto !important;
   }
 
+  .dashboard-shell-header .mobile-nav,
   .dashboard-shell-header .mobile-nav-bar {
     width: min(1240px, 100%) !important;
     min-height: 62px !important;
@@ -58,6 +93,7 @@
     border-radius: 15px !important;
     background: rgba(255, 255, 255, 0.95) !important;
     box-shadow: 0 8px 24px rgba(37, 54, 74, 0.08) !important;
+    pointer-events: auto !important;
   }
 
   .dashboard-shell-header .mobile-nav-brand-logo,
@@ -66,6 +102,7 @@
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .dashboard-shell > .main {
@@ -88,14 +125,29 @@
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 100 !important;
+    pointer-events: auto !important;
   }
 
+  .dashboard-shell-header .mobile-nav,
   .dashboard-shell-header .mobile-nav-bar,
-  .dashboard-shell-header .mobile-nav-menu-btn {
+  .dashboard-shell-header .mobile-nav-menu-btn,
+  .dashboard-shell-header .mobile-nav-language {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    pointer-events: auto !important;
   }
+}
+
+.mobile-nav-overlay-portal {
+  z-index: 2147483000 !important;
+  pointer-events: auto !important;
+}
+
+.mobile-nav-drawer,
+.mobile-nav-drawer * {
+  pointer-events: auto !important;
 }
 
 .mobile-nav-close-btn {
@@ -106,4 +158,5 @@
   word-break: normal !important;
   overflow-wrap: normal !important;
   writing-mode: horizontal-tb !important;
+  pointer-events: auto !important;
 }
