@@ -1,0 +1,61 @@
+/* Final navigation guard for every authenticated role and viewport. */
+@media (min-width: 1024px) {
+  .dashboard-shell {
+    display: grid !important;
+    grid-template-columns: 300px minmax(0, 1fr) !important;
+    grid-template-areas: 'side main' !important;
+  }
+
+  .dashboard-shell > .sidebar {
+    grid-area: side !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+    transform: none !important;
+  }
+
+  .dashboard-shell > .main {
+    grid-area: main !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell > .dashboard-shell-header {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .dashboard-shell {
+    display: block !important;
+  }
+
+  .dashboard-shell > .sidebar {
+    display: none !important;
+  }
+
+  .dashboard-shell > .dashboard-shell-header {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-bar,
+  .dashboard-shell-header .mobile-nav-menu-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+.mobile-nav-close-btn {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: max-content !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  writing-mode: horizontal-tb !important;
+}
