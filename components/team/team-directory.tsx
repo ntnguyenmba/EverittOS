@@ -28,6 +28,7 @@ type ProfileRow = {
 
 function roleLabel(role: string) {
   const normalized = normalizeRole(role);
+  if (normalized === 'employee') return 'Staff';
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).replaceAll('_', ' ');
 }
 
@@ -35,6 +36,7 @@ export function TeamDirectory() {
   const [members, setMembers] = useState<DirectoryMember[]>([]);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -72,7 +74,7 @@ export function TeamDirectory() {
 
       if (memberError) {
         if (!cancelled) {
-          setError(memberError.message);
+          setError('Team members could not be loaded.');
           setLoading(false);
         }
         return;
@@ -87,18 +89,20 @@ export function TeamDirectory() {
       const profiles = new Map<string, ProfileRow>();
       for (const profile of (profileRows || []) as ProfileRow[]) profiles.set(profile.id, profile);
 
-      const next = rows.map((row) => {
-        const profile = profiles.get(row.user_id);
-        const email = profile?.email?.trim() || '';
-        const name = profile?.full_name?.trim() || email || 'Team member';
-        return {
-          userId: row.user_id,
-          name,
-          email,
-          role: normalizeRole(row.role),
-          active: row.active
-        };
-      });
+      const next = rows
+        .map((row) => {
+          const profile = profiles.get(row.user_id);
+          const email = profile?.email?.trim() || '';
+          const name = profile?.full_name?.trim() || email || 'Team member';
+          return {
+            userId: row.user_id,
+            name,
+            email,
+            role: normalizeRole(row.role),
+            active: row.active
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
 
       if (!cancelled) {
         setMembers(next);
@@ -114,17 +118,21 @@ export function TeamDirectory() {
     const text = query.trim().toLowerCase();
     return members.filter((member) => {
       if (roleFilter !== 'all' && member.role !== roleFilter) return false;
+      if (statusFilter === 'active' && !member.active) return false;
+      if (statusFilter === 'inactive' && member.active) return false;
       if (!text) return true;
-      return [member.name, member.email, member.role].some((value) => value.toLowerCase().includes(text));
+      return [member.name, member.email, roleLabel(member.role)].some((value) => value.toLowerCase().includes(text));
     });
-  }, [members, query, roleFilter]);
+  }, [members, query, roleFilter, statusFilter]);
+
+  const activeCount = members.filter((member) => member.active).length;
 
   return (
     <section className="card" style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ margin: 0 }}>Team directory</h2>
-          <p className="muted" style={{ margin: '6px 0 0' }}>Find managers, staff, and contractors, then assign them when creating a job.</p>
+          <h2 style={{ margin: 0 }}>Team members</h2>
+          <p className="muted" style={{ margin: '6px 0 0' }}>{activeCount} active · Find someone and assign them to a job.</p>
         </div>
         <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
       </div>
@@ -132,19 +140,31 @@ export function TeamDirectory() {
       <div className="grid-2" style={{ marginTop: 16 }}>
         <label>
           Search team
-          <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or role" />
+          <input
+            className="input"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Name, email, or role"
+          />
         </label>
         <label>
           Role
           <select className="input" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-            <option value="all">All assignable team</option>
-            <option value="owner">Owners</option>
-            <option value="admin">Admins</option>
-            <option value="manager">Managers</option>
+            <option value="all">All roles</option>
+            <option value="owner">Owner</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
             <option value="employee">Staff</option>
-            <option value="contractor">Contractors</option>
+            <option value="contractor">Contractor</option>
           </select>
         </label>
+      </div>
+
+      <div className="segmented-control" role="group" aria-label="Team member status" style={{ marginTop: 12 }}>
+        <button type="button" className={`btn${statusFilter === 'active' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
+        <button type="button" className={`btn${statusFilter === 'inactive' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button>
+        <button type="button" className={`btn${statusFilter === 'all' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('all')}>All</button>
       </div>
 
       {loading ? <p className="loading-state">Loading team...</p> : null}
