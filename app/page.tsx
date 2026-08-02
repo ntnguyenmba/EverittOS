@@ -5,7 +5,7 @@ import './marketing-home.css';
 export const metadata: Metadata = {
   title: 'EverittOS | Run Your Service Business From One Place',
   description:
-    'Manage customers, jobs, schedules, teams, photos, reports, and payments in one clear workspace built for service businesses.'
+    'Manage customers, jobs, schedules, teams, photos, and payments in one clear workspace built for service businesses.'
 };
 
 const features = [
@@ -21,8 +21,8 @@ const features = [
   },
   {
     number: '03',
-    title: 'Photos and reports',
-    description: 'Capture before and after photos, organize job records, and share professional customer reports from one place.'
+    title: 'Photos and job records',
+    description: 'Capture before and after photos, organize job details, and keep a clear record of completed work in one place.'
   },
   {
     number: '04',
@@ -55,8 +55,8 @@ const plans = [
     name: 'Pro',
     price: '$9',
     period: '/month',
-    description: 'For solo operators who need stronger job records and customer-facing reports.',
-    features: ['Everything in Free', 'Bookings and appointments', 'Before and after photos', 'Standard reports', 'Expanded jobs and customers'],
+    description: 'For solo operators who need bookings, before and after photos, and stronger job records.',
+    features: ['Everything in Free', 'Bookings and appointments', 'Before and after photos', 'Expanded jobs and customers'],
     href: '/signup?plan=pro',
     label: 'Choose Pro',
     featured: true
@@ -65,8 +65,8 @@ const plans = [
     name: 'Business',
     price: '$39',
     period: '/month',
-    description: 'For teams that need assignments, activity tracking, and advanced reporting.',
-    features: ['Everything in Pro', 'Team and crew management', 'Job assignments', 'Activity log', 'Everitt AI', 'Advanced reporting'],
+    description: 'For teams that need assignments, activity tracking, and Everitt AI.',
+    features: ['Everything in Pro', 'Team and crew management', 'Job assignments', 'Activity log', 'Everitt AI'],
     href: '/signup?plan=business',
     label: 'Choose Business'
   }
@@ -103,7 +103,7 @@ export default function HomePage() {
           <p className="marketing-eyebrow">Operations software for service businesses</p>
           <h1>Run the work. Know the numbers.</h1>
           <p className="marketing-hero-copy">
-            EverittOS brings customers, jobs, scheduling, teams, photos, reports, and payments into one clear workspace so you can spend less time piecing your business together.
+            EverittOS brings customers, jobs, scheduling, teams, photos, and payments into one clear workspace so you can spend less time piecing your business together.
           </p>
           <div className="marketing-hero-actions">
             <Link className="marketing-button" href="/signup?plan=free">
@@ -158,7 +158,7 @@ export default function HomePage() {
                 <div className="marketing-preview-list">
                   <div className="marketing-preview-row"><span>Residential cleaning</span><em>In progress</em></div>
                   <div className="marketing-preview-row"><span>Move-out service</span><em>Scheduled</em></div>
-                  <div className="marketing-preview-row"><span>Property report</span><em>Ready</em></div>
+                  <div className="marketing-preview-row"><span>Property service</span><em>Ready</em></div>
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function HomePage() {
       <section className="marketing-cta">
         <div>
           <h2>Your business should be easier to run.</h2>
-          <p>Build a clear daily workflow for customers, jobs, teams, photos, reports, and money without adding more administrative work.</p>
+          <p>Build a clear daily workflow for customers, jobs, teams, photos, and money without adding more administrative work.</p>
         </div>
         <Link className="marketing-button" href="/signup?plan=free">
           Start with EverittOS
