@@ -52,6 +52,7 @@ import './unified-record-cards.css';
 import './team-customer-consistency.css';
 import './job-instructions-context-link.css';
 import './button-consistency.css';
+import './final-app-polish.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
