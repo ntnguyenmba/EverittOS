@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LeadDetailForm } from '@/components/lead-detail-form';
@@ -41,7 +41,7 @@ export default function LeadDetailPage({ params }: PageProps) {
     params.then((p) => setLeadId(p.id));
   }, [params]);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!leadId) return;
     setLoading(true);
 
@@ -78,11 +78,11 @@ export default function LeadDetailPage({ params }: PageProps) {
     }
 
     setLead(data as CustomerRecord);
-  }
+  }, [appFeedback, leadId, router]);
 
   useEffect(() => {
     void load();
-  }, [leadId]);
+  }, [load]);
 
   const bookingHref = useMemo(() => (lead ? bookingHrefForLead(lead) : '/bookings'), [lead]);
 
