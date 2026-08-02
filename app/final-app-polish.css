@@ -186,26 +186,83 @@ h3,
   margin-top: 24px;
 }
 
-/* Do not let decorative or disabled-looking helper content wash out important pages. */
-.job-instructions-context-link,
+/* Shared banners and empty states should read as active content, not disabled UI. */
 .empty-state,
 .notice-card,
-.info-card {
+.info-card,
+.access-blocked-banner,
+.alert,
+.status-banner,
+.inline-notice {
   opacity: 1;
+  border: 1px solid rgba(37, 54, 74, 0.16);
+  background: var(--surface, #ffffff);
+  color: var(--text, #25364a);
+  border-radius: var(--radius-md, 10px);
+  padding: 16px 18px;
 }
 
-.job-instructions-context-link strong,
 .empty-state strong,
 .notice-card strong,
-.info-card strong {
+.info-card strong,
+.access-blocked-banner strong,
+.alert strong,
+.status-banner strong,
+.inline-notice strong {
   color: var(--text, #25364a);
 }
 
-.job-instructions-context-link span,
 .empty-state p,
 .notice-card p,
-.info-card p {
+.info-card p,
+.access-blocked-banner p,
+.alert p,
+.status-banner p,
+.inline-notice p {
   color: var(--text-secondary, #5f7186);
+  opacity: 1;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.empty-state .muted,
+.notice-card .muted,
+.info-card .muted,
+.access-blocked-banner .muted,
+.alert .muted,
+.status-banner .muted,
+.inline-notice .muted {
+  color: var(--text-secondary, #5f7186);
+  opacity: 1;
+}
+
+.empty-state .btn,
+.notice-card .btn,
+.info-card .btn,
+.access-blocked-banner .btn,
+.alert .btn,
+.status-banner .btn,
+.inline-notice .btn {
+  margin-top: 14px;
+}
+
+/* Keep card interiors and stacked content on one spacing rhythm. */
+.card > :first-child,
+.panel > :first-child,
+.settings-section > :first-child {
+  margin-top: 0;
+}
+
+.card > :last-child,
+.panel > :last-child,
+.settings-section > :last-child {
+  margin-bottom: 0;
+}
+
+.card > * + *,
+.panel > * + *,
+.settings-section > * + * {
+  margin-top: 12px;
 }
 
 @media (max-width: 640px) {
@@ -231,5 +288,15 @@ h3,
   .dashboard-home .dashboard-revenue-metric {
     min-height: 112px;
     padding: 16px;
+  }
+
+  .empty-state,
+  .notice-card,
+  .info-card,
+  .access-blocked-banner,
+  .alert,
+  .status-banner,
+  .inline-notice {
+    padding: 14px 16px;
   }
 }
