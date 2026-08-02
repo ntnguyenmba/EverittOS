@@ -35,6 +35,41 @@ describe('portal navigation menus', () => {
   });
 });
 
+describe('portal route isolation', () => {
+  it('allows exact portal homes and true descendants only', () => {
+    assert.equal(isContractorAllowedPath('/portal/contractor'), true);
+    assert.equal(isContractorAllowedPath('/portal/contractor/jobs/job-1'), true);
+    assert.equal(isClientAllowedPath('/portal/client'), true);
+    assert.equal(isClientAllowedPath('/portal/client/jobs/job-1'), true);
+  });
+
+  it('rejects lookalike portal prefixes', () => {
+    assert.equal(isContractorAllowedPath('/portal/contractor-admin'), false);
+    assert.equal(isContractorAllowedPath('/portal/contractors'), false);
+    assert.equal(isClientAllowedPath('/portal/client-admin'), false);
+    assert.equal(isClientAllowedPath('/portal/clients'), false);
+  });
+
+  it('keeps owner-only and financial routes blocked for portal roles', () => {
+    const blocked = [
+      '/dashboard',
+      '/customers',
+      '/team',
+      '/invoices',
+      '/expenses',
+      '/analytics',
+      '/contractor-pay',
+      '/settings/billing',
+      '/settings/integrations'
+    ];
+
+    for (const path of blocked) {
+      assert.equal(isContractorAllowedPath(path), false, `contractor should not access ${path}`);
+      assert.equal(isClientAllowedPath(path), false, `client should not access ${path}`);
+    }
+  });
+});
+
 describe('client invite access bypasses subscription walls', () => {
   it('does not require a paid plan for invite acceptance', () => {
     assert.equal(minimumPlanForPath('/team/accept'), null);
