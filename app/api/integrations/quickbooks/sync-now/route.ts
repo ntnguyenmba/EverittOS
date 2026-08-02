@@ -4,6 +4,7 @@ import { ensureValidAccessToken } from '@/lib/quickbooks/client';
 import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
 import { exportEverittOSExpensesToQuickBooks } from '@/lib/quickbooks/expense-exports';
 import { syncQuickBooksExpenses } from '@/lib/quickbooks/expenses';
+import { exportEverittOSIncomeToQuickBooks } from '@/lib/quickbooks/income';
 import { exportInvoiceToQuickBooks } from '@/lib/quickbooks/invoices';
 import { writeQuickBooksSyncLog, logQuickBooksEvent } from '@/lib/quickbooks/logging';
 import { canManageOrganizationSettings } from '@/lib/roles';
@@ -29,6 +30,13 @@ type SyncSummary = {
   companyName: string | null;
   customers: ExportCounts;
   invoices: ExportCounts;
+  incomeExports: {
+    found: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+  };
   expenseExports: {
     found: number;
     created: number;
@@ -127,6 +135,12 @@ async function runQuickBooksSync(input: {
 
     const customers = await exportExistingCustomers({ admin, organizationId, userId });
     const invoices = await exportExistingInvoices({ admin, organizationId, userId });
+    const incomeExports = await exportEverittOSIncomeToQuickBooks({
+      admin,
+      organizationId,
+      userId,
+      limit: BULK_EXPORT_LIMIT
+    });
     const expenseExports = await exportEverittOSExpensesToQuickBooks({
       admin,
       organizationId,
@@ -136,7 +150,7 @@ async function runQuickBooksSync(input: {
     const expenseImports = await syncQuickBooksExpenses(admin, organizationId, userId, activeConnection);
 
     const now = new Date().toISOString();
-    const failures = customers.failed + invoices.failed + expenseExports.failed;
+    const failures = customers.failed + invoices.failed + incomeExports.failed + expenseExports.failed;
     const lastError = failures
       ? `${failures} financial record${failures === 1 ? '' : 's'} could not be synced. Open Recent sync activity for details.`
       : null;
@@ -161,6 +175,16 @@ async function runQuickBooksSync(input: {
         status: failures ? 'completed_with_errors' : 'completed',
         externalId: activeConnection.realm_id,
         errorMessage: lastError,
+        httpStatus: 200
+      }),
+      writeQuickBooksSyncLog(admin, {
+        organizationId,
+        userId,
+        entityType: 'income',
+        action: 'export',
+        status: incomeExports.failed ? 'completed_with_errors' : 'completed',
+        externalId: activeConnection.realm_id,
+        errorMessage: `Exported ${incomeExports.created}, updated ${incomeExports.updated}, skipped ${incomeExports.skipped}, failed ${incomeExports.failed}.`,
         httpStatus: 200
       }),
       writeQuickBooksSyncLog(admin, {
@@ -195,6 +219,9 @@ async function runQuickBooksSync(input: {
       invoicesCreated: invoices.created,
       invoicesUpdated: invoices.updated,
       invoicesFailed: invoices.failed,
+      incomeCreated: incomeExports.created,
+      incomeUpdated: incomeExports.updated,
+      incomeFailed: incomeExports.failed,
       expensesExported: expenseExports.created,
       expensesExportFailed: expenseExports.failed,
       expensesImported: expenseImports.imported,
@@ -206,6 +233,7 @@ async function runQuickBooksSync(input: {
       companyName: companyName || activeConnection.company_name,
       customers,
       invoices,
+      incomeExports,
       expenseExports,
       expenseImports
     };
@@ -316,9 +344,11 @@ export async function POST() {
   try {
     const summary = await runQuickBooksSync({ admin, organizationId, userId: ctx.userId });
     const importedExpenseCount = summary.expenseImports.imported + summary.expenseImports.updated;
+    const directIncomeCount = summary.incomeExports.created + summary.incomeExports.updated;
     const message = [
       `${summary.customers.created + summary.customers.updated} customer${summary.customers.found === 1 ? '' : 's'} synced`,
       `${summary.invoices.created + summary.invoices.updated} invoice${summary.invoices.found === 1 ? '' : 's'} synced`,
+      `${directIncomeCount} direct income payment${directIncomeCount === 1 ? '' : 's'} synced`,
       `${summary.expenseExports.created} expense${summary.expenseExports.created === 1 ? '' : 's'} exported`,
       `${importedExpenseCount} expense${importedExpenseCount === 1 ? '' : 's'} imported`
     ].join(', ');
