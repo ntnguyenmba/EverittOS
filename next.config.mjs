@@ -29,9 +29,19 @@ function buildSecurityHeaders() {
     .filter(Boolean)
     .join(' ');
 
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    vercelEnv === 'development' ? "'unsafe-eval'" : '',
+    'https://www.googletagmanager.com',
+    'https://www.google-analytics.com'
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
@@ -40,7 +50,8 @@ function buildSecurityHeaders() {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'"
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests"
   ].join('; ');
 
   const headers = {
@@ -50,6 +61,9 @@ function buildSecurityHeaders() {
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy':
       'camera=(self), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")',
+    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    'Cross-Origin-Resource-Policy': 'same-site',
+    'X-Permitted-Cross-Domain-Policies': 'none',
     'X-DNS-Prefetch-Control': 'on'
   };
 
@@ -66,6 +80,9 @@ const securityHeaders = Object.entries(buildSecurityHeaders()).map(([key, value]
 }));
 
 const nextConfig = {
+  poweredByHeader: false,
+  compress: true,
+  productionBrowserSourceMaps: false,
   typescript: {
     ignoreBuildErrors: true
   },
