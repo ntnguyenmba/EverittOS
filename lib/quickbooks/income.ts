@@ -15,8 +15,6 @@ type DirectPaymentRow = {
   payment_method: string | null;
   payment_reference: string | null;
   notes: string | null;
-  quickbooks_sales_receipt_id: string | null;
-  quickbooks_sync_token: string | null;
 };
 
 type JobRow = {
@@ -125,6 +123,25 @@ async function resolveIncomeItemId(
   return createdId;
 }
 
+async function wasDirectPaymentExported(
+  admin: SupabaseClient,
+  organizationId: string,
+  paymentId: string
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from('quickbooks_sync_logs')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('entity_type', 'income')
+    .eq('entity_id', paymentId)
+    .eq('action', 'export_sales_receipt')
+    .in('status', ['created', 'updated'])
+    .limit(1);
+
+  if (error) throw new Error(`QuickBooks income history could not be checked: ${error.message}`);
+  return Boolean(data?.length);
+}
+
 async function exportDirectPayment(input: {
   admin: SupabaseClient;
   organizationId: string;
@@ -134,6 +151,10 @@ async function exportDirectPayment(input: {
 }): Promise<'created' | 'updated' | 'skipped'> {
   const payment = input.payment;
   if (payment.invoice_id) return 'skipped';
+
+  if (await wasDirectPaymentExported(input.admin, input.organizationId, payment.id)) {
+    return 'skipped';
+  }
 
   const { data: job, error: jobError } = await input.admin
     .from('jobs')
@@ -168,6 +189,7 @@ async function exportDirectPayment(input: {
     TxnDate: payment.paid_at.slice(0, 10),
     PrivateNote: [
       note,
+      `EverittOS payment ${payment.id}`,
       payment.payment_method ? `Method: ${payment.payment_method}` : '',
       payment.payment_reference ? `Reference: ${payment.payment_reference}` : ''
     ].filter(Boolean).join(' | ').slice(0, 4000),
@@ -185,12 +207,6 @@ async function exportDirectPayment(input: {
     ]
   };
 
-  if (payment.quickbooks_sales_receipt_id && payment.quickbooks_sync_token) {
-    payload.Id = payment.quickbooks_sales_receipt_id;
-    payload.SyncToken = payment.quickbooks_sync_token;
-    payload.sparse = true;
-  }
-
   const response = await quickbooksAccountingRequest<SalesReceiptResponse>({
     admin: input.admin,
     organizationId: input.organizationId,
@@ -207,32 +223,19 @@ async function exportDirectPayment(input: {
     );
   }
 
-  const wasExisting = Boolean(payment.quickbooks_sales_receipt_id);
-  const { error: updateError } = await input.admin
-    .from('job_payments')
-    .update({
-      quickbooks_sales_receipt_id: entity.Id,
-      quickbooks_sync_token: entity.SyncToken,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', payment.id)
-    .eq('organization_id', input.organizationId);
-
-  if (updateError) throw new Error(updateError.message);
-
   await writeQuickBooksSyncLog(input.admin, {
     organizationId: input.organizationId,
     userId: input.userId,
     entityType: 'income',
     entityId: payment.id,
     action: 'export_sales_receipt',
-    status: wasExisting ? 'updated' : 'created',
+    status: 'created',
     externalId: entity.Id,
     intuitTid: response.intuitTid,
     httpStatus: 200
   });
 
-  return wasExisting ? 'updated' : 'created';
+  return 'created';
 }
 
 export async function exportEverittOSIncomeToQuickBooks(input: {
@@ -245,7 +248,7 @@ export async function exportEverittOSIncomeToQuickBooks(input: {
   const { data, error } = await input.admin
     .from('job_payments')
     .select(
-      'id, organization_id, job_id, customer_id, invoice_id, amount, paid_at, payment_method, payment_reference, notes, quickbooks_sales_receipt_id, quickbooks_sync_token'
+      'id, organization_id, job_id, customer_id, invoice_id, amount, paid_at, payment_method, payment_reference, notes'
     )
     .eq('organization_id', input.organizationId)
     .is('invoice_id', null)
