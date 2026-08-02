@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchCompanyDisplayName, loadQuickBooksConnection } from '@/lib/quickbooks';
 import { ensureValidAccessToken } from '@/lib/quickbooks/client';
+import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
 import { syncQuickBooksExpenses } from '@/lib/quickbooks/expenses';
+import { exportInvoiceToQuickBooks } from '@/lib/quickbooks/invoices';
 import { writeQuickBooksSyncLog, logQuickBooksEvent } from '@/lib/quickbooks/logging';
 import { canManageOrganizationSettings } from '@/lib/roles';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -11,7 +13,82 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/** Verify the QuickBooks connection and import purchases and bills into EverittOS expenses. */
+const BULK_EXPORT_LIMIT = 250;
+
+type ExportCounts = {
+  found: number;
+  created: number;
+  updated: number;
+  failed: number;
+};
+
+async function exportExistingCustomers(input: {
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>;
+  organizationId: string;
+  userId: string;
+}): Promise<ExportCounts> {
+  const { data, error } = await input.admin
+    .from('customers')
+    .select('id')
+    .eq('organization_id', input.organizationId)
+    .order('created_at', { ascending: true })
+    .limit(BULK_EXPORT_LIMIT);
+
+  if (error) throw new Error(`Customers could not be loaded: ${error.message}`);
+
+  const counts: ExportCounts = { found: data?.length || 0, created: 0, updated: 0, failed: 0 };
+  for (const row of data || []) {
+    try {
+      const result = await syncCustomerToQuickBooks({
+        admin: input.admin,
+        organizationId: input.organizationId,
+        userId: input.userId,
+        customerId: row.id,
+        log: true
+      });
+      if (result.created) counts.created += 1;
+      else counts.updated += 1;
+    } catch {
+      counts.failed += 1;
+    }
+  }
+  return counts;
+}
+
+async function exportExistingInvoices(input: {
+  admin: NonNullable<ReturnType<typeof createAdminSupabase>>;
+  organizationId: string;
+  userId: string;
+}): Promise<ExportCounts> {
+  const { data, error } = await input.admin
+    .from('invoices')
+    .select('id')
+    .eq('organization_id', input.organizationId)
+    .not('customer_id', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(BULK_EXPORT_LIMIT);
+
+  if (error) throw new Error(`Invoices could not be loaded: ${error.message}`);
+
+  const counts: ExportCounts = { found: data?.length || 0, created: 0, updated: 0, failed: 0 };
+  for (const row of data || []) {
+    try {
+      const result = await exportInvoiceToQuickBooks({
+        admin: input.admin,
+        organizationId: input.organizationId,
+        userId: input.userId,
+        invoiceId: row.id
+      });
+      if (result.created) counts.created += 1;
+      else counts.updated += 1;
+    } catch {
+      counts.failed += 1;
+    }
+  }
+  return counts;
+}
+
+/** Export EverittOS customers and invoices, then import QuickBooks purchases and bills. */
 export async function POST() {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
@@ -26,7 +103,8 @@ export async function POST() {
     return NextResponse.json({ error: 'QuickBooks sync is not configured on the server.' }, { status: 503 });
   }
 
-  const connection = await loadQuickBooksConnection(admin, ctx.workspace.organizationId);
+  const organizationId = ctx.workspace.organizationId;
+  const connection = await loadQuickBooksConnection(admin, organizationId);
   if (!connection || !['connected', 'error'].includes(connection.status)) {
     return NextResponse.json(
       { error: 'QuickBooks is not connected. Connect your company before syncing.', status: 'disconnected' },
@@ -35,41 +113,41 @@ export async function POST() {
   }
 
   try {
-    // Refresh once before starting concurrent Accounting API calls. QuickBooks rotates
-    // refresh tokens, so allowing each request to refresh independently can invalidate
-    // sibling requests and make Sync Now appear successful while importing nothing.
     const validated = await ensureValidAccessToken(admin, connection);
     const activeConnection = validated.connection;
+    const companyName = await fetchCompanyDisplayName(admin, organizationId, { connection: activeConnection });
 
-    const [companyName, expenseSync] = await Promise.all([
-      fetchCompanyDisplayName(admin, ctx.workspace.organizationId, { connection: activeConnection }),
-      syncQuickBooksExpenses(admin, ctx.workspace.organizationId, ctx.userId, activeConnection)
-    ]);
+    // Run exports in sequence to avoid QuickBooks refresh-token and rate-limit conflicts.
+    const customers = await exportExistingCustomers({ admin, organizationId, userId: ctx.userId });
+    const invoices = await exportExistingInvoices({ admin, organizationId, userId: ctx.userId });
+    const expenses = await syncQuickBooksExpenses(admin, organizationId, ctx.userId, activeConnection);
 
     const now = new Date().toISOString();
+    const failures = customers.failed + invoices.failed;
     await admin
       .from('quickbooks_connections')
       .update({
         company_name: companyName || activeConnection.company_name,
         last_sync_at: now,
-        last_error: null,
+        last_error: failures ? `${failures} record${failures === 1 ? '' : 's'} could not be exported. Open Recent sync activity for details.` : null,
         status: 'connected',
         updated_at: now
       })
-      .eq('organization_id', ctx.workspace.organizationId);
+      .eq('organization_id', organizationId);
 
     await Promise.all([
       writeQuickBooksSyncLog(admin, {
-        organizationId: ctx.workspace.organizationId,
+        organizationId,
         userId: ctx.userId,
         entityType: 'connection',
         action: 'sync',
-        status: 'completed',
+        status: failures ? 'completed_with_errors' : 'completed',
         externalId: activeConnection.realm_id,
+        errorMessage: failures ? `${failures} export failures` : null,
         httpStatus: 200
       }),
       writeQuickBooksSyncLog(admin, {
-        organizationId: ctx.workspace.organizationId,
+        organizationId,
         userId: ctx.userId,
         entityType: 'expense',
         action: 'import',
@@ -80,33 +158,41 @@ export async function POST() {
     ]);
 
     logQuickBooksEvent('sync_now_completed', {
-      organizationId: ctx.workspace.organizationId,
+      organizationId,
       realmId: activeConnection.realm_id,
       companyName: companyName || activeConnection.company_name,
-      expensesImported: expenseSync.imported,
-      expensesUpdated: expenseSync.updated,
-      expensesSkipped: expenseSync.skipped,
-      purchasesFound: expenseSync.purchases,
-      billsFound: expenseSync.bills
+      customersCreated: customers.created,
+      customersUpdated: customers.updated,
+      customersFailed: customers.failed,
+      invoicesCreated: invoices.created,
+      invoicesUpdated: invoices.updated,
+      invoicesFailed: invoices.failed,
+      expensesImported: expenses.imported,
+      expensesUpdated: expenses.updated,
+      expensesSkipped: expenses.skipped
     });
 
-    const recordsFound = expenseSync.purchases + expenseSync.bills;
-    const message = recordsFound === 0
-      ? 'QuickBooks sync completed, but no posted purchases or bills were found.'
-      : `QuickBooks synced. ${expenseSync.imported} expenses imported, ${expenseSync.updated} updated, and ${expenseSync.skipped} skipped.`;
+    const message = [
+      `QuickBooks synced: ${customers.created} customers created, ${customers.updated} updated`,
+      `${invoices.created} invoices created, ${invoices.updated} updated`,
+      `${expenses.imported} expenses imported, ${expenses.updated} updated`,
+      failures ? `${failures} failed` : null
+    ].filter(Boolean).join(' · ');
 
     return NextResponse.json({
       ok: true,
-      status: 'synced',
+      status: failures ? 'synced_with_errors' : 'synced',
       companyName: companyName || activeConnection.company_name,
       realmId: activeConnection.realm_id,
       lastSyncAt: now,
-      recordsFound,
-      expenses: expenseSync,
+      customers,
+      invoices,
+      expenses,
       message,
+      limited: customers.found >= BULK_EXPORT_LIMIT || invoices.found >= BULK_EXPORT_LIMIT,
       supported: {
-        customers: 'Export from customer or invoice workflows (one-way to QuickBooks)',
-        invoices: 'Export from invoice workflows (one-way to QuickBooks)',
+        customers: 'Existing and new customers export to QuickBooks',
+        invoices: 'Existing and new invoices export to QuickBooks',
         payments: 'QuickBooks payments reconcile exported EverittOS invoices',
         expenses: 'Posted purchases and bills import from QuickBooks into EverittOS'
       }
@@ -120,13 +206,13 @@ export async function POST() {
         status: 'error',
         updated_at: new Date().toISOString()
       })
-      .eq('organization_id', ctx.workspace.organizationId);
+      .eq('organization_id', organizationId);
 
     await writeQuickBooksSyncLog(admin, {
-      organizationId: ctx.workspace.organizationId,
+      organizationId,
       userId: ctx.userId,
-      entityType: 'expense',
-      action: 'import',
+      entityType: 'connection',
+      action: 'sync',
       status: 'failed',
       errorMessage: message.slice(0, 500),
       httpStatus: 400
