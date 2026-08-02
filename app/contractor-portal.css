@@ -160,6 +160,23 @@
   line-height: 1.45;
 }
 
+.contractor-job-card .eyebrow,
+.contractor-history-card .eyebrow,
+.client-job-card .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 0 0 8px !important;
+  padding: 5px 10px;
+  border: 1px solid #c7d9ee;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #405a78 !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .contractor-job-card > div[id^='contractor-job-'] {
   padding: 14px 20px 18px !important;
   border-top: 1px solid #e1e9ec !important;
@@ -175,10 +192,6 @@
 
 .client-job-card-main {
   padding-right: 0;
-}
-
-.client-job-card .eyebrow {
-  margin: 0 0 7px;
 }
 
 .client-job-secondary {
