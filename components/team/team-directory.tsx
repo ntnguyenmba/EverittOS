@@ -186,7 +186,10 @@ export function TeamDirectory() {
           <h2 style={{ margin: 0 }}>Team members</h2>
           <p className="muted" style={{ margin: '6px 0 0' }}>{activeCount} active · Find someone and assign work.</p>
         </div>
-        <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+        <div className="inline-actions">
+          <Link className="btn" href="/people#invite-by-email">Add team member</Link>
+          <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
+        </div>
       </div>
 
       <div className="grid-2" style={{ marginTop: 16 }}>
