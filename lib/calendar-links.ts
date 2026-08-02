@@ -10,14 +10,90 @@ export type CalendarEventInput = {
   timeZone?: string;
 };
 
-function toUtcStamp(iso: string): string {
-  const date = new Date(iso);
+function hasExplicitTimeZone(value: string): boolean {
+  return /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim());
+}
+
+function parseWallClock(value: string): number[] | null {
+  const match = value
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return null;
+  return match.slice(1, 7).map((part) => Number(part || 0));
+}
+
+function isValidTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function wallClockToUtcIso(value: string, timeZone: string): string | null {
+  const parts = parseWallClock(value);
+  if (!parts || !isValidTimeZone(timeZone)) return null;
+  const [year, month, day, hour, minute, second] = parts;
+  const targetWallClock = Date.UTC(year, month - 1, day, hour, minute, second);
+  let instant = targetWallClock;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const formatted = Object.fromEntries(
+      formatter
+        .formatToParts(new Date(instant))
+        .filter((part) => part.type !== 'literal')
+        .map((part) => [part.type, Number(part.value)])
+    ) as Record<string, number>;
+    const renderedWallClock = Date.UTC(
+      formatted.year,
+      formatted.month - 1,
+      formatted.day,
+      formatted.hour,
+      formatted.minute,
+      formatted.second
+    );
+    const adjustment = targetWallClock - renderedWallClock;
+    instant += adjustment;
+    if (adjustment === 0) break;
+  }
+
+  return new Date(instant).toISOString();
+}
+
+function calendarInstant(value: string, timeZone?: string): string {
+  if (!hasExplicitTimeZone(value) && timeZone?.trim()) {
+    const converted = wallClockToUtcIso(value, timeZone.trim());
+    if (converted) return converted;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
+function toUtcStamp(value: string, timeZone?: string): string {
+  const date = new Date(calendarInstant(value, timeZone));
   if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
 function ensureEnd(startsAt: string, endsAt?: string): string {
   if (endsAt) return endsAt;
+  const parts = parseWallClock(startsAt);
+  if (parts && !hasExplicitTimeZone(startsAt)) {
+    const [year, month, day, hour, minute, second] = parts;
+    const end = new Date(Date.UTC(year, month - 1, day, hour + 2, minute, second));
+    return end.toISOString().replace(/\.000Z$/, '');
+  }
   const start = new Date(startsAt);
   if (Number.isNaN(start.getTime())) return startsAt;
   return new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString();
@@ -37,7 +113,7 @@ export function googleCalendarEventUrl(input: CalendarEventInput): string {
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: input.title,
-    dates: `${toUtcStamp(input.startsAt)}/${toUtcStamp(endsAt)}`
+    dates: `${toUtcStamp(input.startsAt, input.timeZone)}/${toUtcStamp(endsAt, input.timeZone)}`
   });
   if (input.description?.trim()) params.set('details', input.description.trim());
   if (input.location?.trim()) params.set('location', input.location.trim());
@@ -52,8 +128,8 @@ export function outlookCalendarEventUrl(input: CalendarEventInput): string {
     path: '/calendar/action/compose',
     rru: 'addevent',
     subject: input.title,
-    startdt: new Date(input.startsAt).toISOString(),
-    enddt: new Date(endsAt).toISOString()
+    startdt: calendarInstant(input.startsAt, input.timeZone),
+    enddt: calendarInstant(endsAt, input.timeZone)
   });
   if (input.description?.trim()) params.set('body', input.description.trim());
   if (input.location?.trim()) params.set('location', input.location.trim());
