@@ -134,7 +134,7 @@ export default function JobInstructionsPage() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login?next=/settings/job-instructions'); return; }
+      if (!user) { router.push('/login?next=/settings/account/job-instructions'); return; }
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
       setRole(normalizeRole(profile?.role));
@@ -150,7 +150,7 @@ export default function JobInstructionsPage() {
 
   const validSteps = useMemo(() => steps.filter((step) => step.text.en.trim() || step.text.es.trim() || step.text.vi.trim()), [steps]);
 
-  function useStarter(kind: StarterKey) {
+  function applyStarterTemplate(kind: StarterKey) {
     const starter = STARTERS[kind];
     setName(copy[kind]);
     setSteps(starter.en.map((_, index) => ({ key: crypto.randomUUID(), required: true, photoRequired: false, text: { en: starter.en[index], es: starter.es[index], vi: starter.vi[index] } })));
@@ -225,7 +225,7 @@ export default function JobInstructionsPage() {
         <div style={{ marginTop: 20 }}>
           <strong>{copy.chooseStarter}</strong>
           <div className="button-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
-            {(Object.keys(STARTERS) as StarterKey[]).map((kind) => <button key={kind} type="button" className="btn" onClick={() => useStarter(kind)}>{copy[kind]}</button>)}
+            {(Object.keys(STARTERS) as StarterKey[]).map((kind) => <button key={kind} type="button" className="btn" onClick={() => applyStarterTemplate(kind)}>{copy[kind]}</button>)}
           </div>
         </div>
 
