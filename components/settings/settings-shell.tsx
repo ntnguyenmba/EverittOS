@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { isNavLinkActive, settingsLinksForRole } from '@/lib/nav-access';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageBilling, canViewTeam, normalizeRole, type UserRole } from '@/lib/roles';
+import { canManageBilling, canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type SettingsShellProps = {
@@ -17,22 +18,28 @@ type SettingsShellProps = {
   children: React.ReactNode;
 };
 
-const CLEAR_SETTINGS_LABELS: Record<string, string> = {
-  '/settings/account': 'Account',
-  '/settings': 'Organization',
-  '/settings/team': 'Team',
-  '/settings/people': 'Team',
-  '/settings/notifications': 'Notifications',
-  '/settings/branding': 'Preferences',
-  '/settings/privacy': 'Privacy',
-  '/terms': 'Terms',
-  '/settings/privacy#delete-account': 'Delete Account',
-  '/settings/billing': 'Billing',
-  '/about': 'About'
-};
+const LABELS = {
+  en: {
+    organization: 'Organization', team: 'Team', notifications: 'Notifications', preferences: 'Preferences',
+    privacy: 'Privacy', terms: 'Terms', deleteAccount: 'Delete Account', billing: 'Billing', about: 'About',
+    instructions: 'Job instructions', manageBilling: 'Manage Billing', settings: 'Settings'
+  },
+  es: {
+    organization: 'Organización', team: 'Equipo', notifications: 'Notificaciones', preferences: 'Preferencias',
+    privacy: 'Privacidad', terms: 'Términos', deleteAccount: 'Eliminar cuenta', billing: 'Facturación', about: 'Acerca de',
+    instructions: 'Instrucciones de trabajo', manageBilling: 'Administrar facturación', settings: 'Configuración'
+  },
+  vi: {
+    organization: 'Tổ chức', team: 'Nhóm', notifications: 'Thông báo', preferences: 'Tùy chọn',
+    privacy: 'Quyền riêng tư', terms: 'Điều khoản', deleteAccount: 'Xóa tài khoản', billing: 'Thanh toán', about: 'Giới thiệu',
+    instructions: 'Hướng dẫn công việc', manageBilling: 'Quản lý thanh toán', settings: 'Cài đặt'
+  }
+} as const;
 
 export function SettingsShell({ plan = 'free', title, description, role: roleProp, children }: SettingsShellProps) {
   const pathname = usePathname();
+  const { locale } = useTranslation();
+  const copy = LABELS[locale];
   const normalizedPlan = normalizePlan(plan);
   const [role, setRole] = useState<UserRole>(normalizeRole(roleProp));
 
@@ -43,9 +50,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     }
 
     async function loadRole() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       setRole(normalizeRole(profile?.role));
@@ -54,25 +59,45 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     void loadRole();
   }, [roleProp]);
 
+  const labelByHref: Record<string, string> = {
+    '/settings/account': copy.settings,
+    '/settings': copy.organization,
+    '/settings/team': copy.team,
+    '/settings/people': copy.team,
+    '/settings/notifications': copy.notifications,
+    '/settings/branding': copy.preferences,
+    '/settings/privacy': copy.privacy,
+    '/terms': copy.terms,
+    '/settings/privacy#delete-account': copy.deleteAccount,
+    '/settings/billing': copy.billing,
+    '/settings/job-instructions': copy.instructions,
+    '/about': copy.about
+  };
+
   const links = settingsLinksForRole(role, normalizedPlan).map((link) => ({
     ...link,
-    label: CLEAR_SETTINGS_LABELS[link.href] || link.label
+    label: labelByHref[link.href] || link.label
   }));
 
   if (canViewTeam(role) && !links.some((link) => link.href === '/settings/team')) {
     const organizationIndex = links.findIndex((link) => link.href === '/settings');
-    const teamLink = { href: '/settings/team', label: 'Team' };
+    const teamLink = { href: '/settings/team', label: copy.team };
     if (organizationIndex >= 0) links.splice(organizationIndex + 1, 0, teamLink);
     else links.push(teamLink);
   }
 
-  if (canManageBilling(role) && !links.some((link) => link.href === '/settings/billing')) {
-    links.push({ href: '/settings/billing', label: 'Billing' });
+  if (isManagerRole(role) && !links.some((link) => link.href === '/settings/job-instructions')) {
+    const teamIndex = links.findIndex((link) => link.href === '/settings/team');
+    const instructionLink = { href: '/settings/job-instructions', label: copy.instructions };
+    if (teamIndex >= 0) links.splice(teamIndex + 1, 0, instructionLink);
+    else links.push(instructionLink);
   }
 
-  if (!links.some((link) => link.href === '/about')) {
-    links.push({ href: '/about', label: 'About' });
+  if (canManageBilling(role) && !links.some((link) => link.href === '/settings/billing')) {
+    links.push({ href: '/settings/billing', label: copy.billing });
   }
+
+  if (!links.some((link) => link.href === '/about')) links.push({ href: '/about', label: copy.about });
 
   const showBillingShortcut = canManageBilling(role) && pathname !== '/settings/billing';
 
@@ -83,20 +108,12 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
           <h2>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {showBillingShortcut ? (
-          <Link className="btn" href="/settings/billing">
-            Manage Billing
-          </Link>
-        ) : null}
+        {showBillingShortcut ? <Link className="btn" href="/settings/billing">{copy.manageBilling}</Link> : null}
       </div>
 
-      <nav className="settings-subnav settings-subnav-pills" aria-label="Settings">
+      <nav className="settings-subnav settings-subnav-pills" aria-label={copy.settings}>
         {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={isNavLinkActive(pathname, link.href) ? 'active' : undefined}
-          >
+          <Link key={link.href} href={link.href} className={isNavLinkActive(pathname, link.href) ? 'active' : undefined}>
             {link.label}
           </Link>
         ))}
