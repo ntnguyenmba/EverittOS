@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { fetchCompanyDisplayName, loadQuickBooksConnection } from '@/lib/quickbooks';
 import { ensureValidAccessToken } from '@/lib/quickbooks/client';
 import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
@@ -15,6 +15,8 @@ export const maxDuration = 60;
 
 const BULK_EXPORT_LIMIT = 250;
 
+type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
+
 type ExportCounts = {
   found: number;
   created: number;
@@ -23,7 +25,7 @@ type ExportCounts = {
 };
 
 async function exportExistingCustomers(input: {
-  admin: NonNullable<ReturnType<typeof createAdminSupabase>>;
+  admin: AdminClient;
   organizationId: string;
   userId: string;
 }): Promise<ExportCounts> {
@@ -56,7 +58,7 @@ async function exportExistingCustomers(input: {
 }
 
 async function exportExistingInvoices(input: {
-  admin: NonNullable<ReturnType<typeof createAdminSupabase>>;
+  admin: AdminClient;
   organizationId: string;
   userId: string;
 }): Promise<ExportCounts> {
@@ -88,39 +90,26 @@ async function exportExistingInvoices(input: {
   return counts;
 }
 
-/** Export EverittOS customers and invoices, then import QuickBooks purchases and bills. */
-export async function POST() {
-  const ctx = await requireWorkspaceSession();
-  if (!ctx.ok) {
-    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
-  }
-  if (!canManageOrganizationSettings(ctx.workspace.role)) {
-    return NextResponse.json({ error: 'Only owners and admins can sync QuickBooks.' }, { status: 403 });
-  }
-
-  const admin = createAdminSupabase();
-  if (!admin) {
-    return NextResponse.json({ error: 'QuickBooks sync is not configured on the server.' }, { status: 503 });
-  }
-
-  const organizationId = ctx.workspace.organizationId;
-  const connection = await loadQuickBooksConnection(admin, organizationId);
-  if (!connection || !['connected', 'error'].includes(connection.status)) {
-    return NextResponse.json(
-      { error: 'QuickBooks is not connected. Connect your company before syncing.', status: 'disconnected' },
-      { status: 409 }
-    );
-  }
+async function runQuickBooksSync(input: {
+  admin: AdminClient;
+  organizationId: string;
+  userId: string;
+}): Promise<void> {
+  const { admin, organizationId, userId } = input;
 
   try {
+    const connection = await loadQuickBooksConnection(admin, organizationId);
+    if (!connection || !['connected', 'error', 'syncing'].includes(connection.status)) {
+      throw new Error('QuickBooks is no longer connected. Reconnect your company before syncing.');
+    }
+
     const validated = await ensureValidAccessToken(admin, connection);
     const activeConnection = validated.connection;
     const companyName = await fetchCompanyDisplayName(admin, organizationId, { connection: activeConnection });
 
-    // Run exports in sequence to avoid QuickBooks refresh-token and rate-limit conflicts.
-    const customers = await exportExistingCustomers({ admin, organizationId, userId: ctx.userId });
-    const invoices = await exportExistingInvoices({ admin, organizationId, userId: ctx.userId });
-    const expenses = await syncQuickBooksExpenses(admin, organizationId, ctx.userId, activeConnection);
+    const customers = await exportExistingCustomers({ admin, organizationId, userId });
+    const invoices = await exportExistingInvoices({ admin, organizationId, userId });
+    const expenses = await syncQuickBooksExpenses(admin, organizationId, userId, activeConnection);
 
     const now = new Date().toISOString();
     const failures = customers.failed + invoices.failed;
@@ -138,7 +127,7 @@ export async function POST() {
     await Promise.all([
       writeQuickBooksSyncLog(admin, {
         organizationId,
-        userId: ctx.userId,
+        userId,
         entityType: 'connection',
         action: 'sync',
         status: failures ? 'completed_with_errors' : 'completed',
@@ -148,7 +137,7 @@ export async function POST() {
       }),
       writeQuickBooksSyncLog(admin, {
         organizationId,
-        userId: ctx.userId,
+        userId,
         entityType: 'expense',
         action: 'import',
         status: 'completed',
@@ -171,32 +160,6 @@ export async function POST() {
       expensesUpdated: expenses.updated,
       expensesSkipped: expenses.skipped
     });
-
-    const message = [
-      `QuickBooks synced: ${customers.created} customers created, ${customers.updated} updated`,
-      `${invoices.created} invoices created, ${invoices.updated} updated`,
-      `${expenses.imported} expenses imported, ${expenses.updated} updated`,
-      failures ? `${failures} failed` : null
-    ].filter(Boolean).join(' · ');
-
-    return NextResponse.json({
-      ok: true,
-      status: failures ? 'synced_with_errors' : 'synced',
-      companyName: companyName || activeConnection.company_name,
-      realmId: activeConnection.realm_id,
-      lastSyncAt: now,
-      customers,
-      invoices,
-      expenses,
-      message,
-      limited: customers.found >= BULK_EXPORT_LIMIT || invoices.found >= BULK_EXPORT_LIMIT,
-      supported: {
-        customers: 'Existing and new customers export to QuickBooks',
-        invoices: 'Existing and new invoices export to QuickBooks',
-        payments: 'QuickBooks payments reconcile exported EverittOS invoices',
-        expenses: 'Posted purchases and bills import from QuickBooks into EverittOS'
-      }
-    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'QuickBooks sync failed.';
     await admin
@@ -210,14 +173,78 @@ export async function POST() {
 
     await writeQuickBooksSyncLog(admin, {
       organizationId,
-      userId: ctx.userId,
+      userId,
       entityType: 'connection',
       action: 'sync',
       status: 'failed',
       errorMessage: message.slice(0, 500),
       httpStatus: 400
     });
-
-    return NextResponse.json({ error: message, status: 'failed' }, { status: 400 });
   }
+}
+
+/** Queue a QuickBooks sync and return immediately while Next.js finishes it after the response. */
+export async function POST() {
+  const ctx = await requireWorkspaceSession();
+  if (!ctx.ok) {
+    return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  }
+  if (!canManageOrganizationSettings(ctx.workspace.role)) {
+    return NextResponse.json({ error: 'Only owners and admins can sync QuickBooks.' }, { status: 403 });
+  }
+
+  const admin = createAdminSupabase();
+  if (!admin) {
+    return NextResponse.json({ error: 'QuickBooks sync is not configured on the server.' }, { status: 503 });
+  }
+
+  const organizationId = ctx.workspace.organizationId;
+  const connection = await loadQuickBooksConnection(admin, organizationId);
+  if (!connection || !['connected', 'error', 'syncing'].includes(connection.status)) {
+    return NextResponse.json(
+      { error: 'QuickBooks is not connected. Connect your company before syncing.', status: 'disconnected' },
+      { status: 409 }
+    );
+  }
+
+  if (connection.status === 'syncing') {
+    return NextResponse.json(
+      { ok: true, status: 'syncing', message: 'QuickBooks sync is already in progress.' },
+      { status: 202 }
+    );
+  }
+
+  const startedAt = new Date().toISOString();
+  const { error: updateError } = await admin
+    .from('quickbooks_connections')
+    .update({ status: 'syncing', last_error: null, updated_at: startedAt })
+    .eq('organization_id', organizationId);
+
+  if (updateError) {
+    return NextResponse.json({ error: `QuickBooks sync could not be started: ${updateError.message}` }, { status: 500 });
+  }
+
+  await writeQuickBooksSyncLog(admin, {
+    organizationId,
+    userId: ctx.userId,
+    entityType: 'connection',
+    action: 'sync',
+    status: 'started',
+    externalId: connection.realm_id,
+    httpStatus: 202
+  });
+
+  after(async () => {
+    await runQuickBooksSync({ admin, organizationId, userId: ctx.userId });
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      status: 'syncing',
+      startedAt,
+      message: 'QuickBooks sync started. You can leave this page while it finishes.'
+    },
+    { status: 202 }
+  );
 }
