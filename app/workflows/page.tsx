@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState } from '@/components/empty-state';
 import { AppShell } from '@/components/app-shell';
@@ -29,10 +29,9 @@ export default function WorkflowsPage() {
   const [canManage, setCanManage] = useState(false);
   const [name, setName] = useState('');
   const [stepTitle, setStepTitle] = useState('');
-  const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -47,11 +46,11 @@ export default function WorkflowsPage() {
     setCanManage(Boolean(json.canManage));
     setWorkflows(json.workflows || []);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
-    load();
-  }, [router]);
+    void load();
+  }, [load]);
 
   async function createWorkflow() {
     const res = await runResponse(
@@ -69,7 +68,7 @@ export default function WorkflowsPage() {
     if (!res) return;
     setName('');
     setStepTitle('');
-    load();
+    void load();
   }
 
   async function toggleActive(id: string, active: boolean) {
@@ -78,7 +77,7 @@ export default function WorkflowsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: !active })
     });
-    load();
+    void load();
   }
 
   async function addStep(workflowId: string) {
@@ -89,7 +88,7 @@ export default function WorkflowsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title })
     });
-    load();
+    void load();
   }
 
   async function reorderStep(workflowId: string, stepId: string, direction: 'up' | 'down') {
@@ -98,7 +97,7 @@ export default function WorkflowsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reorder: [{ stepId, direction }] })
     });
-    load();
+    void load();
   }
 
   if (loading) {
@@ -112,73 +111,73 @@ export default function WorkflowsPage() {
   return (
     <AppShell plan={plan}>
       <h2>Workflows</h2>
-        <p className="muted">Job workflows and checklist templates for Growth and higher.</p>
+      <p className="muted">Job workflows and checklist templates for Growth and higher.</p>
 
-        {!limitsForPlan(plan).workflowCustomization ? (
-          <PlanLockedMessage feature="Workflows" requiredPlan="Growth" />
-        ) : (
-          <>
-            {canManage ? (
-              <div className="settings-card form">
-                <h3>Create workflow</h3>
-                <input className="input" placeholder="Workflow name" value={name} onChange={(e) => setName(e.target.value)} />
-                <input className="input" placeholder="First step (optional)" value={stepTitle} onChange={(e) => setStepTitle(e.target.value)} />
-                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createWorkflow()}>
-                  {buttonLabel('Create workflow', FEEDBACK.loading)}
-                </button>
-              </div>
-            ) : null}
+      {!limitsForPlan(plan).workflowCustomization ? (
+        <PlanLockedMessage feature="Workflows" requiredPlan="Growth" />
+      ) : (
+        <>
+          {canManage ? (
+            <div className="settings-card form">
+              <h3>Create workflow</h3>
+              <input className="input" placeholder="Workflow name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="input" placeholder="First step (optional)" value={stepTitle} onChange={(e) => setStepTitle(e.target.value)} />
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createWorkflow()}>
+                {buttonLabel('Create workflow', FEEDBACK.loading)}
+              </button>
+            </div>
+          ) : null}
 
-            {workflows.length === 0 ? (
-              <div className="settings-card">
-                <EmptyState title={EMPTY_COPY.workflows.title} description={EMPTY_COPY.workflows.description} />
-              </div>
-            ) : null}
+          {workflows.length === 0 ? (
+            <div className="settings-card">
+              <EmptyState title={EMPTY_COPY.workflows.title} description={EMPTY_COPY.workflows.description} />
+            </div>
+          ) : null}
 
-            {workflows.map((wf) => (
-              <div key={wf.id} className="settings-card">
-                <div className="list-row">
-                  <div>
-                    <strong>{wf.name}</strong>
-                    <p className="muted">{wf.description || 'No description'}</p>
-                  </div>
-                  {canManage ? (
-                    <button type="button" className="btn" disabled={busy} onClick={() => toggleActive(wf.id, wf.active)}>
-                      {wf.active ? 'Deactivate' : 'Activate'}
-                    </button>
-                  ) : null}
+          {workflows.map((wf) => (
+            <div key={wf.id} className="settings-card">
+              <div className="list-row">
+                <div>
+                  <strong>{wf.name}</strong>
+                  <p className="muted">{wf.description || 'No description'}</p>
                 </div>
-                {(wf.workflow_steps || [])
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((step) => (
-                    <div key={step.id} className="checklist-row">
-                      <span>{step.title}</span>
-                      <span className="muted">{step.step_type}</span>
-                      {canManage ? (
-                        <span className="inline-actions">
-                          <button type="button" className="btn" disabled={busy} onClick={() => reorderStep(wf.id, step.id, 'up')}>
-                            Up
-                          </button>
-                          <button type="button" className="btn" disabled={busy} onClick={() => reorderStep(wf.id, step.id, 'down')}>
-                            Down
-                          </button>
-                        </span>
-                      ) : null}
-                    </div>
-                  ))}
                 {canManage ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => addStep(wf.id)}>
-                    Add step
+                  <button type="button" className="btn" disabled={busy} onClick={() => void toggleActive(wf.id, wf.active)}>
+                    {wf.active ? 'Deactivate' : 'Activate'}
                   </button>
                 ) : null}
               </div>
-            ))}
-          </>
-        )}
+              {(wf.workflow_steps || [])
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((step) => (
+                  <div key={step.id} className="checklist-row">
+                    <span>{step.title}</span>
+                    <span className="muted">{step.step_type}</span>
+                    {canManage ? (
+                      <span className="inline-actions">
+                        <button type="button" className="btn" disabled={busy} onClick={() => void reorderStep(wf.id, step.id, 'up')}>
+                          Up
+                        </button>
+                        <button type="button" className="btn" disabled={busy} onClick={() => void reorderStep(wf.id, step.id, 'down')}>
+                          Down
+                        </button>
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              {canManage ? (
+                <button type="button" className="btn" disabled={busy} onClick={() => void addStep(wf.id)}>
+                  Add step
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </>
+      )}
 
-        <Link href="/settings" className="btn">
-          Back to settings
-        </Link>
+      <Link href="/settings" className="btn">
+        Back to settings
+      </Link>
     </AppShell>
   );
 }
