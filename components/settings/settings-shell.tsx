@@ -25,6 +25,8 @@ type SettingsShellProps = {
   children: React.ReactNode;
 };
 
+const JOB_INSTRUCTIONS_PATH = '/settings/account/job-instructions';
+
 const LABELS = {
   en: {
     organization: 'Organization', team: 'Team', notifications: 'Notifications', preferences: 'Preferences',
@@ -77,7 +79,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     '/terms': copy.terms,
     '/settings/privacy#delete-account': copy.deleteAccount,
     '/settings/billing': copy.billing,
-    '/settings/job-instructions': copy.instructions,
+    [JOB_INSTRUCTIONS_PATH]: copy.instructions,
     '/about': copy.about
   };
 
@@ -94,9 +96,9 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
   }
 
   const canUseJobInstructions = !isClientRole(role) && !isContractorRole(role);
-  if (canUseJobInstructions && !links.some((link) => link.href === '/settings/job-instructions')) {
+  if (canUseJobInstructions && !links.some((link) => link.href === JOB_INSTRUCTIONS_PATH)) {
     const teamIndex = links.findIndex((link) => link.href === '/settings/team');
-    const instructionLink = { href: '/settings/job-instructions', label: copy.instructions };
+    const instructionLink = { href: JOB_INSTRUCTIONS_PATH, label: copy.instructions };
     if (teamIndex >= 0) links.splice(teamIndex + 1, 0, instructionLink);
     else links.unshift(instructionLink);
   }
@@ -108,7 +110,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
   if (!links.some((link) => link.href === '/about')) links.push({ href: '/about', label: copy.about });
 
   const showBillingShortcut = canManageBilling(role) && pathname !== '/settings/billing';
-  const showInstructionsShortcut = canUseJobInstructions && pathname !== '/settings/job-instructions';
+  const showInstructionsShortcut = canUseJobInstructions && pathname !== JOB_INSTRUCTIONS_PATH;
 
   return (
     <AppShell plan={normalizedPlan} role={role}>
@@ -119,7 +121,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
         </div>
         <div className="inline-actions">
           {showInstructionsShortcut ? (
-            <Link className="btn" href="/settings/job-instructions">{copy.instructions}</Link>
+            <Link className="btn" href={JOB_INSTRUCTIONS_PATH}>{copy.instructions}</Link>
           ) : null}
           {showBillingShortcut ? <Link className="btn" href="/settings/billing">{copy.manageBilling}</Link> : null}
         </div>
