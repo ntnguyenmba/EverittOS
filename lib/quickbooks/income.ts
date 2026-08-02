@@ -45,6 +45,10 @@ type SalesReceiptResponse = {
   SalesReceipt?: SalesReceiptEntity;
 };
 
+type IncomeSyncLogRow = {
+  external_id?: string | null;
+};
+
 export type DirectIncomeExportSummary = {
   found: number;
   created: number;
@@ -123,23 +127,44 @@ async function resolveIncomeItemId(
   return createdId;
 }
 
-async function wasDirectPaymentExported(
-  admin: SupabaseClient,
-  organizationId: string,
-  paymentId: string
-): Promise<boolean> {
-  const { data, error } = await admin
+async function findVerifiedSalesReceipt(input: {
+  admin: SupabaseClient;
+  organizationId: string;
+  paymentId: string;
+  fetchImpl?: QuickBooksFetch;
+}): Promise<SalesReceiptEntity | null> {
+  const { data, error } = await input.admin
     .from('quickbooks_sync_logs')
-    .select('id')
-    .eq('organization_id', organizationId)
+    .select('external_id')
+    .eq('organization_id', input.organizationId)
     .eq('entity_type', 'income')
-    .eq('entity_id', paymentId)
+    .eq('entity_id', input.paymentId)
     .eq('action', 'export_sales_receipt')
     .in('status', ['created', 'updated'])
+    .not('external_id', 'is', null)
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (error) throw new Error(`QuickBooks income history could not be checked: ${error.message}`);
-  return Boolean(data?.length);
+
+  const externalId = ((data || []) as IncomeSyncLogRow[])[0]?.external_id;
+  if (!externalId) return null;
+
+  try {
+    const result = await quickbooksAccountingRequest<SalesReceiptResponse>({
+      admin: input.admin,
+      organizationId: input.organizationId,
+      method: 'GET',
+      path: `/salesreceipt/${encodeURIComponent(externalId)}`,
+      fetchImpl: input.fetchImpl
+    });
+    return result.body.SalesReceipt || null;
+  } catch (error) {
+    if (error instanceof QuickBooksApiError && error.parsed.httpStatus === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function exportDirectPayment(input: {
@@ -157,9 +182,13 @@ async function exportDirectPayment(input: {
     return 'skipped';
   }
 
-  if (await wasDirectPaymentExported(input.admin, input.organizationId, payment.id)) {
-    return 'skipped';
-  }
+  const existingReceipt = await findVerifiedSalesReceipt({
+    admin: input.admin,
+    organizationId: input.organizationId,
+    paymentId: payment.id,
+    fetchImpl: input.fetchImpl
+  });
+  if (existingReceipt) return 'skipped';
 
   const { data: job, error: jobError } = await input.admin
     .from('jobs')
