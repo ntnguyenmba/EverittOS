@@ -35,6 +35,7 @@ import './app-readability-pass.css';
 import './customer-ready-polish.css';
 import './dashboard.css';
 import './job-mobile-fixes.css';
+import './payment-receipt-modal-fix.css';
 import './job-visit-layout-override.css';
 import './form-alignment-fixes.css';
 import './jobs-visual-polish.css';
