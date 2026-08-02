@@ -6,7 +6,6 @@ export type PlanLimits = {
   jobs: number;
   photos: number;
   customers: number;
-  reports: number;
   teamMembers: number;
   crewMembers: number;
   locations: number;
@@ -14,15 +13,12 @@ export type PlanLimits = {
   teamManagement: boolean;
   scheduling: boolean;
   activityLog: boolean;
-  advancedReporting: boolean;
   workflowCustomization: boolean;
   multiLocation: boolean;
   customBranding: boolean;
-  pdfReports: boolean;
   photoUpload: boolean;
   clientPortal: boolean;
   contractorPortal: boolean;
-  brandedReports: boolean;
   beforeAfterPhotos: boolean;
   aiAccess: boolean;
   aiUnlimited: boolean;
@@ -41,7 +37,6 @@ export function limitsForPlan(plan: EverittosPlan): PlanLimits {
     jobs: cap(row.jobs),
     photos: cap(row.photos),
     customers: cap(row.customers),
-    reports: cap(row.reports),
     teamMembers: cap(row.teamMembers),
     crewMembers: cap(row.crewMembers),
     locations: cap(row.locations),
@@ -49,15 +44,12 @@ export function limitsForPlan(plan: EverittosPlan): PlanLimits {
     teamManagement: row.teamManagement,
     scheduling: row.scheduling,
     activityLog: row.activityLog,
-    advancedReporting: row.advancedReporting,
     workflowCustomization: row.workflowCustomization,
     multiLocation: row.multiLocation,
     customBranding: row.customBranding,
-    pdfReports: row.pdfReports,
     photoUpload: row.photoUpload,
     clientPortal: row.clientPortal,
     contractorPortal: row.contractorPortal,
-    brandedReports: row.brandedReports,
     beforeAfterPhotos: row.beforeAfterPhotos,
     aiAccess: row.aiAccess,
     aiUnlimited: row.aiUnlimited,
