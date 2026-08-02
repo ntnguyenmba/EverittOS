@@ -26,8 +26,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const hideUpgradeCta = pathname.startsWith('/settings/billing');
   const { t } = useTranslation();
   const workspacePlan = useWorkspacePlanOptional();
-  const normalized =
-    workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
+  const normalized = normalizePlan(workspacePlan?.plan ?? plan);
   const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(resolvedRole);
@@ -61,12 +60,9 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
     await performClientLogout(router);
   }
 
-  const showBillingLink =
-    normalized != null && canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
-  const showUpgrade =
-    normalized != null && !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
-  const showViewPlans =
-    normalized != null && !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const showBillingLink = canManageBilling(role) && canAccessNavHref(role, '/settings/billing', normalized);
+  const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
+  const showViewPlans = !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
   const isOwnerDashboard = pathname === '/dashboard' && role === 'owner';
 
   return (
@@ -76,7 +72,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
       </div>
 
       <div className="sidebar-nav">
-        {normalized ? <AppNavItems plan={normalized} role={role} unread={unread} /> : null}
+        <AppNavItems plan={normalized} role={role} unread={unread} />
       </div>
 
       <div className="sidebar-footer">
