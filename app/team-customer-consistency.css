@@ -6,10 +6,34 @@
   margin-top: 20px;
 }
 
-.team-directory-card .grid-2,
-.team-management-panel .grid-2,
-.team-records-panel .grid-2 {
-  gap: 16px;
+.team-directory-card {
+  padding: 20px;
+}
+
+.team-directory-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.team-directory-header h2 {
+  margin: 0;
+}
+
+.team-directory-header .muted {
+  margin: 8px 0 0;
+}
+
+.team-directory-actions,
+.team-member-actions {
+  gap: 10px;
+}
+
+.team-directory-filters {
+  margin-top: 24px;
+  gap: 20px;
 }
 
 .team-directory-card label,
@@ -25,51 +49,56 @@
   width: 100%;
 }
 
-.team-member-list,
-.team-directory-card .customer-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.team-member-card,
-.team-directory-card .customer-row {
-  min-height: 92px;
-  padding: 16px;
-  gap: 16px;
-  align-items: center;
-}
-
-.team-directory-card .inline-actions,
-.team-member-card .inline-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 .team-directory-card .segmented-control {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .team-directory-card .segmented-control .btn {
   min-width: 88px;
 }
 
-@media (min-width: 768px) {
-  .team-directory-card,
-  .team-management-panel,
-  .team-records-panel {
-    padding: 20px;
-  }
+.team-directory-state {
+  margin-top: 18px;
+}
 
-  .team-directory-card .customer-row,
-  .team-member-card {
-    padding: 18px 20px;
-  }
+.team-member-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.team-member-card {
+  min-height: 92px;
+  padding: 18px 20px;
+  gap: 18px;
+  align-items: center;
+}
+
+.team-member-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-member-meta {
+  margin: 4px 0 0;
+}
+
+.team-member-email {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.team-member-summary {
+  margin: 8px 0 0;
+}
+
+.team-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 @media (max-width: 767px) {
@@ -80,39 +109,67 @@
     padding: 16px;
   }
 
-  .team-directory-card .grid-2,
+  .team-directory-header {
+    gap: 16px;
+  }
+
+  .team-directory-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .team-directory-actions .btn {
+    width: 100%;
+  }
+
+  .team-directory-filters,
   .team-management-panel .grid-2,
   .team-records-panel .grid-2 {
     grid-template-columns: 1fr;
     gap: 14px;
-  }
-
-  .team-directory-card .customer-row,
-  .team-member-card {
-    align-items: stretch;
-    flex-direction: column;
-    min-height: 0;
-    padding: 16px;
-  }
-
-  .team-directory-card .inline-actions,
-  .team-member-card .inline-actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .team-directory-card .inline-actions .btn,
-  .team-member-card .inline-actions .btn {
-    flex: 1 1 140px;
+    margin-top: 20px;
   }
 
   .team-directory-card .segmented-control {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 18px;
   }
 
   .team-directory-card .segmented-control .btn {
     min-width: 0;
     padding-inline: 10px;
+  }
+
+  .team-member-list {
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .team-member-card {
+    align-items: stretch;
+    flex-direction: column;
+    min-height: 0;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .team-member-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .team-member-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .team-directory-actions,
+  .team-member-actions {
+    grid-template-columns: 1fr;
   }
 }
