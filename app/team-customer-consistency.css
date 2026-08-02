@@ -1,0 +1,118 @@
+/* Keep Team and Customers visually consistent across desktop, mobile, and native shells. */
+
+.team-directory-card,
+.team-management-panel,
+.team-records-panel {
+  margin-top: 20px;
+}
+
+.team-directory-card .grid-2,
+.team-management-panel .grid-2,
+.team-records-panel .grid-2 {
+  gap: 16px;
+}
+
+.team-directory-card label,
+.team-management-panel label,
+.team-records-panel label {
+  display: grid;
+  gap: 8px;
+}
+
+.team-directory-card .input,
+.team-management-panel .input,
+.team-records-panel .input {
+  width: 100%;
+}
+
+.team-member-list,
+.team-directory-card .customer-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.team-member-card,
+.team-directory-card .customer-row {
+  min-height: 92px;
+  padding: 16px;
+  gap: 16px;
+  align-items: center;
+}
+
+.team-directory-card .inline-actions,
+.team-member-card .inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.team-directory-card .segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.team-directory-card .segmented-control .btn {
+  min-width: 88px;
+}
+
+@media (min-width: 768px) {
+  .team-directory-card,
+  .team-management-panel,
+  .team-records-panel {
+    padding: 20px;
+  }
+
+  .team-directory-card .customer-row,
+  .team-member-card {
+    padding: 18px 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  .team-directory-card,
+  .team-management-panel,
+  .team-records-panel {
+    margin-top: 16px;
+    padding: 16px;
+  }
+
+  .team-directory-card .grid-2,
+  .team-management-panel .grid-2,
+  .team-records-panel .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .team-directory-card .customer-row,
+  .team-member-card {
+    align-items: stretch;
+    flex-direction: column;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .team-directory-card .inline-actions,
+  .team-member-card .inline-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .team-directory-card .inline-actions .btn,
+  .team-member-card .inline-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .team-directory-card .segmented-control {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .team-directory-card .segmented-control .btn {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+}
