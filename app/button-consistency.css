@@ -1,0 +1,140 @@
+/* Final shared button system for every EverittOS role and surface. */
+:root {
+  --button-frame: #2d3748;
+  --button-frame-hover: #1f2937;
+  --button-surface: #ffffff;
+  --button-surface-hover: #f4f6f8;
+  --button-text: #25364a;
+  --button-on-dark: #f7f6f3;
+}
+
+.btn,
+a.btn,
+button.btn,
+.app-back-button,
+.auth-password-toggle,
+.sidebar-logout {
+  min-height: 44px;
+  border: 1px solid var(--button-frame);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--button-surface);
+  color: var(--button-text);
+  box-shadow: none;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+}
+
+.btn:hover,
+a.btn:hover,
+button.btn:hover,
+.app-back-button:hover,
+.auth-password-toggle:hover,
+.sidebar-logout:hover {
+  border-color: var(--button-frame-hover);
+  background: var(--button-surface-hover);
+  color: var(--button-text);
+}
+
+.btn-primary,
+a.btn-primary,
+button.btn-primary {
+  border-color: var(--button-frame);
+  background: var(--button-frame);
+  color: var(--button-on-dark);
+}
+
+.btn-primary:hover,
+a.btn-primary:hover,
+button.btn-primary:hover {
+  border-color: var(--button-frame-hover);
+  background: var(--button-frame-hover);
+  color: var(--button-on-dark);
+}
+
+.btn-danger,
+a.btn-danger,
+button.btn-danger,
+.danger-zone .btn {
+  border-color: #9b2c2c;
+}
+
+.btn-danger:hover,
+a.btn-danger:hover,
+button.btn-danger:hover,
+.danger-zone .btn:hover {
+  border-color: #742a2a;
+}
+
+.btn:focus-visible,
+a.btn:focus-visible,
+button.btn:focus-visible,
+.app-back-button:focus-visible,
+.auth-password-toggle:focus-visible,
+.sidebar-logout:focus-visible {
+  outline: 3px solid rgba(47, 95, 143, 0.28);
+  outline-offset: 2px;
+  border-color: var(--button-frame-hover);
+}
+
+.btn:active,
+a.btn:active,
+button.btn:active,
+.app-back-button:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled,
+button.btn:disabled,
+.btn[aria-disabled='true'],
+a.btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+}
+
+.btn svg,
+a.btn svg,
+button.btn svg,
+.app-back-button svg {
+  flex: 0 0 auto;
+}
+
+/* Compact controls keep their intended size while sharing the same frame. */
+.app-back-button,
+.btn-sm,
+.btn-small {
+  min-height: 36px;
+}
+
+/* Prevent unreadable inherited colors inside dark panels. */
+.surface-dark .btn:not(.btn-primary),
+.surface-dark a.btn:not(.btn-primary),
+.surface-dark button.btn:not(.btn-primary) {
+  background: transparent;
+  border-color: rgba(247, 246, 243, 0.72);
+  color: var(--button-on-dark);
+}
+
+.surface-dark .btn:not(.btn-primary):hover,
+.surface-dark a.btn:not(.btn-primary):hover,
+.surface-dark button.btn:not(.btn-primary):hover {
+  background: rgba(247, 246, 243, 0.1);
+  border-color: var(--button-on-dark);
+  color: var(--button-on-dark);
+}
+
+@media (max-width: 640px) {
+  .btn,
+  a.btn,
+  button.btn {
+    min-height: 44px;
+  }
+
+  .settings-actions .btn,
+  .page-head .btn,
+  .app-page-top-actions .btn {
+    max-width: 100%;
+  }
+}
