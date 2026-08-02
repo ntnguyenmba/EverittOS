@@ -4,28 +4,23 @@ import { useEffect } from 'react';
 
 export function ContractorStaticSections() {
   useEffect(() => {
-    const makeJobCardsStatic = () => {
-      document.querySelectorAll<HTMLButtonElement>('.contractor-dashboard .contractor-job-card > button').forEach((button) => {
-        const display = document.createElement('div');
-        display.className = 'contractor-job-card-display';
-        display.innerHTML = button.innerHTML;
-        button.replaceWith(display);
-      });
+    let attempts = 0;
 
-      document.querySelectorAll<HTMLAnchorElement>('.client-portal-jobs .client-job-card[href]').forEach((link) => {
-        link.removeAttribute('href');
-        link.removeAttribute('tabindex');
-        link.removeAttribute('role');
-      });
+    const applyLabels = () => {
+      attempts += 1;
+
+      const contractorPastTitle = document.querySelector('.contractor-dashboard #history summary h2');
+      const clientPastTitle = document.querySelector('.client-portal-jobs #history summary h2');
+
+      if (contractorPastTitle) contractorPastTitle.textContent = 'Past Jobs';
+      if (clientPastTitle) clientPastTitle.textContent = 'Past Jobs';
+
+      if ((!contractorPastTitle || !clientPastTitle) && attempts < 50) {
+        window.setTimeout(applyLabels, 100);
+      }
     };
 
-    makeJobCardsStatic();
-    const observer = new MutationObserver(makeJobCardsStatic);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
+    applyLabels();
   }, []);
 
   return null;
