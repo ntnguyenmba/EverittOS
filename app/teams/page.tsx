@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -29,7 +29,7 @@ export default function TeamsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setMessage('');
     const {
@@ -54,11 +54,11 @@ export default function TeamsPage() {
       return;
     }
     setTeams(json.teams || []);
-  }
+  }, [router]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function createTeam() {
     if (!name.trim() || saving) return;
