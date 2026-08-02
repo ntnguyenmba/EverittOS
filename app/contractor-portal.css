@@ -56,6 +56,7 @@
 
 .contractor-job-card-display,
 .contractor-job-card > button,
+.contractor-history-card,
 .client-job-card {
   display: block;
   width: 100%;
@@ -67,7 +68,8 @@
 }
 
 .contractor-job-card-display > div:first-child,
-.contractor-job-card > button > div:first-child {
+.contractor-job-card > button > div:first-child,
+.contractor-history-card > div:first-child {
   display: flex !important;
   align-items: flex-start !important;
   justify-content: space-between !important;
@@ -106,7 +108,8 @@
 }
 
 .contractor-job-card-display > .inline-actions,
-.contractor-job-card > button > .inline-actions {
+.contractor-job-card > button > .inline-actions,
+.contractor-history-card dl {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px !important;
@@ -114,9 +117,11 @@
 }
 
 .contractor-job-card-display > .inline-actions .badge,
-.contractor-job-card > button > .inline-actions .badge {
+.contractor-job-card > button > .inline-actions .badge,
+.contractor-history-card dl > div,
+.contractor-history-address {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   justify-items: start;
   min-height: 66px;
   padding: 12px 14px;
@@ -129,34 +134,36 @@
 }
 
 .contractor-job-card-display > .inline-actions .badge:nth-child(2),
-.contractor-job-card > button > .inline-actions .badge:nth-child(2) {
-  font-size: 1.05rem;
+.contractor-job-card > button > .inline-actions .badge:nth-child(2),
+.contractor-history-card > div:first-child > strong {
+  font-size: 1.08rem;
   font-weight: 700;
+  color: #1f313b;
+}
+
+.contractor-history-address {
+  margin-top: 12px;
+}
+
+.contractor-history-address .muted,
+.contractor-history-card dt {
+  color: #71838d !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.contractor-history-card dd {
+  margin: 0 !important;
+  color: #233845;
+  line-height: 1.45;
 }
 
 .contractor-job-card > div[id^='contractor-job-'] {
   padding: 14px 20px 18px !important;
   border-top: 1px solid #e1e9ec !important;
   background: #fbfcfc;
-}
-
-.contractor-history-card {
-  padding: 20px !important;
-}
-
-.contractor-history-card dl {
-  margin-top: 18px !important;
-}
-
-.contractor-history-card dt {
-  color: #71838d !important;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.contractor-history-card dd {
-  color: #233845;
-  line-height: 1.45;
 }
 
 .client-job-card-list,
@@ -183,8 +190,10 @@
   display: grid;
   gap: 5px;
   margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid #e1e9ec;
+  padding: 14px;
+  border: 1px solid #e1e9ec;
+  border-radius: 14px;
+  background: #fbfcfc;
 }
 
 .client-job-schedule strong {
@@ -227,13 +236,9 @@
   }
 
   .contractor-job-card-display > .inline-actions,
-  .contractor-job-card > button > .inline-actions {
-    grid-template-columns: 1fr;
-  }
-
+  .contractor-job-card > button > .inline-actions,
   .contractor-history-card dl {
     grid-template-columns: 1fr !important;
-    gap: 14px !important;
   }
 
   .client-job-card-list,
