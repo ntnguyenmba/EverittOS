@@ -96,46 +96,25 @@ export async function PATCH(request: Request, context: RouteContext) {
     assigned_to: body.assigned_to
   });
 
-  if (body.record_type === 'customer' && body.pipeline_stage === undefined) {
-    payload.pipeline_stage = 'active';
-  }
-  if (body.record_type === 'lead' && body.pipeline_stage === undefined) {
-    payload.pipeline_stage = 'open';
-  }
-
-  if (body.logo_path !== undefined) {
-    payload.logo_path = body.logo_path;
-  }
+  if (body.record_type === 'customer' && body.pipeline_stage === undefined) payload.pipeline_stage = 'active';
+  if (body.record_type === 'lead' && body.pipeline_stage === undefined) payload.pipeline_stage = 'open';
+  if (body.logo_path !== undefined) payload.logo_path = body.logo_path;
 
   const { error } = await ctx.supabase.from('customers').update(payload).eq('id', id).or(ownershipFilter);
-
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
-  }
+  if (error) return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
 
   const nextType = body.record_type || existing.record_type || 'customer';
   const previousStage = existing.pipeline_stage || null;
   const nextStage = body.pipeline_stage !== undefined ? body.pipeline_stage : previousStage;
   const stageChanged = body.pipeline_stage !== undefined && body.pipeline_stage !== previousStage;
   const typeChanged = Boolean(body.record_type && body.record_type !== existing.record_type);
-  const action = typeChanged
-    ? `${nextType}_converted`
-    : stageChanged
-      ? `${nextType}_stage_changed`
-      : `${nextType}_updated`;
+  const action = typeChanged ? `${nextType}_converted` : stageChanged ? `${nextType}_stage_changed` : `${nextType}_updated`;
   const title = customerDisplayName(existing);
   const activityMessage = stageChanged
     ? `${nextType === 'lead' ? 'Lead' : 'Customer'} status changed to ${String(nextStage || 'active')}: ${title}`
     : `${nextType === 'lead' ? 'Lead' : 'Customer'} updated: ${title}`;
 
-  await logWorkspaceActivity(
-    ctx.workspace.organizationId,
-    ctx.userId,
-    nextType,
-    id,
-    action,
-    activityMessage
-  );
+  await logWorkspaceActivity(ctx.workspace.organizationId, ctx.userId, nextType, id, action, activityMessage);
 
   if (body.assigned_to && body.assigned_to !== existing.assigned_to) {
     await sendAssignmentNotification({
@@ -167,23 +146,33 @@ export async function DELETE(_request: Request, context: RouteContext) {
     .or(ownershipFilter)
     .maybeSingle();
 
-  if (readError) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
-  }
-  if (!existing) {
-    return NextResponse.json({ error: 'Customer not found.' }, { status: 404 });
-  }
+  if (readError) return NextResponse.json({ error: mapWorkspaceSaveError(readError.message) }, { status: 400 });
+  if (!existing) return NextResponse.json({ error: 'Customer or lead not found.' }, { status: 404 });
 
   const recordType = existing.record_type || 'customer';
-  const archivedStage = recordType === 'lead' ? 'cancelled' : 'archived';
-  const { error } = await ctx.supabase
+  const title = customerDisplayName(existing);
+
+  // Preserve job history while removing the CRM record. Jobs retain their saved customer name and address.
+  const { error: unlinkJobsError } = await ctx.supabase
+    .from('jobs')
+    .update({ customer_id: null })
+    .eq('customer_id', id)
+    .eq('organization_id', ctx.workspace.organizationId);
+
+  if (unlinkJobsError) {
+    return NextResponse.json({ error: `Unable to preserve linked jobs: ${mapWorkspaceSaveError(unlinkJobsError.message)}` }, { status: 400 });
+  }
+
+  const { error: deleteError } = await ctx.supabase
     .from('customers')
-    .update({ pipeline_stage: archivedStage })
+    .delete()
     .eq('id', id)
     .or(ownershipFilter);
 
-  if (error) {
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+  if (deleteError) {
+    return NextResponse.json({
+      error: `Unable to delete this ${recordType === 'lead' ? 'lead' : 'customer'}. Remove linked records and try again: ${mapWorkspaceSaveError(deleteError.message)}`
+    }, { status: 400 });
   }
 
   await logWorkspaceActivity(
@@ -191,15 +180,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
     ctx.userId,
     recordType,
     id,
-    `${recordType}_archived`,
-    `${recordType === 'lead' ? 'Lead' : 'Customer'} archived: ${customerDisplayName(existing)}`
+    `${recordType}_deleted`,
+    `${recordType === 'lead' ? 'Lead' : 'Customer'} deleted: ${title}`
   );
 
   return NextResponse.json({
     ok: true,
-    message:
-      recordType === 'lead'
-        ? 'Lead archived successfully. You can reopen it later.'
-        : 'Customer archived successfully. Their jobs and history are preserved.'
+    message: recordType === 'lead' ? 'Lead deleted.' : 'Customer deleted.'
   });
 }
