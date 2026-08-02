@@ -3,6 +3,7 @@ import { logAuthEvent } from '@/lib/auth-logger';
 import { appUrl } from '@/lib/app-url';
 import { isRevokedTokenError } from '@/lib/google-calendar-health';
 import { refreshGoogleAccessToken } from '@/lib/google-calendar-oauth';
+import { normalizeTimeZone } from '@/lib/time-zones';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 
@@ -32,6 +33,7 @@ export type JobForCalendarSync = {
   scheduled_end: string | null;
   due_date: string | null;
   start_date: string | null;
+  timezone: string | null;
 };
 
 type JobVisitForCalendarSync = {
@@ -100,7 +102,7 @@ function eventDescription(job: JobForCalendarSync, extraNote?: string | null): s
 /**
  * EverittOS stores scheduled job values as UTC-backed wall-clock timestamps.
  * Google must receive the stored calendar components without a trailing Z,
- * plus the workspace IANA timezone. Sending toISOString() with Z makes Google
+ * plus the job's IANA timezone. Sending toISOString() with Z makes Google
  * treat the value as an absolute UTC instant and shifts the displayed time.
  */
 function wallClockDateTime(value: string): string {
@@ -242,9 +244,10 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
   try {
     const connection = await getGoogleCalendarConnection(admin, organizationId);
     if (!connection || !connection.sync_enabled) return { ok: true, skipped: true };
-    const { data: job } = await admin.from('jobs').select('id, organization_id, title, status, customer_name, address, notes, scheduled_start, scheduled_end, due_date, start_date').eq('id', jobId).eq('organization_id', organizationId).maybeSingle();
+    const { data: job } = await admin.from('jobs').select('id, organization_id, title, status, customer_name, address, notes, scheduled_start, scheduled_end, due_date, start_date, timezone').eq('id', jobId).eq('organization_id', organizationId).maybeSingle();
     if (!job) return { ok: false, error: 'Job not found.' };
     const typedJob = job as JobForCalendarSync;
+    const jobTimeZone = normalizeTimeZone(typedJob.timezone, timeZone);
     const accessToken = await ensureAccessToken(admin, connection);
     const calendarId = encodeURIComponent(connection.calendar_id || 'primary');
     if (isCancelledJobStatus(typedJob.status) || typedJob.status === 'completed') {
@@ -266,7 +269,7 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
         await admin.from('job_google_calendar_events').delete().eq('id', mapping.id);
       }
       for (const visit of visitRows) {
-        await upsertGoogleEvent({ admin, accessToken, calendarId, organizationId, jobId, visitId: visit.id, mapping: mappings.find((row) => row.visit_id === visit.id) || null, body: buildVisitEventBody(typedJob, visit, timeZone) });
+        await upsertGoogleEvent({ admin, accessToken, calendarId, organizationId, jobId, visitId: visit.id, mapping: mappings.find((row) => row.visit_id === visit.id) || null, body: buildVisitEventBody(typedJob, visit, jobTimeZone) });
       }
       return { ok: true };
     }
@@ -275,7 +278,7 @@ export async function syncJobToGoogleCalendar(admin: SupabaseClient, organizatio
       await deleteGoogleEvent(accessToken, calendarId, mapping.google_event_id);
       await admin.from('job_google_calendar_events').delete().eq('id', mapping.id);
     }
-    const eventBody = buildEventBody(typedJob, timeZone);
+    const eventBody = buildEventBody(typedJob, jobTimeZone);
     if (!eventBody) {
       await clearExistingCalendarEvents(admin, accessToken, calendarId, jobId);
       return { ok: true, skipped: true };
