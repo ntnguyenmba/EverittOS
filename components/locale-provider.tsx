@@ -33,6 +33,19 @@ function applyDocumentLocale(locale: Locale) {
   document.body.dataset.locale = locale;
 }
 
+async function persistLocale(locale: Locale) {
+  try {
+    await fetch('/api/account/locale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale }),
+      keepalive: true
+    });
+  } catch {
+    /* Local storage and the locale cookie still preserve the selection offline. */
+  }
+}
+
 function resolvePath(messages: Messages, path: string): string | undefined {
   const parts = path.split('.');
   let current: unknown = messages;
@@ -56,7 +69,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     applyDocumentLocale(locale);
   }, [locale]);
 
-  const setLocale = useCallback((next: Locale) => {
+  const setLocale = useCallback((input: Locale) => {
+    const next = normalizeLocale(input);
     applyDocumentLocale(next);
     setLocaleState(next);
     try {
@@ -66,6 +80,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     }
     writeLocaleCookie(next);
     window.dispatchEvent(new CustomEvent('everittos:locale-change', { detail: { locale: next } }));
+    void persistLocale(next);
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
