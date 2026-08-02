@@ -11,11 +11,18 @@ export type EmailSendResult = {
   error?: string;
 };
 
+export type TransactionalEmailAttachment = {
+  filename: string;
+  content: string;
+  contentType?: string;
+};
+
 export type TransactionalEmailInput = {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  attachments?: TransactionalEmailAttachment[];
 };
 
 function resendReady(): boolean {
@@ -64,7 +71,12 @@ export async function sendTransactionalEmail(input: TransactionalEmailInput): Pr
       to: input.to,
       subject: input.subject,
       html: input.html,
-      text: input.text
+      text: input.text,
+      attachments: input.attachments?.map((attachment) => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        content_type: attachment.contentType
+      }))
     })
   });
 
