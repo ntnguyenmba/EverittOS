@@ -2,8 +2,8 @@
  * Scans user-facing React/TSX for likely hardcoded English UI strings.
  *
  * Strict mode (fails CI): labels in JSX attributes / confirm dialogs / visible text
- * for known shared app, dashboard, billing, export, and jobs phrases, excluding
- * locale catalogs and typed copy helpers.
+ * for known shared app, dashboard, auth, settings, portal, billing, export, and jobs
+ * phrases, excluding locale catalogs and typed copy helpers.
  *
  * Run: npm run i18n:ui-audit
  */
@@ -48,6 +48,55 @@ const STRICT_PHRASES = [
   'Search',
   'No results',
   'Something went wrong',
+  'Back',
+  'Continue',
+  'Close',
+  'Done',
+  'View details',
+  'Learn more',
+
+  // Authentication and account
+  'Sign in',
+  'Sign out',
+  'Create account',
+  'Forgot password',
+  'Reset password',
+  'Email address',
+  'Password',
+  'Show password',
+  'Hide password',
+  'Check your email',
+  'Verify your email',
+  'Account details',
+  'Plans & billing',
+  'Delete account',
+  'Delete company',
+  'Danger Zone',
+
+  // Navigation, settings, and portals
+  'Dashboard',
+  'Jobs',
+  'Customers',
+  'Leads',
+  'Team',
+  'Schedule',
+  'Settings',
+  'Notifications',
+  'Language',
+  'Business details',
+  'Branding',
+  'Customer messages & invoices',
+  'Legal & advanced',
+  'My jobs',
+  'Active jobs',
+  'Completed jobs',
+  'Job history',
+  'No active jobs',
+  'No completed jobs',
+  'No jobs yet',
+  'Assigned to you',
+  'Customer portal',
+  'Contractor portal',
 
   // Billing, payments, exports, and jobs
   'Record payment',
@@ -78,7 +127,16 @@ const STRICT_PHRASES = [
   'Auto-save on',
   'Start over',
   'New invoice',
-  'Payment receipt'
+  'Payment receipt',
+  'Mark complete',
+  'Mark cancelled',
+  'Archive',
+  'Restore',
+  'Export',
+  'Download',
+  'Upload photos',
+  'Add photos',
+  'No photos yet'
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -145,11 +203,11 @@ for (const file of files) {
 
 if (findings.length) {
   console.error(`i18n UI audit failed: ${findings.length} hardcoded UI string(s):\n`);
-  for (const item of findings.slice(0, 60)) {
+  for (const item of findings.slice(0, 80)) {
     console.error(`  ${item.file}:${item.line} [${item.phrase}]`);
     console.error(`    ${item.text}`);
   }
-  if (findings.length > 60) console.error(`  …and ${findings.length - 60} more`);
+  if (findings.length > 80) console.error(`  …and ${findings.length - 80} more`);
   process.exit(1);
 }
 
