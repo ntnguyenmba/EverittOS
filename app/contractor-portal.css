@@ -24,7 +24,7 @@
   display: none;
 }
 
-.contractor-dashboard details:not(#earnings) > summary::after,
+.contractor-dashboard details > summary::after,
 .client-portal-jobs details > summary::after {
   content: '+';
   position: absolute;
@@ -37,172 +37,133 @@
   transform: translateY(-50%);
 }
 
-.contractor-dashboard details:not(#earnings)[open] > summary::after,
+.contractor-dashboard details[open] > summary::after,
 .client-portal-jobs details[open] > summary::after {
   content: '−';
 }
 
-.contractor-job-card {
+.contractor-job-card,
+.contractor-history-card,
+.client-job-card {
   position: relative;
-  border-color: #dbe5e8 !important;
+  border: 1px solid #dbe5e8 !important;
   border-radius: 18px !important;
-  background: #ffffff;
+  background: #ffffff !important;
   box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
+  color: inherit;
+  text-decoration: none;
 }
 
-.contractor-job-card h3 {
-  color: var(--text);
+.contractor-job-card-display,
+.contractor-job-card > button,
+.client-job-card {
+  display: block;
+  width: 100%;
+  padding: 20px !important;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
-.contractor-job-card > button {
-  position: relative;
-  padding: 18px 20px !important;
+.contractor-job-card-display > div:first-child,
+.contractor-job-card > button > div:first-child {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap;
 }
 
-.contractor-job-card > button > div:first-child > .badge,
-.contractor-job-card > button > .inline-actions {
-  display: none !important;
-}
-
-.contractor-job-card > button h3 {
+.contractor-job-card h3,
+.contractor-history-card h3,
+.client-job-card h3 {
   margin: 0 !important;
-  font-size: 1.05rem !important;
-  line-height: 1.25;
+  color: #1f313b;
+  font-size: 1.08rem !important;
+  line-height: 1.3;
 }
 
-.contractor-job-card > button .muted {
-  margin-top: 8px !important;
-  color: #70818b !important;
-  line-height: 1.45;
+.contractor-job-card .muted,
+.contractor-history-card .muted,
+.client-job-secondary,
+.client-job-schedule span {
+  color: #71838d !important;
+}
+
+.contractor-job-card-display > div:first-child > .badge,
+.contractor-job-card > button > div:first-child > .badge {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #cad9e0;
+  border-radius: 999px;
+  background: #f3f7f9;
+  color: #405866;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.contractor-job-card-display > .inline-actions,
+.contractor-job-card > button > .inline-actions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px !important;
+  margin-top: 18px !important;
+}
+
+.contractor-job-card-display > .inline-actions .badge,
+.contractor-job-card > button > .inline-actions .badge {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid #e1e9ec;
+  border-radius: 14px;
+  background: #fbfcfc;
+  color: #233845;
+  font-size: 0.95rem;
+  white-space: normal;
+}
+
+.contractor-job-card-display > .inline-actions .badge:nth-child(2),
+.contractor-job-card > button > .inline-actions .badge:nth-child(2) {
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .contractor-job-card > div[id^='contractor-job-'] {
   padding: 14px 20px 18px !important;
-  border-top-color: #e1e9ec !important;
+  border-top: 1px solid #e1e9ec !important;
   background: #fbfcfc;
 }
 
-.contractor-dashboard #earnings summary {
-  cursor: default !important;
-  pointer-events: none;
-  padding-right: 0;
+.contractor-history-card {
+  padding: 20px !important;
 }
 
-.contractor-dashboard #earnings summary .muted {
-  display: none;
+.contractor-history-card dl {
+  margin-top: 18px !important;
 }
 
-.contractor-dashboard #earnings:not([open]) > :not(summary) {
-  display: block;
-}
-
-.contractor-dashboard #history .contractor-job-card {
-  display: none !important;
-}
-
-.contractor-dashboard #history > div:not(.table-wrap) {
-  margin-top: 0 !important;
-}
-
-.contractor-dashboard #history .table-wrap {
-  overflow: visible !important;
-}
-
-.contractor-dashboard #history .data-table,
-.contractor-dashboard #history .data-table tbody {
-  display: grid;
-  gap: 12px;
-  width: 100%;
-}
-
-.contractor-dashboard #history .data-table thead {
-  display: none;
-}
-
-.contractor-dashboard #history .data-table tr {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(110px, auto);
-  gap: 10px 18px;
-  padding: 16px 18px;
-  border: 1px solid #dbe5e8;
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(35, 52, 63, 0.05);
-}
-
-.contractor-dashboard #history .data-table td {
-  display: grid;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-  color: #233845;
-}
-
-.contractor-dashboard #history .data-table td::before {
-  color: #71838d;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+.contractor-history-card dt {
+  color: #71838d !important;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.contractor-dashboard #history .data-table td:nth-child(1)::before {
-  content: 'Job';
+.contractor-history-card dd {
+  color: #233845;
+  line-height: 1.45;
 }
 
-.contractor-dashboard #history .data-table td:nth-child(2)::before {
-  content: 'Customer';
-}
-
-.contractor-dashboard #history .data-table td:nth-child(3)::before {
-  content: 'Work date';
-}
-
-.contractor-dashboard #history .data-table td:nth-child(4)::before {
-  content: 'Earned';
-}
-
-.contractor-dashboard #history .data-table td:nth-child(5)::before {
-  content: 'Status';
-}
-
-.contractor-dashboard #history .data-table td:nth-child(6)::before {
-  content: 'Paid date';
-}
-
-.contractor-dashboard #history .data-table td:nth-child(1) {
-  font-weight: 700;
-}
-
-.contractor-dashboard #history .data-table td:nth-child(4) {
-  font-weight: 700;
-}
-
-.client-job-card-list {
+.client-job-card-list,
+.contractor-history-list {
   display: grid;
   gap: 14px;
   margin-top: 18px;
-}
-
-.client-job-card {
-  display: block;
-  position: relative;
-  padding: 20px;
-  border: 1px solid #dbe5e8;
-  border-radius: 18px;
-  background: #ffffff;
-  color: inherit;
-  text-decoration: none;
-  box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
-}
-
-.client-job-card:hover,
-.client-job-card:focus-visible,
-.contractor-job-card:focus-within {
-  border-color: #c6d5db;
-  box-shadow: 0 10px 28px rgba(35, 52, 63, 0.09);
-  outline: none;
 }
 
 .client-job-card-main {
@@ -213,23 +174,15 @@
   margin: 0 0 7px;
 }
 
-.client-job-card h3 {
-  margin: 0;
-  color: #1f313b;
-  font-size: 1.08rem;
-  line-height: 1.25;
-}
-
 .client-job-secondary {
-  margin: 6px 0 0;
-  color: #71838d;
-  line-height: 1.35;
+  margin: 7px 0 0;
+  line-height: 1.45;
 }
 
 .client-job-schedule {
   display: grid;
   gap: 5px;
-  margin-top: 16px;
+  margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid #e1e9ec;
 }
@@ -239,8 +192,18 @@
   font-size: 1rem;
 }
 
-.client-job-schedule span {
-  color: #71838d;
+.contractor-job-card,
+.contractor-job-card-display,
+.client-job-card {
+  cursor: default !important;
+}
+
+.client-job-card:hover,
+.client-job-card:focus-visible,
+.contractor-job-card:focus-within {
+  border-color: #dbe5e8 !important;
+  box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
+  outline: none;
 }
 
 @media (max-width: 760px) {
@@ -249,27 +212,32 @@
     margin: 12px 0 16px;
   }
 
-  .contractor-job-card {
+  .contractor-job-card,
+  .contractor-history-card,
+  .client-job-card {
     margin-top: 12px !important;
+    border-radius: 16px !important;
   }
 
+  .contractor-job-card-display,
   .contractor-job-card > button,
+  .contractor-history-card,
   .client-job-card {
     padding: 18px !important;
   }
 
-  .client-job-card-list {
+  .contractor-job-card-display > .inline-actions,
+  .contractor-job-card > button > .inline-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .contractor-history-card dl {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .client-job-card-list,
+  .contractor-history-list {
     gap: 12px;
-  }
-
-  .contractor-dashboard #history .data-table tr {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px 16px;
-    padding: 16px;
-  }
-
-  .contractor-dashboard #history .data-table td:nth-child(1),
-  .contractor-dashboard #history .data-table td:nth-child(2) {
-    grid-column: 1 / -1;
   }
 }
