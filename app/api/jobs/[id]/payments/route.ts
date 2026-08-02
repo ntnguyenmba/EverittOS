@@ -10,6 +10,7 @@ import {
 } from '@/lib/finance/job-payments';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
+import { sendJobPaymentReceipt } from '@/lib/outbound/send-job-payment-receipt';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -179,12 +180,40 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
   const history = await fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId);
+  const newestPayment = history.payments[0] || null;
+  const receiptDelivery = newestPayment
+    ? await sendJobPaymentReceipt({
+        supabase: ctx.supabase,
+        organizationId: ctx.organizationId,
+        jobId,
+        source: newestPayment.source,
+        paymentId: newestPayment.id
+      })
+    : { sent: false, error: 'Payment was saved, but the receipt could not be prepared.' };
+
+  await logWorkspaceActivity(
+    ctx.organizationId,
+    ctx.userId,
+    'job',
+    jobId,
+    receiptDelivery.sent ? 'receipt_sent' : 'receipt_send_failed',
+    receiptDelivery.sent
+      ? `Payment receipt emailed to ${receiptDelivery.recipientEmail}`
+      : receiptDelivery.error || 'Payment receipt email failed',
+    {
+      payment_id: newestPayment?.id || null,
+      recipient_email: receiptDelivery.recipientEmail || null,
+      email_sent: receiptDelivery.sent,
+      error: receiptDelivery.error || null
+    }
+  );
 
   return NextResponse.json({
     ok: true,
     viaInvoice: result.viaInvoice,
     invoiceId: result.invoiceId,
     profitability,
-    payments: history.payments
+    payments: history.payments,
+    receiptDelivery
   });
 }
