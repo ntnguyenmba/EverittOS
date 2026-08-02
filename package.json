@@ -12,6 +12,7 @@
     "i18n:audit": "tsx scripts/i18n-audit.ts",
     "i18n:ui-audit": "tsx scripts/i18n-hardcoded-ui-audit.ts",
     "i18n:check": "npm run i18n:audit && npm run i18n:ui-audit",
+    "verify": "npm run typecheck && npm run i18n:check && npm test",
     "mobile:icons": "node scripts/generate-mobile-icons.mjs",
     "mobile:validate-env": "tsx scripts/validate-mobile-env.ts",
     "mobile:validate-release": "tsx scripts/validate-mobile-release.ts",
