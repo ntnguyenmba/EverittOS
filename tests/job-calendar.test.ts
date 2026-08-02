@@ -29,6 +29,67 @@ describe('job calendar export', () => {
     assert.ok(outlookCalendarEventUrl(event!).includes('outlook.live.com'));
   });
 
+  it('converts Chicago summer wall-clock times to the correct UTC instant for Google and Outlook', () => {
+    const event = {
+      id: 'job-summer',
+      title: 'Summer job',
+      startsAt: '2026-07-31T10:00:00',
+      endsAt: '2026-07-31T12:00:00',
+      timeZone: 'America/Chicago'
+    };
+    const google = new URL(googleCalendarEventUrl(event));
+    const outlook = new URL(outlookCalendarEventUrl(event));
+
+    assert.equal(google.searchParams.get('dates'), '20260731T150000Z/20260731T170000Z');
+    assert.equal(google.searchParams.get('ctz'), 'America/Chicago');
+    assert.equal(outlook.searchParams.get('startdt'), '2026-07-31T15:00:00.000Z');
+    assert.equal(outlook.searchParams.get('enddt'), '2026-07-31T17:00:00.000Z');
+  });
+
+  it('converts Chicago winter wall-clock times with the DST offset change', () => {
+    const event = {
+      id: 'job-winter',
+      title: 'Winter job',
+      startsAt: '2026-12-15T10:00:00',
+      endsAt: '2026-12-15T12:00:00',
+      timeZone: 'America/Chicago'
+    };
+    const google = new URL(googleCalendarEventUrl(event));
+    const outlook = new URL(outlookCalendarEventUrl(event));
+
+    assert.equal(google.searchParams.get('dates'), '20261215T160000Z/20261215T180000Z');
+    assert.equal(outlook.searchParams.get('startdt'), '2026-12-15T16:00:00.000Z');
+    assert.equal(outlook.searchParams.get('enddt'), '2026-12-15T18:00:00.000Z');
+  });
+
+  it('preserves explicit timestamp offsets instead of converting them as wall-clock values', () => {
+    const event = {
+      id: 'job-explicit-offset',
+      title: 'Explicit offset job',
+      startsAt: '2026-07-31T10:00:00-05:00',
+      endsAt: '2026-07-31T12:00:00-05:00',
+      timeZone: 'America/Chicago'
+    };
+    const google = new URL(googleCalendarEventUrl(event));
+    const outlook = new URL(outlookCalendarEventUrl(event));
+
+    assert.equal(google.searchParams.get('dates'), '20260731T150000Z/20260731T170000Z');
+    assert.equal(outlook.searchParams.get('startdt'), '2026-07-31T15:00:00.000Z');
+    assert.equal(outlook.searchParams.get('enddt'), '2026-07-31T17:00:00.000Z');
+  });
+
+  it('uses a two-hour wall-clock duration before timezone conversion when no end is supplied', () => {
+    const event = {
+      id: 'job-default-link-end',
+      title: 'Default link end',
+      startsAt: '2026-07-31T10:00:00',
+      timeZone: 'America/Chicago'
+    };
+    const google = new URL(googleCalendarEventUrl(event));
+
+    assert.equal(google.searchParams.get('dates'), '20260731T150000Z/20260731T170000Z');
+  });
+
   it('treats stored Z timestamps as job wall-clock values for ICS output', () => {
     const event = jobCalendarEvent({
       id: 'job-utc',
