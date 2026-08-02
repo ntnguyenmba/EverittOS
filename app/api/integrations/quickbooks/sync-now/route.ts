@@ -1,4 +1,4 @@
-import { after, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { fetchCompanyDisplayName, loadQuickBooksConnection } from '@/lib/quickbooks';
 import { ensureValidAccessToken } from '@/lib/quickbooks/client';
 import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const BULK_EXPORT_LIMIT = 250;
+const BULK_EXPORT_LIMIT = 50;
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminSupabase>>;
 
@@ -22,6 +22,17 @@ type ExportCounts = {
   created: number;
   updated: number;
   failed: number;
+};
+
+type SyncSummary = {
+  companyName: string | null;
+  customers: ExportCounts;
+  invoices: ExportCounts;
+  expenses: {
+    imported: number;
+    updated: number;
+    skipped: number;
+  };
 };
 
 async function exportExistingCustomers(input: {
@@ -94,7 +105,7 @@ async function runQuickBooksSync(input: {
   admin: AdminClient;
   organizationId: string;
   userId: string;
-}): Promise<void> {
+}): Promise<SyncSummary> {
   const { admin, organizationId, userId } = input;
 
   try {
@@ -113,12 +124,16 @@ async function runQuickBooksSync(input: {
 
     const now = new Date().toISOString();
     const failures = customers.failed + invoices.failed;
+    const lastError = failures
+      ? `${failures} record${failures === 1 ? '' : 's'} could not be exported. Open Recent sync activity for details.`
+      : null;
+
     await admin
       .from('quickbooks_connections')
       .update({
         company_name: companyName || activeConnection.company_name,
         last_sync_at: now,
-        last_error: failures ? `${failures} record${failures === 1 ? '' : 's'} could not be exported. Open Recent sync activity for details.` : null,
+        last_error: lastError,
         status: 'connected',
         updated_at: now
       })
@@ -132,7 +147,7 @@ async function runQuickBooksSync(input: {
         action: 'sync',
         status: failures ? 'completed_with_errors' : 'completed',
         externalId: activeConnection.realm_id,
-        errorMessage: failures ? `${failures} export failures` : null,
+        errorMessage: lastError,
         httpStatus: 200
       }),
       writeQuickBooksSyncLog(admin, {
@@ -142,6 +157,7 @@ async function runQuickBooksSync(input: {
         action: 'import',
         status: 'completed',
         externalId: activeConnection.realm_id,
+        errorMessage: `Imported ${expenses.imported}, updated ${expenses.updated}, skipped ${expenses.skipped}.`,
         httpStatus: 200
       })
     ]);
@@ -160,6 +176,13 @@ async function runQuickBooksSync(input: {
       expensesUpdated: expenses.updated,
       expensesSkipped: expenses.skipped
     });
+
+    return {
+      companyName: companyName || activeConnection.company_name,
+      customers,
+      invoices,
+      expenses
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'QuickBooks sync failed.';
     await admin
@@ -180,10 +203,11 @@ async function runQuickBooksSync(input: {
       errorMessage: message.slice(0, 500),
       httpStatus: 400
     });
+
+    throw error;
   }
 }
 
-/** Queue a QuickBooks sync and return immediately while Next.js finishes it after the response. */
 export async function POST() {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) {
@@ -203,8 +227,8 @@ export async function POST() {
 
   if (connection?.status === 'syncing') {
     return NextResponse.json(
-      { ok: true, status: 'syncing', message: 'QuickBooks sync is already in progress.' },
-      { status: 202 }
+      { error: 'A QuickBooks sync is already running. Refresh status in a moment.' },
+      { status: 409 }
     );
   }
 
@@ -229,7 +253,7 @@ export async function POST() {
       .eq('organization_id', organizationId);
 
     return NextResponse.json(
-      { error: 'Reconnect QuickBooks before syncing.', status: 'reconnect_required' },
+      { error: message, status: 'reconnect_required' },
       { status: 409 }
     );
   }
@@ -260,20 +284,26 @@ export async function POST() {
     action: 'sync',
     status: 'started',
     externalId: connection.realm_id,
-    httpStatus: 202
+    httpStatus: 200
   });
 
-  after(async () => {
-    await runQuickBooksSync({ admin, organizationId, userId: ctx.userId });
-  });
+  try {
+    const summary = await runQuickBooksSync({ admin, organizationId, userId: ctx.userId });
+    const message = [
+      `${summary.customers.created + summary.customers.updated} customer${summary.customers.found === 1 ? '' : 's'} synced`,
+      `${summary.invoices.created + summary.invoices.updated} invoice${summary.invoices.found === 1 ? '' : 's'} synced`,
+      `${summary.expenses.imported + summary.expenses.updated} expense${summary.expenses.imported + summary.expenses.updated === 1 ? '' : 's'} imported`
+    ].join(', ');
 
-  return NextResponse.json(
-    {
+    return NextResponse.json({
       ok: true,
-      status: 'syncing',
+      status: 'connected',
       startedAt,
-      message: 'QuickBooks sync is running. You can leave this page while it finishes.'
-    },
-    { status: 202 }
-  );
+      summary,
+      message: `QuickBooks sync completed: ${message}.`
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'QuickBooks sync failed.';
+    return NextResponse.json({ error: message, status: 'sync_failed' }, { status: 500 });
+  }
 }
