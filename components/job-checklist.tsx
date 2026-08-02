@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -37,46 +37,20 @@ type JobChecklistProps = {
 
 const COPY = {
   en: {
-    instructions: 'Job instructions',
-    checklist: 'Checklist',
-    required: 'Required',
-    photoRequired: 'Photo required',
-    addPlaceholder: 'Add checklist item',
-    addItem: 'Add item',
-    added: 'Checklist item added.',
-    loadError: 'Job instructions could not be loaded.'
+    instructions: 'Job instructions', checklist: 'Checklist', required: 'Required', photoRequired: 'Photo required',
+    addPlaceholder: 'Add checklist item', addItem: 'Add item', added: 'Checklist item added.', loadError: 'Job instructions could not be loaded.'
   },
   es: {
-    instructions: 'Instrucciones de trabajo',
-    checklist: 'Lista',
-    required: 'Obligatorio',
-    photoRequired: 'Foto obligatoria',
-    addPlaceholder: 'Agregar elemento',
-    addItem: 'Agregar',
-    added: 'Elemento agregado.',
-    loadError: 'No se pudieron cargar las instrucciones.'
+    instructions: 'Instrucciones de trabajo', checklist: 'Lista', required: 'Obligatorio', photoRequired: 'Foto obligatoria',
+    addPlaceholder: 'Agregar elemento', addItem: 'Agregar', added: 'Elemento agregado.', loadError: 'No se pudieron cargar las instrucciones.'
   },
   vi: {
-    instructions: 'Hướng dẫn công việc',
-    checklist: 'Danh sách',
-    required: 'Bắt buộc',
-    photoRequired: 'Bắt buộc chụp ảnh',
-    addPlaceholder: 'Thêm mục công việc',
-    addItem: 'Thêm mục',
-    added: 'Đã thêm mục.',
-    loadError: 'Không tải được hướng dẫn công việc.'
+    instructions: 'Hướng dẫn công việc', checklist: 'Danh sách', required: 'Bắt buộc', photoRequired: 'Bắt buộc chụp ảnh',
+    addPlaceholder: 'Thêm mục công việc', addItem: 'Thêm mục', added: 'Đã thêm mục.', loadError: 'Không tải được hướng dẫn công việc.'
   }
 } as const;
 
-export function JobChecklist({
-  jobId,
-  organizationId,
-  userId,
-  items,
-  canEdit,
-  canAddItems = canEdit,
-  onChange
-}: JobChecklistProps) {
+export function JobChecklist({ jobId, organizationId, userId, items, canEdit, canAddItems = canEdit, onChange }: JobChecklistProps) {
   const appFeedback = useAppFeedback();
   const { locale } = useTranslation();
   const copy = COPY[locale];
@@ -85,7 +59,7 @@ export function JobChecklist({
   const [instructions, setInstructions] = useState<InstructionStep[]>([]);
   const [instructionsLoading, setInstructionsLoading] = useState(true);
 
-  async function loadInstructions() {
+  const loadInstructions = useCallback(async () => {
     if (!jobId) return;
     setInstructionsLoading(true);
 
@@ -109,11 +83,7 @@ export function JobChecklist({
 
     const [{ data: templates }, { data: steps, error: stepError }] = await Promise.all([
       supabase.from('job_instruction_templates').select('id, name').in('id', templateIds),
-      supabase
-        .from('job_instruction_steps')
-        .select('id, template_id, position, required, photo_required')
-        .in('template_id', templateIds)
-        .order('position', { ascending: true })
+      supabase.from('job_instruction_steps').select('id, template_id, position, required, photo_required').in('template_id', templateIds).order('position', { ascending: true })
     ]);
 
     if (stepError) {
@@ -125,17 +95,10 @@ export function JobChecklist({
     const stepIds = (steps || []).map((step) => String(step.id));
     const [{ data: translations }, { data: completions }] = await Promise.all([
       stepIds.length
-        ? supabase
-            .from('job_instruction_step_translations')
-            .select('step_id, locale, instruction')
-            .in('step_id', stepIds)
+        ? supabase.from('job_instruction_step_translations').select('step_id, locale, instruction').in('step_id', stepIds)
         : Promise.resolve({ data: [] as Array<{ step_id: string; locale: string; instruction: string }> }),
       stepIds.length
-        ? supabase
-            .from('job_instruction_completions')
-            .select('step_id, completed')
-            .eq('job_id', jobId)
-            .in('step_id', stepIds)
+        ? supabase.from('job_instruction_completions').select('step_id, completed').eq('job_id', jobId).in('step_id', stepIds)
         : Promise.resolve({ data: [] as Array<{ step_id: string; completed: boolean }> })
     ]);
 
@@ -168,11 +131,11 @@ export function JobChecklist({
 
     setInstructions(next);
     setInstructionsLoading(false);
-  }
+  }, [appFeedback, copy.instructions, copy.loadError, jobId, locale]);
 
   useEffect(() => {
     void loadInstructions();
-  }, [jobId, locale]);
+  }, [loadInstructions]);
 
   async function addItem() {
     if (!label.trim() || !canAddItems || busy) return;
@@ -196,10 +159,7 @@ export function JobChecklist({
 
   async function toggleItem(item: ChecklistItem) {
     if (!canEdit) return;
-    const { error } = await supabase
-      .from('job_checklist_items')
-      .update({ completed: !item.completed })
-      .eq('id', item.id);
+    const { error } = await supabase.from('job_checklist_items').update({ completed: !item.completed }).eq('id', item.id);
     if (error) {
       appFeedback.error(formatSupabaseError(error));
       return;
@@ -210,17 +170,14 @@ export function JobChecklist({
   async function toggleInstruction(step: InstructionStep) {
     if (!canEdit) return;
     const nextCompleted = !step.completed;
-    const { error } = await supabase.from('job_instruction_completions').upsert(
-      {
-        job_id: jobId,
-        step_id: step.id,
-        completed: nextCompleted,
-        completed_by: nextCompleted ? userId : null,
-        completed_at: nextCompleted ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'job_id,step_id' }
-    );
+    const { error } = await supabase.from('job_instruction_completions').upsert({
+      job_id: jobId,
+      step_id: step.id,
+      completed: nextCompleted,
+      completed_by: nextCompleted ? userId : null,
+      completed_at: nextCompleted ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'job_id,step_id' });
     if (error) {
       appFeedback.error(formatSupabaseError(error));
       return;
@@ -277,9 +234,7 @@ export function JobChecklist({
       {canAddItems ? (
         <>
           <input className="input" placeholder={copy.addPlaceholder} value={label} onChange={(event) => setLabel(event.target.value)} />
-          <button type="button" className="btn" disabled={busy} onClick={() => void addItem()}>
-            {busy ? FEEDBACK.loading : copy.addItem}
-          </button>
+          <button type="button" className="btn" disabled={busy} onClick={() => void addItem()}>{busy ? FEEDBACK.loading : copy.addItem}</button>
         </>
       ) : null}
     </div>
