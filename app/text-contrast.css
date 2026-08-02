@@ -1,15 +1,18 @@
-/* Global text contrast pass.
-   Keeps the current design and font, but makes all text easier to read. */
+/* App-wide contrast and readability guard.
+   Loaded last so later visual polish cannot make essential text or controls too faint. */
 
 :root {
-  --text: #1f2d3a;
-  --charcoal: #1f2d3a;
-  --text-secondary: #3f4f5f;
-  --muted: #4f5f6f;
-  --cool-grey: #4f5f6f;
-  --evr-charcoal: #1f2d3a;
-  --evr-muted: #3f4f5f;
-  --evr-taupe: #3f4f5f;
+  --text: #172532;
+  --charcoal: #172532;
+  --text-secondary: #344656;
+  --muted: #465867;
+  --cool-grey: #465867;
+  --evr-charcoal: #172532;
+  --evr-muted: #344656;
+  --evr-taupe: #344656;
+  --readable-border: #a8b3bd;
+  --readable-border-strong: #7c8a97;
+  --readable-focus: #1f5f91;
 }
 
 body,
@@ -73,6 +76,7 @@ td,
 .empty-state-copy,
 .empty-state-description {
   color: var(--text-secondary) !important;
+  opacity: 1 !important;
 }
 
 small,
@@ -89,6 +93,7 @@ small,
 .status-pill,
 .table th {
   color: var(--muted) !important;
+  opacity: 1 !important;
 }
 
 label,
@@ -105,8 +110,8 @@ select {
 
 input::placeholder,
 textarea::placeholder {
-  color: #6d7884 !important;
-  opacity: 1;
+  color: #596a78 !important;
+  opacity: 1 !important;
 }
 
 .nav-item,
@@ -116,7 +121,8 @@ textarea::placeholder {
 .mobile-nav-drawer-link.nav-item,
 .mobile-bottom-nav-item,
 .nav-links a {
-  color: #334352 !important;
+  color: #2c4050 !important;
+  opacity: 1 !important;
 }
 
 .nav-item.active,
@@ -124,7 +130,7 @@ textarea::placeholder {
 .sidebar a.nav-item.active,
 .sidebar a[aria-current='page'],
 .app-sidebar a[aria-current='page'] {
-  color: #182530 !important;
+  color: #10202c !important;
 }
 
 button,
@@ -150,11 +156,65 @@ a.btn-primary,
 .surface-dark p,
 .surface-dark .muted,
 .surface-dark span {
-  color: #e8edf2 !important;
+  color: #f1f5f8 !important;
+  opacity: 1 !important;
+}
+
+input,
+textarea,
+select,
+.input,
+.card,
+.panel,
+.table,
+.modal,
+dialog {
+  border-color: var(--readable-border) !important;
+}
+
+button,
+.btn,
+a.btn,
+.button,
+[role='button'] {
+  border-color: var(--readable-border-strong) !important;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--readable-focus) !important;
+  outline-offset: 2px !important;
 }
 
 [aria-disabled='true'],
 :disabled,
 .disabled {
-  color: #707b86 !important;
+  color: #586977 !important;
+  opacity: 0.72 !important;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --text: #0b1720;
+    --text-secondary: #213746;
+    --muted: #304757;
+    --readable-border: #667887;
+    --readable-border-strong: #425767;
+  }
+
+  .card,
+  .panel,
+  input,
+  textarea,
+  select,
+  button,
+  .btn,
+  a.btn {
+    box-shadow: none !important;
+  }
 }
