@@ -8,9 +8,9 @@
   --control-gap: 10px;
   --field-gap: 8px;
   --group-gap: 18px;
+  --section-space: 24px;
 }
 
-/* Use one type system across interactive controls. */
 button,
 input,
 select,
@@ -22,7 +22,6 @@ a.btn,
   font-size: var(--control-font-size);
 }
 
-/* All normal text buttons use the same dark frame. Icon-only and deliberately unframed controls stay compact. */
 button:not(.action-feedback-dismiss):not(.icon-button):not(.mobile-nav-toggle):not([data-unframed='true']),
 .btn,
 a.btn,
@@ -31,6 +30,8 @@ a.btn,
   border: 1px solid var(--control-border);
   border-radius: var(--control-radius);
   line-height: 1.2;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 button:not(.action-feedback-dismiss):not(.icon-button):not(.mobile-nav-toggle):not([data-unframed='true']):hover,
@@ -40,7 +41,6 @@ a.btn:hover,
   border-color: var(--control-border-hover);
 }
 
-/* Keep filled actions readable while retaining the same frame. */
 .btn-primary,
 button.btn-primary,
 a.btn-primary {
@@ -49,12 +49,29 @@ a.btn-primary {
   color: #ffffff;
 }
 
-/* Consistent form rhythm throughout settings, jobs, customers, and team screens. */
+.btn-primary:hover,
+button.btn-primary:hover,
+a.btn-primary:hover {
+  border-color: var(--control-border-hover);
+  background: var(--control-border-hover);
+  color: #ffffff;
+}
+
+.btn-sm,
+.btn-small,
+.app-back-button {
+  min-height: 36px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 14px;
+}
+
 label,
 .form-label,
 .field-label {
   font-size: 14px;
   line-height: 1.35;
+  font-weight: 600;
 }
 
 input:not([type='checkbox']):not([type='radio']),
@@ -88,6 +105,7 @@ form,
 }
 
 .actions,
+.inline-actions,
 .form-actions,
 .settings-actions,
 .page-actions,
@@ -100,12 +118,17 @@ form,
   gap: var(--control-gap);
 }
 
-/* Shared page spacing and readable headings. */
 .page-head,
 .section-head,
 .card-head {
   column-gap: 16px;
   row-gap: 10px;
+}
+
+.main > section + section,
+.main > div + section,
+.main > section + div {
+  margin-top: var(--section-space);
 }
 
 h1,
@@ -132,17 +155,81 @@ h3,
   font-size: 14px;
 }
 
+/* Dashboard rhythm and contrast. */
+.dashboard-home .page-head,
+.dashboard-home .page-header {
+  margin-bottom: 24px;
+}
+
+.dashboard-home .dashboard-revenue-grid {
+  gap: 16px;
+}
+
+.dashboard-home .dashboard-revenue-metric {
+  min-height: 124px;
+  padding: 20px;
+}
+
+.dashboard-home .dashboard-revenue-metric-label {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text-secondary, #5f7186);
+}
+
+.dashboard-home .dashboard-revenue-metric-value {
+  margin-top: 16px;
+  font-size: clamp(28px, 3vw, 34px);
+  line-height: 1.05;
+}
+
+.dashboard-home .inline-actions {
+  margin-top: 24px;
+}
+
+/* Do not let decorative or disabled-looking helper content wash out important pages. */
+.job-instructions-context-link,
+.empty-state,
+.notice-card,
+.info-card {
+  opacity: 1;
+}
+
+.job-instructions-context-link strong,
+.empty-state strong,
+.notice-card strong,
+.info-card strong {
+  color: var(--text, #25364a);
+}
+
+.job-instructions-context-link span,
+.empty-state p,
+.notice-card p,
+.info-card p {
+  color: var(--text-secondary, #5f7186);
+}
+
 @media (max-width: 640px) {
   :root {
     --control-font-size: 16px;
     --group-gap: 16px;
+    --section-space: 20px;
   }
 
   .actions > .btn,
+  .inline-actions > .btn,
   .form-actions > .btn,
   .settings-actions > .btn,
   .dialog-actions > .btn,
   .modal-actions > .btn {
     max-width: 100%;
+  }
+
+  .dashboard-home .dashboard-revenue-grid {
+    gap: 12px;
+  }
+
+  .dashboard-home .dashboard-revenue-metric {
+    min-height: 112px;
+    padding: 16px;
   }
 }
