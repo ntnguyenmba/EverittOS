@@ -48,7 +48,7 @@ export default function CustomerImportPage() {
       }
     }
     void load();
-  }, [router]);
+  }, [appFeedback, router]);
 
   async function previewImport() {
     setLoading(true);
