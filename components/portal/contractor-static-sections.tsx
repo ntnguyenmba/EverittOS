@@ -2,8 +2,44 @@
 
 import { useEffect } from 'react';
 
-function normalizedTitle(value: string | null | undefined) {
-  return String(value || '').trim().toLowerCase();
+function jobCountLabel(count: number, kind: 'current' | 'past') {
+  const noun = count === 1 ? 'job' : 'jobs';
+  return `${count} ${kind} ${noun}`;
+}
+
+function formatSectionSummary(section: Element | null, title: string, kind: 'current' | 'past') {
+  const summary = section?.querySelector('summary');
+  const heading = summary?.querySelector('h2');
+  if (!summary || !heading) return false;
+
+  const directCount = Array.from(summary.children).find(
+    (child) => child instanceof HTMLSpanElement && child.classList.contains('muted')
+  );
+  const nestedCount = heading.parentElement?.querySelector(':scope > .muted');
+  const source = directCount || nestedCount;
+  const count = Number.parseInt(String(source?.textContent || '0'), 10) || 0;
+
+  let headingGroup = summary.querySelector<HTMLElement>('.portal-job-section-heading');
+  if (!headingGroup) {
+    headingGroup = document.createElement('div');
+    headingGroup.className = 'portal-job-section-heading';
+    summary.insertBefore(headingGroup, summary.firstChild);
+    headingGroup.appendChild(heading);
+  }
+
+  heading.textContent = title;
+
+  let subtitle = headingGroup.querySelector<HTMLElement>('.portal-job-section-count');
+  if (!subtitle) {
+    subtitle = document.createElement('span');
+    subtitle.className = 'muted portal-job-section-count';
+    headingGroup.appendChild(subtitle);
+  }
+  subtitle.textContent = jobCountLabel(count, kind);
+
+  if (directCount && directCount !== subtitle) directCount.remove();
+  if (nestedCount && nestedCount !== subtitle) nestedCount.remove();
+  return true;
 }
 
 export function ContractorStaticSections() {
@@ -14,56 +50,19 @@ export function ContractorStaticSections() {
     const applyOnce = () => {
       attempts += 1;
 
-      const dashboard = document.querySelector('.contractor-dashboard');
-      const currentSection = dashboard?.querySelector('#current-jobs');
-      const historySection = dashboard?.querySelector('#history');
+      const contractorCurrent = document.querySelector('.contractor-dashboard #current-jobs');
+      const contractorPast = document.querySelector('.contractor-dashboard #history');
+      const clientCurrent = document.querySelector('.client-portal-jobs #current-jobs');
+      const clientPast = document.querySelector('.client-portal-jobs #history');
 
-      const contractorPastTitle = historySection?.querySelector('summary h2');
-      const clientPastTitle = document.querySelector('.client-portal-jobs #history summary h2');
-      if (contractorPastTitle) contractorPastTitle.textContent = 'Past Jobs';
-      if (clientPastTitle) clientPastTitle.textContent = 'Past Jobs';
+      const changed = [
+        formatSectionSummary(contractorCurrent, 'Current Jobs', 'current'),
+        formatSectionSummary(contractorPast, 'Past Jobs', 'past'),
+        formatSectionSummary(clientCurrent, 'Current Jobs', 'current'),
+        formatSectionSummary(clientPast, 'Past Jobs', 'past')
+      ].some(Boolean);
 
-      document.querySelectorAll<HTMLButtonElement>('.contractor-dashboard .contractor-job-card > button').forEach((button) => {
-        const display = document.createElement('div');
-        display.className = 'contractor-job-card-display';
-        display.innerHTML = button.innerHTML;
-        button.replaceWith(display);
-      });
-
-      document.querySelectorAll<HTMLAnchorElement>('.client-portal-jobs .client-job-card[href]').forEach((link) => {
-        link.removeAttribute('href');
-        link.removeAttribute('tabindex');
-        link.removeAttribute('role');
-      });
-
-      const completedByTitle = new Map<string, string>();
-      historySection?.querySelectorAll<HTMLElement>('.contractor-job-card').forEach((card) => {
-        const title = normalizedTitle(card.querySelector('h3')?.textContent);
-        const scheduleAndAddress = String(card.querySelector('.muted')?.textContent || '').trim();
-        const parts = scheduleAndAddress.split(' · ').map((part) => part.trim()).filter(Boolean);
-        const address = parts.length > 1 ? parts.slice(1).join(' · ') : '';
-        if (title && address && address.toLowerCase() !== 'not set') completedByTitle.set(title, address);
-      });
-
-      historySection?.querySelectorAll<HTMLElement>('.contractor-history-card').forEach((card) => {
-        if (card.querySelector('.contractor-history-address')) return;
-        const title = normalizedTitle(card.querySelector('h3')?.textContent);
-        const address = completedByTitle.get(title) || 'Not set';
-        const field = document.createElement('div');
-        field.className = 'contractor-history-address';
-        const label = document.createElement('span');
-        label.className = 'muted';
-        label.textContent = 'Address';
-        const value = document.createElement('strong');
-        value.textContent = address;
-        field.append(label, value);
-        const details = card.querySelector('dl');
-        card.insertBefore(field, details || null);
-      });
-
-      const contractorReady = Boolean(currentSection && historySection);
-      const clientReady = Boolean(document.querySelector('.client-portal-jobs'));
-      if (!contractorReady && !clientReady && attempts < 30) {
+      if (!changed && attempts < 30) {
         timer = window.setTimeout(applyOnce, 100);
       }
     };
