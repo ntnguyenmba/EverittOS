@@ -2,7 +2,8 @@
  * Scans user-facing React/TSX for likely hardcoded English UI strings.
  *
  * Strict mode (fails CI): labels in JSX attributes / confirm dialogs / visible text
- * for known billing, export, and jobs phrases — excluding lib/i18n catalogs.
+ * for known shared app, dashboard, billing, export, and jobs phrases, excluding
+ * locale catalogs and typed copy helpers.
  *
  * Run: npm run i18n:ui-audit
  */
@@ -18,7 +19,7 @@ const SKIP_PATH_PARTS = ['node_modules', '.next', 'tests/', '/tests/', 'scripts/
 const SKIP_FILES = [
   'lib/i18n/',
   'lib/feedback-labels.ts',
-  'lib/outbound/types.ts' // default templates are locale-branched
+  'lib/outbound/types.ts'
 ];
 
 /**
@@ -26,6 +27,29 @@ const SKIP_FILES = [
  * outside typed copy helpers.
  */
 const STRICT_PHRASES = [
+  // Shared app chrome and dashboard
+  'Welcome back',
+  'Financial Details',
+  'New Job',
+  'New Customer',
+  'Customer balance due',
+  'Cash after paid costs',
+  'All-Time Jobs',
+  'Ask Everitt about your business',
+  'Create instructions',
+  'Open instructions',
+  'Job instructions',
+  'Loading…',
+  'Retry',
+  'Save changes',
+  'Cancel',
+  'Delete',
+  'Edit',
+  'Search',
+  'No results',
+  'Something went wrong',
+
+  // Billing, payments, exports, and jobs
   'Record payment',
   'Save payment',
   'Payment amount',
@@ -57,10 +81,6 @@ const STRICT_PHRASES = [
   'Payment receipt'
 ];
 
-/** Only flag when the phrase is used as UI chrome, not as API fallback. */
-const UI_CONTEXT =
-  /(placeholder|aria-label|title|alt|confirm\(|window\.confirm|>)[^;]*['"`][^'"`]*(PHRASE)|['"`](PHRASE)['"`]\s*[,})]|children:\s*['"`](PHRASE)/i;
-
 function walk(dir: string, out: string[] = []): string[] {
   let entries: string[] = [];
   try {
@@ -85,13 +105,15 @@ function stripComments(source: string): string {
 }
 
 function looksLikeLocaleMapEnglish(line: string, previous: string): boolean {
-  // Local copy maps: `unableLoad: 'Unable to load jobs.'` under en: { ... }
-  if (/^\s*\w+:\s*'/.test(line) && (/^\s*en:\s*\{/.test(previous) || previous.includes("en: {"))) return true;
+  if (/^\s*\w+:\s*['"`]/.test(line) && (/^\s*en:\s*\{/.test(previous) || previous.includes('en: {'))) return true;
   if (/\ben:\s*\{/.test(line)) return true;
-  if (/getBillingOpsCopy|getExportCopy|BillingOpsCopy|ExportCopy|getFeedbackLabels|LABELS\[/.test(line)) return true;
-  // API fallback: json.error || '...'
-  if (/\|\|\s*'/.test(line) && /(error|message|json\.error|throw new Error)/i.test(line)) return true;
+  if (/getBillingOpsCopy|getExportCopy|BillingOpsCopy|ExportCopy|getFeedbackLabels|LABELS\[|dashboardCopy\[|copy\[locale\]/.test(line)) return true;
+  if (/\|\|\s*['"`]/.test(line) && /(error|message|json\.error|throw new Error)/i.test(line)) return true;
   return false;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 const files = SCAN_DIRS.flatMap((dir) => walk(join(ROOT, dir)));
@@ -106,15 +128,16 @@ for (const file of files) {
     for (const phrase of STRICT_PHRASES) {
       if (!line.includes(phrase)) continue;
       if (looksLikeLocaleMapEnglish(line, previous)) continue;
-      // Require UI-ish context OR assignment to label-like identifiers
+
+      const escaped = escapeRegExp(phrase);
       const uiContext = new RegExp(
-        `(placeholder|aria-label|title|confirm\\(|>|label:\\s*|:\\s*)['"\`][^'"\`]*${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        `(placeholder|aria-label|title|confirm\\(|>|label:\\s*|children:\\s*|:\\s*)['"\`][^'"\`]*${escaped}`,
         'i'
       );
-      const bareString = new RegExp(`['"\`]${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]`);
+      const bareString = new RegExp(`['"\`]${escaped}['"\`]`);
       if (!uiContext.test(line) && !bareString.test(line)) continue;
-      // Ignore imports of copy helpers returning these phrases
-      if (/billingCopy\.|exportCopy\.|copy\.|c\./.test(line)) continue;
+      if (/billingCopy\.|exportCopy\.|copy\.|c\.|t\(/.test(line)) continue;
+
       findings.push({ file: rel, line: index + 1, phrase, text: line.trim().slice(0, 180) });
     }
   });
