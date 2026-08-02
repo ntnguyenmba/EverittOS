@@ -104,6 +104,10 @@ function normalizedJobStatus(status: string) {
   return String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
 }
 
+function isPastJobStatus(status: string) {
+  return ['completed', 'complete', 'finished', 'done', 'cancelled', 'canceled'].includes(normalizedJobStatus(status));
+}
+
 const NAV_LABEL_KEYS: Record<string, string> = {
   overview: 'portal.contractor.nav.dashboard',
   jobs: 'portal.contractor.nav.jobs',
@@ -140,20 +144,17 @@ export default function ContractorPortalPage() {
 
   const groupedJobs = useMemo(() => {
     const current: ContractorJobCardModel[] = [];
-    const completed: ContractorJobCardModel[] = [];
+    const past: ContractorJobCardModel[] = [];
 
     for (const job of jobCards) {
-      const status = normalizedJobStatus(job.status);
-      if (status === 'completed' || status === 'complete' || status === 'done') completed.push(job);
+      if (isPastJobStatus(job.status)) past.push(job);
       else current.push(job);
     }
 
     current.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-    completed.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-    return { current, completed };
+    past.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    return { current, past };
   }, [jobCards]);
-
-  const jobCardsById = useMemo(() => new Map(jobCards.map((job) => [job.id, job])), [jobCards]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -381,7 +382,7 @@ export default function ContractorPortalPage() {
   function renderJobCard(job: ContractorJobCardModel) {
     const expanded = openJobId === job.id;
     const status = normalizedJobStatus(job.status);
-    const completed = status === 'completed' || status === 'complete' || status === 'done';
+    const past = isPastJobStatus(job.status);
 
     return (
       <article
@@ -414,40 +415,40 @@ export default function ContractorPortalPage() {
 
         {expanded ? (
           <div id={`contractor-job-${job.id}`} style={{ padding: '0 16px 16px', borderTop: '1px solid var(--line)' }}>
-            <div className="inline-actions" style={{ marginTop: 14, flexWrap: 'wrap' }}>
-              {!completed && status !== 'in_progress' ? (
-                <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
-                  {t('portal.contractor.startJob')}
-                </button>
-              ) : null}
-              {!completed ? (
+            {!past ? (
+              <div className="inline-actions" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+                {status !== 'in_progress' ? (
+                  <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
+                    {t('portal.contractor.startJob')}
+                  </button>
+                ) : null}
                 <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
                   {t('portal.contractor.markComplete')}
                 </button>
-              ) : null}
-              {(() => {
-                const event = contractorJobCalendarEvent(job);
-                if (!event) return null;
-                return (
-                  <>
-                    <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                      {t('portal.contractor.googleCalendar')}
-                    </a>
-                    <a className="btn" href={outlookCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                      {t('portal.contractor.outlook')}
-                    </a>
-                    <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
-                      {t('portal.contractor.appleIcs')}
-                    </button>
-                  </>
-                );
-              })()}
-            </div>
+                {(() => {
+                  const event = contractorJobCalendarEvent(job);
+                  if (!event) return null;
+                  return (
+                    <>
+                      <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
+                        {t('portal.contractor.googleCalendar')}
+                      </a>
+                      <a className="btn" href={outlookCalendarEventUrl(event)} target="_blank" rel="noreferrer">
+                        {t('portal.contractor.outlookCalendar')}
+                      </a>
+                      <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
+                        {t('portal.contractor.appleIcs')}
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            ) : null}
 
             {photoUploadAllowed(plan) && userId ? (
               <div style={{ marginTop: 14 }}>
                 <h4 style={{ fontSize: 15, marginBottom: 8 }}>{t('portal.contractor.jobPhotos')}</h4>
-                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={completed} />
+                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={past} />
               </div>
             ) : null}
           </div>
@@ -522,39 +523,17 @@ export default function ContractorPortalPage() {
             <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div>
                 <h2 style={{ fontSize: 18, margin: 0 }}>Past Jobs</h2>
-                <span className="muted">{metrics.completedJobs} {earningsCopy.completedWork}</span>
+                <span className="muted">{groupedJobs.past.length} jobs</span>
               </div>
               {history.length > 0 ? <strong>{earningsCopy.paidToYou}: {formatContractorMoney(metrics.paidEarnings)}</strong> : null}
             </summary>
 
-            {history.length === 0 && !hasDataError ? (
-              <p className="muted" style={{ marginTop: 16 }}>{earningsCopy.paymentRecordsPending}</p>
+            {groupedJobs.past.length === 0 && !hasDataError ? (
+              <p className="muted" style={{ marginTop: 16 }}>{t('portal.contractor.noCompleted')}</p>
             ) : null}
 
-            {history.length > 0 ? (
-              <div className="contractor-history-list" style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-                {history.map((row) => {
-                  const job = row.jobId ? jobCardsById.get(row.jobId) : undefined;
-                  return (
-                    <article key={row.laborId} className="contractor-history-card" style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 18, background: 'var(--surface)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
-                          <h3 style={{ margin: '5px 0 0', fontSize: 17 }}>{row.jobTitle}</h3>
-                        </div>
-                        <strong style={{ fontSize: 18 }}>{formatContractorMoney(row.amountEarned)}</strong>
-                      </div>
-                      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, margin: '16px 0 0' }}>
-                        {renderField(t('portal.contractor.workDate'), row.workDate || 'Not set')}
-                        {renderField('Address', job?.address || 'Not set')}
-                        {renderField(t('portal.contractor.customer'), row.customerName || 'Not set')}
-                        {renderField(t('portal.common.status'), translatePortalPaymentStatus(t, row.paymentStatus))}
-                        {renderField(t('portal.contractor.paidDate'), row.paidDate || 'Not set')}
-                      </dl>
-                    </article>
-                  );
-                })}
-              </div>
+            {groupedJobs.past.length > 0 ? (
+              <div style={{ marginTop: 8 }}>{groupedJobs.past.map(renderJobCard)}</div>
             ) : null}
           </details>
 
