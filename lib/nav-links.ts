@@ -66,5 +66,6 @@ export const SECONDARY_APP_ROUTES = [
   '/portal/contractor',
   '/settings/billing',
   '/settings/account',
-  '/settings/integrations'
+  '/settings/integrations',
+  '/settings/job-instructions'
 ] as const;
