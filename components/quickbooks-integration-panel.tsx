@@ -32,7 +32,7 @@ type QuickBooksStatus = {
 };
 
 const REQUEST_TIMEOUT_MS = 12000;
-const SYNC_REQUEST_TIMEOUT_MS = 65000;
+const SYNC_POLL_INTERVAL_MS = 4000;
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,
@@ -88,6 +88,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   const appFeedback = useAppFeedback();
   const mounted = useRef(true);
   const loadingRef = useRef(false);
+  const previousConnectionStatusRef = useRef<string | undefined>(undefined);
   const [status, setStatus] = useState<QuickBooksStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -99,16 +100,18 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     return () => { mounted.current = false; };
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setLoadError('');
     setUnauthorized(false);
+
     try {
       const res = await fetchWithTimeout(`/api/integrations/quickbooks/status?t=${Date.now()}`);
       const json = await readJson(res);
       if (!mounted.current) return;
+
       if (!res.ok) {
         if (res.status === 401) {
           setUnauthorized(true);
@@ -116,29 +119,49 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         } else {
           setLoadError(typeof json.error === 'string' ? json.error : 'QuickBooks status is temporarily unavailable.');
         }
-        setStatus(null);
+        if (!silent) setStatus(null);
         return;
       }
-      setStatus({
+
+      const nextStatus: QuickBooksStatus = {
         configured: Boolean(json.configured),
         canConnect: Boolean(json.canConnect),
         connection: (json.connection || { status: 'disconnected' }) as QuickBooksStatus['connection'],
         recentLogs: Array.isArray(json.recentLogs) ? (json.recentLogs as SyncLog[]) : [],
         needsReconnect: Boolean(json.needsReconnect),
         setupMessage: typeof json.setupMessage === 'string' ? json.setupMessage : null
-      });
+      };
+
+      const previousConnectionStatus = previousConnectionStatusRef.current;
+      const nextConnectionStatus = nextStatus.connection?.status;
+      previousConnectionStatusRef.current = nextConnectionStatus;
+      setStatus(nextStatus);
+
+      if (previousConnectionStatus === 'syncing' && nextConnectionStatus === 'connected') {
+        appFeedback.success('QuickBooks sync completed.');
+      } else if (previousConnectionStatus === 'syncing' && nextConnectionStatus === 'error') {
+        appFeedback.error(nextStatus.connection?.last_error || 'QuickBooks sync failed.');
+      }
     } catch (error) {
       if (!mounted.current) return;
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
       setLoadError(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks status is temporarily unavailable.');
-      setStatus(null);
+      if (!silent) setStatus(null);
     } finally {
       loadingRef.current = false;
-      if (mounted.current) setLoading(false);
+      if (mounted.current && !silent) setLoading(false);
     }
-  }, []);
+  }, [appFeedback]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (status?.connection?.status !== 'syncing') return;
+    const timer = window.setInterval(() => {
+      void load({ silent: true });
+    }, SYNC_POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [status?.connection?.status, load]);
 
   useEffect(() => {
     const qb = searchParams.get('quickbooks');
@@ -150,7 +173,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   }, [searchParams, appFeedback, load]);
 
   async function disconnect() {
-    if (busy) return;
+    if (busy || status?.connection?.status === 'syncing') return;
     setBusy(true);
     try {
       const res = await fetchWithTimeout('/api/integrations/quickbooks/disconnect', { method: 'POST' });
@@ -169,34 +192,60 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   }
 
   async function syncNow() {
-    if (busy) return;
+    if (busy || status?.connection?.status === 'syncing') return;
     setBusy(true);
     try {
-      const res = await fetchWithTimeout(
-        '/api/integrations/quickbooks/sync-now',
-        { method: 'POST' },
-        SYNC_REQUEST_TIMEOUT_MS
-      );
+      const res = await fetchWithTimeout('/api/integrations/quickbooks/sync-now', { method: 'POST' });
       const json = await readJson(res);
       if (!res.ok) {
-        appFeedback.error(typeof json.error === 'string' ? json.error : 'QuickBooks sync failed.');
+        appFeedback.error(typeof json.error === 'string' ? json.error : 'QuickBooks sync could not be started.');
         await load();
         return;
       }
-      appFeedback.success(typeof json.message === 'string' ? json.message : 'QuickBooks sync completed.');
-      await load();
+
+      previousConnectionStatusRef.current = 'syncing';
+      setStatus((current) => current ? {
+        ...current,
+        connection: {
+          ...current.connection,
+          status: 'syncing',
+          last_error: null,
+          needsReconnect: false
+        },
+        needsReconnect: false
+      } : current);
+      appFeedback.success(typeof json.message === 'string' ? json.message : 'QuickBooks sync started.');
+      await load({ silent: true });
     } catch (error) {
       const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      appFeedback.error(timedOut ? 'QuickBooks sync is still taking too long. Please try again.' : 'QuickBooks sync failed.');
+      appFeedback.error(timedOut ? 'QuickBooks could not start the sync in time. Please try again.' : 'QuickBooks sync could not be started.');
     } finally {
       setBusy(false);
     }
   }
 
-  const connected = status?.connection?.status === 'connected';
-  const needsReconnect = Boolean(status?.needsReconnect || status?.connection?.needsReconnect || status?.connection?.status === 'error');
+  const connectionStatus = status?.connection?.status;
+  const syncing = connectionStatus === 'syncing';
+  const connected = connectionStatus === 'connected' || syncing;
+  const needsReconnect = Boolean(status?.needsReconnect || status?.connection?.needsReconnect || connectionStatus === 'error');
   const configured = Boolean(status?.configured);
-  const statusText = loading ? 'Checking...' : unauthorized ? 'Sign in required' : loadError ? 'Failed' : connected ? 'Connected' : needsReconnect ? 'Reconnect required' : configured ? 'Disconnected' : status ? 'Not configured' : 'Not checked';
+  const statusText = loading
+    ? 'Checking...'
+    : unauthorized
+      ? 'Sign in required'
+      : loadError
+        ? 'Failed'
+        : syncing
+          ? 'Syncing QuickBooks...'
+          : connectionStatus === 'connected'
+            ? 'Connected'
+            : needsReconnect
+              ? 'Reconnect required'
+              : configured
+                ? 'Disconnected'
+                : status
+                  ? 'Not configured'
+                  : 'Not checked';
   const showConnect = canManage && !connected;
   const realmMasked = maskRealmId(status?.connection?.realm_id);
   const recentLogs = status?.recentLogs || [];
@@ -205,6 +254,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     <div>
       {!status && !loading && !loadError ? <p className="muted">Connect QuickBooks to exchange supported accounting data.</p> : null}
       <p style={{ marginBottom: 10 }}>{t('pages.quickbooks.statusLabel')}: <strong>{statusText}</strong></p>
+      {syncing ? <p className="muted" role="status">Your sync is running. You can leave this page while it finishes.</p> : null}
       {loadError ? <p className="auth-message auth-message-error" role="alert">{loadError}</p> : null}
       {status?.setupMessage && !connected ? <p className="muted">{status.setupMessage}</p> : null}
       {needsReconnect && !loadError ? <p className="muted">Reconnect QuickBooks to resume syncing.</p> : null}
@@ -212,13 +262,13 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       <div className="settings-actions" style={{ marginTop: 12 }}>
         {unauthorized ? <a className="btn btn-primary" href="/login?next=/invoices">Sign in again</a> : showConnect ? <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">{needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}</a> : null}
         <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>{loading ? 'Checking...' : 'Refresh status'}</button>
-        {canManage && connected ? <button type="button" className="btn" disabled={busy || loading} onClick={() => void syncNow()}>{busy ? 'Syncing…' : 'Sync now'}</button> : null}
-        {canManage && (connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading} onClick={() => void disconnect()}>{busy ? 'Disconnecting...' : t('pages.quickbooks.disconnect')}</button> : null}
+        {canManage && connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing ? 'Syncing…' : 'Sync now'}</button> : null}
+        {canManage && (connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? 'Disconnecting...' : t('pages.quickbooks.disconnect')}</button> : null}
       </div>
 
       {status?.connection?.company_name ? <p className="muted" style={{ marginTop: 12 }}>Connected company: <strong>{status.connection.company_name}</strong>{realmMasked ? ` · Realm ${realmMasked}` : ''}</p> : null}
-      {status?.connection?.last_sync_at ? <p className="muted">Last sync {formatRelativeTime(status.connection.last_sync_at)}.</p> : connected ? <p className="muted">No successful sync recorded yet.</p> : null}
-      {status?.connection?.last_error ? <p className="auth-message auth-message-error" role="alert">{status.connection.last_error}</p> : null}
+      {status?.connection?.last_sync_at ? <p className="muted">Last sync {formatRelativeTime(status.connection.last_sync_at)}.</p> : connected && !syncing ? <p className="muted">No successful sync recorded yet.</p> : null}
+      {status?.connection?.last_error && !syncing ? <p className="auth-message auth-message-error" role="alert">{status.connection.last_error}</p> : null}
 
       <div style={{ marginTop: 16 }}>
         <h4 style={{ marginBottom: 6 }}>Current sync</h4>
