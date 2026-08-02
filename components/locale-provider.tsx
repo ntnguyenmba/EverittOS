@@ -15,15 +15,15 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-function readStoredLocale(): Locale {
-  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+function readStoredLocale(fallback: Locale): Locale {
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
     if (stored) return normalizeLocale(stored);
   } catch {
     /* ignore */
   }
-  return readLocaleCookie() || DEFAULT_LOCALE;
+  return readLocaleCookie() || fallback;
 }
 
 function applyDocumentLocale(locale: Locale) {
@@ -56,14 +56,21 @@ function resolvePath(messages: Messages, path: string): string | undefined {
   return typeof current === 'string' ? current : undefined;
 }
 
-export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+export function LocaleProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}) {
+  const normalizedInitialLocale = normalizeLocale(initialLocale);
+  const [locale, setLocaleState] = useState<Locale>(normalizedInitialLocale);
 
   useEffect(() => {
-    const storedLocale = readStoredLocale();
+    const storedLocale = readStoredLocale(normalizedInitialLocale);
     setLocaleState(storedLocale);
     applyDocumentLocale(storedLocale);
-  }, []);
+  }, [normalizedInitialLocale]);
 
   useEffect(() => {
     applyDocumentLocale(locale);
