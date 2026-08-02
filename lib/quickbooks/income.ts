@@ -152,6 +152,11 @@ async function exportDirectPayment(input: {
   const payment = input.payment;
   if (payment.invoice_id) return 'skipped';
 
+  const amount = Number(payment.amount || 0);
+  if (!Number.isFinite(amount) || amount <= 0 || !payment.job_id || !payment.paid_at) {
+    return 'skipped';
+  }
+
   if (await wasDirectPaymentExported(input.admin, input.organizationId, payment.id)) {
     return 'skipped';
   }
@@ -164,13 +169,11 @@ async function exportDirectPayment(input: {
     .maybeSingle();
 
   if (jobError) throw new Error(jobError.message);
-  if (!job) throw new Error('The job linked to this payment could not be found.');
+  if (!job) return 'skipped';
 
   const jobRow = job as JobRow;
   const customerId = payment.customer_id || jobRow.customer_id;
-  if (!customerId) {
-    throw new Error('This direct payment has no customer and cannot be exported to QuickBooks.');
-  }
+  if (!customerId) return 'skipped';
 
   const customer = await syncCustomerToQuickBooks({
     admin: input.admin,
@@ -181,7 +184,7 @@ async function exportDirectPayment(input: {
     log: true
   });
   const itemId = await resolveIncomeItemId(input.admin, input.organizationId, input.fetchImpl);
-  const amount = Math.max(0, Number(payment.amount || 0));
+  const safeAmount = Math.max(0, amount);
   const note = payment.notes?.trim() || jobRow.title?.trim() || 'EverittOS job payment';
 
   const payload: Record<string, unknown> = {
@@ -195,13 +198,13 @@ async function exportDirectPayment(input: {
     ].filter(Boolean).join(' | ').slice(0, 4000),
     Line: [
       {
-        Amount: amount,
+        Amount: safeAmount,
         DetailType: 'SalesItemLineDetail',
         Description: note.slice(0, 4000),
         SalesItemLineDetail: {
           ItemRef: { value: itemId },
           Qty: 1,
-          UnitPrice: amount
+          UnitPrice: safeAmount
         }
       }
     ]
