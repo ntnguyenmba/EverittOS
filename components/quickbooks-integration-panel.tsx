@@ -253,7 +253,9 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         needsReconnect: false
       } : current);
     } catch (error) {
-      appFeedback.error(isAbortError(error) ? 'QuickBooks may still be starting the sync. Refresh status before trying again.' : 'QuickBooks sync could not be started.');
+      if (!isAbortError(error)) {
+        appFeedback.error('QuickBooks sync could not be started.');
+      }
     } finally {
       setBusy(false);
     }
