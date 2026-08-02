@@ -66,6 +66,17 @@ export function localYmd(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+function effectiveScheduleDate(job: {
+  scheduled_start?: string | null;
+  start_date?: string | null;
+  due_date?: string | null;
+}): string | null {
+  const effective = getEffectiveJobSchedule(job);
+  if (!effective) return null;
+  const date = effective.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+}
+
 export function isUnassignedJob(job: {
   assigned_to?: string | null;
   assigned_email?: string | null;
@@ -95,8 +106,7 @@ export function jobMatchesToday(
   },
   todayYmd: string = localYmd()
 ): boolean {
-  const effective = getEffectiveJobSchedule(job);
-  return Boolean(effective && effective === todayYmd);
+  return effectiveScheduleDate(job) === todayYmd;
 }
 
 function addLocalDays(ymd: string, days: number): string {
@@ -117,16 +127,16 @@ export function jobMatchesPeriod(
   todayYmd: string = localYmd()
 ): boolean {
   if (period === 'all') return true;
-  const effective = getEffectiveJobSchedule(job);
-  if (!effective) return false;
-  if (period === 'today') return effective === todayYmd;
+  const effectiveDate = effectiveScheduleDate(job);
+  if (!effectiveDate) return false;
+  if (period === 'today') return effectiveDate === todayYmd;
   if (period === 'week') {
     const start = addLocalDays(todayYmd, -6);
-    return effective >= start && effective <= todayYmd;
+    return effectiveDate >= start && effectiveDate <= todayYmd;
   }
   if (period === 'month') {
     const start = addLocalDays(todayYmd, -29);
-    return effective >= start && effective <= todayYmd;
+    return effectiveDate >= start && effectiveDate <= todayYmd;
   }
   return true;
 }
