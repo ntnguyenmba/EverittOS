@@ -236,7 +236,7 @@ export default function ClientPortalJobsPage() {
       ) : (
         <>
           {renderSection('current-jobs', 'Current Jobs', groupedJobs.current, t('portal.contractor.noUpcoming'), true)}
-          {renderSection('history', 'History', groupedJobs.history, t('portal.contractor.noCompleted'))}
+          {renderSection('history', 'Past Jobs', groupedJobs.history, t('portal.contractor.noCompleted'))}
         </>
       )}
     </AuthenticatedSection>
