@@ -220,6 +220,15 @@
   cursor: default !important;
 }
 
+.contractor-job-card > button,
+.contractor-job-card a,
+.contractor-history-card a,
+.client-job-card a,
+.client-job-card button {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
 .client-job-card:hover,
 .client-job-card:focus-visible,
 .contractor-job-card:focus-within {
