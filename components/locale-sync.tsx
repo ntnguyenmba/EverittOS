@@ -1,19 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/components/locale-provider';
 import { LOCALE_STORAGE_KEY, normalizeLocale } from '@/lib/i18n/config';
 import { writeLocaleCookie } from '@/lib/i18n/cookie';
 import { isSessionExemptPath } from '@/lib/session-policy';
 
-/** Sync locale from profile preference after sign-in. */
+/** Load the signed-in profile locale once, then respect the user's live selection. */
 export function LocaleSync() {
   const pathname = usePathname() || '/';
   const { setLocale } = useLocale();
+  const hasSynced = useRef(false);
 
   useEffect(() => {
-    if (isSessionExemptPath(pathname)) return;
+    if (hasSynced.current || isSessionExemptPath(pathname)) return;
+    hasSynced.current = true;
 
     async function syncLocale() {
       const res = await fetch('/api/account/locale', { cache: 'no-store' });
