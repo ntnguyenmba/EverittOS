@@ -39,6 +39,7 @@ export type ContractorJobRow = AssignableJob & {
   completed_at?: string | null;
   created_at?: string | null;
   user_id?: string | null;
+  expected_contractor_cost?: number | string | null;
 };
 
 export type ContractorDashboardMetrics = {
@@ -72,6 +73,7 @@ export type ContractorJobCardModel = {
   address: string;
   status: string;
   payAmount: number;
+  payIsPlanned: boolean;
   paymentStatus: 'paid' | 'pending' | 'unpaid' | 'none';
   userId: string | null;
 };
@@ -327,7 +329,10 @@ export function buildContractorJobCards(
     .filter((job) => isJobAssignedToWorker(job, identity, assignmentWorkerIdsByJob))
     .map((job) => {
       const rows = laborByJob.get(job.id) || [];
-      const payAmount = Number(rows.reduce((sum, row) => sum + num(row.total_cost), 0).toFixed(2));
+      const recordedPay = Number(rows.reduce((sum, row) => sum + num(row.total_cost), 0).toFixed(2));
+      const plannedPay = Number(num(job.expected_contractor_cost).toFixed(2));
+      const payAmount = rows.length ? recordedPay : plannedPay;
+      const payIsPlanned = rows.length === 0 && plannedPay > 0;
       let paymentStatus: ContractorJobCardModel['paymentStatus'] = 'none';
       if (rows.length) {
         const statuses = rows.map((row) => normalizeLaborPaymentStatus(row.payment_status));
@@ -344,6 +349,7 @@ export function buildContractorJobCards(
         address: job.address?.trim() || 'Not set',
         status: job.status || 'new',
         payAmount,
+        payIsPlanned,
         paymentStatus,
         userId: job.user_id || null
       };
