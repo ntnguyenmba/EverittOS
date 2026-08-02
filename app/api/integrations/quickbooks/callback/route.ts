@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function redirectWithError(code: string) {
-  return NextResponse.redirect(appUrl(`/invoices?quickbooks=error&reason=${code}`));
+  return NextResponse.redirect(appUrl(`/settings?quickbooks=error&reason=${code}#integrations`));
 }
 
 export async function GET(request: Request) {
@@ -50,16 +50,24 @@ export async function GET(request: Request) {
       last_error: null
     });
 
-    const connection = await loadQuickBooksConnection(admin, parsed.organizationId);
-    const companyName = connection
-      ? await fetchCompanyDisplayName(admin, parsed.organizationId, { connection })
-      : null;
+    let companyName: string | null = null;
+    let companyLookupError: string | null = null;
 
-    if (companyName) {
-      await admin
-        .from('quickbooks_connections')
-        .update({ company_name: companyName, updated_at: new Date().toISOString() })
-        .eq('organization_id', parsed.organizationId);
+    try {
+      const connection = await loadQuickBooksConnection(admin, parsed.organizationId);
+      companyName = connection
+        ? await fetchCompanyDisplayName(admin, parsed.organizationId, { connection })
+        : null;
+
+      if (companyName) {
+        await admin
+          .from('quickbooks_connections')
+          .update({ company_name: companyName, updated_at: new Date().toISOString() })
+          .eq('organization_id', parsed.organizationId);
+      }
+    } catch (error) {
+      companyLookupError = error instanceof Error ? error.message : 'QuickBooks company details could not be loaded yet.';
+      console.error('QuickBooks company lookup failed after OAuth connection', error);
     }
 
     await writeQuickBooksSyncLog(admin, {
@@ -67,8 +75,9 @@ export async function GET(request: Request) {
       userId: parsed.userId,
       entityType: 'connection',
       action: 'connect',
-      status: 'completed',
+      status: companyLookupError ? 'completed_with_errors' : 'completed',
       externalId: realmId,
+      errorMessage: companyLookupError,
       intuitTid,
       httpStatus: 200
     });
@@ -77,10 +86,11 @@ export async function GET(request: Request) {
       organizationId: parsed.organizationId,
       realmId,
       intuitTid,
-      hasCompanyName: Boolean(companyName)
+      hasCompanyName: Boolean(companyName),
+      companyLookupError
     });
 
-    return NextResponse.redirect(appUrl('/invoices?quickbooks=connected'));
+    return NextResponse.redirect(appUrl('/settings?quickbooks=connected#integrations'));
   } catch (error) {
     const message =
       error instanceof QuickBooksApiError
