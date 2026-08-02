@@ -17,9 +17,13 @@ function pathOnly(pathname: string): string {
   return pathname.split('?')[0].split('#')[0];
 }
 
+function pathMatchesPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
 export function isPortalPersonalSettingsPath(pathname: string): boolean {
   const path = pathOnly(pathname);
-  return PORTAL_PERSONAL_SETTINGS_PATHS.some((allowed) => path === allowed || path.startsWith(`${allowed}/`));
+  return PORTAL_PERSONAL_SETTINGS_PATHS.some((allowed) => pathMatchesPrefix(path, allowed));
 }
 
 /** Public legal pages reachable without role escalation. */
@@ -47,7 +51,7 @@ export function isTeamInviteAcceptPath(pathname: string): boolean {
  */
 export function isContractorAllowedPath(pathname: string): boolean {
   const path = pathOnly(pathname);
-  if (path.startsWith(CONTRACTOR_PORTAL_HOME)) return true;
+  if (pathMatchesPrefix(path, CONTRACTOR_PORTAL_HOME)) return true;
   if (isPortalPersonalSettingsPath(path)) return true;
   if (path.startsWith('/jobs/')) return true;
   if (isTeamInviteAcceptPath(path)) return true;
@@ -58,7 +62,7 @@ export function isContractorAllowedPath(pathname: string): boolean {
 /** Paths a client/customer may open without being bounced back to the portal home. */
 export function isClientAllowedPath(pathname: string): boolean {
   const path = pathOnly(pathname);
-  if (path.startsWith(CLIENT_PORTAL_HOME)) return true;
+  if (pathMatchesPrefix(path, CLIENT_PORTAL_HOME)) return true;
   if (isPortalPersonalSettingsPath(path)) return true;
   if (path.startsWith('/report/')) return true;
   if (isTeamInviteAcceptPath(path)) return true;
@@ -139,7 +143,7 @@ export function isManagerOperationalPath(pathname: string): boolean {
     '/settings/notifications',
     '/settings/privacy'
   ];
-  return operational.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  return operational.some((prefix) => pathMatchesPrefix(path, prefix));
 }
 
 /** Financial modules that require org-wide or explicit finance permission. */
