@@ -136,6 +136,11 @@ textarea,
   overflow-wrap: anywhere;
 }
 
+/* Reports were retired from the product. Hide the remaining legacy report card on job details. */
+.job-detail-shell > section.card:has(a[href$='/report']) {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   .page-head,
   .page-header,
