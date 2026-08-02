@@ -180,24 +180,24 @@ export function TeamDirectory() {
   const activeCount = members.filter((member) => member.active).length;
 
   return (
-    <section className="card" style={{ marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
+    <section className="card team-directory-card">
+      <div className="team-directory-header">
         <div>
-          <h2 style={{ margin: 0 }}>Team members</h2>
-          <p className="muted" style={{ margin: '8px 0 0' }}>{activeCount} active · Find someone and assign work.</p>
+          <h2>Team members</h2>
+          <p className="muted">{activeCount} active · Find someone and assign work.</p>
         </div>
-        <div className="inline-actions" style={{ gap: 12 }}>
+        <div className="inline-actions team-directory-actions">
           <Link className="btn" href="/people#invite-by-email">Add team member</Link>
           <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginTop: 24, gap: 20 }}>
-        <label style={{ display: 'grid', gap: 8 }}>
+      <div className="grid-2 team-directory-filters">
+        <label>
           Search team
           <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or role" />
         </label>
-        <label style={{ display: 'grid', gap: 8 }}>
+        <label>
           Role
           <select className="input" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
             <option value="all">All roles</option>
@@ -210,31 +210,31 @@ export function TeamDirectory() {
         </label>
       </div>
 
-      <div className="segmented-control" role="group" aria-label="Team member status" style={{ marginTop: 22, gap: 12 }}>
+      <div className="segmented-control" role="group" aria-label="Team member status">
         <button type="button" className={`btn${statusFilter === 'active' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
         <button type="button" className={`btn${statusFilter === 'inactive' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button>
         <button type="button" className={`btn${statusFilter === 'all' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('all')}>All</button>
       </div>
 
-      {loading ? <p className="loading-state">Loading team...</p> : null}
-      {error ? <p className="auth-message auth-message-error">{error}</p> : null}
-      {!loading && !error && filtered.length === 0 ? <p className="muted">No matching team members.</p> : null}
+      {loading ? <p className="loading-state team-directory-state">Loading team...</p> : null}
+      {error ? <p className="auth-message auth-message-error team-directory-state">{error}</p> : null}
+      {!loading && !error && filtered.length === 0 ? <p className="muted team-directory-state">No matching team members.</p> : null}
 
-      <div className="customer-list" style={{ marginTop: 22 }}>
+      <div className="customer-list team-member-list">
         {filtered.map((member) => {
           const summary = jobSummaries[member.userId] || emptySummary();
           return (
-            <article key={member.userId} className="list-row customer-row">
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <article key={member.userId} className="list-row customer-row team-member-card">
+              <div className="team-member-copy">
                 <strong>{member.name}</strong>
-                <p className="muted" style={{ margin: '3px 0 0' }}>{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
-                {member.email ? <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>{member.email}</p> : null}
-                <p className="muted" style={{ margin: '6px 0 0' }}>
+                <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
+                {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
+                <p className="muted team-member-summary">
                   {summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt)}
                 </p>
               </div>
               {member.active ? (
-                <div className="inline-actions">
+                <div className="inline-actions team-member-actions">
                   <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>View jobs</Link>
                   <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
                 </div>
