@@ -26,14 +26,44 @@ type ProfileRow = {
   email: string | null;
 };
 
+type JobRow = {
+  assigned_to: string | null;
+  status: string | null;
+  scheduled_start: string | null;
+  start_date: string | null;
+  completed_at: string | null;
+};
+
+type JobSummary = {
+  active: number;
+  completed: number;
+  lastJobAt: string | null;
+};
+
 function roleLabel(role: string) {
   const normalized = normalizeRole(role);
   if (normalized === 'employee') return 'Staff';
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).replaceAll('_', ' ');
 }
 
+function emptySummary(): JobSummary {
+  return { active: 0, completed: 0, lastJobAt: null };
+}
+
+function isCompletedStatus(status: string | null) {
+  return ['completed', 'finished', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
+}
+
+function formatLastJob(value: string | null) {
+  if (!value) return 'No jobs yet';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'No jobs yet';
+  return `Last job ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+}
+
 export function TeamDirectory() {
   const [members, setMembers] = useState<DirectoryMember[]>([]);
+  const [jobSummaries, setJobSummaries] = useState<Record<string, JobSummary>>({});
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
@@ -82,9 +112,18 @@ export function TeamDirectory() {
 
       const rows = (memberRows || []) as MemberRow[];
       const ids = rows.map((row) => row.user_id);
-      const { data: profileRows } = ids.length
-        ? await supabase.from('profiles').select('id, full_name, email').in('id', ids)
-        : { data: [] as ProfileRow[] };
+      const [{ data: profileRows }, { data: jobRows }] = await Promise.all([
+        ids.length
+          ? supabase.from('profiles').select('id, full_name, email').in('id', ids)
+          : Promise.resolve({ data: [] as ProfileRow[] }),
+        ids.length
+          ? supabase
+              .from('jobs')
+              .select('assigned_to, status, scheduled_start, start_date, completed_at')
+              .eq('organization_id', workspace.organizationId)
+              .in('assigned_to', ids)
+          : Promise.resolve({ data: [] as JobRow[] })
+      ]);
 
       const profiles = new Map<string, ProfileRow>();
       for (const profile of (profileRows || []) as ProfileRow[]) profiles.set(profile.id, profile);
@@ -104,8 +143,21 @@ export function TeamDirectory() {
         })
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      const summaries: Record<string, JobSummary> = {};
+      for (const id of ids) summaries[id] = emptySummary();
+      for (const job of (jobRows || []) as JobRow[]) {
+        if (!job.assigned_to) continue;
+        const summary = summaries[job.assigned_to] || emptySummary();
+        if (isCompletedStatus(job.status)) summary.completed += 1;
+        else summary.active += 1;
+        const value = job.completed_at || job.scheduled_start || job.start_date;
+        if (value && (!summary.lastJobAt || value > summary.lastJobAt)) summary.lastJobAt = value;
+        summaries[job.assigned_to] = summary;
+      }
+
       if (!cancelled) {
         setMembers(next);
+        setJobSummaries(summaries);
         setLoading(false);
       }
     }
@@ -140,13 +192,7 @@ export function TeamDirectory() {
       <div className="grid-2" style={{ marginTop: 16 }}>
         <label>
           Search team
-          <input
-            className="input"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, email, or role"
-          />
+          <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or role" />
         </label>
         <label>
           Role
@@ -172,25 +218,27 @@ export function TeamDirectory() {
       {!loading && !error && filtered.length === 0 ? <p className="muted">No matching team members.</p> : null}
 
       <div className="customer-list" style={{ marginTop: 14 }}>
-        {filtered.map((member) => (
-          <article key={member.userId} className="list-row customer-row">
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <strong>{member.name}</strong>
-              <p className="muted" style={{ margin: '3px 0 0' }}>{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
-              {member.email ? <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>{member.email}</p> : null}
-            </div>
-            {member.active ? (
-              <div className="inline-actions">
-                <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>
-                  View jobs
-                </Link>
-                <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>
-                  Assign to job
-                </Link>
+        {filtered.map((member) => {
+          const summary = jobSummaries[member.userId] || emptySummary();
+          return (
+            <article key={member.userId} className="list-row customer-row">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong>{member.name}</strong>
+                <p className="muted" style={{ margin: '3px 0 0' }}>{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
+                {member.email ? <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>{member.email}</p> : null}
+                <p className="muted" style={{ margin: '6px 0 0' }}>
+                  {summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt)}
+                </p>
               </div>
-            ) : null}
-          </article>
-        ))}
+              {member.active ? (
+                <div className="inline-actions">
+                  <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>View jobs</Link>
+                  <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
