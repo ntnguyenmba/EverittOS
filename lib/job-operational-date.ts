@@ -66,8 +66,9 @@ export function getCompletedJobReportingDate(job: JobDateFields): string | null 
 
 /**
  * Returns YYYY-MM-DD for the date that should drive operational reports.
- * Completed jobs: completed_at → latest visit → start_date → scheduled_start (else null).
- * Other jobs: start/scheduled/visit/due, then created_at only when no operational date exists.
+ * Completed jobs: completed_at -> latest visit -> start_date -> scheduled_start (else null).
+ * Other jobs: scheduled_start first so Dashboard Today matches Schedule Today,
+ * then start/visit/due, and created_at only when no operational date exists.
  */
 export function getJobOperationalDate(job: JobDateFields): string | null {
   if (isCompletedJobStatus(job.status)) {
@@ -75,8 +76,8 @@ export function getJobOperationalDate(job: JobDateFields): string | null {
   }
 
   return (
-    asDateOnly(job.start_date) ||
     asDateOnly(job.scheduled_start) ||
+    asDateOnly(job.start_date) ||
     asDateOnly(job.visit_start) ||
     asDateOnly(job.due_date) ||
     asDateOnly(job.created_at) ||
