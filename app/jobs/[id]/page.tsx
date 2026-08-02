@@ -9,7 +9,6 @@ import { JobWorkflow } from '@/components/job-workflow';
 import { JobPhotosSection } from '@/components/job-photos-section';
 import { JobLaborSection } from '@/components/job-labor-section';
 import { JobProfitabilityCard } from '@/components/job-profitability-card';
-import { CustomerReportSharePanel } from '@/components/customer-report-share-panel';
 import { JobVisitsSchedule } from '@/components/job-visits-schedule';
 import { JobAssignments } from '@/components/job-assignments';
 import { JobAddToCalendar } from '@/components/job-add-to-calendar';
@@ -23,7 +22,6 @@ import { StatusPill } from '@/components/status-pill';
 import { canAccessFeature } from '@/lib/plan-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { fetchUsageCounts, reportLimitReached, limitMessage } from '@/lib/everittos-usage';
 import { hasPermission } from '@/lib/permissions';
 import { canViewInternalNotes, isContractorRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
@@ -76,34 +74,11 @@ type Worker = { id: string; name: string };
 type Assignment = { id: string; worker_id: string; responsibility: string | null };
 
 const SAFE_JOB_DETAIL_COLUMNS = [
-  'id',
-  'user_id',
-  'title',
-  'customer_name',
-  'phone',
-  'address',
-  'notes',
-  'status',
-  'start_date',
-  'due_date',
-  'scheduled_start',
-  'scheduled_end',
-  'assigned_to',
-  'assigned_email',
-  'organization_id',
-  'customer_id',
-  'customer_email',
-  'recurring_series_id',
-  'occurrence_date',
-  'is_skipped',
-  'revenue_amount',
-  'expected_contractor_cost',
-  'expected_additional_expense',
-  'timezone',
-  'priority',
-  'customer_notes',
-  'completion_verified',
-  'created_at'
+  'id', 'user_id', 'title', 'customer_name', 'phone', 'address', 'notes', 'status', 'start_date', 'due_date',
+  'scheduled_start', 'scheduled_end', 'assigned_to', 'assigned_email', 'organization_id', 'customer_id',
+  'customer_email', 'recurring_series_id', 'occurrence_date', 'is_skipped', 'revenue_amount',
+  'expected_contractor_cost', 'expected_additional_expense', 'timezone', 'priority', 'customer_notes',
+  'completion_verified', 'created_at'
 ];
 
 function jobDetailColumns(canReadInternalNotes: boolean): string {
@@ -121,9 +96,9 @@ function formatPriority(value: string | null, labels: { low: string; normal: str
   return labels.normal;
 }
 
-function formatDateTime(value: string | null, fallback: string) {
+function formatDateTime(value: string | null, fallback: string, locale: string) {
   if (!value) return fallback;
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(locale);
 }
 
 function isActiveStatus(status: string | null | undefined) {
@@ -145,7 +120,6 @@ export default function JobDetailPage({ params }: PageProps) {
   const [canEditStatus, setCanEditStatus] = useState(false);
   const [canUploadPhotos, setCanUploadPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [creatingReport, setCreatingReport] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [seriesBusy, setSeriesBusy] = useState('');
   const [photoRefresh, setPhotoRefresh] = useState(0);
@@ -171,9 +145,7 @@ export default function JobDetailPage({ params }: PageProps) {
   async function loadJob() {
     if (!jobId) return;
     setLoading(true);
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
       return;
@@ -211,6 +183,7 @@ export default function JobDetailPage({ params }: PageProps) {
       data = fallback.data as typeof data;
       error = fallback.error;
     }
+
     const [{ data: checklistRows }, { data: assignmentRows }] = await Promise.all([
       supabase.from('job_checklist_items').select('id, label, completed, sort_order').eq('job_id', jobId).order('sort_order'),
       supabase.from('job_assignments').select('id, worker_id, responsibility').eq('job_id', jobId)
@@ -235,36 +208,16 @@ export default function JobDetailPage({ params }: PageProps) {
       return;
     }
 
-    // Single source of truth: if create saved jobs.assigned_to but missed job_assignments,
-    // repair the join row so the detail page never asks to assign again.
     const assignedWorkerId = (data as { assigned_to?: string | null }).assigned_to || null;
-    if (
-      assignedWorkerId &&
-      !typedAssignments.some((row) => row.worker_id === assignedWorkerId) &&
-      org?.organizationId &&
-      isManagerRole(role)
-    ) {
+    if (assignedWorkerId && !typedAssignments.some((row) => row.worker_id === assignedWorkerId) && org?.organizationId && isManagerRole(role)) {
       const { data: repaired } = await supabase
         .from('job_assignments')
-        .upsert(
-          {
-            job_id: jobId,
-            worker_id: assignedWorkerId,
-            user_id: user.id,
-            organization_id: org.organizationId
-          },
-          { onConflict: 'job_id,worker_id', ignoreDuplicates: false }
-        )
+        .upsert({ job_id: jobId, worker_id: assignedWorkerId, user_id: user.id, organization_id: org.organizationId }, { onConflict: 'job_id,worker_id', ignoreDuplicates: false })
         .select('id, worker_id, responsibility')
         .maybeSingle();
-      if (repaired) {
-        typedAssignments = [...typedAssignments, repaired as Assignment];
-      } else {
-        typedAssignments = [
-          ...typedAssignments,
-          { id: `legacy-${assignedWorkerId}`, worker_id: assignedWorkerId, responsibility: null }
-        ];
-      }
+      typedAssignments = repaired
+        ? [...typedAssignments, repaired as Assignment]
+        : [...typedAssignments, { id: `legacy-${assignedWorkerId}`, worker_id: assignedWorkerId, responsibility: null }];
     }
     setAssignments(typedAssignments);
 
@@ -273,43 +226,18 @@ export default function JobDetailPage({ params }: PageProps) {
     const workerSelect = 'id, auth_user_id, email, active, organization_id, name';
     const [authWorkersRes, emailWorkersRes, orgWorkersRes] = await Promise.all([
       supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
-      lookupEmail
-        ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
-        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
-      org?.organizationId
-        ? supabase.from('workers').select(workerSelect).eq('organization_id', org.organizationId)
-        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null })
+      lookupEmail ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail) : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
+      org?.organizationId ? supabase.from('workers').select(workerSelect).eq('organization_id', org.organizationId) : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null })
     ]);
     const workerMap = new Map<string, Record<string, unknown>>();
-    for (const row of [
-      ...(authWorkersRes.data || []),
-      ...(emailWorkersRes.data || []),
-      ...(orgWorkersRes.data || [])
-    ]) {
+    for (const row of [...(authWorkersRes.data || []), ...(emailWorkersRes.data || []), ...(orgWorkersRes.data || [])]) {
       workerMap.set(String(row.id), row);
     }
-    const identity = contractorIdentityFromWorkers(
-      user.id,
-      Array.from(workerMap.values()),
-      lookupEmail,
-      displayName
-    );
+    const identity = contractorIdentityFromWorkers(user.id, Array.from(workerMap.values()), lookupEmail, displayName);
     const identityAliases = workerIdentityAliases(identity);
-    const assignedThroughJobAssignments = typedAssignments.some((assignment) =>
-      identityAliases.has(String(assignment.worker_id || ''))
-    );
-    const hasDirectWorkspaceAccess = canAccessWorkspaceRecord(
-      data,
-      user.id,
-      org?.organizationId,
-      role,
-      data.assigned_to,
-      identity.workerIds || []
-    );
-    const hasAdditionalAssignmentAccess =
-      Boolean(org?.organizationId) &&
-      data.organization_id === org?.organizationId &&
-      assignedThroughJobAssignments;
+    const assignedThroughJobAssignments = typedAssignments.some((assignment) => identityAliases.has(String(assignment.worker_id || '')));
+    const hasDirectWorkspaceAccess = canAccessWorkspaceRecord(data, user.id, org?.organizationId, role, data.assigned_to, identity.workerIds || []);
+    const hasAdditionalAssignmentAccess = Boolean(org?.organizationId) && data.organization_id === org?.organizationId && assignedThroughJobAssignments;
 
     if (!hasDirectWorkspaceAccess && !hasAdditionalAssignmentAccess) {
       const msg = t('pages.jobs.notFound');
@@ -333,27 +261,23 @@ export default function JobDetailPage({ params }: PageProps) {
 
   async function updateStatus(status: string) {
     if (!canEditStatus || updatingStatus) return;
-    const isRestoringCancelledJob = job?.status === 'cancelled' && status === 'scheduled';
+    const restoring = job?.status === 'cancelled' && status === 'scheduled';
     const confirmed = status === 'cancelled'
-      ? window.confirm('Cancel this job? It will be hidden from dashboard metrics.')
-      : isRestoringCancelledJob
-        ? window.confirm('Restore this cancelled job? It will become scheduled again.')
+      ? window.confirm(copy.cancelJobConfirm)
+      : restoring
+        ? window.confirm(copy.restoreJobConfirm)
         : true;
     if (!confirmed) return;
     setUpdatingStatus(true);
-    const ok = await patchJob({ status }, isRestoringCancelledJob ? 'Job restored to scheduled.' : copy.statusUpdated(status));
+    const ok = await patchJob({ status }, restoring ? copy.jobRestored : copy.statusUpdated(status));
     setUpdatingStatus(false);
     if (!ok) return;
     if (orgId && status === 'completed') {
-      const {
-        data: { user: u }
-      } = await supabase.auth.getUser();
-      if (u) await createNotification(orgId, u.id, 'completion', copy.jobCompletedTitle, job?.title || copy.jobMarkedCompleted, jobId);
-      if (canAccessFinancials(userRole, plan) && isManagerRole(userRole)) {
-        setCompletionPrompt(true);
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await createNotification(orgId, user.id, 'completion', copy.jobCompletedTitle, job?.title || copy.jobMarkedCompleted, jobId);
+      if (canAccessFinancials(userRole, plan) && isManagerRole(userRole)) setCompletionPrompt(true);
     }
-    loadJob();
+    void loadJob();
   }
 
   async function saveJobFields(successMessage: string = FEEDBACK.saved, overrides?: Partial<Job>) {
@@ -364,25 +288,15 @@ export default function JobDetailPage({ params }: PageProps) {
       return false;
     }
     setSavingDetails(true);
-    const ok = await patchJob(
-      {
-        title: next.title.trim(),
-        customer_name: next.customer_name,
-        customer_email: next.customer_email || null,
-        phone: next.phone,
-        address: next.address,
-        notes: next.notes,
-        priority: next.priority,
-        internal_notes: next.internal_notes,
-        customer_notes: next.customer_notes,
-        completion_verified: next.completion_verified
-      },
-      successMessage
-    );
+    const ok = await patchJob({
+      title: next.title.trim(), customer_name: next.customer_name, customer_email: next.customer_email || null,
+      phone: next.phone, address: next.address, notes: next.notes, priority: next.priority,
+      internal_notes: next.internal_notes, customer_notes: next.customer_notes, completion_verified: next.completion_verified
+    }, successMessage);
     setSavingDetails(false);
     if (!ok) return false;
     setJob(next);
-    loadJob();
+    void loadJob();
     return true;
   }
 
@@ -390,19 +304,15 @@ export default function JobDetailPage({ params }: PageProps) {
     if (!job || !canManage || seriesBusy) return;
     setSeriesBusy(action);
     if (action === 'skip' || action === 'cancel_visit') {
-      const res = await fetch(`/api/jobs/${job.id}/series-actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      });
+      const res = await fetch(`/api/jobs/${job.id}/series-actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
       const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
       setSeriesBusy('');
       if (!res.ok) {
-        appFeedback.error(json.error || 'Unable to update this visit.');
+        appFeedback.error(json.error || copy.unableToUpdateVisit);
         return;
       }
-      appFeedback.success(json.message || 'Visit updated.');
-      loadJob();
+      appFeedback.success(json.message || copy.visitUpdated);
+      void loadJob();
       return;
     }
     if (!job.recurring_series_id) {
@@ -411,66 +321,45 @@ export default function JobDetailPage({ params }: PageProps) {
     }
 
     if (action === 'edit_future' || action === 'edit_series') {
-      const scopeLabel =
-        action === 'edit_future'
-          ? 'this visit and all future uncompleted visits'
-          : 'the series defaults and all future uncompleted visits';
-      const confirmed = window.confirm(
-        `Apply the current title, notes, price, and timezone on this form to ${scopeLabel}? Completed, paid, and historically finalized visits stay unchanged.`
-      );
-      if (!confirmed) {
+      const scope = action === 'edit_future' ? copy.futureScope : copy.seriesScope;
+      if (!window.confirm(copy.applySeriesChanges(scope))) {
         setSeriesBusy('');
         return;
       }
       const res = await fetch(`/api/recurring-jobs/${job.recurring_series_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action,
-          fromDate: job.occurrence_date || job.start_date || undefined,
-          title: job.title,
-          notes: job.notes,
-          default_price: job.revenue_amount ?? null,
-          expected_contractor_cost: job.expected_contractor_cost ?? null,
-          expected_additional_expense: job.expected_additional_expense ?? null,
-          timezone: job.timezone || null
+          action, fromDate: job.occurrence_date || job.start_date || undefined, title: job.title, notes: job.notes,
+          default_price: job.revenue_amount ?? null, expected_contractor_cost: job.expected_contractor_cost ?? null,
+          expected_additional_expense: job.expected_additional_expense ?? null, timezone: job.timezone || null
         })
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string; updatedJobCount?: number };
       setSeriesBusy('');
       if (!res.ok) {
-        appFeedback.error(json.error || 'Unable to update the series.');
+        appFeedback.error(json.error || copy.unableToUpdateSeries);
         return;
       }
-      appFeedback.success(
-        `Updated ${json.updatedJobCount ?? 0} future visit(s). Past completed visits were not changed.`
-      );
-      loadJob();
+      appFeedback.success(copy.futureVisitsUpdated(json.updatedJobCount ?? 0));
+      void loadJob();
       return;
     }
 
     const res = await fetch(`/api/recurring-jobs/${job.recurring_series_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action,
-        fromDate: job.occurrence_date || job.start_date || undefined,
-        cancelFutureJobs:
-          action === 'pause'
-            ? window.confirm('Also cancel already-generated future visits? Choose Cancel to keep them scheduled.')
-            : undefined
+        action, fromDate: job.occurrence_date || job.start_date || undefined,
+        cancelFutureJobs: action === 'pause' ? window.confirm(copy.cancelGeneratedVisitsConfirm) : undefined
       })
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     setSeriesBusy('');
     if (!res.ok) {
-      appFeedback.error(json.error || 'Unable to update the series.');
+      appFeedback.error(json.error || copy.unableToUpdateSeries);
       return;
     }
-    appFeedback.success(
-      action === 'pause' ? 'Series paused.' : action === 'resume' ? 'Series resumed.' : 'Series ended.'
-    );
-    loadJob();
+    appFeedback.success(action === 'pause' ? copy.seriesPaused : action === 'resume' ? copy.seriesResumed : copy.seriesEnded);
+    void loadJob();
   }
 
   async function bookAgain() {
@@ -480,44 +369,15 @@ export default function JobDetailPage({ params }: PageProps) {
     const json = (await res.json().catch(() => ({}))) as { job?: { id: string }; redirectTo?: string; error?: string };
     setDuplicating(false);
     if (!res.ok || !json.job?.id) {
-      appFeedback.error(json.error || 'Unable to create a similar job.');
+      appFeedback.error(json.error || copy.duplicateFailed);
       return;
     }
-    appFeedback.success('Draft job created. Confirm the date and time.');
+    appFeedback.success(copy.duplicateCreated);
     router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
   }
 
-  async function createReport() {
-    if (!job || creatingReport) return;
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push(`/login?next=/jobs/${jobId}`);
-      return;
-    }
-    setCreatingReport(true);
-    const usage = await fetchUsageCounts(user.id, orgId || job.organization_id || null);
-    if (reportLimitReached(plan, usage)) {
-      setCreatingReport(false);
-      appFeedback.error(limitMessage('reports', plan));
-      return;
-    }
-    const { error } = await supabase.from('job_reports').insert({ user_id: user.id, organization_id: orgId || job.organization_id, job_id: job.id, title: copy.reportTitle(job.title) });
-    setCreatingReport(false);
-    if (error) {
-      appFeedback.error(error.message.includes('PLAN_LIMIT_REPORTS') ? limitMessage('reports', plan) : formatSupabaseError(error));
-      return;
-    }
-    if (orgId) {
-      await createNotification(orgId, user.id, 'report', copy.reportGeneratedTitle, job.title, job.id);
-    }
-    appFeedback.success(copy.reportCreated);
-    router.push(`/jobs/${job.id}/report`);
-  }
-
   useEffect(() => {
-    loadJob();
+    void loadJob();
   }, [jobId]);
 
   if (loading) return <AppShell plan={plan} role={userRole}><div className="card">{copy.loadingJob}</div></AppShell>;
@@ -527,24 +387,20 @@ export default function JobDetailPage({ params }: PageProps) {
   const priorityLabels = { low: copy.priorityLow, normal: copy.priorityNormal, high: copy.priorityHigh, urgent: copy.priorityUrgent };
   const isCancelledJob = job.status === 'cancelled';
   const refreshFinancials = () => setFinanceRefresh((key) => key + 1);
-  const assignedContractorName =
-    assignments
-      .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
-      .filter((name): name is string => Boolean(name))
-      .join(', ') || null;
+  const assignedContractorName = assignments
+    .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
+    .filter((name): name is string => Boolean(name))
+    .join(', ') || null;
 
   return (
     <AppShell plan={plan} role={userRole}>
       <div className="job-detail-shell">
         <div className="page-head">
-          <div>
-            <h2>{job.title}</h2>
-            <p>{job.address || copy.noAddressAdded}</p>
-          </div>
+          <div><h2>{job.title}</h2><p>{job.address || copy.noAddressAdded}</p></div>
           <div className="button-row" style={{ flexWrap: 'wrap' }}>
             {canManage ? (
               <button type="button" className="btn btn-primary" disabled={duplicating} onClick={() => void bookAgain()}>
-                {duplicating ? 'Creating…' : 'Book again'}
+                {duplicating ? copy.creatingJob : copy.bookAgain}
               </button>
             ) : null}
             <StatusPill status={job.status} />
@@ -553,332 +409,142 @@ export default function JobDetailPage({ params }: PageProps) {
 
         {confirmSchedule ? (
           <div className="card" style={{ marginBottom: 18, borderColor: 'var(--accent, #0f766e)' }}>
-            <h3>Confirm date and time</h3>
-            <p className="muted">This draft was created from a past job. Choose the visit date and time before the work is scheduled.</p>
+            <h3>{copy.confirmDateTime}</h3>
+            <p className="muted">{copy.confirmDateTimeCopy}</p>
           </div>
         ) : null}
 
         {completionPrompt && canAccessFinancials(userRole, plan) ? (
           <div className="card" style={{ marginBottom: 18 }} role="status">
-            <h3>{billingCopy.jobCompleted}</h3>
-            <p className="muted">{billingCopy.jobCompletedHint}</p>
+            <h3>{billingCopy.jobCompleted}</h3><p className="muted">{billingCopy.jobCompletedHint}</p>
             <div className="button-row" style={{ flexWrap: 'wrap', marginTop: 10 }}>
-              <Link
-                className="btn btn-primary"
-                href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}
-              >
-                {billingCopy.createInvoice}
-              </Link>
-              <Link
-                className="btn"
-                href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}
-              >
-                {billingCopy.createDraft}
-              </Link>
-              <button type="button" className="btn" onClick={() => setCompletionPrompt(false)}>
-                {billingCopy.later}
-              </button>
+              <Link className="btn btn-primary" href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}>{billingCopy.createInvoice}</Link>
+              <Link className="btn" href={`/invoices?jobId=${job.id}${job.customer_id ? `&customerId=${job.customer_id}` : ''}`}>{billingCopy.createDraft}</Link>
+              <button type="button" className="btn" onClick={() => setCompletionPrompt(false)}>{billingCopy.later}</button>
             </div>
           </div>
         ) : null}
 
         <section className="card" style={{ marginBottom: 18 }}>
-          <h3>{canManage ? 'Overview' : copy.jobDetailsReadOnly}</h3>
-          <p className="muted">
-            {canManage
-              ? 'This job was created in one step. Update details here without re-entering schedule or contractor setup.'
-              : copy.fieldAccessCopy}
-          </p>
+          <h3>{canManage ? copy.overview : copy.jobDetailsReadOnly}</h3>
+          <p className="muted">{canManage ? copy.overviewCopy : copy.fieldAccessCopy}</p>
           {canManage ? (
             <div className="form">
-              <label>{copy.title}</label>
-              <input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
-              <label>{copy.customer}</label>
-              <input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
-              <label>Email</label>
-              <input
-                className="input"
-                type="email"
-                value={job.customer_email || ''}
-                onChange={(e) => setJob({ ...job, customer_email: e.target.value })}
-              />
-              <label>{copy.phone}</label>
-              <input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
-              <AddressAutocomplete
-                label={copy.address}
-                value={job.address || ''}
-                onChange={(formatted) => setJob({ ...job, address: formatted })}
-              />
-              <label>{copy.jobNotes}</label>
-              <textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
+              <label>{copy.title}</label><input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
+              <label>{copy.customer}</label><input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
+              <label>{copy.email}</label><input className="input" type="email" value={job.customer_email || ''} onChange={(e) => setJob({ ...job, customer_email: e.target.value })} />
+              <label>{copy.phone}</label><input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
+              <AddressAutocomplete label={copy.address} value={job.address || ''} onChange={(formatted) => setJob({ ...job, address: formatted })} />
+              <label>{copy.jobNotes}</label><textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
               <label>{copy.priority}</label>
               <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
-                <option value="low">{copy.priorityLow}</option>
-                <option value="normal">{copy.priorityNormal}</option>
-                <option value="high">{copy.priorityHigh}</option>
-                <option value="urgent">{copy.priorityUrgent}</option>
+                <option value="low">{copy.priorityLow}</option><option value="normal">{copy.priorityNormal}</option>
+                <option value="high">{copy.priorityHigh}</option><option value="urgent">{copy.priorityUrgent}</option>
               </select>
-              <label>{copy.customerNotes}</label>
-              <textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
-              <label>
-                <input
-                  type="checkbox"
-                  checked={!!job.completion_verified}
-                  onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })}
-                />{' '}
-                {copy.completionVerified}
-              </label>
-              <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>
-                {savingDetails ? FEEDBACK.loading : copy.saveDetails}
-              </button>
+              <label>{copy.customerNotes}</label><textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
+              <label><input type="checkbox" checked={!!job.completion_verified} onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })} />{' '}{copy.completionVerified}</label>
+              <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? copy.saving : copy.saveDetails}</button>
             </div>
           ) : (
             <>
-              <p>
-                <strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}
-              </p>
-              <p>
-                <strong>Email:</strong> {displayValue(job.customer_email, copy.notSet)}
-              </p>
-              <p>
-                <strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}
-              </p>
-              <p>
-                <strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}
-              </p>
-              <p>
-                <strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}
-              </p>
-              <p>
-                <strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}
-              </p>
+              <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
+              <p><strong>{copy.email}:</strong> {displayValue(job.customer_email, copy.notSet)}</p>
+              <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
+              <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
+              <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
+              <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
             </>
           )}
-          <p>
-            <strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet)}
-          </p>
+          <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet, locale)}</p>
           {canEditStatus ? (
             <div className="job-detail-actions">
-              <button
-                className="btn"
-                type="button"
-                disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)}
-                onClick={() => updateStatus('active')}
-              >
-                {updatingStatus ? FEEDBACK.loading : copy.startJob}
-              </button>
-              <button
-                className="btn btn-primary"
-                type="button"
-                disabled={updatingStatus || isCancelledJob || job.status === 'completed'}
-                onClick={() => updateStatus('completed')}
-              >
-                {updatingStatus ? FEEDBACK.loading : copy.markCompleted}
-              </button>
+              <button className="btn" type="button" disabled={updatingStatus || isCancelledJob || isActiveStatus(job.status)} onClick={() => void updateStatus('active')}>{updatingStatus ? copy.working : copy.startJob}</button>
+              <button className="btn btn-primary" type="button" disabled={updatingStatus || isCancelledJob || job.status === 'completed'} onClick={() => void updateStatus('completed')}>{updatingStatus ? copy.working : copy.markCompleted}</button>
               {isCancelledJob ? (
-                <button className="btn" type="button" disabled={updatingStatus} onClick={() => updateStatus('scheduled')}>
-                  {updatingStatus ? FEEDBACK.loading : t('pages.jobs.restoreJob')}
-                </button>
+                <button className="btn" type="button" disabled={updatingStatus} onClick={() => void updateStatus('scheduled')}>{updatingStatus ? copy.working : t('pages.jobs.restoreJob')}</button>
               ) : (
-                <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => updateStatus('cancelled')}>
-                  {updatingStatus ? FEEDBACK.loading : t('pages.jobs.cancelJob')}
-                </button>
+                <button className="btn job-detail-danger" type="button" disabled={updatingStatus} onClick={() => void updateStatus('cancelled')}>{updatingStatus ? copy.working : t('pages.jobs.cancelJob')}</button>
               )}
             </div>
           ) : null}
           {canManage ? (
             <div className="card" style={{ marginTop: 16, padding: 12 }}>
-              <ClientAccessPanel
-                jobId={job.id}
-                plan={plan}
-                canManage={canManage}
-                customerName={job.customer_name}
-                customerEmail={job.customer_email}
+              <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} customerName={job.customer_name} customerEmail={job.customer_email}
                 onCustomerEmailChange={(email) => setJob({ ...job, customer_email: email })}
-                onSaveCustomerEmail={(email) => saveJobFields(FEEDBACK.saved, { customer_email: email })}
-              />
+                onSaveCustomerEmail={(email) => saveJobFields(FEEDBACK.saved, { customer_email: email })} />
             </div>
           ) : null}
         </section>
 
         <section className="card" style={{ marginBottom: 18 }}>
-          <JobVisitsSchedule
-            jobId={job.id}
-            organizationId={orgId || job.organization_id}
-            canManage={canManage}
-            scheduledStart={job.scheduled_start}
-            scheduledEnd={job.scheduled_end}
-            startDate={job.start_date}
-            dueDate={job.due_date}
-            timezone={job.timezone}
-            onSaved={loadJob}
-          />
-          <JobAddToCalendar
-            job={{
-              id: job.id,
-              title: job.title,
-              customer_name: job.customer_name,
-              address: job.address,
-              notes: job.notes,
-              customer_notes: job.customer_notes,
-              scheduled_start: job.scheduled_start,
-              scheduled_end: job.scheduled_end,
-              start_date: job.start_date,
-              due_date: job.due_date,
-              assignedNames: assignments
-                .map((row) => workers.find((worker) => worker.id === row.worker_id)?.name)
-                .filter((name): name is string => Boolean(name))
-            }}
-          />
+          <JobVisitsSchedule jobId={job.id} organizationId={orgId || job.organization_id} canManage={canManage}
+            scheduledStart={job.scheduled_start} scheduledEnd={job.scheduled_end} startDate={job.start_date}
+            dueDate={job.due_date} timezone={job.timezone} onSaved={loadJob} />
+          <JobAddToCalendar job={{
+            id: job.id, title: job.title, customer_name: job.customer_name, address: job.address, notes: job.notes,
+            customer_notes: job.customer_notes, scheduled_start: job.scheduled_start, scheduled_end: job.scheduled_end,
+            start_date: job.start_date, due_date: job.due_date,
+            assignedNames: assignments.map((row) => workers.find((worker) => worker.id === row.worker_id)?.name).filter((name): name is string => Boolean(name))
+          }} />
         </section>
 
         {orgId && limitsForPlan(plan).crewAssignment ? (
           <section className="card" style={{ marginBottom: 18 }}>
-            <JobAssignments
-              jobId={job.id}
-              organizationId={orgId}
-              userId={job.user_id}
-              workers={workers}
-              assignments={assignments}
-              canManage={canManage}
-              recurringSeriesId={job.recurring_series_id}
-              occurrenceDate={job.occurrence_date || job.start_date}
-              onChange={loadJob}
-            />
+            <JobAssignments jobId={job.id} organizationId={orgId} userId={job.user_id} workers={workers} assignments={assignments}
+              canManage={canManage} recurringSeriesId={job.recurring_series_id} occurrenceDate={job.occurrence_date || job.start_date} onChange={loadJob} />
           </section>
         ) : null}
 
         <section className="card job-photos-card" style={{ marginBottom: 18 }}>
-          <h3>{copy.photosTitle}</h3>
-          <p className="muted">{copy.photosCopy}</p>
-          <JobPhotosSection
-            jobId={job.id}
-            organizationId={orgId || job.organization_id}
-            plan={plan}
-            canUpload={canUploadPhotos}
-            showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')}
-            refreshKey={photoRefresh}
-            onChange={() => {
-              setPhotoRefresh((k) => k + 1);
-              loadJob();
-            }}
-          />
+          <h3>{copy.photosTitle}</h3><p className="muted">{copy.photosCopy}</p>
+          <JobPhotosSection jobId={job.id} organizationId={orgId || job.organization_id} plan={plan} canUpload={canUploadPhotos}
+            showComparison={canAccessFeature(normalizePlan(plan), 'beforeAfterPhotos')} refreshKey={photoRefresh}
+            onChange={() => { setPhotoRefresh((key) => key + 1); void loadJob(); }} />
         </section>
 
         {orgId ? (
           <section className="card" style={{ marginBottom: 18 }}>
-            <JobChecklist
-              jobId={job.id}
-              organizationId={orgId}
-              userId={job.user_id}
-              items={checklist}
-              canEdit={canWorkJob}
-              canAddItems={canManage}
-              onChange={loadJob}
-            />
+            <JobChecklist jobId={job.id} organizationId={orgId} userId={job.user_id} items={checklist}
+              canEdit={canWorkJob} canAddItems={canManage} onChange={loadJob} />
           </section>
         ) : null}
 
         {canAccessFinancials(userRole, plan) ? (
           <section style={{ marginBottom: 18 }}>
-            <h3 style={{ marginBottom: 12 }}>Money</h3>
+            <h3 style={{ marginBottom: 12 }}>{copy.money}</h3>
             <JobProfitabilityCard jobId={job.id} customerId={job.customer_id} canManage={canManage} refreshKey={financeRefresh} />
-            <div style={{ marginTop: 18 }}>
-              <JobLaborSection
-                jobId={job.id}
-                workers={workers}
-                canManage={canManage}
-                assignedContractorName={assignedContractorName}
-                onChange={refreshFinancials}
-              />
-            </div>
-          </section>
-        ) : null}
-
-        {canManage ? (
-          <section className="card" style={{ marginBottom: 18 }}>
-            <h3>{copy.proofReport}</h3>
-            <p>{copy.proofReportCopy}</p>
-            <CustomerReportSharePanel jobId={job.id} canManage={canManage} />
-            <div className="button-row" style={{ marginTop: 12 }}>
-              <button className="btn btn-primary" type="button" onClick={createReport} disabled={creatingReport}>
-                {creatingReport ? copy.creating : copy.createReport}
-              </button>
-              <Link className="btn" href={`/jobs/${job.id}/report`}>
-                {copy.viewLatest}
-              </Link>
-            </div>
+            <div style={{ marginTop: 18 }}><JobLaborSection jobId={job.id} workers={workers} canManage={canManage}
+              assignedContractorName={assignedContractorName} onChange={refreshFinancials} /></div>
           </section>
         ) : null}
 
         <details className="card" style={{ marginBottom: 18 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>More / Advanced</summary>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{copy.moreAdvanced}</summary>
           <div style={{ marginTop: 16 }}>
             {job.recurring_series_id && canManage ? (
               <div style={{ marginBottom: 18 }}>
-                <h3>Recurring series</h3>
-                <p className="muted">
-                  This visit is part of a recurring series{job.occurrence_date ? ` (${job.occurrence_date})` : ''}. Use these
-                  actions only when changing future visits or the series.
-                </p>
+                <h3>{copy.recurringSeries}</h3><p className="muted">{copy.recurringSeriesCopy(job.occurrence_date)}</p>
                 <div className="button-row" style={{ flexWrap: 'wrap' }}>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('skip')}>
-                    {seriesBusy === 'skip' ? 'Working…' : 'Skip this visit'}
-                  </button>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('cancel_visit')}>
-                    {seriesBusy === 'cancel_visit' ? 'Working…' : 'Cancel this visit'}
-                  </button>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_future')}>
-                    {seriesBusy === 'edit_future' ? 'Working…' : 'Edit this and future'}
-                  </button>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_series')}>
-                    {seriesBusy === 'edit_series' ? 'Working…' : 'Edit entire series'}
-                  </button>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('pause')}>
-                    {seriesBusy === 'pause' ? 'Working…' : 'Pause series'}
-                  </button>
-                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('resume')}>
-                    {seriesBusy === 'resume' ? 'Working…' : 'Resume series'}
-                  </button>
-                  <button type="button" className="btn btn-danger" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('end')}>
-                    {seriesBusy === 'end' ? 'Working…' : 'End series'}
-                  </button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('skip')}>{seriesBusy === 'skip' ? copy.working : copy.skipVisit}</button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('cancel_visit')}>{seriesBusy === 'cancel_visit' ? copy.working : copy.cancelVisit}</button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_future')}>{seriesBusy === 'edit_future' ? copy.working : copy.editFuture}</button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('edit_series')}>{seriesBusy === 'edit_series' ? copy.working : copy.editSeries}</button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('pause')}>{seriesBusy === 'pause' ? copy.working : copy.pauseSeries}</button>
+                  <button type="button" className="btn" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('resume')}>{seriesBusy === 'resume' ? copy.working : copy.resumeSeries}</button>
+                  <button type="button" className="btn btn-danger" disabled={Boolean(seriesBusy)} onClick={() => void runSeriesAction('end')}>{seriesBusy === 'end' ? copy.working : copy.endSeries}</button>
                 </div>
               </div>
             ) : null}
 
-            <JobWorkflow
-              jobId={job.id}
-              canManage={canManage}
-              canComplete={canWorkJob}
-              hasWorkflowFeature={limitsForPlan(plan).workflowCustomization}
-            />
-
-            {canManage && orgId ? (
-              <div style={{ marginTop: 18 }}>
-                <RecordSharingPanel organizationId={orgId} recordType="job" recordId={job.id} canManage={canManage} />
-              </div>
-            ) : null}
+            <JobWorkflow jobId={job.id} canManage={canManage} canComplete={canWorkJob} hasWorkflowFeature={limitsForPlan(plan).workflowCustomization} />
+            {canManage && orgId ? <div style={{ marginTop: 18 }}><RecordSharingPanel organizationId={orgId} recordType="job" recordId={job.id} canManage={canManage} /></div> : null}
 
             {canViewInternalNotes(userRole) ? (
               <div className="form" style={{ marginTop: 18 }}>
-                <h3>Internal metadata</h3>
-                <label>{copy.internalNotes}</label>
-                <textarea
-                  className="input"
-                  rows={3}
-                  value={job.internal_notes || ''}
-                  onChange={(e) => setJob({ ...job, internal_notes: e.target.value })}
-                  disabled={!canManage}
-                />
-                {canManage ? (
-                  <button type="button" className="btn" disabled={savingDetails} onClick={() => void saveJobFields()}>
-                    {savingDetails ? FEEDBACK.loading : 'Save internal notes'}
-                  </button>
-                ) : null}
-                <p className="muted" style={{ marginTop: 8 }}>
-                  Job ID: {job.id}
-                </p>
+                <h3>{copy.internalMetadata}</h3><label>{copy.internalNotes}</label>
+                <textarea className="input" rows={3} value={job.internal_notes || ''} onChange={(e) => setJob({ ...job, internal_notes: e.target.value })} disabled={!canManage} />
+                {canManage ? <button type="button" className="btn" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? copy.saving : copy.saveInternalNotes}</button> : null}
+                <p className="muted" style={{ marginTop: 8 }}>{copy.jobId}: {job.id}</p>
               </div>
             ) : null}
           </div>
