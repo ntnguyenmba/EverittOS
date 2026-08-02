@@ -153,6 +153,8 @@ export default function ContractorPortalPage() {
     return { current, completed };
   }, [jobCards]);
 
+  const jobCardsById = useMemo(() => new Map(jobCards.map((job) => [job.id, job])), [jobCards]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setErrors([]);
@@ -367,6 +369,15 @@ export default function ContractorPortalPage() {
     }
   }
 
+  function renderField(label: string, value: string) {
+    return (
+      <div>
+        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{label}</dt>
+        <dd style={{ margin: '5px 0 0' }}>{value || '—'}</dd>
+      </div>
+    );
+  }
+
   function renderJobCard(job: ContractorJobCardModel) {
     const expanded = openJobId === job.id;
     const status = normalizedJobStatus(job.status);
@@ -385,26 +396,20 @@ export default function ContractorPortalPage() {
           onClick={() => setOpenJobId(expanded ? null : job.id)}
           style={{ width: '100%', border: 0, background: 'transparent', color: 'inherit', padding: 16, textAlign: 'left', cursor: 'pointer' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
-              <h3 style={{ fontSize: 17, margin: 0 }}>{job.title}</h3>
-              <p className="muted" style={{ margin: '6px 0 0' }}>
-                {[job.date, job.address].filter(Boolean).join(' · ')}
-              </p>
+              <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
+              <h3 style={{ fontSize: 17, margin: '5px 0 0' }}>{job.title}</h3>
             </div>
-            <span className="badge">{translatePortalJobStatus(t, job.status)}</span>
+            {job.payAmount > 0 ? <strong style={{ fontSize: 18 }}>{formatContractorMoney(job.payAmount)}</strong> : null}
           </div>
-          <div className="inline-actions" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
-            <span className="badge">{t('portal.contractor.customer')}: {job.customerName || '—'}</span>
-            {job.payAmount > 0 ? (
-              <>
-                <span className="badge">{t('portal.contractor.pay')}: {formatContractorMoney(job.payAmount)}</span>
-                <span className="badge">
-                  {t('portal.contractor.payment')}: {translatePortalPaymentStatus(t, job.paymentStatus)}
-                </span>
-              </>
-            ) : null}
-          </div>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, margin: '16px 0 0' }}>
+            {renderField(t('portal.contractor.workDate'), job.date || 'Not set')}
+            {renderField('Address', job.address || 'Not set')}
+            {renderField(t('portal.contractor.customer'), job.customerName || 'Not set')}
+            {renderField(t('portal.common.status'), translatePortalJobStatus(t, job.status))}
+            {job.payAmount > 0 ? renderField(t('portal.contractor.payment'), translatePortalPaymentStatus(t, job.paymentStatus)) : null}
+          </dl>
         </button>
 
         {expanded ? (
@@ -502,9 +507,7 @@ export default function ContractorPortalPage() {
           ) : null}
 
           <details id="current-jobs" className="card" style={{ marginBottom: 16 }} open>
-            <summary
-              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
-            >
+            <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <h2 style={{ fontSize: 18, margin: 0 }}>Current Jobs</h2>
               <span className="muted">{groupedJobs.current.length}</span>
             </summary>
@@ -516,16 +519,12 @@ export default function ContractorPortalPage() {
           </details>
 
           <details id="history" className="card" style={{ marginBottom: 16 }} open>
-            <summary
-              style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}
-            >
+            <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div>
-                <h2 style={{ fontSize: 18, margin: 0 }}>History</h2>
+                <h2 style={{ fontSize: 18, margin: 0 }}>Past Jobs</h2>
                 <span className="muted">{metrics.completedJobs} {earningsCopy.completedWork}</span>
               </div>
-              {history.length > 0 ? (
-                <strong>{earningsCopy.paidToYou}: {formatContractorMoney(metrics.paidEarnings)}</strong>
-              ) : null}
+              {history.length > 0 ? <strong>{earningsCopy.paidToYou}: {formatContractorMoney(metrics.paidEarnings)}</strong> : null}
             </summary>
 
             {history.length === 0 && !hasDataError ? (
@@ -534,36 +533,27 @@ export default function ContractorPortalPage() {
 
             {history.length > 0 ? (
               <div className="contractor-history-list" style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-                {history.map((row) => (
-                  <article
-                    key={row.laborId}
-                    className="contractor-history-card"
-                    style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 18, background: 'var(--surface)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
-                        <h3 style={{ margin: '5px 0 0', fontSize: 17 }}>{row.jobTitle}</h3>
-                        <p className="muted" style={{ margin: '7px 0 0' }}>{row.customerName || '—'}</p>
+                {history.map((row) => {
+                  const job = row.jobId ? jobCardsById.get(row.jobId) : undefined;
+                  return (
+                    <article key={row.laborId} className="contractor-history-card" style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 18, background: 'var(--surface)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
+                          <h3 style={{ margin: '5px 0 0', fontSize: 17 }}>{row.jobTitle}</h3>
+                        </div>
+                        <strong style={{ fontSize: 18 }}>{formatContractorMoney(row.amountEarned)}</strong>
                       </div>
-                      <strong style={{ fontSize: 18 }}>{formatContractorMoney(row.amountEarned)}</strong>
-                    </div>
-                    <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14, margin: '16px 0 0' }}>
-                      <div>
-                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.contractor.workDate')}</dt>
-                        <dd style={{ margin: '5px 0 0' }}>{row.workDate || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.common.status')}</dt>
-                        <dd style={{ margin: '5px 0 0' }}>{translatePortalPaymentStatus(t, row.paymentStatus)}</dd>
-                      </div>
-                      <div>
-                        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{t('portal.contractor.paidDate')}</dt>
-                        <dd style={{ margin: '5px 0 0' }}>{row.paidDate || '—'}</dd>
-                      </div>
-                    </dl>
-                  </article>
-                ))}
+                      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, margin: '16px 0 0' }}>
+                        {renderField(t('portal.contractor.workDate'), row.workDate || 'Not set')}
+                        {renderField('Address', job?.address || 'Not set')}
+                        {renderField(t('portal.contractor.customer'), row.customerName || 'Not set')}
+                        {renderField(t('portal.common.status'), translatePortalPaymentStatus(t, row.paymentStatus))}
+                        {renderField(t('portal.contractor.paidDate'), row.paidDate || 'Not set')}
+                      </dl>
+                    </article>
+                  );
+                })}
               </div>
             ) : null}
           </details>
