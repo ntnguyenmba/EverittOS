@@ -1,0 +1,138 @@
+/* Final release safeguards for translated text, responsive controls, and readable guidance. */
+
+:where(.main, .app-shell, .portal-shell, .settings-shell) {
+  min-width: 0;
+}
+
+:where(
+  h1,
+  h2,
+  h3,
+  h4,
+  p,
+  label,
+  .btn,
+  button,
+  .tab,
+  .chip,
+  .badge,
+  .nav-link,
+  .mobile-nav-label,
+  .card-title,
+  .section-title,
+  .help-text,
+  .field-help,
+  .form-hint,
+  .helper-text,
+  .description
+) {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.btn,
+button,
+[role='button'] {
+  height: auto;
+  white-space: normal;
+  text-align: center;
+}
+
+select,
+input,
+textarea {
+  max-width: 100%;
+}
+
+.help-text,
+.field-help,
+.form-hint,
+.helper-text,
+.description,
+.muted:not([aria-disabled='true']) {
+  color: var(--text-secondary, #526579);
+  opacity: 1;
+}
+
+.dialog,
+.modal,
+[role='dialog'] {
+  max-width: min(92vw, 680px);
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+}
+
+.dialog-actions,
+.modal-actions,
+.form-actions,
+.page-actions {
+  min-width: 0;
+}
+
+.table-wrap,
+.table-container,
+.data-table-wrap {
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.language-switcher,
+.language-switcher-select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .page-head,
+  .page-header,
+  .section-head,
+  .list-header {
+    gap: 12px;
+  }
+
+  .page-actions,
+  .form-actions,
+  .dialog-actions,
+  .modal-actions,
+  .settings-actions {
+    width: 100%;
+  }
+
+  .page-actions > *,
+  .form-actions > *,
+  .dialog-actions > *,
+  .modal-actions > *,
+  .settings-actions > * {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .tabs,
+  .tab-list,
+  .segmented-control,
+  .pill-tabs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tabs > *,
+  .tab-list > *,
+  .segmented-control > *,
+  .pill-tabs > * {
+    width: 100%;
+  }
+
+  .mobile-nav-label {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .card,
+  .panel,
+  .settings-section,
+  .empty-state,
+  .notice-card,
+  .info-card {
+    min-width: 0;
+  }
+}
