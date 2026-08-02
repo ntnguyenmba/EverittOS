@@ -20,7 +20,6 @@ import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
-import { JobInstructionsContextLink } from '@/components/job-instructions-context-link';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import './everitt-theme.css';
 import './everitt-app-polish.css';
@@ -50,7 +49,6 @@ import './jobs-visual-final.css';
 import './jobs-actions-spacing-fix.css';
 import './unified-record-cards.css';
 import './team-customer-consistency.css';
-import './job-instructions-context-link.css';
 import './button-consistency.css';
 import './final-app-polish.css';
 
@@ -114,7 +112,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SkipToMain />
                 <SiteChrome />
                 <ContractorStaticSections />
-                <JobInstructionsContextLink />
                 {children}
                 <AnalyticsGate />
                 <CookieConsentBanner />
