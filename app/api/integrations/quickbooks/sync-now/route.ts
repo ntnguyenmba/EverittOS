@@ -99,8 +99,8 @@ async function runQuickBooksSync(input: {
 
   try {
     const connection = await loadQuickBooksConnection(admin, organizationId);
-    if (!connection || !['connected', 'error', 'syncing'].includes(connection.status)) {
-      throw new Error('QuickBooks is no longer connected. Reconnect your company before syncing.');
+    if (!connection || connection.status !== 'syncing') {
+      throw new Error('QuickBooks sync was stopped because the connection is no longer ready.');
     }
 
     const validated = await ensureValidAccessToken(admin, connection);
@@ -200,17 +200,37 @@ export async function POST() {
 
   const organizationId = ctx.workspace.organizationId;
   const connection = await loadQuickBooksConnection(admin, organizationId);
-  if (!connection || !['connected', 'error', 'syncing'].includes(connection.status)) {
+
+  if (connection?.status === 'syncing') {
     return NextResponse.json(
-      { error: 'QuickBooks is not connected. Connect your company before syncing.', status: 'disconnected' },
+      { ok: true, status: 'syncing', message: 'QuickBooks sync is already in progress.' },
+      { status: 202 }
+    );
+  }
+
+  if (!connection || connection.status !== 'connected') {
+    return NextResponse.json(
+      { error: 'Reconnect QuickBooks before syncing.', status: 'reconnect_required' },
       { status: 409 }
     );
   }
 
-  if (connection.status === 'syncing') {
+  try {
+    await ensureValidAccessToken(admin, connection);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'QuickBooks authorization could not be verified.';
+    await admin
+      .from('quickbooks_connections')
+      .update({
+        last_error: message.slice(0, 500),
+        status: 'error',
+        updated_at: new Date().toISOString()
+      })
+      .eq('organization_id', organizationId);
+
     return NextResponse.json(
-      { ok: true, status: 'syncing', message: 'QuickBooks sync is already in progress.' },
-      { status: 202 }
+      { error: 'Reconnect QuickBooks before syncing.', status: 'reconnect_required' },
+      { status: 409 }
     );
   }
 
@@ -218,10 +238,19 @@ export async function POST() {
   const { error: updateError } = await admin
     .from('quickbooks_connections')
     .update({ status: 'syncing', last_error: null, updated_at: startedAt })
-    .eq('organization_id', organizationId);
+    .eq('organization_id', organizationId)
+    .eq('status', 'connected');
 
   if (updateError) {
     return NextResponse.json({ error: `QuickBooks sync could not be started: ${updateError.message}` }, { status: 500 });
+  }
+
+  const refreshedConnection = await loadQuickBooksConnection(admin, organizationId);
+  if (refreshedConnection?.status !== 'syncing') {
+    return NextResponse.json(
+      { error: 'QuickBooks sync could not be started because the connection changed. Refresh and try again.' },
+      { status: 409 }
+    );
   }
 
   await writeQuickBooksSyncLog(admin, {
@@ -243,7 +272,7 @@ export async function POST() {
       ok: true,
       status: 'syncing',
       startedAt,
-      message: 'QuickBooks sync started. You can leave this page while it finishes.'
+      message: 'QuickBooks sync is running. You can leave this page while it finishes.'
     },
     { status: 202 }
   );
