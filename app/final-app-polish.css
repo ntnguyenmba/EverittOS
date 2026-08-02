@@ -379,6 +379,114 @@ tbody tr:hover {
   background: rgba(47, 95, 143, 0.035);
 }
 
+/* Shared tabs, segmented controls, and form guidance. */
+.tabs,
+.tab-list,
+.segmented-control,
+.pill-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.tabs a,
+.tabs button,
+.tab-list a,
+.tab-list button,
+.segmented-control a,
+.segmented-control button,
+.pill-tabs a,
+.pill-tabs button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background: var(--surface, #ffffff);
+  color: var(--text, #25364a);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tabs a[aria-current='page'],
+.tabs button[aria-selected='true'],
+.tab-list a[aria-current='page'],
+.tab-list button[aria-selected='true'],
+.segmented-control a[aria-current='page'],
+.segmented-control button[aria-selected='true'],
+.pill-tabs a[aria-current='page'],
+.pill-tabs button[aria-selected='true'],
+.tabs .active,
+.tab-list .active,
+.segmented-control .active,
+.pill-tabs .active {
+  background: var(--control-border);
+  border-color: var(--control-border);
+  color: #ffffff;
+}
+
+.help-text,
+.field-help,
+.form-hint,
+.helper-text,
+.caption,
+.description {
+  color: var(--text-secondary, #5f7186);
+  opacity: 1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+label + .help-text,
+label + .field-help,
+label + .form-hint,
+label + .helper-text {
+  margin-top: 4px;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  margin-bottom: 10px;
+  color: var(--text, #25364a);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Loading and disabled states remain readable without looking broken. */
+.loading-state,
+.skeleton-label,
+[data-loading='true'] {
+  color: var(--text-secondary, #5f7186);
+  opacity: 1;
+}
+
+button:disabled,
+.btn[aria-disabled='true'],
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+.btn:focus-visible,
+a.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  outline: 3px solid rgba(47, 95, 143, 0.3);
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   :root {
     --control-font-size: 16px;
@@ -444,6 +552,21 @@ tbody tr:hover {
   .table-toolbar > *,
   .search-toolbar > * {
     width: 100%;
+  }
+
+  .tabs,
+  .tab-list,
+  .segmented-control,
+  .pill-tabs {
+    align-items: stretch;
+  }
+
+  .tabs > *,
+  .tab-list > *,
+  .segmented-control > *,
+  .pill-tabs > * {
+    flex: 1 1 auto;
+    text-align: center;
   }
 
   th,
