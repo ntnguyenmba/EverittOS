@@ -108,6 +108,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   const [status, setStatus] = useState<QuickBooksStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [syncCompleted, setSyncCompleted] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [unauthorized, setUnauthorized] = useState(false);
 
@@ -155,11 +156,14 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
 
       if (previousConnectionStatus === 'syncing' && nextConnectionStatus === 'connected') {
         if (nextStatus.connection?.last_error) {
+          setSyncCompleted(false);
           appFeedback.error(nextStatus.connection.last_error);
         } else {
-          appFeedback.success('QuickBooks sync completed.');
+          setSyncCompleted(true);
+          appFeedback.success('QuickBooks synced.');
         }
       } else if (previousConnectionStatus === 'syncing' && nextConnectionStatus === 'error') {
+        setSyncCompleted(false);
         appFeedback.error(nextStatus.connection?.last_error || 'QuickBooks authorization expired. Reconnect QuickBooks.');
       }
     } catch (error) {
@@ -205,6 +209,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         appFeedback.error('QuickBooks could not be disconnected. Please try again.');
         return;
       }
+      setSyncCompleted(false);
       appFeedback.disconnected();
       await load();
     } catch (error) {
@@ -217,6 +222,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   async function syncNow() {
     if (busy || status?.connection?.status === 'syncing') return;
     setBusy(true);
+    setSyncCompleted(false);
     try {
       const res = await fetchWithTimeout('/api/integrations/quickbooks/sync-now', { method: 'POST' });
       const json = await readJson(res);
@@ -241,17 +247,22 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         return;
       }
 
-      previousConnectionStatusRef.current = 'syncing';
+      const message = typeof json.message === 'string' ? json.message : 'QuickBooks synced.';
+      previousConnectionStatusRef.current = 'connected';
+      setSyncCompleted(true);
       setStatus((current) => current ? {
         ...current,
         connection: {
           ...current.connection,
-          status: 'syncing',
+          status: 'connected',
+          last_sync_at: new Date().toISOString(),
           last_error: null,
           needsReconnect: false
         },
         needsReconnect: false
       } : current);
+      appFeedback.success(message);
+      await load({ silent: true });
     } catch (error) {
       if (!isAbortError(error)) {
         appFeedback.error('QuickBooks sync could not be started.');
@@ -275,7 +286,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
         : syncing
           ? 'Syncing QuickBooks...'
           : connected
-            ? 'Connected'
+            ? (syncCompleted ? 'Synced' : 'Connected')
             : needsReconnect
               ? 'Reconnect required'
               : configured
@@ -299,7 +310,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       <div className="settings-actions" style={{ marginTop: 12 }}>
         {unauthorized ? <a className="btn btn-primary" href="/login?next=/settings">Sign in again</a> : showConnect ? <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">{needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}</a> : null}
         <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>{loading ? 'Checking...' : 'Refresh status'}</button>
-        {canManage && connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing ? 'Syncing…' : 'Sync now'}</button> : null}
+        {canManage && connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing || busy ? 'Syncing…' : syncCompleted ? 'Synced' : 'Sync now'}</button> : null}
         {canManage && (connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? 'Disconnecting...' : t('pages.quickbooks.disconnect')}</button> : null}
       </div>
 
@@ -310,7 +321,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       <div style={{ marginTop: 16 }}>
         <h4 style={{ marginBottom: 6 }}>Current sync</h4>
         <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
-          <li>Customers and invoices export to QuickBooks.</li>
+          <li>Customers, invoices, and direct income export to QuickBooks.</li>
           <li>Posted QuickBooks purchases and bills import as EverittOS expenses.</li>
           <li>Payments reconcile exported EverittOS invoices.</li>
         </ul>
