@@ -312,7 +312,7 @@ export async function ensureValidAccessToken(
     );
   }
 
-  if (connection.status !== 'connected' && connection.status !== 'error') {
+  if (!['connected', 'syncing', 'error'].includes(connection.status)) {
     throw new QuickBooksApiError({
       userMessage: 'Connect QuickBooks before syncing.',
       httpStatus: 400,
@@ -326,7 +326,7 @@ export async function ensureValidAccessToken(
   if (!accessTokenNeedsRefresh(connection)) {
     if (!connection.access_token) {
       throw new QuickBooksApiError({
-        userMessage: 'QuickBooks access expired. Disconnect and connect again in Payments.',
+        userMessage: 'QuickBooks access expired. Disconnect and connect again in Settings.',
         httpStatus: 401,
         intuitTid: null,
         reconnectRequired: true,
@@ -344,7 +344,7 @@ export async function ensureValidAccessToken(
       'Refresh token missing. Reconnect QuickBooks.'
     );
     throw new QuickBooksApiError({
-      userMessage: 'QuickBooks access expired. Disconnect and connect again in Payments.',
+      userMessage: 'QuickBooks access expired. Disconnect and connect again in Settings.',
       httpStatus: 401,
       intuitTid: null,
       reconnectRequired: true,
@@ -357,7 +357,7 @@ export async function ensureValidAccessToken(
     const { tokens } = await refreshAccessToken(connection.refresh_token, options);
     await persistConnectionTokens(admin, connection.organization_id, tokens, {
       realm_id: connection.realm_id,
-      status: 'connected',
+      status: connection.status === 'syncing' ? 'syncing' : 'connected',
       company_name: connection.company_name,
       last_error: null
     });
@@ -388,7 +388,7 @@ export async function quickbooksAccountingRequest<T = unknown>(
   }
 ): Promise<QuickBooksHttpResult<T>> {
   let connection = input.connection || (await loadQuickBooksConnection(input.admin, input.organizationId));
-  if (!connection || (connection.status !== 'connected' && connection.status !== 'error')) {
+  if (!connection || !['connected', 'syncing', 'error'].includes(connection.status)) {
     throw new QuickBooksApiError({
       userMessage: 'Connect QuickBooks before syncing.',
       httpStatus: 400,
