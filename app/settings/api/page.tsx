@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { SettingsShell } from '@/components/settings/settings-shell';
@@ -28,7 +28,7 @@ export default function ApiSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     const {
       data: { user }
     } = await supabase.auth.getUser();
@@ -47,11 +47,11 @@ export default function ApiSettingsPage() {
     const json = await res.json();
     if (res.ok) setKeys(json.keys || []);
     setLoading(false);
-  }
+  }, [router]);
 
   useEffect(() => {
-    load();
-  }, [router]);
+    void load();
+  }, [load]);
 
   async function createKey() {
     if (!name.trim() || busy) return;
@@ -72,7 +72,7 @@ export default function ApiSettingsPage() {
     setRawKey(json.rawKey);
     setName('');
     setMessage('Copy this key now. It will not be shown again.');
-    load();
+    void load();
   }
 
   async function revokeKey(id: string) {
@@ -84,7 +84,7 @@ export default function ApiSettingsPage() {
       setMessage(json.error || 'Unable to revoke key.');
       return;
     }
-    load();
+    void load();
   }
 
   if (loading) {
