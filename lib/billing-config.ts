@@ -25,7 +25,6 @@ export type BillingPlanDefinition = {
   featured?: boolean;
 };
 
-/** Ordered plan ladder shown on billing/pricing pages (includes Free). */
 export const BILLING_PLAN_ORDER: EverittosPlan[] = [
   'free',
   'pro',
@@ -67,7 +66,6 @@ const REROOT_STRIPE_PRODUCT_ENV_KEYS: Record<ExternalReRootPlan, string> = {
   yearly: 'REROOT_STRIPE_PRODUCT_YEARLY'
 };
 
-/** Monthly list prices in cents for display and amount-based webhook fallback. */
 export const BILLING_PLAN_AMOUNT_CENTS: Record<PaidPlanKey, number> = {
   pro: 900,
   business: 3900,
@@ -100,12 +98,11 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     name: 'Pro',
     priceLabel: '$9/month',
     priceCents: 900,
-    headline: 'Before/after photos, reports, bookings, and professional job records.',
+    headline: 'Before/after photos, bookings, and professional job management.',
     features: [
       'Everything in Free',
       'Bookings & appointments',
       'Before and after photos',
-      'Standard reports',
       'Expanded jobs and customers',
       'Ask Everitt search on every plan'
     ],
@@ -124,8 +121,7 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
       'Team & crew management',
       'Job assignments',
       'Activity log',
-      'Everitt AI writing & analysis',
-      'Advanced reporting'
+      'Everitt AI writing & analysis'
     ],
     limits: ['150 active jobs', '1,000 customers', '15 users'],
     buttonLabel: 'Choose Business'
@@ -135,13 +131,12 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     name: 'Starter',
     priceLabel: '$149/month',
     priceCents: 14900,
-    headline: 'Scale tier with higher limits for growing teams that need more capacity.',
+    headline: 'Scale tier with higher limits for growing teams.',
     features: [
       'Everything in Business',
       'Higher job and customer limits',
       'More team members',
       'Everitt AI included',
-      'Branded reports',
       'Multi-location basics'
     ],
     limits: ['500 active jobs', '5,000 customers', '50 users'],
@@ -152,7 +147,7 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     name: 'Growth',
     priceLabel: '$399/month',
     priceCents: 39900,
-    headline: 'Workflows, portals, API access, and priority support for larger teams.',
+    headline: 'Workflows, portals, API access, and priority support.',
     features: [
       'Everything in Starter',
       'Workflows',
@@ -175,7 +170,6 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
       'Unlimited Everitt AI',
       'Enterprise permissions',
       'Dedicated support',
-      'Custom reporting',
       'Unlimited jobs, customers, and users'
     ],
     limits: ['Unlimited jobs', 'Unlimited customers', 'Unlimited users'],
@@ -262,7 +256,6 @@ export function allSessionCheckoutConfigured(): boolean {
   return PAID_BILLING_PLAN_ORDER.every((plan) => Boolean(resolveStripePriceId(plan)));
 }
 
-/** Map a Stripe price ID to an internal plan key using configured env price IDs. */
 export function planFromKnownStripePriceId(priceId: string | null | undefined): EverittosPlan | null {
   const id = (priceId || '').trim();
   if (!id) return null;
@@ -303,7 +296,6 @@ export function planFromBillingAmount(amount: number | null | undefined): Everit
   return null;
 }
 
-/** Lowest paid tier that includes Everitt AI (from plan-config feature flags). */
 export function minimumAiUpgradePlan(): EverittosPlan {
   for (const plan of PAID_BILLING_PLAN_ORDER) {
     if (getPlanConfig(plan as PlanTierId).aiAccess) return plan;
