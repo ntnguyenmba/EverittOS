@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { Manrope } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { ToastProvider } from '@/components/feedback/toast-provider';
@@ -21,6 +22,7 @@ import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
+import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import './everitt-theme.css';
 import './everitt-app-polish.css';
 import './everitt-editorial-fixes.css';
@@ -90,12 +92,19 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const deployment = vercelDeploymentEnv();
+  const cookieStore = await cookies();
+  const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
 
   return (
-    <html lang="en" data-deployment={deployment} className={manrope.variable}>
-      <body className={manrope.className}>
+    <html
+      lang={initialLocale}
+      data-locale={initialLocale}
+      data-deployment={deployment}
+      className={manrope.variable}
+    >
+      <body className={manrope.className} data-locale={initialLocale}>
         <SupabaseRuntimeConfig />
         <PwaRegistration />
         <MobileDocumentFlags />
@@ -104,7 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NetworkStatusBanner />
         <PwaUpdatePrompt />
         <SuppressVercelToolbar />
-        <LocaleProvider>
+        <LocaleProvider initialLocale={initialLocale}>
           <ToastProvider>
             <LocaleSync />
             <SessionGuard>
