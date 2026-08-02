@@ -6,6 +6,7 @@ import { AppNavigationTracker } from '@/components/app-navigation-tracker';
 import { AppPageContent } from '@/components/app-page-content';
 import { AppPageTop } from '@/components/app-page-top';
 import { MobileNav } from '@/components/mobile-nav';
+import { Sidebar } from '@/components/sidebar';
 import { UnsavedChangesGuard } from '@/components/unsaved-changes-guard';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
@@ -33,6 +34,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
       <div className="dashboard-shell-overlay" aria-hidden="true" />
       <UnsavedChangesGuard />
       <AppNavigationTracker />
+      <Sidebar plan={resolvedPlan} role={resolvedRole} />
       <header className="dashboard-shell-header">
         <MobileNav plan={resolvedPlan} role={resolvedRole} />
       </header>
@@ -50,6 +52,9 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           position: relative;
           isolation: isolate;
           min-height: 100svh;
+          display: grid;
+          grid-template-columns: 300px minmax(0, 1fr);
+          grid-template-areas: 'side main';
           background: #dfe8ee;
         }
 
@@ -74,46 +79,28 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
             linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
         }
 
+        .dashboard-shell > .sidebar,
         .dashboard-shell-header,
         .dashboard-shell > .main {
           position: relative;
           z-index: 2;
         }
 
+        .dashboard-shell > .sidebar {
+          grid-area: side;
+          display: flex;
+        }
+
         .dashboard-shell-header {
-          position: sticky;
-          top: 0;
-          z-index: 42;
-          width: 100%;
-          padding: 12px clamp(24px, 4vw, 56px) 0;
+          display: none;
         }
 
-        .dashboard-shell-header .mobile-nav-bar {
-          width: 100% !important;
+        .dashboard-shell > .main {
+          grid-area: main;
+          width: min(1240px, calc(100% - clamp(48px, 8vw, 112px))) !important;
           max-width: 1240px !important;
-          min-height: 68px !important;
           margin: 0 auto !important;
-          padding: 10px 18px !important;
-          box-sizing: border-box !important;
-          border: 1px solid rgba(37, 54, 74, 0.13) !important;
-          border-radius: 18px !important;
-          background: rgba(255, 255, 255, 0.94) !important;
-          box-shadow: 0 8px 24px rgba(37, 54, 74, 0.08) !important;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-        }
-
-        .dashboard-shell-header .mobile-nav-brand-logo,
-        .dashboard-shell-header .mobile-nav-bar-actions {
-          margin: 0 !important;
-        }
-
-        .dashboard-shell-header .mobile-nav-menu-btn {
-          width: 44px !important;
-          height: 44px !important;
-          flex: 0 0 44px !important;
-          margin: 0 !important;
-          border-radius: 12px !important;
+          padding: 28px 0 40px !important;
         }
 
         .dashboard-shell > .main,
@@ -127,13 +114,6 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           background-color: transparent !important;
         }
 
-        .dashboard-shell > .main {
-          width: min(1240px, calc(100% - clamp(48px, 8vw, 112px))) !important;
-          max-width: 1240px !important;
-          margin: 0 auto !important;
-          padding: 18px 0 40px !important;
-        }
-
         .dashboard-shell .app-page-content,
         .dashboard-shell .today-page,
         .dashboard-shell .dashboard-home,
@@ -145,15 +125,42 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           margin-inline: 0 !important;
         }
 
-        @media (max-width: 900px) {
+        .mobile-nav-close-btn {
+          min-width: max-content !important;
+          white-space: nowrap !important;
+          overflow-wrap: normal !important;
+          word-break: normal !important;
+          writing-mode: horizontal-tb !important;
+        }
+
+        @media (max-width: 1023px) {
+          .dashboard-shell {
+            display: block;
+          }
+
+          .dashboard-shell > .sidebar {
+            display: none !important;
+          }
+
           .dashboard-shell-header {
+            position: sticky;
+            top: 0;
+            z-index: 42;
+            display: block;
+            width: 100%;
             padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
           }
 
           .dashboard-shell-header .mobile-nav-bar {
+            width: 100% !important;
             min-height: 64px !important;
+            margin: 0 auto !important;
             padding: 9px 14px !important;
+            box-sizing: border-box !important;
+            border: 1px solid rgba(37, 54, 74, 0.13) !important;
             border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            box-shadow: 0 8px 24px rgba(37, 54, 74, 0.08) !important;
           }
 
           .dashboard-shell > .main {
