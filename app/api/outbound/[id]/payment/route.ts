@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireOutboundApiAccess } from '@/lib/outbound/auth';
 import { recordInvoicePaymentByOutboundId } from '@/lib/finance/record-invoice-payment';
+import { autoSendPaymentReceipt } from '@/lib/outbound/auto-send-payment-receipt';
 import { canRecordInvoicePayments } from '@/lib/roles';
 import { isValidUuid } from '@/lib/input-validation';
 
@@ -31,7 +32,8 @@ function paymentErrorResponse(error: string, status: number) {
 
 /**
  * Canonical customer payment API (outbound invoice document id).
- * Delegates to the shared finance payment recorder so ledger + summaries stay in sync.
+ * Records the payment, updates the ledger and invoice summaries, then creates
+ * and emails a receipt to the client when a new payment was recorded.
  */
 export async function POST(request: Request, context: RouteContext) {
   const ctx = await requireOutboundApiAccess();
@@ -72,6 +74,22 @@ export async function POST(request: Request, context: RouteContext) {
     return paymentErrorResponse(result.error, result.status);
   }
 
+  let receipt: Awaited<ReturnType<typeof autoSendPaymentReceipt>> | null = null;
+  if (!body.cancel && result.paymentIncrement > 0) {
+    receipt = await autoSendPaymentReceipt({
+      supabase: ctx.supabase,
+      organizationId: ctx.organizationId,
+      userId: ctx.userId,
+      invoiceDocument: result.document,
+      invoiceId: result.invoiceId,
+      paymentId: result.paymentId,
+      paymentAmount: result.paymentIncrement,
+      paidDate: body.paid_date,
+      paymentMethod: body.payment_method,
+      paymentReference: body.payment_reference
+    });
+  }
+
   const activityAction =
     result.paymentStatus === 'paid'
       ? 'invoice_marked_paid'
@@ -91,7 +109,10 @@ export async function POST(request: Request, context: RouteContext) {
       payment_increment: result.paymentIncrement,
       payment_status: result.paymentStatus,
       payment_method: body.payment_method || null,
-      payment_reference: body.payment_reference || null
+      payment_reference: body.payment_reference || null,
+      receipt_created: Boolean(receipt?.receipt),
+      receipt_sent: Boolean(receipt?.emailSent),
+      receipt_delivery_note: receipt?.deliveryNote || null
     }
   );
 
@@ -102,6 +123,9 @@ export async function POST(request: Request, context: RouteContext) {
     amount_paid: result.amountPaid,
     balance_due: result.balanceDue,
     payment_increment: result.paymentIncrement,
-    payment_id: result.paymentId
+    payment_id: result.paymentId,
+    receipt: receipt?.receipt || null,
+    receipt_sent: Boolean(receipt?.emailSent),
+    receipt_delivery_note: receipt?.deliveryNote || null
   });
 }
