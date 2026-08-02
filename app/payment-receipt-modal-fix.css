@@ -1,0 +1,25 @@
+.job-payment-modal-backdrop {
+  align-items: center !important;
+  overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px));
+}
+
+.job-payment-modal {
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 40px);
+  margin: auto 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 720px) {
+  .job-payment-modal-backdrop {
+    align-items: flex-start !important;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+  }
+
+  .job-payment-modal {
+    max-height: calc(100dvh - 32px);
+    margin: 0;
+  }
+}
