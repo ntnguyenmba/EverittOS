@@ -10,7 +10,6 @@ export type PlanTierRow = {
   jobs: number;
   photos: number;
   customers: number;
-  reports: number;
   teamMembers: number;
   crewMembers: number;
   locations: number;
@@ -18,15 +17,12 @@ export type PlanTierRow = {
   teamManagement: boolean;
   scheduling: boolean;
   activityLog: boolean;
-  advancedReporting: boolean;
   workflowCustomization: boolean;
   multiLocation: boolean;
   customBranding: boolean;
-  pdfReports: boolean;
   photoUpload: boolean;
   clientPortal: boolean;
   contractorPortal: boolean;
-  brandedReports: boolean;
   beforeAfterPhotos: boolean;
   aiAccess: boolean;
   aiUnlimited: boolean;
@@ -40,178 +36,47 @@ export const UNLIMITED_CAP = -1;
 
 export const PLAN_TIER_ROWS: PlanTierRow[] = [
   {
-    id: 'free',
-    jobs: 3,
-    photos: 20,
-    customers: 10,
-    reports: 0,
-    teamMembers: 1,
-    crewMembers: 0,
-    locations: 1,
-    crewAssignment: false,
-    teamManagement: false,
-    scheduling: true,
-    activityLog: false,
-    advancedReporting: false,
-    workflowCustomization: false,
-    multiLocation: false,
-    customBranding: false,
-    pdfReports: false,
-    photoUpload: true,
-    clientPortal: false,
-    contractorPortal: false,
-    brandedReports: false,
-    beforeAfterPhotos: false,
-    aiAccess: false,
-    aiUnlimited: false,
-    apiAccess: false,
-    prioritySupport: false,
-    bookings: false
+    id: 'free', jobs: 3, photos: 20, customers: 10, teamMembers: 1, crewMembers: 0, locations: 1,
+    crewAssignment: false, teamManagement: false, scheduling: true, activityLog: false,
+    workflowCustomization: false, multiLocation: false, customBranding: false, photoUpload: true,
+    clientPortal: false, contractorPortal: false, beforeAfterPhotos: false, aiAccess: false,
+    aiUnlimited: false, apiAccess: false, prioritySupport: false, bookings: false
   },
   {
-    id: 'pro',
-    jobs: 25,
-    photos: 100,
-    customers: 100,
-    reports: UNLIMITED_CAP,
-    teamMembers: 3,
-    crewMembers: 0,
-    locations: 1,
-    crewAssignment: false,
-    teamManagement: false,
-    scheduling: true,
-    activityLog: false,
-    advancedReporting: false,
-    workflowCustomization: false,
-    multiLocation: false,
-    customBranding: false,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: false,
-    contractorPortal: false,
-    brandedReports: false,
-    beforeAfterPhotos: true,
-    aiAccess: false,
-    aiUnlimited: false,
-    apiAccess: false,
-    prioritySupport: false,
-    bookings: true
+    id: 'pro', jobs: 25, photos: 100, customers: 100, teamMembers: 3, crewMembers: 0, locations: 1,
+    crewAssignment: false, teamManagement: false, scheduling: true, activityLog: false,
+    workflowCustomization: false, multiLocation: false, customBranding: false, photoUpload: true,
+    clientPortal: false, contractorPortal: false, beforeAfterPhotos: true, aiAccess: false,
+    aiUnlimited: false, apiAccess: false, prioritySupport: false, bookings: true
   },
   {
-    id: 'business',
-    jobs: 150,
-    photos: UNLIMITED_CAP,
-    customers: 1000,
-    reports: UNLIMITED_CAP,
-    teamMembers: 15,
-    crewMembers: 100,
-    locations: 1,
-    crewAssignment: true,
-    teamManagement: true,
-    scheduling: true,
-    activityLog: true,
-    advancedReporting: true,
-    workflowCustomization: false,
-    multiLocation: false,
-    customBranding: false,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: false,
-    contractorPortal: false,
-    brandedReports: false,
-    beforeAfterPhotos: true,
-    aiAccess: true,
-    aiUnlimited: false,
-    apiAccess: false,
-    prioritySupport: false,
-    bookings: true
+    id: 'business', jobs: 150, photos: UNLIMITED_CAP, customers: 1000, teamMembers: 15, crewMembers: 100, locations: 1,
+    crewAssignment: true, teamManagement: true, scheduling: true, activityLog: true,
+    workflowCustomization: false, multiLocation: false, customBranding: false, photoUpload: true,
+    clientPortal: false, contractorPortal: false, beforeAfterPhotos: true, aiAccess: true,
+    aiUnlimited: false, apiAccess: false, prioritySupport: false, bookings: true
   },
   {
-    id: 'starter',
-    jobs: 500,
-    photos: UNLIMITED_CAP,
-    customers: 5000,
-    reports: UNLIMITED_CAP,
-    teamMembers: 50,
-    crewMembers: 200,
-    locations: 5,
-    crewAssignment: true,
-    teamManagement: true,
-    scheduling: true,
-    activityLog: true,
-    advancedReporting: true,
-    workflowCustomization: false,
-    multiLocation: true,
-    customBranding: true,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: false,
-    contractorPortal: false,
-    brandedReports: true,
-    beforeAfterPhotos: true,
-    aiAccess: true,
-    aiUnlimited: false,
-    apiAccess: false,
-    prioritySupport: false,
-    bookings: true
+    id: 'starter', jobs: 500, photos: UNLIMITED_CAP, customers: 5000, teamMembers: 50, crewMembers: 200, locations: 5,
+    crewAssignment: true, teamManagement: true, scheduling: true, activityLog: true,
+    workflowCustomization: false, multiLocation: true, customBranding: true, photoUpload: true,
+    clientPortal: false, contractorPortal: false, beforeAfterPhotos: true, aiAccess: true,
+    aiUnlimited: false, apiAccess: false, prioritySupport: false, bookings: true
   },
   {
-    id: 'growth',
-    jobs: 2500,
-    photos: UNLIMITED_CAP,
-    customers: 25000,
-    reports: UNLIMITED_CAP,
-    teamMembers: 250,
-    crewMembers: UNLIMITED_CAP,
-    locations: 25,
-    crewAssignment: true,
-    teamManagement: true,
-    scheduling: true,
-    activityLog: true,
-    advancedReporting: true,
-    workflowCustomization: true,
-    multiLocation: true,
-    customBranding: true,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: true,
-    contractorPortal: true,
-    brandedReports: true,
-    beforeAfterPhotos: true,
-    aiAccess: true,
-    aiUnlimited: false,
-    apiAccess: true,
-    prioritySupport: true,
-    bookings: true
+    id: 'growth', jobs: 2500, photos: UNLIMITED_CAP, customers: 25000, teamMembers: 250, crewMembers: UNLIMITED_CAP, locations: 25,
+    crewAssignment: true, teamManagement: true, scheduling: true, activityLog: true,
+    workflowCustomization: true, multiLocation: true, customBranding: true, photoUpload: true,
+    clientPortal: true, contractorPortal: true, beforeAfterPhotos: true, aiAccess: true,
+    aiUnlimited: false, apiAccess: true, prioritySupport: true, bookings: true
   },
   {
-    id: 'enterprise',
-    jobs: UNLIMITED_CAP,
-    photos: UNLIMITED_CAP,
-    customers: UNLIMITED_CAP,
-    reports: UNLIMITED_CAP,
-    teamMembers: UNLIMITED_CAP,
-    crewMembers: UNLIMITED_CAP,
-    locations: UNLIMITED_CAP,
-    crewAssignment: true,
-    teamManagement: true,
-    scheduling: true,
-    activityLog: true,
-    advancedReporting: true,
-    workflowCustomization: true,
-    multiLocation: true,
-    customBranding: true,
-    pdfReports: true,
-    photoUpload: true,
-    clientPortal: true,
-    contractorPortal: true,
-    brandedReports: true,
-    beforeAfterPhotos: true,
-    aiAccess: true,
-    aiUnlimited: true,
-    apiAccess: true,
-    prioritySupport: true,
-    bookings: true
+    id: 'enterprise', jobs: UNLIMITED_CAP, photos: UNLIMITED_CAP, customers: UNLIMITED_CAP,
+    teamMembers: UNLIMITED_CAP, crewMembers: UNLIMITED_CAP, locations: UNLIMITED_CAP,
+    crewAssignment: true, teamManagement: true, scheduling: true, activityLog: true,
+    workflowCustomization: true, multiLocation: true, customBranding: true, photoUpload: true,
+    clientPortal: true, contractorPortal: true, beforeAfterPhotos: true, aiAccess: true,
+    aiUnlimited: true, apiAccess: true, prioritySupport: true, bookings: true
   }
 ];
 
