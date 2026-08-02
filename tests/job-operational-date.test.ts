@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { jobMatchesPeriod, jobMatchesToday } from '../lib/exports/job-filters';
 import { getJobOperationalDate } from '../lib/job-operational-date';
 
 test('active jobs use scheduled_start before a stale start_date', () => {
@@ -29,4 +30,25 @@ test('completed jobs continue to use completed_at for reporting', () => {
   });
 
   assert.equal(date, '2026-08-03');
+});
+
+test('Today tab includes jobs with a scheduled time', () => {
+  const job = {
+    scheduled_start: '2026-08-02T10:00:00-05:00',
+    start_date: '2026-08-02',
+    due_date: '2026-08-02'
+  };
+
+  assert.equal(jobMatchesToday(job, '2026-08-02'), true);
+  assert.equal(jobMatchesPeriod(job, 'today', '2026-08-02'), true);
+});
+
+test('Today tab excludes timed jobs scheduled for another day', () => {
+  const job = {
+    scheduled_start: '2026-08-03T10:00:00-05:00',
+    start_date: '2026-08-03'
+  };
+
+  assert.equal(jobMatchesToday(job, '2026-08-02'), false);
+  assert.equal(jobMatchesPeriod(job, 'today', '2026-08-02'), false);
 });
