@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchCompanyDisplayName, loadQuickBooksConnection } from '@/lib/quickbooks';
 import { ensureValidAccessToken } from '@/lib/quickbooks/client';
 import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
+import { exportEverittOSExpensesToQuickBooks } from '@/lib/quickbooks/expense-exports';
 import { syncQuickBooksExpenses } from '@/lib/quickbooks/expenses';
 import { exportInvoiceToQuickBooks } from '@/lib/quickbooks/invoices';
 import { writeQuickBooksSyncLog, logQuickBooksEvent } from '@/lib/quickbooks/logging';
@@ -28,7 +29,13 @@ type SyncSummary = {
   companyName: string | null;
   customers: ExportCounts;
   invoices: ExportCounts;
-  expenses: {
+  expenseExports: {
+    found: number;
+    created: number;
+    skipped: number;
+    failed: number;
+  };
+  expenseImports: {
     imported: number;
     updated: number;
     skipped: number;
@@ -120,12 +127,18 @@ async function runQuickBooksSync(input: {
 
     const customers = await exportExistingCustomers({ admin, organizationId, userId });
     const invoices = await exportExistingInvoices({ admin, organizationId, userId });
-    const expenses = await syncQuickBooksExpenses(admin, organizationId, userId, activeConnection);
+    const expenseExports = await exportEverittOSExpensesToQuickBooks({
+      admin,
+      organizationId,
+      userId,
+      limit: BULK_EXPORT_LIMIT
+    });
+    const expenseImports = await syncQuickBooksExpenses(admin, organizationId, userId, activeConnection);
 
     const now = new Date().toISOString();
-    const failures = customers.failed + invoices.failed;
+    const failures = customers.failed + invoices.failed + expenseExports.failed;
     const lastError = failures
-      ? `${failures} record${failures === 1 ? '' : 's'} could not be exported. Open Recent sync activity for details.`
+      ? `${failures} financial record${failures === 1 ? '' : 's'} could not be synced. Open Recent sync activity for details.`
       : null;
 
     await admin
@@ -157,7 +170,17 @@ async function runQuickBooksSync(input: {
         action: 'import',
         status: 'completed',
         externalId: activeConnection.realm_id,
-        errorMessage: `Imported ${expenses.imported}, updated ${expenses.updated}, skipped ${expenses.skipped}.`,
+        errorMessage: `Imported ${expenseImports.imported}, updated ${expenseImports.updated}, skipped ${expenseImports.skipped}.`,
+        httpStatus: 200
+      }),
+      writeQuickBooksSyncLog(admin, {
+        organizationId,
+        userId,
+        entityType: 'expense',
+        action: 'export',
+        status: expenseExports.failed ? 'completed_with_errors' : 'completed',
+        externalId: activeConnection.realm_id,
+        errorMessage: `Exported ${expenseExports.created}, skipped ${expenseExports.skipped}, failed ${expenseExports.failed}.`,
         httpStatus: 200
       })
     ]);
@@ -172,16 +195,19 @@ async function runQuickBooksSync(input: {
       invoicesCreated: invoices.created,
       invoicesUpdated: invoices.updated,
       invoicesFailed: invoices.failed,
-      expensesImported: expenses.imported,
-      expensesUpdated: expenses.updated,
-      expensesSkipped: expenses.skipped
+      expensesExported: expenseExports.created,
+      expensesExportFailed: expenseExports.failed,
+      expensesImported: expenseImports.imported,
+      expensesUpdated: expenseImports.updated,
+      expensesSkipped: expenseImports.skipped
     });
 
     return {
       companyName: companyName || activeConnection.company_name,
       customers,
       invoices,
-      expenses
+      expenseExports,
+      expenseImports
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'QuickBooks sync failed.';
@@ -289,10 +315,12 @@ export async function POST() {
 
   try {
     const summary = await runQuickBooksSync({ admin, organizationId, userId: ctx.userId });
+    const importedExpenseCount = summary.expenseImports.imported + summary.expenseImports.updated;
     const message = [
       `${summary.customers.created + summary.customers.updated} customer${summary.customers.found === 1 ? '' : 's'} synced`,
       `${summary.invoices.created + summary.invoices.updated} invoice${summary.invoices.found === 1 ? '' : 's'} synced`,
-      `${summary.expenses.imported + summary.expenses.updated} expense${summary.expenses.imported + summary.expenses.updated === 1 ? '' : 's'} imported`
+      `${summary.expenseExports.created} expense${summary.expenseExports.created === 1 ? '' : 's'} exported`,
+      `${importedExpenseCount} expense${importedExpenseCount === 1 ? '' : 's'} imported`
     ].join(', ');
 
     return NextResponse.json({
