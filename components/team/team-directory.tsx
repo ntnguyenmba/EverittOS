@@ -132,7 +132,7 @@ export function TeamDirectory() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: 0 }}>Team members</h2>
-          <p className="muted" style={{ margin: '6px 0 0' }}>{activeCount} active · Find someone and assign them to a job.</p>
+          <p className="muted" style={{ margin: '6px 0 0' }}>{activeCount} active · Find someone and assign work.</p>
         </div>
         <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
       </div>
@@ -180,9 +180,14 @@ export function TeamDirectory() {
               {member.email ? <p className="muted" style={{ margin: 0, overflowWrap: 'anywhere' }}>{member.email}</p> : null}
             </div>
             {member.active ? (
-              <Link className="btn btn-sm" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>
-                Assign to job
-              </Link>
+              <div className="inline-actions">
+                <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>
+                  View jobs
+                </Link>
+                <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>
+                  Assign to job
+                </Link>
+              </div>
             ) : null}
           </article>
         ))}
