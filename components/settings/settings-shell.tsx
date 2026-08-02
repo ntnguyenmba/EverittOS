@@ -7,7 +7,14 @@ import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
 import { isNavLinkActive, settingsLinksForRole } from '@/lib/nav-access';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
-import { canManageBilling, canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
+import {
+  canManageBilling,
+  canViewTeam,
+  isClientRole,
+  isContractorRole,
+  normalizeRole,
+  type UserRole
+} from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type SettingsShellProps = {
@@ -86,11 +93,12 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
     else links.push(teamLink);
   }
 
-  if (isManagerRole(role) && !links.some((link) => link.href === '/settings/job-instructions')) {
+  const canUseJobInstructions = !isClientRole(role) && !isContractorRole(role);
+  if (canUseJobInstructions && !links.some((link) => link.href === '/settings/job-instructions')) {
     const teamIndex = links.findIndex((link) => link.href === '/settings/team');
     const instructionLink = { href: '/settings/job-instructions', label: copy.instructions };
     if (teamIndex >= 0) links.splice(teamIndex + 1, 0, instructionLink);
-    else links.push(instructionLink);
+    else links.unshift(instructionLink);
   }
 
   if (canManageBilling(role) && !links.some((link) => link.href === '/settings/billing')) {
@@ -100,6 +108,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
   if (!links.some((link) => link.href === '/about')) links.push({ href: '/about', label: copy.about });
 
   const showBillingShortcut = canManageBilling(role) && pathname !== '/settings/billing';
+  const showInstructionsShortcut = canUseJobInstructions && pathname !== '/settings/job-instructions';
 
   return (
     <AppShell plan={normalizedPlan} role={role}>
@@ -108,7 +117,12 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
           <h2>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {showBillingShortcut ? <Link className="btn" href="/settings/billing">{copy.manageBilling}</Link> : null}
+        <div className="inline-actions">
+          {showInstructionsShortcut ? (
+            <Link className="btn" href="/settings/job-instructions">{copy.instructions}</Link>
+          ) : null}
+          {showBillingShortcut ? <Link className="btn" href="/settings/billing">{copy.manageBilling}</Link> : null}
+        </div>
       </div>
 
       <nav className="settings-subnav settings-subnav-pills" aria-label={copy.settings}>
