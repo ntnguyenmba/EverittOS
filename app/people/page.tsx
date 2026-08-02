@@ -2,6 +2,7 @@
 
 import { AppShell } from '@/components/app-shell';
 import { ExportMenu } from '@/components/export-menu';
+import { TeamDirectory } from '@/components/team/team-directory';
 import { TeamManagementPanel } from '@/components/team/team-management-panel';
 import { useTranslation } from '@/components/locale-provider';
 import {
@@ -122,11 +123,12 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section style={{ marginTop: 24 }}>
-      <h2>Team members</h2>
+      <h2>Contractors and staff records</h2>
+      <p className="muted">Add people who need job assignments or payment records but do not need workspace access.</p>
 
       {canManage ? (
         <details className="card" style={{ marginBottom: 12 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Add team member</summary>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Add team record</summary>
           <div className="form" style={{ marginTop: 16 }}>
             <div className="grid-2">
               <label>
@@ -166,7 +168,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
               </label>
             </div>
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void addContractor()}>
-              {saving ? 'Adding...' : 'Add'}
+              {saving ? 'Adding...' : 'Add record'}
             </button>
           </div>
         </details>
@@ -176,9 +178,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
       {loading ? <p className="loading-state">Loading...</p> : null}
       {!loading && contractors.length === 0 ? (
         <p className="muted">
-          {canManage
-            ? 'No team members yet. Open Add team member above to add your first contractor or employee.'
-            : 'No team members have been added yet.'}
+          {canManage ? 'No team records yet.' : 'No team records have been added.'}
         </p>
       ) : null}
 
@@ -252,7 +252,10 @@ export default function PeoplePage() {
   return (
     <AppShell plan={plan} role={role}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ margin: 0 }}>{t('nav.team')}</h1>
+        <div>
+          <h1 style={{ margin: 0 }}>{t('nav.team')}</h1>
+          <p className="muted" style={{ margin: '8px 0 0' }}>Find team members, manage access, and assign work.</p>
+        </div>
         {canViewTeam(role) ? (
           <ExportMenu
             endpoint="/api/exports/team"
@@ -263,9 +266,7 @@ export default function PeoplePage() {
         ) : null}
       </div>
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
-      <p className="muted" style={{ marginTop: 8 }}>
-        {exportCopy.privateCompanyRecord}
-      </p>
+      <TeamDirectory />
       <TeamManagementPanel showPermissionMatrix={false} showAuditHistory={false} />
       <ContractorPanel canManage={isManagerRole(role)} />
     </AppShell>
