@@ -181,23 +181,23 @@ export function TeamDirectory() {
 
   return (
     <section className="card" style={{ marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: 0 }}>Team members</h2>
-          <p className="muted" style={{ margin: '6px 0 0' }}>{activeCount} active · Find someone and assign work.</p>
+          <p className="muted" style={{ margin: '8px 0 0' }}>{activeCount} active · Find someone and assign work.</p>
         </div>
-        <div className="inline-actions">
+        <div className="inline-actions" style={{ gap: 12 }}>
           <Link className="btn" href="/people#invite-by-email">Add team member</Link>
           <Link className="btn btn-primary" href="/jobs/new">Create job</Link>
         </div>
       </div>
 
-      <div className="grid-2" style={{ marginTop: 16 }}>
-        <label>
+      <div className="grid-2" style={{ marginTop: 24, gap: 20 }}>
+        <label style={{ display: 'grid', gap: 8 }}>
           Search team
           <input className="input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or role" />
         </label>
-        <label>
+        <label style={{ display: 'grid', gap: 8 }}>
           Role
           <select className="input" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
             <option value="all">All roles</option>
@@ -210,7 +210,7 @@ export function TeamDirectory() {
         </label>
       </div>
 
-      <div className="segmented-control" role="group" aria-label="Team member status" style={{ marginTop: 12 }}>
+      <div className="segmented-control" role="group" aria-label="Team member status" style={{ marginTop: 22, gap: 12 }}>
         <button type="button" className={`btn${statusFilter === 'active' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('active')}>Active</button>
         <button type="button" className={`btn${statusFilter === 'inactive' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('inactive')}>Inactive</button>
         <button type="button" className={`btn${statusFilter === 'all' ? ' btn-primary' : ''}`} onClick={() => setStatusFilter('all')}>All</button>
@@ -220,7 +220,7 @@ export function TeamDirectory() {
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
       {!loading && !error && filtered.length === 0 ? <p className="muted">No matching team members.</p> : null}
 
-      <div className="customer-list" style={{ marginTop: 14 }}>
+      <div className="customer-list" style={{ marginTop: 22 }}>
         {filtered.map((member) => {
           const summary = jobSummaries[member.userId] || emptySummary();
           return (
