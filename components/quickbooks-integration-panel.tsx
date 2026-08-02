@@ -32,7 +32,12 @@ type QuickBooksStatus = {
 };
 
 const REQUEST_TIMEOUT_MS = 12000;
+const STATUS_RETRY_TIMEOUT_MS = 20000;
 const SYNC_POLL_INTERVAL_MS = 4000;
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,
@@ -55,6 +60,17 @@ async function fetchWithTimeout(
     });
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** Status reads are safe to retry. Mutating QuickBooks requests are never retried automatically. */
+async function fetchQuickBooksStatus(): Promise<Response> {
+  const url = `/api/integrations/quickbooks/status?t=${Date.now()}`;
+  try {
+    return await fetchWithTimeout(url);
+  } catch (error) {
+    if (!isAbortError(error)) throw error;
+    return fetchWithTimeout(`/api/integrations/quickbooks/status?t=${Date.now()}`, undefined, STATUS_RETRY_TIMEOUT_MS);
   }
 }
 
@@ -108,7 +124,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     setUnauthorized(false);
 
     try {
-      const res = await fetchWithTimeout(`/api/integrations/quickbooks/status?t=${Date.now()}`);
+      const res = await fetchQuickBooksStatus();
       const json = await readJson(res);
       if (!mounted.current) return;
 
@@ -144,8 +160,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       }
     } catch (error) {
       if (!mounted.current) return;
-      const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      setLoadError(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks status is temporarily unavailable.');
+      setLoadError(isAbortError(error) ? 'QuickBooks is still taking too long to respond. Refresh status in a moment.' : 'QuickBooks status is temporarily unavailable.');
       if (!silent) setStatus(null);
     } finally {
       loadingRef.current = false;
@@ -184,8 +199,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       appFeedback.disconnected();
       await load();
     } catch (error) {
-      const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      appFeedback.error(timedOut ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks could not be disconnected. Please try again.');
+      appFeedback.error(isAbortError(error) ? 'QuickBooks took too long to respond. Try again.' : 'QuickBooks could not be disconnected. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -217,8 +231,7 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
       appFeedback.success(typeof json.message === 'string' ? json.message : 'QuickBooks sync started.');
       await load({ silent: true });
     } catch (error) {
-      const timedOut = error instanceof DOMException && error.name === 'AbortError';
-      appFeedback.error(timedOut ? 'QuickBooks could not start the sync in time. Please try again.' : 'QuickBooks sync could not be started.');
+      appFeedback.error(isAbortError(error) ? 'QuickBooks may still be starting the sync. Refresh status before trying again.' : 'QuickBooks sync could not be started.');
     } finally {
       setBusy(false);
     }
