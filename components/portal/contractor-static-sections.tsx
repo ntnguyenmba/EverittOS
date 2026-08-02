@@ -14,18 +14,16 @@ export function ContractorStaticSections() {
 
     const makeJobCardsStatic = () => {
       document.querySelectorAll<HTMLButtonElement>('.contractor-dashboard .contractor-job-card > button').forEach((button) => {
-        button.type = 'button';
-        button.tabIndex = -1;
-        button.setAttribute('aria-disabled', 'true');
-        button.style.pointerEvents = 'none';
-        button.style.cursor = 'default';
+        const display = document.createElement('div');
+        display.className = 'contractor-job-card-display';
+        display.innerHTML = button.innerHTML;
+        button.replaceWith(display);
       });
 
       document.querySelectorAll<HTMLAnchorElement>('.client-portal-jobs .client-job-card[href]').forEach((link) => {
         link.removeAttribute('href');
-        link.tabIndex = -1;
-        link.setAttribute('aria-disabled', 'true');
-        link.style.cursor = 'default';
+        link.removeAttribute('tabindex');
+        link.removeAttribute('role');
       });
     };
 
