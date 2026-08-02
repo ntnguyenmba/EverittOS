@@ -1,0 +1,293 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { QuickBooksApiError, quickbooksAccountingRequest, type QuickBooksFetch } from '@/lib/quickbooks/client';
+import { syncCustomerToQuickBooks } from '@/lib/quickbooks/customers';
+import { parseQuickBooksError } from '@/lib/quickbooks/errors';
+import { writeQuickBooksSyncLog } from '@/lib/quickbooks/logging';
+
+type DirectPaymentRow = {
+  id: string;
+  organization_id: string;
+  job_id: string;
+  customer_id: string | null;
+  invoice_id: string | null;
+  amount: number | string;
+  paid_at: string;
+  payment_method: string | null;
+  payment_reference: string | null;
+  notes: string | null;
+  quickbooks_sales_receipt_id: string | null;
+  quickbooks_sync_token: string | null;
+};
+
+type JobRow = {
+  id: string;
+  title: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+};
+
+type SalesReceiptEntity = {
+  Id: string;
+  SyncToken: string;
+};
+
+type ItemQueryResponse = {
+  QueryResponse?: {
+    Item?: Array<{ Id: string }>;
+  };
+};
+
+type AccountQueryResponse = {
+  QueryResponse?: {
+    Account?: Array<{ Id: string }>;
+  };
+};
+
+type SalesReceiptResponse = {
+  SalesReceipt?: SalesReceiptEntity;
+};
+
+export type DirectIncomeExportSummary = {
+  found: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+};
+
+async function resolveIncomeItemId(
+  admin: SupabaseClient,
+  organizationId: string,
+  fetchImpl?: QuickBooksFetch
+): Promise<string> {
+  const serviceItems = await quickbooksAccountingRequest<ItemQueryResponse>({
+    admin,
+    organizationId,
+    method: 'GET',
+    path: '/query',
+    query: {
+      query: `select Id from Item where Type = 'Service' and Active = true maxresults 1`
+    },
+    fetchImpl
+  });
+
+  const existingId = serviceItems.body.QueryResponse?.Item?.[0]?.Id;
+  if (existingId) return existingId;
+
+  const incomeAccounts = await quickbooksAccountingRequest<AccountQueryResponse>({
+    admin,
+    organizationId,
+    method: 'GET',
+    path: '/query',
+    query: {
+      query: `select Id from Account where AccountType = 'Income' and Active = true maxresults 1`
+    },
+    fetchImpl
+  });
+
+  const incomeAccountId = incomeAccounts.body.QueryResponse?.Account?.[0]?.Id;
+  if (!incomeAccountId) {
+    throw new QuickBooksApiError({
+      userMessage: 'QuickBooks needs an active income account before EverittOS income can be synced.',
+      httpStatus: 400,
+      intuitTid: incomeAccounts.intuitTid,
+      reconnectRequired: false,
+      retryable: false,
+      code: 'missing_income_account'
+    });
+  }
+
+  const created = await quickbooksAccountingRequest<{ Item?: { Id?: string } }>({
+    admin,
+    organizationId,
+    method: 'POST',
+    path: '/item',
+    body: {
+      Name: 'EverittOS Services',
+      Type: 'Service',
+      IncomeAccountRef: { value: incomeAccountId }
+    },
+    fetchImpl
+  });
+
+  const createdId = created.body.Item?.Id;
+  if (!createdId) {
+    throw new QuickBooksApiError({
+      userMessage: 'QuickBooks could not create the EverittOS income service item.',
+      httpStatus: 400,
+      intuitTid: created.intuitTid,
+      reconnectRequired: false,
+      retryable: false,
+      code: 'missing_income_item'
+    });
+  }
+
+  return createdId;
+}
+
+async function exportDirectPayment(input: {
+  admin: SupabaseClient;
+  organizationId: string;
+  userId?: string | null;
+  payment: DirectPaymentRow;
+  fetchImpl?: QuickBooksFetch;
+}): Promise<'created' | 'updated' | 'skipped'> {
+  const payment = input.payment;
+  if (payment.invoice_id) return 'skipped';
+
+  const { data: job, error: jobError } = await input.admin
+    .from('jobs')
+    .select('id, title, customer_id, customer_name')
+    .eq('id', payment.job_id)
+    .eq('organization_id', input.organizationId)
+    .maybeSingle();
+
+  if (jobError) throw new Error(jobError.message);
+  if (!job) throw new Error('The job linked to this payment could not be found.');
+
+  const jobRow = job as JobRow;
+  const customerId = payment.customer_id || jobRow.customer_id;
+  if (!customerId) {
+    throw new Error('This direct payment has no customer and cannot be exported to QuickBooks.');
+  }
+
+  const customer = await syncCustomerToQuickBooks({
+    admin: input.admin,
+    organizationId: input.organizationId,
+    userId: input.userId,
+    customerId,
+    fetchImpl: input.fetchImpl,
+    log: true
+  });
+  const itemId = await resolveIncomeItemId(input.admin, input.organizationId, input.fetchImpl);
+  const amount = Math.max(0, Number(payment.amount || 0));
+  const note = payment.notes?.trim() || jobRow.title?.trim() || 'EverittOS job payment';
+
+  const payload: Record<string, unknown> = {
+    CustomerRef: { value: customer.externalId },
+    TxnDate: payment.paid_at.slice(0, 10),
+    PrivateNote: [
+      note,
+      payment.payment_method ? `Method: ${payment.payment_method}` : '',
+      payment.payment_reference ? `Reference: ${payment.payment_reference}` : ''
+    ].filter(Boolean).join(' | ').slice(0, 4000),
+    Line: [
+      {
+        Amount: amount,
+        DetailType: 'SalesItemLineDetail',
+        Description: note.slice(0, 4000),
+        SalesItemLineDetail: {
+          ItemRef: { value: itemId },
+          Qty: 1,
+          UnitPrice: amount
+        }
+      }
+    ]
+  };
+
+  if (payment.quickbooks_sales_receipt_id && payment.quickbooks_sync_token) {
+    payload.Id = payment.quickbooks_sales_receipt_id;
+    payload.SyncToken = payment.quickbooks_sync_token;
+    payload.sparse = true;
+  }
+
+  const response = await quickbooksAccountingRequest<SalesReceiptResponse>({
+    admin: input.admin,
+    organizationId: input.organizationId,
+    method: 'POST',
+    path: '/salesreceipt',
+    body: payload,
+    fetchImpl: input.fetchImpl
+  });
+
+  const entity = response.body.SalesReceipt;
+  if (!entity?.Id || entity.SyncToken == null) {
+    throw new QuickBooksApiError(
+      parseQuickBooksError({ httpStatus: response.status, body: response.body, intuitTid: response.intuitTid })
+    );
+  }
+
+  const wasExisting = Boolean(payment.quickbooks_sales_receipt_id);
+  const { error: updateError } = await input.admin
+    .from('job_payments')
+    .update({
+      quickbooks_sales_receipt_id: entity.Id,
+      quickbooks_sync_token: entity.SyncToken,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', payment.id)
+    .eq('organization_id', input.organizationId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  await writeQuickBooksSyncLog(input.admin, {
+    organizationId: input.organizationId,
+    userId: input.userId,
+    entityType: 'income',
+    entityId: payment.id,
+    action: 'export_sales_receipt',
+    status: wasExisting ? 'updated' : 'created',
+    externalId: entity.Id,
+    intuitTid: response.intuitTid,
+    httpStatus: 200
+  });
+
+  return wasExisting ? 'updated' : 'created';
+}
+
+export async function exportEverittOSIncomeToQuickBooks(input: {
+  admin: SupabaseClient;
+  organizationId: string;
+  userId?: string | null;
+  limit?: number;
+  fetchImpl?: QuickBooksFetch;
+}): Promise<DirectIncomeExportSummary> {
+  const { data, error } = await input.admin
+    .from('job_payments')
+    .select(
+      'id, organization_id, job_id, customer_id, invoice_id, amount, paid_at, payment_method, payment_reference, notes, quickbooks_sales_receipt_id, quickbooks_sync_token'
+    )
+    .eq('organization_id', input.organizationId)
+    .is('invoice_id', null)
+    .order('paid_at', { ascending: true })
+    .limit(input.limit || 50);
+
+  if (error) throw new Error(`EverittOS income could not be loaded: ${error.message}`);
+
+  const rows = (data || []) as DirectPaymentRow[];
+  const summary: DirectIncomeExportSummary = {
+    found: rows.length,
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0
+  };
+
+  for (const payment of rows) {
+    try {
+      const result = await exportDirectPayment({
+        admin: input.admin,
+        organizationId: input.organizationId,
+        userId: input.userId,
+        payment,
+        fetchImpl: input.fetchImpl
+      });
+      summary[result] += 1;
+    } catch (error) {
+      summary.failed += 1;
+      const message = error instanceof Error ? error.message : 'Direct income could not be exported.';
+      await writeQuickBooksSyncLog(input.admin, {
+        organizationId: input.organizationId,
+        userId: input.userId,
+        entityType: 'income',
+        entityId: payment.id,
+        action: 'export_sales_receipt',
+        status: 'failed',
+        errorMessage: message.slice(0, 500),
+        httpStatus: 400
+      });
+    }
+  }
+
+  return summary;
+}
