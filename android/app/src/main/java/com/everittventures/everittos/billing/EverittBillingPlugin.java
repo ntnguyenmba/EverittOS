@@ -1,6 +1,7 @@
 package com.everittventures.everittos.billing;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 
@@ -44,6 +45,18 @@ public class EverittBillingPlugin extends Plugin {
         billingManager.addPurchaseListener(purchaseListener);
     }
 
+    @Override
+    protected void handleOnDestroy() {
+        if (billingManager != null && purchaseListener != null) {
+            billingManager.removePurchaseListener(purchaseListener);
+        }
+        if (pendingPurchaseCall != null) {
+            pendingPurchaseCall.reject("Purchase interrupted because the app closed.");
+            pendingPurchaseCall = null;
+        }
+        super.handleOnDestroy();
+    }
+
     @PluginMethod
     public void loadProducts(PluginCall call) {
         List<String> productIds = readProductIds(call);
@@ -71,6 +84,10 @@ public class EverittBillingPlugin extends Plugin {
             call.reject("productId is required");
             return;
         }
+        if (pendingPurchaseCall != null) {
+            call.reject("Another purchase is already in progress.");
+            return;
+        }
         Activity activity = getActivity();
         if (activity == null) {
             call.reject("Activity unavailable");
@@ -78,8 +95,9 @@ public class EverittBillingPlugin extends Plugin {
         }
         pendingPurchaseCall = call;
         billingManager.launchPurchase(activity, productId, error -> {
+            PluginCall currentCall = pendingPurchaseCall;
             pendingPurchaseCall = null;
-            call.reject(error);
+            if (currentCall != null) currentCall.reject(error);
         });
     }
 
@@ -107,10 +125,14 @@ public class EverittBillingPlugin extends Plugin {
         String url = "https://play.google.com/store/account/subscriptions?package=" + packageName;
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        getContext().startActivity(intent);
-        JSObject result = new JSObject();
-        result.put("opened", true);
-        call.resolve(result);
+        try {
+            getContext().startActivity(intent);
+            JSObject result = new JSObject();
+            result.put("opened", true);
+            call.resolve(result);
+        } catch (ActivityNotFoundException error) {
+            call.reject("Google Play subscription management is unavailable on this device.");
+        }
     }
 
     @PluginMethod
