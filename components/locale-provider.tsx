@@ -26,6 +26,13 @@ function readStoredLocale(): Locale {
   return readLocaleCookie() || DEFAULT_LOCALE;
 }
 
+function applyDocumentLocale(locale: Locale) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = locale;
+  document.documentElement.dataset.locale = locale;
+  document.body.dataset.locale = locale;
+}
+
 function resolvePath(messages: Messages, path: string): string | undefined {
   const parts = path.split('.');
   let current: unknown = messages;
@@ -40,14 +47,17 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
-    setLocaleState(readStoredLocale());
+    const storedLocale = readStoredLocale();
+    setLocaleState(storedLocale);
+    applyDocumentLocale(storedLocale);
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = locale;
+    applyDocumentLocale(locale);
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
+    applyDocumentLocale(next);
     setLocaleState(next);
     try {
       localStorage.setItem(LOCALE_STORAGE_KEY, next);
@@ -55,6 +65,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
     writeLocaleCookie(next);
+    window.dispatchEvent(new CustomEvent('everittos:locale-change', { detail: { locale: next } }));
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
