@@ -36,20 +36,6 @@ export function ContractorStaticSections() {
         link.removeAttribute('role');
       });
 
-      currentSection?.querySelectorAll<HTMLElement>('.contractor-job-card-display').forEach((card) => {
-        const fields = card.querySelector<HTMLElement>('.inline-actions');
-        if (!fields) return;
-        const hasPay = Array.from(fields.querySelectorAll('.badge')).some((badge) =>
-          String(badge.textContent || '').trim().toLowerCase().startsWith('pay:')
-        );
-        if (!hasPay) {
-          const pay = document.createElement('span');
-          pay.className = 'badge';
-          pay.textContent = 'Pay: Not set';
-          fields.appendChild(pay);
-        }
-      });
-
       const completedByTitle = new Map<string, string>();
       historySection?.querySelectorAll<HTMLElement>('.contractor-job-card').forEach((card) => {
         const title = normalizedTitle(card.querySelector('h3')?.textContent);
