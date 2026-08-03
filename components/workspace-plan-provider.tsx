@@ -15,15 +15,10 @@ import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 export type WorkspacePlanState = {
-  /** Normalized plan from the signed-in user's profiles.plan row. */
   profilePlan: EverittosPlan | null;
-  /** Raw profiles.subscription_status from Supabase. */
   subscriptionStatus: string | null;
-  /** Same as profilePlan — billing UI reads profiles.plan directly. */
   billingPlan: EverittosPlan | null;
-  /** Organization owner's profiles.plan (limits + feature gates). */
   organizationPlan: EverittosPlan | null;
-  /** Effective plan for UI: organization plan when present, else profile plan. */
   plan: EverittosPlan | null;
   role: UserRole | null;
   rawProfilePlan: string | null;
@@ -46,52 +41,62 @@ type WorkspacePlanResponse = {
   error?: string;
 };
 
-async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>> {
-  const res = await fetch('/api/workspace/plan', { cache: 'no-store' });
-  if (res.status === 401) {
-    return {
-      profilePlan: null,
-      subscriptionStatus: null,
-      billingPlan: null,
-      organizationPlan: null,
-      plan: null,
-      role: null,
-      rawProfilePlan: null,
-      rawSubscriptionStatus: null,
-      loading: false,
-      error: null
-    };
-  }
+function emptyPlanState(error: string | null = null): Omit<WorkspacePlanState, 'refresh'> {
+  return {
+    profilePlan: null,
+    subscriptionStatus: null,
+    billingPlan: null,
+    organizationPlan: null,
+    plan: null,
+    role: null,
+    rawProfilePlan: null,
+    rawSubscriptionStatus: null,
+    loading: false,
+    error
+  };
+}
 
-  const json = (await res.json()) as WorkspacePlanResponse;
-  if (!res.ok) {
-    return {
-      profilePlan: null,
-      subscriptionStatus: null,
-      billingPlan: null,
-      organizationPlan: null,
-      plan: null,
-      role: null,
-      rawProfilePlan: null,
-      rawSubscriptionStatus: null,
-      loading: false,
-      error: json.error || 'Unable to load workspace plan.'
-    };
+async function requestWorkspacePlan(): Promise<Response> {
+  return fetch('/api/workspace/plan', {
+    cache: 'no-store',
+    credentials: 'same-origin'
+  });
+}
+
+async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>> {
+  let res = await requestWorkspacePlan();
+  if (res.status === 401) return emptyPlanState();
+
+  let json = (await res.json().catch(() => ({}))) as WorkspacePlanResponse;
+  if (!res.ok) return emptyPlanState(json.error || 'Unable to load workspace plan.');
+
+  const firstPlan = normalizePlan(json.organizationPlan || json.billingPlan || json.profilePlan || 'free');
+
+  // Recover Stripe subscriptions that were paid successfully but were not saved by an older webhook.
+  // The endpoint verifies directly with Stripe and never trusts a client-supplied plan.
+  if (firstPlan === 'free') {
+    const recovery = await fetch('/api/stripe/sync-current-user', {
+      method: 'POST',
+      credentials: 'same-origin'
+    }).catch(() => null);
+
+    if (recovery?.ok) {
+      res = await requestWorkspacePlan();
+      json = (await res.json().catch(() => ({}))) as WorkspacePlanResponse;
+      if (!res.ok) return emptyPlanState(json.error || 'Unable to refresh workspace plan.');
+    }
   }
 
   const profilePlan = json.profilePlan ? normalizePlan(json.profilePlan) : null;
   const billingPlan = json.billingPlan ? normalizePlan(json.billingPlan) : profilePlan;
-  const organizationPlan = json.organizationPlan
-    ? normalizePlan(json.organizationPlan)
-    : profilePlan;
-  const effectivePlan = organizationPlan ?? profilePlan;
+  const organizationPlan = json.organizationPlan ? normalizePlan(json.organizationPlan) : profilePlan;
 
   return {
     profilePlan,
     subscriptionStatus: json.subscriptionStatus ?? json.rawSubscriptionStatus ?? null,
     billingPlan,
     organizationPlan,
-    plan: effectivePlan,
+    plan: organizationPlan ?? profilePlan,
     role: normalizeRole(json.role || 'owner'),
     rawProfilePlan: json.rawProfilePlan ?? json.profilePlan ?? null,
     rawSubscriptionStatus: json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null,
@@ -102,16 +107,8 @@ async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>
 
 export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<WorkspacePlanState, 'refresh'>>({
-    profilePlan: null,
-    subscriptionStatus: null,
-    billingPlan: null,
-    organizationPlan: null,
-    plan: null,
-    role: null,
-    rawProfilePlan: null,
-    rawSubscriptionStatus: null,
-    loading: true,
-    error: null
+    ...emptyPlanState(),
+    loading: true
   });
 
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
@@ -135,14 +132,22 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const onNativeResume = () => {
+    const refreshSilently = () => {
       void refresh({ silent: true });
     };
-    window.addEventListener('everittos:workspace-plan-refresh', onNativeResume);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshSilently();
+    };
+
+    window.addEventListener('everittos:workspace-plan-refresh', refreshSilently);
+    window.addEventListener('focus', refreshSilently);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('everittos:workspace-plan-refresh', onNativeResume);
+      window.removeEventListener('everittos:workspace-plan-refresh', refreshSilently);
+      window.removeEventListener('focus', refreshSilently);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [refresh]);
 
@@ -153,13 +158,10 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
 
 export function useWorkspacePlan(): WorkspacePlanState {
   const ctx = useContext(WorkspacePlanContext);
-  if (!ctx) {
-    throw new Error('useWorkspacePlan must be used within WorkspacePlanProvider');
-  }
+  if (!ctx) throw new Error('useWorkspacePlan must be used within WorkspacePlanProvider');
   return ctx;
 }
 
-/** Safe variant for components that may render outside the provider (e.g. marketing pages). */
 export function useWorkspacePlanOptional(): WorkspacePlanState | null {
   return useContext(WorkspacePlanContext);
 }
