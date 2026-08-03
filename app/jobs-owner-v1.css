@@ -1,1 +1,181 @@
-placeholder
+.jobs-shell-minimal .jobs-list-page {
+  display: grid;
+  gap: 12px;
+}
+
+.jobs-shell-minimal .jobs-header-actions,
+.jobs-shell-minimal .jobs-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jobs-shell-minimal .jobs-filter-tab {
+  min-height: 40px;
+  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(37, 54, 74, 0.16);
+  border-radius: 10px;
+  background: #fff;
+  color: #536577;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.jobs-shell-minimal .jobs-filter-tab-active {
+  background: #243f53;
+  color: #fff;
+  border-color: #243f53;
+}
+
+.jobs-shell-minimal .jobs-table-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.jobs-shell-minimal .jobs-mobile-table-wrap {
+  max-height: min(68vh, 760px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.jobs-shell-minimal .jobs-operations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.jobs-shell-minimal .jobs-operations-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f6f8f9;
+  color: #5f7186;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jobs-shell-minimal .jobs-operations-table th,
+.jobs-shell-minimal .jobs-operations-table td {
+  padding: 13px 14px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(37, 54, 74, 0.1);
+}
+
+.jobs-shell-minimal .jobs-operations-row {
+  cursor: pointer;
+}
+
+.jobs-shell-minimal .jobs-operations-row:hover {
+  background: #f8fafb;
+}
+
+/* The list answers only who and where. The saved job title remains available after opening the job. */
+.jobs-shell-minimal .jobs-col-property .jobs-property-link {
+  display: none;
+}
+
+.jobs-shell-minimal .jobs-col-property .jobs-secondary:first-of-type {
+  margin: 0;
+  color: #243f53;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.jobs-shell-minimal .jobs-col-property .jobs-secondary:nth-of-type(2) {
+  margin-top: 4px;
+  color: #5f7186;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.jobs-shell-minimal .jobs-row-time,
+.jobs-shell-minimal .jobs-photo-count {
+  display: block;
+  margin-top: 4px;
+  color: #6b7c8d;
+  font-size: 13px;
+}
+
+.jobs-shell-minimal .jobs-menu-trigger {
+  min-width: 40px;
+  min-height: 40px !important;
+  border: 1px solid rgba(37, 54, 74, 0.14);
+  border-radius: 10px;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .jobs-shell-minimal .jobs-filter-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .jobs-shell-minimal .jobs-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .jobs-shell-minimal .jobs-filter-tab {
+    flex: 0 0 auto;
+  }
+
+  .jobs-shell-minimal .jobs-mobile-table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table,
+  .jobs-shell-minimal .jobs-operations-table tbody,
+  .jobs-shell-minimal .jobs-operations-table tr,
+  .jobs-shell-minimal .jobs-operations-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table thead {
+    display: none;
+  }
+
+  .jobs-shell-minimal .jobs-operations-row {
+    position: relative;
+    padding: 14px;
+    border-bottom: 1px solid rgba(37, 54, 74, 0.12);
+  }
+
+  .jobs-shell-minimal .jobs-operations-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .jobs-shell-minimal .jobs-col-date {
+    margin-bottom: 10px;
+  }
+
+  .jobs-shell-minimal .jobs-col-property {
+    margin-bottom: 10px;
+  }
+
+  .jobs-shell-minimal .jobs-col-assigned,
+  .jobs-shell-minimal .jobs-col-status {
+    display: inline-flex !important;
+    width: auto !important;
+    margin-right: 8px;
+    margin-top: 6px;
+  }
+
+  .jobs-shell-minimal .jobs-col-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: auto !important;
+  }
+}
