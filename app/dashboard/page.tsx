@@ -312,6 +312,7 @@ export default function DashboardPage() {
   const managerView = isManagerRole(role) && !ownerView;
   const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan);
   const showFinance = ownerView && canAccessFinancials(role, plan);
+  const showOperations = (ownerView || managerView) && !staffView;
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -327,14 +328,8 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        {showFinance ? (
-          <Suspense fallback={<div style={{ minHeight: 140 }} aria-busy="true" />}>
-            <DashboardRevenueSnapshot metrics={revenue} todayJobs={ops.todayJobs} loading={loading} />
-          </Suspense>
-        ) : null}
-
-        {managerView ? (
-          <section aria-label={c.today} style={{ marginTop: showFinance ? 24 : 0 }}>
+        {showOperations ? (
+          <section aria-label={c.today} className="dashboard-operations">
             <div className="dashboard-revenue-grid">
               {canLink('/schedule') ? <SimpleStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
               {canViewTeam(role) && canLink('/people') ? <SimpleStat label={c.teamWorkingToday} value={ops.teamWorkingToday} href="/people" /> : null}
@@ -342,6 +337,12 @@ export default function DashboardPage() {
               {canLink('/leads') || canLink('/customers') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href="/customers?stage=leads" /> : null}
             </div>
           </section>
+        ) : null}
+
+        {showFinance ? (
+          <Suspense fallback={<div style={{ minHeight: 140 }} aria-busy="true" />}>
+            <DashboardRevenueSnapshot metrics={revenue} todayJobs={ops.todayJobs} loading={loading} />
+          </Suspense>
         ) : null}
 
         {staffView ? (
@@ -353,7 +354,7 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        {(ownerView || managerView) && !staffView ? (
+        {showOperations ? (
           <div className="inline-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
             {canLink('/jobs') ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
             {canLink('/customers') ? <Link className="btn" href="/customers/new">{c.newCustomer}</Link> : null}
