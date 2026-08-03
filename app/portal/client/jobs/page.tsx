@@ -28,6 +28,29 @@ type ClientJob = {
   created_at: string | null;
 };
 
+type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
+
+const copy = {
+  en: {
+    today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All',
+    upcoming: 'Upcoming jobs', completed: 'Completed jobs', current: 'Upcoming', past: 'Completed',
+    noUpcoming: 'No upcoming jobs.', noCompleted: 'No completed jobs.',
+    serviceAmount: 'Price', status: 'Status', dateNotSet: 'Date not set'
+  },
+  es: {
+    today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo',
+    upcoming: 'Próximos trabajos', completed: 'Trabajos terminados', current: 'Próximos', past: 'Terminados',
+    noUpcoming: 'No hay trabajos próximos.', noCompleted: 'No hay trabajos terminados.',
+    serviceAmount: 'Precio', status: 'Estado', dateNotSet: 'Fecha no definida'
+  },
+  vi: {
+    today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả',
+    upcoming: 'Công việc sắp tới', completed: 'Công việc đã xong', current: 'Sắp tới', past: 'Đã xong',
+    noUpcoming: 'Không có công việc sắp tới.', noCompleted: 'Không có công việc đã xong.',
+    serviceAmount: 'Giá', status: 'Trạng thái', dateNotSet: 'Chưa có ngày'
+  }
+} as const;
+
 function cityState(address: string | null) {
   if (!address) return '';
   const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
@@ -60,10 +83,7 @@ function jobDate(job: ClientJob, locale: string) {
   const value = operationalDate(job);
   if (!value) return '';
   return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString(locale, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
   });
 }
 
@@ -71,8 +91,7 @@ function jobTime(job: ClientJob, locale: string) {
   const start = wallClockFromTimestamp(job.scheduled_start);
   const end = wallClockFromTimestamp(job.scheduled_end);
   if (!start?.time) return '';
-  const format = (time: string) =>
-    new Date(`2000-01-01T${time}:00`).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  const format = (time: string) => new Date(`2000-01-01T${time}:00`).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   return end?.time ? `${format(start.time)} – ${format(end.time)}` : format(start.time);
 }
 
@@ -81,31 +100,38 @@ function formatMoney(value: number | null, locale: string) {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(Number(value));
 }
 
+function rangeBounds(range: TimeRange) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  if (range === 'today') end.setDate(end.getDate() + 1);
+  if (range === 'week') end.setDate(end.getDate() + 7);
+  if (range === 'month') end.setMonth(end.getMonth() + 1);
+  if (range === 'year') end.setFullYear(end.getFullYear() + 1);
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
+
 export default function ClientPortalJobsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const exportCopy = getExportCopy(locale);
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
   const [jobs, setJobs] = useState<ClientJob[]>([]);
+  const [range, setRange] = useState<TimeRange>('month');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     async function load() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push(`/login?next=${encodeURIComponent(clientPortalJobsPath())}`);
         return;
       }
 
-      try {
-        await fetch('/api/portal/client/repair', { method: 'POST' });
-      } catch {
-        // Continue with current access rows.
-      }
+      try { await fetch('/api/portal/client/repair', { method: 'POST' }); } catch {}
 
       const { data: profileRow } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       if (!isClientRole(normalizeRole(profileRow?.role))) {
@@ -115,7 +141,6 @@ export default function ClientPortalJobsPage() {
 
       const { data: access } = await supabase.from('job_client_access').select('job_id').eq('client_user_id', user.id);
       const jobIds = ((access || []) as Array<{ job_id: string }>).map((row) => String(row.job_id)).filter(Boolean);
-
       if (jobIds.length === 0) {
         setMessage(t('portal.client.noSharedMessage'));
         setLoading(false);
@@ -126,29 +151,34 @@ export default function ClientPortalJobsPage() {
         .from('jobs')
         .select('id, title, status, customer_name, address, revenue_amount, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
         .in('id', jobIds);
-
       setJobs((jobRows || []) as ClientJob[]);
       setLoading(false);
     }
-
     void load();
   }, [router, t]);
+
+  const visibleJobs = useMemo(() => {
+    if (range === 'all') return jobs;
+    const { start, end } = rangeBounds(range);
+    return jobs.filter((job) => {
+      const date = operationalDate(job);
+      return date && date >= start && date < end;
+    });
+  }, [jobs, range]);
 
   const groupedJobs = useMemo(() => {
     const today = localToday();
     const current: ClientJob[] = [];
     const history: ClientJob[] = [];
-
-    for (const job of jobs) {
+    for (const job of visibleJobs) {
       const date = operationalDate(job);
       if (isFinished(job) || isCancelled(job) || (date && date < today)) history.push(job);
       else current.push(job);
     }
-
     current.sort((a, b) => operationalDate(a).localeCompare(operationalDate(b)));
     history.sort((a, b) => operationalDate(b).localeCompare(operationalDate(a)));
     return { current, history };
-  }, [jobs]);
+  }, [visibleJobs]);
 
   function renderJobCard(job: ClientJob) {
     const date = jobDate(job, localeCode);
@@ -156,87 +186,62 @@ export default function ClientPortalJobsPage() {
     const location = cityState(job.address);
     const amount = formatMoney(job.revenue_amount, localeCode);
     return (
-      <article key={job.id} className="client-job-card" aria-label={job.title}>
+      <article key={job.id} className="client-job-card simplified-job-card" aria-label={job.title}>
         <div className="client-job-card-main">
-          <p className="eyebrow">{t('portal.contractor.job')}</p>
           <h3>{job.title}</h3>
-          {job.customer_name ? <p className="client-job-secondary">{job.customer_name}</p> : null}
+          <p className="client-job-secondary">{[date || c.dateNotSet, time].filter(Boolean).join(' · ')}</p>
           {location ? <p className="client-job-secondary">{location}</p> : null}
-          {job.status ? <p className="client-job-secondary">{job.status.replace(/_/g, ' ')}</p> : null}
-          {amount ? <p className="client-job-secondary"><strong>Service amount:</strong> {amount}</p> : null}
         </div>
-        {(date || time) ? (
-          <div className="client-job-schedule">
-            {date ? <strong>{date}</strong> : null}
-            {time ? <span>{time}</span> : null}
-          </div>
-        ) : null}
+        <div className="client-job-card-meta">
+          {job.status ? <span className="status-badge">{job.status.replace(/_/g, ' ')}</span> : null}
+          {amount ? <strong>{c.serviceAmount}: {amount}</strong> : null}
+        </div>
       </article>
     );
   }
 
   function renderSection(id: string, title: string, rows: ClientJob[], emptyText: string, open = false) {
     return (
-      <details id={id} className="card" style={{ marginBottom: 16 }} open={open}>
-        <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>{title}</h2>
-          <span className="muted">{rows.length}</span>
-        </summary>
-        {rows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>{emptyText}</p>
-        ) : (
-          <div className="client-job-card-list" style={{ marginTop: 12 }}>{rows.map(renderJobCard)}</div>
-        )}
+      <details id={id} className="card portal-dashboard-section" open={open}>
+        <summary><h2>{title}</h2><span>{rows.length}</span></summary>
+        {rows.length === 0 ? <p className="muted">{emptyText}</p> : <div className="client-job-card-list">{rows.map(renderJobCard)}</div>}
       </details>
     );
   }
 
-  if (loading) {
-    return (
-      <AuthenticatedSection role="client">
-        <div className="card" role="status" aria-live="polite">{t('portal.client.loadingSharedJobs')}</div>
-      </AuthenticatedSection>
-    );
-  }
+  if (loading) return <AuthenticatedSection role="client"><div className="card" role="status">{t('portal.client.loadingSharedJobs')}</div></AuthenticatedSection>;
 
   return (
-    <AuthenticatedSection role="client" className="client-portal-jobs">
-      <header style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <p className="eyebrow">{t('portal.client.portal')}</p>
-            <h2 style={{ marginBottom: 6 }}>{t('portal.client.sharedJobsTitle')}</h2>
-            <p className="muted" style={{ margin: 0 }}>{t('portal.client.sharedJobsDescription')}</p>
-          </div>
-          <ExportMenu
-            endpoint="/api/exports/portal/client/jobs"
-            locale={locale}
-            labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
-            disabled={loading || Boolean(message)}
-            onError={(err) => setExportError(err || exportCopy.exportFailed)}
-            onSuccess={() => setExportError('')}
-          />
+    <AuthenticatedSection role="client" className="client-portal-jobs role-dashboard-minimal">
+      <div className="role-dashboard-topbar">
+        <div className="role-period-filter" aria-label="Time period">
+          {(['today', 'week', 'month', 'year', 'all'] as TimeRange[]).map((item) => (
+            <button key={item} type="button" className={range === item ? 'is-active' : ''} onClick={() => setRange(item)}>{c[item]}</button>
+          ))}
         </div>
-      </header>
+        <ExportMenu
+          endpoint="/api/exports/portal/client/jobs"
+          locale={locale}
+          labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
+          disabled={loading || Boolean(message)}
+          onError={(err) => setExportError(err || exportCopy.exportFailed)}
+          onSuccess={() => setExportError('')}
+        />
+      </div>
 
-      <PortalClientNav
-        active="appointments"
-        overviewHref={CLIENT_PORTAL_HOME}
-        appointmentsHref={clientPortalJobsPath()}
-        accountHref={CLIENT_SETTINGS_PATH}
-      />
-
+      <PortalClientNav active="appointments" overviewHref={CLIENT_PORTAL_HOME} appointmentsHref={clientPortalJobsPath()} accountHref={CLIENT_SETTINGS_PATH} />
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
 
       {message ? (
-        <div className="card" role="status">
-          <h3>{t('portal.client.noSharedTitle')}</h3>
-          <p>{message}</p>
-        </div>
+        <div className="card" role="status"><h3>{t('portal.client.noSharedTitle')}</h3><p>{message}</p></div>
       ) : (
         <>
-          {renderSection('current-jobs', 'Current Jobs', groupedJobs.current, t('portal.contractor.noUpcoming'), true)}
-          {renderSection('history', 'Past Jobs', groupedJobs.history, t('portal.contractor.noCompleted'))}
+          <div className="role-summary-grid">
+            <div className="role-summary-card"><strong>{groupedJobs.current.length}</strong><span>{c.upcoming}</span></div>
+            <div className="role-summary-card"><strong>{groupedJobs.history.length}</strong><span>{c.completed}</span></div>
+          </div>
+          {renderSection('current-jobs', c.current, groupedJobs.current, c.noUpcoming, true)}
+          {renderSection('history', c.past, groupedJobs.history, c.noCompleted)}
         </>
       )}
     </AuthenticatedSection>
