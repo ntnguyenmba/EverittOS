@@ -176,6 +176,7 @@ type OpsCounts = {
   todayJobs: number;
   needsAttention: number;
   openLeads: number;
+  singleOpenLeadId: string | null;
   teamWorkingToday: number;
 };
 
@@ -189,7 +190,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, teamWorkingToday: 0 });
+  const [ops, setOps] = useState<OpsCounts>({
+    todayJobs: 0,
+    needsAttention: 0,
+    openLeads: 0,
+    singleOpenLeadId: null,
+    teamWorkingToday: 0
+  });
 
   async function loadDashboard() {
     setLoading(true);
@@ -259,7 +266,11 @@ export default function DashboardPage() {
       scheduled_start?: string | null;
       assigned_to?: string | null;
     }>;
-    const customers = (customersResult.data || []) as Array<{ record_type: string | null; pipeline_stage: string | null }>;
+    const customers = (customersResult.data || []) as Array<{
+      id: string;
+      record_type: string | null;
+      pipeline_stage: string | null;
+    }>;
 
     const activeJobs = jobs.filter((job) => !['completed', 'cancelled', 'canceled'].includes(job.status || ''));
     const todayJobs = activeJobs.filter((job) => {
@@ -271,12 +282,16 @@ export default function DashboardPage() {
       const due = (job.due_date || '').slice(0, 10);
       return !job.assigned_to || status === 'new' || (due && due < today);
     }).length;
+    const openLeadRows = customers.filter(
+      (row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
+    );
 
     setRevenue(nextRevenue);
     setOps({
       todayJobs: todayJobs.length,
       needsAttention,
-      openLeads: customers.filter((row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')).length,
+      openLeads: openLeadRows.length,
+      singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null,
       teamWorkingToday: new Set(todayJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)).size
     });
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
@@ -313,6 +328,7 @@ export default function DashboardPage() {
   const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan);
   const showFinance = ownerView && canAccessFinancials(role, plan);
   const showOperations = (ownerView || managerView) && !staffView;
+  const openLeadsHref = ops.singleOpenLeadId ? `/customers/${ops.singleOpenLeadId}` : '/customers?stage=leads';
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -334,7 +350,7 @@ export default function DashboardPage() {
               {canLink('/schedule') ? <SimpleStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
               {canViewTeam(role) && canLink('/people') ? <SimpleStat label={c.teamWorkingToday} value={ops.teamWorkingToday} href="/people" /> : null}
               {canLink('/jobs') ? <SimpleStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
-              {canLink('/leads') || canLink('/customers') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href="/customers?stage=leads" /> : null}
+              {canLink('/leads') || canLink('/customers') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href={openLeadsHref} /> : null}
             </div>
           </section>
         ) : null}
