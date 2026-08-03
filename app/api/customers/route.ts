@@ -149,7 +149,6 @@ export async function POST(request: Request) {
   const recordType = body.record_type === 'lead' ? 'lead' : 'customer';
   const pipelineStage = normalizePipelineStage(body.pipeline_stage, recordType);
 
-  // Duplicate prevention for customers created from the New Job form (and other create paths).
   if (recordType === 'customer') {
     const existing = await findReusableCustomer(ctx, {
       displayName: body.displayName,
@@ -158,11 +157,28 @@ export async function POST(request: Request) {
       address: body.address
     });
     if (existing) {
+      const existingRecord = existing as CustomerMatchCandidate & {
+        record_type?: string | null;
+        pipeline_stage?: string | null;
+      };
+
+      if (existingRecord.record_type === 'lead' || existingRecord.pipeline_stage !== 'active') {
+        const { error: conversionError } = await ctx.supabase
+          .from('customers')
+          .update({ record_type: 'customer', pipeline_stage: 'active' })
+          .eq('id', existing.id)
+          .eq('organization_id', ctx.workspace.organizationId);
+
+        if (conversionError) {
+          return NextResponse.json({ error: 'Unable to convert this lead into a customer.' }, { status: 400 });
+        }
+      }
+
       return NextResponse.json({
         ok: true,
         reused: true,
         customer: { id: existing.id },
-        message: 'Existing customer linked.'
+        message: existingRecord.record_type === 'lead' ? 'Lead converted and linked.' : 'Existing customer linked.'
       });
     }
   }
