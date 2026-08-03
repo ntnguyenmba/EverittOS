@@ -11,6 +11,10 @@ import { isPaidPlanActive } from '@/lib/workspace-subscription';
 
 export const runtime = 'nodejs';
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function refreshSubscription(request: Request) {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
@@ -73,12 +77,28 @@ async function refreshSubscription(request: Request) {
     workspaceId
   });
 
-  const result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
+  let result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
     userId: user.id,
     email,
     workspaceId,
     sessionId: sessionId || null
   });
+
+  // Stripe can return the browser to EverittOS a moment before the new
+  // subscription is available through all retrieval paths. Retry here on the
+  // server so the UI does not depend on a client-side retry surviving a URL change.
+  if (!result.synced && result.reason === 'no_stripe_subscription' && sessionId) {
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      await wait(1000);
+      result = await syncActiveStripeSubscriptionForUser(admin, stripe, {
+        userId: user.id,
+        email,
+        workspaceId,
+        sessionId
+      });
+      if (result.synced || result.reason !== 'no_stripe_subscription') break;
+    }
+  }
 
   if (!result.synced && result.reason === 'no_stripe_subscription') {
     logBillingActivation('CHECKOUT_RETURN_SYNC_FAILED', {
