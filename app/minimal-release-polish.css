@@ -166,6 +166,76 @@ details[open] > summary {
   gap: 8px;
 }
 
+/* Dashboard: show the essential numbers without oversized cards or long gaps. */
+.today-page.dashboard-home {
+  display: grid;
+  gap: 16px;
+}
+
+.today-page.dashboard-home > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-revenue-grid {
+  gap: 10px !important;
+}
+
+.dashboard-revenue-metric {
+  min-height: 96px !important;
+  padding: 14px !important;
+  border-radius: 12px !important;
+}
+
+.dashboard-revenue-metric-label {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+.dashboard-revenue-metric-value {
+  font-size: clamp(26px, 4vw, 38px) !important;
+  line-height: 1 !important;
+}
+
+.dashboard-home .inline-actions {
+  margin-top: 0 !important;
+}
+
+/* Forms: less dead space, same fields and behavior. */
+form,
+.form-stack,
+.form-section,
+.field-group,
+.fields-grid {
+  gap: 14px;
+}
+
+.form-section + .form-section,
+.card + .card,
+.panel + .panel,
+.record-card + .record-card {
+  margin-top: 14px;
+}
+
+label {
+  line-height: 1.3;
+}
+
+/* Record and job screens: keep summary and actions close together. */
+.job-header,
+.job-summary,
+.record-summary,
+.customer-summary,
+.contractor-summary {
+  gap: 12px;
+}
+
+.job-actions,
+.record-actions,
+.mobile-job-actions {
+  gap: 8px;
+}
+
 /* Mobile: one clear column, compact page chrome, full-width primary actions. */
 @media (max-width: 720px) {
   :root {
@@ -203,6 +273,15 @@ details[open] > summary {
   .two-column,
   .three-column {
     grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-revenue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-revenue-metric {
+    min-height: 88px !important;
+    padding: 12px !important;
   }
 
   .actions,
@@ -256,6 +335,23 @@ details[open] > summary {
   td,
   th {
     font-size: 16px;
+  }
+
+  .page-header p,
+  .section-header p,
+  .card-header p,
+  .panel-header p,
+  .dashboard-header p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-revenue-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
