@@ -23,10 +23,16 @@ export type BillingActivationWrites = {
 
 export function summarizeWrites(writes: BillingWriteResult[]): BillingActivationWrites {
   const failed = writes.filter((write) => !write.ok);
+  if (failed.length > 0) {
+    const details = failed
+      .map((write) => `${write.table}:${write.target}:${write.error || 'write failed'}`)
+      .join('; ');
+    throw new Error(`Billing activation failed: ${details}`);
+  }
+
   return {
-    ok: failed.length === 0,
-    writes,
-    error: failed[0]?.error
+    ok: true,
+    writes
   };
 }
 
