@@ -1,0 +1,277 @@
+/* UI-only release polish: reduce scrolling, improve scanability, and keep existing behavior intact. */
+
+:root {
+  --release-page-gap: clamp(14px, 2vw, 22px);
+  --release-card-pad: clamp(14px, 2vw, 20px);
+  --release-control-height: 46px;
+  --release-reading-width: 72rem;
+}
+
+/* Keep primary app content compact, centered, and easy to scan. */
+main,
+.app-main,
+.app-content,
+.dashboard-main,
+.portal-main {
+  scroll-margin-top: 72px;
+}
+
+.page,
+.page-shell,
+.page-content,
+.app-page,
+.dashboard-page,
+.portal-page,
+.settings-page {
+  gap: var(--release-page-gap);
+}
+
+/* Reduce tall empty areas while keeping comfortable touch spacing. */
+.panel,
+.card,
+.stat,
+.metric-card,
+.dashboard-card,
+.summary-card,
+.form-card,
+.settings-card,
+.record-card {
+  padding: var(--release-card-pad);
+}
+
+.panel > :first-child,
+.card > :first-child,
+.stat > :first-child,
+.metric-card > :first-child,
+.dashboard-card > :first-child,
+.summary-card > :first-child,
+.form-card > :first-child,
+.settings-card > :first-child,
+.record-card > :first-child {
+  margin-top: 0;
+}
+
+.panel > :last-child,
+.card > :last-child,
+.stat > :last-child,
+.metric-card > :last-child,
+.dashboard-card > :last-child,
+.summary-card > :last-child,
+.form-card > :last-child,
+.settings-card > :last-child,
+.record-card > :last-child {
+  margin-bottom: 0;
+}
+
+/* Make grids denser on wide screens without squeezing mobile. */
+.stats-grid,
+.metrics-grid,
+.dashboard-grid,
+.summary-grid,
+.card-grid,
+.quick-actions-grid {
+  gap: 12px;
+}
+
+/* Keep headings clear without spending excessive vertical space. */
+h1 {
+  margin-bottom: 8px;
+  line-height: 1.14;
+}
+
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+}
+
+.page-header,
+.section-header,
+.card-header,
+.panel-header,
+.dashboard-header {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.page-header p,
+.section-header p,
+.card-header p,
+.panel-header p,
+.dashboard-header p,
+.helper-text,
+.form-help,
+.description,
+.subtitle {
+  margin-top: 4px;
+  margin-bottom: 0;
+  max-width: 68ch;
+}
+
+/* Controls stay readable and finger-friendly, but not oversized. */
+.btn,
+button,
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.btn,
+button:not(.icon-button):not(.action-feedback-dismiss) {
+  min-height: var(--release-control-height);
+}
+
+input:not([type='checkbox']):not([type='radio']),
+select {
+  min-height: var(--release-control-height);
+}
+
+textarea {
+  min-height: 96px;
+}
+
+/* Collapse native details sections into clean one-line summaries. */
+details {
+  border-radius: 12px;
+}
+
+details > summary {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+details[open] > summary {
+  margin-bottom: 12px;
+}
+
+/* Keep tables usable without making the whole page wider than the phone. */
+.table-wrap,
+.table-container,
+.data-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent long action rows from creating tall wrapping blocks. */
+.actions,
+.page-actions,
+.card-actions,
+.form-actions,
+.toolbar-actions,
+.header-actions {
+  gap: 8px;
+}
+
+/* Mobile: one clear column, compact page chrome, full-width primary actions. */
+@media (max-width: 720px) {
+  :root {
+    --release-page-gap: 14px;
+    --release-card-pad: 14px;
+  }
+
+  body {
+    line-height: 1.5;
+  }
+
+  .container,
+  .app-container,
+  .page-container,
+  .dashboard-container,
+  .portal-container {
+    width: min(100%, calc(100% - 24px));
+  }
+
+  .page-header,
+  .section-header,
+  .dashboard-header,
+  .card-header,
+  .panel-header {
+    align-items: flex-start;
+  }
+
+  .stats-grid,
+  .metrics-grid,
+  .dashboard-grid,
+  .summary-grid,
+  .card-grid,
+  .quick-actions-grid,
+  .form-grid,
+  .two-column,
+  .three-column {
+    grid-template-columns: 1fr !important;
+  }
+
+  .actions,
+  .page-actions,
+  .form-actions,
+  .toolbar-actions,
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .actions > .btn-primary,
+  .page-actions > .btn-primary,
+  .form-actions > .btn-primary,
+  .header-actions > .btn-primary,
+  .actions > button[type='submit'],
+  .form-actions > button[type='submit'] {
+    width: 100%;
+  }
+
+  .panel,
+  .card,
+  .stat,
+  .metric-card,
+  .dashboard-card,
+  .summary-card,
+  .form-card,
+  .settings-card,
+  .record-card {
+    border-radius: 12px;
+  }
+
+  .hero,
+  .app-hero,
+  .page-hero {
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  h2 {
+    font-size: clamp(20px, 6vw, 25px);
+  }
+
+  p,
+  li,
+  label,
+  td,
+  th {
+    font-size: 16px;
+  }
+}
+
+/* High-contrast dark surfaces must always keep readable text. */
+.btn-primary,
+.dark-card,
+.dark-panel,
+[data-theme='dark'],
+[data-surface='dark'] {
+  color: var(--text-on-dark, #f7f6f3);
+}
+
+.btn-primary *,
+.dark-card *,
+.dark-panel *,
+[data-theme='dark'] *,
+[data-surface='dark'] * {
+  color: inherit;
+}
