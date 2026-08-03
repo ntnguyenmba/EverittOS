@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import styles from './job-form-simplify.module.css';
 
 type MembershipResponse = {
   activeRole?: string | null;
@@ -64,9 +65,11 @@ export default function NewJobPage() {
   return (
     <AppShell plan={plan} role={role}>
       <PageHeader title="New job" />
-      <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
-        <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
-      </Suspense>
+      <div className={styles.formWrap}>
+        <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
+          <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
+        </Suspense>
+      </div>
     </AppShell>
   );
 }
