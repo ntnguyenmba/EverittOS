@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -64,15 +63,7 @@ export default function NewJobPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader
-        title="New job"
-        subtitle="Create a job, assign the right people, then add photos and proof as the work happens."
-        action={
-          <Link className="btn" href="/jobs">
-            Back to jobs
-          </Link>
-        }
-      />
+      <PageHeader title="New job" />
       <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
         <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
       </Suspense>
