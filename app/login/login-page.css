@@ -4,18 +4,19 @@
 }
 
 .auth-tech-page {
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 
 .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-  width: min(500px, calc(100vw - 32px));
+  width: min(460px, calc(100vw - 32px));
   max-width: 100%;
-  margin: clamp(20px, 4vh, 40px) auto;
-  padding: clamp(24px, 3vw, 32px);
+  margin: clamp(12px, 2.5vh, 24px) auto;
+  padding: clamp(18px, 2.4vw, 24px);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border-radius: 22px;
+  border-radius: 18px;
   overflow: hidden;
 }
 
@@ -27,45 +28,50 @@
 
 .login-origin-story {
   order: -1;
-  padding: 0 0 20px;
-  margin-bottom: 20px;
+  padding: 0 0 14px;
+  margin-bottom: 14px;
   border-bottom: 1px solid #d5dee5;
 }
 
 .login-origin-story h2 {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   color: #132433;
-  font-size: clamp(32px, 5vw, 42px);
+  font-size: clamp(26px, 4vw, 34px);
   font-weight: 800;
-  line-height: 1.04;
-  letter-spacing: -0.05em;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
   overflow-wrap: anywhere;
 }
 
 .login-origin-story p {
-  margin: 0 0 12px;
+  margin: 0;
   color: #40586a;
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 14px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.login-origin-actions {
-  display: flex;
-  align-items: center;
-  margin-top: 18px;
+.login-origin-story p + p {
+  margin-top: 4px;
 }
 
-.login-origin-actions .btn {
-  width: auto;
-  min-width: 132px;
-  min-height: 48px;
-  padding-inline: 20px;
+.login-origin-actions {
+  display: none;
 }
 
 .auth-tech-card:has(.login-origin-story) .auth-card-heading {
-  padding-bottom: 18px;
-  margin-bottom: 18px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.auth-tech-card:has(.login-origin-story) .auth-card-heading h1 {
+  font-size: clamp(24px, 4vw, 30px);
+}
+
+.auth-tech-card:has(.login-origin-story) .auth-methods-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .auth-tech-card:has(.login-origin-story) .auth-form,
@@ -84,12 +90,39 @@
   width: 100%;
 }
 
+.auth-tech-card:has(.login-origin-story) .auth-form {
+  gap: 12px;
+  padding: 14px;
+  margin: 0;
+}
+
+.auth-tech-card:has(.login-origin-story) .auth-field,
+.auth-tech-card:has(.login-origin-story) .password-field {
+  gap: 5px;
+}
+
+.auth-tech-card:has(.login-origin-story) .input,
+.auth-tech-card:has(.login-origin-story) .btn {
+  min-height: 44px;
+}
+
+.auth-tech-card:has(.login-origin-story) .auth-links {
+  margin-top: 10px;
+  gap: 14px;
+}
+
+.auth-tech-card:has(.login-origin-story) .auth-legal-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 @media (max-width: 760px) {
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    width: min(500px, calc(100vw - 24px));
-    margin: 16px auto 18px;
-    padding: 24px 20px;
-    border-radius: 20px;
+    width: min(460px, calc(100vw - 20px));
+    margin: 8px auto 12px;
+    padding: 16px;
+    border-radius: 16px;
   }
 
   .login-origin-story,
@@ -101,25 +134,27 @@
   }
 
   .login-origin-story {
-    padding-bottom: 17px;
-    margin-bottom: 17px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
   }
 
   .login-origin-story h2 {
-    font-size: 34px;
+    margin-bottom: 5px;
+    font-size: clamp(24px, 8vw, 29px);
   }
 
   .login-origin-story p {
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.4;
   }
 
-  .login-origin-actions {
-    justify-content: center;
+  .login-origin-story p + p {
+    display: none;
   }
 
   .auth-tech-card:has(.login-origin-story) .auth-card-heading {
-    padding-bottom: 16px;
-    margin-bottom: 16px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
 
   .auth-tech-card:has(.login-origin-story) .auth-form,
@@ -133,60 +168,46 @@
 
 @media (max-width: 520px) {
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    width: calc(100vw - 20px);
-    margin: 10px auto 18px;
-    padding: 22px 18px;
-    border-radius: 18px;
+    width: calc(100vw - 16px);
+    margin: 6px auto 10px;
+    padding: 14px;
+    border-radius: 15px;
+  }
+
+  .auth-tech-card:has(.login-origin-story) .auth-form {
+    padding: 12px;
+  }
+
+  .auth-tech-card:has(.login-origin-story) .auth-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-height: 740px) {
+  .auth-tech-page .auth-tech-card:has(.login-origin-story) {
+    margin-top: 4px;
+    margin-bottom: 6px;
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
 
   .login-origin-story {
-    padding-bottom: 14px;
-    margin-bottom: 14px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
 
-  .login-origin-story h2 {
-    font-size: 31px;
-  }
-
-  .login-origin-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    margin-top: 14px;
-  }
-
-  .login-origin-actions .btn {
-    width: 100%;
-  }
-
-  .auth-tech-card:has(.login-origin-story) .auth-card-heading {
-    padding-bottom: 14px;
-    margin-bottom: 14px;
-  }
-}
-
-@media (max-width: 380px) {
-  .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    width: calc(100vw - 16px);
-    padding: 20px 16px;
-  }
-
-  .login-origin-story h2 {
-    font-size: 28px;
-  }
-}
-
-@media (max-height: 720px) and (min-width: 761px) {
-  .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    margin: 16px auto;
-    padding-block: 22px;
+  .auth-tech-card:has(.login-origin-story) .auth-methods-note {
+    display: none;
   }
 }
 
 @supports (padding: max(0px)) {
   @media (max-width: 760px) {
     .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-      margin-left: max(10px, env(safe-area-inset-left));
-      margin-right: max(10px, env(safe-area-inset-right));
+      margin-left: max(8px, env(safe-area-inset-left));
+      margin-right: max(8px, env(safe-area-inset-right));
       width: auto;
     }
   }
