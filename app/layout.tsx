@@ -60,6 +60,7 @@ import './final-language-layout-polish.css';
 import './sidebar-plan-card-polish.css';
 import './navigation-visibility-guard.css';
 import './minimal-release-polish.css';
+import './role-dashboard-v1.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
