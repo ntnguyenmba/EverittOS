@@ -107,7 +107,7 @@ export async function writeBillingOrganizationPlan(
     .select('id');
 
   const counted = await countUpdatedRows(data, error);
-  const result: BillingWriteResult = {
+  let result: BillingWriteResult = {
     table: 'organizations',
     operation: 'update',
     target: input.organizationId,
@@ -118,10 +118,39 @@ export async function writeBillingOrganizationPlan(
   };
 
   if (result.ok) {
+    const now = new Date().toISOString();
+    const { data: entitlementRows, error: entitlementError } = await admin
+      .from('account_entitlements')
+      .upsert(
+        {
+          organization_id: input.organizationId,
+          plan: input.plan,
+          source: 'stripe',
+          status: 'active',
+          expires_at: null,
+          billing_subscription_id: null,
+          last_resolved_at: now,
+          updated_at: now
+        },
+        { onConflict: 'organization_id' }
+      )
+      .select('id');
+
+    if (entitlementError || !entitlementRows || entitlementRows.length !== 1) {
+      result = {
+        ...result,
+        ok: false,
+        error: entitlementError?.message || 'Shared entitlement row was not saved'
+      };
+    }
+  }
+
+  if (result.ok) {
     logBillingPipeline('workspace_updated', {
       organizationId: input.organizationId,
       plan: input.plan,
       rowsAffected: result.rowsAffected,
+      entitlementSource: 'stripe',
       ...input.context
     });
   } else {
