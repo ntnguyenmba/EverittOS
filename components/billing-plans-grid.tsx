@@ -44,9 +44,14 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
   const normalizedCurrent = normalizePlan(currentPlan);
   const isFreeUser = normalizedCurrent === 'free';
   const billingVisibility = resolveBillingVisibility();
+  const visiblePlans = billingVisibility.allowNativeStorePurchase
+    ? BILLING_PLANS.filter((tier) => tier.id === 'free' || tier.id === 'pro' || tier.id === 'business')
+    : BILLING_PLANS;
   const [checkoutAvailableByPlan, setCheckoutAvailableByPlan] = useState<Partial<Record<PaidPlanKey, boolean>>>({});
 
   useEffect(() => {
+    if (!billingVisibility.allowCheckout) return;
+
     let cancelled = false;
     async function loadCapabilities() {
       const res = await fetch('/api/stripe/capabilities', { cache: 'no-store' });
@@ -58,13 +63,13 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
     }
     void loadCapabilities();
     return () => { cancelled = true; };
-  }, []);
+  }, [billingVisibility.allowCheckout]);
 
   return (
     <section className="billing-plans-grid-wrap" style={shellStyle}>
       <div style={introStyle}><p style={noteStyle}>{t('billing.planChangeIntro')}</p></div>
       <div className="billing-plans-grid" style={gridStyle}>
-        {BILLING_PLANS.map((tier) => {
+        {visiblePlans.map((tier) => {
           const ui = resolveBillingPlanCardUi({ currentPlan: normalizedCurrent, targetPlan: tier.id, hasActiveSubscription: isFreeUser ? false : hasActiveSubscription, portalAvailable, checkoutAvailableByPlan });
           const isCurrent = ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
@@ -76,7 +81,6 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
                 <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.25 }}>{tier.name}</h3>
                 {billingVisibility.showUpgradePrices && !billingVisibility.allowNativeStorePurchase ? <p className="pricing-plan-price" style={priceStyle}>{tier.priceLabel}</p> : null}
                 {billingVisibility.allowNativeStorePurchase && (tier.id === 'pro' || tier.id === 'business') ? <p className="pricing-plan-price" style={priceStyle}>Store price shown at purchase</p> : null}
-                {billingVisibility.allowNativeStorePurchase && tier.id !== 'pro' && tier.id !== 'business' && tier.id !== 'free' ? <p className="pricing-plan-price" style={{ ...priceStyle, fontSize: 14 }}>Available on web (Stripe)</p> : null}
                 <p className="billing-plan-headline" style={headlineStyle}>{tier.headline}</p>
                 <ul className="billing-plan-features" style={featuresStyle}>{tier.features.slice(0, 5).map((feature) => <li key={feature} style={{ margin: 0, overflowWrap: 'anywhere' }}>{feature}</li>)}</ul>
                 <div className="billing-plan-limits" aria-label={`${tier.name} plan limits`} style={limitsStyle}>{tier.limits.map((limit) => <span key={limit} style={limitStyle}>{limit}</span>)}</div>
@@ -86,7 +90,6 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
                 {ui.kind === 'checkout' && billingVisibility.allowCheckout ? <PlanCheckoutButton plan={ui.plan} label={ui.label} requireRefundAck={false} disabled={!ui.checkoutAvailable} className="btn btn-primary btn-block" /> : null}
                 {ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase && (ui.plan === 'pro' || ui.plan === 'business') ? <NativeStoreSubscribeButton plan={ui.plan} label={ui.label} onSuccess={() => onNativePurchaseSuccess?.()} /> : null}
                 {ui.kind === 'checkout' && !billingVisibility.allowCheckout && !billingVisibility.allowNativeStorePurchase ? <p className="billing-plan-current-label" style={currentStyle}>{nativeBillingNotice(locale)}</p> : null}
-                {ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase && ui.plan !== 'pro' && ui.plan !== 'business' ? <p className="billing-plan-current-label" style={currentStyle}>This plan is available on the web with Stripe.</p> : null}
                 {ui.kind === 'unavailable' ? <p className="billing-plan-current-label" style={currentStyle}>{ui.label}</p> : null}
                 {ui.kind === 'portal' && onOpenPortal && billingVisibility.allowPortal ? <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>{portalLoading ? t('billing.openingPortal') : ui.label}</button> : null}
                 {ui.kind === 'downgrade_contact' ? <a className="btn btn-block" href={ui.href}>{ui.label}</a> : null}
