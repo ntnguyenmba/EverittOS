@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import logo from '../9CE8852C-46D4-4C5F-8173-13B7132006EC.png';
 
 type BrandLogoProps = {
   href?: string;
@@ -12,7 +13,7 @@ export function BrandLogo({ href = '/', showName = false, size = 36, className =
   const content = (
     <>
       <Image
-        src="/9CE8852C-46D4-4C5F-8173-13B7132006EC.png"
+        src={logo}
         alt="EverittOS"
         width={size}
         height={size}
