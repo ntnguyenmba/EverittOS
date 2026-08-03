@@ -59,6 +59,7 @@ import './final-compact-controls-polish.css';
 import './final-language-layout-polish.css';
 import './sidebar-plan-card-polish.css';
 import './navigation-visibility-guard.css';
+import './minimal-release-polish.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
