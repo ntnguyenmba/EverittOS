@@ -129,6 +129,29 @@
   text-align: right;
 }
 
+/* Owner: no greeting, no vague attention or working cards. */
+.dashboard-home > .page-header {
+  display: none !important;
+}
+
+.dashboard-operations .dashboard-revenue-grid > :nth-child(2),
+.dashboard-operations .dashboard-revenue-grid > :nth-child(3) {
+  display: none !important;
+}
+
+.dashboard-operations .dashboard-revenue-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.dashboard-home .dashboard-revenue-metric {
+  min-height: 100px !important;
+}
+
+.dashboard-home .dashboard-revenue-metric > .muted {
+  display: none !important;
+}
+
+/* Contractor: keep every existing flow but reduce visual weight. */
 .contractor-dashboard .contractor-job-card {
   box-shadow: none;
 }
@@ -150,6 +173,18 @@
 
 .contractor-dashboard .contractor-dash-nav::-webkit-scrollbar {
   display: none;
+}
+
+.contractor-dashboard > details.card,
+.contractor-dashboard > section.card {
+  margin-bottom: 12px !important;
+  padding: 14px !important;
+}
+
+.contractor-dashboard .contractor-job-card dl {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
 }
 
 @media (max-width: 720px) {
@@ -179,10 +214,19 @@
     align-items: flex-start;
     text-align: left;
   }
+
+  .dashboard-operations .dashboard-revenue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .contractor-dashboard .contractor-job-card dl {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 390px) {
-  .role-summary-grid {
-    grid-template-columns: 1fr;
+  .role-summary-grid,
+  .dashboard-operations .dashboard-revenue-grid {
+    grid-template-columns: 1fr !important;
   }
 }
