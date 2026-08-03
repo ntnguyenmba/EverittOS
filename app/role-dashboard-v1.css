@@ -1,0 +1,188 @@
+.role-dashboard-minimal {
+  display: grid;
+  gap: 14px;
+}
+
+.role-dashboard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.role-period-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(37, 54, 74, 0.16);
+  border-radius: 12px;
+  background: #f5f7f8;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.role-period-filter button {
+  min-height: 38px !important;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #536577;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.role-period-filter button.is-active {
+  background: #243f53;
+  color: #fff;
+}
+
+.role-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.role-summary-card {
+  min-height: 108px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(37, 54, 74, 0.17);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(37, 54, 74, 0.06);
+}
+
+.role-summary-card strong {
+  color: #243f53;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.role-summary-card span {
+  color: #5f7186;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.portal-dashboard-section {
+  margin: 0 !important;
+  padding: 14px !important;
+}
+
+.portal-dashboard-section > summary {
+  min-height: 42px;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-dashboard-section > summary h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.portal-dashboard-section > summary span {
+  color: #5f7186;
+  font-weight: 700;
+}
+
+.client-job-card-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.simplified-job-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(37, 54, 74, 0.14);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.simplified-job-card h3 {
+  margin: 0 0 6px;
+  color: #243f53;
+  font-size: 17px;
+}
+
+.client-job-secondary {
+  margin: 3px 0 0;
+  color: #5f7186;
+  font-size: 14px;
+}
+
+.client-job-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+
+.contractor-dashboard .contractor-job-card {
+  box-shadow: none;
+}
+
+.contractor-dashboard .contractor-job-card > button {
+  padding: 14px !important;
+}
+
+.contractor-dashboard .contractor-dash-header h1 {
+  display: none;
+}
+
+.contractor-dashboard .contractor-dash-nav {
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+
+.contractor-dashboard .contractor-dash-nav::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .role-dashboard-topbar {
+    align-items: stretch;
+  }
+
+  .role-period-filter {
+    width: 100%;
+  }
+
+  .role-period-filter button {
+    flex: 1 0 auto;
+  }
+
+  .role-summary-card {
+    min-height: 94px;
+    padding: 13px;
+  }
+
+  .simplified-job-card {
+    flex-direction: column;
+  }
+
+  .client-job-card-meta {
+    width: 100%;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .role-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
