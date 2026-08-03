@@ -73,15 +73,6 @@ function stripeStatusToStore(status: string): SubscriptionStatus {
   }
 }
 
-/**
- * Resolve the effective plan for an organization from verified billing records.
- *
- * Precedence:
- * 1. Ignore revoked / refunded / expired / invalid rows
- * 2. Keep active, trialing, grace_period, and cancelled-but-unexpired access
- * 3. When multiple valid entitlements exist, choose the highest plan
- * 4. Fall back to Free
- */
 export async function resolveOrganizationEntitlement(
   admin: AdminClient,
   organizationId: string
@@ -90,12 +81,12 @@ export async function resolveOrganizationEntitlement(
 
   const candidates: Candidate[] = [];
 
-  const { data: storeRows } = await admin
+  const { data: storeRows, error: storeError } = await admin
     .from('billing_subscriptions')
-    .select(
-      'id, platform, plan, status, expires_at, organization_id, revoked_at'
-    )
+    .select('id, platform, plan, status, expires_at, organization_id, revoked_at')
     .eq('organization_id', organizationId);
+
+  if (storeError) throw new Error(`Unable to read store subscriptions: ${storeError.message}`);
 
   for (const row of storeRows || []) {
     const plan = normalizePlan(row.plan);
@@ -112,29 +103,28 @@ export async function resolveOrganizationEntitlement(
       });
       continue;
     }
-    const grantsAccess = statusGrantsAccess(status, row.expires_at);
     candidates.push({
       plan,
       source: (row.platform as EntitlementSource) || 'manual',
       status,
       expiresAt: row.expires_at || null,
       billingSubscriptionId: row.id,
-      grantsAccess
+      grantsAccess: statusGrantsAccess(status, row.expires_at)
     });
   }
 
-  const { data: stripeRows } = await admin
+  const { data: stripeRows, error: stripeError } = await admin
     .from('everittos_subscriptions')
     .select('id, plan, status, current_period_end, organization_id')
     .eq('organization_id', organizationId);
+
+  if (stripeError) throw new Error(`Unable to read Stripe subscriptions: ${stripeError.message}`);
 
   for (const row of stripeRows || []) {
     const plan = normalizePlan(row.plan);
     if (plan === 'free') continue;
     const status = stripeStatusToStore(String(row.status || ''));
-    const expiresAt = row.current_period_end
-      ? new Date(row.current_period_end).toISOString()
-      : null;
+    const expiresAt = row.current_period_end ? new Date(row.current_period_end).toISOString() : null;
     candidates.push({
       plan,
       source: 'stripe',
@@ -145,13 +135,14 @@ export async function resolveOrganizationEntitlement(
     });
   }
 
-  // Manual promotional override on organizations.plan with account_entitlements source=manual
-  const { data: manualEntitlement } = await admin
+  const { data: manualEntitlement, error: manualError } = await admin
     .from('account_entitlements')
     .select('plan, source, status, expires_at, billing_subscription_id')
     .eq('organization_id', organizationId)
     .eq('source', 'manual')
     .maybeSingle();
+
+  if (manualError) throw new Error(`Unable to read manual entitlement: ${manualError.message}`);
 
   if (manualEntitlement) {
     const plan = normalizePlan(manualEntitlement.plan);
@@ -166,42 +157,41 @@ export async function resolveOrganizationEntitlement(
     });
   }
 
-  const valid = candidates.filter((c) => c.grantsAccess && c.plan !== 'free');
-  const sources = candidates.map((c) => ({
-    platform: c.source,
-    plan: c.plan,
-    status: c.status,
-    expiresAt: c.expiresAt
+  const valid = candidates.filter((candidate) => candidate.grantsAccess && candidate.plan !== 'free');
+  const sources = candidates.map((candidate) => ({
+    platform: candidate.source,
+    plan: candidate.plan,
+    status: candidate.status,
+    expiresAt: candidate.expiresAt
   }));
 
+  let resolved: OrganizationEntitlement;
+
   if (!valid.length) {
-    const resolved = freeEntitlement();
+    resolved = freeEntitlement();
     resolved.sources = sources;
-    await persistEntitlementCache(admin, organizationId, resolved);
-    return resolved;
+  } else {
+    valid.sort((a, b) => {
+      const planDiff = planRank(b.plan) - planRank(a.plan);
+      if (planDiff !== 0) return planDiff;
+      const aExp = a.expiresAt ? Date.parse(a.expiresAt) : Number.POSITIVE_INFINITY;
+      const bExp = b.expiresAt ? Date.parse(b.expiresAt) : Number.POSITIVE_INFINITY;
+      return bExp - aExp;
+    });
+
+    const winner = valid[0];
+    resolved = {
+      plan: winner.plan,
+      source: winner.source,
+      status: winner.status,
+      expiresAt: winner.expiresAt,
+      billingSubscriptionId: winner.billingSubscriptionId,
+      sources
+    };
   }
-
-  valid.sort((a, b) => {
-    const planDiff = planRank(b.plan) - planRank(a.plan);
-    if (planDiff !== 0) return planDiff;
-    const aExp = a.expiresAt ? Date.parse(a.expiresAt) : Number.POSITIVE_INFINITY;
-    const bExp = b.expiresAt ? Date.parse(b.expiresAt) : Number.POSITIVE_INFINITY;
-    return bExp - aExp;
-  });
-
-  const winner = valid[0];
-  const resolved: OrganizationEntitlement = {
-    plan: winner.plan,
-    source: winner.source,
-    status: winner.status,
-    expiresAt: winner.expiresAt,
-    billingSubscriptionId: winner.billingSubscriptionId,
-    sources
-  };
 
   await persistEntitlementCache(admin, organizationId, resolved);
   await mirrorPlanToOrgAndOwner(admin, organizationId, resolved);
-
   return resolved;
 }
 
@@ -211,7 +201,7 @@ async function persistEntitlementCache(
   entitlement: OrganizationEntitlement
 ): Promise<void> {
   const now = new Date().toISOString();
-  await admin.from('account_entitlements').upsert(
+  const { error } = await admin.from('account_entitlements').upsert(
     {
       organization_id: organizationId,
       plan: entitlement.plan,
@@ -224,9 +214,10 @@ async function persistEntitlementCache(
     },
     { onConflict: 'organization_id' }
   );
+
+  if (error) throw new Error(`Unable to save entitlement cache: ${error.message}`);
 }
 
-/** Keep organizations.plan and owner profile in sync with resolved entitlement. */
 async function mirrorPlanToOrgAndOwner(
   admin: AdminClient,
   organizationId: string,
@@ -237,35 +228,44 @@ async function mirrorPlanToOrgAndOwner(
       ? 'free'
       : entitlement.status === 'cancelled'
         ? 'canceled'
-        : entitlement.status === 'billing_retry'
+        : entitlement.status === 'billing_retry' || entitlement.status === 'grace_period'
           ? 'past_due'
-          : entitlement.status === 'grace_period'
-            ? 'past_due'
-            : entitlement.status === 'active' || entitlement.status === 'trialing'
-              ? entitlement.status
-              : entitlement.status === 'expired' || entitlement.status === 'revoked'
-                ? 'inactive'
-                : 'active';
+          : entitlement.status === 'active' || entitlement.status === 'trialing'
+            ? entitlement.status
+            : entitlement.status === 'expired' || entitlement.status === 'revoked'
+              ? 'inactive'
+              : 'active';
 
-  await admin
+  const { data: updatedOrganizations, error: organizationError } = await admin
     .from('organizations')
     .update({ plan: entitlement.plan })
-    .eq('id', organizationId);
-
-  const { data: org } = await admin
-    .from('organizations')
-    .select('owner_user_id')
     .eq('id', organizationId)
-    .maybeSingle();
+    .select('id, owner_user_id');
 
-  if (org?.owner_user_id) {
-    await admin
-      .from('profiles')
-      .update({
-        plan: entitlement.plan,
-        subscription_status: subscriptionStatus
-      })
-      .eq('id', org.owner_user_id);
+  if (organizationError) {
+    throw new Error(`Unable to update organization plan: ${organizationError.message}`);
+  }
+  if (!updatedOrganizations || updatedOrganizations.length !== 1) {
+    throw new Error(`Unable to update organization plan: organization ${organizationId} was not found.`);
+  }
+
+  const ownerUserId = updatedOrganizations[0].owner_user_id;
+  if (!ownerUserId) {
+    throw new Error(`Unable to update owner plan: organization ${organizationId} has no owner.`);
+  }
+
+  const { data: updatedProfiles, error: profileError } = await admin
+    .from('profiles')
+    .update({
+      plan: entitlement.plan,
+      subscription_status: subscriptionStatus
+    })
+    .eq('id', ownerUserId)
+    .select('id');
+
+  if (profileError) throw new Error(`Unable to update owner plan: ${profileError.message}`);
+  if (!updatedProfiles || updatedProfiles.length !== 1) {
+    throw new Error(`Unable to update owner plan: profile ${ownerUserId} was not found.`);
   }
 }
 
