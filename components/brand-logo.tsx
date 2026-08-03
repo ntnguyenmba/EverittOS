@@ -12,7 +12,7 @@ export function BrandLogo({ href = '/', showName = false, size = 36, className =
   const content = (
     <>
       <Image
-        src="/logo.jpg"
+        src="/9CE8852C-46D4-4C5F-8173-13B7132006EC.png"
         alt="EverittOS"
         width={size}
         height={size}
