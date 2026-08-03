@@ -7,7 +7,6 @@
   --release-reading-width: 72rem;
 }
 
-/* Keep primary app content compact, centered, and easy to scan. */
 main,
 .app-main,
 .app-content,
@@ -26,7 +25,6 @@ main,
   gap: var(--release-page-gap);
 }
 
-/* Reduce tall empty areas while keeping comfortable touch spacing. */
 .panel,
 .card,
 .stat,
@@ -63,7 +61,6 @@ main,
   margin-bottom: 0;
 }
 
-/* Make grids denser on wide screens without squeezing mobile. */
 .stats-grid,
 .metrics-grid,
 .dashboard-grid,
@@ -73,7 +70,6 @@ main,
   gap: 12px;
 }
 
-/* Keep headings clear without spending excessive vertical space. */
 h1 {
   margin-bottom: 8px;
   line-height: 1.14;
@@ -108,7 +104,6 @@ h4 {
   max-width: 68ch;
 }
 
-/* Controls stay readable and finger-friendly, but not oversized. */
 .btn,
 button,
 input,
@@ -131,7 +126,6 @@ textarea {
   min-height: 96px;
 }
 
-/* Collapse native details sections into clean one-line summaries. */
 details {
   border-radius: 12px;
 }
@@ -148,7 +142,6 @@ details[open] > summary {
   margin-bottom: 12px;
 }
 
-/* Keep tables usable without making the whole page wider than the phone. */
 .table-wrap,
 .table-container,
 .data-table-wrap {
@@ -156,7 +149,6 @@ details[open] > summary {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent long action rows from creating tall wrapping blocks. */
 .actions,
 .page-actions,
 .card-actions,
@@ -166,7 +158,6 @@ details[open] > summary {
   gap: 8px;
 }
 
-/* Dashboard: show the essential numbers without oversized cards or long gaps. */
 .today-page.dashboard-home {
   display: grid;
   gap: 16px;
@@ -178,30 +169,58 @@ details[open] > summary {
 }
 
 .dashboard-revenue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
 .dashboard-revenue-metric {
-  min-height: 96px !important;
-  padding: 14px !important;
+  min-width: 0 !important;
+  min-height: 106px !important;
+  padding: 15px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  border: 1px solid rgba(37, 54, 74, 0.2) !important;
   border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #25364a !important;
+  box-shadow: 0 4px 14px rgba(37, 54, 74, 0.07) !important;
+  text-decoration: none !important;
+}
+
+.dashboard-revenue-metric:hover {
+  border-color: rgba(37, 54, 74, 0.38) !important;
+  background: #f7f9fb !important;
 }
 
 .dashboard-revenue-metric-label {
+  color: #5f7186 !important;
   font-size: 14px !important;
+  font-weight: 700 !important;
   line-height: 1.25 !important;
 }
 
 .dashboard-revenue-metric-value {
-  font-size: clamp(26px, 4vw, 38px) !important;
+  color: #25364a !important;
+  font-size: clamp(26px, 3vw, 38px) !important;
   line-height: 1 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.dashboard-revenue-metric > .muted {
+  margin: 0 !important;
+  color: #6b7c8d !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
 }
 
 .dashboard-home .inline-actions {
   margin-top: 0 !important;
 }
 
-/* Forms: less dead space, same fields and behavior. */
 form,
 .form-stack,
 .form-section,
@@ -221,7 +240,6 @@ label {
   line-height: 1.3;
 }
 
-/* Record and job screens: keep summary and actions close together. */
 .job-header,
 .job-summary,
 .record-summary,
@@ -236,7 +254,12 @@ label {
   gap: 8px;
 }
 
-/* Mobile: one clear column, compact page chrome, full-width primary actions. */
+@media (max-width: 1040px) {
+  .dashboard-revenue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 @media (max-width: 720px) {
   :root {
     --release-page-gap: 14px;
@@ -277,11 +300,16 @@ label {
 
   .dashboard-revenue-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
   }
 
   .dashboard-revenue-metric {
-    min-height: 88px !important;
-    padding: 12px !important;
+    min-height: 96px !important;
+    padding: 13px !important;
+  }
+
+  .dashboard-revenue-metric > .muted {
+    display: none !important;
   }
 
   .actions,
@@ -355,7 +383,6 @@ label {
   }
 }
 
-/* High-contrast dark surfaces must always keep readable text. */
 .btn-primary,
 .dark-card,
 .dark-panel,
