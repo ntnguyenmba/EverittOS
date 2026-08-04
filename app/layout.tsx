@@ -22,6 +22,7 @@ import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { JobFinanceWordingAndCustomerRate } from '@/components/job-finance-wording-and-customer-rate';
+import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import './everitt-theme.css';
@@ -128,6 +129,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <PwaUpdatePrompt />
         <SuppressVercelToolbar />
         <JobFinanceWordingAndCustomerRate />
+        <DashboardTodayCountFix />
         <LocaleProvider initialLocale={initialLocale}>
           <ToastProvider>
             <LocaleSync />
