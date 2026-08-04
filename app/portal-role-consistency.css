@@ -1,0 +1,194 @@
+/* Visual-only consistency for client and contractor portals. */
+
+.contractor-dashboard,
+.authenticated-portal,
+.customer-portal,
+.client-portal,
+.portal-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.contractor-dashboard .card,
+.authenticated-portal .card,
+.customer-portal .card,
+.client-portal .card,
+.portal-page .card,
+.contractor-job-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(36, 63, 83, 0.18) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 14px 34px rgba(28, 48, 63, 0.08) !important;
+  color: #172433;
+  overflow: hidden;
+}
+
+.contractor-dashboard .card,
+.authenticated-portal .card,
+.customer-portal .card,
+.client-portal .card,
+.portal-page .card {
+  padding: clamp(18px, 2.6vw, 28px);
+}
+
+.contractor-job-card > button {
+  padding: clamp(18px, 2.6vw, 28px) !important;
+}
+
+.contractor-dashboard h1,
+.contractor-dashboard h2,
+.contractor-dashboard h3,
+.authenticated-portal h1,
+.authenticated-portal h2,
+.authenticated-portal h3,
+.customer-portal h1,
+.customer-portal h2,
+.customer-portal h3,
+.client-portal h1,
+.client-portal h2,
+.client-portal h3 {
+  color: #172433;
+  letter-spacing: -0.025em;
+}
+
+.contractor-dashboard p,
+.contractor-dashboard dd,
+.authenticated-portal p,
+.customer-portal p,
+.client-portal p,
+.portal-page p {
+  max-width: 72ch;
+  line-height: 1.5;
+}
+
+.contractor-dash-header,
+.contractor-dash-nav,
+.authenticated-portal .portal-actions,
+.customer-portal .portal-actions,
+.client-portal .portal-actions {
+  width: 100%;
+  min-width: 0;
+}
+
+.contractor-dash-nav {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 16px 0 22px;
+}
+
+.contractor-dash-nav .btn,
+.authenticated-portal .btn,
+.customer-portal .btn,
+.client-portal .btn,
+.portal-page .btn {
+  min-height: 48px;
+  border-radius: 14px;
+  white-space: normal;
+  text-align: center;
+}
+
+.contractor-dashboard .btn-primary,
+.authenticated-portal .btn-primary,
+.customer-portal .btn-primary,
+.client-portal .btn-primary,
+.portal-page .btn-primary,
+.contractor-dashboard .btn[style*="background"],
+.authenticated-portal .btn[style*="background"],
+.customer-portal .btn[style*="background"],
+.client-portal .btn[style*="background"] {
+  background: #243f53 !important;
+  border-color: #243f53 !important;
+  color: #ffffff !important;
+}
+
+.contractor-dashboard .btn-primary *,
+.authenticated-portal .btn-primary *,
+.customer-portal .btn-primary *,
+.client-portal .btn-primary *,
+.portal-page .btn-primary * {
+  color: #ffffff !important;
+}
+
+.contractor-dashboard .muted,
+.authenticated-portal .muted,
+.customer-portal .muted,
+.client-portal .muted,
+.portal-page .muted {
+  color: #526778 !important;
+}
+
+.contractor-dashboard details.card > summary,
+.authenticated-portal details.card > summary,
+.customer-portal details.card > summary,
+.client-portal details.card > summary {
+  min-width: 0;
+}
+
+.contractor-dashboard dl,
+.authenticated-portal dl,
+.customer-portal dl,
+.client-portal dl {
+  min-width: 0;
+}
+
+.contractor-dashboard dd,
+.authenticated-portal dd,
+.customer-portal dd,
+.client-portal dd {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .contractor-dashboard,
+  .authenticated-portal,
+  .customer-portal,
+  .client-portal,
+  .portal-page {
+    width: 100%;
+    padding-inline: 0;
+  }
+
+  .contractor-dash-header {
+    align-items: stretch !important;
+  }
+
+  .contractor-dash-header > *,
+  .contractor-dash-header .btn,
+  .contractor-dash-header select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .contractor-dash-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .contractor-dashboard .card,
+  .authenticated-portal .card,
+  .customer-portal .card,
+  .client-portal .card,
+  .portal-page .card,
+  .contractor-job-card {
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .contractor-dash-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .contractor-dashboard .card,
+  .authenticated-portal .card,
+  .customer-portal .card,
+  .client-portal .card,
+  .portal-page .card {
+    padding: 17px;
+  }
+}
