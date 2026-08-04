@@ -104,7 +104,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           max-width: 100% !important;
           min-width: 0 !important;
           margin: 0 !important;
-          padding: 28px clamp(24px, 4vw, 56px) 40px !important;
+          padding: 28px clamp(20px, 3vw, 48px) 40px !important;
           box-sizing: border-box !important;
           overflow-x: clip !important;
         }
@@ -120,6 +120,16 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           box-sizing: border-box !important;
         }
 
+        .dashboard-shell .app-page-content,
+        .dashboard-shell .app-page-content > *,
+        .dashboard-shell .dashboard-home,
+        .dashboard-shell .role-dashboard,
+        .dashboard-shell .field-dashboard {
+          min-width: 0 !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+
         .dashboard-shell > .main,
         .dashboard-shell .main,
         .dashboard-shell .app-page-content,
@@ -129,16 +139,6 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         .dashboard-shell .authenticated-portal {
           background: transparent !important;
           background-color: transparent !important;
-        }
-
-        .dashboard-shell .app-page-content,
-        .dashboard-shell .today-page,
-        .dashboard-shell .dashboard-home,
-        .dashboard-shell .portal-page,
-        .dashboard-shell .authenticated-portal {
-          max-width: 100% !important;
-          min-width: 0 !important;
-          box-sizing: border-box !important;
         }
 
         .dashboard-shell .app-page-content {
@@ -241,7 +241,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
 
           .dashboard-shell .app-page-top {
-            margin: 0 0 8px !important;
+            margin: 0 auto 8px !important;
             padding: 0 !important;
           }
 
