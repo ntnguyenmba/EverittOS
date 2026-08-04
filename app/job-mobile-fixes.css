@@ -511,3 +511,13 @@
     display: none !important;
   }
 }
+
+/* One-time jobs show only the Delete button. Recurring jobs keep the warning. */
+.job-detail-shell > section.card:last-child > h3:has(+ p.muted:empty),
+.job-detail-shell > section.card:last-child > p.muted:empty {
+  display: none;
+}
+
+.job-detail-shell > section.card:last-child:has(> p.muted:empty) > .button-row {
+  margin-top: 0 !important;
+}
