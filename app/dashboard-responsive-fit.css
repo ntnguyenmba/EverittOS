@@ -21,22 +21,17 @@
   overflow-x: hidden !important;
 }
 
-.dashboard-shell .app-page-content,
-.dashboard-shell .main > main,
-.dashboard-shell .main > section,
-.dashboard-shell .main > div {
-  container-type: inline-size;
-}
-
+/* Use at most three columns beside the desktop sidebar so the last card never clips. */
 .dashboard-revenue-grid,
 .role-dashboard > .stats-grid,
 .field-dashboard > .stats-grid,
 .team-command-grid {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 16px !important;
   width: 100% !important;
   max-width: 100% !important;
+  overflow: visible !important;
 }
 
 .dashboard-revenue-grid > *,
@@ -54,6 +49,7 @@
 .team-command-card {
   width: 100% !important;
   min-width: 0 !important;
+  max-width: 100% !important;
   box-sizing: border-box !important;
   overflow-wrap: anywhere !important;
 }
@@ -75,8 +71,7 @@
   max-width: 100% !important;
 }
 
-/* Use the actual dashboard content width, not the full browser width. */
-@container (max-width: 1120px) {
+@media (max-width: 1180px) {
   .dashboard-revenue-grid,
   .role-dashboard > .stats-grid,
   .field-dashboard > .stats-grid,
@@ -85,7 +80,7 @@
   }
 }
 
-@container (max-width: 620px) {
+@media (max-width: 720px) {
   .dashboard-revenue-grid,
   .role-dashboard > .stats-grid,
   .field-dashboard > .stats-grid,
@@ -104,24 +99,5 @@
   .field-dashboard .button-row > * {
     width: 100% !important;
     justify-content: center !important;
-  }
-}
-
-/* Fallback for browsers without container queries. */
-@media (max-width: 1320px) {
-  .dashboard-revenue-grid,
-  .role-dashboard > .stats-grid,
-  .field-dashboard > .stats-grid,
-  .team-command-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (max-width: 720px) {
-  .dashboard-revenue-grid,
-  .role-dashboard > .stats-grid,
-  .field-dashboard > .stats-grid,
-  .team-command-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
