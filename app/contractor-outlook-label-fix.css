@@ -1,0 +1,10 @@
+/* Replace a missing contractor translation key with the intended visible label. */
+.contractor-dashboard a[href*="outlook.live.com"] {
+  font-size: 0 !important;
+}
+
+.contractor-dashboard a[href*="outlook.live.com"]::after {
+  content: "Outlook Calendar";
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
