@@ -18,7 +18,14 @@
 .role-dashboard,
 .field-dashboard {
   width: 100% !important;
-  overflow-x: clip !important;
+  overflow-x: hidden !important;
+}
+
+.dashboard-shell .app-page-content,
+.dashboard-shell .main > main,
+.dashboard-shell .main > section,
+.dashboard-shell .main > div {
+  container-type: inline-size;
 }
 
 .dashboard-revenue-grid,
@@ -26,9 +33,10 @@
 .field-dashboard > .stats-grid,
 .team-command-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 16px !important;
   width: 100% !important;
+  max-width: 100% !important;
 }
 
 .dashboard-revenue-grid > *,
@@ -45,6 +53,7 @@
 .stat-card,
 .team-command-card {
   width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
   overflow-wrap: anywhere !important;
 }
@@ -66,7 +75,8 @@
   max-width: 100% !important;
 }
 
-@media (max-width: 980px) {
+/* Use the actual dashboard content width, not the full browser width. */
+@container (max-width: 1120px) {
   .dashboard-revenue-grid,
   .role-dashboard > .stats-grid,
   .field-dashboard > .stats-grid,
@@ -75,7 +85,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@container (max-width: 620px) {
   .dashboard-revenue-grid,
   .role-dashboard > .stats-grid,
   .field-dashboard > .stats-grid,
@@ -94,5 +104,24 @@
   .field-dashboard .button-row > * {
     width: 100% !important;
     justify-content: center !important;
+  }
+}
+
+/* Fallback for browsers without container queries. */
+@media (max-width: 1320px) {
+  .dashboard-revenue-grid,
+  .role-dashboard > .stats-grid,
+  .field-dashboard > .stats-grid,
+  .team-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-revenue-grid,
+  .role-dashboard > .stats-grid,
+  .field-dashboard > .stats-grid,
+  .team-command-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
