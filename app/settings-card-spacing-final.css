@@ -1,0 +1,30 @@
+/* Keep settings sections comfortably separated on desktop, tablet, and mobile. */
+
+.app-page-content .settings-section + .settings-section,
+.app-page-content .settings-card + .settings-card,
+.app-page-content .card + .card,
+.app-page-content > section.card + section.card,
+.app-page-content > div.card + div.card,
+main .settings-section + .settings-section,
+main .settings-card + .settings-card {
+  margin-top: 28px !important;
+}
+
+.app-page-content .settings-section,
+.app-page-content .settings-card,
+.app-page-content > section.card,
+.app-page-content > div.card {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .app-page-content .settings-section + .settings-section,
+  .app-page-content .settings-card + .settings-card,
+  .app-page-content .card + .card,
+  .app-page-content > section.card + section.card,
+  .app-page-content > div.card + div.card,
+  main .settings-section + .settings-section,
+  main .settings-card + .settings-card {
+    margin-top: 20px !important;
+  }
+}
