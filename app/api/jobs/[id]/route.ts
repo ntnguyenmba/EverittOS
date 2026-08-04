@@ -3,6 +3,11 @@ import { sendAssignmentNotification } from '@/lib/assignment-notifications';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
 import { validateAssignedEmail } from '@/lib/job-assigned-email';
+import {
+  previousIsoDate,
+  resolveOccurrenceAnchorDate,
+  selectRecurringJobsForPermanentDelete
+} from '@/lib/job-permanent-delete';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
 import { canAssignJobs } from '@/lib/roles';
 import { localDateFromIso, normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
@@ -62,13 +67,6 @@ const MANAGER_ONLY_FIELDS = new Set([
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status', 'notes']);
-const COMPLETED_STATUSES = new Set(['completed', 'done', 'complete', 'closed']);
-
-function previousIsoDate(value: string): string {
-  const date = new Date(`${value}T00:00:00.000Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
-}
 
 async function resolveAssignedWorkerId(
   ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
@@ -328,34 +326,87 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
+  // Prefer atomic DB function when available (series truncate + deletes in one transaction).
+  const rpc = await ctx.supabase.rpc('permanently_delete_job', { p_job_id: id });
+  if (!rpc.error && rpc.data) {
+    const result = rpc.data as {
+      ok?: boolean;
+      deletedJobCount?: number;
+      recurringSeriesEnded?: boolean;
+      deletedFromDate?: string | null;
+      deletedJobIds?: string[];
+    };
+    const deletedJobCount = Number(result.deletedJobCount || 0);
+    await logWorkspaceActivity(
+      ctx.workspace.organizationId,
+      ctx.userId,
+      'job',
+      id,
+      'job_deleted',
+      existing.recurring_series_id
+        ? `Recurring job deleted from ${result.deletedFromDate || 'selected visit'}: ${existing.title || 'Untitled'}`
+        : `Job deleted: ${existing.title || 'Untitled'}`,
+      {
+        deletedJobCount,
+        recurringSeriesId: existing.recurring_series_id || null,
+        deletedFromDate: result.deletedFromDate || null,
+        deletedJobIds: result.deletedJobIds || []
+      }
+    );
+    return NextResponse.json({
+      ok: true,
+      deletedJobCount,
+      recurringSeriesEnded: Boolean(result.recurringSeriesEnded),
+      message: existing.recurring_series_id
+        ? `${deletedJobCount} recurring visit${deletedJobCount === 1 ? '' : 's'} removed.`
+        : 'Job removed.'
+    });
+  }
+
+  if (rpc.error && !/could not find|does not exist|schema cache|function/i.test(rpc.error.message || '')) {
+    const message = mapWorkspaceSaveError(rpc.error.message);
+    const conflict = /reference|foreign key|still reference|could not be permanently deleted/i.test(
+      rpc.error.message || ''
+    );
+    return NextResponse.json(
+      {
+        error: conflict
+          ? `This job could not be permanently deleted because related records still reference it. ${message}`
+          : message
+      },
+      { status: conflict ? 409 : 400 }
+    );
+  }
+
   let jobIds = [existing.id];
   let deletedFromDate: string | null = null;
 
   if (existing.recurring_series_id) {
-    deletedFromDate = existing.occurrence_date || existing.start_date;
+    deletedFromDate = resolveOccurrenceAnchorDate(existing);
     if (!deletedFromDate) {
       return NextResponse.json({ error: 'This recurring visit is missing its occurrence date.' }, { status: 400 });
     }
 
-    const { data: futureJobs, error: futureError } = await ctx.supabase
+    const { data: seriesJobs, error: futureError } = await ctx.supabase
       .from('jobs')
-      .select('id, status')
+      .select('id, status, occurrence_date, start_date')
       .eq('organization_id', ctx.workspace.organizationId)
-      .eq('recurring_series_id', existing.recurring_series_id)
-      .gte('occurrence_date', deletedFromDate);
+      .eq('recurring_series_id', existing.recurring_series_id);
 
     if (futureError) {
       return NextResponse.json({ error: mapWorkspaceSaveError(futureError.message) }, { status: 400 });
     }
 
-    jobIds = (futureJobs || [])
-      .filter((job) => !COMPLETED_STATUSES.has(String(job.status || '').toLowerCase()))
-      .map((job) => job.id);
+    jobIds = selectRecurringJobsForPermanentDelete(seriesJobs || [], existing.id, deletedFromDate);
 
-    if (!jobIds.includes(existing.id) && !COMPLETED_STATUSES.has(String(existing.status || '').toLowerCase())) {
-      jobIds.unshift(existing.id);
+    if (!jobIds.length) {
+      return NextResponse.json(
+        { error: 'Completed historical visits were preserved and there is nothing to delete.' },
+        { status: 400 }
+      );
     }
 
+    // End the series before deletes so the generator cannot recreate removed visits.
     const { error: seriesError } = await ctx.supabase
       .from('recurring_job_series')
       .update({
@@ -373,8 +424,18 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   if (!jobIds.length) {
-    return NextResponse.json({ error: 'Completed historical visits were preserved and there is nothing to delete.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Completed historical visits were preserved and there is nothing to delete.' },
+      { status: 400 }
+    );
   }
+
+  await ctx.supabase
+    .from('record_shares')
+    .delete()
+    .eq('organization_id', ctx.workspace.organizationId)
+    .eq('record_type', 'job')
+    .in('record_id', jobIds);
 
   const { error: deleteError } = await ctx.supabase
     .from('jobs')

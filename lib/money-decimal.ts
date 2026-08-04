@@ -26,6 +26,29 @@ export function parseMoneyDollars(value: unknown): number {
   return centsToDollars(dollarsToCents(value));
 }
 
+/**
+ * Optional money input: blank/null/undefined → null; intentional 0 stays 0.
+ * Do not use `value || null` for monetary fields — it drops valid zeros.
+ * Negatives are preserved so callers can reject them explicitly.
+ */
+export function optionalMoneyDollars(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const raw = trimmed.replace(/[^0-9.-]/g, '');
+    if (!raw || raw === '-' || raw === '.' || raw === '-.') return null;
+    const parsed = Number.parseFloat(raw);
+    if (!Number.isFinite(parsed)) return null;
+    return Number((Math.round(parsed * 100) / 100).toFixed(2));
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return null;
+    return Number((Math.round(value * 100) / 100).toFixed(2));
+  }
+  return optionalMoneyDollars(String(value));
+}
+
 export function addMoneyDollars(...values: unknown[]): number {
   return centsToDollars(values.reduce<number>((sum, value) => sum + dollarsToCents(value), 0));
 }

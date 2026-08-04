@@ -231,14 +231,21 @@ function JobsList() {
     if (!window.confirm(c.removeConfirm.replace('{title}', job.title))) return;
     setRemovingId(job.id);
     const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+    const json = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      message?: string;
+      deletedJobIds?: string[];
+      deletedJobCount?: number;
+    };
     setRemovingId('');
     setOpenMenuId('');
     if (!res.ok) {
-      const json = await res.json();
       window.alert(json.error || c.unableRemove);
       return;
     }
+    appFeedback.success(json.message || 'Job removed.');
     setJobs((rows) => rows.filter((row) => row.id !== job.id));
+    void load();
   }
 
   async function bookAgain(job: Job) {

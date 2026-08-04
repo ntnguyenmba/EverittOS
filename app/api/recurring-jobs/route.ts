@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { logWorkspaceActivity } from '@/lib/activity-server';
 import { generateActiveSeriesForOrganization } from '@/lib/generate-recurring-series';
-import { calculateExpectedJobFinance, centsToDollars, dollarsToCents } from '@/lib/money-decimal';
+import {
+  calculateExpectedJobFinance,
+  centsToDollars,
+  dollarsToCents,
+  optionalMoneyDollars
+} from '@/lib/money-decimal';
 import { enforcePlanForUser } from '@/lib/plan-enforce-server';
 import {
   generateOccurrences,
@@ -169,16 +174,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const expectedRevenue = optionalMoneyDollars(body.default_price);
+  const expectedContractorCost = optionalMoneyDollars(body.expected_contractor_cost);
+  const expectedAdditionalExpense = optionalMoneyDollars(body.expected_additional_expense);
+  if (
+    (expectedRevenue !== null && expectedRevenue < 0) ||
+    (expectedContractorCost !== null && expectedContractorCost < 0) ||
+    (expectedAdditionalExpense !== null && expectedAdditionalExpense < 0)
+  ) {
+    return NextResponse.json({ error: 'Financial amounts cannot be negative.' }, { status: 400 });
+  }
+
   const finance = calculateExpectedJobFinance({
-    clientPrice: body.default_price,
-    contractorPay: body.expected_contractor_cost,
-    additionalExpenses: body.expected_additional_expense
+    clientPrice: expectedRevenue ?? 0,
+    contractorPay: expectedContractorCost ?? 0,
+    additionalExpenses: expectedAdditionalExpense ?? 0
   });
 
   const financeDefaults = {
-    expectedRevenue: finance.expectedRevenue,
-    expectedContractorCost: finance.expectedContractorCost,
-    expectedAdditionalExpense: finance.expectedAdditionalExpense,
+    expectedRevenue,
+    expectedContractorCost,
+    expectedAdditionalExpense,
     expectedExpenseDescription: body.expected_expense_description?.trim() || null,
     contractorPayBasis: body.contractor_pay_basis || 'flat',
     contractorHours: body.contractor_hours ?? null,
@@ -229,9 +245,9 @@ export async function POST(request: Request) {
     preferred_start_time: recurrence.preferredStartTime || null,
     duration_minutes: body.duration_minutes ?? null,
     timezone: timezone || normalizeTimeZone(null),
-    default_price: finance.expectedRevenue || null,
-    default_contractor_cost: finance.expectedContractorCost || null,
-    default_additional_expense: finance.expectedAdditionalExpense || null,
+    default_price: expectedRevenue,
+    default_contractor_cost: expectedContractorCost,
+    default_additional_expense: expectedAdditionalExpense,
     default_expense_description: financeDefaults.expectedExpenseDescription,
     default_contractor_pay_basis: financeDefaults.contractorPayBasis,
     default_contractor_hours: financeDefaults.contractorHours,

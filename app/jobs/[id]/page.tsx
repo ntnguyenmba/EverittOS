@@ -118,6 +118,7 @@ export default function JobDetailPage({ params }: PageProps) {
   const [userRole, setUserRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
   const [canEditStatus, setCanEditStatus] = useState(false);
+  const [deletingJob, setDeletingJob] = useState(false);
   const [canUploadPhotos, setCanUploadPhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [duplicating, setDuplicating] = useState(false);
@@ -298,6 +299,25 @@ export default function JobDetailPage({ params }: PageProps) {
     setJob(next);
     void loadJob();
     return true;
+  }
+
+  async function permanentlyDeleteJob() {
+    if (!job || !canManage || deletingJob) return;
+    const confirmed = window.confirm(
+      job.recurring_series_id ? copy.deleteJobConfirmRecurring : copy.deleteJobConfirmOneTime
+    );
+    if (!confirmed) return;
+    setDeletingJob(true);
+    const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string; deletedJobCount?: number };
+    setDeletingJob(false);
+    if (!res.ok) {
+      appFeedback.error(json.error || copy.unableToDeleteJob);
+      return;
+    }
+    appFeedback.success(json.message || FEEDBACK.deleted);
+    router.push('/jobs');
+    router.refresh();
   }
 
   async function runSeriesAction(action: 'skip' | 'cancel_visit' | 'pause' | 'resume' | 'end' | 'edit_future' | 'edit_series') {
@@ -549,6 +569,25 @@ export default function JobDetailPage({ params }: PageProps) {
             ) : null}
           </div>
         </details>
+
+        {canManage ? (
+          <section className="card" style={{ marginBottom: 18 }}>
+            <h3>{copy.deleteJob}</h3>
+            <p className="muted">
+              {job.recurring_series_id ? copy.deleteJobSectionCopyRecurring : copy.deleteJobSectionCopyOneTime}
+            </p>
+            <div className="button-row" style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={deletingJob}
+                onClick={() => void permanentlyDeleteJob()}
+              >
+                {deletingJob ? copy.deletingJob : copy.deleteJob}
+              </button>
+            </div>
+          </section>
+        ) : null}
       </div>
     </AppShell>
   );

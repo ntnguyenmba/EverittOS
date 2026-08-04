@@ -99,7 +99,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         ? null
         : Number(body.revenue_amount);
   if (revenueAmount !== undefined && revenueAmount !== null && (!Number.isFinite(revenueAmount) || revenueAmount < 0)) {
-    return NextResponse.json({ error: 'Revenue amount must be a positive number.' }, { status: 400 });
+    return NextResponse.json({ error: 'Revenue amount must be a non-negative number.' }, { status: 400 });
   }
 
   const job = await resolveJob(ctx, jobId);
@@ -116,7 +116,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         ? null
         : Number(body.expected_contractor_cost);
     if (value !== null && (!Number.isFinite(value) || value < 0)) {
-      return NextResponse.json({ error: 'Expected contractor cost must be a positive number.' }, { status: 400 });
+      return NextResponse.json({ error: 'Expected contractor cost must be a non-negative number.' }, { status: 400 });
     }
     patch.expected_contractor_cost = value;
   }
@@ -126,7 +126,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         ? null
         : Number(body.expected_additional_expense);
     if (value !== null && (!Number.isFinite(value) || value < 0)) {
-      return NextResponse.json({ error: 'Expected additional expense must be a positive number.' }, { status: 400 });
+      return NextResponse.json({ error: 'Expected additional expense must be a non-negative number.' }, { status: 400 });
     }
     patch.expected_additional_expense = value;
   }

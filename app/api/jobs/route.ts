@@ -293,15 +293,27 @@ export async function POST(request: Request) {
         ? null
         : Number(body.revenue_amount),
     expected_contractor_cost:
-      body.expected_contractor_cost === undefined || body.expected_contractor_cost === null
+      body.expected_contractor_cost === undefined ||
+      body.expected_contractor_cost === null ||
+      body.expected_contractor_cost === ''
         ? null
         : Number(body.expected_contractor_cost),
     expected_additional_expense:
-      body.expected_additional_expense === undefined || body.expected_additional_expense === null
+      body.expected_additional_expense === undefined ||
+      body.expected_additional_expense === null ||
+      body.expected_additional_expense === ''
         ? null
         : Number(body.expected_additional_expense),
     expected_expense_description: body.expected_expense_description?.trim?.() || body.expected_expense_description || null
   };
+
+  for (const key of ['revenue_amount', 'expected_contractor_cost', 'expected_additional_expense'] as const) {
+    const value = insertPayload[key];
+    if (value === null || value === undefined) continue;
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+      return NextResponse.json({ error: 'Financial amounts must be non-negative numbers.' }, { status: 400 });
+    }
+  }
 
   if (propertyId) {
     insertPayload.property_id = propertyId;

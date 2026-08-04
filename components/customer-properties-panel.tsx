@@ -155,7 +155,10 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
       access_instructions: draft.access_instructions || null,
       gate_code: draft.gate_code || null,
       lockbox_code: draft.lockbox_code || null,
-      default_price: draft.default_price ? Number(draft.default_price) : null,
+      default_price:
+        draft.default_price === null || draft.default_price === undefined || String(draft.default_price).trim() === ''
+          ? null
+          : Number(draft.default_price),
       is_primary: draft.is_primary
     };
 

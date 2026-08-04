@@ -86,7 +86,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
     }
     const next = json.profitability as JobProfitability;
     setProfitability(next);
-    setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
+    setRevenueAmount(next.manualRevenue == null ? '' : String(next.manualRevenue));
     setRevenueNotes(next.revenueNotes || '');
   }, [appFeedback, copy.unableToLoad, jobId]);
 
@@ -146,7 +146,7 @@ export function JobProfitabilityCard({ jobId, customerId, canManage, refreshKey 
 
     const next = json.profitability as JobProfitability;
     setProfitability(next);
-    setRevenueAmount(next.manualRevenue ? String(next.manualRevenue) : '');
+    setRevenueAmount(next.manualRevenue == null ? '' : String(next.manualRevenue));
     setRevenueNotes(next.revenueNotes || '');
     appFeedback.success(copy.saveExpectedAmount);
   }

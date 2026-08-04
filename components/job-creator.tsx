@@ -129,6 +129,13 @@ function moneyValue(value: string): number {
   return parseMoneyDollars(value);
 }
 
+/** Blank → null; intentional "0" → 0. Never use `value || null` for money. */
+function optionalMoneyInput(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return moneyValue(trimmed);
+}
+
 function propertyLabel(property: PropertyOption) {
   const type = (property.property_type || 'home') as PropertyType;
   const typeLabel = PROPERTY_TYPE_LABELS[type] || 'Property';
@@ -579,14 +586,38 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       }
     }
 
-    const hasContractorPay = Boolean(contractorHours || contractorHourlyRate || contractorFlatRate);
-    if (hasContractorPay && contractorPayMode === 'hourly' && (moneyValue(contractorHours) <= 0 || moneyValue(contractorHourlyRate) < 0)) {
-      appFeedback.error('Enter valid contractor hours and hourly rate.');
-      return;
+    const hasContractorPay =
+      contractorPayMode === 'hourly'
+        ? Boolean(contractorHours.trim() || contractorHourlyRate.trim())
+        : Boolean(contractorFlatRate.trim());
+    if (hasContractorPay && contractorPayMode === 'hourly') {
+      const hours = moneyValue(contractorHours);
+      const rate = moneyValue(contractorHourlyRate);
+      if (!Number.isFinite(hours) || hours < 0 || !Number.isFinite(rate) || rate < 0) {
+        appFeedback.error('Enter valid contractor hours and hourly rate.');
+        return;
+      }
     }
-    if (hasContractorPay && contractorPayMode === 'flat' && moneyValue(contractorFlatRate) <= 0) {
-      appFeedback.error('Enter a valid flat-rate contractor amount.');
-      return;
+    if (hasContractorPay && contractorPayMode === 'flat') {
+      const flat = moneyValue(contractorFlatRate);
+      if (!Number.isFinite(flat) || flat < 0) {
+        appFeedback.error('Enter a valid flat-rate contractor amount.');
+        return;
+      }
+    }
+    if (clientIncome.trim()) {
+      const clientPay = moneyValue(clientIncome);
+      if (!Number.isFinite(clientPay) || clientPay < 0) {
+        appFeedback.error('Enter a valid client pay amount.');
+        return;
+      }
+    }
+    if (additionalExpenses.trim()) {
+      const expense = moneyValue(additionalExpenses);
+      if (!Number.isFinite(expense) || expense < 0) {
+        appFeedback.error('Enter a valid additional expense amount.');
+        return;
+      }
     }
 
     const firstVisit = scheduledVisits[0];
@@ -697,8 +728,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     const expectedContractorPay =
       contractorPayMode === 'hourly'
-        ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
-        : moneyValue(contractorFlatRate);
+        ? hasContractorPay
+          ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
+          : null
+        : optionalMoneyInput(contractorFlatRate);
     const assignedMember = teamMembers.find((member) => member.userId === assignedTo);
     const resolvedContractorName = assignedMember?.label || 'Unassigned contractor';
     const durationMinutes =
@@ -725,14 +758,19 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           address: address.trim() || null,
           notes: notes.trim() || null,
           timezone: timeZone || null,
-          default_price: clientIncome ? moneyValue(clientIncome) : null,
-          expected_contractor_cost: expectedContractorPay || null,
-          expected_additional_expense: additionalExpenses ? moneyValue(additionalExpenses) : null,
+          default_price: optionalMoneyInput(clientIncome),
+          expected_contractor_cost: expectedContractorPay,
+          expected_additional_expense: optionalMoneyInput(additionalExpenses),
           expected_expense_description: expenseDescription.trim() || null,
           contractor_pay_basis: contractorPayMode,
-          contractor_hours: contractorPayMode === 'hourly' ? moneyValue(contractorHours) : null,
+          contractor_hours:
+            contractorPayMode === 'hourly' && contractorHours.trim() ? moneyValue(contractorHours) : null,
           contractor_hourly_rate:
-            contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : expectedContractorPay || null,
+            contractorPayMode === 'hourly' && contractorHourlyRate.trim()
+              ? moneyValue(contractorHourlyRate)
+              : contractorPayMode === 'flat'
+                ? expectedContractorPay
+                : null,
           contractor_name: assignedTo ? resolvedContractorName : null,
           duration_minutes: durationMinutes,
           assigned_to: assignedTo || null,
@@ -787,9 +825,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         timezone: timeZone || null,
         customer_id: customerId,
         property_id: propertyId,
-        revenue_amount: clientIncome ? moneyValue(clientIncome) : null,
-        expected_contractor_cost: expectedContractorPay || null,
-        expected_additional_expense: additionalExpenses ? moneyValue(additionalExpenses) : null,
+        revenue_amount: optionalMoneyInput(clientIncome),
+        expected_contractor_cost: expectedContractorPay,
+        expected_additional_expense: optionalMoneyInput(additionalExpenses),
         expected_expense_description: expenseDescription.trim() || null,
         assigned_to: assignedTo || null,
         start_date: firstVisit?.visit_date || null,
@@ -816,12 +854,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     const jobId = createJson.job.id;
     const followUpTasks: Promise<unknown>[] = [];
 
-    if (clientIncome) {
+    const clientPayAmount = optionalMoneyInput(clientIncome);
+    if (clientPayAmount !== null) {
       followUpTasks.push(
         fetch(`/api/jobs/${jobId}/profitability`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ revenue_amount: moneyValue(clientIncome), revenue_notes: 'Added during job creation' })
+          body: JSON.stringify({ revenue_amount: clientPayAmount, revenue_notes: 'Added during job creation' })
         })
       );
     }
@@ -830,15 +869,20 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     // Team Pay / labor records are created later when payment is reviewed, so metrics
     // never count the same $200 as both expected and labor.
 
-    if (additionalExpenses && moneyValue(additionalExpenses) > 0) {
+    const additionalExpenseAmount = optionalMoneyInput(additionalExpenses);
+    if (additionalExpenseAmount !== null || expectedContractorPay !== null) {
       followUpTasks.push(
         fetch(`/api/jobs/${jobId}/profitability`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            expected_additional_expense: moneyValue(additionalExpenses),
-            expected_expense_description: expenseDescription.trim() || null,
-            expected_contractor_cost: expectedContractorPay || null
+            ...(additionalExpenseAmount !== null
+              ? {
+                  expected_additional_expense: additionalExpenseAmount,
+                  expected_expense_description: expenseDescription.trim() || null
+                }
+              : {}),
+            ...(expectedContractorPay !== null ? { expected_contractor_cost: expectedContractorPay } : {})
           })
         }).catch(() => undefined)
       );

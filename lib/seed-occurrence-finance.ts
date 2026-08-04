@@ -78,7 +78,7 @@ export function occurrenceFinanceColumns(defaults: OccurrenceFinanceDefaults): {
   const additional =
     defaults.expectedAdditionalExpense == null ? null : parseMoneyDollars(defaults.expectedAdditionalExpense);
   return {
-    revenue_amount: revenue && revenue > 0 ? revenue : revenue === 0 ? 0 : null,
+    revenue_amount: revenue,
     expected_contractor_cost: contractor,
     expected_additional_expense: additional,
     expected_expense_description: defaults.expectedExpenseDescription?.trim() || null

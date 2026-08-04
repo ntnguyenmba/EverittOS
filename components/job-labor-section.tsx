@@ -107,9 +107,14 @@ export function JobLaborSection({
 
     if (profitabilityRes.ok) {
       const profitability = profitabilityJson.profitability || {};
-      const expected = Number(profitability.expectedContractorCost || 0);
-      setExpectedContractorCost(expected);
-      setExpectedEditAmount(expected > 0 ? String(expected) : '');
+      const rawExpected = profitability.expectedContractorCost;
+      const expected =
+        rawExpected === null || rawExpected === undefined || rawExpected === ''
+          ? null
+          : Number(rawExpected);
+      const expectedNumber = expected != null && Number.isFinite(expected) ? expected : 0;
+      setExpectedContractorCost(expectedNumber);
+      setExpectedEditAmount(expected != null && Number.isFinite(expected) ? String(expected) : '');
       setCurrentProfit(Number(profitability.estimatedProfit || 0));
     }
   }, [appFeedback, jobId]);
@@ -285,7 +290,7 @@ export function JobLaborSection({
       appFeedback.error('Enter a quantity greater than zero.');
       return;
     }
-    if (!Number.isFinite(parsedRate) || parsedRate <= 0) {
+    if (!Number.isFinite(parsedRate) || parsedRate < 0) {
       appFeedback.error('Enter a valid contractor pay amount.');
       return;
     }

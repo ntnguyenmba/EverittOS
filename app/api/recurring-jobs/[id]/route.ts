@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateSeriesWindow } from '@/lib/generate-recurring-series';
 import { isValidUuid } from '@/lib/input-validation';
-import { parseMoneyDollars } from '@/lib/money-decimal';
+import { optionalMoneyDollars } from '@/lib/money-decimal';
 import { isCompletedLikeStatus } from '@/lib/recurring-jobs';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
@@ -61,9 +61,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     endDate?: string | null;
     title?: string;
     notes?: string | null;
-    default_price?: number | null;
-    expected_contractor_cost?: number | null;
-    expected_additional_expense?: number | null;
+    default_price?: number | string | null;
+    expected_contractor_cost?: number | string | null;
+    expected_additional_expense?: number | string | null;
     expected_expense_description?: string | null;
     preferred_contractor_id?: string | null;
     preferred_start_time?: string | null;
@@ -193,12 +193,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (body.title !== undefined) patch.title = String(body.title).trim();
   if (body.notes !== undefined) patch.notes = body.notes;
-  if (body.default_price !== undefined) patch.default_price = parseMoneyDollars(body.default_price);
+  if (body.default_price !== undefined) patch.default_price = optionalMoneyDollars(body.default_price);
   if (body.expected_contractor_cost !== undefined) {
-    patch.default_contractor_cost = parseMoneyDollars(body.expected_contractor_cost);
+    patch.default_contractor_cost = optionalMoneyDollars(body.expected_contractor_cost);
   }
   if (body.expected_additional_expense !== undefined) {
-    patch.default_additional_expense = parseMoneyDollars(body.expected_additional_expense);
+    patch.default_additional_expense = optionalMoneyDollars(body.expected_additional_expense);
   }
   if (body.expected_expense_description !== undefined) {
     patch.default_expense_description = body.expected_expense_description;
@@ -228,12 +228,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const jobPatch: Record<string, unknown> = {};
   if (body.title !== undefined) jobPatch.title = String(body.title).trim();
   if (body.notes !== undefined) jobPatch.notes = body.notes;
-  if (body.default_price !== undefined) jobPatch.revenue_amount = parseMoneyDollars(body.default_price);
+  if (body.default_price !== undefined) jobPatch.revenue_amount = optionalMoneyDollars(body.default_price);
   if (body.expected_contractor_cost !== undefined) {
-    jobPatch.expected_contractor_cost = parseMoneyDollars(body.expected_contractor_cost);
+    jobPatch.expected_contractor_cost = optionalMoneyDollars(body.expected_contractor_cost);
   }
   if (body.expected_additional_expense !== undefined) {
-    jobPatch.expected_additional_expense = parseMoneyDollars(body.expected_additional_expense);
+    jobPatch.expected_additional_expense = optionalMoneyDollars(body.expected_additional_expense);
   }
   if (body.expected_expense_description !== undefined) {
     jobPatch.expected_expense_description = body.expected_expense_description;
