@@ -73,6 +73,43 @@
   max-width: 100% !important;
 }
 
+/* Never show the left sidebar and compact top navigation at the same time. */
+@media (min-width: 1451px) {
+  .dashboard-shell {
+    display: grid !important;
+    grid-template-columns: 300px minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell > .sidebar {
+    display: flex !important;
+  }
+
+  .dashboard-shell > .dashboard-shell-header {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1450px) {
+  .dashboard-shell {
+    display: block !important;
+  }
+
+  .dashboard-shell > .sidebar {
+    display: none !important;
+  }
+
+  .dashboard-shell > .dashboard-shell-header {
+    display: block !important;
+  }
+
+  .dashboard-shell > .main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
 @media (max-width: 720px) {
   .dashboard-revenue-grid,
   .role-dashboard > .stats-grid,
