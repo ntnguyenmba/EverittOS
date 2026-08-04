@@ -77,13 +77,10 @@ export function AccountDeleteSection({
   }
 
   return (
-    <section className="settings-card settings-danger-zone">
-      <h3>{t('portal.account.delete.dangerZone')}</h3>
-
-      <div className="settings-danger-block">
-        <h4>{t('portal.account.delete.deleteAccount')}</h4>
+    <details className="settings-card settings-danger-zone">
+      <summary><strong>{t('portal.account.delete.deleteAccount')}</strong></summary>
+      <div className="settings-danger-block" style={{ marginTop: 14 }}>
         <p className="muted">{retentionNote || defaultRetention}</p>
-        <p className="muted">{t('portal.account.delete.subscriptionWarning')}</p>
 
         {hasActiveSubscription ? (
           <div className="settings-warning" role="alert">
@@ -137,6 +134,6 @@ export function AccountDeleteSection({
           </div>
         </form>
       </dialog>
-    </section>
+    </details>
   );
 }
