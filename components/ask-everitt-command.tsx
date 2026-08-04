@@ -40,6 +40,8 @@ type AskCopy = {
   requestError: string;
   aiPlanNotice: string;
   footerPrefix: string;
+  escapeHint: string;
+  close: string;
   usage: string;
   recordLabels: Record<AskEverittSearchRecord['type'], string>;
   suggestions: AskSuggestion[];
@@ -95,7 +97,9 @@ const COPY: Record<AskLocale, AskCopy> = {
     actionComplete: 'Action completed.',
     requestError: 'Unable to complete your request.',
     aiPlanNotice: 'Everitt AI is unavailable on your plan. Try a search question instead.',
-    footerPrefix: 'Search uses your workspace data · AI only when needed · Esc to close ·',
+    footerPrefix: 'Search uses your workspace data · AI only when needed ·',
+    escapeHint: 'Esc to close',
+    close: 'Close',
     usage: 'Usage',
     recordLabels: {
       customer: 'Customer', job: 'Job', lead: 'Lead', worker: 'Team member', schedule: 'Schedule', booking: 'Booking',
@@ -134,7 +138,9 @@ const COPY: Record<AskLocale, AskCopy> = {
     actionComplete: 'Acción completada.',
     requestError: 'No se pudo completar la solicitud.',
     aiPlanNotice: 'Everitt IA no está disponible en su plan. Pruebe una pregunta de búsqueda.',
-    footerPrefix: 'La búsqueda usa los datos de su espacio · IA solo cuando se necesita · Esc para cerrar ·',
+    footerPrefix: 'La búsqueda usa los datos de su espacio · IA solo cuando se necesita ·',
+    escapeHint: 'Esc para cerrar',
+    close: 'Cerrar',
     usage: 'Uso',
     recordLabels: {
       customer: 'Cliente', job: 'Trabajo', lead: 'Prospecto', worker: 'Miembro del equipo', schedule: 'Agenda', booking: 'Reserva',
@@ -187,7 +193,9 @@ const COPY: Record<AskLocale, AskCopy> = {
     actionComplete: 'Đã hoàn tất thao tác.',
     requestError: 'Không thể hoàn tất yêu cầu.',
     aiPlanNotice: 'Everitt AI không có trong gói của bạn. Hãy thử câu hỏi tìm kiếm.',
-    footerPrefix: 'Tìm kiếm dùng dữ liệu không gian của bạn · Chỉ dùng AI khi cần · Esc để đóng ·',
+    footerPrefix: 'Tìm kiếm dùng dữ liệu không gian của bạn · Chỉ dùng AI khi cần ·',
+    escapeHint: 'Esc để đóng',
+    close: 'Đóng',
     usage: 'Mức dùng',
     recordLabels: {
       customer: 'Khách hàng', job: 'Công việc', lead: 'Khách tiềm năng', worker: 'Thành viên nhóm', schedule: 'Lịch', booking: 'Đặt lịch',
@@ -269,7 +277,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
   const [notice, setNotice] = useState('');
   const [lastMode, setLastMode] = useState<'search' | 'ai' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [kbd, setKbd] = useState('Ctrl+K');
+  const [kbd, setKbd] = useState('');
   const askAccess = useMemo(() => resolveAskEverittUiAccess(status), [status]);
 
   function openUpgradeIfAllowed() {
@@ -285,7 +293,14 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
   }
 
   useEffect(() => {
-    setKbd(navigator.platform.toLowerCase().includes('mac') ? '⌘K' : 'Ctrl+K');
+    const touchOnly = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    if (touchOnly) {
+      setKbd('');
+      return;
+    }
+    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const platform = (nav.userAgentData?.platform || navigator.platform || '').toLowerCase();
+    setKbd(platform.includes('mac') ? '⌘K' : 'Ctrl+K');
   }, []);
 
   const loadStatus = useCallback(async () => {
@@ -463,7 +478,8 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
         <div className="command-ask-head">
           <h2>{copy.title}</h2>
           <button type="button" className="everitt-cmd-trigger everitt-cmd-trigger-inline" onClick={openCommand}>
-            {copy.inlineTrigger} <span className="muted">{kbd}</span>
+            {copy.inlineTrigger}
+            {kbd ? <span className="muted"> {kbd}</span> : null}
           </button>
         </div>
         <p className="muted">{copy.embeddedDescription}</p>
@@ -480,7 +496,7 @@ export function AskEverittCommand({ plan: _planProp, embedded = false }: AskEver
     <>
       <button type="button" className="everitt-cmd-trigger" onClick={openCommand} aria-label={copy.title}>
         <span className="everitt-cmd-placeholder">{copy.trigger}</span>
-        <span className="everitt-cmd-kbd">{kbd}</span>
+        {kbd ? <span className="everitt-cmd-kbd">{kbd}</span> : null}
       </button>
       {overlay}
       {askAccess.shouldShowAiUpsell ? (
@@ -547,9 +563,21 @@ function CommandOverlay({
     ? copy.suggestions
     : copy.suggestions.filter((s) => s.mode !== 'ai');
 
+  const touchControls = !kbd;
+
   return (
     <div className="everitt-cmd-overlay" role="presentation" onClick={onClose}>
-      <div className="everitt-cmd-palette" role="dialog" aria-label={copy.title} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={touchControls ? 'everitt-cmd-palette everitt-cmd-palette-touch' : 'everitt-cmd-palette'}
+        role="dialog"
+        aria-label={copy.title}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {touchControls ? (
+          <button type="button" className="everitt-cmd-close" onClick={onClose} aria-label={copy.close}>
+            ×
+          </button>
+        ) : null}
         <div className="everitt-cmd-bar">
           <input
             ref={inputRef}
@@ -561,7 +589,7 @@ function CommandOverlay({
               if (e.key === 'Enter') void submitAsk();
             }}
           />
-          <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span>
+          {kbd ? <span className="everitt-cmd-kbd everitt-cmd-kbd-muted">{kbd}</span> : null}
         </div>
 
         <p className="everitt-cmd-tagline muted">{copy.tagline}</p>
@@ -671,9 +699,16 @@ function CommandOverlay({
 
         {notice ? <p className="everitt-cmd-notice">{notice}</p> : null}
         {askAccess.shouldShowAiUpsell ? (
-          <p className="muted everitt-cmd-footer">{copy.footerPrefix} <Link href="/settings/billing">{copy.usage}</Link></p>
+          <p className="muted everitt-cmd-footer">
+            {copy.footerPrefix}
+            {kbd ? ` ${copy.escapeHint} ·` : null}{' '}
+            <Link href="/settings/billing">{copy.usage}</Link>
+          </p>
         ) : (
-          <p className="muted everitt-cmd-footer">{copy.footerPrefix}</p>
+          <p className="muted everitt-cmd-footer">
+            {copy.footerPrefix}
+            {kbd ? ` ${copy.escapeHint}` : null}
+          </p>
         )}
       </div>
     </div>

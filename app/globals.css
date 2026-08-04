@@ -3985,6 +3985,7 @@ html[data-deployment='production'] #vercel-toolbar {
 }
 
 .everitt-cmd-palette {
+  position: relative;
   width: min(680px, 100%);
   max-height: min(80vh, 720px);
   overflow: auto;
@@ -3993,6 +3994,33 @@ html[data-deployment='production'] #vercel-toolbar {
   border-radius: 14px;
   padding: 12px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+}
+
+.everitt-cmd-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.everitt-cmd-palette-touch .everitt-cmd-bar {
+  padding-right: 48px;
 }
 
 .everitt-cmd-bar {

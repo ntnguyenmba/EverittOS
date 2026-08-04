@@ -67,7 +67,6 @@ import './portal-role-consistency.css';
 import './mobile-overflow-final-fix.css';
 import './contractor-outlook-label-fix.css';
 import './dashboard-responsive-fit.css';
-import './ask-everitt-mobile-controls.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],

@@ -240,7 +240,7 @@ a.btn-primary:hover,
 }
 
 .everitt-cmd-footer::before {
-  content: 'Esc to close. Do not enter passwords, payment details, or highly sensitive personal details.';
+  content: 'Do not enter passwords, payment details, or highly sensitive personal details.';
   font-size: 13px !important;
 }
 
