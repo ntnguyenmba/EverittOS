@@ -38,7 +38,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
       <div className="auth-tech-shell">
         <header className="auth-tech-header">
-          <BrandLogo href="/" size={44} showName />
+          <BrandLogo href="/" size={44} />
           <div className="auth-shell-language auth-tech-language">
             <LanguageSwitcher id="auth-language" variant="compact" />
           </div>
