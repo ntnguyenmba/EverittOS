@@ -29,19 +29,19 @@ const JOB_INSTRUCTIONS_PATH = '/settings/account/job-instructions';
 
 const LABELS = {
   en: {
-    organization: 'Organization', team: 'Team', notifications: 'Notifications', preferences: 'Preferences',
-    privacy: 'Privacy', terms: 'Terms', deleteAccount: 'Delete Account', billing: 'Billing', about: 'About',
-    instructions: 'Job instructions', manageBilling: 'Manage Billing', settings: 'Settings'
+    organization: 'Company', team: 'Team', notifications: 'Notifications', preferences: 'General',
+    privacy: 'Privacy', terms: 'Terms', deleteAccount: 'Delete', billing: 'Billing', about: 'About',
+    instructions: 'Instructions', manageBilling: 'Billing', settings: 'Settings'
   },
   es: {
-    organization: 'Organización', team: 'Equipo', notifications: 'Notificaciones', preferences: 'Preferencias',
-    privacy: 'Privacidad', terms: 'Términos', deleteAccount: 'Eliminar cuenta', billing: 'Facturación', about: 'Acerca de',
-    instructions: 'Instrucciones de trabajo', manageBilling: 'Administrar facturación', settings: 'Configuración'
+    organization: 'Empresa', team: 'Equipo', notifications: 'Notificaciones', preferences: 'General',
+    privacy: 'Privacidad', terms: 'Términos', deleteAccount: 'Eliminar', billing: 'Facturación', about: 'Acerca de',
+    instructions: 'Instrucciones', manageBilling: 'Facturación', settings: 'Configuración'
   },
   vi: {
-    organization: 'Tổ chức', team: 'Nhóm', notifications: 'Thông báo', preferences: 'Tùy chọn',
-    privacy: 'Quyền riêng tư', terms: 'Điều khoản', deleteAccount: 'Xóa tài khoản', billing: 'Thanh toán', about: 'Giới thiệu',
-    instructions: 'Hướng dẫn công việc', manageBilling: 'Quản lý thanh toán', settings: 'Cài đặt'
+    organization: 'Công ty', team: 'Nhóm', notifications: 'Thông báo', preferences: 'Chung',
+    privacy: 'Quyền riêng tư', terms: 'Điều khoản', deleteAccount: 'Xóa', billing: 'Thanh toán', about: 'Giới thiệu',
+    instructions: 'Hướng dẫn', manageBilling: 'Thanh toán', settings: 'Cài đặt'
   }
 } as const;
 
@@ -114,7 +114,7 @@ export function SettingsShell({ plan = 'free', title, description, role: rolePro
 
   return (
     <AppShell plan={normalizedPlan} role={role}>
-      <div className="page-head">
+      <div className="page-head settings-page-head">
         <div>
           <h2>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
