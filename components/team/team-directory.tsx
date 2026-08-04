@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { normalizeRole } from '@/lib/roles';
+import { normalizeJobStatus } from '@/lib/worker-assignment';
 import { supabase } from '@/lib/supabase';
 
 type DirectoryMember = {
@@ -26,12 +27,25 @@ type ProfileRow = {
   email: string | null;
 };
 
+type WorkerRow = {
+  id: string;
+  auth_user_id: string | null;
+  email: string | null;
+};
+
 type JobRow = {
+  id: string;
   assigned_to: string | null;
+  assigned_email: string | null;
   status: string | null;
   scheduled_start: string | null;
   start_date: string | null;
   completed_at: string | null;
+};
+
+type AssignmentRow = {
+  job_id: string;
+  worker_id: string;
 };
 
 type JobSummary = {
@@ -48,10 +62,6 @@ function roleLabel(role: string) {
 
 function emptySummary(): JobSummary {
   return { active: 0, completed: 0, lastJobAt: null };
-}
-
-function isCompletedStatus(status: string | null) {
-  return ['completed', 'finished', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
 }
 
 function formatLastJob(value: string | null) {
@@ -112,17 +122,22 @@ export function TeamDirectory() {
 
       const rows = (memberRows || []) as MemberRow[];
       const ids = rows.map((row) => row.user_id);
-      const [{ data: profileRows }, { data: jobRows }] = await Promise.all([
+      const [{ data: profileRows }, { data: workerRows }, { data: jobRows }, { data: assignmentRows }] = await Promise.all([
         ids.length
           ? supabase.from('profiles').select('id, full_name, email').in('id', ids)
           : Promise.resolve({ data: [] as ProfileRow[] }),
-        ids.length
-          ? supabase
-              .from('jobs')
-              .select('assigned_to, status, scheduled_start, start_date, completed_at')
-              .eq('organization_id', workspace.organizationId)
-              .in('assigned_to', ids)
-          : Promise.resolve({ data: [] as JobRow[] })
+        supabase
+          .from('workers')
+          .select('id, auth_user_id, email')
+          .eq('organization_id', workspace.organizationId),
+        supabase
+          .from('jobs')
+          .select('id, assigned_to, assigned_email, status, scheduled_start, start_date, completed_at')
+          .eq('organization_id', workspace.organizationId),
+        supabase
+          .from('job_assignments')
+          .select('job_id, worker_id')
+          .eq('organization_id', workspace.organizationId)
       ]);
 
       const profiles = new Map<string, ProfileRow>();
@@ -143,16 +158,61 @@ export function TeamDirectory() {
         })
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      const workers = (workerRows || []) as WorkerRow[];
+      const jobs = (jobRows || []) as JobRow[];
+      const assignments = (assignmentRows || []) as AssignmentRow[];
+      const userIdByWorkerId = new Map<string, string>();
+      const userIdByEmail = new Map<string, string>();
+      const jobById = new Map(jobs.map((job) => [job.id, job]));
+      const jobIdsByUserId = new Map<string, Set<string>>();
+
+      for (const member of next) {
+        if (member.email) userIdByEmail.set(member.email.toLowerCase(), member.userId);
+        jobIdsByUserId.set(member.userId, new Set());
+      }
+
+      for (const worker of workers) {
+        if (worker.auth_user_id && ids.includes(worker.auth_user_id)) {
+          userIdByWorkerId.set(worker.id, worker.auth_user_id);
+        } else if (worker.email) {
+          const userId = userIdByEmail.get(worker.email.trim().toLowerCase());
+          if (userId) userIdByWorkerId.set(worker.id, userId);
+        }
+      }
+
+      const addJob = (userId: string | undefined, jobId: string) => {
+        if (!userId || !jobIdsByUserId.has(userId)) return;
+        jobIdsByUserId.get(userId)?.add(jobId);
+      };
+
+      for (const job of jobs) {
+        const directAssignment = String(job.assigned_to || '');
+        const directUserId = userIdByWorkerId.get(directAssignment) || (ids.includes(directAssignment) ? directAssignment : undefined);
+        addJob(directUserId, job.id);
+
+        if (job.assigned_email) {
+          addJob(userIdByEmail.get(job.assigned_email.trim().toLowerCase()), job.id);
+        }
+      }
+
+      for (const assignment of assignments) {
+        addJob(userIdByWorkerId.get(assignment.worker_id), assignment.job_id);
+      }
+
       const summaries: Record<string, JobSummary> = {};
-      for (const id of ids) summaries[id] = emptySummary();
-      for (const job of (jobRows || []) as JobRow[]) {
-        if (!job.assigned_to) continue;
-        const summary = summaries[job.assigned_to] || emptySummary();
-        if (isCompletedStatus(job.status)) summary.completed += 1;
-        else summary.active += 1;
-        const value = job.completed_at || job.scheduled_start || job.start_date;
-        if (value && (!summary.lastJobAt || value > summary.lastJobAt)) summary.lastJobAt = value;
-        summaries[job.assigned_to] = summary;
+      for (const id of ids) {
+        const summary = emptySummary();
+        for (const jobId of jobIdsByUserId.get(id) || []) {
+          const job = jobById.get(jobId);
+          if (!job) continue;
+          const status = normalizeJobStatus(job.status);
+          if (status === 'completed') summary.completed += 1;
+          else if (status === 'active' || status === 'unknown') summary.active += 1;
+
+          const value = job.completed_at || job.scheduled_start || job.start_date;
+          if (value && (!summary.lastJobAt || value > summary.lastJobAt)) summary.lastJobAt = value;
+        }
+        summaries[id] = summary;
       }
 
       if (!cancelled) {
