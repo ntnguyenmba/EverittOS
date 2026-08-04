@@ -52,9 +52,12 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           position: relative;
           isolation: isolate;
           min-height: 100svh;
+          width: 100%;
+          max-width: 100vw;
           display: grid;
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
+          overflow-x: hidden;
           background: #dfe8ee;
         }
 
@@ -97,13 +100,24 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
 
         .dashboard-shell > .main {
           grid-area: main;
-          width: min(1240px, calc(100% - clamp(48px, 8vw, 112px))) !important;
-          max-width: 1240px !important;
+          width: 100% !important;
+          max-width: 100% !important;
           min-width: 0 !important;
-          margin: 0 auto !important;
-          padding: 28px 0 40px !important;
+          margin: 0 !important;
+          padding: 28px clamp(24px, 4vw, 56px) 40px !important;
           box-sizing: border-box !important;
           overflow-x: hidden !important;
+        }
+
+        .dashboard-shell .app-page-top,
+        .dashboard-shell .app-page-content,
+        .dashboard-shell > .main > footer {
+          width: min(1240px, 100%) !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          box-sizing: border-box !important;
         }
 
         .dashboard-shell > .main,
@@ -122,11 +136,13 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         .dashboard-shell .dashboard-home,
         .dashboard-shell .portal-page,
         .dashboard-shell .authenticated-portal {
-          width: 100% !important;
           max-width: 100% !important;
           min-width: 0 !important;
-          margin-inline: 0 !important;
           box-sizing: border-box !important;
+        }
+
+        .dashboard-shell .app-page-content {
+          container-type: inline-size;
         }
 
         .dashboard-shell .dashboard-revenue-grid,
@@ -159,12 +175,32 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           writing-mode: horizontal-tb !important;
         }
 
-        @media (min-width: 1500px) {
+        @container (max-width: 720px) {
+          .dashboard-shell .dashboard-revenue-grid,
+          .dashboard-shell .role-dashboard > .stats-grid,
+          .dashboard-shell .field-dashboard > .stats-grid,
+          .dashboard-shell .team-command-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+        }
+
+        @media (min-width: 1700px) {
           .dashboard-shell .dashboard-revenue-grid,
           .dashboard-shell .role-dashboard > .stats-grid,
           .dashboard-shell .field-dashboard > .stats-grid,
           .dashboard-shell .team-command-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 1180px) and (min-width: 1024px) {
+          .dashboard-shell {
+            grid-template-columns: 260px minmax(0, 1fr);
+          }
+
+          .dashboard-shell > .main {
+            padding-left: 24px !important;
+            padding-right: 24px !important;
           }
         }
 
