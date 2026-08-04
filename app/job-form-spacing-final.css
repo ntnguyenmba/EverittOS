@@ -1,0 +1,89 @@
+/* Consistent spacing for job creation and edit forms across desktop, tablet, and mobile. */
+
+.unified-job-form {
+  display: grid !important;
+  gap: 20px !important;
+}
+
+.unified-job-form .job-create-section {
+  display: grid !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: clamp(18px, 2.2vw, 24px) !important;
+  box-sizing: border-box !important;
+}
+
+.unified-job-form .job-create-section > h4,
+.unified-job-form .job-create-section > p,
+.unified-job-form .job-create-section > label,
+.unified-job-form .job-create-section > .form-group,
+.unified-job-form .job-create-section > .grid-2,
+.unified-job-form .job-create-section > .segmented-control,
+.unified-job-form .job-create-section > .finance-metric,
+.unified-job-form .job-create-section > .finance-metric-grid,
+.unified-job-form .job-create-section > details,
+.unified-job-form .job-create-section > fieldset {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.unified-job-form .form-group {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.unified-job-form .grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+.unified-job-form label,
+.unified-job-form legend {
+  display: block !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
+}
+
+.unified-job-form .input,
+.unified-job-form select,
+.unified-job-form textarea {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.unified-job-form .segmented-control {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.unified-job-form .finance-metric-grid {
+  gap: 12px !important;
+}
+
+@media (max-width: 720px) {
+  .unified-job-form {
+    gap: 14px !important;
+  }
+
+  .unified-job-form .job-create-section {
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  .unified-job-form .grid-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .unified-job-form .segmented-control > * {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
+}
