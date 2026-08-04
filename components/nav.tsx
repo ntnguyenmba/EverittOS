@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -12,7 +12,9 @@ import { supabase } from '@/lib/supabase';
 /** Minimal chrome for legal and policy pages only. */
 export function Nav() {
   const router = useRouter();
+  const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
+  const simpleLegalPage = pathname === '/terms' || pathname === '/privacy';
 
   useEffect(() => {
     async function checkUser() {
@@ -40,7 +42,7 @@ export function Nav() {
   return (
     <header className="nav">
       <div className="container nav-inner">
-        <BrandLogo href="/login" showName />
+        {simpleLegalPage ? <span aria-hidden="true" /> : <BrandLogo href="/login" showName />}
 
         <nav className="nav-links" aria-label="Legal">
           <a href={MARKETING_SITE_URL} target="_blank" rel="noopener noreferrer">
@@ -53,7 +55,7 @@ export function Nav() {
 
         <div className="nav-actions">
           <LanguageSwitcher id="legal-nav-language" variant="compact" />
-          {loggedIn ? (
+          {simpleLegalPage ? null : loggedIn ? (
             <>
               <Link className="btn btn-primary" href="/dashboard">
                 Open app
