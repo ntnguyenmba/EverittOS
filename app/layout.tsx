@@ -65,6 +65,7 @@ import './jobs-owner-minimal.css';
 import './final-record-card-consistency.css';
 import './portal-role-consistency.css';
 import './mobile-overflow-final-fix.css';
+import './contractor-outlook-label-fix.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
