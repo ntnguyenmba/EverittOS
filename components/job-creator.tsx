@@ -1451,10 +1451,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           <p className="muted">
             Enter amounts once. For recurring jobs these become defaults on each generated visit and can be edited per visit later.
           </p>
-          <label>Client price / expected revenue</label>
+          <label>What the customer pays</label>
           <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
 
-          <label style={{ marginTop: 12 }}>Payment method</label>
+          <label style={{ marginTop: 12 }}>How the contractor is paid</label>
           <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
             <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
             <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
@@ -1463,7 +1463,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             <>
               <div className="grid-2">
                 <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
-                <div className="form-group"><label>Hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
+                <div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
               </div>
               <div className="finance-metric" style={{ marginTop: 8 }}>
                 <span className="finance-metric-label">Calculated contractor pay</span>
@@ -1471,7 +1471,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               </div>
             </>
           ) : (
-            <div className="form-group"><label>Amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
+            <div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
           )}
           <label>Contractor pay notes (optional)</label>
           <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
