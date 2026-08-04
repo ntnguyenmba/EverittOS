@@ -133,8 +133,8 @@ export function AppNavItems({
   if (isContractorRole(normalizedRole)) {
     const links = [
       { label: t('portal.contractor.nav.dashboard'), href: CONTRACTOR_PORTAL_HOME },
-      { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#jobs` },
-      { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#earnings` },
+      { label: t('portal.contractor.nav.jobs'), href: `${CONTRACTOR_PORTAL_HOME}#current-jobs` },
+      { label: t('portal.contractor.nav.earnings'), href: `${CONTRACTOR_PORTAL_HOME}#history` },
       { label: t('portal.contractor.nav.settings'), href: CONTRACTOR_PORTAL_SETTINGS }
     ];
     return (
