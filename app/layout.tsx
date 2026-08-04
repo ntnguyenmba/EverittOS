@@ -72,6 +72,7 @@ import './dashboard-responsive-fit.css';
 import './job-form-spacing-final.css';
 import './cross-role-alignment-final.css';
 import './settings-card-spacing-final.css';
+import './notification-settings-layout-fix.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
