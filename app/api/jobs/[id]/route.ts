@@ -62,6 +62,13 @@ const MANAGER_ONLY_FIELDS = new Set([
 ]);
 
 const STAFF_ALLOWED_FIELDS = new Set(['status', 'notes']);
+const COMPLETED_STATUSES = new Set(['completed', 'done', 'complete', 'closed']);
+
+function previousIsoDate(value: string): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
 
 async function resolveAssignedWorkerId(
   ctx: Extract<Awaited<ReturnType<typeof requireWorkspaceSession>>, { ok: true }>,
@@ -307,10 +314,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-
   const { data: existing, error: readError } = await ctx.supabase
     .from('jobs')
-    .select('id, title')
+    .select('id, title, status, recurring_series_id, occurrence_date, start_date')
     .eq('id', id)
     .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
@@ -322,35 +328,67 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
-  const { error } = await ctx.supabase.from('jobs').delete().eq('id', id);
+  let jobIds = [existing.id];
+  let deletedFromDate: string | null = null;
 
-  if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes('foreign key') || msg.includes('violates')) {
-      const { error: cancelError } = await ctx.supabase
-        .from('jobs')
-        .update({ status: 'cancelled', completed_at: null })
-        .eq('id', id)
-        .eq('organization_id', ctx.workspace.organizationId);
-
-      if (cancelError) {
-        return NextResponse.json({ error: mapWorkspaceSaveError(cancelError.message) }, { status: 400 });
-      }
-
-      await logWorkspaceActivity(
-        ctx.workspace.organizationId,
-        ctx.userId,
-        'job',
-        id,
-        'job_cancelled',
-        `Job cancelled: ${existing.title || 'Untitled'}`,
-        {}
-      );
-
-      return NextResponse.json({ ok: true, message: 'Job cancelled because related records exist.' });
+  if (existing.recurring_series_id) {
+    deletedFromDate = existing.occurrence_date || existing.start_date;
+    if (!deletedFromDate) {
+      return NextResponse.json({ error: 'This recurring visit is missing its occurrence date.' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
+    const { data: futureJobs, error: futureError } = await ctx.supabase
+      .from('jobs')
+      .select('id, status')
+      .eq('organization_id', ctx.workspace.organizationId)
+      .eq('recurring_series_id', existing.recurring_series_id)
+      .gte('occurrence_date', deletedFromDate);
+
+    if (futureError) {
+      return NextResponse.json({ error: mapWorkspaceSaveError(futureError.message) }, { status: 400 });
+    }
+
+    jobIds = (futureJobs || [])
+      .filter((job) => !COMPLETED_STATUSES.has(String(job.status || '').toLowerCase()))
+      .map((job) => job.id);
+
+    if (!jobIds.includes(existing.id) && !COMPLETED_STATUSES.has(String(existing.status || '').toLowerCase())) {
+      jobIds.unshift(existing.id);
+    }
+
+    const { error: seriesError } = await ctx.supabase
+      .from('recurring_job_series')
+      .update({
+        status: 'ended',
+        end_date: previousIsoDate(deletedFromDate),
+        next_generation_date: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.recurring_series_id)
+      .eq('organization_id', ctx.workspace.organizationId);
+
+    if (seriesError) {
+      return NextResponse.json({ error: mapWorkspaceSaveError(seriesError.message) }, { status: 400 });
+    }
+  }
+
+  if (!jobIds.length) {
+    return NextResponse.json({ error: 'Completed historical visits were preserved and there is nothing to delete.' }, { status: 400 });
+  }
+
+  const { error: deleteError } = await ctx.supabase
+    .from('jobs')
+    .delete()
+    .eq('organization_id', ctx.workspace.organizationId)
+    .in('id', jobIds);
+
+  if (deleteError) {
+    return NextResponse.json(
+      {
+        error: `This job could not be permanently deleted because related records still reference it. ${mapWorkspaceSaveError(deleteError.message)}`
+      },
+      { status: 409 }
+    );
   }
 
   await logWorkspaceActivity(
@@ -359,9 +397,18 @@ export async function DELETE(_request: Request, context: RouteContext) {
     'job',
     id,
     'job_deleted',
-    `Job deleted: ${existing.title || 'Untitled'}`,
-    {}
+    existing.recurring_series_id
+      ? `Recurring job deleted from ${deletedFromDate}: ${existing.title || 'Untitled'}`
+      : `Job deleted: ${existing.title || 'Untitled'}`,
+    { deletedJobCount: jobIds.length, recurringSeriesId: existing.recurring_series_id || null, deletedFromDate }
   );
 
-  return NextResponse.json({ ok: true, message: 'Job removed.' });
+  return NextResponse.json({
+    ok: true,
+    deletedJobCount: jobIds.length,
+    recurringSeriesEnded: Boolean(existing.recurring_series_id),
+    message: existing.recurring_series_id
+      ? `${jobIds.length} recurring visit${jobIds.length === 1 ? '' : 's'} removed.`
+      : 'Job removed.'
+  });
 }
