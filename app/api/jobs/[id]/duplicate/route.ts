@@ -32,16 +32,23 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
   }
 
+  const sourceColumns =
+    'id, user_id, organization_id, title, customer_name, phone, address, notes, customer_id, property_id, timezone, service_type, assigned_to, location_name, price_estimate';
+
+  // Read through the signed-in user's existing row access first. Older jobs can have a null
+  // organization_id, so filtering by the current workspace before reading incorrectly returns
+  // "Job not found" even though the owner can open the job in the app.
   const { data: source, error: sourceError } = await ctx.supabase
     .from('jobs')
-    .select(
-      'id, title, customer_name, phone, address, notes, customer_id, property_id, timezone, service_type, assigned_to, location_name, price_estimate'
-    )
+    .select(sourceColumns)
     .eq('id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
     .maybeSingle();
 
-  if (sourceError || !source) {
+  if (
+    sourceError ||
+    !source ||
+    (source.organization_id && source.organization_id !== ctx.workspace.organizationId)
+  ) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
@@ -123,6 +130,7 @@ export async function POST(_request: Request, context: RouteContext) {
       }
       return NextResponse.json({
         job: retry.data,
+        redirectTo: `/jobs/${retry.data.id}?confirmSchedule=1`,
         requiresScheduleConfirmation: true,
         message: 'Draft job created. Confirm the date and time before scheduling.'
       });
@@ -131,12 +139,14 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   // Copy checklist item labels only (not completion state).
-  const { data: checklist } = await ctx.supabase
+  const checklistQuery = ctx.supabase
     .from('job_checklist_items')
     .select('label, sort_order')
     .eq('job_id', id)
-    .eq('organization_id', ctx.workspace.organizationId)
     .order('sort_order', { ascending: true });
+  const { data: checklist } = source.organization_id
+    ? await checklistQuery.eq('organization_id', ctx.workspace.organizationId)
+    : await checklistQuery;
 
   if (checklist?.length) {
     await ctx.supabase.from('job_checklist_items').insert(
