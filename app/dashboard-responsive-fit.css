@@ -1,0 +1,98 @@
+/* Keep owner, client, and contractor dashboards fully visible at every width. */
+
+.dashboard-shell,
+.dashboard-shell > .main,
+.dashboard-shell .app-page-content,
+.role-dashboard,
+.field-dashboard,
+.dashboard-revenue-grid,
+.stats-grid,
+.team-command-grid {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .app-page-content,
+.role-dashboard,
+.field-dashboard {
+  width: 100% !important;
+  overflow-x: clip !important;
+}
+
+.dashboard-revenue-grid,
+.role-dashboard > .stats-grid,
+.field-dashboard > .stats-grid,
+.team-command-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.dashboard-revenue-grid > *,
+.stats-grid > *,
+.team-command-grid > *,
+.dashboard-section-head > *,
+.role-dashboard .card,
+.field-dashboard .card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.dashboard-revenue-metric,
+.stat-card,
+.team-command-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-wrap: anywhere !important;
+}
+
+.dashboard-section-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+}
+
+.dashboard-section-head .button-row,
+.role-dashboard .button-row,
+.field-dashboard .button-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 980px) {
+  .dashboard-revenue-grid,
+  .role-dashboard > .stats-grid,
+  .field-dashboard > .stats-grid,
+  .team-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-revenue-grid,
+  .role-dashboard > .stats-grid,
+  .field-dashboard > .stats-grid,
+  .team-command-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-section-head {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-section-head .btn,
+  .dashboard-section-head .dashboard-section-link,
+  .role-dashboard .button-row > *,
+  .field-dashboard .button-row > * {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
