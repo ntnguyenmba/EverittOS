@@ -64,6 +64,7 @@ import './role-dashboard-v1.css';
 import './jobs-owner-minimal.css';
 import './final-record-card-consistency.css';
 import './portal-role-consistency.css';
+import './mobile-overflow-final-fix.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
