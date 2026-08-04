@@ -1,4 +1,4 @@
-/* Keep owner, client, and contractor dashboards fully visible at every width. */
+/* Keep owner, client, and contractor dashboards fully visible and balanced. */
 
 .dashboard-shell,
 .dashboard-shell > .main,
@@ -21,13 +21,13 @@
   overflow-x: hidden !important;
 }
 
-/* Use at most three columns beside the desktop sidebar so the last card never clips. */
+/* Two equal columns on desktop prevent clipped or uneven metric cards. */
 .dashboard-revenue-grid,
 .role-dashboard > .stats-grid,
 .field-dashboard > .stats-grid,
 .team-command-grid {
   display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 16px !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -41,7 +41,9 @@
 .role-dashboard .card,
 .field-dashboard .card {
   min-width: 0 !important;
+  width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .dashboard-revenue-metric,
@@ -69,15 +71,6 @@
   flex-wrap: wrap !important;
   gap: 10px !important;
   max-width: 100% !important;
-}
-
-@media (max-width: 1180px) {
-  .dashboard-revenue-grid,
-  .role-dashboard > .stats-grid,
-  .field-dashboard > .stats-grid,
-  .team-command-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
 }
 
 @media (max-width: 720px) {
