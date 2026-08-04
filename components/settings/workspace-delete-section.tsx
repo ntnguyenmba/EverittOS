@@ -102,44 +102,41 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
   if (!canManage) return null;
 
   return (
-    <section className="settings-card settings-danger-zone">
-      <h3>Delete company</h3>
-      {preview?.scheduledForDeletion ? (
-        <>
-          <p className="settings-warning">This company is scheduled for deletion.</p>
-          <p className="muted">
-            You can restore it during the {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery window
-            {preview.deletionScheduledAt
-              ? ` before ${new Date(preview.deletionScheduledAt).toLocaleDateString()}`
-              : ''}
-            .
-          </p>
-          <div className="settings-actions">
-            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void restoreWorkspace()}>
-              Restore company
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="muted">
-            Permanently remove this company and its customers, jobs, bookings, files, templates, and team access
-            after a {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery window.
-          </p>
-          {preview?.hasActivePaidSubscription ? (
-            <p className="settings-warning">
-              An active subscription will be canceled through Stripe before deletion is scheduled.
+    <details className="settings-card settings-danger-zone">
+      <summary><strong>Delete company</strong></summary>
+      <div style={{ marginTop: 14 }}>
+        {preview?.scheduledForDeletion ? (
+          <>
+            <p className="settings-warning">This company is scheduled for deletion.</p>
+            <p className="muted">
+              Restore it within {WORKSPACE_DELETION_RECOVERY_DAYS} days
+              {preview.deletionScheduledAt
+                ? `, before ${new Date(preview.deletionScheduledAt).toLocaleDateString()}`
+                : ''}
+              .
             </p>
-          ) : null}
-          <div className="settings-actions">
-            <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void loadPreview()}>
-              Delete company
-            </button>
-          </div>
-        </>
-      )}
+            <div className="settings-actions">
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void restoreWorkspace()}>
+                Restore company
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="muted">Deletes the company after a {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery period.</p>
+            {preview?.hasActivePaidSubscription ? (
+              <p className="settings-warning">The active subscription will be canceled first.</p>
+            ) : null}
+            <div className="settings-actions">
+              <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void loadPreview()}>
+                Delete company
+              </button>
+            </div>
+          </>
+        )}
 
-      {message ? <p className="auth-message">{message}</p> : null}
+        {message ? <p className="auth-message">{message}</p> : null}
+      </div>
 
       <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="delete-workspace-title">
         <form method="dialog" className="confirm-dialog-body" onSubmit={(event) => event.preventDefault()}>
@@ -147,8 +144,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
           {preview ? (
             <>
               <p className="muted">
-                This will schedule <strong>{preview.organizationName}</strong> for deletion. Review what will be
-                removed:
+                This will schedule <strong>{preview.organizationName}</strong> for deletion. Review what will be removed:
               </p>
               <ul className="settings-danger-list muted">
                 <li>{preview.customers} customers</li>
@@ -182,6 +178,6 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
           </div>
         </form>
       </dialog>
-    </section>
+    </details>
   );
 }
