@@ -57,7 +57,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           display: grid;
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
-          overflow-x: hidden;
+          overflow-x: clip;
           background: #dfe8ee;
         }
 
@@ -106,7 +106,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           margin: 0 !important;
           padding: 28px clamp(24px, 4vw, 56px) 40px !important;
           box-sizing: border-box !important;
-          overflow-x: hidden !important;
+          overflow-x: clip !important;
         }
 
         .dashboard-shell .app-page-top,
@@ -193,18 +193,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
         }
 
-        @media (max-width: 1180px) and (min-width: 1024px) {
-          .dashboard-shell {
-            grid-template-columns: 260px minmax(0, 1fr);
-          }
-
-          .dashboard-shell > .main {
-            padding-left: 24px !important;
-            padding-right: 24px !important;
-          }
-        }
-
-        @media (max-width: 1023px) {
+        @media (max-width: 1279px) {
           .dashboard-shell {
             display: block;
           }
@@ -220,10 +209,11 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
             display: block;
             width: 100%;
             padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+            box-sizing: border-box;
           }
 
           .dashboard-shell-header .mobile-nav-bar {
-            width: 100% !important;
+            width: min(1240px, 100%) !important;
             min-height: 64px !important;
             margin: 0 auto !important;
             padding: 9px 14px !important;
@@ -235,7 +225,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
 
           .dashboard-shell > .main {
-            width: auto !important;
+            width: 100% !important;
             max-width: none !important;
             margin: 0 !important;
             padding: 14px max(20px, env(safe-area-inset-right)) 32px max(20px, env(safe-area-inset-left)) !important;
