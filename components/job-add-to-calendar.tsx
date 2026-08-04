@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   downloadCalendarIcs,
   googleCalendarEventUrl,
@@ -10,7 +10,13 @@ import { jobCalendarEvent, type JobCalendarFields } from '@/lib/job-calendar';
 
 export function JobAddToCalendar({ job }: { job: JobCalendarFields }) {
   const [open, setOpen] = useState(false);
+  const [isAppleDevice, setIsAppleDevice] = useState(false);
   const event = useMemo(() => jobCalendarEvent(job), [job]);
+
+  useEffect(() => {
+    const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '';
+    setIsAppleDevice(/Mac|iPhone|iPad|iPod/i.test(platform));
+  }, []);
 
   if (!event) {
     return (
@@ -28,7 +34,7 @@ export function JobAddToCalendar({ job }: { job: JobCalendarFields }) {
       {open ? (
         <div className="inline-actions" style={{ marginTop: 10, flexWrap: 'wrap', gap: 8 }}>
           <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
-            Download calendar file
+            {isAppleDevice ? 'Add to Apple Calendar' : 'Download calendar file'}
           </button>
           <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
             Add to Google Calendar
