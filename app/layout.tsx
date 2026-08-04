@@ -63,6 +63,7 @@ import './minimal-release-polish.css';
 import './role-dashboard-v1.css';
 import './jobs-owner-minimal.css';
 import './final-record-card-consistency.css';
+import './portal-role-consistency.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
