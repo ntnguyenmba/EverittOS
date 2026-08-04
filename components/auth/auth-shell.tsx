@@ -14,15 +14,15 @@ type AuthShellProps = {
 const authIntroCopy = {
   en: {
     subtitle: 'Run your business from one place.',
-    description: 'Customers, jobs, scheduling, teams, photos, payments, and financial tracking in one clear workspace.'
+    description: 'Customers, jobs, scheduling, teams, photos, payments, and financial tracking.'
   },
   es: {
     subtitle: 'Gestione su negocio desde un solo lugar.',
-    description: 'Clientes, trabajos, horarios, equipos, fotos, pagos y seguimiento financiero en un espacio de trabajo claro.'
+    description: 'Clientes, trabajos, horarios, equipos, fotos, pagos y seguimiento financiero.'
   },
   vi: {
     subtitle: 'Quản lý doanh nghiệp của bạn ở một nơi.',
-    description: 'Khách hàng, công việc, lịch, đội nhóm, ảnh, thanh toán và theo dõi tài chính trong một không gian rõ ràng.'
+    description: 'Khách hàng, công việc, lịch, đội nhóm, ảnh, thanh toán và theo dõi tài chính.'
   }
 };
 
@@ -38,7 +38,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
       <div className="auth-tech-shell">
         <header className="auth-tech-header">
-          <BrandLogo href="/" size={44} />
+          <BrandLogo href="/" size={44} showName={false} />
           <div className="auth-shell-language auth-tech-language">
             <LanguageSwitcher id="auth-language" variant="compact" />
           </div>
