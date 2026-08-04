@@ -70,6 +70,7 @@ import './mobile-overflow-final-fix.css';
 import './contractor-outlook-label-fix.css';
 import './dashboard-responsive-fit.css';
 import './job-form-spacing-final.css';
+import './cross-role-alignment-final.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
