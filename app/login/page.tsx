@@ -33,8 +33,8 @@ const loginCopy = {
     createAccount: 'Create account',
     startFree: 'Start free',
     storyTitle: 'Built from real work.',
-    storyBody: 'We built the software we always wanted to use.',
-    storyClose: 'Today we use it every day. Now you can too.',
+    storyBody: 'We use it every day.',
+    storyClose: 'Now you can too.',
     selectedPlan: 'Selected plan:',
     continueSetup: 'Sign in to continue setup.',
     accountDeleted: 'Your account has been permanently deleted.',
@@ -55,8 +55,8 @@ const loginCopy = {
     createAccount: 'Crear cuenta',
     startFree: 'Comenzar gratis',
     storyTitle: 'Creado a partir del trabajo real.',
-    storyBody: 'No encontramos un software que realmente quisiéramos usar, así que creamos el nuestro.',
-    storyClose: 'Hoy lo usamos todos los días. Ahora usted también puede usarlo.',
+    storyBody: 'Lo usamos todos los días.',
+    storyClose: 'Ahora usted también puede usarlo.',
     selectedPlan: 'Plan seleccionado:',
     continueSetup: 'Inicie sesión para continuar la configuración.',
     accountDeleted: 'Su cuenta se eliminó permanentemente.',
@@ -77,8 +77,8 @@ const loginCopy = {
     createAccount: 'Tạo tài khoản',
     startFree: 'Bắt đầu miễn phí',
     storyTitle: 'Được xây dựng từ công việc thực tế.',
-    storyBody: 'Chúng tôi không tìm thấy phần mềm mình thực sự muốn dùng, nên đã tự xây dựng một hệ thống riêng.',
-    storyClose: 'Chúng tôi dùng nó mỗi ngày. Giờ bạn cũng có thể dùng.',
+    storyBody: 'Chúng tôi dùng nó mỗi ngày.',
+    storyClose: 'Giờ bạn cũng có thể dùng.',
     selectedPlan: 'Gói đã chọn:',
     continueSetup: 'Đăng nhập để tiếp tục thiết lập.',
     accountDeleted: 'Tài khoản của bạn đã bị xóa vĩnh viễn.',
@@ -121,7 +121,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const signupHref = `/signup?next=${encodeURIComponent(next)}${selectedPlan !== 'free' ? `&plan=${selectedPlan}` : ''}`;
-  const { t, locale } = useTranslation();
+  const { locale } = useTranslation();
   const copy = loginCopy[locale] || loginCopy.en;
 
   function showError(nextError: LoginClientError) {
@@ -231,8 +231,6 @@ function LoginForm() {
           {copy.selectedPlan} <strong>{planDisplayName(selectedPlan as EverittosPlan)}</strong>. {copy.continueSetup}
         </p>
       ) : null}
-
-      <p className="auth-methods-note">{t('auth.signInMethods')}</p>
 
       <form className="auth-form card" onSubmit={handleLogin}>
         <div className="auth-field">
