@@ -1,0 +1,52 @@
+name: Fix job finance labels
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-job-finance-labels.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Clarify finance wording
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('components/job-creator.tsx')
+          text = path.read_text()
+
+          replacements = {
+              '<label>Client price / expected revenue</label>': '<label>What the customer pays</label>',
+              '<label style={{ marginTop: 12 }}>Payment method</label>': '<label style={{ marginTop: 12 }}>How the contractor is paid</label>',
+              '<div className="form-group"><label>Amount</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>': '<div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>',
+              '<div className="form-group"><label>Hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>': '<div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>',
+          }
+
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing expected text: {old}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/fix-job-finance-labels.yml
+
+      - name: Commit to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/job-creator.tsx .github/workflows/fix-job-finance-labels.yml
+          git commit -m "Clarify customer and contractor pay fields"
+          git push origin main
