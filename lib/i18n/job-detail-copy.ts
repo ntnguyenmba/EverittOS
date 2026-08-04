@@ -144,14 +144,11 @@ const copy: Record<Locale, JobDetailCopy> = {
     recurringSeriesCopy: (date) => `This visit is part of a recurring series${date ? ` (${date})` : ''}. Use these actions only for future visits or the series.`,
     working: 'Working...', skipVisit: 'Skip this visit', cancelVisit: 'Cancel this visit', editFuture: 'Edit this and future', editSeries: 'Edit entire series',
     pauseSeries: 'Pause series', resumeSeries: 'Resume series', endSeries: 'End series', internalMetadata: 'Internal details', saveInternalNotes: 'Save team notes', jobId: 'Job ID', money: 'Money',
-    deleteJob: 'Delete job',
-    deleteJobSectionCopyOneTime: 'A one-time job will be permanently removed.',
-    deleteJobSectionCopyRecurring:
-      'For a recurring job, the selected visit and all future non-completed visits will be permanently removed. Earlier completed visits will remain in history.',
-    deleteJobConfirmOneTime:
-      'Permanently delete this job? Its financial amounts, assignments, schedule, and related records will be removed. This cannot be undone.',
-    deleteJobConfirmRecurring:
-      'Permanently delete this visit and all future visits in this recurring series? Earlier completed visits will remain. This cannot be undone.',
+    deleteJob: 'Delete',
+    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyRecurring: 'Delete this visit and all future visits? Past completed visits will stay.',
+    deleteJobConfirmOneTime: 'Permanently delete this job? This cannot be undone.',
+    deleteJobConfirmRecurring: 'Delete this visit and all future visits? Past completed visits will stay. This cannot be undone.',
     deletingJob: 'Deleting…',
     unableToDeleteJob: 'Could not permanently delete this job.'
   },
@@ -181,14 +178,11 @@ const copy: Record<Locale, JobDetailCopy> = {
     moreAdvanced: 'Más / Avanzado', recurringSeries: 'Serie recurrente', recurringSeriesCopy: (date) => `Esta visita forma parte de una serie recurrente${date ? ` (${date})` : ''}. Usa estas acciones solo para visitas futuras o la serie.`,
     working: 'Procesando...', skipVisit: 'Omitir esta visita', cancelVisit: 'Cancelar esta visita', editFuture: 'Editar esta y las futuras', editSeries: 'Editar toda la serie',
     pauseSeries: 'Pausar serie', resumeSeries: 'Reanudar serie', endSeries: 'Finalizar serie', internalMetadata: 'Detalles internos', saveInternalNotes: 'Guardar notas del equipo', jobId: 'ID del trabajo', money: 'Dinero',
-    deleteJob: 'Eliminar trabajo',
-    deleteJobSectionCopyOneTime: 'Un trabajo único se eliminará permanentemente.',
-    deleteJobSectionCopyRecurring:
-      'En un trabajo recurrente, la visita seleccionada y todas las visitas futuras no completadas se eliminarán permanentemente. Las visitas completadas anteriores permanecerán en el historial.',
-    deleteJobConfirmOneTime:
-      '¿Eliminar permanentemente este trabajo? Se eliminarán sus montos financieros, asignaciones, horario y registros relacionados. Esto no se puede deshacer.',
-    deleteJobConfirmRecurring:
-      '¿Eliminar permanentemente esta visita y todas las visitas futuras de esta serie recurrente? Las visitas completadas anteriores permanecerán. Esto no se puede deshacer.',
+    deleteJob: 'Eliminar',
+    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyRecurring: '¿Eliminar esta visita y todas las visitas futuras? Las visitas completadas anteriores se conservarán.',
+    deleteJobConfirmOneTime: '¿Eliminar permanentemente este trabajo? Esto no se puede deshacer.',
+    deleteJobConfirmRecurring: '¿Eliminar esta visita y todas las visitas futuras? Las visitas completadas anteriores se conservarán. Esto no se puede deshacer.',
     deletingJob: 'Eliminando…',
     unableToDeleteJob: 'No se pudo eliminar permanentemente este trabajo.'
   },
@@ -214,14 +208,11 @@ const copy: Record<Locale, JobDetailCopy> = {
     recurringSeriesCopy: (date) => `Lần làm này thuộc chuỗi định kỳ${date ? ` (${date})` : ''}. Chỉ dùng các thao tác này cho các lần làm tương lai hoặc toàn bộ chuỗi.`,
     working: 'Đang xử lý...', skipVisit: 'Bỏ qua lần này', cancelVisit: 'Hủy lần này', editFuture: 'Sửa lần này và tương lai', editSeries: 'Sửa toàn bộ chuỗi',
     pauseSeries: 'Tạm dừng chuỗi', resumeSeries: 'Tiếp tục chuỗi', endSeries: 'Kết thúc chuỗi', internalMetadata: 'Chi tiết nội bộ', saveInternalNotes: 'Lưu ghi chú nhóm', jobId: 'Mã công việc', money: 'Tiền',
-    deleteJob: 'Xóa công việc',
-    deleteJobSectionCopyOneTime: 'Công việc một lần sẽ bị xóa vĩnh viễn.',
-    deleteJobSectionCopyRecurring:
-      'Với công việc định kỳ, lần làm đã chọn và tất cả các lần chưa hoàn tất trong tương lai sẽ bị xóa vĩnh viễn. Các lần đã hoàn tất trước đó vẫn được giữ trong lịch sử.',
-    deleteJobConfirmOneTime:
-      'Xóa vĩnh viễn công việc này? Số tiền tài chính, phân công, lịch và các bản ghi liên quan sẽ bị xóa. Không thể hoàn tác.',
-    deleteJobConfirmRecurring:
-      'Xóa vĩnh viễn lần làm này và tất cả các lần làm trong tương lai của chuỗi định kỳ? Các lần đã hoàn tất trước đó sẽ được giữ lại. Không thể hoàn tác.',
+    deleteJob: 'Xóa',
+    deleteJobSectionCopyOneTime: '',
+    deleteJobSectionCopyRecurring: 'Xóa lần làm này và tất cả các lần trong tương lai? Các lần đã hoàn tất trước đó sẽ được giữ lại.',
+    deleteJobConfirmOneTime: 'Xóa vĩnh viễn công việc này? Không thể hoàn tác.',
+    deleteJobConfirmRecurring: 'Xóa lần làm này và tất cả các lần trong tương lai? Các lần đã hoàn tất trước đó sẽ được giữ lại. Không thể hoàn tác.',
     deletingJob: 'Đang xóa…',
     unableToDeleteJob: 'Không thể xóa vĩnh viễn công việc này.'
   }
