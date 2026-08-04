@@ -1,0 +1,18 @@
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
+  .everitt-cmd-kbd,
+  .everitt-cmd-kbd-muted,
+  .command-ask-head .muted {
+    display: none !important;
+  }
+
+  .everitt-cmd-footer {
+    font-size: 0 !important;
+  }
+
+  .everitt-cmd-footer::before {
+    content: 'Tap outside this panel to close.';
+    display: block;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
