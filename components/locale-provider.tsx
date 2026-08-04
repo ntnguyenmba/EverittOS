@@ -66,15 +66,44 @@ export function LocaleProvider({
   const normalizedInitialLocale = normalizeLocale(initialLocale);
   const [locale, setLocaleState] = useState<Locale>(normalizedInitialLocale);
 
-  useEffect(() => {
-    const storedLocale = readStoredLocale(normalizedInitialLocale);
-    setLocaleState(storedLocale);
-    applyDocumentLocale(storedLocale);
+  const applyLocaleState = useCallback((input: string | Locale | null | undefined) => {
+    const next = normalizeLocale(input || normalizedInitialLocale);
+    applyDocumentLocale(next);
+    setLocaleState((current) => (current === next ? current : next));
   }, [normalizedInitialLocale]);
+
+  useEffect(() => {
+    applyLocaleState(readStoredLocale(normalizedInitialLocale));
+  }, [applyLocaleState, normalizedInitialLocale]);
 
   useEffect(() => {
     applyDocumentLocale(locale);
   }, [locale]);
+
+  useEffect(() => {
+    function handleLocaleChange(event: Event) {
+      const detail = (event as CustomEvent<{ locale?: string }>).detail;
+      applyLocaleState(detail?.locale || readStoredLocale(normalizedInitialLocale));
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === LOCALE_STORAGE_KEY) applyLocaleState(event.newValue);
+    }
+
+    function handlePageShow() {
+      applyLocaleState(readStoredLocale(normalizedInitialLocale));
+    }
+
+    window.addEventListener('everittos:locale-change', handleLocaleChange);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      window.removeEventListener('everittos:locale-change', handleLocaleChange);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [applyLocaleState, normalizedInitialLocale]);
 
   const setLocale = useCallback((input: Locale) => {
     const next = normalizeLocale(input);
