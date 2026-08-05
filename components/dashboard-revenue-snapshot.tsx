@@ -111,12 +111,16 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   const outstanding = range === 'all_time'
     ? activeMetrics.stillOwed ?? 0
     : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
-  const cashAfterPaidCosts = activeMetrics.cashAfterPaidCosts ?? activeMetrics.cashAfterExpenses ?? activeMetrics.netCashFlow ?? 0;
   const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
   const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
   const expectedRevenue = activeMetrics.expectedRevenue ?? 0;
   const expenses = activeMetrics.otherExpensesThisMonth ?? activeMetrics.expenseTotalThisMonth ?? 0;
-  const expectedProfit = activeMetrics.estimatedProfit ?? activeMetrics.netEstimateThisMonth ?? 0;
+
+  // Recalculate the two summary totals from the exact values shown for the selected filter.
+  // This keeps every dashboard period internally consistent even when older stored aliases differ.
+  const cashAfterPaidCosts = Number((collected - contractorPaid - expenses).toFixed(2));
+  const expectedProfit = Number((expectedRevenue - contractorCost - expenses).toFixed(2));
+
   const selectedJobs = range === 'today' ? todayJobs : activeMetrics.totalJobs ?? 0;
   const busy = Boolean(loading || rangeLoading);
 
