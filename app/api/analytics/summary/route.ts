@@ -32,7 +32,7 @@ export async function GET() {
   const orgId = org.organizationId;
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-  let jobsRes = await supabase
+  let jobsRes: { data: JobCountRow[] | null; error: { message?: string } | null } = await supabase
     .from('jobs')
     .select(
       'id, status, completed_at, start_date, scheduled_start, due_date, created_at, is_skipped, recurring_series_id, occurrence_date'

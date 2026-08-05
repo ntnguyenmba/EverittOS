@@ -1405,7 +1405,10 @@ export async function fetchDashboardRevenueMetrics(
     res.error ? fallback : res.data || fallback;
 
   // Optional recurring columns may be missing before migrations — retry without them.
-  let jobsForCountingRes = jobsRes;
+  let jobsForCountingRes: {
+    data: Array<JobDateFields & JobCountRow> | null;
+    error: unknown;
+  } = jobsRes;
   if (jobsRes.error && /column|schema cache|does not exist/i.test(String((jobsRes.error as { message?: string }).message || ''))) {
     jobsForCountingRes = await supabase
       .from('jobs')

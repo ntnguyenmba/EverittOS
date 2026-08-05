@@ -665,7 +665,10 @@ export async function fetchDashboardMetricDetails(
   }
 
   if (metric === 'completed-jobs' || metric === 'jobs') {
-    let jobsRes = await supabase
+    let jobsRes: {
+      data: Array<JobCountRow & { title?: string | null; customer_name?: string | null }> | null;
+      error: { message?: string } | null;
+    } = await supabase
       .from('jobs')
       .select(
         'id, title, customer_name, status, completed_at, start_date, scheduled_start, due_date, created_at, is_skipped, recurring_series_id, occurrence_date'

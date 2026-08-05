@@ -226,7 +226,20 @@ test('dashboard job count reconciles with Jobs page period filter', () => {
   const dashboardCount = countValidJobsInPeriod(jobs, 'month', now);
   const jobsPageCount = countJobsForDashboardPeriod(jobs, 'month', now);
   const filtered = applyJobsExportPostFilters(
-    jobs as Array<JobCountRow & { assigned_to?: null; assigned_email?: null }>,
+    jobs.map((row) => ({
+      id: String(row.id || ''),
+      status: String(row.status || null),
+      completed_at: (row.completed_at as string | null | undefined) ?? null,
+      scheduled_start: (row.scheduled_start as string | null | undefined) ?? null,
+      start_date: (row.start_date as string | null | undefined) ?? null,
+      due_date: (row.due_date as string | null | undefined) ?? null,
+      created_at: (row.created_at as string | null | undefined) ?? null,
+      is_skipped: Boolean(row.is_skipped),
+      recurring_series_id: (row.recurring_series_id as string | null | undefined) ?? null,
+      occurrence_date: (row.occurrence_date as string | null | undefined) ?? null,
+      assigned_to: null,
+      assigned_email: null
+    })),
     parseJobsExportFilters(new URLSearchParams('period=month')),
     '2026-07-15'
   );

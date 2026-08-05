@@ -353,7 +353,10 @@ async function queryTopWorkerThisMonth(
 ): Promise<AskEverittSearchResponse | null> {
   const monthStart = monthStartDate();
 
-  let jobsRes = await supabase
+  let jobsRes: {
+    data: Array<JobCountRow & { assigned_to?: string | null }> | null;
+    error: { message?: string } | null;
+  } = await supabase
     .from('jobs')
     .select(
       'id, assigned_to, status, completed_at, start_date, scheduled_start, due_date, created_at, is_skipped, recurring_series_id, occurrence_date'
