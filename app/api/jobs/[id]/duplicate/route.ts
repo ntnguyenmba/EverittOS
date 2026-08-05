@@ -6,6 +6,7 @@ import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { isValidTimeZone } from '@/lib/time-zones';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,20 +36,20 @@ export async function POST(_request: Request, context: RouteContext) {
   const sourceColumns =
     'id, user_id, organization_id, title, customer_name, phone, address, notes, customer_id, property_id, timezone, service_type, assigned_to, location_name, price_estimate';
 
-  // Read through the signed-in user's existing row access first. Older jobs can have a null
-  // organization_id, so filtering by the current workspace before reading incorrectly returns
-  // "Job not found" even though the owner can open the job in the app.
-  const { data: source, error: sourceError } = await ctx.supabase
+  // Use the admin client only for the source lookup so legacy owner-created jobs with a null
+  // organization_id can still be copied even when current RLS no longer exposes those rows.
+  const admin = createAdminSupabase();
+  const sourceReader = admin || ctx.supabase;
+  const { data: source, error: sourceError } = await sourceReader
     .from('jobs')
     .select(sourceColumns)
     .eq('id', id)
     .maybeSingle();
 
-  if (
-    sourceError ||
-    !source ||
-    (source.organization_id && source.organization_id !== ctx.workspace.organizationId)
-  ) {
+  const belongsToWorkspace = Boolean(source?.organization_id) && source?.organization_id === ctx.workspace.organizationId;
+  const isLegacyOwnerJob = !source?.organization_id && source?.user_id === ctx.userId;
+
+  if (sourceError || !source || (!belongsToWorkspace && !isLegacyOwnerJob)) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
@@ -64,13 +65,12 @@ export async function POST(_request: Request, context: RouteContext) {
   } | null = null;
 
   if (source.property_id) {
-    const { data: property } = await ctx.supabase
+    const { data: property } = await sourceReader
       .from('customer_properties')
       .select(
         'access_instructions, supply_notes, default_price, default_duration_minutes, preferred_contractor_id, timezone, formatted_address, address'
       )
       .eq('id', source.property_id)
-      .eq('organization_id', ctx.workspace.organizationId)
       .maybeSingle();
     propertyDefaults = property;
   }
@@ -138,15 +138,12 @@ export async function POST(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: mapWorkspaceSaveError(error.message) }, { status: 400 });
   }
 
-  // Copy checklist item labels only (not completion state).
-  const checklistQuery = ctx.supabase
+  // Copy checklist item labels only, not completion state.
+  const { data: checklist } = await sourceReader
     .from('job_checklist_items')
     .select('label, sort_order')
     .eq('job_id', id)
     .order('sort_order', { ascending: true });
-  const { data: checklist } = source.organization_id
-    ? await checklistQuery.eq('organization_id', ctx.workspace.organizationId)
-    : await checklistQuery;
 
   if (checklist?.length) {
     await ctx.supabase.from('job_checklist_items').insert(
