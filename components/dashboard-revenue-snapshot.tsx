@@ -38,7 +38,7 @@ const copy = {
     totalContractorCost: 'Contractor costs', expectedRevenue: 'Job revenue', expectedProfit: 'Profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Money customers paid you.', currentBalances: 'Money customers still owe.', periodBalances: 'Money customers still owe for this period.',
     cashDesc: 'Money received minus costs already paid.', contractorsPaidDesc: 'Money already paid to contractors.',
-    contractorCostDesc: 'What the work costs you, paid or not.', expectedRevenueDesc: 'Total value of the jobs in this period.',
+    contractorCostDesc: 'What the work costs you, paid or not.', expectedRevenueDesc: 'Money received plus money customers still owe.',
     expectedProfitDesc: 'What is left after contractor costs and expenses.', expensesDesc: 'Fuel, supplies, software, and other costs.'
   },
   es: {
@@ -49,7 +49,7 @@ const copy = {
     totalContractorCost: 'Costos de contratistas', expectedRevenue: 'Ingresos de trabajos', expectedProfit: 'Ganancia', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Dinero que los clientes te pagaron.', currentBalances: 'Dinero que los clientes todavía deben.', periodBalances: 'Dinero que los clientes todavía deben de este período.',
     cashDesc: 'Dinero recibido menos costos ya pagados.', contractorsPaidDesc: 'Dinero ya pagado a contratistas.',
-    contractorCostDesc: 'Lo que cuesta el trabajo, pagado o pendiente.', expectedRevenueDesc: 'Valor total de los trabajos de este período.',
+    contractorCostDesc: 'Lo que cuesta el trabajo, pagado o pendiente.', expectedRevenueDesc: 'Dinero recibido más dinero que los clientes todavía deben.',
     expectedProfitDesc: 'Lo que queda después de contratistas y gastos.', expensesDesc: 'Combustible, suministros, software y otros costos.'
   },
   vi: {
@@ -60,7 +60,7 @@ const copy = {
     totalContractorCost: 'Chi phí nhà thầu', expectedRevenue: 'Doanh thu công việc', expectedProfit: 'Lợi nhuận', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Tiền khách đã trả cho bạn.', currentBalances: 'Tiền khách vẫn còn nợ.', periodBalances: 'Tiền khách vẫn còn nợ trong khoảng này.',
     cashDesc: 'Tiền đã nhận trừ các khoản đã trả.', contractorsPaidDesc: 'Tiền đã trả cho nhà thầu.',
-    contractorCostDesc: 'Chi phí của công việc, dù đã trả hay chưa.', expectedRevenueDesc: 'Tổng giá trị công việc trong khoảng này.',
+    contractorCostDesc: 'Chi phí của công việc, dù đã trả hay chưa.', expectedRevenueDesc: 'Tiền đã nhận cộng với tiền khách vẫn còn nợ.',
     expectedProfitDesc: 'Số tiền còn lại sau chi phí nhà thầu và chi phí khác.', expensesDesc: 'Xăng, vật tư, phần mềm và các chi phí khác.'
   }
 } as const;
@@ -113,11 +113,11 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
   const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
   const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
-  const expectedRevenue = activeMetrics.expectedRevenue ?? 0;
   const expenses = activeMetrics.otherExpensesThisMonth ?? activeMetrics.expenseTotalThisMonth ?? 0;
 
-  // Recalculate the two summary totals from the exact values shown for the selected filter.
-  // This keeps every dashboard period internally consistent even when older stored aliases differ.
+  // Use one simple ledger for every filter so the cards always add up:
+  // job revenue = money received + customers owe.
+  const expectedRevenue = Number((collected + outstanding).toFixed(2));
   const cashAfterPaidCosts = Number((collected - contractorPaid - expenses).toFixed(2));
   const expectedProfit = Number((expectedRevenue - contractorCost - expenses).toFixed(2));
 
