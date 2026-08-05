@@ -12,16 +12,6 @@ export type EnsureWorkspaceResult =
 
 const WORKSPACE_LOOKUP_TIMEOUT_MS = 2500;
 const WORKSPACE_SETUP_TIMEOUT_MS = 6500;
-const WORKSPACE_CACHE_TTL_MS = 60_000;
-
-type WorkspaceCacheEntry = {
-  value: ClientWorkspace | null;
-  expiresAt: number;
-};
-
-const workspaceCache = new Map<string, WorkspaceCacheEntry>();
-const workspaceRequests = new Map<string, Promise<ClientWorkspace | null>>();
-const workspaceSetupRequests = new Map<string, Promise<boolean>>();
 
 async function withTimeout<T>(task: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -37,96 +27,36 @@ async function withTimeout<T>(task: Promise<T>, timeoutMs: number, fallback: T):
   }
 }
 
-function readCachedWorkspace(userId: string): ClientWorkspace | null | undefined {
-  const cached = workspaceCache.get(userId);
-  if (!cached) return undefined;
-  if (cached.expiresAt <= Date.now()) {
-    workspaceCache.delete(userId);
-    return undefined;
-  }
-  return cached.value;
+async function loadOrganization(userId: string): Promise<ClientWorkspace | null> {
+  return withTimeout(fetchOrganizationContext(userId), WORKSPACE_LOOKUP_TIMEOUT_MS, null);
 }
 
-function cacheWorkspace(userId: string, value: ClientWorkspace | null) {
-  workspaceCache.set(userId, {
-    value,
-    expiresAt: Date.now() + WORKSPACE_CACHE_TTL_MS
-  });
-}
-
-export function clearWorkspaceClientCache(userId?: string) {
-  if (userId) {
-    workspaceCache.delete(userId);
-    workspaceRequests.delete(userId);
-    workspaceSetupRequests.delete(userId);
-    return;
-  }
-  workspaceCache.clear();
-  workspaceRequests.clear();
-  workspaceSetupRequests.clear();
-}
-
-async function loadOrganization(userId: string, force = false): Promise<ClientWorkspace | null> {
-  if (!force) {
-    const cached = readCachedWorkspace(userId);
-    if (cached !== undefined) return cached;
-
-    const activeRequest = workspaceRequests.get(userId);
-    if (activeRequest) return activeRequest;
-  }
-
-  const request = withTimeout(fetchOrganizationContext(userId), WORKSPACE_LOOKUP_TIMEOUT_MS, null)
-    .then((result) => {
-      cacheWorkspace(userId, result);
-      return result;
-    })
-    .finally(() => {
-      workspaceRequests.delete(userId);
+async function requestWorkspaceSetup(): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), WORKSPACE_SETUP_TIMEOUT_MS);
+  try {
+    const response = await fetch('/api/auth/setup', {
+      method: 'POST',
+      signal: controller.signal
     });
-
-  workspaceRequests.set(userId, request);
-  return request;
-}
-
-async function requestWorkspaceSetup(userId: string): Promise<boolean> {
-  const activeRequest = workspaceSetupRequests.get(userId);
-  if (activeRequest) return activeRequest;
-
-  const request = (async () => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), WORKSPACE_SETUP_TIMEOUT_MS);
-    try {
-      const response = await fetch('/api/auth/setup', {
-        method: 'POST',
-        signal: controller.signal
-      });
-      if (response.ok) workspaceCache.delete(userId);
-      return response.ok;
-    } catch {
-      return false;
-    } finally {
-      clearTimeout(timer);
-    }
-  })().finally(() => {
-    workspaceSetupRequests.delete(userId);
-  });
-
-  workspaceSetupRequests.set(userId, request);
-  return request;
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
  * Returns the current workspace for dashboard reads.
- * Reuses one short-lived lookup across the shell, dashboard, portals, and helper
- * components so each page does not repeat the same organization request.
- * Missing workspace repair runs in the background so the page can render with
- * user-scoped data instead of waiting on setup.
+ * Missing workspace repair runs in the background so the dashboard can render
+ * immediately with user-scoped data instead of showing a blank loading state.
  */
 export async function ensureOrganizationForUser(userId: string): Promise<ClientWorkspace | null> {
   const org = await loadOrganization(userId);
   if (org?.organizationId) return org;
 
-  void requestWorkspaceSetup(userId).catch(() => undefined);
+  void requestWorkspaceSetup().catch(() => undefined);
   return null;
 }
 
@@ -137,8 +67,8 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
     return { ok: true, workspace: org };
   }
 
-  await requestWorkspaceSetup(userId);
-  org = await loadOrganization(userId, true);
+  await requestWorkspaceSetup();
+  org = await loadOrganization(userId);
   if (org?.organizationId) {
     return { ok: true, workspace: org };
   }
@@ -176,8 +106,7 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
       apiOk: res.ok
     });
 
-    workspaceCache.delete(userId);
-    org = await loadOrganization(userId, true);
+    org = await loadOrganization(userId);
     if (org?.organizationId) {
       return { ok: true, workspace: org };
     }
@@ -194,8 +123,7 @@ export async function ensureWorkspaceForSave(userId: string): Promise<EnsureWork
       code: json.code
     };
   } catch {
-    workspaceCache.delete(userId);
-    org = await loadOrganization(userId, true);
+    org = await loadOrganization(userId);
     if (org?.organizationId) {
       return { ok: true, workspace: org };
     }
