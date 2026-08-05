@@ -21,6 +21,11 @@
   overflow-x: hidden !important;
 }
 
+/* Hide the broken Book again action on job details. */
+.job-detail-shell > .page-head > .button-row > .btn.btn-primary:first-child {
+  display: none !important;
+}
+
 /* Two equal columns on desktop prevent clipped or uneven metric cards. */
 .dashboard-revenue-grid,
 .role-dashboard > .stats-grid,
