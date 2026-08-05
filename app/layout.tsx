@@ -24,6 +24,7 @@ import { ContractorStaticSections } from '@/components/portal/contractor-static-
 import { JobFinanceWordingAndCustomerRate } from '@/components/job-finance-wording-and-customer-rate';
 import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { ContractorJobPayVisibility } from '@/components/contractor-job-pay-visibility';
+import { OwnerTopPerformerMetric } from '@/components/owner-top-performer-metric';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import './everitt-theme.css';
@@ -135,6 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JobFinanceWordingAndCustomerRate />
         <DashboardTodayCountFix />
         <ContractorJobPayVisibility />
+        <OwnerTopPerformerMetric />
         <LocaleProvider initialLocale={initialLocale}>
           <ToastProvider>
             <LocaleSync />
