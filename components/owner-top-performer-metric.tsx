@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { rangeBounds, type DashboardDateRange } from '@/lib/dashboard-metrics';
+import { useTranslation } from '@/components/locale-provider';
+import { formatCurrency, rangeBounds, type DashboardDateRange } from '@/lib/dashboard-metrics';
 import { getJobOperationalDate } from '@/lib/job-operational-date';
 import { isAdminRole, normalizeRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
@@ -11,9 +12,52 @@ import { supabase } from '@/lib/supabase';
 const RANGE_KEY = 'everittos-dashboard-range';
 const RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'all_time'];
 
-type Performer = {
+const copy = {
+  en: {
+    topPerformers: 'Top performers',
+    topCustomers: 'Top customers',
+    noCompletedJobs: 'No completed jobs',
+    noCustomerRevenue: 'No customer revenue',
+    completedJob: 'completed job',
+    completedJobs: 'completed jobs',
+    jobRevenue: 'job revenue',
+    noTeamPeriod: 'No team member has completed a job in this period.',
+    noCustomerPeriod: 'No customer revenue was found in this period.'
+  },
+  es: {
+    topPerformers: 'Mejores trabajadores',
+    topCustomers: 'Mejores clientes',
+    noCompletedJobs: 'No hay trabajos terminados',
+    noCustomerRevenue: 'No hay ingresos de clientes',
+    completedJob: 'trabajo terminado',
+    completedJobs: 'trabajos terminados',
+    jobRevenue: 'ingresos de trabajos',
+    noTeamPeriod: 'Ningún miembro del equipo terminó un trabajo en este período.',
+    noCustomerPeriod: 'No se encontraron ingresos de clientes en este período.'
+  },
+  vi: {
+    topPerformers: 'Nhân sự nổi bật',
+    topCustomers: 'Khách hàng hàng đầu',
+    noCompletedJobs: 'Chưa có công việc hoàn thành',
+    noCustomerRevenue: 'Chưa có doanh thu khách hàng',
+    completedJob: 'công việc đã hoàn thành',
+    completedJobs: 'công việc đã hoàn thành',
+    jobRevenue: 'doanh thu công việc',
+    noTeamPeriod: 'Chưa có thành viên nào hoàn thành công việc trong khoảng này.',
+    noCustomerPeriod: 'Chưa có doanh thu khách hàng trong khoảng này.'
+  }
+} as const;
+
+type PerformerRanking = {
+  id: string;
   name: string;
   completedJobs: number;
+};
+
+type CustomerRanking = {
+  id: string;
+  name: string;
+  revenue: number;
 };
 
 function currentRange(): DashboardDateRange {
@@ -21,17 +65,27 @@ function currentRange(): DashboardDateRange {
   return saved && RANGES.includes(saved) ? saved : 'month';
 }
 
+function amount(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
 export function OwnerTopPerformerMetric() {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [range, setRange] = useState<DashboardDateRange>('month');
-  const [performer, setPerformer] = useState<Performer | null>(null);
+  const [performers, setPerformers] = useState<PerformerRanking[]>([]);
+  const [customers, setCustomers] = useState<CustomerRanking[]>([]);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     let stopped = false;
 
     async function authorize() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
       if (!user || stopped) return;
       const [profile, organization] = await Promise.all([
         supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
@@ -42,7 +96,9 @@ export function OwnerTopPerformerMetric() {
     }
 
     void authorize();
-    return () => { stopped = true; };
+    return () => {
+      stopped = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -53,10 +109,10 @@ export function OwnerTopPerformerMetric() {
       const primaryGrid = grids.length > 1 ? grids[1] : grids[0];
       if (!primaryGrid) return;
 
-      let node = primaryGrid.querySelector<HTMLElement>('[data-owner-top-performer-host]');
+      let node = primaryGrid.querySelector<HTMLElement>('[data-owner-rankings-host]');
       if (!node) {
         node = document.createElement('div');
-        node.dataset.ownerTopPerformerHost = 'true';
+        node.dataset.ownerRankingsHost = 'true';
         node.style.display = 'contents';
         primaryGrid.appendChild(node);
       }
@@ -74,7 +130,7 @@ export function OwnerTopPerformerMetric() {
     setRange(currentRange());
     const timer = window.setInterval(() => {
       const next = currentRange();
-      setRange((previous) => previous === next ? previous : next);
+      setRange((previous) => (previous === next ? previous : next));
     }, 400);
     return () => window.clearInterval(timer);
   }, [allowed]);
@@ -84,25 +140,41 @@ export function OwnerTopPerformerMetric() {
     let stopped = false;
 
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
       if (!user || stopped) return;
       const organization = await ensureOrganizationForUser(user.id);
       const organizationId = organization?.organizationId;
       if (!organizationId) {
-        if (!stopped) setPerformer(null);
+        if (!stopped) {
+          setPerformers([]);
+          setCustomers([]);
+        }
         return;
       }
 
-      const [jobsResult, assignmentsResult, workersResult] = await Promise.all([
+      const [jobsResult, assignmentsResult, workersResult, invoicesResult, paymentsResult] = await Promise.all([
         supabase
           .from('jobs')
-          .select('id, status, completed_at, start_date, scheduled_start, due_date, assigned_to')
+          .select('id, status, completed_at, start_date, scheduled_start, due_date, assigned_to, customer_id, customer_name, revenue_amount')
           .eq('organization_id', organizationId),
         supabase.from('job_assignments').select('job_id, worker_id').eq('organization_id', organizationId),
-        supabase.from('workers').select('id, name, email').eq('organization_id', organizationId)
+        supabase.from('workers').select('id, name, email').eq('organization_id', organizationId),
+        supabase.from('invoices').select('job_id, amount, status, payment_status').eq('organization_id', organizationId),
+        supabase.from('job_payments').select('job_id, amount').eq('organization_id', organizationId)
       ]);
 
-      if (jobsResult.error || assignmentsResult.error || workersResult.error || stopped) return;
+      if (
+        jobsResult.error ||
+        assignmentsResult.error ||
+        workersResult.error ||
+        invoicesResult.error ||
+        paymentsResult.error ||
+        stopped
+      ) {
+        return;
+      }
 
       const workerNames = new Map<string, string>();
       for (const worker of workersResult.data || []) {
@@ -118,44 +190,146 @@ export function OwnerTopPerformerMetric() {
         workersByJob.set(jobId, [...(workersByJob.get(jobId) || []), workerId]);
       }
 
+      const invoiceByJob = new Map<string, number>();
+      for (const invoice of invoicesResult.data || []) {
+        const status = String(invoice.status || '').toLowerCase();
+        const paymentStatus = String(invoice.payment_status || '').toLowerCase();
+        if (['cancelled', 'canceled', 'draft', 'void', 'voided', 'deleted'].includes(status)) continue;
+        if (['cancelled', 'canceled'].includes(paymentStatus)) continue;
+        const jobId = String(invoice.job_id || '');
+        if (!jobId) continue;
+        invoiceByJob.set(jobId, (invoiceByJob.get(jobId) || 0) + amount(invoice.amount));
+      }
+
+      const paymentsByJob = new Map<string, number>();
+      for (const payment of paymentsResult.data || []) {
+        const jobId = String(payment.job_id || '');
+        if (!jobId) continue;
+        paymentsByJob.set(jobId, (paymentsByJob.get(jobId) || 0) + amount(payment.amount));
+      }
+
       const { start, end } = rangeBounds(range);
-      const counts = new Map<string, number>();
+      const performerCounts = new Map<string, number>();
+      const customerRevenue = new Map<string, { name: string; revenue: number }>();
+
       for (const job of jobsResult.data || []) {
-        if (!['completed', 'complete', 'finished', 'done'].includes(String(job.status || '').toLowerCase())) continue;
         const date = getJobOperationalDate(job);
         if (range !== 'all_time' && (!date || (start && date < start) || (end && date >= end))) continue;
 
-        const assigned = workersByJob.get(String(job.id || '')) || [];
-        const direct = String(job.assigned_to || '');
-        const workerIds = assigned.length ? assigned : direct ? [direct] : [];
-        for (const workerId of new Set(workerIds)) {
-          if (!workerNames.has(workerId)) continue;
-          counts.set(workerId, (counts.get(workerId) || 0) + 1);
+        const status = String(job.status || '').toLowerCase();
+        const cancelled = ['cancelled', 'canceled'].includes(status);
+        if (cancelled) continue;
+
+        const jobId = String(job.id || '');
+        const completed = ['completed', 'complete', 'finished', 'done'].includes(status);
+        if (completed) {
+          const assigned = workersByJob.get(jobId) || [];
+          const direct = String(job.assigned_to || '');
+          const workerIds = assigned.length ? assigned : direct ? [direct] : [];
+          for (const workerId of new Set(workerIds)) {
+            if (!workerNames.has(workerId)) continue;
+            performerCounts.set(workerId, (performerCounts.get(workerId) || 0) + 1);
+          }
         }
+
+        const customerId = String(job.customer_id || '').trim();
+        const customerName = String(job.customer_name || '').trim();
+        if (!customerId && !customerName) continue;
+        const customerKey = customerId || `name:${customerName.toLowerCase()}`;
+        const revenue = Math.max(
+          amount(job.revenue_amount),
+          invoiceByJob.get(jobId) || 0,
+          paymentsByJob.get(jobId) || 0
+        );
+        if (revenue <= 0) continue;
+        const existing = customerRevenue.get(customerKey);
+        customerRevenue.set(customerKey, {
+          name: customerName || existing?.name || 'Customer',
+          revenue: Number(((existing?.revenue || 0) + revenue).toFixed(2))
+        });
       }
 
-      const top = [...counts.entries()].sort((a, b) => b[1] - a[1] || workerNames.get(a[0])!.localeCompare(workerNames.get(b[0])!))[0];
+      const nextPerformers = [...performerCounts.entries()]
+        .map(([id, completedJobs]) => ({ id, name: workerNames.get(id) || 'Team member', completedJobs }))
+        .sort((a, b) => b.completedJobs - a.completedJobs || a.name.localeCompare(b.name))
+        .slice(0, 3);
+
+      const nextCustomers = [...customerRevenue.entries()]
+        .map(([id, value]) => ({ id, name: value.name, revenue: value.revenue }))
+        .sort((a, b) => b.revenue - a.revenue || a.name.localeCompare(b.name))
+        .slice(0, 3);
+
       if (!stopped) {
-        setPerformer(top ? { name: workerNames.get(top[0]) || 'Team member', completedJobs: top[1] } : null);
+        setPerformers(nextPerformers);
+        setCustomers(nextCustomers);
       }
     }
 
     void load();
-    return () => { stopped = true; };
+    return () => {
+      stopped = true;
+    };
   }, [allowed, range]);
 
   if (!host || !allowed) return null;
 
+  const rankingRowStyle = {
+    display: 'grid',
+    gridTemplateColumns: '28px minmax(0, 1fr) auto',
+    gap: 10,
+    alignItems: 'center',
+    width: '100%'
+  } as const;
+
   return createPortal(
-    <div className="dashboard-revenue-metric is-primary" style={{ minHeight: 120 }} aria-label="Top performer">
-      <span className="dashboard-revenue-metric-label">Top performer</span>
-      <strong className="dashboard-revenue-metric-value" style={{ fontSize: 'clamp(1.2rem, 2vw, 1.65rem)' }}>
-        {performer?.name || 'No completed jobs'}
-      </strong>
-      <span className="muted" style={{ marginTop: 8 }}>
-        {performer ? `${performer.completedJobs} completed ${performer.completedJobs === 1 ? 'job' : 'jobs'} in this period.` : 'No team member has completed a job in this period.'}
-      </span>
-    </div>,
+    <>
+      <div className="dashboard-revenue-metric is-primary" style={{ minHeight: 150 }} aria-label={c.topPerformers}>
+        <span className="dashboard-revenue-metric-label">{c.topPerformers}</span>
+        {performers.length ? (
+          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+            {performers.map((performer, index) => (
+              <div key={performer.id} style={rankingRowStyle}>
+                <strong>{index + 1}</strong>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{performer.name}</span>
+                <span className="muted">
+                  {performer.completedJobs} {performer.completedJobs === 1 ? c.completedJob : c.completedJobs}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <strong className="dashboard-revenue-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.45rem)' }}>
+              {c.noCompletedJobs}
+            </strong>
+            <span className="muted" style={{ marginTop: 8 }}>{c.noTeamPeriod}</span>
+          </>
+        )}
+      </div>
+
+      <div className="dashboard-revenue-metric is-primary" style={{ minHeight: 150 }} aria-label={c.topCustomers}>
+        <span className="dashboard-revenue-metric-label">{c.topCustomers}</span>
+        {customers.length ? (
+          <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+            {customers.map((customer, index) => (
+              <div key={customer.id} style={rankingRowStyle}>
+                <strong>{index + 1}</strong>
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.name}</span>
+                <span className="muted">{formatCurrency(customer.revenue)}</span>
+              </div>
+            ))}
+            <span className="muted" style={{ marginTop: 2 }}>{c.jobRevenue}</span>
+          </div>
+        ) : (
+          <>
+            <strong className="dashboard-revenue-metric-value" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.45rem)' }}>
+              {c.noCustomerRevenue}
+            </strong>
+            <span className="muted" style={{ marginTop: 8 }}>{c.noCustomerPeriod}</span>
+          </>
+        )}
+      </div>
+    </>,
     host
   );
 }
