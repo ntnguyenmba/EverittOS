@@ -133,11 +133,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NetworkStatusBanner />
         <PwaUpdatePrompt />
         <SuppressVercelToolbar />
-        <JobFinanceWordingAndCustomerRate />
-        <DashboardTodayCountFix />
-        <ContractorJobPayVisibility />
-        <OwnerTopPerformerMetric />
         <LocaleProvider initialLocale={initialLocale}>
+          <JobFinanceWordingAndCustomerRate />
+          <DashboardTodayCountFix />
+          <ContractorJobPayVisibility />
+          <OwnerTopPerformerMetric />
           <ToastProvider>
             <LocaleSync />
             <SessionGuard>
