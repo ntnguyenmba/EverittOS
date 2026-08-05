@@ -74,7 +74,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, ca
       return;
     }
 
-    const templateIds = Array.from(new Set((links || []).map((row) => String(row.template_id)).filter(Boolean)));
+    const templateIds = Array.from(new Set((links || []).map((row: { template_id?: string | null }) => String(row.template_id)).filter(Boolean)));
     if (!templateIds.length) {
       setInstructions([]);
       setInstructionsLoading(false);
@@ -92,7 +92,17 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, ca
       return;
     }
 
-    const stepIds = (steps || []).map((step) => String(step.id));
+    type StepRow = {
+      id?: string | null;
+      template_id?: string | null;
+      position?: number | null;
+      required?: boolean | null;
+      photo_required?: boolean | null;
+    };
+    type TemplateRow = { id?: string | null; name?: string | null };
+    type CompletionRow = { step_id?: string | null; completed?: boolean | null };
+
+    const stepIds = ((steps || []) as StepRow[]).map((step) => String(step.id));
     const [{ data: translations }, { data: completions }] = await Promise.all([
       stepIds.length
         ? supabase.from('job_instruction_step_translations').select('step_id, locale, instruction').in('step_id', stepIds)
@@ -102,8 +112,8 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, ca
         : Promise.resolve({ data: [] as Array<{ step_id: string; completed: boolean }> })
     ]);
 
-    const templateNames = new Map((templates || []).map((template) => [String(template.id), String(template.name)]));
-    const completionMap = new Map((completions || []).map((completion) => [String(completion.step_id), Boolean(completion.completed)]));
+    const templateNames = new Map(((templates || []) as TemplateRow[]).map((template) => [String(template.id), String(template.name)]));
+    const completionMap = new Map(((completions || []) as CompletionRow[]).map((completion) => [String(completion.step_id), Boolean(completion.completed)]));
     const translationsByStep = new Map<string, Map<string, string>>();
 
     for (const translation of translations || []) {
@@ -113,7 +123,7 @@ export function JobChecklist({ jobId, organizationId, userId, items, canEdit, ca
       translationsByStep.set(stepId, languageMap);
     }
 
-    const next = (steps || []).map((step) => {
+    const next = ((steps || []) as StepRow[]).map((step) => {
       const stepId = String(step.id);
       const languageMap = translationsByStep.get(stepId) || new Map<string, string>();
       const text = languageMap.get(locale) || languageMap.get('en') || Array.from(languageMap.values())[0] || '';

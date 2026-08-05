@@ -97,16 +97,19 @@ test('weekly biweekly four-week and monthly recurrence generate dates', () => {
 });
 
 test('custom recurrence and property timezone wall-clock schedule', () => {
-  const custom = generateOccurrences({
-    frequency: 'custom',
-    interval: 3,
-    intervalUnit: 'weeks',
-    weekday: 2,
-    startDate: '2026-08-04',
-    preferredStartTime: '14:30',
-    durationMinutes: 120,
-    timezone: 'America/Chicago'
-  });
+  const custom = generateOccurrences(
+    {
+      frequency: 'custom',
+      interval: 3,
+      intervalUnit: 'weeks',
+      weekday: 2,
+      startDate: '2026-08-04',
+      preferredStartTime: '14:30',
+      durationMinutes: 120,
+      timezone: 'America/Chicago'
+    },
+    { skipOverdueToday: false }
+  );
   assert.equal(custom[0].occurrenceDate, '2026-08-04');
   assert.equal(custom[0].scheduledStart, '2026-08-04T14:30:00');
   assert.equal(custom[1].occurrenceDate, '2026-08-25');
@@ -198,14 +201,17 @@ test('job create persists contractor assignment into job_assignments', () => {
 
 test('job detail repairs missing assignment rows and hides reassign prompt when assigned', () => {
   const detail = read('app/jobs/[id]/page.tsx');
-  assert.match(detail, /Single source of truth/);
+  assert.match(detail, /assignedWorkerId && !typedAssignments\.some/);
   assert.match(detail, /assigned_to/);
   assert.match(detail, /job_assignments/);
+  assert.match(detail, /\.upsert\(/);
   const assignments = read('components/job-assignments.tsx');
   assert.match(assignments, /assignments\.length === 0/);
   assert.match(assignments, /Assign contractor/);
-  assert.match(assignments, /Add another contractor/);
-  assert.match(assignments, /jobs'\)\.update\(\{ assigned_to:/);
+  assert.match(assignments, /Assign existing contractor/);
+  assert.match(assignments, /Add manual contractor/);
+  assert.match(assignments, /\.from\('jobs'\)/);
+  assert.match(assignments, /\.update\(\{\s*assigned_to:/);
 });
 
 test('series actions support skip pause resume end and edit scopes', () => {

@@ -102,7 +102,7 @@ describe('payment receipt details', () => {
       outstanding: 0
     });
 
-    assert.equal(view.amountPaidLabel, 'Amount paid');
+    assert.equal(view.amountPaidLabel, 'Amount received');
     assert.equal(view.amountPaidValue, '$180.00');
     assert.equal(view.paidOnLabel, 'Paid on July 21, 2026.');
     assert.equal(view.paidInFull, true);

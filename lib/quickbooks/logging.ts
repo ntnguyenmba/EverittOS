@@ -7,7 +7,7 @@ export type QuickBooksSyncLogInput = {
   entityId?: string | null;
   action: string;
   direction?: 'export' | 'import';
-  status: 'pending' | 'completed' | 'failed' | 'created' | 'updated';
+  status: 'pending' | 'completed' | 'failed' | 'created' | 'updated' | 'completed_with_errors' | 'started';
   externalId?: string | null;
   errorMessage?: string | null;
   intuitTid?: string | null;

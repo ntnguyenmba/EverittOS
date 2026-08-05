@@ -192,6 +192,7 @@ export function AddressAutocomplete({
       if (!suggestions.length) return;
       setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
     } else if (event.key === 'Enter') {
+      // Only consume Enter when a suggestion is actively highlighted.
       if (activeIndex >= 0 && suggestions[activeIndex]) {
         event.preventDefault();
         applySuggestion(suggestions[activeIndex]);
@@ -222,6 +223,7 @@ export function AddressAutocomplete({
         aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
         onChange={(event) => {
           const next = event.target.value;
+          // Manual text is always preserved — typing does not require picking a suggestion.
           onChange(next, next.trim() ? structuredAddressFromManual(next) : null);
         }}
         onFocus={() => {

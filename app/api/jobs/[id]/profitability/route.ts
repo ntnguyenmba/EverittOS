@@ -26,7 +26,7 @@ async function resolveJob(
   return job as ResolvedJob | null;
 }
 
-export function withPlannedExpenses(
+function withPlannedExpenses(
   profitability: JobProfitability,
   expectedAdditionalExpense: number | null | undefined
 ): JobProfitability & { expectedAdditionalExpense: number } {

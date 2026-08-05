@@ -73,15 +73,18 @@ test('weekly every-two-weeks every-four-weeks monthly and custom recurrence', ()
   const monthly = generateOccurrenceDates({ frequency: 'monthly', startDate: '2026-08-06' });
   assert.equal(monthly[1], '2026-09-06');
 
-  const custom = generateOccurrences({
-    frequency: 'custom',
-    interval: 3,
-    intervalUnit: 'weeks',
-    weekday: 2,
-    startDate: '2026-08-04',
-    preferredStartTime: '14:30',
-    timezone: 'America/Chicago'
-  });
+  const custom = generateOccurrences(
+    {
+      frequency: 'custom',
+      interval: 3,
+      intervalUnit: 'weeks',
+      weekday: 2,
+      startDate: '2026-08-04',
+      preferredStartTime: '14:30',
+      timezone: 'America/Chicago'
+    },
+    { skipOverdueToday: false }
+  );
   assert.equal(custom[0].scheduledStart, '2026-08-04T14:30:00');
   assert.equal(custom[1].occurrenceDate, '2026-08-25');
 });

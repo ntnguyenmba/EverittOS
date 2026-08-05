@@ -1,21 +1,22 @@
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, it } from 'node:test';
 
 describe('Stripe hardened webhook', () => {
   it('keeps failed activation events retryable', () => {
     const source = fs.readFileSync('app/api/stripe/webhook-v2/route.ts', 'utf8');
-    expect(source).toContain(".ilike('event_type', 'webhook.sync.ok:%')");
-    expect(source).toContain(".delete()\n      .eq('stripe_event_id', event.id)");
-    expect(source).toContain('Stripe should retry this event.');
-    expect(source).toContain('status: 500');
+    assert.match(source, /\.ilike\('event_type', 'webhook\.sync\.ok:%'\)/);
+    assert.match(source, /\.delete\(\)\s*\n\s*\.eq\('stripe_event_id', event\.id\)/);
+    assert.match(source, /Stripe should retry this event\./);
+    assert.match(source, /status:\s*500/);
   });
 
   it('requires successful sync for paid activation events only', () => {
     const source = fs.readFileSync('app/api/stripe/webhook-v2/route.ts', 'utf8');
-    expect(source).toContain("'checkout.session.completed'");
-    expect(source).toContain("'customer.subscription.created'");
-    expect(source).toContain("'customer.subscription.updated'");
-    expect(source).toContain("'invoice.payment_succeeded'");
-    expect(source).not.toContain("'invoice.payment_failed',");
+    assert.match(source, /'checkout\.session\.completed'/);
+    assert.match(source, /'customer\.subscription\.created'/);
+    assert.match(source, /'customer\.subscription\.updated'/);
+    assert.match(source, /'invoice\.payment_succeeded'/);
+    assert.doesNotMatch(source, /'invoice\.payment_failed',/);
   });
 });

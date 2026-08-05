@@ -212,30 +212,34 @@ export function OwnerTopPerformerMetric() {
       const performerCounts = new Map<string, number>();
       const customerRevenue = new Map<string, { name: string; revenue: number }>();
 
+      const seenJobIds = new Set<string>();
       for (const job of jobsResult.data || []) {
         const date = getJobOperationalDate(job);
         if (range !== 'all_time' && (!date || (start && date < start) || (end && date >= end))) continue;
 
         const status = String(job.status || '').toLowerCase();
-        const cancelled = ['cancelled', 'canceled'].includes(status);
-        if (cancelled) continue;
+        // Completed jobs only — never draft, cancelled, or in-progress work.
+        if (['cancelled', 'canceled', 'draft'].includes(status)) continue;
+        const completed = ['completed', 'complete', 'finished', 'done'].includes(status);
+        if (!completed) continue;
 
         const jobId = String(job.id || '');
-        const completed = ['completed', 'complete', 'finished', 'done'].includes(status);
-        if (completed) {
-          const assigned = workersByJob.get(jobId) || [];
-          const direct = String(job.assigned_to || '');
-          const workerIds = assigned.length ? assigned : direct ? [direct] : [];
-          for (const workerId of new Set(workerIds)) {
-            if (!workerNames.has(workerId)) continue;
-            performerCounts.set(workerId, (performerCounts.get(workerId) || 0) + 1);
-          }
-        }
+        if (!jobId || seenJobIds.has(jobId)) continue;
+        seenJobIds.add(jobId);
+
+        const assigned = workersByJob.get(jobId) || [];
+        const direct = String(job.assigned_to || '');
+        const workerIds = assigned.length ? assigned : direct ? [direct] : [];
+        Array.from(new Set(workerIds)).forEach((workerId) => {
+          if (!workerNames.has(workerId)) return;
+          performerCounts.set(workerId, (performerCounts.get(workerId) || 0) + 1);
+        });
 
         const customerId = String(job.customer_id || '').trim();
         const customerName = String(job.customer_name || '').trim();
         if (!customerId && !customerName) continue;
         const customerKey = customerId || `name:${customerName.toLowerCase()}`;
+        // Completed revenue once per job — max of quote/invoice/payments, never invoice + job.
         const revenue = Math.max(
           amount(job.revenue_amount),
           invoiceByJob.get(jobId) || 0,
@@ -249,12 +253,12 @@ export function OwnerTopPerformerMetric() {
         });
       }
 
-      const nextPerformers = [...performerCounts.entries()]
+      const nextPerformers = Array.from(performerCounts.entries())
         .map(([id, completedJobs]) => ({ id, name: workerNames.get(id) || 'Team member', completedJobs }))
         .sort((a, b) => b.completedJobs - a.completedJobs || a.name.localeCompare(b.name))
         .slice(0, 3);
 
-      const nextCustomers = [...customerRevenue.entries()]
+      const nextCustomers = Array.from(customerRevenue.entries())
         .map(([id, value]) => ({ id, name: value.name, revenue: value.revenue }))
         .sort((a, b) => b.revenue - a.revenue || a.name.localeCompare(b.name))
         .slice(0, 3);

@@ -34,7 +34,7 @@ export function ContractorJobPayVisibility() {
         .select('id')
         .or(`auth_user_id.eq.${user.id},email.ilike.${user.email || ''}`);
 
-      const workerIds = (workers || []).map((row) => String(row.id || '')).filter(Boolean);
+      const workerIds = (workers || []).map((row: { id?: string | null }) => String(row.id || '')).filter(Boolean);
       if (!workerIds.length || cancelled) return;
 
       const { data: assignments } = await supabase
@@ -42,7 +42,7 @@ export function ContractorJobPayVisibility() {
         .select('job_id')
         .in('worker_id', workerIds);
 
-      const assignedJobIds = (assignments || []).map((row) => String(row.job_id || '')).filter(Boolean);
+      const assignedJobIds = (assignments || []).map((row: { job_id?: string | null }) => String(row.job_id || '')).filter(Boolean);
 
       const direct = await supabase
         .from('jobs')

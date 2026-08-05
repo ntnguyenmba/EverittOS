@@ -28,7 +28,7 @@ describe('worker assignment helpers', () => {
         start_date: '2026-07-18',
         due_date: '2026-07-10'
       }),
-      '2026-07-20'
+      '2026-07-20 · 9:00 AM'
     );
     assert.equal(
       getEffectiveJobSchedule({

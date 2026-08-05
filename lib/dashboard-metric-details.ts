@@ -1,25 +1,31 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  buildJobOperationalDateMap,
+  buildJobsWithInvoiceSidePayments,
+  calculateContractorAccruedCost,
+  calculateContractorCashPaid,
   calculateLatePayments,
-  calculateCashAfterPaidCosts,
   calculateEstimatedProfit,
-  calculateExpectedRevenue,
+  calculateJobRevenue,
+  calculateMoneyKept,
   calculateOutstandingBreakdown,
   calculatePaidToYou,
-  calculateUninvoicedExpectedRevenue,
+  calculatePeriodOutstanding,
   cappedAmountPaid,
   collectibleInvoicedJobIds,
+  customersOweForRange,
   inRange,
   isCollectibleInvoice,
   num,
   rangeBounds,
   remainingBalance,
+  shouldIncludeDirectJobPayment,
   type DashboardDateRange,
   type InvoiceMetricRow,
   type InvoicePaymentRow,
-  type JobExpectedRevenueRow,
   type JobPaymentMetricRow,
-  type JobRevenueRow
+  type JobRevenueRow,
+  type LaborCostRow
 } from '@/lib/dashboard-metrics';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import {
@@ -148,7 +154,7 @@ export async function fetchDashboardMetricDetails(
     const jobs = new Map((jobsRes.data || []).map((job) => [String(job.id), job]));
     const invoiceMap = new Map(invoices.map((inv) => [String(inv.id || ''), inv]));
 
-    const { paidToYou } = calculatePaidToYou({
+    const { paidToYou, invoicePayments: invoicePaymentsTotal, directJobPayments } = calculatePaidToYou({
       invoices,
       paymentRows: invoicePayments,
       jobPaymentRows: jobPayments,
@@ -156,6 +162,8 @@ export async function fetchDashboardMetricDetails(
       end,
       range
     });
+    const invoicedJobIds = collectibleInvoicedJobIds(invoices);
+    const jobsWithInvoiceSidePayments = buildJobsWithInvoiceSidePayments(invoices, invoicePayments);
 
     const invoiceRows: DashboardDetailRow[] = [];
     for (const payment of invoicePayments) {
@@ -180,7 +188,9 @@ export async function fetchDashboardMetricDetails(
     const jobRows: DashboardDetailRow[] = [];
     for (const payment of jobPayments) {
       if (range !== 'all_time' && !inRange(payment.paid_at, start, end)) continue;
-      const job = payment.job_id ? jobs.get(String(payment.job_id)) : null;
+      const jobId = String(payment.job_id || '');
+      if (!shouldIncludeDirectJobPayment(jobId, invoicedJobIds, jobsWithInvoiceSidePayments)) continue;
+      const job = jobId ? jobs.get(jobId) : null;
       jobRows.push({
         id: String(payment.id || `${payment.job_id}-${payment.paid_at}`),
         title: job?.title || job?.customer_name || 'Direct payment',
@@ -196,25 +206,26 @@ export async function fetchDashboardMetricDetails(
     }
 
     return empty(
-      'Collected = invoice payments + direct job payments in the selected period. The same payment is never counted twice.',
+      'Money received = invoice payments + direct job payments in the selected period. The same payment is never counted twice.',
       [
         {
           id: 'invoice-payments',
           title: 'Invoice payments',
           formula: 'Payments recorded against invoices',
-          total: Number(invoiceRows.reduce((sum, row) => sum + (row.amount || 0), 0).toFixed(2)),
-          totalLabel: money(invoiceRows.reduce((sum, row) => sum + (row.amount || 0), 0)),
+          total: invoicePaymentsTotal,
+          totalLabel: money(invoicePaymentsTotal),
           rows: invoiceRows
         },
         {
           id: 'direct-payments',
           title: 'Direct job payments',
-          formula: 'Payments recorded on jobs without requiring an invoice',
-          total: Number(jobRows.reduce((sum, row) => sum + (row.amount || 0), 0).toFixed(2)),
-          totalLabel: money(jobRows.reduce((sum, row) => sum + (row.amount || 0), 0)),
+          formula: 'Direct payments kept unless the invoice ledger already recorded the same cash',
+          total: directJobPayments,
+          totalLabel: money(directJobPayments),
           rows: jobRows
         }
-      ].map((section) => ({ ...section, totalLabel: money(section.total) })).concat([])
+      ],
+      paidToYou
     );
   }
 
@@ -435,16 +446,30 @@ export async function fetchDashboardMetricDetails(
       range
     });
 
+    type LaborDetailRow = LaborCostRow & { id?: unknown; worker_name?: unknown };
+    const allLabor = (laborRes.data || []) as LaborDetailRow[];
+    const jobDates = buildJobOperationalDateMap(
+      (manualJobsRes.data || []) as Array<{
+        id?: string | null;
+        status?: string | null;
+        completed_at?: string | null;
+        start_date?: string | null;
+        scheduled_start?: string | null;
+        created_at?: string | null;
+      }>
+    );
+
     if (metric === 'net-cash') {
-      const laborRows = (laborRes.data || []).filter((row) => {
+      const contractorCashPaid = calculateContractorCashPaid(allLabor, start, end, range);
+      const paidLaborRows = allLabor.filter((row) => {
         if (String(row.payment_status || '').toLowerCase() !== 'paid') return false;
-        return range === 'all_time' || inRange(row.paid_at || row.created_at, start, end);
+        if (!row.paid_at) return false;
+        return range === 'all_time' || inRange(row.paid_at, start, end);
       });
-      const contractorCashPaid = laborRows.reduce((sum, row) => sum + num(row.total_cost), 0);
-      const net = calculateCashAfterPaidCosts({
-        cashCollected: paidToYou,
-        contractorCashPaid,
-        otherCashExpenses: expenseTotal
+      const net = calculateMoneyKept({
+        moneyReceived: paidToYou,
+        paidContractors: contractorCashPaid,
+        businessExpenses: expenseTotal
       });
       return empty(
         copy.formulas['net-cash'],
@@ -460,13 +485,13 @@ export async function fetchDashboardMetricDetails(
           {
             id: 'contractor-paid',
             title: copy.money.contractorPay,
-            formula: 'Labor marked paid in selected period',
+            formula: 'Labor marked paid with paid_at in selected period',
             total: Number(contractorCashPaid.toFixed(2)),
             totalLabel: money(contractorCashPaid),
-            rows: laborRows.map((row) => ({
-              id: String(row.id),
-              title: row.worker_name || 'Contractor',
-              subtitle: [dateLabel(String(row.paid_at || row.created_at || '')), row.payment_status]
+            rows: paidLaborRows.map((row) => ({
+              id: String(row.id || `${row.job_id || 'labor'}-${row.paid_at || ''}`),
+              title: String(row.worker_name || 'Contractor'),
+              subtitle: [dateLabel(String(row.paid_at || '')), row.payment_status]
                 .filter(Boolean)
                 .join(' · '),
               amount: num(row.total_cost),
@@ -496,62 +521,77 @@ export async function fetchDashboardMetricDetails(
       );
     }
 
-    // estimated profit = expected revenue − contractor incurred − expenses
-    const laborRows = (laborRes.data || []).filter((row) => range === 'all_time' || inRange(row.created_at, start, end));
-    const contractorCost = laborRows.reduce((sum, row) => sum + num(row.total_cost), 0);
-    const invoiced = invoices.reduce((sum, inv) => {
-      if (!isCollectibleInvoice(inv)) return sum;
-      return range === 'all_time' || inRange(inv.invoice_date || inv.created_at, start, end)
-        ? sum + num(inv.amount)
-        : sum;
-    }, 0);
-    const invoicedJobIds = collectibleInvoicedJobIds(invoices);
-    const uninvoiced = calculateUninvoicedExpectedRevenue(
-      (manualJobsRes.data || []) as JobExpectedRevenueRow[],
-      invoicedJobIds,
+    // Profit = Job revenue − Contractor costs − Business expenses
+    // Job revenue = Money received + Customers owe
+    const invoicePayments = (paymentRowsRes.data || []) as InvoicePaymentRow[];
+    const jobPayments = (jobPaymentsRes.data || []) as JobPaymentMetricRow[];
+    const revenueJobs = (manualJobsRes.data || []) as JobRevenueRow[];
+    const outstanding = calculateOutstandingBreakdown({
+      invoices,
+      jobs: revenueJobs,
+      jobPayments,
+      invoicePayments
+    });
+    const periodOutstanding = calculatePeriodOutstanding({
+      invoices,
+      jobs: revenueJobs,
+      jobPayments,
+      invoicePayments,
       start,
-      end
-    );
-    const expectedRevenue = calculateExpectedRevenue(invoiced, uninvoiced);
+      end,
+      jobDates
+    });
+    const customersOwe = customersOweForRange(range, outstanding.total, periodOutstanding.total);
+    const expectedRevenue = calculateJobRevenue(paidToYou, customersOwe);
+    const contractorCost = calculateContractorAccruedCost(allLabor, start, end, jobDates);
     const expectedProfit = calculateEstimatedProfit({
       expectedRevenue,
       contractorPay: contractorCost,
       otherExpenses: expenseTotal
     });
+    const laborInPeriod = allLabor.filter((row) => {
+      const jobId = String(row.job_id || '');
+      if (jobId) {
+        const jobDate = jobDates.get(jobId);
+        if (!jobDate) return range === 'all_time';
+        return inRange(jobDate, start, end);
+      }
+      return inRange(row.created_at, start, end);
+    });
     return empty(copy.formulas['estimated-profit'], [
       {
         id: 'expected-revenue',
         title: copy.money.expectedRevenue,
-        formula: 'Invoices created in period + uninvoiced job expected revenue',
+        formula: 'Money received + Customers owe',
         total: expectedRevenue,
         totalLabel: money(expectedRevenue),
         rows: []
       },
       {
-        id: 'invoiced',
-        title: copy.money.invoiced,
-        formula: 'Invoices created in period',
-        total: Number(invoiced.toFixed(2)),
-        totalLabel: money(invoiced),
+        id: 'money-received',
+        title: copy.money.collected,
+        formula: 'Invoice + direct payments by paid date',
+        total: paidToYou,
+        totalLabel: money(paidToYou),
         rows: []
       },
       {
-        id: 'uninvoiced',
-        title: copy.money.uninvoicedWork,
-        formula: 'Jobs with expected revenue and no invoice',
-        total: Number(uninvoiced.toFixed(2)),
-        totalLabel: money(uninvoiced),
+        id: 'customers-owe',
+        title: copy.money.outstanding,
+        formula: 'Unpaid invoice balances + unpaid direct jobs without invoices',
+        total: customersOwe,
+        totalLabel: money(customersOwe),
         rows: []
       },
       {
         id: 'contractor',
         title: copy.money.contractorCost,
-        formula: 'Labor recorded in period',
+        formula: 'Labor for jobs in the selected period (operational job date)',
         total: Number(contractorCost.toFixed(2)),
         totalLabel: money(contractorCost),
-        rows: laborRows.map((row) => ({
-          id: String(row.id),
-          title: row.worker_name || 'Contractor',
+        rows: laborInPeriod.map((row) => ({
+          id: String(row.id || `${row.job_id || 'labor'}-${row.created_at || ''}`),
+          title: String(row.worker_name || 'Contractor'),
           subtitle: String(row.payment_status || 'unpaid'),
           amount: num(row.total_cost),
           amountLabel: money(num(row.total_cost)),

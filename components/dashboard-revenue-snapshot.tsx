@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import {
+  calculateJobRevenue,
+  calculateMoneyKept,
+  calculateEstimatedProfit,
+  customersOweForRange,
   fetchDashboardRevenueMetrics,
   formatCurrency,
   type DashboardDateRange,
@@ -108,18 +112,27 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
   }, [range, loading]);
 
   const collected = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? 0;
-  const outstanding = range === 'all_time'
-    ? activeMetrics.stillOwed ?? 0
-    : activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0;
+  const outstanding = customersOweForRange(
+    range,
+    activeMetrics.stillOwed ?? 0,
+    activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0
+  );
   const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
   const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
-  const expenses = activeMetrics.otherExpensesThisMonth ?? activeMetrics.expenseTotalThisMonth ?? 0;
+  const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
 
-  // Use one simple ledger for every filter so the cards always add up:
-  // job revenue = money received + customers owe.
-  const expectedRevenue = Number((collected + outstanding).toFixed(2));
-  const cashAfterPaidCosts = Number((collected - contractorPaid - expenses).toFixed(2));
-  const expectedProfit = Number((expectedRevenue - contractorCost - expenses).toFixed(2));
+  // Same shared finance engine as the server — never a separate client formula.
+  const expectedRevenue = calculateJobRevenue(collected, outstanding);
+  const cashAfterPaidCosts = calculateMoneyKept({
+    moneyReceived: collected,
+    paidContractors: contractorPaid,
+    businessExpenses: expenses
+  });
+  const expectedProfit = calculateEstimatedProfit({
+    expectedRevenue,
+    contractorPay: contractorCost,
+    otherExpenses: expenses
+  });
 
   const selectedJobs = range === 'today' ? todayJobs : activeMetrics.totalJobs ?? 0;
   const busy = Boolean(loading || rangeLoading);

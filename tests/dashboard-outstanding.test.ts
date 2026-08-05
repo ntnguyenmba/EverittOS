@@ -142,9 +142,9 @@ test('draft invoice does not block uninvoiced job outstanding', () => {
   assert.equal(breakdown.jobTotal, 500);
 });
 
-test('expected revenue includes invoices and uninvoiced jobs without double counting', () => {
+test('job revenue equals money received plus customers owe', () => {
   const invoices: InvoiceMetricRow[] = [
-    { id: 'inv-1', amount: 2000, invoice_date: '2026-07-05', payment_status: 'paid', status: 'paid', job_id: 'job-1' },
+    { id: 'inv-1', amount: 2000, amount_paid: 600, invoice_date: '2026-07-05', payment_status: 'partially_paid', status: 'partial', job_id: 'job-1' },
     { id: 'void', amount: 500, invoice_date: '2026-07-06', payment_status: 'unpaid', status: 'void' }
   ];
   const jobs = [
@@ -170,7 +170,24 @@ test('expected revenue includes invoices and uninvoiced jobs without double coun
   );
   assert.equal(invoiced, 2000);
   assert.equal(uninvoiced, 1400);
-  assert.equal(calculateExpectedRevenue(invoiced, uninvoiced), 3400);
+
+  const moneyReceived = calculatePaidToYou({
+    invoices,
+    paymentRows: [{ invoice_id: 'inv-1', amount: 600, paid_at: '2026-07-06' }],
+    jobPaymentRows: [],
+    start: '2026-07-01',
+    end: '2026-08-01',
+    range: 'month'
+  }).paidToYou;
+  const customersOwe = calculateOutstandingBreakdown({
+    invoices,
+    jobs,
+    jobPayments: [],
+    invoicePayments: [{ invoice_id: 'inv-1', amount: 600, paid_at: '2026-07-06' }]
+  }).total;
+  assert.equal(moneyReceived, 600);
+  assert.equal(customersOwe, 2800); // 1400 invoice remaining + 1400 uninvoiced job
+  assert.equal(calculateExpectedRevenue(moneyReceived, customersOwe), 3400);
 });
 
 test('expected profit example: $3400 - $3040 - $0 = $360', () => {
@@ -276,19 +293,19 @@ test('signup referral has visible Select one and separate field labels', () => {
   }
 });
 
-test('finance cards use locale keys for Outstanding, Contractor cost, Expected profit', () => {
+test('finance cards use locale keys for Customers owe, Contractor costs, Profit', () => {
   const en = getDashboardFinanceCopy('en');
-  assert.equal(en.money.outstanding, 'Outstanding');
+  assert.equal(en.money.outstanding, 'Customers owe');
   assert.equal(
     en.money.outstandingHelp,
-    'Unpaid balances for invoices and unbilled jobs attributed to the selected period.'
+    'Remaining unpaid invoice balances plus unpaid direct jobs without invoices for the selected period.'
   );
-  assert.equal(en.money.contractorCost, 'Contractor cost');
-  assert.equal(en.money.contractorCostHelp, 'Contractor labor for jobs in this period.');
-  assert.equal(en.money.expectedProfit, 'Expected profit');
+  assert.equal(en.money.contractorCost, 'Contractor costs');
+  assert.equal(en.money.contractorCostHelp, 'Total labor cost for jobs in this period, paid or unpaid.');
+  assert.equal(en.money.expectedProfit, 'Profit');
   assert.equal(
     en.money.expectedProfitHelp,
-    'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses.'
+    'Profit = Job revenue − Contractor costs − Business expenses.'
   );
 });
 

@@ -38,7 +38,7 @@ for (const [label, token] of requiredSafeguards) {
   if (!releaseCss.includes(token)) failures.push(`Missing ${label} safeguard (${token})`);
 }
 
-if (/\.muted[^{}]*\{[^{}]*opacity:\s*(?:0|0\.[0-5])\s*;/s.test(releaseCss)) {
+if (/\.muted[^{}]*\{[^{}]*opacity:\s*(?:0|0\.[0-5])\s*;/.test(releaseCss)) {
   failures.push('Final release stylesheet must not make normal muted text look disabled');
 }
 

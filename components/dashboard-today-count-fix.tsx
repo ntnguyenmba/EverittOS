@@ -35,7 +35,7 @@ export function DashboardTodayCountFix() {
       if (result.error || cancelled) return;
 
       const today = formatLocalDate(new Date());
-      const count = (result.data || []).filter((job) => {
+      const count = (result.data || []).filter((job: { status?: string | null; scheduled_start?: string | null; start_date?: string | null }) => {
         const status = String(job.status || '').toLowerCase();
         return !FINISHED_STATUSES.has(status) && jobDate(job) === today;
       }).length;

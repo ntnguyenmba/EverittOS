@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   EXPECTED_PROFIT_FORMULA,
+  JOB_REVENUE_FORMULA,
   buildFinanceDebugBreakdown,
   calculateEstimatedProfit,
-  calculateExpectedRevenue,
+  calculateJobRevenue,
   calculatePeriodOutstanding,
   calculatePeriodUnpaidContractorPay,
   calculateUnpaidContractorPay,
@@ -15,13 +16,14 @@ import {
 } from '@/lib/dashboard-metrics';
 
 describe('dashboard period consistency', () => {
-  it('documents the exact Expected Profit formula', () => {
+  it('documents the exact Job revenue and Profit formulas', () => {
+    assert.equal(JOB_REVENUE_FORMULA, 'Job revenue = Money received + Customers owe');
     assert.equal(
       EXPECTED_PROFIT_FORMULA,
-      'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses'
+      'Profit = Job revenue − Contractor costs − Business expenses'
     );
 
-    const expectedRevenue = calculateExpectedRevenue(2000, 1400);
+    const expectedRevenue = calculateJobRevenue(2000, 1400);
     const profit = calculateEstimatedProfit({
       expectedRevenue,
       contractorPay: 1000,
@@ -112,18 +114,19 @@ describe('dashboard period consistency', () => {
       contractorLaborUnpaidLifetime: 700,
       contractorLaborAccrued: 700,
       businessExpenses: 100,
-      expectedRevenue: 2400,
-      expectedProfit: 1600,
-      cashAvailable: 900
+      expectedRevenue: 0,
+      expectedProfit: 0,
+      cashAvailable: 0
     });
 
     assert.equal(debug.collected, 1500);
-    assert.equal(debug.expectedRevenue, 2400);
-    assert.equal(debug.expectedProfit, 1600);
+    // Job revenue = money received + customers owe (period)
+    assert.equal(debug.expectedRevenue, 2300);
+    assert.equal(debug.expectedProfit, 1500);
     assert.equal(debug.cashAvailable, 900);
     assert.equal(debug.expectedProfitFormula, EXPECTED_PROFIT_FORMULA);
     assert.equal(
-      Number((debug.invoiceRevenue + debug.unbilledRevenue).toFixed(2)),
+      Number((debug.collected + debug.periodOutstanding).toFixed(2)),
       debug.expectedRevenue
     );
     assert.equal(

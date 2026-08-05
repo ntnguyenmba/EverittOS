@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  buildMoneySummaryMetrics,
   buildPrimaryDashboardMetrics,
   calculateCashAfterPaidCosts,
   calculateDirectJobOutstanding,
+  calculateJobRevenue,
+  calculateMoneyKept,
   calculatePaidToYou,
   calculateStillOwed,
   formatCurrency,
@@ -45,6 +46,30 @@ describe('Dashboard money calculations', () => {
     assert.equal(collected, 350);
   });
 
+  it('keeps direct payments after an invoice is created later with no invoice payments', () => {
+    const invoices: InvoiceMetricRow[] = [
+      {
+        id: 'inv-1',
+        amount: 500,
+        amount_paid: 0,
+        invoice_date: '2026-07-20',
+        payment_status: 'unpaid',
+        status: 'sent',
+        job_id: 'job-1'
+      }
+    ];
+    const collected = calculatePaidToYou({
+      invoices,
+      paymentRows: [],
+      jobPaymentRows: [{ job_id: 'job-1', amount: 175, paid_at: '2026-07-08' }],
+      start: '2026-07-01',
+      end: '2026-08-01',
+      range: 'month'
+    }).paidToYou;
+
+    assert.equal(collected, 175);
+  });
+
   it('outstanding includes unpaid invoices and uninvoiced job balances', () => {
     const invoices: InvoiceMetricRow[] = [
       { id: 'inv-1', amount: 400, amount_paid: 100, payment_status: 'partially_paid', job_id: 'job-a' }
@@ -77,53 +102,21 @@ describe('Dashboard money calculations', () => {
       340
     );
     assert.equal(
-      calculateCashAfterPaidCosts({
-        cashCollected: 0,
-        contractorCashPaid: 0,
-        otherCashExpenses: 0
+      calculateMoneyKept({
+        moneyReceived: 0,
+        paidContractors: 0,
+        businessExpenses: 0
       }),
       0
     );
   });
 
-  it('legacy money summary no longer includes conflicting Net cash', () => {
-    const rows = buildMoneySummaryMetrics({
-      rangeLabel: 'This month',
-      collected: 0,
-      outstanding: 0,
-      invoiced: 0,
-      expensesPaid: 0,
-      hasCreatedInvoices: false
-    });
-
-    assert.deepEqual(
-      rows.map((row) => row.key),
-      ['collected', 'outstanding']
-    );
-    assert.equal(rows.every((row) => row.value === 0), true);
-    assert.equal(formatCurrency(0).includes('0'), true);
-    assert.equal(rows.some((row) => /net cash/i.test(row.label)), false);
+  it('job revenue always equals money received plus customers owe', () => {
+    assert.equal(calculateJobRevenue(200, 50), 250);
+    assert.equal(calculateJobRevenue(0, 0), 0);
   });
 
-  it('includes invoiced metric only after invoices exist', () => {
-    const rows = buildMoneySummaryMetrics({
-      rangeLabel: 'This month',
-      collected: 200,
-      outstanding: 50,
-      invoiced: 300,
-      expensesPaid: 40,
-      hasCreatedInvoices: true
-    });
-
-    assert.deepEqual(
-      rows.map((row) => row.key),
-      ['collected', 'outstanding', 'invoiced']
-    );
-    assert.equal(rows.find((row) => row.key === 'invoiced')?.value, 300);
-    assert.equal(rows.find((row) => row.key === 'collected')?.label, 'Collected this month');
-  });
-
-  it('primary metrics use Cash after paid costs as the only cash summary', () => {
+  it('primary metrics use Money kept as the only cash summary', () => {
     const rows = buildPrimaryDashboardMetrics({
       expectedRevenue: 300,
       collected: 200,
@@ -134,11 +127,9 @@ describe('Dashboard money calculations', () => {
     });
 
     assert.equal(rows.find((row) => row.key === 'cashAfterPaidCosts')?.value, 160);
-    assert.equal(rows.some((row) => row.key === 'cashAfterPaidCosts'), true);
-    assert.equal(
-      rows.filter((row) => /cash/i.test(row.label)).length,
-      1
-    );
+    assert.equal(rows.find((row) => row.key === 'cashAfterPaidCosts')?.label, 'Money kept');
+    assert.equal(rows.find((row) => row.key === 'expectedRevenue')?.label, 'Job revenue');
+    assert.equal(formatCurrency(0).includes('0'), true);
   });
 
   it('does not treat expected job amounts as collected cash', () => {

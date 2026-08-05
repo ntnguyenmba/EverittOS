@@ -18,10 +18,11 @@ import {
 } from '@/lib/job-operational-date';
 
 describe('Dashboard expected revenue and profit', () => {
-  it('includes uninvoiced expected revenue in expected profit', () => {
-    const uninvoiced = 3400;
+  it('job revenue from money received plus customers owe drives profit', () => {
+    const moneyReceived = 0;
+    const customersOwe = 3400;
     const contractorCost = 3040;
-    const expectedRevenue = calculateExpectedRevenue(0, uninvoiced);
+    const expectedRevenue = calculateExpectedRevenue(moneyReceived, customersOwe);
     const profit = calculateEstimatedProfit({
       expectedRevenue,
       contractorPay: contractorCost,
@@ -32,7 +33,7 @@ describe('Dashboard expected revenue and profit', () => {
     assert.equal(profit, 360);
   });
 
-  it('does not double count invoiced jobs in expected revenue', () => {
+  it('does not double count invoiced jobs in uninvoiced work totals', () => {
     const jobs: JobExpectedRevenueRow[] = [
       {
         id: 'job-invoiced',
@@ -56,6 +57,7 @@ describe('Dashboard expected revenue and profit', () => {
       '2026-07-01',
       '2026-08-01'
     );
+    // Canonical job revenue uses money received + customers owe, not invoice+uninvoiced accrual.
     const expectedRevenue = calculateExpectedRevenue(2000, uninvoiced);
 
     assert.equal(uninvoiced, 1400);
@@ -168,6 +170,7 @@ describe('Dashboard expected revenue and profit', () => {
     );
     assert.equal(rows.some((row) => /net cash/i.test(row.label)), false);
     assert.equal(rows.find((row) => row.key === 'expectedProfit')?.value, 360);
-    assert.equal(rows.find((row) => row.key === 'cashAfterPaidCosts')?.label, 'Cash after paid costs');
+    assert.equal(rows.find((row) => row.key === 'cashAfterPaidCosts')?.label, 'Money kept');
+    assert.equal(rows.find((row) => row.key === 'expectedRevenue')?.label, 'Job revenue');
   });
 });

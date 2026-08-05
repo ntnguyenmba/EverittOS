@@ -150,8 +150,8 @@ test('Late payments sum overdue unpaid balances', () => {
 
 test('Estimated profit uses expected revenue and recorded costs', () => {
   const profit = calculateEstimatedProfit({
-    customerInvoices: 1000,
-    uninvoicedCompletedWork: 0,
+    moneyReceived: 1000,
+    customersOwe: 0,
     contractorPay: 300,
     otherExpenses: 100
   });

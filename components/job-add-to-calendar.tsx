@@ -14,7 +14,11 @@ export function JobAddToCalendar({ job }: { job: JobCalendarFields }) {
   const event = useMemo(() => jobCalendarEvent(job), [job]);
 
   useEffect(() => {
-    const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '';
+    const platform =
+      (navigator as Navigator & { userAgentData?: { platform?: string; mobile?: boolean } }).userAgentData?.platform
+      || navigator.platform
+      || navigator.userAgent
+      || '';
     setIsAppleDevice(/Mac|iPhone|iPad|iPod/i.test(platform));
   }, []);
 

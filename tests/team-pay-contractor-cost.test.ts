@@ -39,10 +39,10 @@ describe('Team pay and contractor cost unification', () => {
     assert.doesNotMatch(source, /contractorName/);
     assert.doesNotMatch(source, /Contractor or cleaner name/);
     assert.doesNotMatch(source, /Add the contractor or cleaner name/);
-    assert.match(source, /Payment method/);
+    assert.match(source, /paymentMethod/);
     assert.match(source, />Flat rate</);
     assert.match(source, />Hourly</);
-    assert.match(source, />Amount</);
+    assert.match(source, /What the contractor earns/);
     assert.match(source, /Calculated contractor pay/);
     assert.match(source, /Contractor pay notes \(optional\)/);
     assert.match(source, /Unassigned contractor/);

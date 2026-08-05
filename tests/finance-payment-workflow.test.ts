@@ -172,7 +172,8 @@ describe('canonical payment workflow metrics', () => {
     assert.equal(cash, 800);
 
     const profit = calculateEstimatedProfit({
-      customerInvoices: 1000,
+      moneyReceived: 1000,
+      customersOwe: 0,
       contractorPay: 425,
       otherExpenses: expenses
     });

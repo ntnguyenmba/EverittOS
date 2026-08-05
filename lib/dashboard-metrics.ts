@@ -34,8 +34,8 @@ export type DashboardRevenueMetrics = {
   /** Uninvoiced job expected revenue in the selected period (excludes jobs that already have an invoice) */
   uninvoicedCompletedWork: number;
   /**
-   * Expected revenue = invoice totals created in the period + uninvoiced job expected revenue.
-   * Invoiced jobs are never double counted.
+   * Job revenue = Money received + Customers owe for the selected filter.
+   * Always reconciles with paidToYou and periodOutstanding/stillOwed.
    */
   expectedRevenue: number;
   /**
@@ -439,20 +439,36 @@ export function calculateOutstandingBreakdown(input: {
     if (!invoiceId || amount <= 0) continue;
     paidByInvoice.set(invoiceId, Number(((paidByInvoice.get(invoiceId) || 0) + amount).toFixed(2)));
   }
+  // Direct payments on jobs that later got invoices still reduce what customers owe when the
+  // invoice ledger never absorbed them (prevents Money received + Customers owe overstating revenue).
+  const jobsWithInvoiceSidePayments = buildJobsWithInvoiceSidePayments(
+    input.invoices,
+    input.invoicePayments || []
+  );
+  const unmigratedDirectByJob = new Map<string, number>();
+  Array.from(collectedByJob.entries()).forEach(([jobId, amount]) => {
+    if (!invoicedJobIds.has(jobId)) return;
+    if (jobsWithInvoiceSidePayments.has(jobId)) return;
+    unmigratedDirectByJob.set(jobId, amount);
+  });
   const rows: OutstandingBreakdownRow[] = [];
 
   let invoiceTotal = 0;
   for (const inv of input.invoices) {
     if (!isCollectibleInvoice(inv)) continue;
     const invoiceId = String(inv.id || '');
+    const jobId = inv.job_id ? String(inv.job_id) : '';
     const paidRaw = useLedger
       ? paidByInvoice.get(invoiceId) || 0
       : num(inv.amount_paid);
-    const owed = remainingBalance(inv.amount, paidRaw);
+    // Credit unmigrated direct job payments once against the job's invoice balance.
+    const directCredit = jobId ? unmigratedDirectByJob.get(jobId) || 0 : 0;
+    if (jobId && directCredit > 0) unmigratedDirectByJob.set(jobId, 0);
+    const paidTowardInvoice = Number((paidRaw + directCredit).toFixed(2));
+    const owed = remainingBalance(inv.amount, paidTowardInvoice);
     if (owed <= 0) continue;
     invoiceTotal += owed;
-    const paid = cappedAmountPaid(inv.amount, paidRaw);
-    const jobId = inv.job_id ? String(inv.job_id) : '';
+    const paid = cappedAmountPaid(inv.amount, paidTowardInvoice);
     const job = jobId && input.jobLookup ? input.jobLookup.get(jobId) : null;
     rows.push({
       id: invoiceId,
@@ -589,7 +605,57 @@ export function countUnpaidInvoices(invoices: InvoiceMetricRow[]): number {
 }
 
 /**
- * Paid to you from payment ledger rows whose paid_at falls in range.
+ * Jobs whose collectible invoices already have payment coverage on the invoice side
+ * (ledger rows or legacy amount_paid). Used to avoid double counting the same cash
+ * when a legacy job_payments row still exists after invoicing.
+ */
+export function buildJobsWithInvoiceSidePayments(
+  invoices: InvoiceMetricRow[],
+  paymentRows: InvoicePaymentRow[]
+): Set<string> {
+  const invoicesWithLedger = new Set<string>();
+  for (const row of paymentRows) {
+    const invoiceId = String(row.invoice_id || '');
+    if (!invoiceId || num(row.amount) <= 0) continue;
+    invoicesWithLedger.add(invoiceId);
+  }
+
+  const jobIds = new Set<string>();
+  for (const inv of invoices) {
+    if (!isCollectibleInvoice(inv)) continue;
+    const invoiceId = String(inv.id || '');
+    const jobId = String(inv.job_id || '');
+    if (!jobId) continue;
+    if (invoiceId && invoicesWithLedger.has(invoiceId)) {
+      jobIds.add(jobId);
+      continue;
+    }
+    if (cappedAmountPaid(inv.amount, inv.amount_paid) > 0) {
+      jobIds.add(jobId);
+    }
+  }
+  return jobIds;
+}
+
+/**
+ * Direct job payments always count unless the job's invoice side already recorded
+ * the same cash. Creating an invoice later must never erase an earlier direct payment.
+ */
+export function shouldIncludeDirectJobPayment(
+  jobId: string,
+  invoicedJobIds: Set<string>,
+  jobsWithInvoiceSidePayments: Set<string>
+): boolean {
+  if (!jobId) return true;
+  if (!invoicedJobIds.has(jobId)) return true;
+  return !jobsWithInvoiceSidePayments.has(jobId);
+}
+
+/**
+ * Money received from payment ledger rows whose paid_at falls in range.
+ * Includes invoice payment ledger + direct job payment ledger.
+ * Never counts the same payment twice.
+ * Never loses a direct payment because a job later received an invoice.
  * Falls back to invoice summary fields when no ledger rows exist for an invoice.
  */
 export function calculatePaidToYou(input: {
@@ -662,13 +728,13 @@ export function calculatePaidToYou(input: {
     }
   }
 
-  // Direct job payments count only for jobs that do not already have a collectible invoice.
-  // This prevents counting the same customer money twice when a job later gets invoiced.
+  // Direct job payments: always include unless the invoice side already captured that cash.
   let directJobPayments = 0;
   const invoicedJobIds = collectibleInvoicedJobIds(invoices);
+  const jobsWithInvoiceSidePayments = buildJobsWithInvoiceSidePayments(invoices, paymentRows);
   for (const row of jobPaymentRows) {
     const jobId = String(row.job_id || '');
-    if (jobId && invoicedJobIds.has(jobId)) continue;
+    if (!shouldIncludeDirectJobPayment(jobId, invoicedJobIds, jobsWithInvoiceSidePayments)) continue;
     if (range === 'all_time') {
       directJobPayments += num(row.amount);
       continue;
@@ -774,8 +840,11 @@ export function calculatePeriodUnpaidContractorPay(
   );
 }
 
+export const JOB_REVENUE_FORMULA = 'Job revenue = Money received + Customers owe';
 export const EXPECTED_PROFIT_FORMULA =
-  'Expected Profit = (Invoice Revenue + Unbilled Revenue) − Contractor Cost (accrued) − Business Expenses';
+  'Profit = Job revenue − Contractor costs − Business expenses';
+export const MONEY_KEPT_FORMULA =
+  'Money kept = Money received − Paid contractors − Business expenses';
 
 export function buildFinanceDebugBreakdown(input: {
   range: DashboardDateRange;
@@ -796,6 +865,22 @@ export function buildFinanceDebugBreakdown(input: {
   expectedProfit: number;
   cashAvailable: number;
 }): FinanceDebugBreakdown {
+  const collected = Number((num(input.invoicePayments) + num(input.directJobPayments)).toFixed(2));
+  const customersOwe =
+    input.range === 'all_time'
+      ? Number(num(input.lifetimeOutstanding).toFixed(2))
+      : Number(num(input.periodOutstanding).toFixed(2));
+  const expectedRevenue = calculateJobRevenue(collected, customersOwe);
+  const expectedProfit = calculateEstimatedProfit({
+    expectedRevenue,
+    contractorPay: input.contractorLaborAccrued,
+    otherExpenses: input.businessExpenses
+  });
+  const cashAvailable = calculateMoneyKept({
+    moneyReceived: collected,
+    paidContractors: input.contractorLaborPaid,
+    businessExpenses: input.businessExpenses
+  });
   return {
     range: input.range,
     start: input.start,
@@ -803,7 +888,7 @@ export function buildFinanceDebugBreakdown(input: {
     invoiceRevenue: Number(num(input.invoiceRevenue).toFixed(2)),
     directJobPayments: Number(num(input.directJobPayments).toFixed(2)),
     invoicePayments: Number(num(input.invoicePayments).toFixed(2)),
-    collected: Number((num(input.invoicePayments) + num(input.directJobPayments)).toFixed(2)),
+    collected,
     outstandingInvoices: Number(num(input.periodOutstanding).toFixed(2)),
     periodOutstanding: Number(num(input.periodOutstanding).toFixed(2)),
     lifetimeOutstanding: Number(num(input.lifetimeOutstanding).toFixed(2)),
@@ -813,9 +898,9 @@ export function buildFinanceDebugBreakdown(input: {
     contractorLaborUnpaidLifetime: Number(num(input.contractorLaborUnpaidLifetime).toFixed(2)),
     contractorLaborAccrued: Number(num(input.contractorLaborAccrued).toFixed(2)),
     businessExpenses: Number(num(input.businessExpenses).toFixed(2)),
-    expectedRevenue: Number(num(input.expectedRevenue).toFixed(2)),
-    expectedProfit: Number(num(input.expectedProfit).toFixed(2)),
-    cashAvailable: Number(num(input.cashAvailable).toFixed(2)),
+    expectedRevenue,
+    expectedProfit,
+    cashAvailable,
     expectedProfitFormula: EXPECTED_PROFIT_FORMULA
   };
 }
@@ -854,52 +939,76 @@ export function calculateUninvoicedExpectedRevenue(
   }, 0);
 }
 
-/** Expected revenue = invoice totals + uninvoiced job expected revenue (no double count). */
-export function calculateExpectedRevenue(
-  customerInvoices: number,
-  uninvoicedExpectedRevenue: number
+/**
+ * Customers owe for the selected dashboard filter.
+ * All-time uses current open balances; bounded periods use period-attributed outstanding.
+ */
+export function customersOweForRange(
+  range: DashboardDateRange,
+  stillOwed: number,
+  periodOutstanding: number
 ): number {
-  return Number((num(customerInvoices) + num(uninvoicedExpectedRevenue)).toFixed(2));
+  return Number((range === 'all_time' ? num(stillOwed) : num(periodOutstanding)).toFixed(2));
 }
 
 /**
- * Expected profit = expected revenue − contractor cost incurred − other recorded expenses.
- * Pass expectedRevenue, or customerInvoices + uninvoicedCompletedWork.
+ * Job revenue = Money received + Customers owe.
+ * Single source of truth for the revenue card — always reconciles with those two cards.
+ */
+export function calculateJobRevenue(moneyReceived: number, customersOwe: number): number {
+  return Number((num(moneyReceived) + num(customersOwe)).toFixed(2));
+}
+
+/** Field-name alias of calculateJobRevenue (DashboardRevenueMetrics.expectedRevenue). */
+export const calculateExpectedRevenue = calculateJobRevenue;
+
+/**
+ * Profit = Job revenue − Contractor costs − Business expenses.
+ * Nothing else.
  */
 export function calculateEstimatedProfit(input: {
   expectedRevenue?: number;
-  customerInvoices?: number;
-  uninvoicedCompletedWork?: number;
+  moneyReceived?: number;
+  customersOwe?: number;
   contractorPay: number;
   otherExpenses: number;
 }): number {
   const expected =
     input.expectedRevenue !== undefined
       ? num(input.expectedRevenue)
-      : num(input.customerInvoices) + num(input.uninvoicedCompletedWork);
+      : calculateJobRevenue(num(input.moneyReceived), num(input.customersOwe));
   return Number((expected - num(input.contractorPay) - num(input.otherExpenses)).toFixed(2));
 }
 
-/** Cash after paid costs = payments received − contractor payments paid − expenses paid. */
+/**
+ * Money kept = Money received − Paid contractors − Business expenses.
+ * Nothing else.
+ */
+export function calculateMoneyKept(input: {
+  moneyReceived: number;
+  paidContractors: number;
+  businessExpenses: number;
+}): number {
+  return Number(
+    (num(input.moneyReceived) - num(input.paidContractors) - num(input.businessExpenses)).toFixed(2)
+  );
+}
+
+/** Cash after paid costs — same formula as Money kept. */
 export function calculateNetCashFlow(input: {
   cashCollected: number;
   contractorCashPaid: number;
   otherCashExpenses: number;
 }): number {
-  return Number(
-    (num(input.cashCollected) - num(input.contractorCashPaid) - num(input.otherCashExpenses)).toFixed(2)
-  );
+  return calculateMoneyKept({
+    moneyReceived: input.cashCollected,
+    paidContractors: input.contractorCashPaid,
+    businessExpenses: input.otherCashExpenses
+  });
 }
 
 export const calculateCashAfterExpenses = calculateNetCashFlow;
 export const calculateCashAfterPaidCosts = calculateNetCashFlow;
-
-/**
- * @deprecated Use calculateCashAfterPaidCosts. This excluded contractor payments and conflicted with cash after paid costs.
- */
-export function calculateMoneySummaryNetCash(collected: number, expensesPaid: number): number {
-  return Number((num(collected) - num(expensesPaid)).toFixed(2));
-}
 
 export type PrimaryDashboardMetricKey =
   | 'expectedRevenue'
@@ -916,7 +1025,7 @@ export type PrimaryDashboardMetric = {
   help: string;
 };
 
-/** Primary dashboard cards — one accurate set of money metrics, no duplicate Net cash. */
+/** Primary dashboard cards — one accurate set of money metrics from the shared finance engine. */
 export function buildPrimaryDashboardMetrics(input: {
   expectedRevenue: number;
   collected: number;
@@ -929,28 +1038,28 @@ export function buildPrimaryDashboardMetrics(input: {
 }): PrimaryDashboardMetric[] {
   const defaults: Record<PrimaryDashboardMetricKey, { label: string; help: string }> = {
     expectedRevenue: {
-      label: 'Expected revenue',
-      help: 'Invoice totals created in this period plus expected amounts on jobs that do not have an invoice yet. A job is never counted twice.'
+      label: 'Job revenue',
+      help: 'Money received plus money customers still owe. Always reconciles with those two cards.'
     },
     collected: {
-      label: 'Collected',
-      help: 'Client payments actually received in this period from invoices and direct job payments.'
+      label: 'Money received',
+      help: 'Customer payments actually received in this period from the invoice payment ledger and direct job payment ledger. The same payment is never counted twice.'
     },
     outstanding: {
-      label: 'Outstanding',
-      help: 'Unpaid invoice balances plus unpaid expected amounts on jobs without an invoice.'
+      label: 'Customers owe',
+      help: 'Remaining unpaid invoice balances plus unpaid direct jobs without invoices. Paid invoices and cancelled jobs are never included.'
     },
     contractorCost: {
-      label: 'Contractor cost',
-      help: 'Contractor cost recorded for this period, whether already paid or still owed.'
+      label: 'Contractor costs',
+      help: 'Total labor cost for jobs in the selected period, paid or unpaid. Labor is never counted twice.'
     },
     expectedProfit: {
-      label: 'Expected profit',
-      help: 'Expected revenue minus contractor cost incurred minus other recorded expenses. This is not the same as cash in the bank.'
+      label: 'Profit',
+      help: 'Job revenue minus contractor costs minus business expenses.'
     },
     cashAfterPaidCosts: {
-      label: 'Cash after paid costs',
-      help: 'Payments actually received minus contractor payments actually paid minus expenses actually paid.'
+      label: 'Money kept',
+      help: 'Money received minus paid contractors minus business expenses.'
     }
   };
 
@@ -960,55 +1069,6 @@ export function buildPrimaryDashboardMetrics(input: {
     value: Number(num(input[key]).toFixed(2)),
     help: input.helps?.[key] || defaults[key].help
   }));
-}
-
-/**
- * @deprecated Money summary Net cash conflicted with Cash after paid costs. Use buildPrimaryDashboardMetrics.
- */
-export type MoneySummaryMetric = {
-  key: 'collected' | 'outstanding' | 'invoiced' | 'netCash';
-  label: string;
-  value: number;
-  help: string;
-};
-
-/** @deprecated Use buildPrimaryDashboardMetrics. */
-export function buildMoneySummaryMetrics(input: {
-  rangeLabel: string;
-  collected: number;
-  outstanding: number;
-  invoiced: number;
-  expensesPaid: number;
-  hasCreatedInvoices: boolean;
-}): MoneySummaryMetric[] {
-  const collected = Math.max(0, num(input.collected));
-  const outstanding = Math.max(0, num(input.outstanding));
-  const invoiced = Math.max(0, num(input.invoiced));
-  const period = input.rangeLabel.toLowerCase();
-  const rows: MoneySummaryMetric[] = [
-    {
-      key: 'collected',
-      label: `Collected ${period}`,
-      value: collected,
-      help: 'Client payments received during this period from direct job payments and invoice payments. The same payment is never counted twice.'
-    },
-    {
-      key: 'outstanding',
-      label: 'Outstanding balance',
-      value: outstanding,
-      help: 'Current unpaid invoice balances plus unpaid expected amounts on jobs that do not have an invoice.'
-    }
-  ];
-  if (input.hasCreatedInvoices) {
-    rows.push({
-      key: 'invoiced',
-      label: `Invoiced ${period}`,
-      value: invoiced,
-      help: 'Total of non-cancelled invoices created during this period.'
-    });
-  }
-  // Intentionally omit the old Net cash row — it excluded contractor payments.
-  return rows;
 }
 
 export function calculateEstimatedProfitPercentage(
@@ -1032,8 +1092,25 @@ export function countCompletedJobsMissingCompletedAt(
 }
 
 /**
- * All-time reconciliation for non-cancelled invoices:
- * customer invoices ≈ paid to you + still owed (within rounding).
+ * Dashboard ledger reconciliation:
+ * Money received + Customers owe = Job revenue (within rounding).
+ */
+export function reconcileDashboardLedger(input: {
+  moneyReceived: number;
+  customersOwe: number;
+  jobRevenue: number;
+  tolerance?: number;
+}): { ok: boolean; difference: number } {
+  const difference = Number(
+    (num(input.jobRevenue) - num(input.moneyReceived) - num(input.customersOwe)).toFixed(2)
+  );
+  const tolerance = input.tolerance ?? 0.02;
+  return { ok: Math.abs(difference) <= tolerance, difference };
+}
+
+/**
+ * All-time invoice identity check (invoices only, not the job-revenue card):
+ * customer invoices ≈ paid to you (invoice side) + invoice still owed.
  */
 export function reconcileAllTimeInvoices(input: {
   customerInvoices: number;
@@ -1293,7 +1370,9 @@ export async function fetchDashboardRevenueMetrics(
   const uninvoicedCompletedWork = Number(
     calculateUninvoicedExpectedRevenue(revenueJobs as JobExpectedRevenueRow[], invoicedJobIds, start, end).toFixed(2)
   );
-  const expectedRevenue = calculateExpectedRevenue(customerInvoices, uninvoicedCompletedWork);
+  // Canonical job revenue: Money received + Customers owe (never a separate accrual path).
+  const customersOwe = customersOweForRange(range, stillOwed, periodOutstanding);
+  const expectedRevenue = calculateJobRevenue(paidToYou, customersOwe);
 
   const averageDaysToPayment = paymentDurations.length
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
@@ -1329,10 +1408,10 @@ export async function fetchDashboardRevenueMetrics(
     contractorPay,
     otherExpenses
   });
-  const cashAfterPaidCosts = calculateCashAfterPaidCosts({
-    cashCollected: paidToYou,
-    contractorCashPaid: contractorPaymentsPaid,
-    otherCashExpenses: otherExpenses
+  const cashAfterPaidCosts = calculateMoneyKept({
+    moneyReceived: paidToYou,
+    paidContractors: contractorPaymentsPaid,
+    businessExpenses: otherExpenses
   });
   const financeDebug = buildFinanceDebugBreakdown({
     range,

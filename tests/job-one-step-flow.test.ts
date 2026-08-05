@@ -47,8 +47,9 @@ test('saved schedule appears without re-entry setup when visits already exist', 
 test('selected contractor appears assigned after save without re-asking', () => {
   const assignments = read('components/job-assignments.tsx');
   assert.match(assignments, /Assigned contractors/);
-  assert.match(assignments, /Add another contractor/);
-  assert.match(assignments, /Access granted through assignment/);
+  assert.match(assignments, /Assign existing contractor/);
+  assert.match(assignments, /Add manual contractor/);
+  assert.match(assignments, /Included in job and contractor metrics/);
   assert.match(assignments, /Remove/);
   assert.doesNotMatch(assignments, /No contractor selected yet\. Assign someone below only if this job still needs a worker\./);
   assert.doesNotMatch(assignments, /Select contractor or team member/);
@@ -60,15 +61,15 @@ test('selected contractor appears assigned after save without re-asking', () => 
 
 test('assigned contractor access is automatic and no manual teammate sharing is required', () => {
   const assignments = read('components/job-assignments.tsx');
-  assert.match(assignments, /appear here automatically/);
-  assert.match(assignments, /receive access when assigned/);
-  assert.match(assignments, /Access granted through assignment/);
+  assert.match(assignments, /Assigned contractors/);
+  assert.match(assignments, /Included in job and contractor metrics/);
 
   const sharing = read('components/record-sharing-panel.tsx');
   assert.match(sharing, /Additional access/);
   assert.doesNotMatch(sharing, /Shared access/);
   assert.doesNotMatch(sharing, /Sharing gives a teammate permission/);
   assert.match(sharing, /not assigned contractors/);
+  assert.match(sharing, /receive job access automatically/);
 
   const clientPanel = read('components/client-access-panel.tsx');
   assert.doesNotMatch(clientPanel, /RecordSharingPanel/);
@@ -77,8 +78,8 @@ test('assigned contractor access is automatic and no manual teammate sharing is 
 test('contractor pay appears once from expected cost without duplicate setup form', () => {
   const source = read('components/job-labor-section.tsx');
   assert.match(source, /expectedContractorCost > 0 && entries\.length === 0/);
-  assert.match(source, /Pay type: Expected/);
-  assert.match(source, /not recorded again as a finalized labor expense/);
+  assert.match(source, /Flat rate:/);
+  assert.match(source, /does not need to be entered again/);
   assert.doesNotMatch(source, /jobPrefillNotice/);
   assert.doesNotMatch(source, /initializeFromJob/);
 });
@@ -101,11 +102,11 @@ test('no email does not fail job creation and detail shows no-email state', () =
   assert.match(jobsApi, /must never block job creation/);
 
   const panel = read('components/client-access-panel.tsx');
-  assert.match(panel, /No customer email available/);
+  assert.match(panel, /Status: Email needed/);
   assert.match(panel, /does not block the job/);
-  assert.match(panel, /Client access enabled/);
-  assert.match(panel, /Copy link/);
-  assert.match(panel, /Disable/);
+  assert.match(panel, /Status: Active/);
+  assert.match(panel, /Copy portal link/);
+  assert.match(panel, /Turn off access/);
 });
 
 test('managers can add additional access with role and permission fields', () => {
@@ -129,14 +130,13 @@ test('managers can add additional access with role and permission fields', () =>
 
 test('job details layout uses simplified sections and advanced drawer', () => {
   const page = read('app/jobs/[id]/page.tsx');
-  assert.match(page, /'Overview'/);
+  assert.match(page, /copy\.overview/);
   assert.match(page, /JobVisitsSchedule/);
   assert.match(page, /JobAssignments/);
   assert.match(page, /photosTitle/);
   assert.match(page, /JobChecklist/);
-  assert.match(page, /Money/);
-  assert.match(page, /proofReport/);
-  assert.match(page, /More \/ Advanced/);
+  assert.match(page, /copy\.money/);
+  assert.match(page, /copy\.moreAdvanced/);
   assert.match(page, /RecordSharingPanel/);
   assert.match(page, /JobWorkflow/);
   assert.match(page, /customer_email/);

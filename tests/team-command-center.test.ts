@@ -34,13 +34,16 @@ describe('team command center helpers', () => {
         scheduled_start: '2026-05-01T09:00:00Z',
         start_date: '2026-05-03'
       }),
-      '2026-05-01'
+      '2026-05-01 · 9:00 AM'
     );
     assert.equal(
       jobEffectiveDate({ due_date: '2026-05-10', scheduled_start: null, start_date: '2026-05-03' }),
       '2026-05-03'
     );
-    assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: '2026-05-01T09:00:00Z', start_date: null }), '2026-05-01');
+    assert.equal(
+      jobEffectiveDate({ due_date: null, scheduled_start: '2026-05-01T09:00:00Z', start_date: null }),
+      '2026-05-01 · 9:00 AM'
+    );
     assert.equal(jobEffectiveDate({ due_date: null, scheduled_start: null, start_date: null }), null);
   });
 

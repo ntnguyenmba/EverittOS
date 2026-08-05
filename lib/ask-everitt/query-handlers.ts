@@ -429,17 +429,29 @@ async function queryRevenueThisMonth(
   supabase: SupabaseClient,
   orgId: string
 ): Promise<AskEverittSearchResponse | null> {
-  const metrics = await fetchDashboardRevenueMetrics(supabase, orgId);
-  return response(`Paid to you this month: ${formatCurrency(metrics.paidToYou ?? metrics.revenueThisMonth)}.`, [], {
-    sourcesUsed: ['revenue', 'invoices'],
-    metrics: [
-      { label: 'Paid to you this month', value: formatCurrency(metrics.paidToYou ?? metrics.revenueThisMonth), href: '/analytics' },
-      { label: 'Customer invoices this month', value: formatCurrency(metrics.customerInvoices ?? metrics.bookedRevenue), href: '/invoices' },
-      { label: 'Still owed', value: formatCurrency(metrics.stillOwed ?? metrics.outstandingInvoices), href: '/invoices' },
-      { label: 'Jobs completed', value: String(metrics.jobsCompleted), href: '/jobs' },
-      { label: 'Active customers', value: String(metrics.activeCustomers), href: '/customers' }
-    ]
-  });
+  // Same finance engine as the dashboard — never a separate money formula.
+  const metrics = await fetchDashboardRevenueMetrics(supabase, orgId, 'month');
+  const moneyReceived = metrics.paidToYou ?? metrics.cashCollected ?? 0;
+  const customersOwe = metrics.periodOutstanding ?? metrics.stillOwed ?? 0;
+  const jobRevenue = metrics.expectedRevenue;
+  const profit = metrics.estimatedProfit;
+  const moneyKept = metrics.cashAfterPaidCosts;
+  return response(
+    `This month: Money received ${formatCurrency(moneyReceived)}, Customers owe ${formatCurrency(customersOwe)}, Job revenue ${formatCurrency(jobRevenue)}.`,
+    [],
+    {
+      sourcesUsed: ['revenue', 'invoices'],
+      metrics: [
+        { label: 'Money received', value: formatCurrency(moneyReceived), href: '/analytics' },
+        { label: 'Customers owe', value: formatCurrency(customersOwe), href: '/invoices' },
+        { label: 'Job revenue', value: formatCurrency(jobRevenue), href: '/analytics' },
+        { label: 'Profit', value: formatCurrency(profit), href: '/analytics' },
+        { label: 'Money kept', value: formatCurrency(moneyKept), href: '/analytics' },
+        { label: 'Jobs completed', value: String(metrics.jobsCompletedThisMonth), href: '/jobs' },
+        { label: 'Active customers', value: String(metrics.activeCustomers), href: '/customers' }
+      ]
+    }
+  );
 }
 
 async function queryExpensesThisMonth(
