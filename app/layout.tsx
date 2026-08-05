@@ -6,6 +6,7 @@ import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSync } from '@/components/locale-sync';
+import { GlobalLocaleFallback } from '@/components/global-locale-fallback';
 import { SiteChrome, SkipToMain } from '@/components/site-chrome';
 import { AnalyticsGate } from '@/components/analytics-gate';
 import { ActivityHeartbeat } from '@/components/activity-heartbeat';
@@ -140,6 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LocaleProvider initialLocale={initialLocale}>
           <ToastProvider>
             <LocaleSync />
+            <GlobalLocaleFallback />
             <SessionGuard>
               <ActivityHeartbeat />
               <WorkspacePlanProvider>
