@@ -8,7 +8,13 @@ import { AppShell } from '@/components/app-shell';
 import { DashboardRevenueSnapshot } from '@/components/dashboard-revenue-snapshot';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
-import { fetchDashboardRevenueMetrics, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
+import {
+  fetchDashboardRevenueMetrics,
+  filterValidJobsInPeriod,
+  type DashboardRevenueMetrics,
+  type JobCountRow
+} from '@/lib/dashboard-metrics';
+import { isCompletedLikeStatus } from '@/lib/recurring-jobs';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canAccessFinancials } from '@/lib/finance-access';
@@ -250,7 +256,13 @@ export default function DashboardPage() {
         ? withTimeout(fetchDashboardRevenueMetrics(supabase, organizationId), { ...emptyRevenue, loadFailed: true })
         : Promise.resolve(emptyRevenue),
       withTimeout(
-        supabase.from('jobs').select('id, status, start_date, due_date, scheduled_start, assigned_to').eq(scopeColumn, scopeValue).limit(5000),
+        supabase
+          .from('jobs')
+          .select(
+            'id, status, start_date, due_date, scheduled_start, completed_at, created_at, assigned_to, is_skipped, recurring_series_id, occurrence_date'
+          )
+          .eq(scopeColumn, scopeValue)
+          .limit(5000),
         { data: [], error: new Error('Jobs timed out') }
       ),
       withTimeout(
@@ -259,24 +271,28 @@ export default function DashboardPage() {
       )
     ]);
 
-    const jobs = (jobsResult.data || []) as Array<{
-      status: string | null;
-      start_date?: string | null;
-      due_date?: string | null;
-      scheduled_start?: string | null;
-      assigned_to?: string | null;
-    }>;
+    const jobs = (jobsResult.data || []) as Array<
+      JobCountRow & {
+        assigned_to?: string | null;
+      }
+    >;
     const customers = (customersResult.data || []) as Array<{
       id: string;
       record_type: string | null;
       pipeline_stage: string | null;
     }>;
 
-    const activeJobs = jobs.filter((job) => !['completed', 'cancelled', 'canceled'].includes(job.status || ''));
-    const todayJobs = activeJobs.filter((job) => {
-      const date = (job.scheduled_start || '').slice(0, 10) || (job.start_date || '').slice(0, 10) || (job.due_date || '').slice(0, 10);
-      return date === today;
-    });
+    // Ops "today" uses the shared engine, limited to non-completed work for the schedule card.
+    const todayActiveJobs = filterValidJobsInPeriod(
+      jobs.filter((job) => !isCompletedLikeStatus(String(job.status || ''))),
+      'today'
+    );
+    const todayJobsCount = todayActiveJobs.length;
+    const activeJobs = jobs.filter(
+      (job) =>
+        !['completed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) &&
+        !job.is_skipped
+    );
     const needsAttention = activeJobs.filter((job) => {
       const status = String(job.status || '').toLowerCase();
       const due = (job.due_date || '').slice(0, 10);
@@ -288,11 +304,11 @@ export default function DashboardPage() {
 
     setRevenue(nextRevenue);
     setOps({
-      todayJobs: todayJobs.length,
+      todayJobs: todayJobsCount,
       needsAttention,
       openLeads: openLeadRows.length,
       singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null,
-      teamWorkingToday: new Set(todayJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)).size
+      teamWorkingToday: new Set(todayActiveJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)).size
     });
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
     setLoading(false);
@@ -357,7 +373,7 @@ export default function DashboardPage() {
 
         {showFinance ? (
           <Suspense fallback={<div style={{ minHeight: 140 }} aria-busy="true" />}>
-            <DashboardRevenueSnapshot metrics={revenue} todayJobs={ops.todayJobs} loading={loading} />
+            <DashboardRevenueSnapshot metrics={revenue} loading={loading} />
           </Suspense>
         ) : null}
 

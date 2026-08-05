@@ -8,6 +8,9 @@ import {
 import { normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 
 export const JOB_LIST_COLUMNS =
+  'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, start_date, due_date, scheduled_start, scheduled_end, timezone, revenue_amount, is_skipped, recurring_series_id, occurrence_date';
+
+export const JOB_LIST_COLUMNS_LEGACY =
   'id, title, customer_name, customer_id, address, status, completed_at, assigned_to, assigned_email, organization_id, user_id, created_at, start_date, due_date, scheduled_start, scheduled_end, timezone, revenue_amount';
 
 export type JobListRow = {
@@ -30,6 +33,9 @@ export type JobListRow = {
   timezone?: string | null;
   revenue_amount?: number | null;
   billing_status?: string | null;
+  is_skipped?: boolean | null;
+  recurring_series_id?: string | null;
+  occurrence_date?: string | null;
 };
 
 export type JobListFilters = {
@@ -206,14 +212,15 @@ export async function countOrganizationJobs(
   return { count: count || 0, error: null };
 }
 
-export async function listWorkspaceJobs(
+async function queryWorkspaceJobs(
   supabase: SupabaseClient,
   userId: string,
   organizationId: string | null | undefined,
   role: UserRole | string | null | undefined,
-  filters?: JobListFilters
-): Promise<{ jobs: JobListRow[]; error: string | null }> {
-  let query = supabase.from('jobs').select(JOB_LIST_COLUMNS).order('created_at', { ascending: false });
+  filters: JobListFilters | undefined,
+  columns: string
+): Promise<{ data: JobListRow[] | null; error: { message?: string } | null }> {
+  let query = supabase.from('jobs').select(columns).order('created_at', { ascending: false });
 
   const managerView = role === undefined || role === null || isManagerRole(normalizeRole(role));
   const currentUserWorkerIds = await workerIdsForUser(supabase, organizationId, userId);
@@ -259,7 +266,35 @@ export async function listWorkspaceJobs(
   if (filters?.createdFrom) query = query.gte('created_at', `${filters.createdFrom}T00:00:00`);
 
   const { data, error } = await query;
-  if (error) return { jobs: [], error: error.message };
+  return { data: (data || null) as JobListRow[] | null, error };
+}
+
+export async function listWorkspaceJobs(
+  supabase: SupabaseClient,
+  userId: string,
+  organizationId: string | null | undefined,
+  role: UserRole | string | null | undefined,
+  filters?: JobListFilters
+): Promise<{ jobs: JobListRow[]; error: string | null }> {
+  let { data, error } = await queryWorkspaceJobs(
+    supabase,
+    userId,
+    organizationId,
+    role,
+    filters,
+    JOB_LIST_COLUMNS
+  );
+  if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+    ({ data, error } = await queryWorkspaceJobs(
+      supabase,
+      userId,
+      organizationId,
+      role,
+      filters,
+      JOB_LIST_COLUMNS_LEGACY
+    ));
+  }
+  if (error) return { jobs: [], error: error.message || 'Unable to load jobs.' };
 
   let rows = filterJobsByStatus((data || []) as JobListRow[], filters?.status);
   rows = await enrichRowsWithAssignments(supabase, organizationId, rows);

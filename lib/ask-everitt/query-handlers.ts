@@ -1,5 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchDashboardRevenueMetrics, formatCurrency } from '@/lib/dashboard-metrics';
+import {
+  filterValidJobsInPeriod,
+  fetchDashboardRevenueMetrics,
+  formatCurrency,
+  isCompletedCountableJob,
+  type JobCountRow
+} from '@/lib/dashboard-metrics';
 import { CUSTOMER_LIST_SELECT, customerDisplayName } from '@/lib/customer-record';
 import type {
   AskEverittSearchRecord,
@@ -347,20 +353,34 @@ async function queryTopWorkerThisMonth(
 ): Promise<AskEverittSearchResponse | null> {
   const monthStart = monthStartDate();
 
-  const { data: jobs, error } = await supabase
+  let jobsRes = await supabase
     .from('jobs')
-    .select('id, assigned_to, status, start_date, updated_at')
+    .select(
+      'id, assigned_to, status, completed_at, start_date, scheduled_start, due_date, created_at, is_skipped, recurring_series_id, occurrence_date'
+    )
     .eq('organization_id', orgId)
-    .eq('status', 'completed')
-    .gte('updated_at', `${monthStart}T00:00:00`)
-    .limit(500);
+    .limit(5000);
+  if (jobsRes.error && /column|schema cache|does not exist/i.test(jobsRes.error.message || '')) {
+    jobsRes = await supabase
+      .from('jobs')
+      .select('id, assigned_to, status, completed_at, start_date, scheduled_start, due_date, created_at')
+      .eq('organization_id', orgId)
+      .limit(5000);
+  }
 
-  if (error) return null;
+  if (jobsRes.error) return null;
+
+  // Same completed-job period rules as the dashboard / top performers card.
+  const completedPeriodJobs = filterValidJobsInPeriod(
+    (jobsRes.data || []) as JobCountRow[],
+    'month'
+  ).filter((job) => isCompletedCountableJob(job));
 
   const counts = new Map<string, number>();
-  for (const j of jobs || []) {
-    if (!j.assigned_to) continue;
-    counts.set(j.assigned_to, (counts.get(j.assigned_to) || 0) + 1);
+  for (const j of completedPeriodJobs) {
+    const assignedTo = String((j as { assigned_to?: string | null }).assigned_to || '').trim();
+    if (!assignedTo) continue;
+    counts.set(assignedTo, (counts.get(assignedTo) || 0) + 1);
   }
 
   if (counts.size === 0) {
@@ -447,7 +467,12 @@ async function queryRevenueThisMonth(
         { label: 'Job revenue', value: formatCurrency(jobRevenue), href: '/analytics' },
         { label: 'Profit', value: formatCurrency(profit), href: '/analytics' },
         { label: 'Money kept', value: formatCurrency(moneyKept), href: '/analytics' },
-        { label: 'Jobs completed', value: String(metrics.jobsCompletedThisMonth), href: '/jobs' },
+        {
+          label: 'Jobs completed',
+          value: String(metrics.jobsCompletedThisMonth),
+          href: '/jobs?period=month&status=completed'
+        },
+        { label: 'Jobs this month', value: String(metrics.totalJobs), href: '/jobs?period=month' },
         { label: 'Active customers', value: String(metrics.activeCustomers), href: '/customers' }
       ]
     }

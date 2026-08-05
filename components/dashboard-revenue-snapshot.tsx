@@ -19,7 +19,6 @@ import { supabase } from '@/lib/supabase';
 
 type DashboardRevenueSnapshotProps = {
   metrics: DashboardRevenueMetrics;
-  todayJobs: number;
   loading?: boolean;
 };
 
@@ -69,7 +68,7 @@ const copy = {
   }
 } as const;
 
-export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: DashboardRevenueSnapshotProps) {
+export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { locale } = useTranslation();
   const c = copy[locale];
   const [range, setRange] = useState<DashboardDateRange>('month');
@@ -134,8 +133,11 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     otherExpenses: expenses
   });
 
-  const selectedJobs = range === 'today' ? todayJobs : activeMetrics.totalJobs ?? 0;
+  // Always use the shared metrics engine — never a separate todayJobs prop.
+  const selectedJobs = activeMetrics.totalJobs ?? 0;
   const busy = Boolean(loading || rangeLoading);
+  const jobsPeriod =
+    range === 'all_time' ? 'all' : range === 'today' || range === 'week' || range === 'month' || range === 'year' ? range : 'all';
 
   const rangeOptions: Array<{ id: DashboardDateRange; label: string }> = [
     { id: 'today', label: c.today }, { id: 'week', label: c.week }, { id: 'month', label: c.month },
@@ -148,7 +150,7 @@ export function DashboardRevenueSnapshot({ metrics, todayJobs, loading }: Dashbo
     { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc },
     { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
     { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
-    { label: jobsLabel, value: String(selectedJobs), href: '/jobs', description: c.jobsDesc }
+    { label: jobsLabel, value: String(selectedJobs), href: `/jobs?period=${jobsPeriod}`, description: c.jobsDesc }
   ];
 
   const detailItems: MetricItem[] = [

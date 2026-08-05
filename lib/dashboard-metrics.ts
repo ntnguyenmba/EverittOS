@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { countOrganizationJobs } from '@/lib/jobs-org-query';
 import {
   getCompletedJobReportingDate,
   getJobOperationalDate,
@@ -256,6 +255,131 @@ export function inRange(value: unknown, start: string | null, end: string | null
 export function num(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Job rows used by the shared dashboard job-count engine.
+ * Schedule definitions live in recurring_job_series — never in this set.
+ */
+export type JobCountRow = JobDateFields & {
+  id?: unknown;
+  status?: unknown;
+  is_skipped?: unknown;
+  recurring_series_id?: unknown;
+  occurrence_date?: unknown;
+  deleted_at?: unknown;
+};
+
+const EXCLUDED_COUNTABLE_JOB_STATUSES = new Set([
+  'cancelled',
+  'canceled',
+  'draft',
+  'deleted',
+  'skipped'
+]);
+
+/**
+ * Valid countable job = a real job record or generated visit.
+ * Excludes cancelled/canceled, deleted, skipped visits, drafts, and schedule templates
+ * (templates are stored in recurring_job_series, not jobs).
+ */
+export function isValidCountableJob(job: JobCountRow): boolean {
+  const status = String(job.status || '').trim().toLowerCase();
+  if (status && EXCLUDED_COUNTABLE_JOB_STATUSES.has(status)) return false;
+  if (job.is_skipped === true) return false;
+  if (String(job.is_skipped || '').trim().toLowerCase() === 'true') return false;
+  if (job.deleted_at) return false;
+  return true;
+}
+
+/** Completed jobs that are also valid countable jobs. */
+export function isCompletedCountableJob(job: JobCountRow): boolean {
+  if (!isValidCountableJob(job)) return false;
+  return isCompletedLikeStatus(String(job.status || ''));
+}
+
+/**
+ * One row per job id. Also collapses duplicate generated visits that share the
+ * same recurring_series_id + occurrence_date.
+ */
+export function dedupeJobsForCounting<T extends JobCountRow>(jobs: T[]): T[] {
+  const byId = new Map<string, T>();
+  const seriesOccurrenceKeys = new Set<string>();
+  for (const job of jobs) {
+    const id = String(job.id || '').trim();
+    if (!id || byId.has(id)) continue;
+    const seriesId = String(job.recurring_series_id || '').trim();
+    const occurrence = String(job.occurrence_date || '').slice(0, 10);
+    if (seriesId && /^\d{4}-\d{2}-\d{2}$/.test(occurrence)) {
+      const key = `${seriesId}:${occurrence}`;
+      if (seriesOccurrenceKeys.has(key)) continue;
+      seriesOccurrenceKeys.add(key);
+    }
+    byId.set(id, job);
+  }
+  return Array.from(byId.values());
+}
+
+/**
+ * Single source of truth for dashboard / analytics / Ask Everitt / top-performer job lists.
+ * Uses getJobOperationalDate + rangeBounds so a job never lands in two periods.
+ * All Time counts every valid non-cancelled job once, even without an operational date.
+ */
+export function filterValidJobsInPeriod<T extends JobCountRow>(
+  jobs: T[],
+  range: DashboardDateRange,
+  now = new Date()
+): T[] {
+  const { start, end } = rangeBounds(range, now);
+  return dedupeJobsForCounting(jobs).filter((job) => {
+    if (!isValidCountableJob(job)) return false;
+    if (range === 'all_time') return true;
+    const date = getJobOperationalDate(job);
+    if (!date) return false;
+    return inRange(date, start, end);
+  });
+}
+
+/** Count of valid jobs attributed to the selected dashboard period. */
+export function countValidJobsInPeriod(
+  jobs: JobCountRow[],
+  range: DashboardDateRange,
+  now = new Date()
+): number {
+  return filterValidJobsInPeriod(jobs, range, now).length;
+}
+
+/** Completed valid jobs in the selected period (one count per job). */
+export function countCompletedJobsInPeriod(
+  jobs: JobCountRow[],
+  range: DashboardDateRange,
+  now = new Date()
+): number {
+  return filterValidJobsInPeriod(jobs, range, now).filter((job) =>
+    isCompletedLikeStatus(String(job.status || ''))
+  ).length;
+}
+
+export function buildJobsByStatusCounts(jobs: JobCountRow[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const job of jobs) {
+    const status = String(job.status || 'new').trim() || 'new';
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
+/** Map Jobs-page period query values onto dashboard date ranges. */
+export function dashboardRangeFromJobsPeriod(
+  period: string | null | undefined
+): DashboardDateRange {
+  const value = String(period || 'all').toLowerCase();
+  if (value === 'today') return 'today';
+  if (value === 'week') return 'week';
+  if (value === 'month') return 'month';
+  if (value === 'year') return 'year';
+  if (value === 'all_time' || value === 'all') return 'all_time';
+  return 'all_time';
 }
 
 function statusTokens(row: { payment_status?: unknown; status?: unknown }): string[] {
@@ -1213,7 +1337,6 @@ export async function fetchDashboardRevenueMetrics(
     bookingsRes,
     messagesRes,
     reportsRes,
-    totalJobsRes,
     visitsRes
   ] = await Promise.all([
     supabase
@@ -1233,7 +1356,7 @@ export async function fetchDashboardRevenueMetrics(
     supabase
       .from('jobs')
       .select(
-        'id, title, customer_name, revenue_amount, created_at, start_date, scheduled_start, completed_at, status'
+        'id, title, customer_name, revenue_amount, created_at, start_date, scheduled_start, completed_at, status, due_date'
       )
       .eq('organization_id', organizationId)
       .not('revenue_amount', 'is', null),
@@ -1261,10 +1384,10 @@ export async function fetchDashboardRevenueMetrics(
       .gte('scheduled_start', `${today}T00:00:00`),
     supabase
       .from('jobs')
-      .select('id, status, created_at, start_date, scheduled_start, completed_at, due_date')
-      .eq('organization_id', organizationId)
-      .neq('status', 'cancelled')
-      .neq('status', 'canceled'),
+      .select(
+        'id, status, created_at, start_date, scheduled_start, completed_at, due_date, is_skipped, recurring_series_id, occurrence_date'
+      )
+      .eq('organization_id', organizationId),
     // Expenses have only amount + date (no payment_status). Treat date as cash-expense date.
     supabase.from('expenses').select('amount, date').eq('organization_id', organizationId),
     supabase
@@ -1274,13 +1397,21 @@ export async function fetchDashboardRevenueMetrics(
       .not('status', 'in', `(${CANCELLED_BOOKING_STATUSES.join(',')})`),
     supabase.from('customer_messages').select('id, created_at').eq('organization_id', organizationId),
     supabase.from('job_reports').select('id, created_at').eq('organization_id', organizationId),
-    countOrganizationJobs(supabase, organizationId, { excludeStatuses: CANCELLED_JOB_STATUSES }),
     supabase.from('job_visits').select('job_id, visit_date').eq('organization_id', organizationId)
   ]);
 
   const safeCount = (res: { count: number | null; error: unknown }) => (res.error ? 0 : res.count || 0);
   const safeData = <T,>(res: { data: T | null; error: unknown }, fallback: T): T =>
     res.error ? fallback : res.data || fallback;
+
+  // Optional recurring columns may be missing before migrations — retry without them.
+  let jobsForCountingRes = jobsRes;
+  if (jobsRes.error && /column|schema cache|does not exist/i.test(String((jobsRes.error as { message?: string }).message || ''))) {
+    jobsForCountingRes = await supabase
+      .from('jobs')
+      .select('id, status, created_at, start_date, scheduled_start, completed_at, due_date')
+      .eq('organization_id', organizationId);
+  }
 
   const latestVisitByJobId = new Map<string, string>();
   for (const visit of (visitsRes.error ? [] : safeData(visitsRes, [])) as Array<{
@@ -1307,12 +1438,16 @@ export async function fetchDashboardRevenueMetrics(
   const paymentRows = paymentRowsRes.error ? [] : (safeData(paymentRowsRes, []) as InvoicePaymentRow[]);
   const jobPaymentRows = jobPaymentRowsRes.error ? [] : (safeData(jobPaymentRowsRes, []) as JobPaymentMetricRow[]);
   const loadFailed = Boolean(
-    invoicesRes.error || expensesRes.error || manualRevenueJobsRes.error || laborRes.error
+    invoicesRes.error ||
+      expensesRes.error ||
+      manualRevenueJobsRes.error ||
+      laborRes.error ||
+      jobsForCountingRes.error
   );
 
   const revenueJobs = withVisitFallback(safeData(manualRevenueJobsRes, []) as JobRevenueRow[]);
   const rangeJobsSource = withVisitFallback(
-    safeData(jobsRes, []) as Array<JobDateFields & { id?: string | null; status?: string | null }>
+    safeData(jobsForCountingRes, []) as Array<JobDateFields & JobCountRow>
   );
   // Job operational dates for period attribution (invoices + contractor labor).
   const jobDates = buildJobOperationalDateMap([
@@ -1378,16 +1513,10 @@ export async function fetchDashboardRevenueMetrics(
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
     : null;
 
-  const rangeJobs = rangeJobsSource.filter((job) => {
-    const operationalDate = getJobOperationalDate(job);
-    if (!operationalDate) return false;
-    return inRange(operationalDate, start, end);
-  });
-  const jobsByStatus: Record<string, number> = {};
-  for (const job of rangeJobs) {
-    const status = (job.status as string) || 'new';
-    jobsByStatus[status] = (jobsByStatus[status] || 0) + 1;
-  }
+  // Single job-count engine for every dashboard filter.
+  const rangeJobs = filterValidJobsInPeriod(rangeJobsSource as JobCountRow[], range);
+  const jobsByStatus = buildJobsByStatusCounts(rangeJobs);
+  const totalJobsInPeriod = rangeJobs.length;
 
   const laborRows = safeData(laborRes, []) as LaborCostRow[];
   const contractorPay = calculateContractorAccruedCost(laborRows, start, end, jobDates);
@@ -1437,11 +1566,8 @@ export async function fetchDashboardRevenueMetrics(
   const completedRows = withVisitFallback(
     safeData(completedJobsRes, []) as Array<JobDateFields & { id?: unknown }>
   );
-  const completedInRange = completedRows.filter((row) => {
-    const reportingDate = getCompletedJobReportingDate(row);
-    if (!reportingDate) return false;
-    return range === 'all_time' || inRange(reportingDate, start, end);
-  });
+  // Prefer the full org job set so completed counts use the same validity/dedupe rules.
+  const completedInRangeCount = countCompletedJobsInPeriod(rangeJobsSource as JobCountRow[], range);
   const missingCompletedAt = countCompletedJobsMissingCompletedAt(completedRows);
 
   const customerRows = customersRes.error
@@ -1628,8 +1754,8 @@ export async function fetchDashboardRevenueMetrics(
     outstandingInvoiceCount,
     overdueInvoiceCount: late.count,
     unpaidInvoiceTotal: Number(stillOwed.toFixed(2)),
-    jobsCompleted: completedRows.length,
-    jobsCompletedThisMonth: completedInRange.length,
+    jobsCompleted: countCompletedJobsInPeriod(rangeJobsSource as JobCountRow[], 'all_time'),
+    jobsCompletedThisMonth: completedInRangeCount,
     completedJobsMissingCompletedAt: missingCompletedAt.count,
     // IDs are retained for admin maintenance tooling only; dashboard never renders repair links.
     completedJobsMissingCompletedAtIds: missingCompletedAt.ids,
@@ -1669,7 +1795,7 @@ export async function fetchDashboardRevenueMetrics(
     messageCount,
     reportCount,
     jobsByStatus,
-    totalJobs: range === 'all_time' ? (totalJobsRes.error ? rangeJobs.length : totalJobsRes.count) : rangeJobs.length,
+    totalJobs: totalJobsInPeriod,
     financeDebug
   };
 }

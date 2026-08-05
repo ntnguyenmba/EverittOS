@@ -14,8 +14,10 @@ import {
   cappedAmountPaid,
   collectibleInvoicedJobIds,
   customersOweForRange,
+  filterValidJobsInPeriod,
   inRange,
   isCollectibleInvoice,
+  isCompletedCountableJob,
   num,
   rangeBounds,
   remainingBalance,
@@ -23,6 +25,7 @@ import {
   type DashboardDateRange,
   type InvoiceMetricRow,
   type InvoicePaymentRow,
+  type JobCountRow,
   type JobPaymentMetricRow,
   type JobRevenueRow,
   type LaborCostRow
@@ -30,8 +33,7 @@ import {
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import {
   getJobOperationalDate,
-  isActiveCustomerRecord,
-  isCancelledJobStatus
+  isActiveCustomerRecord
 } from '@/lib/job-operational-date';
 import { formatCurrency } from '@/lib/finance-format';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
@@ -663,17 +665,25 @@ export async function fetchDashboardMetricDetails(
   }
 
   if (metric === 'completed-jobs' || metric === 'jobs') {
-    const { data } = await supabase
+    let jobsRes = await supabase
       .from('jobs')
-      .select('id, title, customer_name, status, completed_at, start_date, scheduled_start, created_at')
+      .select(
+        'id, title, customer_name, status, completed_at, start_date, scheduled_start, due_date, created_at, is_skipped, recurring_series_id, occurrence_date'
+      )
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
-    const rows = (data || []).filter((job) => {
-      if (isCancelledJobStatus(job.status)) return false;
-      if (metric === 'completed-jobs' && String(job.status || '') !== 'completed') return false;
-      const opDate = getJobOperationalDate(job);
-      return range === 'all_time' || inRange(opDate, start, end);
-    });
+    if (jobsRes.error && /column|schema cache|does not exist/i.test(jobsRes.error.message || '')) {
+      jobsRes = await supabase
+        .from('jobs')
+        .select('id, title, customer_name, status, completed_at, start_date, scheduled_start, due_date, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+    }
+    const periodJobs = filterValidJobsInPeriod((jobsRes.data || []) as JobCountRow[], range);
+    const rows =
+      metric === 'completed-jobs'
+        ? periodJobs.filter((job) => isCompletedCountableJob(job))
+        : periodJobs;
     return empty(
       metric === 'completed-jobs'
         ? 'Completed jobs counted by completion or work date, not by when the record was created.'
@@ -682,13 +692,17 @@ export async function fetchDashboardMetricDetails(
         {
           id: metric,
           title: copy.metricTitles[metric],
-          formula: 'Operational job date in selected period',
+          formula: 'Shared dashboard job-count engine (operational date in selected period)',
           total: rows.length,
           totalLabel: String(rows.length),
           rows: rows.map((job) => ({
             id: String(job.id),
-            title: job.title || 'Job',
-            subtitle: [job.customer_name, dateLabel(getJobOperationalDate(job) || undefined), job.status]
+            title: String((job as { title?: string | null }).title || 'Job'),
+            subtitle: [
+              (job as { customer_name?: string | null }).customer_name,
+              dateLabel(getJobOperationalDate(job) || undefined),
+              String(job.status || '')
+            ]
               .filter(Boolean)
               .join(' · '),
             href: `/jobs/${job.id}`,

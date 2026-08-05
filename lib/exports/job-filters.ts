@@ -1,11 +1,25 @@
 /**
  * Canonical Jobs list / export filters — matches Jobs page + /api/jobs query params:
  * customer, status, period, filter=unassigned, assigned_to, from
+ *
+ * Period dating uses the same operational-date + rangeBounds engine as the dashboard
+ * so Jobs page counts reconcile with dashboard job cards.
  */
 
+import {
+  countValidJobsInPeriod,
+  dashboardRangeFromJobsPeriod,
+  filterValidJobsInPeriod,
+  inRange,
+  isValidCountableJob,
+  rangeBounds,
+  type DashboardDateRange,
+  type JobCountRow
+} from '@/lib/dashboard-metrics';
+import { getJobOperationalDate } from '@/lib/job-operational-date';
 import { getEffectiveJobSchedule, normalizeJobStatus } from '@/lib/worker-assignment';
 
-export type JobsExportPeriod = 'all' | 'today' | 'week' | 'month';
+export type JobsExportPeriod = 'all' | 'today' | 'week' | 'month' | 'year';
 
 export type JobsExportStatus =
   | 'all'
@@ -35,7 +49,7 @@ export type JobsExportFilters = {
   createdFrom: string | null;
 };
 
-const PERIODS: JobsExportPeriod[] = ['all', 'today', 'week', 'month'];
+const PERIODS: JobsExportPeriod[] = ['all', 'today', 'week', 'month', 'year'];
 
 export function parseJobsExportFilters(
   searchParams: URLSearchParams | { get(name: string): string | null }
@@ -66,17 +80,6 @@ export function localYmd(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-function effectiveScheduleDate(job: {
-  scheduled_start?: string | null;
-  start_date?: string | null;
-  due_date?: string | null;
-}): string | null {
-  const effective = getEffectiveJobSchedule(job);
-  if (!effective) return null;
-  const date = effective.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
-}
-
 export function isUnassignedJob(job: {
   assigned_to?: string | null;
   assigned_email?: string | null;
@@ -95,50 +98,98 @@ export function isFinishedJobStatus(status: string | null | undefined): boolean 
   return normalized === 'completed' || normalized === 'cancelled';
 }
 
+function asJobCountRow(job: {
+  id?: string | null;
+  status?: string | null;
+  completed_at?: string | null;
+  start_date?: string | null;
+  scheduled_start?: string | null;
+  due_date?: string | null;
+  created_at?: string | null;
+  is_skipped?: boolean | null;
+  recurring_series_id?: string | null;
+  occurrence_date?: string | null;
+  deleted_at?: string | null;
+  latest_completed_visit_date?: string | null;
+}): JobCountRow {
+  return {
+    id: job.id,
+    status: job.status,
+    completed_at: job.completed_at,
+    start_date: job.start_date,
+    scheduled_start: job.scheduled_start,
+    due_date: job.due_date,
+    created_at: job.created_at,
+    is_skipped: job.is_skipped,
+    recurring_series_id: job.recurring_series_id,
+    occurrence_date: job.occurrence_date,
+    deleted_at: job.deleted_at,
+    latest_completed_visit_date: job.latest_completed_visit_date
+  };
+}
+
 /**
- * Match "today" using scheduled_start → start_date → due_date (local YMD).
+ * Match "today" using the shared operational-date engine
+ * (completed_at for completed jobs; scheduled/service date otherwise).
  */
 export function jobMatchesToday(
   job: {
+    id?: string | null;
+    status?: string | null;
+    completed_at?: string | null;
     scheduled_start?: string | null;
     start_date?: string | null;
     due_date?: string | null;
+    created_at?: string | null;
+    is_skipped?: boolean | null;
+    recurring_series_id?: string | null;
+    occurrence_date?: string | null;
   },
   todayYmd: string = localYmd()
 ): boolean {
-  return effectiveScheduleDate(job) === todayYmd;
+  return jobMatchesPeriod(job, 'today', todayYmd);
 }
 
-function addLocalDays(ymd: string, days: number): string {
-  const match = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return ymd;
-  const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  d.setDate(d.getDate() + days);
-  return localYmd(d);
-}
-
+/**
+ * Period match shared with the dashboard job-count card.
+ * Uses calendar Today / Week / Month / Year bounds from rangeBounds + operational date.
+ * Status validity (cancelled/skipped/draft) is applied separately by callers.
+ */
 export function jobMatchesPeriod(
   job: {
+    id?: string | null;
+    status?: string | null;
+    completed_at?: string | null;
     scheduled_start?: string | null;
     start_date?: string | null;
     due_date?: string | null;
+    created_at?: string | null;
+    is_skipped?: boolean | null;
+    recurring_series_id?: string | null;
+    occurrence_date?: string | null;
   },
   period: JobsExportPeriod,
   todayYmd: string = localYmd()
 ): boolean {
   if (period === 'all') return true;
-  const effectiveDate = effectiveScheduleDate(job);
-  if (!effectiveDate) return false;
-  if (period === 'today') return effectiveDate === todayYmd;
-  if (period === 'week') {
-    const start = addLocalDays(todayYmd, -6);
-    return effectiveDate >= start && effectiveDate <= todayYmd;
-  }
-  if (period === 'month') {
-    const start = addLocalDays(todayYmd, -29);
-    return effectiveDate >= start && effectiveDate <= todayYmd;
-  }
-  return true;
+  const now = new Date(`${todayYmd}T12:00:00`);
+  const range = dashboardRangeFromJobsPeriod(period);
+  const { start, end } = rangeBounds(range, now);
+  const date = getJobOperationalDate(asJobCountRow(job));
+  if (!date) return false;
+  return inRange(date, start, end);
+}
+
+/**
+ * Dashboard-aligned job count for a Jobs-page period filter.
+ * Excludes cancelled, skipped, draft, and duplicate generated visits.
+ */
+export function countJobsForDashboardPeriod(
+  jobs: JobCountRow[],
+  period: JobsExportPeriod | DashboardDateRange | string,
+  now = new Date()
+): number {
+  return countValidJobsInPeriod(jobs, dashboardRangeFromJobsPeriod(period), now);
 }
 
 export function jobMatchesExportStatus(
@@ -161,21 +212,48 @@ export function jobMatchesExportStatus(
 
 /**
  * Post-filters applied in memory after listWorkspaceJobs
- * (period=today/week/month, status=finished, and status nuances).
+ * (period=today/week/month/year, status=finished, and status nuances).
+ *
+ * When status is `all`, non-countable jobs (cancelled/skipped/draft) are excluded so
+ * the Jobs page total reconciles with the dashboard job card for the same period.
+ * Explicit status filters (including cancelled/finished) still return those rows.
  */
 export function applyJobsExportPostFilters<
   T extends {
+    id?: string | null;
     status?: string | null;
+    completed_at?: string | null;
     scheduled_start?: string | null;
     start_date?: string | null;
     due_date?: string | null;
+    created_at?: string | null;
     assigned_to?: string | null;
     assigned_email?: string | null;
+    is_skipped?: boolean | null;
+    recurring_series_id?: string | null;
+    occurrence_date?: string | null;
   }
 >(jobs: T[], filters: JobsExportFilters, todayYmd: string = localYmd()): T[] {
-  return jobs.filter((job) => {
+  const now = new Date(`${todayYmd}T12:00:00`);
+  const range = dashboardRangeFromJobsPeriod(filters.period);
+  const statusAll = !filters.status || filters.status === 'all';
+
+  let working = jobs;
+  if (statusAll) {
+    // Same validity + period engine as the dashboard job card.
+    const countable = filterValidJobsInPeriod(jobs.map((job) => asJobCountRow(job)), range, now);
+    const allowedIds = new Set(countable.map((job) => String(job.id || '')).filter(Boolean));
+    working = jobs.filter((job) => {
+      const id = String(job.id || '');
+      if (id) return allowedIds.has(id);
+      return isValidCountableJob(asJobCountRow(job)) && jobMatchesPeriod(job, filters.period, todayYmd);
+    });
+  } else {
+    working = jobs.filter((job) => jobMatchesPeriod(job, filters.period, todayYmd));
+  }
+
+  return working.filter((job) => {
     if (filters.unassignedOnly && !isUnassignedJob(job)) return false;
-    if (!jobMatchesPeriod(job, filters.period, todayYmd)) return false;
     if (!jobMatchesExportStatus(job, filters.status)) return false;
     return true;
   });

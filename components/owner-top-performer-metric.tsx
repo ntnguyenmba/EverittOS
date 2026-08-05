@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from '@/components/locale-provider';
-import { formatCurrency, rangeBounds, type DashboardDateRange } from '@/lib/dashboard-metrics';
-import { getJobOperationalDate } from '@/lib/job-operational-date';
+import {
+  filterValidJobsInPeriod,
+  formatCurrency,
+  isCompletedCountableJob,
+  type DashboardDateRange,
+  type JobCountRow
+} from '@/lib/dashboard-metrics';
 import { isAdminRole, normalizeRole } from '@/lib/roles';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
@@ -157,7 +162,9 @@ export function OwnerTopPerformerMetric() {
       const [jobsResult, assignmentsResult, workersResult, invoicesResult, paymentsResult] = await Promise.all([
         supabase
           .from('jobs')
-          .select('id, status, completed_at, start_date, scheduled_start, due_date, assigned_to, customer_id, customer_name, revenue_amount')
+          .select(
+            'id, status, completed_at, start_date, scheduled_start, due_date, created_at, assigned_to, customer_id, customer_name, revenue_amount, is_skipped, recurring_series_id, occurrence_date'
+          )
           .eq('organization_id', organizationId),
         supabase.from('job_assignments').select('job_id, worker_id').eq('organization_id', organizationId),
         supabase.from('workers').select('id, name, email').eq('organization_id', organizationId),
@@ -208,40 +215,31 @@ export function OwnerTopPerformerMetric() {
         paymentsByJob.set(jobId, (paymentsByJob.get(jobId) || 0) + amount(payment.amount));
       }
 
-      const { start, end } = rangeBounds(range);
+      // Same period + validity rules as the dashboard completed-job count.
+      const periodJobs = filterValidJobsInPeriod((jobsResult.data || []) as JobCountRow[], range);
+      const completedPeriodJobs = periodJobs.filter((job) => isCompletedCountableJob(job));
       const performerCounts = new Map<string, number>();
       const customerRevenue = new Map<string, { name: string; revenue: number }>();
 
-      const seenJobIds = new Set<string>();
-      for (const job of jobsResult.data || []) {
-        const date = getJobOperationalDate(job);
-        if (range !== 'all_time' && (!date || (start && date < start) || (end && date >= end))) continue;
-
-        const status = String(job.status || '').toLowerCase();
-        // Completed jobs only — never draft, cancelled, or in-progress work.
-        if (['cancelled', 'canceled', 'draft'].includes(status)) continue;
-        const completed = ['completed', 'complete', 'finished', 'done'].includes(status);
-        if (!completed) continue;
-
+      for (const job of completedPeriodJobs) {
         const jobId = String(job.id || '');
-        if (!jobId || seenJobIds.has(jobId)) continue;
-        seenJobIds.add(jobId);
+        if (!jobId) continue;
 
         const assigned = workersByJob.get(jobId) || [];
-        const direct = String(job.assigned_to || '');
+        const direct = String((job as { assigned_to?: string | null }).assigned_to || '');
         const workerIds = assigned.length ? assigned : direct ? [direct] : [];
         Array.from(new Set(workerIds)).forEach((workerId) => {
           if (!workerNames.has(workerId)) return;
           performerCounts.set(workerId, (performerCounts.get(workerId) || 0) + 1);
         });
 
-        const customerId = String(job.customer_id || '').trim();
-        const customerName = String(job.customer_name || '').trim();
+        const customerId = String((job as { customer_id?: string | null }).customer_id || '').trim();
+        const customerName = String((job as { customer_name?: string | null }).customer_name || '').trim();
         if (!customerId && !customerName) continue;
         const customerKey = customerId || `name:${customerName.toLowerCase()}`;
         // Completed revenue once per job — max of quote/invoice/payments, never invoice + job.
         const revenue = Math.max(
-          amount(job.revenue_amount),
+          amount((job as { revenue_amount?: unknown }).revenue_amount),
           invoiceByJob.get(jobId) || 0,
           paymentsByJob.get(jobId) || 0
         );

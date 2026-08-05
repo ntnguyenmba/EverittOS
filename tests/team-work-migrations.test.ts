@@ -64,7 +64,7 @@ describe('team work migration safety', () => {
     const jobsApi = readFileSync(join(process.cwd(), 'app/api/jobs/route.ts'), 'utf8');
     const jobsOrgQuery = readFileSync(join(process.cwd(), 'lib/jobs-org-query.ts'), 'utf8');
 
-    assert.match(analytics, /countOrganizationJobs/);
+    assert.match(analytics, /countValidJobsInPeriod/);
     assert.doesNotMatch(analytics, /eventCounts\.job_created/);
     assert.match(jobsApi, /listWorkspaceJobs/);
     assert.match(jobsOrgQuery, /organization_id/);
