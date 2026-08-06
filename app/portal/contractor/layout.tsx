@@ -6,5 +6,5 @@ type ContractorLayoutProps = {
 };
 
 export default function ContractorLayout({ children }: ContractorLayoutProps) {
-  return children;
+  return <div className="contractor-portal-shell">{children}</div>;
 }
