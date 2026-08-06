@@ -32,7 +32,7 @@ type JobAssignmentsProps = {
   onChange: () => void;
 };
 
-type AssignmentScope = 'this_job_only' | 'this_and_future' | 'entire_series';
+type AssignmentScope = 'this_job_only' | 'this_and_future';
 
 type ManualContractorForm = {
   name: string;
@@ -79,12 +79,11 @@ export function JobAssignments({
   function chooseAssignmentScope(defaultScope: AssignmentScope = 'this_job_only'): AssignmentScope | null {
     if (!recurringSeriesId || isCompleted) return 'this_job_only';
     const choice = window.prompt(
-      'Apply contractor change to:\n1) This job only\n2) This and future jobs\n3) Entire series\n\nEnter 1, 2, or 3',
+      'Where should this contractor change apply?\n\n1) This visit only\nOnly this scheduled visit changes.\n\n2) This visit and all future visits\nPast visits stay unchanged.\n\nEnter 1 or 2',
       '1'
     );
     if (choice === null) return null;
     if (choice.trim() === '2') return 'this_and_future';
-    if (choice.trim() === '3') return 'entire_series';
     return defaultScope;
   }
 
