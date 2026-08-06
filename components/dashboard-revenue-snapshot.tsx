@@ -120,20 +120,30 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
   const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
 
-  // Same shared finance engine as the server — never a separate client formula.
-  const expectedRevenue = calculateJobRevenue(collected, outstanding);
-  const cashAfterPaidCosts = calculateMoneyKept({
+  const calculatedRevenue = calculateJobRevenue(collected, outstanding);
+  const calculatedMoneyKept = calculateMoneyKept({
     moneyReceived: collected,
     paidContractors: contractorPaid,
     businessExpenses: expenses
   });
-  const expectedProfit = calculateEstimatedProfit({
-    expectedRevenue,
+  const calculatedProfit = calculateEstimatedProfit({
+    expectedRevenue: calculatedRevenue,
     contractorPay: contractorCost,
     otherExpenses: expenses
   });
 
-  // Always use the shared metrics engine — never a separate todayJobs prop.
+  // Display the canonical totals returned by the shared metrics engine. The local
+  // formulas are fallback protection only, so the cards cannot drift from reports.
+  const expectedRevenue = Number.isFinite(activeMetrics.expectedRevenue)
+    ? activeMetrics.expectedRevenue
+    : calculatedRevenue;
+  const cashAfterPaidCosts = Number.isFinite(activeMetrics.cashAfterPaidCosts)
+    ? activeMetrics.cashAfterPaidCosts
+    : calculatedMoneyKept;
+  const expectedProfit = Number.isFinite(activeMetrics.estimatedProfit)
+    ? activeMetrics.estimatedProfit
+    : calculatedProfit;
+
   const selectedJobs = activeMetrics.totalJobs ?? 0;
   const busy = Boolean(loading || rangeLoading);
   const jobsPeriod =
