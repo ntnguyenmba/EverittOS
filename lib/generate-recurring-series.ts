@@ -72,6 +72,36 @@ function seriesIntervalUnit(series: SeriesRow): RecurrenceIntervalUnit {
   return 'weeks';
 }
 
+async function syncJobAssignment(
+  supabase: SupabaseClient,
+  organizationId: string,
+  userId: string,
+  jobId: string,
+  workerId: string
+) {
+  const assignment = {
+    job_id: jobId,
+    worker_id: workerId,
+    user_id: userId,
+    organization_id: organizationId
+  };
+  const { error } = await supabase.from('job_assignments').upsert(assignment, {
+    onConflict: 'job_id,worker_id',
+    ignoreDuplicates: true
+  });
+  if (!error) return;
+
+  const { data: existing } = await supabase
+    .from('job_assignments')
+    .select('id')
+    .eq('job_id', jobId)
+    .eq('worker_id', workerId)
+    .maybeSingle();
+  if (!existing) {
+    await supabase.from('job_assignments').insert(assignment);
+  }
+}
+
 /**
  * Count successfully generated jobs for a series.
  * Includes skipped/cancelled rows so occurrence_limit cannot be bypassed by skipping.
@@ -174,7 +204,6 @@ export async function generateSeriesWindow(
 
     const { data, error } = await supabase.from('jobs').insert(row).select('id').maybeSingle();
     if (error) {
-      // Unique violation = already generated; ignore. Missing-column fallback for pre-migration DBs.
       if (/duplicate|unique/i.test(error.message)) continue;
       if (/column|schema cache|does not exist/i.test(error.message)) {
         const legacy = { ...row } as Record<string, unknown>;
@@ -215,14 +244,12 @@ async function afterOccurrenceCreated(
   financeDefaults: OccurrenceFinanceDefaults
 ) {
   if (series.preferred_contractor_id) {
-    await supabase.from('job_assignments').upsert(
-      {
-        job_id: jobId,
-        worker_id: series.preferred_contractor_id,
-        user_id: userId,
-        organization_id: workspace.organizationId
-      },
-      { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
+    await syncJobAssignment(
+      supabase,
+      workspace.organizationId,
+      userId,
+      jobId,
+      series.preferred_contractor_id
     );
   }
   await seedOccurrenceLabor(supabase, {
