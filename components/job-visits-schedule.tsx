@@ -27,6 +27,32 @@ type JobVisitsScheduleProps = {
   onSaved?: () => void;
 };
 
+type RecurringSeries = {
+  id: string;
+  recurrence_frequency?: string | null;
+  recurrence_interval?: number | null;
+  recurrence_interval_unit?: string | null;
+  recurrence_weekday?: number | null;
+  recurrence_weekdays?: number[] | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  occurrence_limit?: number | null;
+  preferred_start_time?: string | null;
+  duration_minutes?: number | null;
+  status?: string | null;
+};
+
+type UpcomingOccurrence = {
+  id: string;
+  occurrence_date?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  status?: string | null;
+  is_skipped?: boolean | null;
+};
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 function addHours(time: string, hours: number) {
   const [h, m] = time.split(':').map(Number);
   const date = new Date(2000, 0, 1, h || 8, m || 0);
@@ -68,6 +94,36 @@ function fallbackVisit(props: JobVisitsScheduleProps): JobVisitRow {
   return { visit_date: visitDate, start_time: startTime, end_time: endTime, notes: '' };
 }
 
+function formatTime(value?: string | null) {
+  if (!value) return 'Not set';
+  const [hours, minutes] = value.slice(0, 5).split(':').map(Number);
+  const date = new Date(2000, 0, 1, hours || 0, minutes || 0);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Not set';
+  return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function recurrenceSummary(series: RecurringSeries) {
+  const interval = Math.max(1, Number(series.recurrence_interval || 1));
+  const unit = String(series.recurrence_interval_unit || series.recurrence_frequency || 'week').toLowerCase();
+  const normalizedUnit = unit.startsWith('day') ? 'day' : unit.startsWith('month') ? 'month' : 'week';
+  const every = interval === 1 ? `Every ${normalizedUnit}` : `Every ${interval} ${normalizedUnit}s`;
+  const weekdayValues = Array.isArray(series.recurrence_weekdays) && series.recurrence_weekdays.length
+    ? series.recurrence_weekdays
+    : series.recurrence_weekday != null
+      ? [series.recurrence_weekday]
+      : [];
+  const days = weekdayValues.map((value) => WEEKDAYS[Number(value)]).filter(Boolean).join(', ');
+  return days ? `${every} on ${days}` : every;
+}
+
 export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   const { jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, onSaved, timezone } = props;
   const [visits, setVisits] = useState<JobVisitRow[]>([fallbackVisit(props)]);
@@ -77,6 +133,8 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   const [editing, setEditing] = useState(false);
   const [showTimezone, setShowTimezone] = useState(false);
   const [fromDatabase, setFromDatabase] = useState(false);
+  const [series, setSeries] = useState<RecurringSeries | null>(null);
+  const [upcoming, setUpcoming] = useState<UpcomingOccurrence[]>([]);
   const feedback = useAppFeedback();
 
   useEffect(() => {
@@ -101,16 +159,41 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
           .eq('job_id', jobId)
           .order('visit_date', { ascending: true })
           .order('start_time', { ascending: true }),
-        supabase.from('jobs').select('timezone').eq('id', jobId).maybeSingle()
+        supabase.from('jobs').select('timezone, recurring_series_id').eq('id', jobId).maybeSingle()
       ]);
 
       if (!active) return;
+      const recurringSeriesId = String(jobData?.recurring_series_id || '');
       const resolvedTz =
         (typeof jobData?.timezone === 'string' && jobData.timezone) ||
         (typeof timezone === 'string' && timezone) ||
         '';
       setTimeZone(resolvedTz);
       setShowTimezone(!resolvedTz);
+
+      if (recurringSeriesId) {
+        const response = await fetch(`/api/recurring-jobs/${recurringSeriesId}`, { cache: 'no-store' });
+        const json = (await response.json().catch(() => ({}))) as {
+          series?: RecurringSeries;
+          jobs?: UpcomingOccurrence[];
+        };
+        if (active && response.ok && json.series) {
+          setSeries(json.series);
+          const today = localToday();
+          setUpcoming(
+            (json.jobs || [])
+              .filter((item) => {
+                const date = String(item.occurrence_date || item.scheduled_start || '').slice(0, 10);
+                const status = String(item.status || '').toLowerCase();
+                return date >= today && !item.is_skipped && !['cancelled', 'canceled', 'completed', 'done', 'complete', 'closed'].includes(status);
+              })
+              .slice(0, 8)
+          );
+        }
+      } else {
+        setSeries(null);
+        setUpcoming([]);
+      }
 
       if (error) {
         setVisits([fallbackVisit(fallbackProps)]);
@@ -145,14 +228,34 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     };
   }, [jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, props.organizationId, timezone]);
 
+  useEffect(() => {
+    if (!series) return;
+    const hideDuplicateSeriesAction = () => {
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
+      for (const button of buttons) {
+        const label = button.textContent?.trim().toLowerCase() || '';
+        if (label === 'edit entire series' || label === 'editar toda la serie' || label === 'chỉnh sửa toàn bộ chuỗi') {
+          button.style.display = 'none';
+        }
+        if (label === 'edit this and future') button.textContent = 'This visit and future visits';
+      }
+    };
+    hideDuplicateSeriesAction();
+    const observer = new MutationObserver(hideDuplicateSeriesAction);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [series]);
+
   const totalHours = useMemo(() => visits.reduce((sum, visit) => sum + visitHours(visit), 0), [visits]);
   const hasSavedSchedule = Boolean(fromDatabase || scheduledStart || startDate);
+  const isRecurring = Boolean(series);
 
   function updateVisit(index: number, field: keyof JobVisitRow, value: string) {
     setVisits((current) => current.map((visit, i) => (i === index ? { ...visit, [field]: value } : visit)));
   }
 
   function addVisit() {
+    if (isRecurring) return;
     setEditing(true);
     const last = visits[visits.length - 1] || fallbackVisit(props);
     setVisits((current) => [
@@ -167,6 +270,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   }
 
   function removeVisit(index: number) {
+    if (isRecurring) return;
     setEditing(true);
     setVisits((current) => current.filter((_, i) => i !== index));
   }
@@ -201,7 +305,14 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     }
 
     const cleared = cleanVisits.length === 0;
-    feedback.success(json.message || (cleared ? 'Schedule cleared.' : 'Schedule saved. Connected calendars will update automatically.'));
+    feedback.success(
+      json.message ||
+        (isRecurring
+          ? 'This visit was rescheduled. The recurring pattern and other visits were not changed.'
+          : cleared
+            ? 'Schedule cleared.'
+            : 'Schedule saved. Connected calendars will update automatically.')
+    );
     setEditing(false);
     setFromDatabase(!cleared);
     onSaved?.();
@@ -213,28 +324,44 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     <div className="job-visits form">
       <div className="job-visits-head">
         <div className="job-visits-title">
-          <h3>Schedule</h3>
+          <h3>{isRecurring ? 'Recurring schedule' : 'Schedule'}</h3>
           <p className="muted">
-            {hasSavedSchedule && !editing
-              ? 'Saved visits for this job.'
-              : visits.length === 0
-                ? 'No visits are scheduled. Save to clear this job from the schedule.'
-                : 'Set each visit date and time, then save.'}
+            {isRecurring
+              ? 'The recurring rule creates future visits. Rescheduling here changes only this visit.'
+              : hasSavedSchedule && !editing
+                ? 'Saved visits for this job.'
+                : visits.length === 0
+                  ? 'No visits are scheduled. Save to clear this job from the schedule.'
+                  : 'Set each visit date and time, then save.'}
           </p>
         </div>
         {canManage ? (
           <div className="button-row" style={{ flexWrap: 'wrap' }}>
             {hasSavedSchedule && !editing ? (
               <button className="btn" type="button" onClick={() => setEditing(true)}>
-                Edit
+                {isRecurring ? 'Reschedule this visit' : 'Edit'}
               </button>
             ) : null}
-            <button className="btn job-visits-add" type="button" onClick={addVisit}>
-              Add visit
-            </button>
+            {!isRecurring ? (
+              <button className="btn job-visits-add" type="button" onClick={addVisit}>
+                Add visit
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
+
+      {isRecurring && series ? (
+        <div className="card" style={{ padding: 14, marginBottom: 14 }}>
+          <div className="grid-2">
+            <div><span className="muted">Repeats</span><strong style={{ display: 'block' }}>{recurrenceSummary(series)}</strong></div>
+            <div><span className="muted">Time</span><strong style={{ display: 'block' }}>{formatTime(series.preferred_start_time)}{series.duration_minutes ? ` · ${formatHours(series.duration_minutes / 60)}` : ''}</strong></div>
+            <div><span className="muted">Starts</span><strong style={{ display: 'block' }}>{formatDate(series.start_date)}</strong></div>
+            <div><span className="muted">Ends</span><strong style={{ display: 'block' }}>{series.end_date ? formatDate(series.end_date) : series.occurrence_limit ? `After ${series.occurrence_limit} visits` : 'Never'}</strong></div>
+          </div>
+          <p className="muted" style={{ margin: '12px 0 0' }}>Past completed visits stay unchanged so payroll, invoices, history, and metrics remain accurate.</p>
+        </div>
+      ) : null}
 
       {timeZone && !showTimezone ? (
         <p className="muted" style={{ marginTop: 0 }}>
@@ -242,12 +369,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
           {canManage ? (
             <>
               {' · '}
-              <button
-                type="button"
-                className="btn"
-                style={{ padding: '2px 8px', fontSize: '0.85em' }}
-                onClick={() => setShowTimezone(true)}
-              >
+              <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: '0.85em' }} onClick={() => setShowTimezone(true)}>
                 Change timezone
               </button>
             </>
@@ -260,9 +382,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
             <select className="input" value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
               <option value="">Use company default</option>
               {TIME_ZONE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           ) : (
@@ -277,14 +397,10 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
             <div className="list-row" key={visit.id || index} style={{ alignItems: 'center' }}>
               <div>
                 <strong>{formatVisitSummary(visit)}</strong>
-                <p className="muted" style={{ margin: '4px 0 0' }}>
-                  {formatHours(visitHours(visit))}
-                </p>
+                <p className="muted" style={{ margin: '4px 0 0' }}>{formatHours(visitHours(visit))}</p>
               </div>
-              {canManage ? (
-                <button className="btn" type="button" onClick={() => removeVisit(index)}>
-                  Remove visit
-                </button>
+              {!isRecurring && canManage ? (
+                <button className="btn" type="button" onClick={() => removeVisit(index)}>Remove visit</button>
               ) : null}
             </div>
           ))}
@@ -295,41 +411,18 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
             <div className="job-visit-row" key={visit.id || index}>
               <div className="job-visit-field">
                 <label>Date</label>
-                <FriendlyDateInput
-                  value={visit.visit_date}
-                  disabled={!canManage}
-                  ariaLabel={`Visit ${index + 1} date`}
-                  onChange={(value) => updateVisit(index, 'visit_date', value)}
-                />
+                <FriendlyDateInput value={visit.visit_date} disabled={!canManage} ariaLabel={`Visit ${index + 1} date`} onChange={(value) => updateVisit(index, 'visit_date', value)} />
               </div>
               <div className="job-visit-field">
                 <label>Start</label>
-                <input
-                  className="input"
-                  type="time"
-                  value={visit.start_time}
-                  disabled={!canManage}
-                  onChange={(e) => updateVisit(index, 'start_time', e.target.value)}
-                />
+                <input className="input" type="time" value={visit.start_time} disabled={!canManage} onChange={(e) => updateVisit(index, 'start_time', e.target.value)} />
               </div>
               <div className="job-visit-field">
                 <label>End</label>
-                <input
-                  className="input"
-                  type="time"
-                  value={visit.end_time}
-                  disabled={!canManage}
-                  onChange={(e) => updateVisit(index, 'end_time', e.target.value)}
-                />
+                <input className="input" type="time" value={visit.end_time} disabled={!canManage} onChange={(e) => updateVisit(index, 'end_time', e.target.value)} />
               </div>
-              {canManage ? (
-                <button
-                  className="btn job-visit-remove"
-                  type="button"
-                  onClick={() => removeVisit(index)}
-                >
-                  Remove visit
-                </button>
+              {!isRecurring && canManage ? (
+                <button className="btn job-visit-remove" type="button" onClick={() => removeVisit(index)}>Remove visit</button>
               ) : (
                 <span className="muted job-visit-hours">{formatHours(visitHours(visit))}</span>
               )}
@@ -339,19 +432,38 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       )}
 
       <p className="muted job-visits-total">
-        Total scheduled: {formatHours(totalHours)} across {visits.length} {visits.length === 1 ? 'visit' : 'visits'}.
+        {isRecurring ? `This visit: ${formatHours(totalHours)}.` : `Total scheduled: ${formatHours(totalHours)} across ${visits.length} ${visits.length === 1 ? 'visit' : 'visits'}.`}
       </p>
 
       {canManage && editing ? (
         <div className="button-row" style={{ flexWrap: 'wrap' }}>
           <button className="btn btn-primary job-visits-save" type="button" onClick={() => void saveVisits()} disabled={saving}>
-            {saving ? 'Saving...' : visits.length === 0 ? 'Save and clear schedule' : 'Save schedule'}
+            {saving ? 'Saving...' : isRecurring ? 'Save this visit' : visits.length === 0 ? 'Save and clear schedule' : 'Save schedule'}
           </button>
-          {hasSavedSchedule ? (
-            <button className="btn" type="button" disabled={saving} onClick={() => setEditing(false)}>
-              Cancel
-            </button>
-          ) : null}
+          {hasSavedSchedule ? <button className="btn" type="button" disabled={saving} onClick={() => setEditing(false)}>Cancel</button> : null}
+        </div>
+      ) : null}
+
+      {isRecurring && upcoming.length ? (
+        <div style={{ marginTop: 18 }}>
+          <h4 style={{ marginBottom: 8 }}>Upcoming visits</h4>
+          <div className="job-visits-list">
+            {upcoming.map((item) => {
+              const date = String(item.occurrence_date || item.scheduled_start || '').slice(0, 10);
+              const start = wallClockFromTimestamp(item.scheduled_start, series?.preferred_start_time || '08:00');
+              const end = wallClockFromTimestamp(item.scheduled_end, '');
+              const row: JobVisitRow = {
+                visit_date: date,
+                start_time: start?.time || series?.preferred_start_time || '',
+                end_time: end?.time || ''
+              };
+              return (
+                <div className="list-row" key={item.id}>
+                  <div><strong>{formatVisitSummary(row)}</strong><p className="muted" style={{ margin: '4px 0 0' }}>Scheduled</p></div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </div>
