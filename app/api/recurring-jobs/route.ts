@@ -22,6 +22,7 @@ import {
 } from '@/lib/recurring-jobs';
 import { occurrenceFinanceColumns, seedOccurrenceLabor } from '@/lib/seed-occurrence-finance';
 import { ensureWorkerForPerson } from '@/lib/people-assignment';
+import { saveJobAssignment } from '@/lib/job-assignment-write';
 import { isValidTimeZone, normalizeTimeZone } from '@/lib/time-zones';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { mapWorkspaceSaveError, workspaceScopedFields } from '@/lib/workspace-server';
@@ -304,15 +305,12 @@ export async function POST(request: Request) {
     }
 
     if (preferredContractorId) {
-      await ctx.supabase.from('job_assignments').upsert(
-        {
-          job_id: job.id,
-          worker_id: preferredContractorId,
-          user_id: ctx.userId,
-          organization_id: ctx.workspace.organizationId
-        },
-        { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
-      );
+      await saveJobAssignment(ctx.supabase, {
+        organizationId: ctx.workspace.organizationId,
+        userId: ctx.userId,
+        jobId: job.id,
+        workerId: preferredContractorId
+      });
     }
     await seedOccurrenceLabor(ctx.supabase, {
       organizationId: ctx.workspace.organizationId,
@@ -427,15 +425,12 @@ export async function POST(request: Request) {
 
   for (const job of jobs) {
     if (preferredContractorId) {
-      await ctx.supabase.from('job_assignments').upsert(
-        {
-          job_id: job.id,
-          worker_id: preferredContractorId,
-          user_id: ctx.userId,
-          organization_id: ctx.workspace.organizationId
-        },
-        { onConflict: 'job_id,worker_id', ignoreDuplicates: true }
-      );
+      await saveJobAssignment(ctx.supabase, {
+        organizationId: ctx.workspace.organizationId,
+        userId: ctx.userId,
+        jobId: job.id,
+        workerId: preferredContractorId
+      });
     }
     await seedOccurrenceLabor(ctx.supabase, {
       organizationId: ctx.workspace.organizationId,
@@ -485,8 +480,6 @@ export async function POST(request: Request) {
     expectedProfit: centsToDollars(dollarsToCents(finance.expectedProfit) * count)
   };
 
-  // Auto-grant client access on the first occurrence when a customer email is present.
-  // Failures here must not undo series creation.
   const firstJobId = jobs[0]?.id || null;
   const customerEmail = (body.customer_email || '').trim();
   if (firstJobId && customerEmail) {
