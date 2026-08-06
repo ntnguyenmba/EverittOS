@@ -3,360 +3,225 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthenticatedSection } from '@/components/authenticated-section';
-import { ExportMenu } from '@/components/export-menu';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { useTranslation } from '@/components/locale-provider';
-import { PhotoUpload } from '@/components/photo-upload';
-import { getExportCopy } from '@/lib/i18n/export-copy';
-import { normalizePlan, photoUploadAllowed } from '@/lib/everittos-plans';
-import { limitsForPlan } from '@/lib/everittos-limits';
-import {
-  buildContractorJobCards,
-  buildContractorPaymentHistory,
-  computeContractorDashboardMetrics,
-  CONTRACTOR_HOME_PATH,
-  CONTRACTOR_SETTINGS_PATH,
-  contractorIdentityFromWorkers,
-  contractorNavItems,
-  formatContractorMoney,
-  type ContractorDashboardMetrics,
-  type ContractorJobCardModel,
-  type ContractorJobRow,
-  type ContractorLaborRow,
-  type ContractorLoadErrorCode,
-  type ContractorPaymentHistoryRow
-} from '@/lib/contractor-dashboard';
-import {
-  contractorJobCalendarEvent,
-  downloadCalendarIcs,
-  googleCalendarEventUrl,
-  outlookCalendarEventUrl
-} from '@/lib/calendar-links';
-import { performClientLogout } from '@/lib/client-logout';
-import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
-import { isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
-import { buildAssignmentWorkerIdsByJob } from '@/lib/worker-assignment';
+import { performClientLogout } from '@/lib/client-logout';
 
-const EMPTY_METRICS: ContractorDashboardMetrics = {
-  assignedJobs: 0,
-  upcomingJobs: 0,
-  completedJobs: 0,
-  totalEarnings: 0,
-  paidEarnings: 0,
-  owedEarnings: 0
+type WorkerRow = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  auth_user_id: string | null;
 };
 
-type Translate = (path: string, values?: Record<string, string | number>) => string;
-
-type EarningsCopy = {
-  completedWork: string;
-  paymentRecordsPending: string;
-  paidToYou: string;
+type AssignmentRow = {
+  job_id: string;
+  worker_id: string;
 };
 
-const EARNINGS_COPY: Record<'en' | 'es' | 'vi', EarningsCopy> = {
-  en: {
-    completedWork: 'jobs completed',
-    paymentRecordsPending: 'No earnings available yet.',
-    paidToYou: 'Paid to you'
-  },
-  es: {
-    completedWork: 'trabajos completados',
-    paymentRecordsPending: 'Aún no hay ganancias disponibles.',
-    paidToYou: 'Pagado a ti'
-  },
-  vi: {
-    completedWork: 'công việc đã hoàn thành',
-    paymentRecordsPending: 'Chưa có thu nhập để hiển thị.',
-    paidToYou: 'Đã trả cho bạn'
-  }
+type JobRow = {
+  id: string;
+  title: string | null;
+  customer_name: string | null;
+  address: string | null;
+  status: string | null;
+  start_date: string | null;
+  due_date: string | null;
+  scheduled_start: string | null;
+  assigned_to: string | null;
 };
 
-function logContractorError(code: ContractorLoadErrorCode, detail: string) {
-  if (code === 'worker_not_linked' || process.env.NODE_ENV !== 'production') {
-    console.error(`[contractor-dashboard] ${code}: ${detail}`);
-  }
-}
-
-function errorMessage(code: ContractorLoadErrorCode, t: Translate): string {
-  switch (code) {
-    case 'worker_not_linked':
-      return t('portal.contractor.errors.workerNotLinked');
-    case 'assignment_query_failed':
-      return t('portal.contractor.errors.assignmentsQueryFailed');
-    case 'jobs_query_failed':
-      return t('portal.contractor.errors.jobsQueryFailed');
-    case 'earnings_query_failed':
-    case 'payment_query_failed':
-      return t('portal.contractor.errors.laborQueryFailed');
-    case 'access_blocked':
-      return t('portal.contractor.errors.permissionDenied');
-    case 'worker_lookup_failed':
-    default:
-      return t('portal.contractor.errors.unknown');
-  }
-}
-
-function normalizedJobStatus(status: string) {
-  return String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
-}
-
-function isPastJobStatus(status: string) {
-  return ['completed', 'complete', 'finished', 'done', 'cancelled', 'canceled'].includes(normalizedJobStatus(status));
-}
-
-const NAV_LABEL_KEYS: Record<string, string> = {
-  overview: 'portal.contractor.nav.dashboard',
-  jobs: 'portal.contractor.nav.jobs',
-  schedule: 'portal.contractor.nav.schedule',
-  earnings: 'portal.contractor.nav.earnings',
-  account: 'portal.contractor.nav.settings'
+type LaborRow = {
+  id: string;
+  job_id: string;
+  worker_id: string;
+  total_cost: number | string | null;
+  payment_status: string | null;
 };
+
+type LoadState = 'loading' | 'ready' | 'error';
+
+const LOAD_TIMEOUT_MS = 10000;
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMessage: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(timeoutMessage)), LOAD_TIMEOUT_MS);
+    Promise.resolve(promise).then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+function money(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+}
+
+function jobDate(job: JobRow) {
+  const value = job.scheduled_start || job.start_date || job.due_date;
+  if (!value) return 'Date not set';
+  const date = new Date(value.includes('T') ? value : `${value}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? 'Date not set'
+    : date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        ...(value.includes('T') ? { hour: 'numeric', minute: '2-digit' } : {})
+      });
+}
+
+function normalizedStatus(value: string | null) {
+  return String(value || 'scheduled').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+function isCompleted(value: string | null) {
+  return ['completed', 'complete', 'done', 'finished', 'closed'].includes(normalizedStatus(value));
+}
+
+function isCancelled(value: string | null) {
+  return ['cancelled', 'canceled'].includes(normalizedStatus(value));
+}
 
 export default function ContractorPortalPage() {
   const router = useRouter();
-  const { t, locale } = useTranslation();
-  const earningsCopy = EARNINGS_COPY[locale];
-  const exportCopy = getExportCopy(locale);
-  const [plan, setPlan] = useState(normalizePlan('free'));
-  const [userId, setUserId] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [exportError, setExportError] = useState('');
-  const [gateMessage, setGateMessage] = useState('');
-  const [errors, setErrors] = useState<ContractorLoadErrorCode[]>([]);
-  const [metrics, setMetrics] = useState<ContractorDashboardMetrics>(EMPTY_METRICS);
-  const [jobCards, setJobCards] = useState<ContractorJobCardModel[]>([]);
-  const [history, setHistory] = useState<ContractorPaymentHistoryRow[]>([]);
+  const [state, setState] = useState<LoadState>('loading');
+  const [error, setError] = useState('');
+  const [workerName, setWorkerName] = useState('Contractor');
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [labor, setLabor] = useState<LaborRow[]>([]);
   const [signingOut, setSigningOut] = useState(false);
-  const [openJobId, setOpenJobId] = useState<string | null>(null);
-
-  const navItems = useMemo(
-    () =>
-      contractorNavItems().map((item) => ({
-        ...item,
-        label: NAV_LABEL_KEYS[item.id] ? t(NAV_LABEL_KEYS[item.id]) : item.label
-      })),
-    [t]
-  );
-
-  const groupedJobs = useMemo(() => {
-    const current: ContractorJobCardModel[] = [];
-    const past: ContractorJobCardModel[] = [];
-
-    for (const job of jobCards) {
-      if (isPastJobStatus(job.status)) past.push(job);
-      else current.push(job);
-    }
-
-    current.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-    past.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-    return { current, past };
-  }, [jobCards]);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setErrors([]);
-    setGateMessage('');
+    setState('loading');
+    setError('');
 
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      router.push(`/login?next=${encodeURIComponent(CONTRACTOR_HOME_PATH)}`);
-      return;
-    }
-    setUserId(user.id);
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, plan, email, full_name, display_name')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (profileError) {
-      logContractorError('worker_lookup_failed', profileError.message);
-      setErrors((current) => [...current, 'worker_lookup_failed']);
-    }
-
-    const role = normalizeRole(profile?.role);
-    const nextPlan = normalizePlan(profile?.plan);
-    setPlan(nextPlan);
-
-    if (!isContractorRole(role) && !limitsForPlan(nextPlan).contractorPortal) {
-      setGateMessage(t('portal.contractor.growthRequired'));
-      setLoading(false);
-      return;
-    }
-
-    const org = await ensureOrganizationForUser(user.id);
-    const organizationId = org?.organizationId || null;
-    const lookupEmail = String(user.email || profile?.email || '').trim().toLowerCase();
-    const displayName = String(profile?.full_name || profile?.display_name || '').trim();
-    const workerSelect = 'id, auth_user_id, email, active, organization_id, name';
-
-    const queries = [
-      supabase.from('workers').select(workerSelect).eq('auth_user_id', user.id),
-      lookupEmail
-        ? supabase.from('workers').select(workerSelect).ilike('email', lookupEmail)
-        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
-      organizationId
-        ? supabase.from('workers').select(workerSelect).eq('organization_id', organizationId)
-        : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null })
-    ] as const;
-
-    const [authWorkersRes, emailWorkersRes, orgWorkersRes] = await Promise.all(queries);
-    if (authWorkersRes.error || emailWorkersRes.error || orgWorkersRes.error) {
-      const message =
-        authWorkersRes.error?.message ||
-        emailWorkersRes.error?.message ||
-        orgWorkersRes.error?.message ||
-        'worker lookup failed';
-      logContractorError('worker_lookup_failed', message);
-      setErrors((current) => [...current, 'worker_lookup_failed']);
-      setLoading(false);
-      return;
-    }
-
-    const workerMap = new Map<
-      string,
-      {
-        id?: string | null;
-        auth_user_id?: string | null;
-        email?: string | null;
-        name?: string | null;
-        active?: boolean | null;
-        organization_id?: string | null;
+    try {
+      const auth = await withTimeout(supabase.auth.getUser(), 'Your session took too long to load.');
+      const user = auth.data.user;
+      if (auth.error || !user) {
+        router.replace('/login?next=%2Fportal%2Fcontractor');
+        return;
       }
-    >();
-    for (const row of [...(authWorkersRes.data || []), ...(emailWorkersRes.data || []), ...(orgWorkersRes.data || [])]) {
-      workerMap.set(String(row.id), row);
-    }
 
-    const workerRows = Array.from(workerMap.values());
-    const identity = contractorIdentityFromWorkers(user.id, workerRows, lookupEmail, displayName);
-    const workerIds = identity.workerIds || [];
+      const email = String(user.email || '').trim().toLowerCase();
+      const workerFields = 'id, name, email, auth_user_id';
+      const [byUser, byEmail] = await Promise.all([
+        withTimeout(
+          supabase.from('workers').select(workerFields).eq('auth_user_id', user.id),
+          'Your contractor profile took too long to load.'
+        ),
+        email
+          ? withTimeout(
+              supabase.from('workers').select(workerFields).ilike('email', email),
+              'Your contractor profile took too long to load.'
+            )
+          : Promise.resolve({ data: [] as WorkerRow[], error: null })
+      ]);
 
-    if (!workerIds.length) {
-      logContractorError(
-        'worker_not_linked',
-        JSON.stringify({ organizationId, lookupEmail, displayName, visibleWorkerCount: workerRows.length })
+      if (byUser.error && byEmail.error) throw new Error(byUser.error.message || byEmail.error.message);
+
+      const workerMap = new Map<string, WorkerRow>();
+      for (const row of [...((byUser.data || []) as WorkerRow[]), ...((byEmail.data || []) as WorkerRow[])]) {
+        workerMap.set(row.id, row);
+      }
+      const workers = Array.from(workerMap.values());
+      const workerIds = workers.map((row) => row.id).filter(Boolean);
+      setWorkerName(workers.find((row) => row.name?.trim())?.name?.trim() || email || 'Contractor');
+
+      if (!workerIds.length) {
+        setJobs([]);
+        setLabor([]);
+        setError('Your login is not linked to a contractor profile yet. Ask the company owner to link your email to your worker record.');
+        setState('error');
+        return;
+      }
+
+      const [assignmentsResult, directJobsResult, laborResult] = await Promise.all([
+        withTimeout(
+          supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', workerIds),
+          'Assigned jobs took too long to load.'
+        ),
+        withTimeout(
+          supabase
+            .from('jobs')
+            .select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to')
+            .in('assigned_to', workerIds),
+          'Jobs took too long to load.'
+        ),
+        withTimeout(
+          supabase
+            .from('job_labor')
+            .select('id, job_id, worker_id, total_cost, payment_status')
+            .in('worker_id', workerIds),
+          'Earnings took too long to load.'
+        )
+      ]);
+
+      if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
+      if (directJobsResult.error) throw new Error(directJobsResult.error.message);
+      if (laborResult.error) throw new Error(laborResult.error.message);
+
+      const assignmentJobIds = Array.from(
+        new Set(((assignmentsResult.data || []) as AssignmentRow[]).map((row) => row.job_id).filter(Boolean))
       );
-      setErrors(['worker_not_linked']);
-      setMetrics(EMPTY_METRICS);
-      setJobCards([]);
-      setHistory([]);
-      setLoading(false);
-      return;
-    }
 
-    const jobSelect =
-      'id, title, status, due_date, start_date, scheduled_start, address, customer_name, user_id, assigned_to, organization_id, completed_at, created_at';
-
-    const [assignmentRes, directJobsRes, laborRes] = await Promise.all([
-      supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', workerIds),
-      organizationId
-        ? supabase
+      let assignedJobs: JobRow[] = [];
+      if (assignmentJobIds.length) {
+        const assignedResult = await withTimeout(
+          supabase
             .from('jobs')
-            .select(jobSelect)
-            .eq('organization_id', organizationId)
-            .or(`assigned_to.in.(${workerIds.join(',')}),assigned_to.eq.${user.id}`)
-        : supabase
-            .from('jobs')
-            .select(jobSelect)
-            .or(`assigned_to.in.(${workerIds.join(',')}),assigned_to.eq.${user.id}`),
-      supabase
-        .from('job_labor')
-        .select('id, job_id, worker_id, total_cost, payment_status, paid_at, created_at, organization_id')
-        .in('worker_id', workerIds)
-    ]);
-
-    const nextErrors: ContractorLoadErrorCode[] = [];
-    if (assignmentRes.error) {
-      logContractorError('assignment_query_failed', assignmentRes.error.message);
-      nextErrors.push('assignment_query_failed');
-    }
-    if (directJobsRes.error) {
-      const code = /permission|rls|policy/i.test(directJobsRes.error.message) ? 'access_blocked' : 'jobs_query_failed';
-      logContractorError(code, directJobsRes.error.message);
-      nextErrors.push(code);
-    }
-    if (laborRes.error) {
-      const code = /permission|rls|policy/i.test(laborRes.error.message) ? 'access_blocked' : 'earnings_query_failed';
-      logContractorError(code, laborRes.error.message);
-      nextErrors.push(code);
-      if (code === 'earnings_query_failed') nextErrors.push('payment_query_failed');
-    }
-
-    const assignmentWorkerIdsByJob = buildAssignmentWorkerIdsByJob(assignmentRes.data || []);
-    const assignmentJobIds = Array.from(
-      new Set(
-        (assignmentRes.data || [])
-          .map((row: { job_id?: string | null }) => String(row.job_id || ''))
-          .filter(Boolean)
-      )
-    );
-
-    let assignmentJobs: ContractorJobRow[] = [];
-    if (assignmentJobIds.length) {
-      const { data: assignedJobs, error: assignedJobsError } = await supabase
-        .from('jobs')
-        .select(jobSelect)
-        .in('id', assignmentJobIds);
-      if (assignedJobsError) {
-        logContractorError('jobs_query_failed', assignedJobsError.message);
-        nextErrors.push('jobs_query_failed');
-      } else {
-        assignmentJobs = (assignedJobs || []) as ContractorJobRow[];
+            .select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to')
+            .in('id', assignmentJobIds),
+          'Assigned job details took too long to load.'
+        );
+        if (assignedResult.error) throw new Error(assignedResult.error.message);
+        assignedJobs = (assignedResult.data || []) as JobRow[];
       }
+
+      const merged = new Map<string, JobRow>();
+      for (const job of [...((directJobsResult.data || []) as JobRow[]), ...assignedJobs]) merged.set(job.id, job);
+
+      setJobs(Array.from(merged.values()));
+      setLabor((laborResult.data || []) as LaborRow[]);
+      setState('ready');
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'The contractor dashboard could not load.';
+      setError(message);
+      setState('error');
     }
-
-    const mergedJobs = new Map<string, ContractorJobRow>();
-    for (const job of [...assignmentJobs, ...((directJobsRes.data || []) as ContractorJobRow[])]) mergedJobs.set(job.id, job);
-
-    const laborRows = (laborRes.data || []) as ContractorLaborRow[];
-    const missingJobIds = Array.from(
-      new Set(laborRows.map((row) => String(row.job_id || '')).filter((id) => id && !mergedJobs.has(id)))
-    );
-
-    if (missingJobIds.length) {
-      const { data: laborJobs, error: laborJobsError } = await supabase
-        .from('jobs')
-        .select(jobSelect)
-        .in('id', missingJobIds);
-      if (laborJobsError) {
-        logContractorError('jobs_query_failed', laborJobsError.message);
-        nextErrors.push('jobs_query_failed');
-      } else {
-        for (const job of (laborJobs || []) as ContractorJobRow[]) mergedJobs.set(job.id, job);
-      }
-    }
-
-    const jobsForView = Array.from(mergedJobs.values());
-    const jobsById = new Map(jobsForView.map((job) => [job.id, job]));
-
-    setMetrics(computeContractorDashboardMetrics(jobsForView, laborRows, identity, undefined, assignmentWorkerIdsByJob));
-    setJobCards(buildContractorJobCards(jobsForView, laborRows, identity, assignmentWorkerIdsByJob));
-    setHistory(buildContractorPaymentHistory(laborRows, jobsById, workerIds));
-    setErrors(Array.from(new Set(nextErrors)));
-    setLoading(false);
-  }, [router, t]);
+  }, [router]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function updateStatus(jobId: string, status: string) {
-    const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
-    if (error) {
-      logContractorError('jobs_query_failed', error.message);
-      setErrors((current) => Array.from(new Set<ContractorLoadErrorCode>([...current, 'jobs_query_failed'])));
-      return;
-    }
-    await load();
-  }
+  const totals = useMemo(() => {
+    const currentJobs = jobs.filter((job) => !isCompleted(job.status) && !isCancelled(job.status));
+    const completedJobs = jobs.filter((job) => isCompleted(job.status));
+    const total = labor.reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
+    const paid = labor
+      .filter((row) => normalizedStatus(row.payment_status) === 'paid')
+      .reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
+    return {
+      assigned: jobs.length,
+      upcoming: currentJobs.length,
+      completed: completedJobs.length,
+      total,
+      paid,
+      owed: Math.max(0, total - paid)
+    };
+  }, [jobs, labor]);
+
+  const sortedJobs = useMemo(
+    () => [...jobs].sort((a, b) => String(a.scheduled_start || a.start_date || '').localeCompare(String(b.scheduled_start || b.start_date || ''))),
+    [jobs]
+  );
 
   async function signOut() {
     if (signingOut) return;
@@ -365,189 +230,91 @@ export default function ContractorPortalPage() {
       await performClientLogout();
       window.location.assign('/login');
     } catch {
-      router.push('/login');
       setSigningOut(false);
+      router.replace('/login');
     }
   }
 
-  function renderField(label: string, value: string) {
-    return (
-      <div>
-        <dt className="muted" style={{ fontSize: 12, fontWeight: 700 }}>{label}</dt>
-        <dd style={{ margin: '5px 0 0' }}>{value || '—'}</dd>
-      </div>
-    );
-  }
-
-  function renderJobCard(job: ContractorJobCardModel) {
-    const expanded = openJobId === job.id;
-    const status = normalizedJobStatus(job.status);
-    const past = isPastJobStatus(job.status);
-
-    return (
-      <article
-        key={job.id}
-        className="contractor-job-card"
-        style={{ marginTop: 12, border: '1px solid var(--line)', borderRadius: 14, overflow: 'hidden' }}
-      >
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={`contractor-job-${job.id}`}
-          onClick={() => setOpenJobId(expanded ? null : job.id)}
-          style={{ width: '100%', border: 0, background: 'transparent', color: 'inherit', padding: 16, textAlign: 'left', cursor: 'pointer' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 0 }}>
-              <p className="eyebrow" style={{ margin: 0 }}>{t('portal.contractor.job')}</p>
-              <h3 style={{ fontSize: 17, margin: '5px 0 0' }}>{job.title}</h3>
-            </div>
-            {job.payAmount > 0 ? <strong style={{ fontSize: 18 }}>{formatContractorMoney(job.payAmount)}</strong> : null}
-          </div>
-          <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, margin: '16px 0 0' }}>
-            {renderField(t('portal.contractor.workDate'), job.date || 'Not set')}
-            {renderField('Address', job.address || 'Not set')}
-            {renderField(t('portal.contractor.customer'), job.customerName || 'Not set')}
-            {renderField(t('portal.common.status'), translatePortalJobStatus(t, job.status))}
-            {job.payAmount > 0 ? renderField(t('portal.contractor.payment'), translatePortalPaymentStatus(t, job.paymentStatus)) : null}
-          </dl>
-        </button>
-
-        {expanded ? (
-          <div id={`contractor-job-${job.id}`} style={{ padding: '0 16px 16px', borderTop: '1px solid var(--line)' }}>
-            {!past ? (
-              <div className="inline-actions" style={{ marginTop: 14, flexWrap: 'wrap' }}>
-                {status !== 'in_progress' ? (
-                  <button type="button" className="btn btn-primary" onClick={() => void updateStatus(job.id, 'in_progress')}>
-                    {t('portal.contractor.startJob')}
-                  </button>
-                ) : null}
-                <button type="button" className="btn" onClick={() => void updateStatus(job.id, 'completed')}>
-                  {t('portal.contractor.markComplete')}
-                </button>
-                {(() => {
-                  const event = contractorJobCalendarEvent(job);
-                  if (!event) return null;
-                  return (
-                    <>
-                      <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                        {t('portal.contractor.googleCalendar')}
-                      </a>
-                      <a className="btn" href={outlookCalendarEventUrl(event)} target="_blank" rel="noreferrer">
-                        {t('portal.contractor.outlookCalendar')}
-                      </a>
-                      <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
-                        {t('portal.contractor.appleIcs')}
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            ) : null}
-
-            {photoUploadAllowed(plan) && userId ? (
-              <div style={{ marginTop: 14 }}>
-                <h4 style={{ fontSize: 15, marginBottom: 8 }}>{t('portal.contractor.jobPhotos')}</h4>
-                <PhotoUpload jobId={job.id} userId={job.userId || userId} disabled={past} />
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </article>
-    );
-  }
-
-  const hasDataError = errors.length > 0;
-
   return (
-    <AuthenticatedSection role="contractor" className="contractor-dashboard">
-      <header id="overview" className="contractor-dash-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <h1>{t('portal.contractor.today')}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <ExportMenu
-            endpoint="/api/exports/portal/contractor/jobs"
-            locale={locale}
-            labels={{
-              export: exportCopy.downloadMyJobs,
-              csv: exportCopy.downloadMyJobsCsv,
-              pdf: exportCopy.downloadMyJobsPdf
-            }}
-            disabled={loading}
-            onError={(err) => setExportError(err || exportCopy.exportFailed)}
-            onSuccess={() => setExportError('')}
-          />
-          <div style={{ width: 'min(100%, 9rem)' }}>
-            <LanguageSwitcher id="contractor-portal-language" variant="compact" />
+    <main style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 18px 56px' }}>
+      <header className="card" style={{ marginBottom: 18 }}>
+        <div className="page-head">
+          <div>
+            <h2 style={{ marginBottom: 4 }}>EverittOS</h2>
+            <p className="muted" style={{ margin: 0 }}>{workerName}</p>
           </div>
+          <button type="button" className="btn" disabled={signingOut} onClick={() => void signOut()}>
+            {signingOut ? 'Signing out...' : 'Sign out'}
+          </button>
         </div>
+        <nav className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+          <Link className="btn btn-primary" href="/portal/contractor">Dashboard</Link>
+          <a className="btn" href="#jobs">Jobs</a>
+          <a className="btn" href="#schedule">Schedule</a>
+          <a className="btn" href="#earnings">Earnings</a>
+          <Link className="btn" href="/portal/contractor/settings">Settings</Link>
+        </nav>
       </header>
-      {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
 
-      <nav className="contractor-dash-nav" aria-label={t('portal.contractor.portal')}>
-        {navItems.map((item) => <Link key={item.id} href={item.href} className="btn">{item.label}</Link>)}
-        <button type="button" className="btn" onClick={() => void signOut()} disabled={signingOut} aria-busy={signingOut}>
-          {signingOut ? t('portal.common.signingOut') : t('portal.common.signOut')}
-        </button>
-      </nav>
+      {state === 'loading' ? (
+        <section className="card" aria-live="polite">
+          <h3 style={{ marginTop: 0 }}>Loading your contractor dashboard...</h3>
+          <p className="muted">This should take only a few seconds.</p>
+        </section>
+      ) : null}
 
-      {loading ? <div className="card">{t('portal.contractor.loading')}</div> : null}
-      {gateMessage ? <div className="card">{gateMessage}</div> : null}
+      {state === 'error' ? (
+        <section className="card" role="alert">
+          <h3 style={{ marginTop: 0 }}>The contractor dashboard could not load</h3>
+          <p>{error}</p>
+          <p className="muted">No jobs, payments, or earnings were changed.</p>
+          <button type="button" className="btn btn-primary" onClick={() => void load()}>Try again</button>
+        </section>
+      ) : null}
 
-      {!loading && !gateMessage ? (
+      {state === 'ready' ? (
         <>
-          {hasDataError ? (
-            <div className="card" role="alert" style={{ borderColor: 'var(--danger)', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 17 }}>{t('portal.contractor.loadErrorTitle')}</h2>
-              <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
-                {errors.map((code) => <li key={code}>{errorMessage(code, t)}</li>)}
-              </ul>
-              <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => void load()}>
-                {t('portal.contractor.tryAgain')}
-              </button>
-            </div>
-          ) : null}
+          <section className="metric-grid" style={{ marginBottom: 18 }}>
+            <article className="card"><span className="muted">Assigned jobs</span><h2>{totals.assigned}</h2></article>
+            <article className="card"><span className="muted">Upcoming jobs</span><h2>{totals.upcoming}</h2></article>
+            <article className="card"><span className="muted">Completed jobs</span><h2>{totals.completed}</h2></article>
+            <article className="card"><span className="muted">Total earnings</span><h2>{money(totals.total)}</h2></article>
+            <article className="card"><span className="muted">Paid to you</span><h2>{money(totals.paid)}</h2></article>
+            <article className="card"><span className="muted">Still owed</span><h2>{money(totals.owed)}</h2></article>
+          </section>
 
-          <details id="current-jobs" className="card" style={{ marginBottom: 16 }} open>
-            <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              <h2 style={{ fontSize: 18, margin: 0 }}>Current Jobs</h2>
-              <span className="muted">{groupedJobs.current.length}</span>
-            </summary>
-            {groupedJobs.current.length === 0 ? (
-              <p className="muted" style={{ marginTop: 12 }}>{t('portal.contractor.noUpcoming')}</p>
-            ) : (
-              <div style={{ marginTop: 8 }}>{groupedJobs.current.map(renderJobCard)}</div>
-            )}
-          </details>
-
-          <details id="history" className="card" style={{ marginBottom: 16 }} open>
-            <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <h2 style={{ fontSize: 18, margin: 0 }}>Past Jobs</h2>
-                <span className="muted">{groupedJobs.past.length} jobs</span>
+          <section id="jobs" className="card" style={{ marginBottom: 18 }}>
+            <h3 style={{ marginTop: 0 }}>Jobs</h3>
+            {sortedJobs.length ? (
+              <div className="job-visits-list">
+                {sortedJobs.map((job) => (
+                  <article key={job.id} className="list-row" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <strong>{job.title || 'Job'}</strong>
+                      <p className="muted" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p>
+                      <p style={{ margin: '5px 0 0' }}>{job.customer_name || 'Customer'}{job.address ? ` · ${job.address}` : ''}</p>
+                    </div>
+                    <span>{normalizedStatus(job.status).replaceAll('_', ' ')}</span>
+                  </article>
+                ))}
               </div>
-              {history.length > 0 ? <strong>{earningsCopy.paidToYou}: {formatContractorMoney(metrics.paidEarnings)}</strong> : null}
-            </summary>
+            ) : (
+              <p className="muted">No assigned jobs yet.</p>
+            )}
+          </section>
 
-            {groupedJobs.past.length === 0 && !hasDataError ? (
-              <p className="muted" style={{ marginTop: 16 }}>{t('portal.contractor.noCompleted')}</p>
-            ) : null}
+          <section id="schedule" className="card" style={{ marginBottom: 18 }}>
+            <h3 style={{ marginTop: 0 }}>Schedule</h3>
+            <p className="muted">Your upcoming assigned jobs appear above in date order.</p>
+          </section>
 
-            {groupedJobs.past.length > 0 ? (
-              <div style={{ marginTop: 8 }}>{groupedJobs.past.map(renderJobCard)}</div>
-            ) : null}
-          </details>
-
-          <section className="card" aria-label={t('portal.legal.title')}>
-            <h2 style={{ fontSize: 18 }}>{t('portal.legal.title')}</h2>
-            <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
-              <Link className="btn" href="/privacy">{t('portal.legal.privacy')}</Link>
-              <Link className="btn" href="/terms">{t('portal.legal.terms')}</Link>
-              <Link className="btn" href="/disclaimer/contractor">{t('portal.legal.contractorDisclaimer')}</Link>
-              <Link className="btn" href={CONTRACTOR_SETTINGS_PATH}>{t('portal.contractor.settingsTitle')}</Link>
-            </div>
+          <section id="earnings" className="card">
+            <h3 style={{ marginTop: 0 }}>Earnings</h3>
+            <p><strong>{money(totals.paid)}</strong> paid · <strong>{money(totals.owed)}</strong> still owed</p>
+            <p className="muted">Earnings are calculated only from contractor payment records linked to your worker profile.</p>
           </section>
         </>
       ) : null}
-    </AuthenticatedSection>
+    </main>
   );
 }
