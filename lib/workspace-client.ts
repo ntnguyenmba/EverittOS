@@ -10,7 +10,7 @@ export type EnsureWorkspaceResult =
   | { ok: true; workspace: ClientWorkspace }
   | { ok: false; error: string; missingRecords?: string[]; code?: string };
 
-const WORKSPACE_LOOKUP_TIMEOUT_MS = 2500;
+const WORKSPACE_LOOKUP_TIMEOUT_MS = 800;
 const WORKSPACE_SETUP_TIMEOUT_MS = 6500;
 
 async function withTimeout<T>(task: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
