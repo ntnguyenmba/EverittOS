@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const CONTRACTOR_FIELDS =
-  'id, name, email, phone, company_name, hourly_rate, contractor_classification, active, worker_type, created_at';
+  'id, name, email, phone, company_name, hourly_rate, contractor_classification, active, worker_type, auth_user_id, created_at';
 
 function isMissingCompanyId(message: string | null | undefined) {
   const lower = String(message || '').toLowerCase();
