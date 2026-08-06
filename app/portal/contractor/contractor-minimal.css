@@ -1,157 +1,143 @@
-html,
-body {
+body:has(main a[href="/portal/contractor"]) {
   min-height: 100%;
-  background-color: #dfe6e9 !important;
+  background-color: #dfe6e9;
   background-image:
-    linear-gradient(rgba(236, 241, 243, 0.48), rgba(236, 241, 243, 0.58)),
-    url('https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/hero.jpg') !important;
-  background-position: center top !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
-  background-attachment: fixed !important;
+    linear-gradient(rgba(244, 246, 247, 0.7), rgba(231, 236, 239, 0.78)),
+    url('https://raw.githubusercontent.com/ntnguyenmba/everitt-website/main/assets/images/hero.jpg');
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
-body::before,
-body::after {
-  display: none !important;
-  content: none !important;
+body:has(main a[href="/portal/contractor"]) > div,
+body:has(main a[href="/portal/contractor"]) > div > div {
+  min-height: 100vh;
+  background: transparent;
 }
 
-main {
+main:has(a[href="/portal/contractor"]) {
   position: relative;
   z-index: 1;
+  width: min(1180px, calc(100% - 36px));
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+  padding: 28px 0 64px !important;
   background: transparent !important;
 }
 
-main > header.card {
-  margin-top: 18px;
-  margin-bottom: 30px !important;
-  padding: 34px 34px 30px;
-  background: rgba(255, 255, 255, 0.78) !important;
-  border: 1px solid rgba(151, 166, 179, 0.42);
-  border-radius: 26px;
-  box-shadow: 0 20px 54px rgba(43, 58, 71, 0.18);
+main:has(a[href="/portal/contractor"]) > header.card {
+  margin: 0 0 24px !important;
+  padding: 28px 30px 26px;
+  background: rgba(255, 255, 255, 0.86) !important;
+  border: 1px solid rgba(37, 54, 74, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(37, 54, 74, 0.08), 0 14px 34px rgba(37, 54, 74, 0.11);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+main:has(a[href="/portal/contractor"]) > header.card .page-head {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+main:has(a[href="/portal/contractor"]) > header.card .button-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px !important;
+  padding-top: 20px;
+  border-top: 1px solid rgba(37, 54, 74, 0.12);
+}
+
+main:has(a[href="/portal/contractor"]) > header.card .button-row .btn {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
+main:has(a[href="/portal/contractor"]) > .card,
+main:has(a[href="/portal/contractor"]) > .metric-grid .card {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(37, 54, 74, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(37, 54, 74, 0.07), 0 10px 26px rgba(37, 54, 74, 0.09);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-main > header.card .page-head {
-  align-items: flex-start;
-}
-
-main > header.card .button-row {
-  display: flex;
-  gap: 14px;
-  margin-top: 24px !important;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
-}
-
-main > header.card .button-row .btn {
-  min-height: 48px;
-  padding-inline: 24px;
-}
-
-main > header.card + .card,
-main > header.card + .metric-grid {
+main:has(a[href="/portal/contractor"]) > header.card + .card,
+main:has(a[href="/portal/contractor"]) > header.card + .metric-grid {
   margin-top: 0;
 }
 
-main > .card,
-main > .metric-grid .card {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(151, 166, 179, 0.38);
-  border-radius: 24px;
-  box-shadow: 0 18px 46px rgba(43, 58, 71, 0.16);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.metric-grid {
+main:has(a[href="/portal/contractor"]) .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
-.metric-grid .card {
-  min-height: 150px;
-  padding: 24px;
+main:has(a[href="/portal/contractor"]) .metric-grid .card {
+  min-height: 132px;
+  padding: 22px;
 }
 
-.contractor-dashboard .stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+main:has(a[href="/portal/contractor"]) .metric-grid .card h2 {
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
 }
 
-.contractor-dashboard .stats-grid .stat-card:nth-child(4) {
-  display: none;
-}
-
-.contractor-dashboard .stats-grid .stat-card {
-  min-height: 104px;
-  padding: 16px;
-}
-
-.contractor-dashboard .contractor-dash-header p:last-child {
-  max-width: 560px;
+main:has(a[href="/portal/contractor"]) .list-row {
+  border-color: rgba(37, 54, 74, 0.1);
 }
 
 @media (max-width: 900px) {
-  .metric-grid {
+  main:has(a[href="/portal/contractor"]) .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  html,
-  body {
-    background-attachment: scroll !important;
+  body:has(main a[href="/portal/contractor"]) {
+    background-attachment: scroll;
+    background-position: 58% top;
   }
 
-  main > header.card {
-    margin-top: 10px;
-    margin-bottom: 22px !important;
-    padding: 24px 20px;
-    border-radius: 22px;
+  main:has(a[href="/portal/contractor"]) {
+    width: min(100% - 24px, 1180px);
+    padding: 12px 0 40px !important;
   }
 
-  main > header.card .button-row {
-    gap: 10px;
-    margin-top: 20px !important;
-    padding-top: 18px;
+  main:has(a[href="/portal/contractor"]) > header.card {
+    margin-bottom: 16px !important;
+    padding: 22px 18px 20px;
   }
 
-  main > header.card .button-row .btn {
+  main:has(a[href="/portal/contractor"]) > header.card .page-head {
+    align-items: flex-start;
+  }
+
+  main:has(a[href="/portal/contractor"]) > header.card .button-row {
+    gap: 8px;
+    margin-top: 18px !important;
+    padding-top: 16px;
+  }
+
+  main:has(a[href="/portal/contractor"]) > header.card .button-row .btn {
+    flex: 1 1 calc(50% - 8px);
     min-height: 44px;
-    padding-inline: 18px;
+    padding-inline: 14px;
   }
 
-  .metric-grid {
+  main:has(a[href="/portal/contractor"]) .metric-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .metric-grid .card {
-    min-height: 118px;
-    padding: 20px;
-  }
-
-  .contractor-dashboard .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .contractor-dashboard .stats-grid .stat-card {
-    min-height: 92px;
-    padding: 14px;
-  }
-}
-
-@media (max-width: 420px) {
-  main > header.card .button-row .btn {
-    flex: 1 1 calc(50% - 10px);
-  }
-
-  .contractor-dashboard .stats-grid {
-    grid-template-columns: 1fr;
+  main:has(a[href="/portal/contractor"]) .metric-grid .card {
+    min-height: 108px;
+    padding: 18px;
   }
 }
