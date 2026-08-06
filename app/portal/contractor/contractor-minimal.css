@@ -1,5 +1,15 @@
-body:has(main a[href="/portal/contractor"]) {
-  min-height: 100%;
+.contractor-portal-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: transparent;
+}
+
+.contractor-portal-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
   background-color: #dfe6e9;
   background-image:
     linear-gradient(rgba(244, 246, 247, 0.7), rgba(231, 236, 239, 0.78)),
@@ -7,16 +17,18 @@ body:has(main a[href="/portal/contractor"]) {
   background-position: center top;
   background-size: cover;
   background-repeat: no-repeat;
-  background-attachment: fixed;
 }
 
-body:has(main a[href="/portal/contractor"]) > div,
-body:has(main a[href="/portal/contractor"]) > div > div {
-  min-height: 100vh;
-  background: transparent;
+.contractor-portal-shell::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(223, 230, 233, 0.2));
 }
 
-main:has(a[href="/portal/contractor"]) {
+.contractor-portal-shell main {
   position: relative;
   z-index: 1;
   width: min(1180px, calc(100% - 36px));
@@ -26,7 +38,7 @@ main:has(a[href="/portal/contractor"]) {
   background: transparent !important;
 }
 
-main:has(a[href="/portal/contractor"]) > header.card {
+.contractor-portal-shell main > header.card {
   margin: 0 0 24px !important;
   padding: 28px 30px 26px;
   background: rgba(255, 255, 255, 0.86) !important;
@@ -37,12 +49,12 @@ main:has(a[href="/portal/contractor"]) > header.card {
   -webkit-backdrop-filter: blur(14px);
 }
 
-main:has(a[href="/portal/contractor"]) > header.card .page-head {
+.contractor-portal-shell main > header.card .page-head {
   align-items: center;
   margin-bottom: 0;
 }
 
-main:has(a[href="/portal/contractor"]) > header.card .button-row {
+.contractor-portal-shell main > header.card .button-row {
   display: flex;
   gap: 10px;
   margin-top: 22px !important;
@@ -50,13 +62,13 @@ main:has(a[href="/portal/contractor"]) > header.card .button-row {
   border-top: 1px solid rgba(37, 54, 74, 0.12);
 }
 
-main:has(a[href="/portal/contractor"]) > header.card .button-row .btn {
+.contractor-portal-shell main > header.card .button-row .btn {
   min-height: 44px;
   padding-inline: 18px;
 }
 
-main:has(a[href="/portal/contractor"]) > .card,
-main:has(a[href="/portal/contractor"]) > .metric-grid .card {
+.contractor-portal-shell main > .card,
+.contractor-portal-shell main > .metric-grid .card {
   background: rgba(255, 255, 255, 0.88) !important;
   border: 1px solid rgba(37, 54, 74, 0.14);
   border-radius: 12px;
@@ -65,23 +77,23 @@ main:has(a[href="/portal/contractor"]) > .metric-grid .card {
   -webkit-backdrop-filter: blur(12px);
 }
 
-main:has(a[href="/portal/contractor"]) > header.card + .card,
-main:has(a[href="/portal/contractor"]) > header.card + .metric-grid {
+.contractor-portal-shell main > header.card + .card,
+.contractor-portal-shell main > header.card + .metric-grid {
   margin-top: 0;
 }
 
-main:has(a[href="/portal/contractor"]) .metric-grid {
+.contractor-portal-shell .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
-main:has(a[href="/portal/contractor"]) .metric-grid .card {
+.contractor-portal-shell .metric-grid .card {
   min-height: 132px;
   padding: 22px;
 }
 
-main:has(a[href="/portal/contractor"]) .metric-grid .card h2 {
+.contractor-portal-shell .metric-grid .card h2 {
   margin-top: 10px;
   margin-bottom: 0;
   font-size: clamp(28px, 4vw, 38px);
@@ -89,54 +101,53 @@ main:has(a[href="/portal/contractor"]) .metric-grid .card h2 {
   letter-spacing: -0.035em;
 }
 
-main:has(a[href="/portal/contractor"]) .list-row {
+.contractor-portal-shell .list-row {
   border-color: rgba(37, 54, 74, 0.1);
 }
 
 @media (max-width: 900px) {
-  main:has(a[href="/portal/contractor"]) .metric-grid {
+  .contractor-portal-shell .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  body:has(main a[href="/portal/contractor"]) {
-    background-attachment: scroll;
+  .contractor-portal-shell::before {
     background-position: 58% top;
   }
 
-  main:has(a[href="/portal/contractor"]) {
+  .contractor-portal-shell main {
     width: min(100% - 24px, 1180px);
     padding: 12px 0 40px !important;
   }
 
-  main:has(a[href="/portal/contractor"]) > header.card {
+  .contractor-portal-shell main > header.card {
     margin-bottom: 16px !important;
     padding: 22px 18px 20px;
   }
 
-  main:has(a[href="/portal/contractor"]) > header.card .page-head {
+  .contractor-portal-shell main > header.card .page-head {
     align-items: flex-start;
   }
 
-  main:has(a[href="/portal/contractor"]) > header.card .button-row {
+  .contractor-portal-shell main > header.card .button-row {
     gap: 8px;
     margin-top: 18px !important;
     padding-top: 16px;
   }
 
-  main:has(a[href="/portal/contractor"]) > header.card .button-row .btn {
+  .contractor-portal-shell main > header.card .button-row .btn {
     flex: 1 1 calc(50% - 8px);
     min-height: 44px;
     padding-inline: 14px;
   }
 
-  main:has(a[href="/portal/contractor"]) .metric-grid {
+  .contractor-portal-shell .metric-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  main:has(a[href="/portal/contractor"]) .metric-grid .card {
+  .contractor-portal-shell .metric-grid .card {
     min-height: 108px;
     padding: 18px;
   }
