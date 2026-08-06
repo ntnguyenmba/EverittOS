@@ -1,3 +1,33 @@
+body {
+  background:
+    linear-gradient(rgba(246, 248, 249, 0.9), rgba(246, 248, 249, 0.94)),
+    url('/hero.jpg') center / cover fixed;
+}
+
+main > header.card {
+  margin-top: 18px;
+  margin-bottom: 30px !important;
+  padding: 24px 28px 28px;
+}
+
+main > header.card .button-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 24px !important;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+main > header.card .button-row .btn {
+  min-height: 48px;
+  padding-inline: 24px;
+}
+
+main > header.card + .card,
+main > header.card + .metric-grid {
+  margin-top: 0;
+}
+
 .contractor-dashboard .stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
@@ -17,6 +47,23 @@
 }
 
 @media (max-width: 640px) {
+  main > header.card {
+    margin-top: 10px;
+    margin-bottom: 22px !important;
+    padding: 20px;
+  }
+
+  main > header.card .button-row {
+    gap: 10px;
+    margin-top: 20px !important;
+    padding-top: 18px;
+  }
+
+  main > header.card .button-row .btn {
+    min-height: 44px;
+    padding-inline: 18px;
+  }
+
   .contractor-dashboard .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -28,6 +75,10 @@
 }
 
 @media (max-width: 420px) {
+  main > header.card .button-row .btn {
+    flex: 1 1 calc(50% - 10px);
+  }
+
   .contractor-dashboard .stats-grid {
     grid-template-columns: 1fr;
   }
