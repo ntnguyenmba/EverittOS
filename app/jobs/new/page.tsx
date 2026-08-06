@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { JobContractorOptions } from '@/components/job-contractor-options';
 import { JobCreator } from '@/components/job-creator';
 import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -68,6 +69,7 @@ export default function NewJobPage() {
       <div className={styles.formWrap}>
         <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
           <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
+          <JobContractorOptions />
         </Suspense>
       </div>
     </AppShell>
