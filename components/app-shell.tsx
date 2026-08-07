@@ -173,15 +173,17 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         .role-portal-shell .role-summary-grid {
           display: grid !important;
           grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          grid-auto-rows: 1fr !important;
           gap: 16px !important;
-          align-items: stretch;
+          align-items: stretch !important;
         }
 
         .role-portal-shell .metric-grid {
           display: grid !important;
           grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          grid-auto-rows: 1fr !important;
           gap: 16px !important;
-          align-items: stretch;
+          align-items: stretch !important;
         }
 
         .role-portal-shell .role-summary-card,
@@ -190,10 +192,17 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           min-width: 0 !important;
           height: 100% !important;
           min-height: 140px !important;
+          margin: 0 !important;
+          padding: 22px !important;
           box-sizing: border-box !important;
           display: flex !important;
           flex-direction: column;
           justify-content: center;
+          align-self: stretch !important;
+          transform: none !important;
+          position: relative !important;
+          top: auto !important;
+          bottom: auto !important;
         }
 
         .dashboard-shell > .sidebar,
