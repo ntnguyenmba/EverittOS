@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthenticatedSection } from '@/components/authenticated-section';
 import { supabase } from '@/lib/supabase';
 import { performClientLogout } from '@/lib/client-logout';
 
@@ -236,117 +237,81 @@ export default function ContractorPortalPage() {
   }
 
   return (
-    <div className="dashboard-shell contractor-dashboard-shell">
-      <div className="contractor-background" aria-hidden="true" />
-
-      <header className="dashboard-shell-mobile contractor-mobile-header">
-        <Link className="contractor-mobile-brand" href="/portal/contractor">EverittOS</Link>
-        <button type="button" className="btn" disabled={signingOut} onClick={() => void signOut()}>
-          {signingOut ? 'Signing out...' : 'Sign out'}
-        </button>
-      </header>
-
-      <aside className="sidebar contractor-sidebar" aria-label="Contractor navigation">
-        <div className="contractor-sidebar-inner">
-          <Link className="contractor-brand" href="/portal/contractor">
-            <span className="contractor-brand-mark">E</span>
-            <span>
-              <strong>EverittOS</strong>
-              <small>Contractor workspace</small>
-            </span>
-          </Link>
-
-          <nav className="contractor-nav">
-            <Link href="/portal/contractor">Dashboard</Link>
-            <a href="#jobs">Jobs</a>
-            <a href="#schedule">Schedule</a>
-            <a href="#earnings">Earnings</a>
-            <Link href="/portal/contractor/settings">Settings</Link>
-          </nav>
-
-          <div className="contractor-role-note">
-            You can only view jobs and payment records assigned to your contractor profile.
-          </div>
-
-          <button type="button" className="btn sidebar-logout" disabled={signingOut} onClick={() => void signOut()}>
+    <AuthenticatedSection role="contractor" className="contractor-dashboard role-dashboard-minimal">
+      <header className="card" style={{ marginBottom: 18 }}>
+        <p className="eyebrow" style={{ margin: '0 0 12px' }}>Contractor dashboard</p>
+        <h1 style={{ marginBottom: 6 }}>Welcome back</h1>
+        <p className="muted" style={{ margin: 0 }}>{workerName}</p>
+        <nav className="button-row contractor-portal-actions" style={{ marginTop: 20, flexWrap: 'wrap' }}>
+          <a className="btn btn-primary" href="#jobs">Jobs</a>
+          <a className="btn" href="#schedule">Schedule</a>
+          <a className="btn" href="#earnings">Earnings</a>
+          <Link className="btn" href="/portal/contractor/settings">Settings</Link>
+          <button type="button" className="btn" disabled={signingOut} onClick={() => void signOut()}>
             {signingOut ? 'Signing out...' : 'Sign out'}
           </button>
-        </div>
-      </aside>
+        </nav>
+      </header>
 
-      <div className="main contractor-main">
-        <main>
-          <header className="card">
-            <div className="page-head">
-              <div>
-                <p className="eyebrow" style={{ margin: '0 0 12px' }}>Contractor dashboard</p>
-                <h1 style={{ marginBottom: 6 }}>Welcome back</h1>
-                <p className="muted" style={{ margin: 0 }}>{workerName}</p>
+      {state === 'loading' ? (
+        <section className="card" aria-live="polite">
+          <h3 style={{ marginTop: 0 }}>Loading your contractor dashboard...</h3>
+          <p className="muted">This should take only a few seconds.</p>
+        </section>
+      ) : null}
+
+      {state === 'error' ? (
+        <section className="card" role="alert">
+          <h3 style={{ marginTop: 0 }}>The contractor dashboard could not load</h3>
+          <p>{error}</p>
+          <p className="muted">No jobs, payments, or earnings were changed.</p>
+          <button type="button" className="btn btn-primary" onClick={() => void load()}>Try again</button>
+        </section>
+      ) : null}
+
+      {state === 'ready' ? (
+        <>
+          <section className="metric-grid" style={{ marginBottom: 18 }}>
+            <article className="card"><span className="muted">Assigned jobs</span><h2>{totals.assigned}</h2></article>
+            <article className="card"><span className="muted">Upcoming jobs</span><h2>{totals.upcoming}</h2></article>
+            <article className="card"><span className="muted">Completed jobs</span><h2>{totals.completed}</h2></article>
+            <article className="card"><span className="muted">Total earnings</span><h2>{money(totals.total)}</h2></article>
+            <article className="card"><span className="muted">Paid to you</span><h2>{money(totals.paid)}</h2></article>
+            <article className="card"><span className="muted">Still owed</span><h2>{money(totals.owed)}</h2></article>
+          </section>
+
+          <section id="jobs" className="card" style={{ marginBottom: 18 }}>
+            <h3 style={{ marginTop: 0 }}>Jobs</h3>
+            {sortedJobs.length ? (
+              <div className="job-visits-list">
+                {sortedJobs.map((job) => (
+                  <article key={job.id} className="list-row" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <strong>{job.title || 'Job'}</strong>
+                      <p className="muted" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p>
+                      <p style={{ margin: '5px 0 0' }}>{job.customer_name || 'Customer'}{job.address ? ` · ${job.address}` : ''}</p>
+                    </div>
+                    <span>{normalizedStatus(job.status).replaceAll('_', ' ')}</span>
+                  </article>
+                ))}
               </div>
-            </div>
-          </header>
+            ) : (
+              <p className="muted">No assigned jobs yet.</p>
+            )}
+          </section>
 
-          {state === 'loading' ? (
-            <section className="card" aria-live="polite">
-              <h3 style={{ marginTop: 0 }}>Loading your contractor dashboard...</h3>
-              <p className="muted">This should take only a few seconds.</p>
-            </section>
-          ) : null}
+          <section id="schedule" className="card" style={{ marginBottom: 18 }}>
+            <h3 style={{ marginTop: 0 }}>Schedule</h3>
+            <p className="muted">Your upcoming assigned jobs appear above in date order.</p>
+          </section>
 
-          {state === 'error' ? (
-            <section className="card" role="alert">
-              <h3 style={{ marginTop: 0 }}>The contractor dashboard could not load</h3>
-              <p>{error}</p>
-              <p className="muted">No jobs, payments, or earnings were changed.</p>
-              <button type="button" className="btn btn-primary" onClick={() => void load()}>Try again</button>
-            </section>
-          ) : null}
-
-          {state === 'ready' ? (
-            <>
-              <section className="metric-grid" style={{ marginBottom: 18 }}>
-                <article className="card"><span className="muted">Assigned jobs</span><h2>{totals.assigned}</h2></article>
-                <article className="card"><span className="muted">Upcoming jobs</span><h2>{totals.upcoming}</h2></article>
-                <article className="card"><span className="muted">Completed jobs</span><h2>{totals.completed}</h2></article>
-                <article className="card"><span className="muted">Total earnings</span><h2>{money(totals.total)}</h2></article>
-                <article className="card"><span className="muted">Paid to you</span><h2>{money(totals.paid)}</h2></article>
-                <article className="card"><span className="muted">Still owed</span><h2>{money(totals.owed)}</h2></article>
-              </section>
-
-              <section id="jobs" className="card" style={{ marginBottom: 18 }}>
-                <h3 style={{ marginTop: 0 }}>Jobs</h3>
-                {sortedJobs.length ? (
-                  <div className="job-visits-list">
-                    {sortedJobs.map((job) => (
-                      <article key={job.id} className="list-row" style={{ alignItems: 'flex-start' }}>
-                        <div>
-                          <strong>{job.title || 'Job'}</strong>
-                          <p className="muted" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p>
-                          <p style={{ margin: '5px 0 0' }}>{job.customer_name || 'Customer'}{job.address ? ` · ${job.address}` : ''}</p>
-                        </div>
-                        <span>{normalizedStatus(job.status).replaceAll('_', ' ')}</span>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted">No assigned jobs yet.</p>
-                )}
-              </section>
-
-              <section id="schedule" className="card" style={{ marginBottom: 18 }}>
-                <h3 style={{ marginTop: 0 }}>Schedule</h3>
-                <p className="muted">Your upcoming assigned jobs appear above in date order.</p>
-              </section>
-
-              <section id="earnings" className="card">
-                <h3 style={{ marginTop: 0 }}>Earnings</h3>
-                <p><strong>{money(totals.paid)}</strong> paid · <strong>{money(totals.owed)}</strong> still owed</p>
-                <p className="muted">Earnings are calculated only from contractor payment records linked to your worker profile.</p>
-              </section>
-            </>
-          ) : null}
-        </main>
-      </div>
-    </div>
+          <section id="earnings" className="card">
+            <h3 style={{ marginTop: 0 }}>Earnings</h3>
+            <p><strong>{money(totals.paid)}</strong> paid · <strong>{money(totals.owed)}</strong> still owed</p>
+            <p className="muted">Earnings are calculated only from contractor payment records linked to your worker profile.</p>
+          </section>
+        </>
+      ) : null}
+    </AuthenticatedSection>
   );
 }
