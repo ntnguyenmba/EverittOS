@@ -59,6 +59,25 @@ function tradeFromTags(tags: string[] | null): PlaybookTrade {
   return TRADES.includes(value as PlaybookTrade) ? (value as PlaybookTrade) : 'general';
 }
 
+const sectionStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10
+};
+
+const assignmentCardStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  width: '100%',
+  minWidth: 0,
+  minHeight: 52,
+  padding: '12px 14px',
+  border: '1px solid var(--border)',
+  borderRadius: 12,
+  cursor: 'pointer',
+  boxSizing: 'border-box'
+};
+
 export default function KnowledgePage() {
   const router = useRouter();
   const { locale } = useTranslation();
@@ -293,23 +312,33 @@ export default function KnowledgePage() {
       featureCheck={(plan) => limitsForPlan(plan).pdfReports}
     >
       {manager ? (
-        <section className="card form" style={{ marginBottom: 18 }}>
-          <div>
-            <h2 style={{ marginBottom: 6 }}>{copy.createTitle}</h2>
-            <p className="muted" style={{ marginTop: 0 }}>{copy.createHelp}</p>
+        <section
+          className="card form"
+          style={{
+            marginBottom: 24,
+            display: 'grid',
+            gap: 26,
+            padding: 'clamp(18px, 3vw, 28px)'
+          }}
+        >
+          <div style={{ ...sectionStyle, gap: 6 }}>
+            <h2 style={{ margin: 0 }}>{copy.createTitle}</h2>
+            <p className="muted" style={{ margin: 0, maxWidth: 760, lineHeight: 1.55 }}>{copy.createHelp}</p>
           </div>
 
-          <div>
-            <strong>{copy.chooseTrade}</strong>
-            <p className="muted" style={{ marginTop: 4 }}>{copy.chooseTradeHelp}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+          <div style={sectionStyle}>
+            <div>
+              <strong>{copy.chooseTrade}</strong>
+              <p className="muted" style={{ margin: '5px 0 0', lineHeight: 1.5 }}>{copy.chooseTradeHelp}</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 12 }}>
               {TRADES.map((item) => (
                 <button
                   key={item}
                   type="button"
                   className={trade === item ? 'btn btn-primary' : 'btn'}
                   onClick={() => applyTradeStarter(item)}
-                  style={{ minHeight: 48, whiteSpace: 'normal' }}
+                  style={{ minHeight: 48, whiteSpace: 'normal', lineHeight: 1.25, padding: '10px 12px' }}
                 >
                   {copy.trades[item]}
                 </button>
@@ -317,78 +346,71 @@ export default function KnowledgePage() {
             </div>
           </div>
 
-          <div className="form-grid">
-            <label>
+          <div className="form-grid" style={{ gap: 16, alignItems: 'end' }}>
+            <label style={{ display: 'grid', gap: 7 }}>
               <span>{copy.typeLabel}</span>
               <select className="input" value={category} onChange={(event) => setCategory(event.target.value as PlaybookDocumentType)}>
                 {DOCUMENT_TYPES.map((type) => <option key={type} value={type}>{copy.types[type]}</option>)}
               </select>
             </label>
-            <label>
+            <label style={{ display: 'grid', gap: 7 }}>
               <span>{copy.titleLabel}</span>
               <input className="input" placeholder={copy.titlePlaceholder} value={title} onChange={(event) => setTitle(event.target.value)} />
             </label>
           </div>
 
-          <div>
-            <strong>{copy.buildFromStarter}</strong>
-            <p className="muted" style={{ marginTop: 4 }}>{copy.buildFromStarterHelp}</p>
-            <p className="muted" style={{ marginTop: 4 }}>{copy.dragHint}</p>
-          </div>
+          <div style={sectionStyle}>
+            <div>
+              <strong>{copy.buildFromStarter}</strong>
+              <p className="muted" style={{ margin: '5px 0 0', lineHeight: 1.5 }}>{copy.buildFromStarterHelp}</p>
+              <p className="muted" style={{ margin: '4px 0 0', lineHeight: 1.5 }}>{copy.dragHint}</p>
+            </div>
 
-          <div style={{ display: 'grid', gap: 12 }}>
-            {blocks.map((block, index) => (
-              <article
-                key={block.id}
-                className="card"
-                draggable
-                onDragStart={() => setDragIndex(index)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => dropBlock(index)}
-                style={{ padding: 14, cursor: 'grab' }}
-              >
-                <div style={{ display: 'grid', gap: 10 }}>
-                  <label>
-                    <span>{copy.blockTitle}</span>
-                    <input className="input" value={block.title} onChange={(event) => updateBlock(block.id, { title: event.target.value })} />
-                  </label>
-                  <label>
-                    <span>{copy.blockBody}</span>
-                    <textarea className="input" rows={4} value={block.body} onChange={(event) => updateBlock(block.id, { body: event.target.value })} />
-                  </label>
-                  <div className="settings-actions" style={{ flexWrap: 'wrap' }}>
-                    <button type="button" className="btn btn-sm" disabled={index === 0} onClick={() => moveBlock(index, -1)}>{copy.moveUp}</button>
-                    <button type="button" className="btn btn-sm" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)}>{copy.moveDown}</button>
-                    <button type="button" className="btn btn-sm" disabled={blocks.length === 1} onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))}>{copy.removeBlock}</button>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {blocks.map((block, index) => (
+                <article
+                  key={block.id}
+                  className="card"
+                  draggable
+                  onDragStart={() => setDragIndex(index)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => dropBlock(index)}
+                  style={{ padding: '16px', cursor: 'grab' }}
+                >
+                  <div style={{ display: 'grid', gap: 14 }}>
+                    <label style={{ display: 'grid', gap: 7 }}>
+                      <span>{copy.blockTitle}</span>
+                      <input className="input" value={block.title} onChange={(event) => updateBlock(block.id, { title: event.target.value })} />
+                    </label>
+                    <label style={{ display: 'grid', gap: 7 }}>
+                      <span>{copy.blockBody}</span>
+                      <textarea className="input" rows={4} value={block.body} onChange={(event) => updateBlock(block.id, { body: event.target.value })} />
+                    </label>
+                    <div className="settings-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
+                      <button type="button" className="btn btn-sm" disabled={index === 0} onClick={() => moveBlock(index, -1)}>{copy.moveUp}</button>
+                      <button type="button" className="btn btn-sm" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)}>{copy.moveDown}</button>
+                      <button type="button" className="btn btn-sm" disabled={blocks.length === 1} onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))}>{copy.removeBlock}</button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
+
+            <div className="settings-actions" style={{ flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
+              <button type="button" className="btn" onClick={() => setBlocks((current) => [...current, makeBlock()])}>{copy.addBlock}</button>
+              {!editingId ? DOCUMENT_TYPES.map((type) => (
+                <button key={type} type="button" className="btn" onClick={() => applyStarter(type)}>{copy.starterAction}: {copy.types[type]}</button>
+              )) : null}
+            </div>
           </div>
 
-          <div className="settings-actions" style={{ flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={() => setBlocks((current) => [...current, makeBlock()])}>{copy.addBlock}</button>
-            {!editingId ? DOCUMENT_TYPES.map((type) => (
-              <button key={type} type="button" className="btn" onClick={() => applyStarter(type)}>{copy.starterAction}: {copy.types[type]}</button>
-            )) : null}
-          </div>
+          <div style={{ ...sectionStyle, gap: 12 }}>
+            <div>
+              <strong>{copy.assignTitle}</strong>
+              <p className="muted" style={{ margin: '5px 0 0', maxWidth: 760, lineHeight: 1.5 }}>{copy.assignHelp}</p>
+            </div>
 
-          <div>
-            <strong>{copy.assignTitle}</strong>
-            <p className="muted" style={{ marginTop: 4 }}>{copy.assignHelp}</p>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                width: '100%',
-                minHeight: 50,
-                padding: '12px 14px',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                cursor: 'pointer'
-              }}
-            >
+            <label style={assignmentCardStyle}>
               <input
                 type="checkbox"
                 checked={assignEveryone}
@@ -396,42 +418,28 @@ export default function KnowledgePage() {
                   setAssignEveryone(event.target.checked);
                   if (event.target.checked) setAssignedIds([]);
                 }}
-                style={{ flex: '0 0 auto' }}
+                style={{ flex: '0 0 auto', margin: 0 }}
               />
-              <span style={{ minWidth: 0, lineHeight: 1.35 }}>{copy.assignEveryone}</span>
+              <span style={{ minWidth: 0, lineHeight: 1.4 }}>{copy.assignEveryone}</span>
             </label>
+
             {!assignEveryone && !teamOptionsLoading ? (
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
                   gap: 10,
-                  marginTop: 10,
-                  width: '100%'
+                  width: '100%',
+                  alignItems: 'start'
                 }}
               >
                 {teamOptions.map((person) => (
-                  <label
-                    key={person.userId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      width: '100%',
-                      minWidth: 0,
-                      minHeight: 54,
-                      padding: '12px 14px',
-                      border: '1px solid var(--border)',
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                      overflow: 'hidden'
-                    }}
-                  >
+                  <label key={person.userId} style={assignmentCardStyle}>
                     <input
                       type="checkbox"
                       checked={assignedIds.includes(person.userId)}
                       onChange={() => toggleAssignee(person.userId)}
-                      style={{ flex: '0 0 auto', marginTop: 2 }}
+                      style={{ flex: '0 0 auto', margin: 0 }}
                     />
                     <span
                       style={{
@@ -440,8 +448,7 @@ export default function KnowledgePage() {
                         minWidth: 0,
                         lineHeight: 1.4,
                         whiteSpace: 'normal',
-                        overflowWrap: 'break-word',
-                        wordBreak: 'normal'
+                        overflowWrap: 'anywhere'
                       }}
                     >
                       {person.label}
@@ -452,38 +459,51 @@ export default function KnowledgePage() {
             ) : null}
           </div>
 
-          <div className="settings-actions" style={{ flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveDoc()}>
-              {saving ? copy.saving : editingId ? copy.update : copy.save}
-            </button>
-            {editingId ? <button type="button" className="btn" disabled={saving} onClick={resetForm}>{copy.cancel}</button> : null}
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div className="settings-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveDoc()}>
+                {saving ? copy.saving : editingId ? copy.update : copy.save}
+              </button>
+              {editingId ? <button type="button" className="btn" disabled={saving} onClick={resetForm}>{copy.cancel}</button> : null}
+            </div>
+            {message ? <p className="muted" role="status" style={{ margin: 0 }}>{message}</p> : null}
           </div>
-          {message ? <p className="muted" role="status">{message}</p> : null}
         </section>
       ) : null}
 
-      <section className="card">
-        {loading ? <p>{copy.loading}</p> : null}
+      <section className="card" style={{ padding: 'clamp(18px, 3vw, 26px)' }}>
+        {loading ? <p style={{ margin: 0 }}>{copy.loading}</p> : null}
         {!loading && docs.length === 0 ? (
-          <div>
-            <h3>{copy.emptyTitle}</h3>
-            <p className="muted">{copy.emptyBody}</p>
+          <div style={{ display: 'grid', gap: 6 }}>
+            <h3 style={{ margin: 0 }}>{copy.emptyTitle}</h3>
+            <p className="muted" style={{ margin: 0, lineHeight: 1.5 }}>{copy.emptyBody}</p>
           </div>
         ) : null}
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div style={{ display: 'grid', gap: 14 }}>
           {docs.map((doc) => {
             const type = DOCUMENT_TYPES.includes(doc.category as PlaybookDocumentType)
               ? (doc.category as PlaybookDocumentType)
               : 'instruction';
             const itemTrade = tradeFromTags(doc.tags);
             return (
-              <article key={doc.id} className="dashboard-today-row" style={{ alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                  <div className="muted" style={{ marginBottom: 4 }}>{copy.types[type]} · {copy.trades[itemTrade]}{!manager ? ` · ${copy.assignedToYou}` : ''}</div>
+              <article
+                key={doc.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 18,
+                  flexWrap: 'wrap',
+                  padding: '16px 0',
+                  borderBottom: '1px solid var(--border)'
+                }}
+              >
+                <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+                  <div className="muted" style={{ marginBottom: 5, lineHeight: 1.4 }}>{copy.types[type]} · {copy.trades[itemTrade]}{!manager ? ` · ${copy.assignedToYou}` : ''}</div>
                   <strong>{doc.title}</strong>
-                  {doc.body ? <p className="muted" style={{ whiteSpace: 'pre-wrap', marginBottom: 0, overflowWrap: 'anywhere' }}>{doc.body}</p> : null}
+                  {doc.body ? <p className="muted" style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0', overflowWrap: 'anywhere', lineHeight: 1.55 }}>{doc.body}</p> : null}
                 </div>
-                <div className="settings-actions" style={{ flexShrink: 0, flexWrap: 'wrap' }}>
+                <div className="settings-actions" style={{ flexShrink: 0, flexWrap: 'wrap', gap: 8 }}>
                   <button type="button" className="btn btn-sm" onClick={() => void shareDoc(doc)}>{copy.share}</button>
                   <button type="button" className="btn btn-sm" onClick={() => emailDoc(doc)}>{copy.shareEmail}</button>
                   <button type="button" className="btn btn-sm" onClick={() => void copyDoc(doc)}>{copy.shareCopy}</button>
@@ -494,7 +514,7 @@ export default function KnowledgePage() {
             );
           })}
         </div>
-        {!manager && message ? <p className="muted" role="status">{message}</p> : null}
+        {!manager && message ? <p className="muted" role="status" style={{ marginBottom: 0 }}>{message}</p> : null}
       </section>
     </OsModulePage>
   );
