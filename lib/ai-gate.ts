@@ -72,10 +72,11 @@ export async function verifyAiRequest(
     };
   }
 
-  const { profile: ownerProfile } = await fetchProfileByUserId(supabase, ownerUserId || userId);
+  const resolvedOwnerUserId = ownerUserId || org.ownerUserId || userId;
+  const { profile: ownerProfile } = await fetchProfileByUserId(supabase, resolvedOwnerUserId);
   const subscriptionStatus = await resolveProfileSubscriptionStatus(
     supabase,
-    ownerUserId || userId,
+    resolvedOwnerUserId,
     ownerProfile
   );
   const sub = subscriptionAccess(plan, subscriptionStatus);
@@ -106,18 +107,26 @@ export async function verifyAiRequest(
     };
   }
 
-  const everittteamBudget = await assertEverittteamBudgetAllowed(
-    admin,
-    userId,
-    org.ownerUserId,
-    org.role
-  );
-  if (!everittteamBudget.ok) {
-    return {
-      ok: false,
-      code: everittteamBudget.code,
-      message: everittteamBudget.message
-    };
+  // The EVERITTTEAM pool is only a fallback allowance. Workspace owners and
+  // organizations with valid paid-plan subscription access use their normal
+  // Business/Enterprise AI entitlement and must not be blocked by pool verification.
+  const isWorkspaceOwner = userId === resolvedOwnerUserId;
+  const hasPaidPlanAccess = sub.ok && plan !== 'free';
+
+  if (!isWorkspaceOwner && !hasPaidPlanAccess) {
+    const everittteamBudget = await assertEverittteamBudgetAllowed(
+      admin,
+      userId,
+      resolvedOwnerUserId,
+      org.role
+    );
+    if (!everittteamBudget.ok) {
+      return {
+        ok: false,
+        code: everittteamBudget.code,
+        message: everittteamBudget.message
+      };
+    }
   }
 
   const cap = aiMonthlyCap(plan);
@@ -127,7 +136,7 @@ export async function verifyAiRequest(
     ok: true,
     org,
     plan,
-    ownerUserId: ownerUserId || userId,
+    ownerUserId: resolvedOwnerUserId,
     monthlyUsed: used,
     monthlyCap: cap,
     unlimited: cap < 0
