@@ -1,15 +1,102 @@
-/* Visual-only consistency for client and contractor portals. */
+/* Simple role portal visual system for client and contractor experiences. */
 
 .contractor-dashboard,
 .authenticated-portal,
 .customer-portal,
 .client-portal,
-.portal-page {
+.portal-page,
+.client-portal-jobs {
   width: min(100%, 1180px);
   margin: 0 auto;
   min-width: 0;
 }
 
+.client-portal-jobs {
+  color: #24313d;
+}
+
+.client-portal-jobs .role-dashboard-topbar,
+.client-portal-jobs .portal-client-nav,
+.client-portal-jobs .role-summary-grid,
+.client-portal-jobs .portal-dashboard-section,
+.client-portal-jobs > .card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.client-portal-jobs .role-dashboard-topbar {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid rgba(58, 48, 40, 0.1);
+  border-radius: 14px;
+  background: #fcfaf6;
+  box-shadow: 0 6px 20px rgba(73, 62, 51, 0.05);
+}
+
+.client-portal-jobs .role-period-filter {
+  gap: 8px;
+}
+
+.client-portal-jobs .role-period-filter button {
+  min-height: 40px;
+  border: 1px solid rgba(58, 48, 40, 0.11);
+  border-radius: 8px;
+  background: #f3efe8;
+  color: #59636c;
+}
+
+.client-portal-jobs .role-period-filter button.is-active {
+  background: #40515f;
+  border-color: #40515f;
+  color: #fff;
+}
+
+.client-portal-jobs .portal-client-nav {
+  margin-bottom: 20px;
+  padding: 8px;
+  border: 1px solid rgba(58, 48, 40, 0.1);
+  border-radius: 12px;
+  background: #e9e1d7;
+}
+
+.client-portal-jobs .portal-client-nav a {
+  border-radius: 8px;
+}
+
+.client-portal-jobs .role-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 18px;
+}
+
+.client-portal-jobs .role-summary-card {
+  min-height: 112px;
+  padding: 20px;
+  border: 1px solid rgba(58, 48, 40, 0.1) !important;
+  border-radius: 14px !important;
+  background: #fffdf9 !important;
+  box-shadow: 0 6px 20px rgba(73, 62, 51, 0.055) !important;
+}
+
+.client-portal-jobs .role-summary-card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #24313d;
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.client-portal-jobs .role-summary-card span {
+  color: #756b61;
+}
+
+.client-portal-jobs .card,
+.client-portal-jobs .portal-dashboard-section,
+.client-portal-jobs .client-job-card,
 .contractor-dashboard .card,
 .authenticated-portal .card,
 .customer-portal .card,
@@ -20,26 +107,36 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid rgba(36, 63, 83, 0.18) !important;
-  border-radius: 22px !important;
-  background: rgba(255, 255, 255, 0.98) !important;
-  box-shadow: 0 14px 34px rgba(28, 48, 63, 0.08) !important;
-  color: #172433;
+  border: 1px solid rgba(58, 48, 40, 0.1) !important;
+  border-radius: 14px !important;
+  background: #fffdf9 !important;
+  box-shadow: 0 6px 20px rgba(73, 62, 51, 0.055) !important;
+  color: #24313d;
+}
+
+.client-portal-jobs .portal-dashboard-section {
+  margin-bottom: 14px;
   overflow: hidden;
 }
 
-.contractor-dashboard .card,
-.authenticated-portal .card,
-.customer-portal .card,
-.client-portal .card,
-.portal-page .card {
-  padding: clamp(18px, 2.6vw, 28px);
+.client-portal-jobs .portal-dashboard-section > summary {
+  padding: 18px 20px;
 }
 
-.contractor-job-card > button {
-  padding: clamp(18px, 2.6vw, 28px) !important;
+.client-portal-jobs .client-job-card-list {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 16px;
 }
 
+.client-portal-jobs .client-job-card {
+  padding: 16px 18px;
+  box-shadow: none !important;
+}
+
+.client-portal-jobs h1,
+.client-portal-jobs h2,
+.client-portal-jobs h3,
 .contractor-dashboard h1,
 .contractor-dashboard h2,
 .contractor-dashboard h3,
@@ -52,45 +149,17 @@
 .client-portal h1,
 .client-portal h2,
 .client-portal h3 {
-  color: #172433;
+  color: #24313d;
   letter-spacing: -0.025em;
 }
 
-.contractor-dashboard p,
-.contractor-dashboard dd,
-.authenticated-portal p,
-.customer-portal p,
-.client-portal p,
-.portal-page p {
-  max-width: 72ch;
-  line-height: 1.5;
-}
-
-.contractor-dash-header,
-.contractor-dash-nav,
-.authenticated-portal .portal-actions,
-.customer-portal .portal-actions,
-.client-portal .portal-actions {
-  width: 100%;
-  min-width: 0;
-}
-
-.contractor-dash-nav {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 16px 0 22px;
-}
-
-.contractor-dash-nav .btn,
-.authenticated-portal .btn,
-.customer-portal .btn,
-.client-portal .btn,
-.portal-page .btn {
-  min-height: 48px;
-  border-radius: 14px;
-  white-space: normal;
-  text-align: center;
+.client-portal-jobs .muted,
+.contractor-dashboard .muted,
+.authenticated-portal .muted,
+.customer-portal .muted,
+.client-portal .muted,
+.portal-page .muted {
+  color: #756b61 !important;
 }
 
 .contractor-dashboard .btn-primary,
@@ -98,50 +167,10 @@
 .customer-portal .btn-primary,
 .client-portal .btn-primary,
 .portal-page .btn-primary,
-.contractor-dashboard .btn[style*="background"],
-.authenticated-portal .btn[style*="background"],
-.customer-portal .btn[style*="background"],
-.client-portal .btn[style*="background"] {
-  background: #243f53 !important;
-  border-color: #243f53 !important;
-  color: #ffffff !important;
-}
-
-.contractor-dashboard .btn-primary *,
-.authenticated-portal .btn-primary *,
-.customer-portal .btn-primary *,
-.client-portal .btn-primary *,
-.portal-page .btn-primary * {
-  color: #ffffff !important;
-}
-
-.contractor-dashboard .muted,
-.authenticated-portal .muted,
-.customer-portal .muted,
-.client-portal .muted,
-.portal-page .muted {
-  color: #526778 !important;
-}
-
-.contractor-dashboard details.card > summary,
-.authenticated-portal details.card > summary,
-.customer-portal details.card > summary,
-.client-portal details.card > summary {
-  min-width: 0;
-}
-
-.contractor-dashboard dl,
-.authenticated-portal dl,
-.customer-portal dl,
-.client-portal dl {
-  min-width: 0;
-}
-
-.contractor-dashboard dd,
-.authenticated-portal dd,
-.customer-portal dd,
-.client-portal dd {
-  overflow-wrap: anywhere;
+.client-portal-jobs .btn-primary {
+  background: #40515f !important;
+  border-color: #40515f !important;
+  color: #fff !important;
 }
 
 @media (max-width: 760px) {
@@ -149,46 +178,30 @@
   .authenticated-portal,
   .customer-portal,
   .client-portal,
-  .portal-page {
+  .portal-page,
+  .client-portal-jobs {
     width: 100%;
     padding-inline: 0;
   }
 
-  .contractor-dash-header {
-    align-items: stretch !important;
+  .client-portal-jobs .role-dashboard-topbar {
+    border-radius: 12px;
   }
 
-  .contractor-dash-header > *,
-  .contractor-dash-header .btn,
-  .contractor-dash-header select {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .contractor-dash-nav {
+  .client-portal-jobs .role-summary-grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .contractor-dashboard .card,
-  .authenticated-portal .card,
-  .customer-portal .card,
-  .client-portal .card,
-  .portal-page .card,
-  .contractor-job-card {
-    border-radius: 18px !important;
   }
 }
 
-@media (max-width: 440px) {
-  .contractor-dash-nav {
+@media (max-width: 520px) {
+  .client-portal-jobs .role-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .contractor-dashboard .card,
-  .authenticated-portal .card,
-  .customer-portal .card,
-  .client-portal .card,
-  .portal-page .card {
-    padding: 17px;
+  .client-portal-jobs .role-dashboard-topbar,
+  .client-portal-jobs .role-summary-card,
+  .client-portal-jobs .portal-dashboard-section,
+  .client-portal-jobs .client-job-card {
+    border-radius: 12px !important;
   }
 }
