@@ -125,6 +125,20 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           min-height: 44px;
         }
 
+        .role-portal-shell .role-period-filter button.is-active,
+        .role-portal-shell .btn.btn-primary,
+        .role-portal-shell .portal-client-nav a[aria-current='page'] {
+          background: #3f586a !important;
+          border-color: #3f586a !important;
+          color: #ffffff !important;
+        }
+
+        .role-portal-shell .role-period-filter button.is-active *,
+        .role-portal-shell .btn.btn-primary *,
+        .role-portal-shell .portal-client-nav a[aria-current='page'] * {
+          color: #ffffff !important;
+        }
+
         .role-portal-shell .button-row,
         .role-portal-shell .role-dashboard-topbar,
         .role-portal-shell .portal-client-nav {
