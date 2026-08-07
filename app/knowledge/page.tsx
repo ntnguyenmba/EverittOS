@@ -376,16 +376,76 @@ export default function KnowledgePage() {
           <div>
             <strong>{copy.assignTitle}</strong>
             <p className="muted" style={{ marginTop: 4 }}>{copy.assignHelp}</p>
-            <label className="dashboard-today-row" style={{ justifyContent: 'flex-start', gap: 10, minHeight: 48 }}>
-              <input type="checkbox" checked={assignEveryone} onChange={(event) => { setAssignEveryone(event.target.checked); if (event.target.checked) setAssignedIds([]); }} />
-              <span>{copy.assignEveryone}</span>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                width: '100%',
+                minHeight: 50,
+                padding: '12px 14px',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                cursor: 'pointer'
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={assignEveryone}
+                onChange={(event) => {
+                  setAssignEveryone(event.target.checked);
+                  if (event.target.checked) setAssignedIds([]);
+                }}
+                style={{ flex: '0 0 auto' }}
+              />
+              <span style={{ minWidth: 0, lineHeight: 1.35 }}>{copy.assignEveryone}</span>
             </label>
             {!assignEveryone && !teamOptionsLoading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginTop: 8 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+                  gap: 10,
+                  marginTop: 10,
+                  width: '100%'
+                }}
+              >
                 {teamOptions.map((person) => (
-                  <label key={person.userId} className="dashboard-today-row" style={{ justifyContent: 'flex-start', gap: 10, minHeight: 48 }}>
-                    <input type="checkbox" checked={assignedIds.includes(person.userId)} onChange={() => toggleAssignee(person.userId)} />
-                    <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{person.label}</span>
+                  <label
+                    key={person.userId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                      width: '100%',
+                      minWidth: 0,
+                      minHeight: 54,
+                      padding: '12px 14px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={assignedIds.includes(person.userId)}
+                      onChange={() => toggleAssignee(person.userId)}
+                      style={{ flex: '0 0 auto', marginTop: 2 }}
+                    />
+                    <span
+                      style={{
+                        display: 'block',
+                        flex: '1 1 auto',
+                        minWidth: 0,
+                        lineHeight: 1.4,
+                        whiteSpace: 'normal',
+                        overflowWrap: 'break-word',
+                        wordBreak: 'normal'
+                      }}
+                    >
+                      {person.label}
+                    </span>
                   </label>
                 ))}
               </div>
