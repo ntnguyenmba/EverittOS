@@ -1,13 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { browserSupportsPasskeys, passkeyApiEnabled, registerPasskey } from '@/lib/passkey-auth';
+import { getPasskeyManagerCopy, getPasskeySetupCopy } from '@/lib/i18n/ui-chrome-copy';
 
 type PasskeySetupPromptProps = {
   onDone: () => void;
 };
 
 export function PasskeySetupPrompt({ onDone }: PasskeySetupPromptProps) {
+  const { locale } = useTranslation();
+  const c = getPasskeySetupCopy(locale);
+  const managerCopy = getPasskeyManagerCopy(locale);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,26 +26,23 @@ export function PasskeySetupPrompt({ onDone }: PasskeySetupPromptProps) {
     const result = await registerPasskey();
     setLoading(false);
     if (!result.ok) {
-      setError(result.error || 'Unable to add passkey.');
+      setError(result.error || managerCopy.addError);
       return;
     }
     onDone();
   }
 
   return (
-    <div className="card passkey-setup-prompt" role="region" aria-label="Add a passkey">
-      <h3>Add a passkey now?</h3>
-      <p className="muted">
-        Sign in faster next time with Face ID, Touch ID, Windows Hello, or a security key. You can skip and add one later
-        in Security settings.
-      </p>
+    <div className="card passkey-setup-prompt" role="region" aria-label={c.aria}>
+      <h3>{c.title}</h3>
+      <p className="muted">{c.body}</p>
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}
       <div className="settings-actions">
         <button type="button" className="btn btn-primary" disabled={loading} onClick={() => void addNow()}>
-          {loading ? 'Setting up…' : 'Add a passkey now'}
+          {loading ? managerCopy.working : c.enable}
         </button>
         <button type="button" className="btn" disabled={loading} onClick={onDone}>
-          Skip for now
+          {c.notNow}
         </button>
       </div>
     </div>

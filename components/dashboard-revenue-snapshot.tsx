@@ -34,6 +34,7 @@ const VALID_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'a
 
 const copy = {
   en: {
+    dashboard: 'Dashboard',
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
     collected: 'Money received', customerBalanceDue: 'Customers owe', cashAfterPaidCosts: 'Money kept',
     jobsToday: 'Jobs today', jobsWeek: 'Jobs this week', jobsMonth: 'Jobs this month', jobsYear: 'Jobs this year', jobsAllTime: 'All jobs',
@@ -45,6 +46,7 @@ const copy = {
     expectedProfitDesc: 'What is left after contractor costs and expenses.', expensesDesc: 'Fuel, supplies, software, and other costs.'
   },
   es: {
+    dashboard: 'Panel',
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
     collected: 'Dinero recibido', customerBalanceDue: 'Clientes deben', cashAfterPaidCosts: 'Dinero restante',
     jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
@@ -56,6 +58,7 @@ const copy = {
     expectedProfitDesc: 'Lo que queda después de contratistas y gastos.', expensesDesc: 'Combustible, suministros, software y otros costos.'
   },
   vi: {
+    dashboard: 'Bảng điều khiển',
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
     collected: 'Tiền đã nhận', customerBalanceDue: 'Khách còn nợ', cashAfterPaidCosts: 'Tiền còn lại',
     jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
@@ -172,7 +175,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   ];
 
   return (
-    <section aria-label="Dashboard" aria-busy={busy}>
+    <section aria-label={c.dashboard} aria-busy={busy}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
         <label className="sr-only" htmlFor="dashboard-period">{c.period}</label>
         <select id="dashboard-period" className="input" value={range} disabled={busy} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 140 }}>

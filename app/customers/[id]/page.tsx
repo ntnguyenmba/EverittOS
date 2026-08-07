@@ -28,9 +28,28 @@ type PageProps = { params: Promise<{ id: string }> };
 
 const CUSTOMER_STAGE_VALUES = ['active', 'past', 'recurring', 'inactive', 'former', 'archived'] as const;
 
+const customerDetailCopy = {
+  en: {
+    moveToLeads: 'Move to leads',
+    moveToLeadsConfirm: 'Move this customer back to Leads?',
+    archiveConfirm: 'Archive this customer?'
+  },
+  es: {
+    moveToLeads: 'Mover a prospectos',
+    moveToLeadsConfirm: '¿Mover este cliente de nuevo a Prospectos?',
+    archiveConfirm: '¿Archivar este cliente?'
+  },
+  vi: {
+    moveToLeads: 'Chuyển sang tiềm năng',
+    moveToLeadsConfirm: 'Chuyển khách hàng này trở lại Tiềm năng?',
+    archiveConfirm: 'Lưu trữ khách hàng này?'
+  }
+} as const;
+
 export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { t, locale } = useTranslation();
+  const copy = customerDetailCopy[locale];
   const lifecycle = getCustomerLifecycleCopy(locale);
   const { teamOptions, teamOptionsLoading } = useTeamOptions();
   const [customerId, setCustomerId] = useState('');
@@ -234,7 +253,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
   async function moveBackToLead() {
     if (!canEdit || !customerId || movingToLead) return;
-    if (!window.confirm('Move this customer back to Leads?')) return;
+    if (!window.confirm(copy.moveToLeadsConfirm)) return;
     setMovingToLead(true);
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'PATCH',
@@ -507,12 +526,12 @@ export default function CustomerDetailPage({ params }: PageProps) {
             {pipelineStage !== 'active' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.markActive}</button> : null}
             {pipelineStage !== 'past' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('past')}>{lifecycle.actions.markPast}</button> : null}
             {pipelineStage === 'archived' ? <button type="button" className="btn" disabled={savingCustomer} onClick={() => void updateLifecycleStage('active')}>{lifecycle.actions.restore}</button> : null}
-            <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>{movingToLead ? FEEDBACK.loading : 'Move to leads'}</button>
+            <button type="button" className="btn" disabled={movingToLead} onClick={() => void moveBackToLead()}>{movingToLead ? FEEDBACK.loading : copy.moveToLeads}</button>
             <button
               type="button"
               className="btn btn-danger"
               onClick={async () => {
-                if (!window.confirm('Archive this customer?')) return;
+                if (!window.confirm(copy.archiveConfirm)) return;
                 const res = await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
                 const json = (await res.json().catch(() => ({}))) as { error?: string };
                 if (!res.ok) {

@@ -14,6 +14,8 @@ import {
 } from '@/lib/billing/product-catalog';
 import { getAppPlatform } from '@/lib/platform/detect';
 import type { PaidPlanKey } from '@/lib/billing-config';
+import { useTranslation } from '@/components/locale-provider';
+import { formatSettingsBillingCopy, getNativeStoreSubscribeCopy } from '@/lib/i18n/settings-copy';
 
 type NativeStoreSubscribeButtonProps = {
   plan: PaidPlanKey;
@@ -42,11 +44,14 @@ export function NativeStoreSubscribeButton({
   disabled = false,
   onSuccess
 }: NativeStoreSubscribeButtonProps) {
+  const { locale } = useTranslation();
+  const c = getNativeStoreSubscribeCopy(locale);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [storePrice, setStorePrice] = useState<string | null>(null);
   const productId = productIdForPlan(plan);
   const platform = getAppPlatform();
+  const storeLabel = platform === 'ios' ? c.subscribeApple : c.subscribeGoogle;
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +74,7 @@ export function NativeStoreSubscribeButton({
   if (!productId) {
     return (
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        {platform === 'ios' ? 'Subscribe with Apple' : 'Subscribe with Google Play'} is available for Pro and Business.
+        {formatSettingsBillingCopy(c.availableForPlans, { store: storeLabel })}
       </p>
     );
   }
@@ -84,28 +89,28 @@ export function NativeStoreSubscribeButton({
       setMessage(outcome.error);
       return;
     }
-    setMessage('Subscription activated.');
+    setMessage(c.activated);
     onSuccess?.(outcome);
   }
 
   const cta =
-    platform === 'ios' ? 'Subscribe with Apple' : platform === 'android' ? 'Subscribe with Google Play' : label;
+    platform === 'ios' ? c.subscribeApple : platform === 'android' ? c.subscribeGoogle : label;
 
   return (
     <div style={{ display: 'grid', gap: 8 }}>
       {storePrice ? (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
-          Store price: {storePrice} · auto-renews monthly until cancelled
+          {formatSettingsBillingCopy(c.storePrice, { price: storePrice })}
         </p>
       ) : null}
       <button type="button" className={className} disabled={disabled || busy} onClick={() => void onClick()}>
-        {busy ? 'Processing…' : cta}
+        {busy ? c.processing : cta}
       </button>
       {message ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>{message}</p> : null}
       <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>
-        Payment will be charged to your {platform === 'ios' ? 'Apple ID' : 'Google Play'} account. Manage or cancel in{' '}
-        {platform === 'ios' ? 'Settings → Subscriptions' : 'Google Play → Subscriptions'}.{' '}
-        <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
+        {platform === 'ios' ? c.chargedToApple : c.chargedToGoogle}{' '}
+        {platform === 'ios' ? c.manageApple : c.manageGoogle}{' '}
+        <a href="/terms">{c.terms}</a> · <a href="/privacy">{c.privacy}</a>
       </p>
     </div>
   );

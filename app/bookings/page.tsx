@@ -7,6 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { BookingShareCard } from '@/components/booking-share-actions';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { useWorkspacePlanOptional } from '@/components/workspace-plan-provider';
 import {
   BOOKING_STATUS_LABELS,
@@ -59,6 +60,12 @@ const EMPTY_FORM: BookingFormState = {
   send_confirmation: false
 };
 
+const pageCopy = {
+  en: { cancelBookingConfirm: 'Cancel booking for {clientName}?' },
+  es: { cancelBookingConfirm: '¿Cancelar la reserva de {clientName}?' },
+  vi: { cancelBookingConfirm: 'Hủy lịch đặt của {clientName}?' }
+} as const;
+
 function toLocalInputValue(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
@@ -103,6 +110,8 @@ function readLeadPrefill(): Partial<BookingFormState> | null {
 export default function BookingsPage() {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const copy = pageCopy[locale];
   const workspacePlan = useWorkspacePlanOptional();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -331,7 +340,7 @@ export default function BookingsPage() {
 
   async function deleteBooking(id: string, clientName: string) {
     if (busyId) return;
-    if (!window.confirm(`Cancel booking for ${clientName}?`)) return;
+    if (!window.confirm(copy.cancelBookingConfirm.replace('{clientName}', clientName))) return;
     setBusyId(id);
     const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
     const json = await res.json();

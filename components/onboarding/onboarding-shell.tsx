@@ -71,11 +71,13 @@ export function OnboardingActions({
   continueDisabled?: boolean;
   showSkipThisStep?: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="onboarding-actions">
       {onBack ? (
         <button type="button" className="btn onboarding-back" onClick={onBack} disabled={busy}>
-          {backLabel || 'Back'}
+          {backLabel || t('common.back')}
         </button>
       ) : null}
       <button type="button" className="btn btn-primary onboarding-continue" onClick={onContinue} disabled={busy || continueDisabled}>

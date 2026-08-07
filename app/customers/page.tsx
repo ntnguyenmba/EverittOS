@@ -82,6 +82,11 @@ function CustomersPageContent() {
   const periodFilter = searchParams.get('period');
   const stageFilter = searchParams.get('stage') || searchParams.get('status');
   const { t, locale } = useTranslation();
+  const copy = {
+    en: { edit: 'Edit' },
+    es: { edit: 'Editar' },
+    vi: { edit: 'Sửa' }
+  }[locale];
   const lifecycle = getCustomerLifecycleCopy(locale);
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -469,7 +474,7 @@ function CustomersPageContent() {
                   viewHref={`/customers/${customer.id}`}
                   viewLabel="Open"
                   editHref={canManage ? `/customers/${customer.id}` : undefined}
-                  editLabel="Edit"
+                  editLabel={copy.edit}
                   onRemove={
                     canManage
                       ? async () => {

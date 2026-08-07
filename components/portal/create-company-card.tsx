@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
+import { getCreateCompanyCopy } from '@/lib/i18n/ui-chrome-copy';
 
 type CreateCompanyCardProps = {
   variant: 'client' | 'contractor';
 };
 
-export function CreateCompanyCard({ variant }: CreateCompanyCardProps) {
+export function CreateCompanyCard({ variant: _variant }: CreateCompanyCardProps) {
+  const { locale, t } = useTranslation();
+  const c = getCreateCompanyCopy(locale);
   const [companyName, setCompanyName] = useState('');
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -16,7 +20,7 @@ export function CreateCompanyCard({ variant }: CreateCompanyCardProps) {
     if (busy) return;
     const name = companyName.trim();
     if (name.length < 2) {
-      setError('Enter your company name.');
+      setError(c.nameRequired);
       return;
     }
 
@@ -30,7 +34,7 @@ export function CreateCompanyCard({ variant }: CreateCompanyCardProps) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(result.error || 'Could not create your company.');
+      setError(result.error || c.createError);
       setBusy(false);
       return;
     }
@@ -40,28 +44,24 @@ export function CreateCompanyCard({ variant }: CreateCompanyCardProps) {
 
   return (
     <div className="settings-card">
-      <p className="muted" style={{ marginBottom: 4 }}>EverittOS for your business</p>
-      <h3>Run your own company</h3>
-      <p className="muted">
-        {variant === 'contractor'
-          ? 'Ready to take your own customers? Create a company with this same login and keep receiving assigned work.'
-          : 'Manage your own customers, jobs, team, invoices, and reports with this same login.'}
-      </p>
+      <p className="muted" style={{ marginBottom: 4 }}>{t('ux.appName')}</p>
+      <h3>{c.title}</h3>
+      <p className="muted">{c.body}</p>
 
       {!open ? (
         <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
-          Create my company
+          {c.create}
         </button>
       ) : (
         <div className="form" style={{ marginTop: 12 }}>
           <label className="settings-field">
-            <span>Company name</span>
+            <span>{c.nameLabel}</span>
             <input
               className="input"
               value={companyName}
               maxLength={120}
               autoComplete="organization"
-              placeholder="Your company name"
+              placeholder={c.namePlaceholder}
               onChange={(event) => setCompanyName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
@@ -73,10 +73,10 @@ export function CreateCompanyCard({ variant }: CreateCompanyCardProps) {
           </label>
           <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void createCompany()}>
-              {busy ? 'Creating company...' : 'Create company'}
+              {busy ? c.creating : c.create}
             </button>
             <button type="button" className="btn" disabled={busy} onClick={() => setOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
           {error ? <p className="auth-message auth-message-error">{error}</p> : null}

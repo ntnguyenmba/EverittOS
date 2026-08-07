@@ -19,16 +19,19 @@ import { supabase } from '@/lib/supabase';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { subscriptionBlocksAccountDeletion } from '@/lib/account-deletion-server';
 import { useWorkspacePlan } from '@/hooks/use-workspace-plan';
+import { formatSettingsCopy, getSettingsWorkspaceCopy } from '@/lib/i18n/settings-copy';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { t, locale } = useTranslation();
+  const c = getSettingsWorkspaceCopy(locale);
   const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
     successMessage: 'saved',
-    errorFallback: 'Unable to save settings.'
+    errorFallback: c.saveError
   });
   const { busy: logoUploading, run: runLogoUpload } = useAsyncAction({ successMessage: 'uploadComplete' });
   const { busy: restartBusy, runResponse: runRestart } = useAsyncAction({
-    errorFallback: 'Unable to restart onboarding.'
+    errorFallback: c.restartError
   });
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
@@ -56,7 +59,6 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/New_York');
   const [teamSize, setTeamSize] = useState('');
   const [industry, setIndustry] = useState('');
-  const { t } = useTranslation();
   const {
     profilePlan,
     billingPlan,
@@ -207,8 +209,8 @@ export default function SettingsPage() {
 
   if (loading || planLoading) {
     return (
-      <SettingsShell plan={plan} role={role} title="Settings">
-        <p className="loading-state" role="status">Loading...</p>
+      <SettingsShell plan={plan} role={role} title={c.title}>
+        <p className="loading-state" role="status">{c.loading}</p>
       </SettingsShell>
     );
   }
@@ -218,60 +220,60 @@ export default function SettingsPage() {
   const canDeleteWorkspace = isOwner(role);
 
   return (
-    <SettingsShell plan={plan} role={role} title="Settings">
+    <SettingsShell plan={plan} role={role} title={c.title}>
       <section className="settings-card form settings-form-grid">
-        <h3>Business</h3>
-        <label htmlFor="org-name">Business name</label>
+        <h3>{c.business}</h3>
+        <label htmlFor="org-name">{c.businessName}</label>
         <input id="org-name" className="input" value={businessName} onChange={(event) => setBusinessName(event.target.value)} />
-        <label htmlFor="org-phone">Phone</label>
+        <label htmlFor="org-phone">{c.phone}</label>
         <input id="org-phone" className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
-        <label htmlFor="org-business-email">Email</label>
+        <label htmlFor="org-business-email">{c.email}</label>
         <input id="org-business-email" className="input" type="email" value={businessEmail} onChange={(event) => setBusinessEmail(event.target.value)} />
-        <label htmlFor="org-address">Address</label>
+        <label htmlFor="org-address">{c.address}</label>
         <input id="org-address" className="input" value={companyAddress} onChange={(event) => setCompanyAddress(event.target.value)} />
-        <label htmlFor="org-service">Service</label>
+        <label htmlFor="org-service">{c.service}</label>
         <input id="org-service" className="input" value={serviceType} onChange={(event) => setServiceType(event.target.value)} />
-        <label htmlFor="org-timezone">Timezone</label>
+        <label htmlFor="org-timezone">{c.timezone}</label>
         <select id="org-timezone" className="input" value={timezone} onChange={(event) => setTimezone(event.target.value)}>
-          <option value="America/New_York">Eastern (US)</option>
-          <option value="America/Chicago">Central (US)</option>
-          <option value="America/Denver">Mountain (US)</option>
-          <option value="America/Los_Angeles">Pacific (US)</option>
-          <option value="UTC">UTC</option>
+          <option value="America/New_York">{c.eastern}</option>
+          <option value="America/Chicago">{c.central}</option>
+          <option value="America/Denver">{c.mountain}</option>
+          <option value="America/Los_Angeles">{c.pacific}</option>
+          <option value="UTC">{c.utc}</option>
         </select>
         <button className="btn btn-primary" type="button" onClick={() => void saveProfile()} disabled={saving}>
-          {buttonLabel('Save', FEEDBACK.loading)}
+          {buttonLabel(c.save, FEEDBACK.loading)}
         </button>
       </section>
 
       {isOwner(role) ? (
         <details className="settings-card" style={{ marginTop: 18 }} open>
-          <summary><strong>Integrations</strong></summary>
+          <summary><strong>{c.integrations}</strong></summary>
           <div style={{ marginTop: 16 }}>
-            <h3 style={{ marginBottom: 8 }}>QuickBooks</h3>
+            <h3 style={{ marginBottom: 8 }}>{c.quickBooks}</h3>
             <QuickBooksIntegrationPanel canManage />
           </div>
         </details>
       ) : null}
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Business details</strong></summary>
+        <summary><strong>{c.businessDetails}</strong></summary>
         <div className="form settings-form-grid" style={{ marginTop: 16 }}>
-          <label htmlFor="org-legal-name">Legal name</label>
+          <label htmlFor="org-legal-name">{c.legalName}</label>
           <input id="org-legal-name" className="input" value={legalBusinessName} onChange={(event) => setLegalBusinessName(event.target.value)} />
-          <label htmlFor="org-team-display">Team name</label>
+          <label htmlFor="org-team-display">{c.teamName}</label>
           <input id="org-team-display" className="input" value={teamDisplayName} onChange={(event) => setTeamDisplayName(event.target.value)} />
-          <label htmlFor="org-website">Website</label>
+          <label htmlFor="org-website">{c.website}</label>
           <input id="org-website" className="input" value={website} onChange={(event) => setWebsite(event.target.value)} />
-          <label htmlFor="org-booking">Booking link</label>
+          <label htmlFor="org-booking">{c.bookingLink}</label>
           <input id="org-booking" className="input" value={bookingUrl} onChange={(event) => setBookingUrl(event.target.value)} />
-          <label htmlFor="org-tax-id">Tax ID</label>
+          <label htmlFor="org-tax-id">{c.taxId}</label>
           <input id="org-tax-id" className="input" value={taxId} onChange={(event) => setTaxId(event.target.value)} />
-          <label htmlFor="org-industry">Business type</label>
+          <label htmlFor="org-industry">{c.businessType}</label>
           <input id="org-industry" className="input" value={industry} onChange={(event) => setIndustry(event.target.value)} />
-          <label htmlFor="org-team-size">Team size</label>
+          <label htmlFor="org-team-size">{c.teamSize}</label>
           <select id="org-team-size" className="input" value={teamSize} onChange={(event) => setTeamSize(event.target.value)}>
-            <option value="">Select</option>
+            <option value="">{c.select}</option>
             <option value="1-5">1-5</option>
             <option value="6-15">6-15</option>
             <option value="16-50">16-50</option>
@@ -281,68 +283,68 @@ export default function SettingsPage() {
       </details>
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Customer messages & invoices</strong></summary>
+        <summary><strong>{c.customerMessages}</strong></summary>
         <div className="form settings-form-grid" style={{ marginTop: 16 }}>
-          <label htmlFor="org-default-message">Default message</label>
+          <label htmlFor="org-default-message">{c.defaultMessage}</label>
           <textarea id="org-default-message" className="input" rows={3} value={defaultCustomerMessage} onChange={(event) => setDefaultCustomerMessage(event.target.value)} />
-          <label htmlFor="org-invoice-footer">Invoice footer</label>
+          <label htmlFor="org-invoice-footer">{c.invoiceFooter}</label>
           <textarea id="org-invoice-footer" className="input" rows={3} value={invoiceFooter} onChange={(event) => setInvoiceFooter(event.target.value)} />
         </div>
       </details>
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Branding</strong></summary>
+        <summary><strong>{c.branding}</strong></summary>
         <div className="form settings-form-grid" style={{ marginTop: 16 }}>
-          <label htmlFor="org-brand-primary">Main color</label>
+          <label htmlFor="org-brand-primary">{c.mainColor}</label>
           <input id="org-brand-primary" className="input" placeholder="#2f5f8f" value={brandPrimaryColor} onChange={(event) => setBrandPrimaryColor(event.target.value)} />
-          <label htmlFor="org-brand-accent">Accent color</label>
+          <label htmlFor="org-brand-accent">{c.accentColor}</label>
           <input id="org-brand-accent" className="input" placeholder="#4A6354" value={brandAccentColor} onChange={(event) => setBrandAccentColor(event.target.value)} />
-          <label>Logo</label>
-          <input type="file" accept="image/*" aria-label="Upload organization logo" disabled={!orgId || logoUploading} onChange={(event) => uploadLogo(event.target.files?.[0] || null)} />
-          {logoUploading ? <p className="loading-state">Uploading...</p> : null}
+          <label>{c.logo}</label>
+          <input type="file" accept="image/*" aria-label={c.uploadLogoAria} disabled={!orgId || logoUploading} onChange={(event) => uploadLogo(event.target.files?.[0] || null)} />
+          {logoUploading ? <p className="loading-state">{c.uploading}</p> : null}
         </div>
       </details>
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Notifications</strong></summary>
+        <summary><strong>{c.notifications}</strong></summary>
         <div className="form" style={{ marginTop: 16 }}>
-          <label><input type="checkbox" checked={notifyAssignments} onChange={(event) => setNotifyAssignments(event.target.checked)} /> Job assignments</label>
-          <label><input type="checkbox" checked={notifyDueDates} onChange={(event) => setNotifyDueDates(event.target.checked)} /> Due dates</label>
-          <label><input type="checkbox" checked={notifyCompletions} onChange={(event) => setNotifyCompletions(event.target.checked)} /> Completed jobs</label>
-          <label><input type="checkbox" checked={notifyReports} onChange={(event) => setNotifyReports(event.target.checked)} /> Reports</label>
+          <label><input type="checkbox" checked={notifyAssignments} onChange={(event) => setNotifyAssignments(event.target.checked)} /> {c.jobAssignments}</label>
+          <label><input type="checkbox" checked={notifyDueDates} onChange={(event) => setNotifyDueDates(event.target.checked)} /> {c.dueDates}</label>
+          <label><input type="checkbox" checked={notifyCompletions} onChange={(event) => setNotifyCompletions(event.target.checked)} /> {c.completedJobs}</label>
+          <label><input type="checkbox" checked={notifyReports} onChange={(event) => setNotifyReports(event.target.checked)} /> {c.reports}</label>
         </div>
       </details>
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Language & setup</strong></summary>
+        <summary><strong>{c.languageSetup}</strong></summary>
         <div style={{ marginTop: 16 }}>
           <LanguageSwitcher />
           <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
             <button type="button" className="btn" onClick={() => void restartOnboarding()} disabled={restartBusy}>
-              {restartBusy ? FEEDBACK.loading : 'Restart setup'}
+              {restartBusy ? FEEDBACK.loading : c.restartSetup}
             </button>
-            <Link className="btn" href="/onboarding">Setup checklist</Link>
+            <Link className="btn" href="/onboarding">{c.setupChecklist}</Link>
           </div>
         </div>
       </details>
 
       <section className="settings-card" style={{ marginTop: 18 }}>
-        <h3>Account</h3>
-        <p className="muted">Signed in as {email}</p>
+        <h3>{c.account}</h3>
+        <p className="muted">{formatSettingsCopy(c.signedInAs, { email })}</p>
         <div className="button-row" style={{ flexWrap: 'wrap' }}>
-          <Link className="btn" href="/settings/account">Account details</Link>
-          <Link className="btn" href="/settings/billing">Plans & billing</Link>
-          <button className="btn" type="button" onClick={logout}>Log out</button>
+          <Link className="btn" href="/settings/account">{c.accountDetails}</Link>
+          <Link className="btn" href="/settings/billing">{c.plansBilling}</Link>
+          <button className="btn" type="button" onClick={logout}>{c.logOut}</button>
         </div>
       </section>
 
       <details className="settings-card" style={{ marginTop: 18 }}>
-        <summary><strong>Legal & advanced</strong></summary>
+        <summary><strong>{c.legalAdvanced}</strong></summary>
         <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
-          <Link className="btn" href="/terms">Terms</Link>
-          <Link className="btn" href="/privacy">Privacy</Link>
-          <Link className="btn" href="/cookies">Cookies</Link>
-          <Link className="btn" href="/disclaimer">Disclaimer</Link>
+          <Link className="btn" href="/terms">{c.terms}</Link>
+          <Link className="btn" href="/privacy">{c.privacy}</Link>
+          <Link className="btn" href="/cookies">{c.cookies}</Link>
+          <Link className="btn" href="/disclaimer">{c.disclaimer}</Link>
         </div>
       </details>
 

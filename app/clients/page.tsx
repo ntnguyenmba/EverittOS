@@ -2,9 +2,19 @@
 
 import Link from 'next/link';
 import { OsModulePage } from '@/components/os-module-page';
+import { useTranslation } from '@/components/locale-provider';
 import { limitsForPlan } from '@/lib/everittos-limits';
 
+const copy = {
+  en: { customers: 'Customers' },
+  es: { customers: 'Clientes' },
+  vi: { customers: 'Khách hàng' }
+} as const;
+
 export default function ClientsPage() {
+  const { locale } = useTranslation();
+  const c = copy[locale];
+
   return (
     <OsModulePage
       title="Clients"
@@ -14,7 +24,7 @@ export default function ClientsPage() {
       featureCheck={(plan) => limitsForPlan(plan).clientPortal}
       actions={[
         { label: 'Open customer dashboard', href: '/portal/client' },
-        { label: 'Customers', href: '/customers' }
+        { label: c.customers, href: '/customers' }
       ]}
     >
       <div className="card">

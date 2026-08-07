@@ -24,7 +24,7 @@ const SKIP_FILES = [
 
 /**
  * High-confidence user-visible phrases that must not appear as hardcoded UI
- * outside typed copy helpers.
+ * outside typed copy helpers / locale maps.
  */
 const STRICT_PHRASES = [
   // Shared app chrome and dashboard
@@ -98,6 +98,38 @@ const STRICT_PHRASES = [
   'Customer portal',
   'Contractor portal',
 
+  // Settings / account chrome
+  'Unable to save settings.',
+  'Unable to restart onboarding.',
+  'Business name',
+  'Restart setup',
+  'Setup checklist',
+  'Save branding',
+  'Update password',
+  'Change password',
+  'Sign out everywhere',
+  'Save account',
+  'Notification preferences',
+  'Restore Purchases',
+  'Refresh Subscription Status',
+  'Choose your plan',
+  'Manage billing',
+  'Cancel plan',
+  'Current plan',
+  'Plan access',
+  'Action needed',
+  'Loading billing',
+  'Activating your plan',
+  'Subscribe with Apple',
+  'Subscribe with Google Play',
+  'Sync subscription',
+  'Syncing...',
+  'Add passkey',
+  'Stay signed in',
+  'Permission denied',
+  'Create company',
+  'Open billing',
+
   // Billing, payments, exports, and jobs
   'Record payment',
   'Save payment',
@@ -162,10 +194,50 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
+/** Mark lines that sit inside en/es/vi locale map object literals. */
+function markLocaleCatalogLines(lines: string[]): boolean[] {
+  const marked = new Array(lines.length).fill(false);
+  let depth = 0;
+  let inLocaleBlock = false;
+  let localeBlockBaseDepth = 0;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    // Inline per-locale values: en: 'Delete account'
+    if (/\b(en|es|vi)\s*:\s*['"`]/.test(line)) {
+      marked[index] = true;
+    }
+
+    const localeStart = line.match(/\b(en|es|vi)\s*:\s*\{/);
+    if (localeStart && !inLocaleBlock) {
+      inLocaleBlock = true;
+      localeBlockBaseDepth = depth;
+    }
+
+    for (const char of line) {
+      if (char === '{') depth += 1;
+      else if (char === '}') depth -= 1;
+    }
+
+    if (inLocaleBlock) {
+      marked[index] = true;
+      if (depth <= localeBlockBaseDepth) inLocaleBlock = false;
+    }
+  }
+
+  return marked;
+}
+
 function looksLikeLocaleMapEnglish(line: string, previous: string): boolean {
   if (/^\s*\w+:\s*['"`]/.test(line) && (/^\s*en:\s*\{/.test(previous) || previous.includes('en: {'))) return true;
   if (/\ben:\s*\{/.test(line)) return true;
-  if (/getBillingOpsCopy|getExportCopy|BillingOpsCopy|ExportCopy|getFeedbackLabels|LABELS\[|dashboardCopy\[|copy\[locale\]/.test(line)) return true;
+  if (
+    /getBillingOpsCopy|getExportCopy|getSettingsWorkspaceCopy|getSettingsBillingUiCopy|getWorkspaceDeleteCopy|getNativeStoreSubscribeCopy|getSyncSubscriptionCopy|getNativeBillingCopy|getSubscriptionStatusCopy|getAiUpgradeCopy|getPasskeyManagerCopy|getPasskeySetupCopy|getSessionIdleCopy|getAccessBlockedCopy|getPermissionDeniedCopy|getContractorLayoutCopy|getCreateCompanyCopy|BillingOpsCopy|ExportCopy|getFeedbackLabels|LABELS\[|dashboardCopy\[|loginCopy\[|copy\[locale\]|copy\[locale\s*\|\||c\.\w+|billingCopy\.|exportCopy\./.test(
+      line
+    )
+  ) {
+    return true;
+  }
   if (/\|\|\s*['"`]/.test(line) && /(error|message|json\.error|throw new Error)/i.test(line)) return true;
   return false;
 }
@@ -180,8 +252,10 @@ const findings: Array<{ file: string; line: number; phrase: string; text: string
 for (const file of files) {
   const rel = relative(ROOT, file).replace(/\\/g, '/');
   const lines = stripComments(readFileSync(file, 'utf8')).split('\n');
+  const localeCatalogLines = markLocaleCatalogLines(lines);
   lines.forEach((line, index) => {
     if (/^\s*import\s/.test(line)) return;
+    if (localeCatalogLines[index]) return;
     const previous = lines[Math.max(0, index - 1)] || '';
     for (const phrase of STRICT_PHRASES) {
       if (!line.includes(phrase)) continue;
@@ -189,12 +263,11 @@ for (const file of files) {
 
       const escaped = escapeRegExp(phrase);
       const uiContext = new RegExp(
-        `(placeholder|aria-label|title|confirm\\(|>|label:\\s*|children:\\s*|:\\s*)['"\`][^'"\`]*${escaped}`,
-        'i'
+        `(placeholder|aria-label|title|confirm\\(|>|label:\\s*|children:\\s*|:\\s*)['"\`][^'"\`]*${escaped}`
       );
       const bareString = new RegExp(`['"\`]${escaped}['"\`]`);
       if (!uiContext.test(line) && !bareString.test(line)) continue;
-      if (/billingCopy\.|exportCopy\.|copy\.|c\.|t\(/.test(line)) continue;
+      if (/billingCopy\.|exportCopy\.|copy\.|c\.|t\(|FEEDBACK\./.test(line)) continue;
 
       findings.push({ file: rel, line: index + 1, phrase, text: line.trim().slice(0, 180) });
     }

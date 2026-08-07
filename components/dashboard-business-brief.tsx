@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
 import { formatCurrency, type DashboardRevenueMetrics } from '@/lib/dashboard-metrics';
 import { scopeJobsForWorkspace } from '@/lib/jobs-query';
 import { supabase } from '@/lib/supabase';
@@ -35,7 +36,33 @@ function todayEnd(): string {
   return d.toISOString();
 }
 
+const copy = {
+  en: {
+    paidThisMonth: 'Paid this month',
+    unpaidInvoices: 'Unpaid invoices',
+    overdueJobs: 'Overdue jobs',
+    requestsToFollowUp: 'Requests to follow up',
+    scheduledToday: 'Scheduled today'
+  },
+  es: {
+    paidThisMonth: 'Pagado este mes',
+    unpaidInvoices: 'Facturas sin pagar',
+    overdueJobs: 'Trabajos atrasados',
+    requestsToFollowUp: 'Solicitudes por seguir',
+    scheduledToday: 'Programado hoy'
+  },
+  vi: {
+    paidThisMonth: 'Đã thanh toán tháng này',
+    unpaidInvoices: 'Hóa đơn chưa thanh toán',
+    overdueJobs: 'Công việc quá hạn',
+    requestsToFollowUp: 'Yêu cầu cần theo dõi',
+    scheduledToday: 'Đã lên lịch hôm nay'
+  }
+} as const;
+
 export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBusinessBriefProps) {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState<BriefCounts>({
     overdueJobs: 0,
@@ -137,11 +164,11 @@ export function DashboardBusinessBrief({ organizationId, metrics }: DashboardBus
       : 'Nothing urgent needs attention right now.';
 
   const items = [
-    { label: 'Paid this month', value: formatCurrency(metrics.revenueThisMonth), href: '/analytics' },
-    { label: 'Unpaid invoices', value: loading ? '...' : String(counts.unpaidInvoices), href: '/invoices' },
-    { label: 'Overdue jobs', value: loading ? '...' : String(counts.overdueJobs), href: '/jobs' },
-    { label: 'Requests to follow up', value: loading ? '...' : String(counts.leadsNeedingFollowUp), href: '/leads' },
-    { label: 'Scheduled today', value: loading ? '...' : String(scheduleToday), href: '/schedule' }
+    { label: c.paidThisMonth, value: formatCurrency(metrics.revenueThisMonth), href: '/analytics' },
+    { label: c.unpaidInvoices, value: loading ? '...' : String(counts.unpaidInvoices), href: '/invoices' },
+    { label: c.overdueJobs, value: loading ? '...' : String(counts.overdueJobs), href: '/jobs' },
+    { label: c.requestsToFollowUp, value: loading ? '...' : String(counts.leadsNeedingFollowUp), href: '/leads' },
+    { label: c.scheduledToday, value: loading ? '...' : String(scheduleToday), href: '/schedule' }
   ];
 
   return (

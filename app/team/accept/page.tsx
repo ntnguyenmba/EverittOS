@@ -4,15 +4,48 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { useTranslation } from '@/components/locale-provider';
 import { CLIENT_PORTAL_HOME, CONTRACTOR_PORTAL_HOME } from '@/lib/portal-access';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 type AcceptStatus = 'checking' | 'needs-sign-in' | 'accepted' | 'already-accepted' | 'error';
 
+const copy = {
+  en: {
+    continue: 'Continue',
+    openSharedJob: 'Open shared job',
+    openContractorPortal: 'Open contractor portal',
+    allSet: 'All set',
+    signInRequired: 'Sign in required',
+    actionNeeded: 'Action needed',
+    checking: 'Checking'
+  },
+  es: {
+    continue: 'Continuar',
+    openSharedJob: 'Abrir trabajo compartido',
+    openContractorPortal: 'Abrir portal de contratista',
+    allSet: 'Todo listo',
+    signInRequired: 'Inicio de sesión requerido',
+    actionNeeded: 'Acción necesaria',
+    checking: 'Verificando'
+  },
+  vi: {
+    continue: 'Tiếp tục',
+    openSharedJob: 'Mở công việc được chia sẻ',
+    openContractorPortal: 'Mở cổng nhà thầu',
+    allSet: 'Đã sẵn sàng',
+    signInRequired: 'Cần đăng nhập',
+    actionNeeded: 'Cần hành động',
+    checking: 'Đang kiểm tra'
+  }
+} as const;
+
 function AcceptInviteForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const token = params.get('token') || '';
   const [message, setMessage] = useState('Checking your invitation...');
   const [status, setStatus] = useState<AcceptStatus>('checking');
@@ -101,7 +134,7 @@ function AcceptInviteForm() {
   const isClientInvite = inviteRole != null && isClientRole(inviteRole);
   const isContractorInvite = inviteRole != null && isContractorRole(inviteRole);
   const isPortalInvite = isClientInvite || isContractorInvite;
-  const ctaLabel = isClientInvite ? 'Open shared job' : isContractorInvite ? 'Open contractor portal' : 'Continue';
+  const ctaLabel = isClientInvite ? c.openSharedJob : isContractorInvite ? c.openContractorPortal : c.continue;
 
   return (
     <AuthenticatedSection>
@@ -122,12 +155,12 @@ function AcceptInviteForm() {
         <div className="auth-message" role="status">
           <strong>
             {status === 'accepted' || status === 'already-accepted'
-              ? 'All set'
+              ? c.allSet
               : status === 'needs-sign-in'
-                ? 'Sign in required'
+                ? c.signInRequired
                 : status === 'error'
-                  ? 'Action needed'
-                  : 'Checking'}
+                  ? c.actionNeeded
+                  : c.checking}
           </strong>
           <p>{message}</p>
         </div>

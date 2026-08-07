@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import {
   browserSupportsPasskeys,
   deletePasskey,
@@ -9,8 +10,11 @@ import {
   registerPasskey,
   type PasskeyRecord
 } from '@/lib/passkey-auth';
+import { formatUiChromeCopy, getPasskeyManagerCopy } from '@/lib/i18n/ui-chrome-copy';
 
 export function PasskeyManager() {
+  const { locale } = useTranslation();
+  const c = getPasskeyManagerCopy(locale);
   const [supported, setSupported] = useState(false);
   const [passkeys, setPasskeys] = useState<PasskeyRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,60 +44,55 @@ export function PasskeyManager() {
     const result = await registerPasskey();
     setBusy(false);
     if (!result.ok) {
-      setError(result.error || 'Unable to add passkey.');
+      setError(result.error || c.addError);
       return;
     }
-    setMessage('Passkey added.');
+    setMessage(c.added);
     await refresh();
   }
 
   async function removePasskey(passkeyId: string) {
-    if (!window.confirm('Remove this passkey? You can add a new one later.')) return;
+    if (!window.confirm(c.removeConfirm)) return;
     setBusy(true);
     setMessage('');
     setError('');
     const result = await deletePasskey(passkeyId);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error || 'Unable to remove passkey.');
+      setError(result.error || c.removeError);
       return;
     }
-    setMessage('Passkey removed.');
+    setMessage(c.removed);
     await refresh();
   }
 
   if (!supported) {
-    return (
-      <p className="muted">
-        Passkeys are not available in this browser or project. Enable passkeys in Supabase Authentication settings,
-        then reload this page.
-      </p>
-    );
+    return <p className="muted">{c.unavailable}</p>;
   }
 
   return (
     <div className="passkey-manager">
-      <p className="muted">
-        Passkeys let you sign in with Face ID, Touch ID, Windows Hello, or a security key. They stay on your device.
-      </p>
+      <p className="muted">{c.description}</p>
       <div className="settings-actions">
         <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void addPasskey()}>
-          {busy ? 'Working…' : 'Add passkey'}
+          {busy ? c.working : c.add}
         </button>
       </div>
-      {loading ? <p className="muted">Loading passkeys…</p> : null}
-      {!loading && passkeys.length === 0 ? <p className="muted">No passkeys on this account yet.</p> : null}
+      {loading ? <p className="muted">{c.loading}</p> : null}
+      {!loading && passkeys.length === 0 ? <p className="muted">{c.empty}</p> : null}
       {!loading
         ? passkeys.map((row) => (
             <div key={row.id} className="list-row compact passkey-row">
               <div>
-                <strong>{row.friendly_name || 'Passkey'}</strong>
+                <strong>{row.friendly_name || c.defaultName}</strong>
                 {row.created_at ? (
-                  <p className="muted">Added {new Date(row.created_at).toLocaleDateString()}</p>
+                  <p className="muted">
+                    {formatUiChromeCopy(c.addedOn, { date: new Date(row.created_at).toLocaleDateString() })}
+                  </p>
                 ) : null}
               </div>
               <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void removePasskey(row.id)}>
-                Remove
+                {c.remove}
               </button>
             </div>
           ))

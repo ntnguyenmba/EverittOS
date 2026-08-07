@@ -4,10 +4,19 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MetricCard } from '@/components/metric-card';
 import { SimpleBarChart, SimpleTrendChart } from '@/components/charts/simple-bar-chart';
+import { useTranslation } from '@/components/locale-provider';
 import { formatCurrency } from '@/lib/finance-format';
 import type { BusinessPerformanceSummary } from '@/lib/finance-types';
 
+const copy = {
+  en: { cashAfterPaidCosts: 'Cash after paid costs' },
+  es: { cashAfterPaidCosts: 'Efectivo después de costos pagados' },
+  vi: { cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả' }
+} as const;
+
 export function BusinessPerformanceSection() {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [data, setData] = useState<BusinessPerformanceSummary | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -64,7 +73,7 @@ export function BusinessPerformanceSection() {
         <MetricCard label="Outstanding invoices" value={formatCurrency(data.outstandingInvoices)} loading={loading} />
         <MetricCard label="Expenses this month" value={formatCurrency(data.expensesThisMonth)} loading={loading} />
         <MetricCard
-          label="Cash after paid costs"
+          label={c.cashAfterPaidCosts}
           value={formatCurrency(cashAfterExpenses)}
           hint="Payments received minus contractor payments and expenses this month"
           loading={loading}

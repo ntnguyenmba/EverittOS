@@ -37,14 +37,93 @@ type AuditLogRow = {
   created_at: string | null;
 };
 
-function formatAuditDate(value: string | null) {
-  if (!value) return 'Unknown date';
+const copy = {
+  en: {
+    loading: 'Loading security settings...',
+    description: 'Password, sessions, sign-in history, SSO, and admin audit controls.',
+    changePassword: 'Change password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm password',
+    updatePassword: 'Update password',
+    passwordMin: 'Password must be at least 6 characters.',
+    passwordMismatch: 'Passwords do not match.',
+    sessions: 'Sessions',
+    sessionsBody: 'Sign out on every device tied to this account.',
+    signOutEverywhere: 'Sign out everywhere',
+    signInHistory: 'Sign-in history',
+    signInHistoryBody: 'Recent sign-ins, sign-outs, password changes, and session events for your account.',
+    businessActivityPrefix: 'Business activity such as jobs, customers, and invoices is on the',
+    activityLog: 'activity log',
+    companyAudit: 'Company security audit',
+    companyAuditBody: 'Sign-in and security events across your company.',
+    companyEmpty: 'No company security events recorded yet.',
+    adminAudit: 'Admin audit log',
+    adminAuditBody: 'Team invitations, role changes, ownership changes, and company admin actions.',
+    adminEmpty: 'No admin audit events recorded yet.',
+    unknownDate: 'Unknown date',
+    system: 'System'
+  },
+  es: {
+    loading: 'Cargando configuración de seguridad...',
+    description: 'Contraseña, sesiones, historial de acceso, SSO y controles de auditoría de administración.',
+    changePassword: 'Cambiar contraseña',
+    newPassword: 'Nueva contraseña',
+    confirmPassword: 'Confirmar contraseña',
+    updatePassword: 'Actualizar contraseña',
+    passwordMin: 'La contraseña debe tener al menos 6 caracteres.',
+    passwordMismatch: 'Las contraseñas no coinciden.',
+    sessions: 'Sesiones',
+    sessionsBody: 'Cierre sesión en todos los dispositivos vinculados a esta cuenta.',
+    signOutEverywhere: 'Cerrar sesión en todas partes',
+    signInHistory: 'Historial de acceso',
+    signInHistoryBody: 'Inicios de sesión, cierres de sesión, cambios de contraseña y eventos de sesión recientes de su cuenta.',
+    businessActivityPrefix: 'La actividad del negocio, como trabajos, clientes y facturas, está en el',
+    activityLog: 'registro de actividad',
+    companyAudit: 'Auditoría de seguridad de la empresa',
+    companyAuditBody: 'Eventos de acceso y seguridad en toda su empresa.',
+    companyEmpty: 'Aún no se han registrado eventos de seguridad de la empresa.',
+    adminAudit: 'Registro de auditoría de administración',
+    adminAuditBody: 'Invitaciones al equipo, cambios de rol, cambios de propiedad y acciones de administración de la empresa.',
+    adminEmpty: 'Aún no se han registrado eventos de auditoría de administración.',
+    unknownDate: 'Fecha desconocida',
+    system: 'Sistema'
+  },
+  vi: {
+    loading: 'Đang tải cài đặt bảo mật...',
+    description: 'Mật khẩu, phiên, lịch sử đăng nhập, SSO và kiểm soát kiểm tra của quản trị viên.',
+    changePassword: 'Đổi mật khẩu',
+    newPassword: 'Mật khẩu mới',
+    confirmPassword: 'Xác nhận mật khẩu',
+    updatePassword: 'Cập nhật mật khẩu',
+    passwordMin: 'Mật khẩu phải có ít nhất 6 ký tự.',
+    passwordMismatch: 'Mật khẩu không khớp.',
+    sessions: 'Phiên',
+    sessionsBody: 'Đăng xuất trên mọi thiết bị liên kết với tài khoản này.',
+    signOutEverywhere: 'Đăng xuất mọi nơi',
+    signInHistory: 'Lịch sử đăng nhập',
+    signInHistoryBody: 'Các lần đăng nhập, đăng xuất, đổi mật khẩu và sự kiện phiên gần đây của tài khoản bạn.',
+    businessActivityPrefix: 'Hoạt động kinh doanh như công việc, khách hàng và hóa đơn nằm trong',
+    activityLog: 'nhật ký hoạt động',
+    companyAudit: 'Kiểm tra bảo mật công ty',
+    companyAuditBody: 'Sự kiện đăng nhập và bảo mật trên toàn công ty của bạn.',
+    companyEmpty: 'Chưa ghi nhận sự kiện bảo mật nào của công ty.',
+    adminAudit: 'Nhật ký kiểm tra quản trị',
+    adminAuditBody: 'Lời mời nhóm, thay đổi vai trò, thay đổi quyền sở hữu và hành động quản trị công ty.',
+    adminEmpty: 'Chưa ghi nhận sự kiện kiểm tra quản trị nào.',
+    unknownDate: 'Ngày không xác định',
+    system: 'Hệ thống'
+  }
+} as const;
+
+function formatAuditDate(value: string | null, unknownDate: string) {
+  if (!value) return unknownDate;
   return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 export default function SecuritySettingsPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState(normalizeRole('owner'));
   const [password, setPassword] = useState('');
@@ -98,12 +177,12 @@ export default function SecuritySettingsPage() {
   async function changePassword(event: React.FormEvent) {
     event.preventDefault();
     if (password.length < 6) {
-      appFeedback.error('Password must be at least 6 characters.');
+      appFeedback.error(c.passwordMin);
       return;
     }
 
     if (password !== confirmPassword) {
-      appFeedback.error('Passwords do not match.');
+      appFeedback.error(c.passwordMismatch);
       return;
     }
 
@@ -132,13 +211,13 @@ export default function SecuritySettingsPage() {
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p>Loading security settings...</p>
+        <p>{c.loading}</p>
       </AppShell>
     );
   }
 
   return (
-    <SettingsShell plan={plan} title="Security" description="Password, sessions, sign-in history, SSO, and admin audit controls.">
+    <SettingsShell plan={plan} title={t('settingsNav.security')} description={c.description}>
       <div className="settings-card">
         <h3>{t('settings.security.passkeysTitle')}</h3>
         <PasskeyManager />
@@ -151,10 +230,10 @@ export default function SecuritySettingsPage() {
       {canManageOrganizationSettings(role) ? <SsoEnterpriseCard plan={plan} /> : null}
 
       <div className="settings-card">
-        <h3>Change password</h3>
+        <h3>{c.changePassword}</h3>
         <form className="form" onSubmit={changePassword}>
           <div className="auth-field">
-            <label htmlFor="password">New password</label>
+            <label htmlFor="password">{c.newPassword}</label>
             <input
               id="password"
               className="input"
@@ -165,7 +244,7 @@ export default function SecuritySettingsPage() {
             />
           </div>
           <div className="auth-field">
-            <label htmlFor="confirm_password">Confirm password</label>
+            <label htmlFor="confirm_password">{c.confirmPassword}</label>
             <input
               id="confirm_password"
               className="input"
@@ -176,49 +255,48 @@ export default function SecuritySettingsPage() {
             />
           </div>
           <button className="btn btn-primary" type="submit" disabled={saving}>
-            {saving ? FEEDBACK.loading : 'Update password'}
+            {saving ? FEEDBACK.loading : c.updatePassword}
           </button>
         </form>
       </div>
 
       <div className="settings-card">
-        <h3>Sessions</h3>
-        <p className="muted">Sign out on every device tied to this account.</p>
+        <h3>{c.sessions}</h3>
+        <p className="muted">{c.sessionsBody}</p>
         <div className="settings-actions">
           <button type="button" className="btn" disabled={saving} onClick={signOutEverywhere}>
-            Sign out everywhere
+            {c.signOutEverywhere}
           </button>
         </div>
       </div>
 
       <div className="settings-card">
-        <h3>Sign-in history</h3>
-        <p className="muted">Recent sign-ins, sign-outs, password changes, and session events for your account.</p>
+        <h3>{c.signInHistory}</h3>
+        <p className="muted">{c.signInHistoryBody}</p>
         <SecurityActivityLog events={personalEvents} />
         <p className="muted" style={{ marginTop: 16 }}>
-          Business activity such as jobs, customers, and invoices is on the{' '}
-          <Link href="/activity">activity log</Link>.
+          {c.businessActivityPrefix} <Link href="/activity">{c.activityLog}</Link>.
         </p>
       </div>
 
       {canManageOrganizationSettings(role) ? (
         <>
           <div className="settings-card">
-            <h3>Company security audit</h3>
-            <p className="muted">Sign-in and security events across your company.</p>
-            <SecurityActivityLog events={orgEvents} emptyLabel="No company security events recorded yet." />
+            <h3>{c.companyAudit}</h3>
+            <p className="muted">{c.companyAuditBody}</p>
+            <SecurityActivityLog events={orgEvents} emptyLabel={c.companyEmpty} />
           </div>
 
           <div className="settings-card">
-            <h3>Admin audit log</h3>
-            <p className="muted">Team invitations, role changes, ownership changes, and company admin actions.</p>
-            {auditLogs.length === 0 ? <p className="muted">No admin audit events recorded yet.</p> : null}
+            <h3>{c.adminAudit}</h3>
+            <p className="muted">{c.adminAuditBody}</p>
+            {auditLogs.length === 0 ? <p className="muted">{c.adminEmpty}</p> : null}
             {auditLogs.map((item) => (
               <div key={item.id} className="list-row compact">
                 <div>
                   <strong>{item.message || item.action.replace(/_/g, ' ')}</strong>
                   <p className="muted">
-                    {item.actor_name || 'System'} · {item.entity_type} · {formatAuditDate(item.created_at)}
+                    {item.actor_name || c.system} · {item.entity_type} · {formatAuditDate(item.created_at, c.unknownDate)}
                   </p>
                 </div>
               </div>

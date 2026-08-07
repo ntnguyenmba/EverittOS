@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
+import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
@@ -26,8 +27,16 @@ type Job = {
 
 type PhotoFilter = 'needs' | 'has' | 'all';
 
+const copy = {
+  en: { noPhotosYet: 'No photos yet', addPhotos: 'Add photos', viewPhotos: 'View photos' },
+  es: { noPhotosYet: 'Aún no hay fotos', addPhotos: 'Agregar fotos', viewPhotos: 'Ver fotos' },
+  vi: { noPhotosYet: 'Chưa có ảnh', addPhotos: 'Thêm ảnh', viewPhotos: 'Xem ảnh' }
+} as const;
+
 export default function PhotosPage() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [jobs, setJobs] = useState<Job[]>([]);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -106,7 +115,7 @@ export default function PhotosPage() {
 
       {!loading && visibleJobs.length === 0 ? (
         <div className="card empty-action-card">
-          <h3>{filter === 'needs' ? 'All jobs have photos' : 'No photos yet'}</h3>
+          <h3>{filter === 'needs' ? 'All jobs have photos' : c.noPhotosYet}</h3>
           <p className="muted">
             {filter === 'needs' ? 'Nothing needs attention.' : 'Choose a job to add before and after photos.'}
           </p>
@@ -135,7 +144,7 @@ export default function PhotosPage() {
 
                 <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
                   <Link className="btn btn-primary" href={`/jobs/${job.id}#before-after-photos`}>
-                    {hasPhotos ? 'View photos' : 'Add photos'}
+                    {hasPhotos ? c.viewPhotos : c.addPhotos}
                   </Link>
                   {job.address ? (
                     <a className="btn" href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} target="_blank" rel="noreferrer">

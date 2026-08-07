@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { normalizeRole } from '@/lib/roles';
 import { normalizeJobStatus } from '@/lib/worker-assignment';
@@ -64,14 +65,22 @@ function emptySummary(): JobSummary {
   return { active: 0, completed: 0, lastJobAt: null };
 }
 
-function formatLastJob(value: string | null) {
-  if (!value) return 'No jobs yet';
+const copy = {
+  en: { noJobsYet: 'No jobs yet' },
+  es: { noJobsYet: 'Aún no hay trabajos' },
+  vi: { noJobsYet: 'Chưa có công việc' }
+} as const;
+
+function formatLastJob(value: string | null, noJobsYet: string) {
+  if (!value) return noJobsYet;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'No jobs yet';
+  if (Number.isNaN(date.getTime())) return noJobsYet;
   return `Last job ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 }
 
 export function TeamDirectory() {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [members, setMembers] = useState<DirectoryMember[]>([]);
   const [jobSummaries, setJobSummaries] = useState<Record<string, JobSummary>>({});
   const [query, setQuery] = useState('');
@@ -290,7 +299,7 @@ export function TeamDirectory() {
                 <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>
                 {member.email ? <p className="muted team-member-email">{member.email}</p> : null}
                 <p className="muted team-member-summary">
-                  {summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt)}
+                  {summary.active} active · {summary.completed} completed · {formatLastJob(summary.lastJobAt, c.noJobsYet)}
                 </p>
               </div>
               {member.active ? (

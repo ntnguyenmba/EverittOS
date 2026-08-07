@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { normalizePlan, planDisplayName } from '@/lib/everittos-plans';
+import { formatSettingsBillingCopy, getSyncSubscriptionCopy } from '@/lib/i18n/settings-copy';
 
 type SyncSubscriptionButtonProps = {
   onSynced?: (plan: string, status: string) => void;
@@ -27,12 +29,14 @@ type SyncCurrentUserResponse = {
 };
 
 export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps) {
+  const { locale } = useTranslation();
+  const c = getSyncSubscriptionCopy(locale);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   async function syncSubscription() {
     setLoading(true);
-    setMessage('Checking Stripe for your active subscription...');
+    setMessage(c.checking);
 
     try {
       const sessionId = new URLSearchParams(window.location.search).get('session_id');
@@ -48,7 +52,7 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
         const nextPlan = normalizePlan(refreshJson.plan);
         const nextStatus = refreshJson.status || `everittos_${nextPlan}`;
         onSynced?.(nextPlan, nextStatus);
-        setMessage(`Subscription synced. Your plan is now ${planDisplayName(nextPlan)}.`);
+        setMessage(formatSettingsBillingCopy(c.synced, { plan: planDisplayName(nextPlan) }));
         return;
       }
 
@@ -62,7 +66,7 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
         const nextPlan = normalizePlan(fallbackJson.plan);
         const nextStatus = fallbackJson.status || `everittos_${nextPlan}`;
         onSynced?.(nextPlan, nextStatus);
-        setMessage(`Subscription synced. Your plan is now ${planDisplayName(nextPlan)}.`);
+        setMessage(formatSettingsBillingCopy(c.synced, { plan: planDisplayName(nextPlan) }));
         return;
       }
 
@@ -72,11 +76,11 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
           refreshJson.message ||
           fallbackJson.message ||
           (refreshJson.reason === 'no_stripe_subscription' || fallbackJson.reason === 'no_stripe_subscription'
-            ? 'No paid Stripe subscription could be mapped to your EverittOS account. Confirm the Stripe customer email matches your login email.'
-            : 'Payment was received, but EverittOS could not activate the subscription. See billing diagnostics for write details.')
+            ? c.noMapping
+            : c.activateFailed)
       );
     } catch {
-      setMessage('Unable to sync subscription right now. Please try again in a minute.');
+      setMessage(c.unable);
     } finally {
       setLoading(false);
     }
@@ -85,7 +89,7 @@ export function SyncSubscriptionButton({ onSynced }: SyncSubscriptionButtonProps
   return (
     <div className="billing-sync-subscription">
       <button type="button" className="btn" disabled={loading} onClick={() => void syncSubscription()}>
-        {loading ? 'Syncing...' : 'Sync subscription'}
+        {loading ? c.syncing : c.sync}
       </button>
       {message ? <p className="muted">{message}</p> : null}
     </div>

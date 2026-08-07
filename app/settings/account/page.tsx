@@ -26,11 +26,99 @@ const DEFAULT_NOTIFICATIONS = {
   smsNotifications: false
 };
 
+const copy = {
+  en: {
+    profileTitle: 'Profile',
+    profileBody: 'Update how your name and contact details appear across EverittOS.',
+    firstName: 'First name',
+    lastName: 'Last name',
+    displayName: 'Display name',
+    phone: 'Phone',
+    email: 'Email',
+    newEmail: 'New email',
+    newEmailPlaceholder: 'Leave blank to keep current email',
+    newPassword: 'New password',
+    newPasswordPlaceholder: 'Leave blank to keep current password',
+    saveAccount: 'Save account',
+    saved: 'Account settings saved.',
+    notificationTitle: 'Notification preferences',
+    emailNotifications: 'Email notifications',
+    operationalUpdates: 'Operational updates',
+    productUpdates: 'Product updates',
+    marketingEmails: 'Marketing emails',
+    legal: 'Legal',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
+    generalDisclaimer: 'General Disclaimer',
+    contractorDisclaimer: 'Contractor Disclaimer',
+    customerDisclaimer: 'Customer Portal Disclaimer',
+    portalRetention:
+      'Deleting your login removes dashboard access and personal profile details. Company-owned job, invoice, payment, and audit records remain with the service provider when required.'
+  },
+  es: {
+    profileTitle: 'Perfil',
+    profileBody: 'Actualice cómo aparecen su nombre y datos de contacto en EverittOS.',
+    firstName: 'Nombre',
+    lastName: 'Apellido',
+    displayName: 'Nombre para mostrar',
+    phone: 'Teléfono',
+    email: 'Correo electrónico',
+    newEmail: 'Nuevo correo',
+    newEmailPlaceholder: 'Deje en blanco para mantener el correo actual',
+    newPassword: 'Nueva contraseña',
+    newPasswordPlaceholder: 'Deje en blanco para mantener la contraseña actual',
+    saveAccount: 'Guardar cuenta',
+    saved: 'Configuración de la cuenta guardada.',
+    notificationTitle: 'Preferencias de notificación',
+    emailNotifications: 'Notificaciones por correo',
+    operationalUpdates: 'Actualizaciones operativas',
+    productUpdates: 'Actualizaciones del producto',
+    marketingEmails: 'Correos de marketing',
+    legal: 'Legal',
+    privacy: 'Política de privacidad',
+    terms: 'Términos de servicio',
+    generalDisclaimer: 'Aviso legal general',
+    contractorDisclaimer: 'Aviso para contratistas',
+    customerDisclaimer: 'Aviso del portal del cliente',
+    portalRetention:
+      'Eliminar su inicio de sesión quita el acceso al panel y los detalles personales del perfil. Los registros de trabajos, facturas, pagos y auditoría de la empresa permanecen con el proveedor del servicio cuando sea necesario.'
+  },
+  vi: {
+    profileTitle: 'Hồ sơ',
+    profileBody: 'Cập nhật cách tên và thông tin liên hệ của bạn hiển thị trên EverittOS.',
+    firstName: 'Tên',
+    lastName: 'Họ',
+    displayName: 'Tên hiển thị',
+    phone: 'Điện thoại',
+    email: 'Email',
+    newEmail: 'Email mới',
+    newEmailPlaceholder: 'Để trống để giữ email hiện tại',
+    newPassword: 'Mật khẩu mới',
+    newPasswordPlaceholder: 'Để trống để giữ mật khẩu hiện tại',
+    saveAccount: 'Lưu tài khoản',
+    saved: 'Đã lưu cài đặt tài khoản.',
+    notificationTitle: 'Tùy chọn thông báo',
+    emailNotifications: 'Thông báo email',
+    operationalUpdates: 'Cập nhật vận hành',
+    productUpdates: 'Cập nhật sản phẩm',
+    marketingEmails: 'Email tiếp thị',
+    legal: 'Pháp lý',
+    privacy: 'Chính sách quyền riêng tư',
+    terms: 'Điều khoản dịch vụ',
+    generalDisclaimer: 'Tuyên bố miễn trừ chung',
+    contractorDisclaimer: 'Tuyên bố miễn trừ nhà thầu',
+    customerDisclaimer: 'Tuyên bố miễn trừ cổng khách hàng',
+    portalRetention:
+      'Xóa đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân. Hồ sơ công việc, hóa đơn, thanh toán và kiểm tra thuộc công ty vẫn thuộc nhà cung cấp dịch vụ khi cần thiết.'
+  }
+} as const;
+
 export default function AccountSettingsPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const { busy: saving, runResponse, buttonLabel } = useAsyncAction({
-    successMessage: 'Account settings saved.'
+    successMessage: c.saved
   });
   const [saveMessage, setSaveMessage] = useState('');
   const {
@@ -108,7 +196,7 @@ export default function AccountSettingsPage() {
         })
       })
     );
-    if (ok) setSaveMessage('Account settings saved.');
+    if (ok) setSaveMessage(c.saved);
     setNewPassword('');
     setNewEmail('');
   }
@@ -130,65 +218,65 @@ export default function AccountSettingsPage() {
   return (
     <SettingsShell plan={plan} role={role} title={t('settingsNav.account')} description={t('settings.account.description')}>
       <div className="settings-card form settings-form-grid">
-        <h3>Profile</h3>
-        <p className="muted">Update how your name and contact details appear across EverittOS.</p>
+        <h3>{c.profileTitle}</h3>
+        <p className="muted">{c.profileBody}</p>
         <label className="settings-field">
-          <span>First name</span>
+          <span>{c.firstName}</span>
           <input className="input" value={firstName} onChange={(event) => setFirstName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Last name</span>
+          <span>{c.lastName}</span>
           <input className="input" value={lastName} onChange={(event) => setLastName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Display name</span>
+          <span>{c.displayName}</span>
           <input className="input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Phone</span>
+          <span>{c.phone}</span>
           <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
         </label>
         <label className="settings-field">
-          <span>Email</span>
+          <span>{c.email}</span>
           <input className="input" value={email} disabled />
         </label>
         <label className="settings-field">
-          <span>New email</span>
+          <span>{c.newEmail}</span>
           <input
             className="input"
             type="email"
             value={newEmail}
             onChange={(event) => setNewEmail(event.target.value)}
-            placeholder="Leave blank to keep current email"
+            placeholder={c.newEmailPlaceholder}
           />
         </label>
         <label className="settings-field">
-          <span>New password</span>
+          <span>{c.newPassword}</span>
           <input
             className="input"
             type="password"
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
-            placeholder="Leave blank to keep current password"
+            placeholder={c.newPasswordPlaceholder}
           />
         </label>
         <div className="settings-actions">
           <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveProfile()}>
-            {buttonLabel('Save account', FEEDBACK.loading)}
+            {buttonLabel(c.saveAccount, FEEDBACK.loading)}
           </button>
         </div>
         {saveMessage ? <p className="auth-message auth-message-success">{saveMessage}</p> : null}
       </div>
 
       <div className="settings-card form settings-form-grid">
-        <h3>Notification preferences</h3>
+        <h3>{c.notificationTitle}</h3>
         <label>
           <input
             type="checkbox"
             checked={notifications.emailNotifications}
             onChange={(event) => setNotifications((current) => ({ ...current, emailNotifications: event.target.checked }))}
           />{' '}
-          Email notifications
+          {c.emailNotifications}
         </label>
         <label>
           <input
@@ -198,7 +286,7 @@ export default function AccountSettingsPage() {
               setNotifications((current) => ({ ...current, operationalNotifications: event.target.checked }))
             }
           />{' '}
-          Operational updates
+          {c.operationalUpdates}
         </label>
         <label>
           <input
@@ -206,7 +294,7 @@ export default function AccountSettingsPage() {
             checked={notifications.productUpdates}
             onChange={(event) => setNotifications((current) => ({ ...current, productUpdates: event.target.checked }))}
           />{' '}
-          Product updates
+          {c.productUpdates}
         </label>
         <label>
           <input
@@ -214,7 +302,7 @@ export default function AccountSettingsPage() {
             checked={notifications.marketingEmails}
             onChange={(event) => setNotifications((current) => ({ ...current, marketingEmails: event.target.checked }))}
           />{' '}
-          Marketing emails
+          {c.marketingEmails}
         </label>
       </div>
 
@@ -238,7 +326,7 @@ export default function AccountSettingsPage() {
           <span className="settings-row-label">{t('billing.status')}</span>
           <span className="settings-row-value">{subscriptionStatus}</span>
         </div>
-        <p className="muted">{subscriptionStatusMessage(subscriptionStatus)}</p>
+        <p className="muted">{subscriptionStatusMessage(subscriptionStatus, locale)}</p>
         <div className="settings-row">
           <span className="settings-row-label">{t('settings.account.accountStatus')}</span>
           <span className="settings-row-value">
@@ -263,25 +351,25 @@ export default function AccountSettingsPage() {
       </div>
 
       <div className="settings-card">
-        <h3>Legal</h3>
+        <h3>{c.legal}</h3>
         <div className="button-row" style={{ flexWrap: 'wrap', gap: 8 }}>
           <Link href="/privacy" className="btn">
-            Privacy Policy
+            {c.privacy}
           </Link>
           <Link href="/terms" className="btn">
-            Terms of Service
+            {c.terms}
           </Link>
           <Link href="/disclaimer" className="btn">
-            General Disclaimer
+            {c.generalDisclaimer}
           </Link>
           {isContractorRole(role) ? (
             <Link href="/disclaimer/contractor" className="btn">
-              Contractor Disclaimer
+              {c.contractorDisclaimer}
             </Link>
           ) : null}
           {isClientRole(role) ? (
             <Link href="/disclaimer/customer" className="btn">
-              Customer Portal Disclaimer
+              {c.customerDisclaimer}
             </Link>
           ) : null}
         </div>
@@ -290,11 +378,7 @@ export default function AccountSettingsPage() {
       <AccountDeleteSection
         hasActiveSubscription={hasActiveSubscription}
         role={role}
-        retentionNote={
-          isPortalMember
-            ? 'Deleting your login removes dashboard access and personal profile details. Company-owned job, invoice, payment, and audit records remain with the service provider when required.'
-            : undefined
-        }
+        retentionNote={isPortalMember ? c.portalRetention : undefined}
       />
     </SettingsShell>
   );

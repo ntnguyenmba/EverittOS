@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { normalizeRole } from '@/lib/roles';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 
 type RecordSharingPanelProps = {
@@ -42,6 +43,12 @@ const ACCESS_ROLE_OPTIONS: Array<{ value: AccessRole; label: string }> = [
   { value: 'other', label: 'Other' }
 ];
 
+const copy = {
+  en: { edit: 'Edit', viewOnly: 'View only' },
+  es: { edit: 'Editar', viewOnly: 'Solo ver' },
+  vi: { edit: 'Sửa', viewOnly: 'Chỉ xem' }
+} as const;
+
 function memberLabel(member: MemberOption): string {
   const name = member.profile?.full_name?.trim();
   const email = member.profile?.email?.trim();
@@ -51,6 +58,8 @@ function memberLabel(member: MemberOption): string {
 
 export function RecordSharingPanel({ organizationId, recordType, recordId, canManage }: RecordSharingPanelProps) {
   const feedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [shares, setShares] = useState<ShareRecord[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -204,8 +213,8 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
           ) : null}
           <label>Permission</label>
           <select className="input" value={accessLevel} onChange={(e) => setAccessLevel(e.target.value as 'view' | 'edit')}>
-            <option value="view">View only</option>
-            <option value="edit">Edit</option>
+            <option value="view">{c.viewOnly}</option>
+            <option value="edit">{c.edit}</option>
           </select>
           <button
             className="btn btn-primary"
@@ -225,7 +234,7 @@ export function RecordSharingPanel({ organizationId, recordType, recordId, canMa
           <div key={share.id} className="list-row compact">
             <div>
               <strong>{member ? memberLabel(member) : 'Person'}</strong>
-              <p className="muted">{share.access_level === 'edit' ? 'Edit' : 'View only'}</p>
+              <p className="muted">{share.access_level === 'edit' ? c.edit : c.viewOnly}</p>
             </div>
             {canManage ? (
               <button className="btn" type="button" onClick={() => void removeShare(share.id)}>

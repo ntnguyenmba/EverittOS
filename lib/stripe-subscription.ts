@@ -1,3 +1,5 @@
+import { localizedSubscriptionStatusMessage } from '@/lib/i18n/subscription-status-copy';
+
 export type StripeSubscriptionStatus =
   | 'active'
   | 'trialing'
@@ -34,33 +36,9 @@ export function normalizeStripeStatus(value: string | null | undefined): StripeS
   return status === 'free' ? 'free' : 'inactive';
 }
 
-export function subscriptionStatusMessage(status: string | null | undefined): string {
+export function subscriptionStatusMessage(status: string | null | undefined, locale?: string | null): string {
   const normalized = normalizeStripeStatus(status);
-
-  switch (normalized) {
-    case 'free':
-      return 'You are on the free plan. Upgrade when you need higher limits.';
-    case 'active':
-      return 'Your subscription is active.';
-    case 'trialing':
-      return 'Your trial is active. Billing starts when the trial ends.';
-    case 'past_due':
-      return 'Payment failed. Update billing details to keep access.';
-    case 'canceled':
-      return 'Your subscription is canceled. Access continues until the current period ends.';
-    case 'unpaid':
-      return 'Your subscription is unpaid. Update payment to restore access.';
-    case 'incomplete':
-      return 'Checkout is incomplete. Finish payment to activate your plan.';
-    case 'incomplete_expired':
-      return 'Checkout expired. Start a new subscription to continue.';
-    case 'paused':
-      return 'Your subscription is paused. Resume when you are ready.';
-    case 'inactive':
-      return 'Subscription status is unrecognized. Update billing or contact support to restore access.';
-    default:
-      return 'Subscription status is unrecognized. Update billing or contact support.';
-  }
+  return localizedSubscriptionStatusMessage(normalized, locale, 'full');
 }
 
 export function canCancelSubscription(status: string | null | undefined): boolean {

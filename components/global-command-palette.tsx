@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/components/locale-provider';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import type { SearchResultItem } from '@/lib/os-types';
 
@@ -17,8 +18,16 @@ const TYPE_LABELS: Record<SearchResultItem['type'], string> = {
   form: 'Form'
 };
 
+const copy = {
+  en: { search: 'Search', searchWorkspace: 'Search workspace' },
+  es: { search: 'Buscar', searchWorkspace: 'Buscar en el espacio de trabajo' },
+  vi: { search: 'Tìm kiếm', searchWorkspace: 'Tìm kiếm trong không gian làm việc' }
+} as const;
+
 export function GlobalCommandPalette() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -106,14 +115,14 @@ export function GlobalCommandPalette() {
         type="button"
         className="global-search-trigger"
         onClick={() => setOpen(true)}
-        aria-label="Search workspace"
+        aria-label={c.searchWorkspace}
       >
         Search… <span className="muted">{kbd}</span>
       </button>
 
       {open ? (
         <div className="ai-modal-overlay" role="presentation" onClick={() => setOpen(false)}>
-          <div className="global-search-palette" role="dialog" aria-label="Search" onClick={(e) => e.stopPropagation()}>
+          <div className="global-search-palette" role="dialog" aria-label={c.search} onClick={(e) => e.stopPropagation()}>
             <input
               ref={inputRef}
               className="input global-search-input"

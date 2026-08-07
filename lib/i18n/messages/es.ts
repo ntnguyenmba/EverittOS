@@ -190,7 +190,7 @@ export const messages: Messages = {
     },
     activity: {
       title: 'Sin actividad aún',
-      description: ''
+      description: 'La actividad de su empresa aparecerá aquí.'
     },
     notifications: {
       title: 'Sin notificaciones aún',

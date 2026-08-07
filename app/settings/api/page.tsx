@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlanLockedMessage } from '@/components/plan-locked-message';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { supabase } from '@/lib/supabase';
@@ -18,8 +19,73 @@ type ApiKeyRow = {
   revoked_at: string | null;
 };
 
+const copy = {
+  en: {
+    loading: 'Loading API settings...',
+    title: 'API access',
+    description: 'Manage API keys for Growth and Enterprise integrations.',
+    createTitle: 'Create API key',
+    keyNamePlaceholder: 'Key name',
+    createButton: 'Create API key',
+    newKeyLabel: 'New key (copy now):',
+    activeKeys: 'Active keys',
+    empty: 'No API keys yet.',
+    created: 'Created',
+    lastUsed: 'Last used',
+    revoke: 'Revoke',
+    reference: 'API reference',
+    authNote: 'Send Authorization: Bearer YOUR_API_KEY on every request.',
+    fullDocs: 'Full API docs',
+    createError: 'Unable to create key.',
+    revokeError: 'Unable to revoke key.',
+    copyNow: 'Copy this key now. It will not be shown again.'
+  },
+  es: {
+    loading: 'Cargando configuración de API...',
+    title: 'Acceso a la API',
+    description: 'Administre claves API para integraciones Growth y Enterprise.',
+    createTitle: 'Crear clave API',
+    keyNamePlaceholder: 'Nombre de la clave',
+    createButton: 'Crear clave API',
+    newKeyLabel: 'Nueva clave (cópiela ahora):',
+    activeKeys: 'Claves activas',
+    empty: 'Aún no hay claves API.',
+    created: 'Creada',
+    lastUsed: 'Último uso',
+    revoke: 'Revocar',
+    reference: 'Referencia de la API',
+    authNote: 'Envíe Authorization: Bearer YOUR_API_KEY en cada solicitud.',
+    fullDocs: 'Documentación completa de la API',
+    createError: 'No se pudo crear la clave.',
+    revokeError: 'No se pudo revocar la clave.',
+    copyNow: 'Copie esta clave ahora. No se mostrará de nuevo.'
+  },
+  vi: {
+    loading: 'Đang tải cài đặt API...',
+    title: 'Truy cập API',
+    description: 'Quản lý khóa API cho tích hợp Growth và Enterprise.',
+    createTitle: 'Tạo khóa API',
+    keyNamePlaceholder: 'Tên khóa',
+    createButton: 'Tạo khóa API',
+    newKeyLabel: 'Khóa mới (sao chép ngay):',
+    activeKeys: 'Khóa đang hoạt động',
+    empty: 'Chưa có khóa API.',
+    created: 'Đã tạo',
+    lastUsed: 'Dùng lần cuối',
+    revoke: 'Thu hồi',
+    reference: 'Tài liệu tham khảo API',
+    authNote: 'Gửi Authorization: Bearer YOUR_API_KEY trên mọi yêu cầu.',
+    fullDocs: 'Tài liệu API đầy đủ',
+    createError: 'Không thể tạo khóa.',
+    revokeError: 'Không thể thu hồi khóa.',
+    copyNow: 'Hãy sao chép khóa này ngay. Khóa sẽ không được hiển thị lại.'
+  }
+} as const;
+
 export default function ApiSettingsPage() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [name, setName] = useState('');
@@ -66,12 +132,12 @@ export default function ApiSettingsPage() {
     const json = await res.json();
     setBusy(false);
     if (!res.ok) {
-      setMessage(json.error || 'Unable to create key.');
+      setMessage(json.error || c.createError);
       return;
     }
     setRawKey(json.rawKey);
     setName('');
-    setMessage('Copy this key now. It will not be shown again.');
+    setMessage(c.copyNow);
     void load();
   }
 
@@ -81,7 +147,7 @@ export default function ApiSettingsPage() {
     setBusy(false);
     if (!res.ok) {
       const json = await res.json();
-      setMessage(json.error || 'Unable to revoke key.');
+      setMessage(json.error || c.revokeError);
       return;
     }
     void load();
@@ -91,37 +157,37 @@ export default function ApiSettingsPage() {
     return (
       <div className="dashboard-shell">
         <main className="main">
-          <p>Loading API settings...</p>
+          <p>{c.loading}</p>
         </main>
       </div>
     );
   }
 
   return (
-    <SettingsShell plan={plan} title="API access" description="Manage API keys for Growth and Enterprise integrations.">
-      {!limitsForPlan(plan).apiAccess ? <PlanLockedMessage feature="API access" requiredPlan="Growth" /> : null}
+    <SettingsShell plan={plan} title={c.title} description={c.description}>
+      {!limitsForPlan(plan).apiAccess ? <PlanLockedMessage feature={c.title} requiredPlan="Growth" /> : null}
 
       {limitsForPlan(plan).apiAccess ? (
         <>
           <div className="settings-card">
-            <h3>Create API key</h3>
+            <h3>{c.createTitle}</h3>
             <div className="inline-actions">
-              <input className="input" placeholder="Key name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="input" placeholder={c.keyNamePlaceholder} value={name} onChange={(e) => setName(e.target.value)} />
               <button type="button" className="btn btn-primary" disabled={busy} onClick={createKey}>
-                Create API key
+                {c.createButton}
               </button>
             </div>
             {rawKey ? (
               <div className="settings-warning" style={{ marginTop: 12 }}>
-                <strong>New key (copy now):</strong>
+                <strong>{c.newKeyLabel}</strong>
                 <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0' }}>{rawKey}</pre>
               </div>
             ) : null}
           </div>
 
           <div className="settings-card">
-            <h3>Active keys</h3>
-            {keys.filter((k) => !k.revoked_at).length === 0 ? <p className="muted">No API keys yet.</p> : null}
+            <h3>{c.activeKeys}</h3>
+            {keys.filter((k) => !k.revoked_at).length === 0 ? <p className="muted">{c.empty}</p> : null}
             {keys
               .filter((k) => !k.revoked_at)
               .map((key) => (
@@ -129,20 +195,20 @@ export default function ApiSettingsPage() {
                   <div>
                     <strong>{key.name}</strong>
                     <p className="muted">
-                      {key.key_prefix}… · Created {new Date(key.created_at).toLocaleDateString()}
-                      {key.last_used_at ? ` · Last used ${new Date(key.last_used_at).toLocaleString()}` : ''}
+                      {key.key_prefix}… · {c.created} {new Date(key.created_at).toLocaleDateString()}
+                      {key.last_used_at ? ` · ${c.lastUsed} ${new Date(key.last_used_at).toLocaleString()}` : ''}
                     </p>
                   </div>
                   <button type="button" className="btn" disabled={busy} onClick={() => revokeKey(key.id)}>
-                    Revoke
+                    {c.revoke}
                   </button>
                 </div>
               ))}
           </div>
 
           <div className="settings-card">
-            <h3>API reference</h3>
-            <p className="muted">Send Authorization: Bearer YOUR_API_KEY on every request.</p>
+            <h3>{c.reference}</h3>
+            <p className="muted">{c.authNote}</p>
             <ul className="plan-feature-list">
               <li>GET /api/v1/jobs</li>
               <li>POST /api/v1/jobs</li>
@@ -150,7 +216,7 @@ export default function ApiSettingsPage() {
               <li>GET /api/v1/workers</li>
             </ul>
             <Link href="/docs/api" className="btn">
-              Full API docs
+              {c.fullDocs}
             </Link>
           </div>
         </>

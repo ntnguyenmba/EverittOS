@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
 
 type RecordActionsProps = {
   viewHref?: string;
@@ -15,18 +16,26 @@ type RecordActionsProps = {
   layout?: 'inline' | 'stack';
 };
 
+const copy = {
+  en: { edit: 'Edit' },
+  es: { edit: 'Editar' },
+  vi: { edit: 'Sửa' }
+} as const;
+
 export function RecordActions({
   viewHref,
   viewLabel = 'Open',
   editHref,
   onEdit,
-  editLabel = 'Edit',
+  editLabel,
   onRemove,
   removeLabel = 'Remove',
   removing = false,
   size = 'sm',
   layout = 'inline'
 }: RecordActionsProps) {
+  const { locale } = useTranslation();
+  const resolvedEditLabel = editLabel || copy[locale].edit;
   const btnClass = size === 'sm' ? 'btn btn-sm' : 'btn';
 
   return (
@@ -38,12 +47,12 @@ export function RecordActions({
       ) : null}
       {editHref ? (
         <Link className={btnClass} href={editHref}>
-          {editLabel}
+          {resolvedEditLabel}
         </Link>
       ) : null}
       {onEdit ? (
         <button type="button" className={btnClass} onClick={onEdit}>
-          {editLabel}
+          {resolvedEditLabel}
         </button>
       ) : null}
       {onRemove ? (

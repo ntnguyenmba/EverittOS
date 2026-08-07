@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
+import { useTranslation } from '@/components/locale-provider';
 import type { StructuredAddress } from '@/lib/address/types';
 import {
   PROPERTY_TYPE_LABELS,
@@ -56,8 +57,16 @@ const emptyDraft = (): DraftProperty => ({
   is_primary: false
 });
 
+const copy = {
+  en: { archiveConfirm: 'Archive this property? Existing jobs keep their saved address snapshot.' },
+  es: { archiveConfirm: '¿Archivar esta propiedad? Los trabajos existentes conservarán la dirección guardada.' },
+  vi: { archiveConfirm: 'Lưu trữ địa điểm này? Các công việc hiện có vẫn giữ bản sao địa chỉ đã lưu.' }
+} as const;
+
 export function CustomerPropertiesPanel({ customerId, customerName, canEdit, jobs }: CustomerPropertiesPanelProps) {
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [properties, setProperties] = useState<CustomerPropertyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -192,7 +201,7 @@ export function CustomerPropertiesPanel({ customerId, customerName, canEdit, job
   }
 
   async function archiveProperty(propertyId: string) {
-    if (!window.confirm('Archive this property? Existing jobs keep their saved address snapshot.')) return;
+    if (!window.confirm(c.archiveConfirm)) return;
     const res = await fetch(`/api/customers/${customerId}/properties/${propertyId}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {

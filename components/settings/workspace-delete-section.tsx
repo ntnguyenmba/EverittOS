@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { WORKSPACE_DELETION_RECOVERY_DAYS } from '@/lib/deletion-policy';
+import { formatSettingsCopy, getWorkspaceDeleteCopy } from '@/lib/i18n/settings-copy';
 
 type WorkspaceDeletionPreview = {
   organizationName: string;
@@ -23,6 +25,8 @@ type WorkspaceDeleteSectionProps = {
 
 export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { locale } = useTranslation();
+  const c = getWorkspaceDeleteCopy(locale);
   const [preview, setPreview] = useState<WorkspaceDeletionPreview | null>(null);
   const [confirmation, setConfirmation] = useState('');
   const [message, setMessage] = useState('');
@@ -45,7 +49,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to load company deletion details.');
+      setMessage(json.error || c.loadError);
       return;
     }
 
@@ -70,13 +74,13 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to delete company.');
+      setMessage(json.error || c.deleteError);
       return;
     }
 
     dialogRef.current?.close();
     setPreview({ ...preview, scheduledForDeletion: true, deletionScheduledAt: json.deletionScheduledAt || null });
-    setMessage('This company is scheduled for deletion.');
+    setMessage(c.scheduledSuccess);
   }
 
   async function restoreWorkspace() {
@@ -87,7 +91,7 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(json.error || 'Unable to restore company.');
+      setMessage(json.error || c.restoreError);
       return;
     }
 
@@ -96,40 +100,46 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
         ? { ...current, scheduledForDeletion: false, deletionScheduledAt: null }
         : current
     );
-    setMessage('Company deletion canceled. Your company has been restored.');
+    setMessage(c.restoredSuccess);
   }
 
   if (!canManage) return null;
 
+  const reviewParts = c.reviewRemoved.split('{name}');
+
   return (
     <details className="settings-card settings-danger-zone">
-      <summary><strong>Delete company</strong></summary>
+      <summary><strong>{c.title}</strong></summary>
       <div style={{ marginTop: 14 }}>
         {preview?.scheduledForDeletion ? (
           <>
-            <p className="settings-warning">This company is scheduled for deletion.</p>
+            <p className="settings-warning">{c.scheduled}</p>
             <p className="muted">
-              Restore it within {WORKSPACE_DELETION_RECOVERY_DAYS} days
+              {formatSettingsCopy(c.restoreWithin, { days: WORKSPACE_DELETION_RECOVERY_DAYS })}
               {preview.deletionScheduledAt
-                ? `, before ${new Date(preview.deletionScheduledAt).toLocaleDateString()}`
+                ? formatSettingsCopy(c.beforeDate, {
+                    date: new Date(preview.deletionScheduledAt).toLocaleDateString()
+                  })
                 : ''}
               .
             </p>
             <div className="settings-actions">
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void restoreWorkspace()}>
-                Restore company
+                {c.restoreCompany}
               </button>
             </div>
           </>
         ) : (
           <>
-            <p className="muted">Deletes the company after a {WORKSPACE_DELETION_RECOVERY_DAYS}-day recovery period.</p>
+            <p className="muted">
+              {formatSettingsCopy(c.deletesAfter, { days: WORKSPACE_DELETION_RECOVERY_DAYS })}
+            </p>
             {preview?.hasActivePaidSubscription ? (
-              <p className="settings-warning">The active subscription will be canceled first.</p>
+              <p className="settings-warning">{c.cancelSubscriptionFirst}</p>
             ) : null}
             <div className="settings-actions">
               <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void loadPreview()}>
-                Delete company
+                {c.deleteCompany}
               </button>
             </div>
           </>
@@ -140,23 +150,25 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
 
       <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="delete-workspace-title">
         <form method="dialog" className="confirm-dialog-body" onSubmit={(event) => event.preventDefault()}>
-          <h3 id="delete-workspace-title">Delete company?</h3>
+          <h3 id="delete-workspace-title">{c.confirmTitle}</h3>
           {preview ? (
             <>
               <p className="muted">
-                This will schedule <strong>{preview.organizationName}</strong> for deletion. Review what will be removed:
+                {reviewParts[0]}
+                <strong>{preview.organizationName}</strong>
+                {reviewParts[1] ?? ''}
               </p>
               <ul className="settings-danger-list muted">
-                <li>{preview.customers} customers</li>
-                <li>{preview.jobs} jobs</li>
-                <li>{preview.leads} leads</li>
-                <li>{preview.invoices} invoices</li>
-                <li>{preview.bookings} bookings</li>
-                <li>{preview.files} uploaded files</li>
-                <li>{preview.teamMembers} team members</li>
+                <li>{preview.customers} {c.customers}</li>
+                <li>{preview.jobs} {c.jobs}</li>
+                <li>{preview.leads} {c.leads}</li>
+                <li>{preview.invoices} {c.invoices}</li>
+                <li>{preview.bookings} {c.bookings}</li>
+                <li>{preview.files} {c.files}</li>
+                <li>{preview.teamMembers} {c.teamMembers}</li>
               </ul>
               <label className="settings-field">
-                <span>Type the company name to continue</span>
+                <span>{c.typeName}</span>
                 <input
                   className="input"
                   value={confirmation}
@@ -170,10 +182,10 @@ export function WorkspaceDeleteSection({ canManage }: WorkspaceDeleteSectionProp
           {message ? <p className="auth-message auth-message-error">{message}</p> : null}
           <div className="confirm-dialog-actions">
             <button type="button" className="btn" onClick={() => dialogRef.current?.close()}>
-              Cancel
+              {c.cancel}
             </button>
             <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void deleteWorkspace()}>
-              Schedule deletion
+              {c.scheduleDeletion}
             </button>
           </div>
         </form>

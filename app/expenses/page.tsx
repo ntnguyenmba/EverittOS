@@ -239,7 +239,7 @@ function ExpensesContent() {
 
   async function deleteExpense(id: string) {
     if (deletingId) return;
-    if (!window.confirm('Delete this expense?')) return;
+    if (!window.confirm(copy.deleteConfirm)) return;
     setDeletingId(id);
     const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
     const json = await res.json();
@@ -445,7 +445,7 @@ function ExpensesContent() {
           <textarea className="input" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           <div className="finance-actions">
             <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveExpense()}>
-              {saving ? FEEDBACK.loading : editingId ? 'Save changes' : 'Add expense'}
+              {saving ? FEEDBACK.loading : editingId ? copy.saveChanges : copy.addExpense}
             </button>
             <button type="button" className="btn" onClick={resetForm}>
               Cancel
@@ -511,7 +511,7 @@ function ExpensesContent() {
                       disabled={deletingId === expense.id}
                       onClick={() => void deleteExpense(expense.id)}
                     >
-                      {deletingId === expense.id ? FEEDBACK.loading : 'Delete'}
+                      {deletingId === expense.id ? FEEDBACK.loading : copy.delete}
                     </button>
                   </div>
                 ) : null}

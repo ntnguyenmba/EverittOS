@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { LEAD_PIPELINE_STAGES } from '@/lib/lead-pipeline';
 import { LEAD_SOURCE_OPTIONS } from '@/lib/lead-sources';
@@ -27,20 +28,59 @@ type LeadDetailFormProps = {
 
 const EDITABLE_LEAD_STAGES = LEAD_PIPELINE_STAGES;
 
-const SIMPLE_STATUS_LABELS: Record<string, string> = {
-  open: 'New',
-  contacted: 'Contacted',
-  qualified: 'Interested',
-  proposal_sent: 'Quote sent',
-  negotiation: 'Following up',
-  reopened: 'Reopened',
-  closed_lost: 'Not booked',
-  cancelled: 'Archived'
-};
+const copy = {
+  en: {
+    statusLabels: {
+      open: 'New',
+      contacted: 'Contacted',
+      qualified: 'Interested',
+      proposal_sent: 'Quote sent',
+      negotiation: 'Following up',
+      reopened: 'Reopened',
+      closed_lost: 'Not booked',
+      cancelled: 'Archived'
+    },
+    archiveConfirm: 'Archive {name}?',
+    archiveConfirmFallback: 'Archive this request?',
+    archiveRequest: 'Archive request'
+  },
+  es: {
+    statusLabels: {
+      open: 'Nueva',
+      contacted: 'Contactada',
+      qualified: 'Interesada',
+      proposal_sent: 'Cotización enviada',
+      negotiation: 'En seguimiento',
+      reopened: 'Reabierta',
+      closed_lost: 'No reservada',
+      cancelled: 'Archivada'
+    },
+    archiveConfirm: '¿Archivar {name}?',
+    archiveConfirmFallback: '¿Archivar esta solicitud?',
+    archiveRequest: 'Archivar solicitud'
+  },
+  vi: {
+    statusLabels: {
+      open: 'Mới',
+      contacted: 'Đã liên hệ',
+      qualified: 'Quan tâm',
+      proposal_sent: 'Đã gửi báo giá',
+      negotiation: 'Đang theo dõi',
+      reopened: 'Đã mở lại',
+      closed_lost: 'Chưa đặt',
+      cancelled: 'Đã lưu trữ'
+    },
+    archiveConfirm: 'Lưu trữ {name}?',
+    archiveConfirmFallback: 'Lưu trữ yêu cầu này?',
+    archiveRequest: 'Lưu trữ yêu cầu'
+  }
+} as const;
 
 export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDetailFormProps) {
   const router = useRouter();
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const { teamOptions, teamOptionsLoading } = useTeamOptions();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [phone, setPhone] = useState(initial.phone);
@@ -142,7 +182,10 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
 
   async function removeLead() {
     if (!canManage || removing) return;
-    if (!window.confirm(`Archive ${displayName || 'this request'}?`)) return;
+    const confirmMessage = displayName
+      ? c.archiveConfirm.replace('{name}', displayName)
+      : c.archiveConfirmFallback;
+    if (!window.confirm(confirmMessage)) return;
 
     setRemoving(true);
     const res = await fetch(`/api/customers/${leadId}`, { method: 'DELETE' });
@@ -160,7 +203,7 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
   }
 
   const sourceLabel = LEAD_SOURCE_OPTIONS.find((option) => option.value === leadSource)?.label || leadSource;
-  const statusLabel = SIMPLE_STATUS_LABELS[pipelineStage] || pipelineStage;
+  const statusLabel = c.statusLabels[pipelineStage as keyof typeof c.statusLabels] || pipelineStage;
   const busy = saving || converting || removing;
 
   return (
@@ -224,7 +267,7 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
           <label>Status</label>
           <select className="input" value={pipelineStage} disabled={!canManage || busy} onChange={(e) => setPipelineStage(e.target.value)}>
             {EDITABLE_LEAD_STAGES.map((option) => (
-              <option key={option.value} value={option.value}>{SIMPLE_STATUS_LABELS[option.value] || option.label}</option>
+              <option key={option.value} value={option.value}>{c.statusLabels[option.value as keyof typeof c.statusLabels] || option.label}</option>
             ))}
           </select>
           <label>Notes</label>
@@ -244,7 +287,7 @@ export function LeadDetailForm({ leadId, initial, canManage, onSaved }: LeadDeta
             <button type="button" className="btn" disabled={busy} onClick={() => void setLeadStage('reopened')}>Reopen</button>
             <button type="button" className="btn" disabled={busy} onClick={() => void setLeadStage('closed_lost')}>Not booked</button>
             <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void removeLead()}>
-              {removing ? FEEDBACK.loading : 'Archive request'}
+              {removing ? FEEDBACK.loading : c.archiveRequest}
             </button>
           </div>
         </details>

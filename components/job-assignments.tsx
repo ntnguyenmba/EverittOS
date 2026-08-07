@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { supabase } from '@/lib/supabase';
 import { logClientActivity } from '@/lib/activity';
@@ -48,9 +49,15 @@ const EMPTY_MANUAL_CONTRACTOR: ManualContractorForm = {
   companyName: ''
 };
 
-function workerLabel(worker?: Worker) {
-  if (!worker) return 'Contractor';
-  const type = worker.worker_type === 'contractor' ? 'Contractor' : 'Team';
+const copy = {
+  en: { contractor: 'Contractor', team: 'Team' },
+  es: { contractor: 'Contratista', team: 'Equipo' },
+  vi: { contractor: 'Nhà thầu', team: 'Đội nhóm' }
+} as const;
+
+function workerLabel(worker: Worker | undefined, labels: { contractor: string; team: string }) {
+  if (!worker) return labels.contractor;
+  const type = worker.worker_type === 'contractor' ? labels.contractor : labels.team;
   return worker.company_name ? `${worker.name} · ${type} · ${worker.company_name}` : `${worker.name} · ${type}`;
 }
 
@@ -67,6 +74,8 @@ export function JobAssignments({
   onChange
 }: JobAssignmentsProps) {
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [workerId, setWorkerId] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -234,7 +243,7 @@ export function JobAssignments({
           return (
             <div key={assignment.id} className="list-row">
               <div>
-                <strong>{workerLabel(assignedWorker)}</strong>
+                <strong>{workerLabel(assignedWorker, c)}</strong>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
                   {assignedWorker ? 'Included in job and contractor metrics' : 'Assigned contractor'}
                 </p>
@@ -280,7 +289,7 @@ export function JobAssignments({
                 <option value="">Select contractor</option>
                 {availableWorkers.map((worker) => (
                   <option key={worker.id} value={worker.id}>
-                    {workerLabel(worker)}
+                    {workerLabel(worker, c)}
                   </option>
                 ))}
               </select>

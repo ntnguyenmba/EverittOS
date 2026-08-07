@@ -188,7 +188,7 @@ export const messages: Messages = {
     },
     activity: {
       title: 'No activity yet',
-      description: ''
+      description: 'Activity from your company will appear here.'
     },
     notifications: {
       title: 'No notifications yet',

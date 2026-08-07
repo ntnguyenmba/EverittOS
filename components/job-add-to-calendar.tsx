@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import {
   downloadCalendarIcs,
   googleCalendarEventUrl,
@@ -8,7 +9,15 @@ import {
 } from '@/lib/calendar-links';
 import { jobCalendarEvent, type JobCalendarFields } from '@/lib/job-calendar';
 
+const copy = {
+  en: { addToAppleCalendar: 'Add to Apple Calendar', downloadCalendarFile: 'Download calendar file' },
+  es: { addToAppleCalendar: 'Agregar a Apple Calendar', downloadCalendarFile: 'Descargar archivo de calendario' },
+  vi: { addToAppleCalendar: 'Thêm vào Apple Calendar', downloadCalendarFile: 'Tải tệp lịch xuống' }
+} as const;
+
 export function JobAddToCalendar({ job }: { job: JobCalendarFields }) {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [open, setOpen] = useState(false);
   const [isAppleDevice, setIsAppleDevice] = useState(false);
   const event = useMemo(() => jobCalendarEvent(job), [job]);
@@ -38,7 +47,7 @@ export function JobAddToCalendar({ job }: { job: JobCalendarFields }) {
       {open ? (
         <div className="inline-actions" style={{ marginTop: 10, flexWrap: 'wrap', gap: 8 }}>
           <button type="button" className="btn" onClick={() => downloadCalendarIcs(event)}>
-            {isAppleDevice ? 'Add to Apple Calendar' : 'Download calendar file'}
+            {isAppleDevice ? c.addToAppleCalendar : c.downloadCalendarFile}
           </button>
           <a className="btn" href={googleCalendarEventUrl(event)} target="_blank" rel="noreferrer">
             Add to Google Calendar

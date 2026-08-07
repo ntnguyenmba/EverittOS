@@ -11,6 +11,9 @@ export type ExpensesPageCopy = {
   filters: string;
   hideFilters: string;
   total: string;
+  saveChanges: string;
+  delete: string;
+  deleteConfirm: string;
 };
 
 const byLocale: Record<Locale, ExpensesPageCopy> = {
@@ -25,7 +28,10 @@ const byLocale: Record<Locale, ExpensesPageCopy> = {
     close: 'Close',
     filters: 'Filters',
     hideFilters: 'Hide filters',
-    total: 'Total'
+    total: 'Total',
+    saveChanges: 'Save changes',
+    delete: 'Delete',
+    deleteConfirm: 'Delete this expense?'
   },
   es: {
     title: 'Gastos',
@@ -39,7 +45,10 @@ const byLocale: Record<Locale, ExpensesPageCopy> = {
     close: 'Cerrar',
     filters: 'Filtros',
     hideFilters: 'Ocultar filtros',
-    total: 'Total'
+    total: 'Total',
+    saveChanges: 'Guardar cambios',
+    delete: 'Eliminar',
+    deleteConfirm: '¿Eliminar este gasto?'
   },
   vi: {
     title: 'Chi phí',
@@ -53,7 +62,10 @@ const byLocale: Record<Locale, ExpensesPageCopy> = {
     close: 'Đóng',
     filters: 'Bộ lọc',
     hideFilters: 'Ẩn bộ lọc',
-    total: 'Tổng'
+    total: 'Tổng',
+    saveChanges: 'Lưu thay đổi',
+    delete: 'Xóa',
+    deleteConfirm: 'Xóa chi phí này?'
   }
 };
 

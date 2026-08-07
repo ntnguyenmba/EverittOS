@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from '@/components/locale-provider';
 import { EmptyState } from '@/components/empty-state';
+import { isMissingTranslationKey } from '@/lib/i18n/fallback-key';
 
 export type EmptyKey =
   | 'jobs'
@@ -43,27 +44,13 @@ const ACTION_HREFS: Partial<Record<EmptyKey, string>> = {
   photos: '/jobs'
 };
 
-const SIMPLE_ACTION_LABELS: Partial<Record<EmptyKey, string>> = {
-  jobs: 'Create job',
-  customers: 'Add customer',
-  leads: 'Add lead',
-  schedule: 'Create job',
-  workers: 'Add team member',
-  forms: 'Create form',
-  templates: 'Create template',
-  expenses: 'Add expense',
-  invoices: 'Create invoice',
-  analytics: 'Open dashboard',
-  workflows: 'Create workflow',
-  photos: 'Open jobs'
-};
-
 export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }: LocalizedEmptyStateProps) {
   const { t } = useTranslation();
-  const translatedActionLabel = t(`empty.${emptyKey}.action`);
-  const actionLabel = SIMPLE_ACTION_LABELS[emptyKey] || translatedActionLabel;
+  const actionLabel = t(`empty.${emptyKey}.action`);
+  const description = t(`empty.${emptyKey}.description`);
   const actionHref = ACTION_HREFS[emptyKey];
-  const hasActionLabel = Boolean(actionLabel) && !actionLabel.startsWith('[');
+  const hasActionLabel = Boolean(actionLabel) && !isMissingTranslationKey(actionLabel);
+  const hasDescription = Boolean(description) && !isMissingTranslationKey(description);
 
   const primaryAction = onPrimaryClick && hasActionLabel ? (
     <button type="button" className="btn btn-primary" onClick={onPrimaryClick}>
@@ -78,7 +65,7 @@ export function LocalizedEmptyState({ emptyKey, compact, icon, onPrimaryClick }:
   return (
     <EmptyState
       title={t(`empty.${emptyKey}.title`)}
-      description=""
+      description={hasDescription ? description : undefined}
       compact={compact}
       icon={icon}
       action={primaryAction}

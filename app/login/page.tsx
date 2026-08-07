@@ -35,6 +35,7 @@ const loginCopy = {
     storyTitle: 'Built from real work.',
     storyBody: 'We use it every day.',
     storyClose: 'Now you can too.',
+    aboutLabel: 'About EverittOS',
     selectedPlan: 'Selected plan:',
     continueSetup: 'Sign in to continue setup.',
     accountDeleted: 'Your account has been permanently deleted.',
@@ -57,6 +58,7 @@ const loginCopy = {
     storyTitle: 'Creado a partir del trabajo real.',
     storyBody: 'Lo usamos todos los días.',
     storyClose: 'Ahora usted también puede usarlo.',
+    aboutLabel: 'Acerca de EverittOS',
     selectedPlan: 'Plan seleccionado:',
     continueSetup: 'Inicie sesión para continuar la configuración.',
     accountDeleted: 'Su cuenta se eliminó permanentemente.',
@@ -79,6 +81,7 @@ const loginCopy = {
     storyTitle: 'Được xây dựng từ công việc thực tế.',
     storyBody: 'Chúng tôi dùng nó mỗi ngày.',
     storyClose: 'Giờ bạn cũng có thể dùng.',
+    aboutLabel: 'Giới thiệu EverittOS',
     selectedPlan: 'Gói đã chọn:',
     continueSetup: 'Đăng nhập để tiếp tục thiết lập.',
     accountDeleted: 'Tài khoản của bạn đã bị xóa vĩnh viễn.',
@@ -211,7 +214,7 @@ function LoginForm() {
 
   return (
     <AuthShell title={copy.title}>
-      <section className="login-origin-story" aria-label="About EverittOS">
+      <section className="login-origin-story" aria-label={copy.aboutLabel}>
         <h2>{copy.storyTitle}</h2>
         <p>{copy.storyBody}</p>
         <p>{copy.storyClose}</p>

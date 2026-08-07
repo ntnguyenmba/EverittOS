@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@/components/locale-provider';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 import {
@@ -56,6 +57,12 @@ const EMPTY_METRICS: PersonalMetrics = {
   jobRevenueThisMonth: 0
 };
 
+const copy = {
+  en: { activeJobs: 'Active jobs', jobsToday: 'Jobs today', overdue: 'Overdue' },
+  es: { activeJobs: 'Trabajos activos', jobsToday: 'Trabajos de hoy', overdue: 'Atrasados' },
+  vi: { activeJobs: 'Công việc đang hoạt động', jobsToday: 'Công việc hôm nay', overdue: 'Quá hạn' }
+} as const;
+
 function money(value: number) {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -79,6 +86,8 @@ function rowDate(value: string | null | undefined): string {
 }
 
 export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [metrics, setMetrics] = useState<PersonalMetrics>(EMPTY_METRICS);
   const [loading, setLoading] = useState(true);
   const normalizedRole = role.trim().toLowerCase();
@@ -187,12 +196,12 @@ export function PersonalWorkMetrics({ role }: PersonalWorkMetricsProps) {
       : { label: 'Pay this month', value: money(metrics.earningsThisMonth), href: '/my-work' };
 
     return [
-      { label: 'Active jobs', value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
-      { label: 'Jobs today', value: String(metrics.dueToday), href: '/schedule?mine=true' },
-      { label: 'Overdue', value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
+      { label: c.activeJobs, value: String(metrics.activeJobs), href: '/jobs?mine=true&status=active' },
+      { label: c.jobsToday, value: String(metrics.dueToday), href: '/schedule?mine=true' },
+      { label: c.overdue, value: String(metrics.overdueJobs), href: '/jobs?mine=true&status=overdue' },
       moneyCard
     ];
-  }, [isManager, metrics]);
+  }, [c.activeJobs, c.jobsToday, c.overdue, isManager, metrics]);
 
   if (!visible) return null;
 

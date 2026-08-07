@@ -24,11 +24,13 @@ import {
   restoreNativePurchases
 } from '@/lib/billing/native-purchase';
 import { supabase } from '@/lib/supabase';
+import { formatSettingsBillingCopy, getSettingsBillingUiCopy } from '@/lib/i18n/settings-copy';
 
 function BillingSettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t, locale } = useTranslation();
+  const c = getSettingsBillingUiCopy(locale);
   const upgradePlan = normalizePlan(searchParams.get('upgrade'));
 
   const accessNotice = useMemo(() => {
@@ -41,7 +43,7 @@ function BillingSettingsContent() {
     }
     if (reason === 'subscription') {
       const mapped = mapAccessError('subscription');
-      const billingMessage = status ? subscriptionAccess(upgradePlan, status).message : mapped.message;
+      const billingMessage = status ? subscriptionAccess(upgradePlan, status, locale).message : mapped.message;
       return {
         ...mapped,
         message: billingMessage,
@@ -49,7 +51,7 @@ function BillingSettingsContent() {
       };
     }
     return null;
-  }, [searchParams, upgradePlan]);
+  }, [searchParams, upgradePlan, locale]);
 
   const {
     profilePlan,
@@ -284,7 +286,7 @@ function BillingSettingsContent() {
     setPortalLoading(false);
 
     if (!res.ok) {
-      setMessage(res.status === 503 ? t('billing.portalNotConfigured') : json.error || 'Unable to open billing portal.');
+      setMessage(res.status === 503 ? t('billing.portalNotConfigured') : json.error || c.unableOpenPortal);
       return;
     }
 
@@ -294,7 +296,7 @@ function BillingSettingsContent() {
   if (loading || planLoading || !plan) {
     return (
       <AppShell role={role}>
-        <p>{checkoutSyncing ? 'Activating your plan...' : 'Loading billing...'}</p>
+        <p>{checkoutSyncing ? c.activating : c.loading}</p>
       </AppShell>
     );
   }
@@ -304,11 +306,11 @@ function BillingSettingsContent() {
   const canOpenPortal = Boolean(stripeCustomerId && stripeCapabilities?.portal && billingVisibility.allowPortal);
   const showPortalCancel = canOpenPortal && plan !== 'free' && subscriptionStatus !== 'canceled';
   const hasActiveSubscription = plan !== 'free' && Boolean(stripeCustomerId) && subscriptionStatus !== 'canceled';
-  const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free');
+  const subscriptionInfo = subscriptionAccess(plan, subscriptionStatus || 'free', locale);
   const planStatus = subscriptionStatus || 'free';
   const renewalLabel = renewalDate
     ? new Date(renewalDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'Not scheduled';
+    : c.notScheduled;
 
   if (billingVisibility.surface === 'native') {
     return (
@@ -320,18 +322,18 @@ function BillingSettingsContent() {
       >
         <section className="settings-card" style={{ display: 'grid', gap: 16, padding: 24 }}>
           <div>
-            <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current plan</p>
+            <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>{c.currentPlan}</p>
             <h3 style={{ margin: 0 }}>{planDisplayName(plan)}</h3>
           </div>
           <div className="settings-row">
-            <span className="settings-row-label">Account status</span>
+            <span className="settings-row-label">{c.accountStatus}</span>
             <span className="settings-row-value" style={{ textTransform: 'capitalize' }}>
               {planStatus.replaceAll('_', ' ')}
             </span>
           </div>
           <div className="settings-row">
-            <span className="settings-row-label">Plan access</span>
-            <span className="settings-row-value">{subscriptionInfo.ok ? 'Active' : 'Action needed'}</span>
+            <span className="settings-row-label">{c.planAccess}</span>
+            <span className="settings-row-value">{subscriptionInfo.ok ? c.active : c.actionNeeded}</span>
           </div>
           <p className="muted" style={{ margin: 0 }}>
             {nativeBillingNotice(locale)}
@@ -343,7 +345,7 @@ function BillingSettingsContent() {
                 className="btn"
                 onClick={() => {
                   void (async () => {
-                    setMessage('Restoring…');
+                    setMessage(c.restoring);
                     const result = await restoreNativePurchases();
                     setMessage(result.message);
                     if (result.restored) {
@@ -352,7 +354,7 @@ function BillingSettingsContent() {
                   })();
                 }}
               >
-                Restore Purchases
+                {c.restorePurchases}
               </button>
             ) : null}
             {billingVisibility.showManageStoreSubscription ? (
@@ -361,7 +363,7 @@ function BillingSettingsContent() {
                 className="btn"
                 onClick={() => {
                   void openNativeSubscriptionManagement().then((opened) => {
-                    if (!opened) setMessage('Unable to open subscription management.');
+                    if (!opened) setMessage(c.unableOpenManagement);
                   });
                 }}
               >
@@ -373,19 +375,19 @@ function BillingSettingsContent() {
               className="btn"
               onClick={() => {
                 void (async () => {
-                  setMessage('Refreshing…');
+                  setMessage(c.refreshing);
                   const res = await fetch('/api/billing/entitlement', { credentials: 'same-origin' });
                   const json = (await res.json().catch(() => ({}))) as { plan?: string; error?: string };
                   if (!res.ok) {
-                    setMessage(json.error || 'Unable to refresh subscription status.');
+                    setMessage(json.error || c.unableRefreshStatus);
                     return;
                   }
-                  setMessage('Subscription status refreshed.');
+                  setMessage(c.statusRefreshed);
                   await refreshWorkspacePlan();
                 })();
               }}
             >
-              Refresh Subscription Status
+              {c.refreshStatus}
             </button>
           </div>
           {message ? <p className="auth-message auth-message-warning">{message}</p> : null}
@@ -399,11 +401,11 @@ function BillingSettingsContent() {
             portalAvailable={false}
             onNativePurchaseSuccess={() => {
               void refreshWorkspacePlan();
-              setMessage('Subscription activated.');
+              setMessage(c.subscriptionActivated);
             }}
           />
         ) : (
-          <p className="muted">Only workspace owners and admins can change the subscription.</p>
+          <p className="muted">{c.ownersOnly}</p>
         )}
       </SettingsShell>
     );
@@ -431,7 +433,7 @@ function BillingSettingsContent() {
 
         {searchParams.get('upgrade') ? (
           <div className="settings-warning">
-            {planDisplayName(upgradePlan)} or higher is required for that page. Choose a plan below to upgrade.
+            {formatSettingsBillingCopy(c.upgradeRequired, { plan: planDisplayName(upgradePlan) })}
           </div>
         ) : null}
 
@@ -447,7 +449,7 @@ function BillingSettingsContent() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
             <div>
-              <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>Current plan</p>
+              <p style={{ margin: '0 0 6px', color: 'var(--muted)', fontSize: 13 }}>{c.currentPlan}</p>
               <h3 style={{ margin: 0, fontSize: 28, lineHeight: 1.15 }}>{planDisplayName(plan)}</h3>
             </div>
             <div
@@ -469,28 +471,28 @@ function BillingSettingsContent() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
-              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Subscription</p>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>{c.subscription}</p>
               <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{planStatus.replaceAll('_', ' ')}</strong>
             </div>
             <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
-              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Renewal</p>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>{c.renewal}</p>
               <strong style={{ color: 'var(--text)' }}>{renewalLabel}</strong>
             </div>
             <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: 16, background: '#fff' }}>
-              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>Plan access</p>
-              <strong style={{ color: 'var(--text)' }}>{subscriptionInfo.ok ? 'Active' : 'Action needed'}</strong>
+              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: 13 }}>{c.planAccess}</p>
+              <strong style={{ color: 'var(--text)' }}>{subscriptionInfo.ok ? c.active : c.actionNeeded}</strong>
             </div>
           </div>
 
           <div className="settings-actions" style={{ marginTop: 0 }}>
             {canOpenPortal ? (
               <button type="button" className="btn btn-primary" disabled={portalLoading} onClick={openBillingPortal}>
-                {portalLoading ? 'Opening...' : 'Manage billing'}
+                {portalLoading ? c.opening : c.manageBilling}
               </button>
             ) : null}
             {showPortalCancel ? (
               <button type="button" className="btn" disabled={portalLoading} onClick={openBillingPortal}>
-                {portalLoading ? 'Opening...' : 'Cancel plan'}
+                {portalLoading ? c.opening : c.cancelPlan}
               </button>
             ) : null}
           </div>
@@ -504,19 +506,19 @@ function BillingSettingsContent() {
 
         {couponName ? (
           <section className="settings-card" style={{ display: 'grid', gap: 12 }}>
-            <h3>Active discount</h3>
+            <h3>{c.activeDiscount}</h3>
             <div className="settings-row">
-              <span className="settings-row-label">Discount</span>
+              <span className="settings-row-label">{c.discount}</span>
               <span className="settings-row-value">{couponName}</span>
             </div>
             {couponCode ? (
               <div className="settings-row">
-                <span className="settings-row-label">Code</span>
+                <span className="settings-row-label">{c.code}</span>
                 <span className="settings-row-value">{couponCode}</span>
               </div>
             ) : null}
             <div className="settings-row">
-              <span className="settings-row-label">Savings</span>
+              <span className="settings-row-label">{c.savings}</span>
               <span className="settings-row-value">
                 {formatCouponDuration(
                   (couponDuration as 'forever' | 'once' | 'repeating') || 'once',
@@ -528,7 +530,7 @@ function BillingSettingsContent() {
             </div>
             {couponExpiresAt ? (
               <div className="settings-row">
-                <span className="settings-row-label">Expires</span>
+                <span className="settings-row-label">{c.expires}</span>
                 <span className="settings-row-value">
                   {new Date(couponExpiresAt).toLocaleDateString(undefined, {
                     year: 'numeric',
@@ -544,9 +546,9 @@ function BillingSettingsContent() {
         <section className="settings-card settings-card-billing-plans" style={{ padding: 24, borderRadius: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
             <div>
-              <h3 style={{ marginBottom: 6 }}>Choose your plan</h3>
+              <h3 style={{ marginBottom: 6 }}>{c.choosePlan}</h3>
               <p className="muted" style={{ margin: 0 }}>
-                Upgrade, switch, or review available plans.
+                {c.choosePlanBody}
               </p>
             </div>
           </div>

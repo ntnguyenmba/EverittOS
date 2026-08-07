@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
+import { getAiUpgradeCopy } from '@/lib/i18n/ui-chrome-copy';
 import { resolveBillingVisibility } from '@/lib/platform/billing';
 
 type AiUpgradeModalProps = {
@@ -10,6 +12,9 @@ type AiUpgradeModalProps = {
 };
 
 export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
+  const { locale } = useTranslation();
+  const c = getAiUpgradeCopy(locale);
+
   if (!open) return null;
 
   const billingVisibility = resolveBillingVisibility();
@@ -25,11 +30,11 @@ export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 id="ai-unavailable-title">Ask Everitt</h2>
-          <p className="muted">This feature is unavailable for this account.</p>
+          <h2 id="ai-unavailable-title">{c.askEveritt}</h2>
+          <p className="muted">{c.unavailable}</p>
           <div className="ai-modal-actions">
             <button type="button" className="btn btn-primary" onClick={onClose}>
-              Close
+              {c.close}
             </button>
           </div>
         </div>
@@ -48,10 +53,8 @@ export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="ai-upgrade-title">Everitt AI</h2>
-        <p className="muted">
-          Ask Everitt search is included on every plan. Everitt AI writing, summarizing, and analysis is available on Business and Enterprise plans.
-        </p>
+        <h2 id="ai-upgrade-title">{c.everittAi}</h2>
+        <p className="muted">{c.body}</p>
         <div className="ai-modal-actions">
           {billingVisibility.showUpgradeActions ? (
             <Link
@@ -59,11 +62,11 @@ export function AiUpgradeModal({ open, onClose, plan }: AiUpgradeModalProps) {
               href={`/settings/billing?upgrade=${upgradePlan}&reason=ai`}
               onClick={onClose}
             >
-              View plans
+              {c.viewPlans}
             </Link>
           ) : null}
           <button type="button" className={billingVisibility.showUpgradeActions ? 'btn' : 'btn btn-primary'} onClick={onClose}>
-            {billingVisibility.showUpgradeActions ? 'Not now' : 'Close'}
+            {billingVisibility.showUpgradeActions ? c.notNow : c.close}
           </button>
         </div>
       </div>

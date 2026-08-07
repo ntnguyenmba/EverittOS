@@ -1,13 +1,34 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from '@/components/locale-provider';
+import { normalizeLocale, type Locale } from '@/lib/i18n/config';
 
-function jobCountLabel(count: number, kind: 'current' | 'past') {
+const SECTION_TITLES: Record<Locale, { current: string; past: string }> = {
+  en: { current: 'Current Jobs', past: 'Past Jobs' },
+  es: { current: 'Trabajos actuales', past: 'Trabajos anteriores' },
+  vi: { current: 'Công việc hiện tại', past: 'Công việc trước đây' }
+};
+
+function jobCountLabel(count: number, kind: 'current' | 'past', locale: Locale) {
+  if (locale === 'es') {
+    const noun = count === 1 ? 'trabajo' : 'trabajos';
+    const adj = kind === 'current' ? (count === 1 ? 'actual' : 'actuales') : count === 1 ? 'anterior' : 'anteriores';
+    return `${count} ${noun} ${adj}`;
+  }
+  if (locale === 'vi') {
+    return `${count} công việc ${kind === 'current' ? 'hiện tại' : 'trước đây'}`;
+  }
   const noun = count === 1 ? 'job' : 'jobs';
   return `${count} ${kind} ${noun}`;
 }
 
-function formatSectionSummary(section: Element | null, title: string, kind: 'current' | 'past') {
+function formatSectionSummary(
+  section: Element | null,
+  title: string,
+  kind: 'current' | 'past',
+  locale: Locale
+) {
   const summary = section?.querySelector('summary');
   const heading = summary?.querySelector('h2');
   if (!summary || !heading) return false;
@@ -35,7 +56,7 @@ function formatSectionSummary(section: Element | null, title: string, kind: 'cur
     subtitle.className = 'muted portal-job-section-count';
     headingGroup.appendChild(subtitle);
   }
-  subtitle.textContent = jobCountLabel(count, kind);
+  subtitle.textContent = jobCountLabel(count, kind, locale);
 
   if (directCount && directCount !== subtitle) directCount.remove();
   if (nestedCount && nestedCount !== subtitle) nestedCount.remove();
@@ -43,6 +64,10 @@ function formatSectionSummary(section: Element | null, title: string, kind: 'cur
 }
 
 export function ContractorStaticSections() {
+  const { locale } = useTranslation();
+  const normalized = normalizeLocale(locale);
+  const titles = SECTION_TITLES[normalized];
+
   useEffect(() => {
     let attempts = 0;
     let timer: number | undefined;
@@ -56,10 +81,10 @@ export function ContractorStaticSections() {
       const clientPast = document.querySelector('.client-portal-jobs #history');
 
       const changed = [
-        formatSectionSummary(contractorCurrent, 'Current Jobs', 'current'),
-        formatSectionSummary(contractorPast, 'Past Jobs', 'past'),
-        formatSectionSummary(clientCurrent, 'Current Jobs', 'current'),
-        formatSectionSummary(clientPast, 'Past Jobs', 'past')
+        formatSectionSummary(contractorCurrent, titles.current, 'current', normalized),
+        formatSectionSummary(contractorPast, titles.past, 'past', normalized),
+        formatSectionSummary(clientCurrent, titles.current, 'current', normalized),
+        formatSectionSummary(clientPast, titles.past, 'past', normalized)
       ].some(Boolean);
 
       if (!changed && attempts < 30) {
@@ -72,7 +97,7 @@ export function ContractorStaticSections() {
     return () => {
       if (timer) window.clearTimeout(timer);
     };
-  }, []);
+  }, [normalized, titles.current, titles.past]);
 
   return null;
 }

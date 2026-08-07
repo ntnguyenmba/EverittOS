@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FriendlyDateInput } from '@/components/friendly-date-input';
 import { addLocalDays, localToday, wallClockFromTimestamp } from '@/lib/schedule-times';
 import { TIME_ZONE_OPTIONS } from '@/lib/time-zones';
@@ -64,6 +65,33 @@ type SeriesDraft = {
 };
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const copy = {
+  en: {
+    schedule: 'Schedule',
+    recurringSchedule: 'Recurring schedule',
+    scheduleSaved: 'Schedule saved.',
+    edit: 'Edit',
+    editRecurringSchedule: 'Edit recurring schedule',
+    rescheduleThisVisit: 'Reschedule this visit'
+  },
+  es: {
+    schedule: 'Horario',
+    recurringSchedule: 'Horario recurrente',
+    scheduleSaved: 'Horario guardado.',
+    edit: 'Editar',
+    editRecurringSchedule: 'Editar horario recurrente',
+    rescheduleThisVisit: 'Reprogramar esta visita'
+  },
+  vi: {
+    schedule: 'Lịch',
+    recurringSchedule: 'Lịch lặp lại',
+    scheduleSaved: 'Đã lưu lịch.',
+    edit: 'Sửa',
+    editRecurringSchedule: 'Sửa lịch lặp lại',
+    rescheduleThisVisit: 'Đổi lịch lượt ghé này'
+  }
+} as const;
 
 function addHours(time: string, hours: number) {
   const [h, m] = time.split(':').map(Number);
@@ -150,6 +178,8 @@ function draftFromSeries(series: RecurringSeries): SeriesDraft {
 
 export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
   const { jobId, scheduledStart, scheduledEnd, startDate, dueDate, canManage, onSaved, timezone } = props;
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [visits, setVisits] = useState<JobVisitRow[]>([fallbackVisit(props)]);
   const [timeZone, setTimeZone] = useState(timezone || '');
   const [loading, setLoading] = useState(true);
@@ -266,7 +296,7 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
       feedback.error(json.error || 'The schedule could not be saved. Please try again.');
       return;
     }
-    feedback.success(json.message || (isRecurring ? 'This visit was rescheduled. Other visits were not changed.' : 'Schedule saved.'));
+    feedback.success(json.message || (isRecurring ? 'This visit was rescheduled. Other visits were not changed.' : c.scheduleSaved));
     setEditing(false);
     setFromDatabase(cleanVisits.length > 0);
     onSaved?.();
@@ -313,13 +343,13 @@ export function JobVisitsSchedule(props: JobVisitsScheduleProps) {
     <div className="job-visits form">
       <div className="job-visits-head">
         <div className="job-visits-title">
-          <h3>{isRecurring ? 'Recurring schedule' : 'Schedule'}</h3>
+          <h3>{isRecurring ? c.recurringSchedule : c.schedule}</h3>
           <p className="muted">{isRecurring ? 'The recurring rule creates future visits. Rescheduling changes only this visit.' : 'Set each visit date and time, then save.'}</p>
         </div>
         {canManage ? (
           <div className="button-row" style={{ flexWrap: 'wrap' }}>
-            {isRecurring && series ? <button className="btn btn-primary" type="button" onClick={() => setEditingSeries((value) => !value)}>Edit recurring schedule</button> : null}
-            {hasSavedSchedule && !editing ? <button className="btn" type="button" onClick={() => setEditing(true)}>{isRecurring ? 'Reschedule this visit' : 'Edit'}</button> : null}
+            {isRecurring && series ? <button className="btn btn-primary" type="button" onClick={() => setEditingSeries((value) => !value)}>{c.editRecurringSchedule}</button> : null}
+            {hasSavedSchedule && !editing ? <button className="btn" type="button" onClick={() => setEditing(true)}>{isRecurring ? c.rescheduleThisVisit : c.edit}</button> : null}
             {!isRecurring ? <button className="btn job-visits-add" type="button" onClick={addVisit}>Add visit</button> : null}
           </div>
         ) : null}

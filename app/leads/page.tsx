@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { CUSTOMER_LIST_SELECT, customerDisplayName, type CustomerRecord } from '@/lib/customer-record';
 import { OPEN_LEAD_STAGES, leadPipelineLabel, normalizeLeadStage } from '@/lib/lead-pipeline';
@@ -18,15 +19,32 @@ import { supabase } from '@/lib/supabase';
 
 type RequestFilter = 'open' | 'closed' | 'archived';
 
-const FILTER_TITLES: Record<RequestFilter, string> = {
-  open: 'Open requests',
-  closed: 'Not booked',
-  archived: 'Archived'
-};
+const copy = {
+  en: {
+    filterTitles: { open: 'Open requests', closed: 'Not booked', archived: 'Archived' },
+    archived: 'Archived',
+    archive: 'Archive',
+    archiveConfirm: 'Archive {name}? You can reopen it later.'
+  },
+  es: {
+    filterTitles: { open: 'Solicitudes abiertas', closed: 'No reservado', archived: 'Archivadas' },
+    archived: 'Archivadas',
+    archive: 'Archivar',
+    archiveConfirm: '¿Archivar {name}? Puede reabrirlo más tarde.'
+  },
+  vi: {
+    filterTitles: { open: 'Yêu cầu đang mở', closed: 'Chưa đặt', archived: 'Đã lưu trữ' },
+    archived: 'Đã lưu trữ',
+    archive: 'Lưu trữ',
+    archiveConfirm: 'Lưu trữ {name}? Bạn có thể mở lại sau.'
+  }
+} as const;
 
 export default function LeadsPage() {
   const router = useRouter();
   const appFeedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [leads, setLeads] = useState<CustomerRecord[]>([]);
@@ -137,7 +155,7 @@ export default function LeadsPage() {
 
   async function archiveLead(id: string, name: string) {
     if (removingId || updatingStageId) return;
-    if (!window.confirm(`Archive ${name}? You can reopen it later.`)) return;
+    if (!window.confirm(c.archiveConfirm.replace('{name}', name))) return;
     setRemovingId(id);
     const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
@@ -191,7 +209,7 @@ export default function LeadsPage() {
 
       <div className="card">
         <div className="inline-actions" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
-          <h3>{FILTER_TITLES[filter]}</h3>
+          <h3>{c.filterTitles[filter]}</h3>
           <div className="inline-actions">
             <button type="button" className={`btn btn-sm ${filter === 'open' ? 'btn-primary' : ''}`} onClick={() => setFilter('open')}>
               Open
@@ -200,7 +218,7 @@ export default function LeadsPage() {
               Not booked
             </button>
             <button type="button" className={`btn btn-sm ${filter === 'archived' ? 'btn-primary' : ''}`} onClick={() => setFilter('archived')}>
-              Archived
+              {c.archived}
             </button>
           </div>
         </div>
@@ -280,7 +298,7 @@ export default function LeadsPage() {
                     disabled={busy}
                     onClick={() => void archiveLead(lead.id, customerDisplayName(lead))}
                   >
-                    {removingId === lead.id ? FEEDBACK.loading : 'Archive'}
+                    {removingId === lead.id ? FEEDBACK.loading : c.archive}
                   </button>
                 ) : null}
               </div>

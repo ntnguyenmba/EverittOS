@@ -1,18 +1,19 @@
 'use client';
 
+import { useTranslation } from '@/components/locale-provider';
+import { getSessionIdleCopy } from '@/lib/i18n/ui-chrome-copy';
+
 type SessionIdleWarningProps = {
   open: boolean;
   secondsRemaining: number;
   onStaySignedIn: () => void;
 };
 
-export function SessionIdleWarning({ open, secondsRemaining, onStaySignedIn }: SessionIdleWarningProps) {
-  if (!open) return null;
+export function SessionIdleWarning({ open, secondsRemaining: _secondsRemaining, onStaySignedIn }: SessionIdleWarningProps) {
+  const { locale } = useTranslation();
+  const c = getSessionIdleCopy(locale);
 
-  const minutes = Math.floor(secondsRemaining / 60);
-  const seconds = secondsRemaining % 60;
-  const timeLabel =
-    minutes > 0 ? `${minutes}:${String(seconds).padStart(2, '0')}` : `${secondsRemaining} seconds`;
+  if (!open) return null;
 
   return (
     <div
@@ -23,14 +24,13 @@ export function SessionIdleWarning({ open, secondsRemaining, onStaySignedIn }: S
       aria-describedby="session-idle-desc"
     >
       <div className="card session-idle-dialog">
-        <h3 id="session-idle-title">Session expiring soon</h3>
+        <h3 id="session-idle-title">{c.title}</h3>
         <p id="session-idle-desc" className="muted">
-          You will be signed out in {timeLabel} due to inactivity. Move your mouse, type, or tap Stay signed in to
-          continue working.
+          {c.body}
         </p>
         <div className="inline-actions" style={{ marginTop: 16 }}>
           <button type="button" className="btn btn-primary" onClick={onStaySignedIn}>
-            Stay signed in
+            {c.staySignedIn}
           </button>
         </div>
       </div>

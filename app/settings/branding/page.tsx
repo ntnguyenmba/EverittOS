@@ -2,6 +2,7 @@
 
 import { AppShell } from '@/components/app-shell';
 import { SettingsShell } from '@/components/settings/settings-shell';
+import { useTranslation } from '@/components/locale-provider';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { limitsForPlan } from '@/lib/everittos-limits';
@@ -13,8 +14,70 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const copy = {
+  en: {
+    loading: 'Loading branding...',
+    description: 'Company logo, colors, and support contact for client-facing surfaces.',
+    ownersOnly: 'Only company owners and admins can edit branding.',
+    planWarning: 'Custom branding on reports and the customer dashboard requires Growth or higher.',
+    companyBranding: 'Company branding',
+    companyName: 'Company name',
+    supportEmail: 'Support email',
+    primaryColor: 'Primary color',
+    secondaryColor: 'Secondary color',
+    companyLogo: 'Company logo',
+    logoPreviewAlt: 'Company logo preview',
+    logoSaved: 'Logo saved. Refresh if preview does not appear.',
+    appliesNote: 'Branding applies to the customer dashboard, PDF reports, invite emails, and the dashboard header.',
+    save: 'Save branding',
+    companyPreview: 'Company preview',
+    supportLabel: 'Support:',
+    brandedButton: 'Branded button'
+  },
+  es: {
+    loading: 'Cargando marca...',
+    description: 'Logotipo, colores y contacto de soporte de la empresa para superficies orientadas al cliente.',
+    ownersOnly: 'Solo los propietarios y administradores de la empresa pueden editar la marca.',
+    planWarning: 'La marca personalizada en informes y el panel del cliente requiere Growth o superior.',
+    companyBranding: 'Marca de la empresa',
+    companyName: 'Nombre de la empresa',
+    supportEmail: 'Correo de soporte',
+    primaryColor: 'Color principal',
+    secondaryColor: 'Color secundario',
+    companyLogo: 'Logotipo de la empresa',
+    logoPreviewAlt: 'Vista previa del logotipo de la empresa',
+    logoSaved: 'Logotipo guardado. Actualice si la vista previa no aparece.',
+    appliesNote: 'La marca se aplica al panel del cliente, informes PDF, correos de invitación y el encabezado del panel.',
+    save: 'Guardar marca',
+    companyPreview: 'Vista previa de la empresa',
+    supportLabel: 'Soporte:',
+    brandedButton: 'Botón con marca'
+  },
+  vi: {
+    loading: 'Đang tải thương hiệu...',
+    description: 'Logo công ty, màu sắc và email hỗ trợ cho các bề mặt hướng tới khách hàng.',
+    ownersOnly: 'Chỉ chủ sở hữu và quản trị viên công ty mới có thể chỉnh sửa thương hiệu.',
+    planWarning: 'Thương hiệu tùy chỉnh trên báo cáo và bảng điều khiển khách hàng yêu cầu gói Growth trở lên.',
+    companyBranding: 'Thương hiệu công ty',
+    companyName: 'Tên công ty',
+    supportEmail: 'Email hỗ trợ',
+    primaryColor: 'Màu chính',
+    secondaryColor: 'Màu phụ',
+    companyLogo: 'Logo công ty',
+    logoPreviewAlt: 'Xem trước logo công ty',
+    logoSaved: 'Đã lưu logo. Làm mới nếu bản xem trước không xuất hiện.',
+    appliesNote: 'Thương hiệu áp dụng cho bảng điều khiển khách hàng, báo cáo PDF, email mời và tiêu đề bảng điều khiển.',
+    save: 'Lưu thương hiệu',
+    companyPreview: 'Xem trước công ty',
+    supportLabel: 'Hỗ trợ:',
+    brandedButton: 'Nút mang thương hiệu'
+  }
+} as const;
+
 export default function BrandingSettingsPage() {
   const router = useRouter();
+  const { t, locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const { busy: saving, run, buttonLabel } = useAsyncAction({ successMessage: 'saved' });
   const { busy: uploading, run: runUpload } = useAsyncAction({ successMessage: 'uploadComplete' });
   const [plan, setPlan] = useState<EverittosPlan>('free');
@@ -111,45 +174,45 @@ export default function BrandingSettingsPage() {
   if (loading) {
     return (
       <AppShell plan={plan} role={role}>
-        <p>Loading branding...</p>
+        <p>{c.loading}</p>
       </AppShell>
     );
   }
 
   return (
-    <SettingsShell plan={plan} role={role} title="Branding" description="Company logo, colors, and support contact for client-facing surfaces.">
+    <SettingsShell plan={plan} role={role} title={t('settingsNav.branding')} description={c.description}>
       {!canManageOrganizationSettings(role) ? (
         <div className="settings-card">
-          <p>Only company owners and admins can edit branding.</p>
+          <p>{c.ownersOnly}</p>
         </div>
       ) : null}
 
       {!brandingEnabled ? (
-        <div className="settings-warning">Custom branding on reports and the customer dashboard requires Growth or higher.</div>
+        <div className="settings-warning">{c.planWarning}</div>
       ) : null}
 
       <form className="settings-card" onSubmit={saveBranding}>
-        <h3>Company branding</h3>
+        <h3>{c.companyBranding}</h3>
         <label className="auth-field">
-          <span>Company name</span>
+          <span>{c.companyName}</span>
           <input className="input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
         </label>
         <label className="auth-field">
-          <span>Support email</span>
+          <span>{c.supportEmail}</span>
           <input className="input" type="email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
         </label>
         <div className="settings-row">
           <label className="auth-field">
-            <span>Primary color</span>
+            <span>{c.primaryColor}</span>
             <input className="input" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
           </label>
           <label className="auth-field">
-            <span>Secondary color</span>
+            <span>{c.secondaryColor}</span>
             <input className="input" type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} />
           </label>
         </div>
         <label className="auth-field">
-          <span>Company logo</span>
+          <span>{c.companyLogo}</span>
           <input
             className="input"
             type="file"
@@ -162,21 +225,23 @@ export default function BrandingSettingsPage() {
           />
         </label>
         {logoPreviewUrl ? (
-          <img src={logoPreviewUrl} alt="Company logo preview" className="customer-logo-preview" width={96} height={96} />
+          <img src={logoPreviewUrl} alt={c.logoPreviewAlt} className="customer-logo-preview" width={96} height={96} />
         ) : logoPath ? (
-          <p className="muted">Logo saved. Refresh if preview does not appear.</p>
+          <p className="muted">{c.logoSaved}</p>
         ) : null}
-        <p className="muted">Branding applies to the customer dashboard, PDF reports, invite emails, and the dashboard header.</p>
+        <p className="muted">{c.appliesNote}</p>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          {buttonLabel('Save branding', FEEDBACK.loading)}
+          {buttonLabel(c.save, FEEDBACK.loading)}
         </button>
       </form>
 
       <div className="settings-card brand-preview" style={{ ['--brand-primary' as string]: primaryColor, ['--brand-secondary' as string]: secondaryColor }}>
-        <h3 style={{ color: primaryColor }}>{companyName || 'Company preview'}</h3>
-        <p className="muted">Support: {supportEmail || 'support@company.com'}</p>
+        <h3 style={{ color: primaryColor }}>{companyName || c.companyPreview}</h3>
+        <p className="muted">
+          {c.supportLabel} {supportEmail || 'support@company.com'}
+        </p>
         <button type="button" className="btn btn-primary" style={{ background: primaryColor, borderColor: primaryColor }}>
-          Branded button
+          {c.brandedButton}
         </button>
       </div>
     </SettingsShell>

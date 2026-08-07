@@ -188,7 +188,7 @@ export const messages: Messages = {
     },
     activity: {
       title: 'Chưa có hoạt động',
-      description: ''
+      description: 'Hoạt động từ công ty của bạn sẽ xuất hiện tại đây.'
     },
     notifications: {
       title: 'Chưa có thông báo',

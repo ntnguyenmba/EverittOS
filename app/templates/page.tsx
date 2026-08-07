@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
+import { useTranslation } from '@/components/locale-provider';
 import { useAsyncAction } from '@/hooks/use-async-action';
 import { FEEDBACK } from '@/lib/feedback-labels';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -13,9 +14,17 @@ import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import type { EverittTemplate, TemplateCategory } from '@/lib/os-types';
 
+const copy = {
+  en: { deleteConfirm: 'Delete this template?' },
+  es: { deleteConfirm: '¿Eliminar esta plantilla?' },
+  vi: { deleteConfirm: 'Xóa mẫu này?' }
+} as const;
+
 export default function TemplatesPage() {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const { locale } = useTranslation();
+  const c = copy[locale];
   const { busy: saving, runResponse, buttonLabel } = useAsyncAction();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -91,7 +100,7 @@ export default function TemplatesPage() {
   }
 
   async function deleteTemplate(id: string) {
-    if (!confirm('Delete this template?')) return;
+    if (!confirm(c.deleteConfirm)) return;
     const res = await runResponse(() => fetch(`/api/templates/${id}`, { method: 'DELETE' }), 'deleted');
     if (res) void load();
   }
