@@ -26,11 +26,18 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
   const resolvedRole = workspacePlan?.role ?? normalizeRole(role);
   const normalizedRole = normalizeRole(resolvedRole);
-  const isRolePortal = isClientRole(normalizedRole) || isContractorRole(normalizedRole);
+  const isClientPortal = isClientRole(normalizedRole);
+  const isContractorPortal = isContractorRole(normalizedRole);
+  const isRolePortal = isClientPortal || isContractorPortal;
   const showAi = !isRolePortal;
+  const rolePortalClass = isContractorPortal
+    ? ' role-portal-shell role-portal-contractor'
+    : isClientPortal
+      ? ' role-portal-shell role-portal-client'
+      : '';
 
   return (
-    <div className={`dashboard-shell${isRolePortal ? ' role-portal-shell' : ''}`}>
+    <div className={`dashboard-shell${rolePortalClass}`}>
       <div className="dashboard-shell-background" aria-hidden="true" />
       <div className="dashboard-shell-overlay" aria-hidden="true" />
       <UnsavedChangesGuard />
@@ -203,6 +210,54 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           position: relative !important;
           top: auto !important;
           bottom: auto !important;
+        }
+
+        .role-portal-contractor .contractor-dashboard > header.card {
+          padding: 24px !important;
+        }
+
+        .role-portal-contractor .metric-grid > .card {
+          min-height: 116px !important;
+          padding: 18px 20px !important;
+          box-shadow: 0 6px 18px rgba(36, 63, 83, 0.055) !important;
+        }
+
+        .role-portal-contractor .metric-grid > .card h2 {
+          margin-top: 8px !important;
+          line-height: 1 !important;
+        }
+
+        .role-portal-contractor .list-row > span:last-child {
+          display: inline-flex;
+          align-items: center;
+          min-height: 30px;
+          padding: 5px 10px;
+          border: 1px solid rgba(36, 63, 83, 0.16);
+          border-radius: 999px;
+          background: #edf2f5;
+          color: #243f53;
+          font-weight: 700;
+          text-transform: capitalize;
+        }
+
+        .role-portal-client .role-summary-card {
+          min-height: 124px !important;
+        }
+
+        .role-portal-client .client-job-card {
+          padding: 20px !important;
+          box-shadow: 0 6px 18px rgba(36, 63, 83, 0.05) !important;
+        }
+
+        .role-portal-client .client-job-card h3 {
+          margin-bottom: 6px !important;
+        }
+
+        .role-portal-client .status-badge {
+          background: #edf2f5 !important;
+          border-color: rgba(36, 63, 83, 0.16) !important;
+          color: #243f53 !important;
+          font-weight: 700;
         }
 
         .dashboard-shell > .sidebar,
@@ -397,6 +452,49 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
             grid-template-columns: repeat(2, minmax(0, 1fr));
             width: 100%;
           }
+
+          .role-portal-contractor .contractor-dashboard > header.card {
+            padding: 18px !important;
+          }
+
+          .role-portal-contractor .contractor-portal-actions {
+            gap: 10px !important;
+          }
+
+          .role-portal-contractor .contractor-portal-actions .btn {
+            min-height: 58px !important;
+            padding: 12px 14px !important;
+            font-size: 16px !important;
+            font-weight: 750 !important;
+          }
+
+          .role-portal-contractor .contractor-portal-actions .btn:first-child {
+            grid-column: 1 / -1;
+            min-height: 64px !important;
+            font-size: 17px !important;
+          }
+
+          .role-portal-contractor .metric-grid {
+            gap: 10px !important;
+          }
+
+          .role-portal-contractor .metric-grid > .card {
+            min-height: 96px !important;
+            padding: 16px 18px !important;
+          }
+
+          .role-portal-contractor .list-row {
+            gap: 12px !important;
+            padding-block: 16px !important;
+          }
+
+          .role-portal-client .role-dashboard-topbar {
+            gap: 12px !important;
+          }
+
+          .role-portal-client .client-job-card {
+            padding: 18px !important;
+          }
         }
 
         @media (max-width: 680px) {
@@ -417,6 +515,14 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           .role-portal-shell .contractor-portal-actions,
           .role-portal-shell .portal-client-nav {
             grid-template-columns: minmax(0, 1fr);
+          }
+
+          .role-portal-contractor .contractor-portal-actions .btn:first-child {
+            grid-column: auto;
+          }
+
+          .role-portal-client .role-summary-card {
+            min-height: 108px !important;
           }
         }
       `}</style>
