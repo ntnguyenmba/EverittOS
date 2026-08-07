@@ -22,7 +22,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Customers', href: '/customers' },
   { label: 'Team', href: '/people' },
   { label: 'Expenses', href: '/expenses' },
-  { label: 'Business Playbook', href: '/knowledge' },
+  { label: 'Playbook', href: '/knowledge' },
   { label: 'Settings', href: '/settings' }
 ];
 
