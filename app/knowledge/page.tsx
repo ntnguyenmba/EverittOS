@@ -74,7 +74,7 @@ export default function KnowledgePage() {
     setEditingId(null);
   }
 
-  function useStarter(type: PlaybookDocumentType) {
+  function applyStarter(type: PlaybookDocumentType) {
     setCategory(type);
     setTitle(copy.starterTitles[type]);
     setBody(copy.starterBodies[type]);
@@ -200,7 +200,7 @@ export default function KnowledgePage() {
               <p className="muted" style={{ marginBottom: 8 }}>{copy.starterLabel}</p>
               <div className="settings-actions">
                 {DOCUMENT_TYPES.map((type) => (
-                  <button key={type} type="button" className="btn" onClick={() => useStarter(type)}>
+                  <button key={type} type="button" className="btn" onClick={() => applyStarter(type)}>
                     {copy.starterAction}: {copy.types[type]}
                   </button>
                 ))}
