@@ -1,4 +1,6 @@
 import type { Messages } from '@/lib/i18n/types';
+import type { Locale } from '@/lib/i18n/config';
+import { getPlaybookCopy } from '@/lib/i18n/playbook-copy';
 
 const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/dashboard': 'commandCenter',
@@ -36,7 +38,8 @@ const NAV_HREF_KEYS: Record<string, keyof Messages['nav']> = {
   '/portal/contractor': 'contractorPortal'
 };
 
-export function navLabel(href: string, t: (key: string) => string, fallback: string): string {
+export function navLabel(href: string, t: (key: string) => string, fallback: string, locale?: Locale): string {
+  if (href === '/knowledge' && locale) return getPlaybookCopy(locale).navLabel;
   const key = NAV_HREF_KEYS[href];
   return key ? t(`nav.${key}`) : fallback;
 }
