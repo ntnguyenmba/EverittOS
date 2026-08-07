@@ -84,11 +84,11 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         }
 
         .dashboard-shell.role-portal-shell {
-          background: #f1ede6;
+          background: #e8eef2;
         }
 
         .role-portal-shell .dashboard-shell-background {
-          background: #f1ede6;
+          background: #e8eef2;
           opacity: 1;
           filter: none;
           transform: none;
@@ -96,8 +96,8 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
 
         .role-portal-shell .dashboard-shell-overlay {
           background:
-            radial-gradient(circle at 18% 8%, rgba(176, 151, 121, 0.12), transparent 32%),
-            linear-gradient(180deg, rgba(250, 248, 244, 0.58), rgba(235, 229, 219, 0.5));
+            radial-gradient(circle at 18% 6%, rgba(74, 101, 119, 0.1), transparent 34%),
+            linear-gradient(180deg, rgba(246, 249, 250, 0.72), rgba(222, 231, 236, 0.68));
         }
 
         .role-portal-shell .app-page-content {
@@ -107,10 +107,16 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         .role-portal-shell .card,
         .role-portal-shell .role-summary-card,
         .role-portal-shell .client-job-card {
-          border: 1px solid rgba(78, 67, 57, 0.12) !important;
-          border-radius: 18px !important;
-          background: rgba(255, 253, 249, 0.96) !important;
-          box-shadow: 0 12px 30px rgba(78, 67, 57, 0.07) !important;
+          border: 1px solid rgba(36, 63, 83, 0.13) !important;
+          border-radius: 16px !important;
+          background: rgba(252, 253, 253, 0.97) !important;
+          box-shadow: 0 10px 26px rgba(36, 63, 83, 0.07) !important;
+        }
+
+        .role-portal-shell .eyebrow {
+          border-color: rgba(36, 63, 83, 0.16) !important;
+          background: #edf2f5 !important;
+          color: #243f53 !important;
         }
 
         .role-portal-shell .btn,
@@ -122,8 +128,14 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
         .role-portal-shell .button-row,
         .role-portal-shell .role-dashboard-topbar,
         .role-portal-shell .portal-client-nav {
-          align-items: center !important;
+          align-items: stretch !important;
           gap: 10px !important;
+        }
+
+        .role-portal-shell .contractor-portal-actions {
+          display: grid !important;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          width: min(720px, 100%);
         }
 
         .role-portal-shell .button-row .btn,
@@ -135,17 +147,39 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           align-items: center;
           justify-content: center;
           box-sizing: border-box;
+          margin: 0 !important;
         }
 
-        .role-portal-shell .role-summary-grid,
+        .role-portal-shell .portal-client-nav {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          width: 100%;
+        }
+
+        .role-portal-shell .role-summary-grid {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 16px !important;
+          align-items: stretch;
+        }
+
         .role-portal-shell .metric-grid {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          gap: 16px !important;
           align-items: stretch;
         }
 
         .role-portal-shell .role-summary-card,
         .role-portal-shell .metric-grid > .card {
-          height: 100%;
-          min-height: 118px;
+          width: 100% !important;
+          min-width: 0 !important;
+          height: 100% !important;
+          min-height: 140px !important;
+          box-sizing: border-box !important;
+          display: flex !important;
+          flex-direction: column;
+          justify-content: center;
         }
 
         .dashboard-shell > .sidebar,
@@ -307,12 +341,12 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
 
           .role-portal-shell .dashboard-shell-background {
-            background: #f1ede6;
+            background: #e8eef2;
             opacity: 1;
           }
 
           .role-portal-shell .dashboard-shell-overlay {
-            background: rgba(241, 237, 230, 0.72);
+            background: rgba(232, 238, 242, 0.78);
           }
 
           .dashboard-shell .app-page-top {
@@ -329,6 +363,19 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
         }
 
+        @media (max-width: 760px) {
+          .role-portal-shell .metric-grid,
+          .role-portal-shell .role-summary-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .role-portal-shell .contractor-portal-actions,
+          .role-portal-shell .portal-client-nav {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+          }
+        }
+
         @media (max-width: 680px) {
           .dashboard-shell .dashboard-revenue-grid,
           .dashboard-shell .role-dashboard > .stats-grid,
@@ -340,6 +387,13 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           .role-portal-shell .button-row,
           .role-portal-shell .role-dashboard-topbar {
             align-items: stretch !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .role-portal-shell .contractor-portal-actions,
+          .role-portal-shell .portal-client-nav {
+            grid-template-columns: minmax(0, 1fr);
           }
         }
       `}</style>

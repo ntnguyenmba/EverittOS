@@ -32,22 +32,25 @@ type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
 
 const copy = {
   en: {
-    today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All',
+    today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All', timePeriod: 'Time period',
     upcoming: 'Upcoming jobs', completed: 'Completed jobs', current: 'Upcoming', past: 'Completed',
     noUpcoming: 'No upcoming jobs.', noCompleted: 'No completed jobs.',
-    serviceAmount: 'Price', status: 'Status', dateNotSet: 'Date not set'
+    serviceAmount: 'Price', status: 'Status', dateNotSet: 'Date not set',
+    statuses: { scheduled: 'scheduled', completed: 'completed', complete: 'completed', finished: 'completed', done: 'completed', cancelled: 'cancelled', canceled: 'cancelled' }
   },
   es: {
-    today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo',
+    today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo', timePeriod: 'Período',
     upcoming: 'Próximos trabajos', completed: 'Trabajos terminados', current: 'Próximos', past: 'Terminados',
     noUpcoming: 'No hay trabajos próximos.', noCompleted: 'No hay trabajos terminados.',
-    serviceAmount: 'Precio', status: 'Estado', dateNotSet: 'Fecha no definida'
+    serviceAmount: 'Precio', status: 'Estado', dateNotSet: 'Fecha no definida',
+    statuses: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', finished: 'terminado', done: 'terminado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
-    today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả',
+    today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả', timePeriod: 'Khoảng thời gian',
     upcoming: 'Công việc sắp tới', completed: 'Công việc đã xong', current: 'Sắp tới', past: 'Đã xong',
     noUpcoming: 'Không có công việc sắp tới.', noCompleted: 'Không có công việc đã xong.',
-    serviceAmount: 'Giá', status: 'Trạng thái', dateNotSet: 'Chưa có ngày'
+    serviceAmount: 'Giá', status: 'Trạng thái', dateNotSet: 'Chưa có ngày',
+    statuses: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', finished: 'đã xong', done: 'đã xong', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
 } as const;
 
@@ -180,6 +183,11 @@ export default function ClientPortalJobsPage() {
     return { current, history };
   }, [visibleJobs]);
 
+  function statusLabel(job: ClientJob) {
+    const key = normalizedStatus(job) as keyof typeof c.statuses;
+    return c.statuses[key] || normalizedStatus(job).replace(/_/g, ' ');
+  }
+
   function renderJobCard(job: ClientJob) {
     const date = jobDate(job, localeCode);
     const time = jobTime(job, localeCode);
@@ -193,7 +201,7 @@ export default function ClientPortalJobsPage() {
           {location ? <p className="client-job-secondary">{location}</p> : null}
         </div>
         <div className="client-job-card-meta">
-          {job.status ? <span className="status-badge">{job.status.replace(/_/g, ' ')}</span> : null}
+          {job.status ? <span className="status-badge">{statusLabel(job)}</span> : null}
           {amount ? <strong>{c.serviceAmount}: {amount}</strong> : null}
         </div>
       </article>
@@ -214,7 +222,7 @@ export default function ClientPortalJobsPage() {
   return (
     <AuthenticatedSection role="client" className="client-portal-jobs role-dashboard-minimal">
       <div className="role-dashboard-topbar">
-        <div className="role-period-filter" aria-label="Time period">
+        <div className="role-period-filter" aria-label={c.timePeriod}>
           {(['today', 'week', 'month', 'year', 'all'] as TimeRange[]).map((item) => (
             <button key={item} type="button" className={range === item ? 'is-active' : ''} onClick={() => setRange(item)}>{c[item]}</button>
           ))}
