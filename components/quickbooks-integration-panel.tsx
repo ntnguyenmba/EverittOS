@@ -283,7 +283,15 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   const connected = connectionStatus === 'connected' || syncing;
   const needsReconnect = connectionStatus === 'error' || Boolean(status?.needsReconnect || status?.connection?.needsReconnect);
   const statusText = loading ? copy.checking : unauthorized ? copy.signInRequired : loadError ? copy.failed : syncing ? copy.syncing : connected ? (syncCompleted ? copy.synced : copy.connected) : needsReconnect ? copy.reconnectRequired : status?.configured ? copy.disconnected : status ? copy.notConfigured : copy.notChecked;
-  const showConnect = canManage && !connected;
+
+  if (!canManage) {
+    return <div>
+      <p style={{ marginBottom: 10 }}>QuickBooks: <strong>{statusText}</strong></p>
+      {status?.connection?.last_sync_at ? <p className="muted">{copy.lastSync} {formatRelativeTime(status.connection.last_sync_at, copy, locale)}.</p> : connected && !syncing ? <p className="muted">{copy.noSync}</p> : null}
+    </div>;
+  }
+
+  const showConnect = !connected;
   const realmMasked = maskRealmId(status?.connection?.realm_id);
   const recentLogs = status?.recentLogs || [];
 
@@ -298,8 +306,8 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     <div className="settings-actions" style={{ marginTop: 12 }}>
       {unauthorized ? <a className="btn btn-primary" href="/login?next=/settings">{copy.signInAgain}</a> : showConnect ? <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">{needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}</a> : null}
       <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>{loading ? copy.checking : copy.refresh}</button>
-      {canManage && connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing || busy ? copy.syncing : syncCompleted ? copy.synced : copy.syncNow}</button> : null}
-      {canManage && (connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? copy.disconnecting : t('pages.quickbooks.disconnect')}</button> : null}
+      {connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing || busy ? copy.syncing : syncCompleted ? copy.synced : copy.syncNow}</button> : null}
+      {(connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? copy.disconnecting : t('pages.quickbooks.disconnect')}</button> : null}
     </div>
 
     {status?.connection?.company_name ? <p className="muted" style={{ marginTop: 12 }}>{connected ? copy.connectedCompany : copy.savedCompany}: <strong>{status.connection.company_name}</strong>{realmMasked ? ` · Realm ${realmMasked}` : ''}</p> : null}
