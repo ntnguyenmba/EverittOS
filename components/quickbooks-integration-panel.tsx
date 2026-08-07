@@ -162,11 +162,6 @@ function formatRelativeTime(value: string, copy: Copy, locale: string): string {
   return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function maskRealmId(realmId: string | null | undefined) {
-  if (!realmId) return null;
-  return realmId.length <= 6 ? realmId : `${realmId.slice(0, 3)}…${realmId.slice(-3)}`;
-}
-
 export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }) {
   const searchParams = useSearchParams();
   const { t, locale } = useTranslation();
@@ -292,8 +287,6 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
   }
 
   const showConnect = !connected;
-  const realmMasked = maskRealmId(status?.connection?.realm_id);
-  const recentLogs = status?.recentLogs || [];
 
   return <div>
     {!status && !loading && !loadError ? <p className="muted">{copy.connectHint}</p> : null}
@@ -303,30 +296,14 @@ export function QuickBooksIntegrationPanel({ canManage }: { canManage: boolean }
     {status?.setupMessage && !connected ? <p className="muted">{status.setupMessage}</p> : null}
     {needsReconnect && !loadError ? <p className="muted">{copy.resume}</p> : null}
 
-    <div className="settings-actions" style={{ marginTop: 12 }}>
-      {unauthorized ? <a className="btn btn-primary" href="/login?next=/settings">{copy.signInAgain}</a> : showConnect ? <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">{needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}</a> : null}
-      <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>{loading ? copy.checking : copy.refresh}</button>
-      {connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing || busy ? copy.syncing : syncCompleted ? copy.synced : copy.syncNow}</button> : null}
-      {(connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? copy.disconnecting : t('pages.quickbooks.disconnect')}</button> : null}
-    </div>
-
-    {status?.connection?.company_name ? <p className="muted" style={{ marginTop: 12 }}>{connected ? copy.connectedCompany : copy.savedCompany}: <strong>{status.connection.company_name}</strong>{realmMasked ? ` · Realm ${realmMasked}` : ''}</p> : null}
     {status?.connection?.last_sync_at ? <p className="muted">{copy.lastSync} {formatRelativeTime(status.connection.last_sync_at, copy, locale)}.</p> : connected && !syncing ? <p className="muted">{copy.noSync}</p> : null}
     {status?.connection?.last_error && !syncing ? <p className="auth-message auth-message-error" role="alert">{status.connection.last_error}</p> : null}
 
-    <section className="card" style={{ marginTop: 16, padding: 16 }} aria-labelledby="quickbooks-difference-title">
-      <h4 id="quickbooks-difference-title" style={{ marginBottom: 6 }}>{copy.accountingTitle}</h4>
-      <p className="muted" style={{ marginTop: 0 }}>{copy.accountingIntro}</p>
-      <p style={{ marginBottom: 4 }}><strong>{copy.sentTitle}</strong></p><p className="muted" style={{ marginTop: 0 }}>{copy.sentItems}</p>
-      <p style={{ marginBottom: 4 }}><strong>{copy.staysTitle}</strong></p><p className="muted" style={{ marginTop: 0 }}>{copy.staysItems}</p>
-      <p className="muted" style={{ marginBottom: 0 }}>{copy.differenceNote}</p>
-    </section>
-
-    <div style={{ marginTop: 16 }}>
-      <h4 style={{ marginBottom: 6 }}>{copy.currentSync}</h4>
-      <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}><li>{copy.exportLine}</li><li>{copy.importLine}</li><li>{copy.reconcileLine}</li></ul>
+    <div className="settings-actions" style={{ marginTop: 12 }}>
+      {unauthorized ? <a className="btn btn-primary" href="/login?next=/settings">{copy.signInAgain}</a> : showConnect ? <a className="btn btn-primary" href="/api/integrations/quickbooks/connect">{needsReconnect ? t('pages.quickbooks.reconnect') : t('pages.quickbooks.connect')}</a> : null}
+      {!connected && !unauthorized ? <button type="button" className="btn" disabled={loading || busy} onClick={() => void load()}>{loading ? copy.checking : copy.refresh}</button> : null}
+      {connected ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void syncNow()}>{syncing || busy ? copy.syncing : syncCompleted ? copy.synced : copy.syncNow}</button> : null}
+      {(connected || needsReconnect) ? <button type="button" className="btn" disabled={busy || loading || syncing} onClick={() => void disconnect()}>{busy ? copy.disconnecting : t('pages.quickbooks.disconnect')}</button> : null}
     </div>
-
-    {recentLogs.length ? <details style={{ marginTop: 16 }}><summary><strong>{copy.recentActivity}</strong></summary><ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>{recentLogs.map((log, index) => <li key={log.id || `${log.created_at}-${index}`} className="muted">{(log.created_at || '').slice(0, 16).replace('T', ' ')} · {log.entity_type || 'item'} · {log.action || 'sync'} · <strong>{log.status || 'unknown'}</strong>{log.error_message ? ` — ${log.error_message}` : ''}</li>)}</ul></details> : null}
   </div>;
 }
