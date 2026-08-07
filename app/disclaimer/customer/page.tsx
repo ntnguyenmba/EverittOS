@@ -1,41 +1,16 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
+
+const copy = {
+  en: { title: 'Customer Portal Disclaimer', body: ['The customer portal displays information entered or shared by the service provider. Appointment times, estimates, invoices, photos, reports, and job updates may change as work progresses. EverittOS provides the software used to display this information but is not the company performing the service unless specifically stated.', 'Questions about work, pricing, refunds, warranties, or service quality should be directed to the service provider. EverittOS does not provide legal, tax, accounting, employment, insurance, financial, or regulatory advice.', 'Calendar events are provided for convenience. Confirm appointment details in EverittOS because external calendar updates may be delayed or affected by provider settings.'], general: 'General disclaimer', terms: 'Terms of Service', privacy: 'Privacy Policy', portal: 'Customer portal' },
+  es: { title: 'Aviso del portal del cliente', body: ['El portal del cliente muestra información ingresada o compartida por el proveedor de servicios. Horarios, estimaciones, facturas, fotos, informes y actualizaciones pueden cambiar mientras avanza el trabajo. EverittOS proporciona el software para mostrar esta información, pero no es la empresa que presta el servicio salvo que se indique expresamente.', 'Las preguntas sobre trabajo, precios, reembolsos, garantías o calidad del servicio deben dirigirse al proveedor. EverittOS no ofrece asesoría legal, fiscal, contable, laboral, de seguros, financiera ni regulatoria.', 'Los eventos de calendario se ofrecen por comodidad. Confirma los detalles de la cita en EverittOS porque las actualizaciones de calendarios externos pueden retrasarse o depender de la configuración del proveedor.'], general: 'Aviso general', terms: 'Términos de servicio', privacy: 'Política de privacidad', portal: 'Portal del cliente' },
+  vi: { title: 'Tuyên bố cổng khách hàng', body: ['Cổng khách hàng hiển thị thông tin do nhà cung cấp dịch vụ nhập hoặc chia sẻ. Thời gian hẹn, ước tính, hóa đơn, ảnh, báo cáo và cập nhật công việc có thể thay đổi trong quá trình thực hiện. EverittOS cung cấp phần mềm để hiển thị thông tin này nhưng không phải là công ty thực hiện dịch vụ trừ khi được nêu rõ.', 'Các câu hỏi về công việc, giá, hoàn tiền, bảo hành hoặc chất lượng dịch vụ nên được gửi đến nhà cung cấp dịch vụ. EverittOS không cung cấp tư vấn pháp lý, thuế, kế toán, lao động, bảo hiểm, tài chính hoặc quy định.', 'Sự kiện lịch chỉ nhằm mục đích thuận tiện. Hãy xác nhận chi tiết cuộc hẹn trong EverittOS vì cập nhật từ lịch bên ngoài có thể bị chậm hoặc chịu ảnh hưởng bởi cài đặt của nhà cung cấp.'], general: 'Tuyên bố chung', terms: 'Điều khoản dịch vụ', privacy: 'Chính sách quyền riêng tư', portal: 'Cổng khách hàng' }
+} as const;
 
 export default function CustomerDisclaimerPage() {
-  return (
-    <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
-        <h1>Customer Portal Disclaimer</h1>
-        <p>
-          The customer portal displays information entered or shared by the service provider. Appointment times,
-          estimates, invoices, photos, reports, and job updates may change as work progresses. EverittOS provides the
-          software used to display this information but is not the company performing the service unless specifically
-          stated. Questions about work, pricing, refunds, warranties, or service quality should be directed to the
-          service provider.
-        </p>
-        <p>
-          EverittOS does not provide legal, tax, accounting, employment, insurance, financial, or regulatory advice.
-          Confirm important details directly with your service provider.
-        </p>
-        <p>
-          Calendar events are provided for convenience. Confirm appointment details in EverittOS because external
-          calendar updates may be delayed or affected by provider settings.
-        </p>
-
-        <nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
-          <Link className="btn" href="/disclaimer">
-            General disclaimer
-          </Link>
-          <Link className="btn" href="/terms">
-            Terms of Service
-          </Link>
-          <Link className="btn" href="/privacy">
-            Privacy Policy
-          </Link>
-          <Link className="btn" href="/portal/client">
-            Customer portal
-          </Link>
-        </nav>
-      </div>
-    </main>
-  );
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
+  return <main className="section"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}><Link className="btn" href="/disclaimer">{c.general}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/portal/client">{c.portal}</Link></nav></div></main>;
 }

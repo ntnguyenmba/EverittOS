@@ -1,42 +1,16 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
+
+const copy = {
+  en: { title: 'Independent Contractor Disclaimer', body: ['Contractors using EverittOS may be independent contractors of the organization that assigned the work. They are not employees of EverittOS merely because they use this software. EverittOS provides scheduling, communication, job documentation, and payment-status tools.', 'The hiring organization and contractor are responsible for compensation, classification, taxes, insurance, licensing, working conditions, and legal compliance. EverittOS does not guarantee work assignments, payment, employment status, or the accuracy of information entered by an organization.', 'Calendar events are provided for convenience. Confirm appointment details in EverittOS because external calendar updates may be delayed or affected by provider settings.'], general: 'General disclaimer', terms: 'Terms of Service', privacy: 'Privacy Policy', portal: 'Contractor portal' },
+  es: { title: 'Aviso para contratistas independientes', body: ['Los contratistas que usan EverittOS pueden ser contratistas independientes de la organización que asignó el trabajo. No son empleados de EverittOS simplemente por usar este software. EverittOS ofrece herramientas de programación, comunicación, documentación de trabajos y estado de pagos.', 'La organización contratante y el contratista son responsables de compensación, clasificación, impuestos, seguros, licencias, condiciones de trabajo y cumplimiento legal. EverittOS no garantiza asignaciones, pagos, condición laboral ni la exactitud de la información ingresada por una organización.', 'Los eventos de calendario se ofrecen por comodidad. Confirma los detalles de la cita en EverittOS porque las actualizaciones de calendarios externos pueden retrasarse o depender de la configuración del proveedor.'], general: 'Aviso general', terms: 'Términos de servicio', privacy: 'Política de privacidad', portal: 'Portal del contratista' },
+  vi: { title: 'Tuyên bố dành cho nhà thầu độc lập', body: ['Nhà thầu sử dụng EverittOS có thể là nhà thầu độc lập của tổ chức giao việc. Họ không trở thành nhân viên của EverittOS chỉ vì sử dụng phần mềm này. EverittOS cung cấp công cụ lập lịch, liên lạc, tài liệu công việc và trạng thái thanh toán.', 'Tổ chức thuê và nhà thầu chịu trách nhiệm về thù lao, phân loại lao động, thuế, bảo hiểm, giấy phép, điều kiện làm việc và tuân thủ pháp luật. EverittOS không bảo đảm việc được giao, thanh toán, tình trạng việc làm hoặc độ chính xác của thông tin do tổ chức nhập.', 'Sự kiện lịch chỉ nhằm mục đích thuận tiện. Hãy xác nhận chi tiết cuộc hẹn trong EverittOS vì cập nhật từ lịch bên ngoài có thể bị chậm hoặc chịu ảnh hưởng bởi cài đặt của nhà cung cấp.'], general: 'Tuyên bố chung', terms: 'Điều khoản dịch vụ', privacy: 'Chính sách quyền riêng tư', portal: 'Cổng nhà thầu' }
+} as const;
 
 export default function ContractorDisclaimerPage() {
-  return (
-    <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
-        <h1>Independent Contractor Disclaimer</h1>
-        <p>
-          Contractors using EverittOS may be independent contractors of the organization that assigned the work. They
-          are not employees of EverittOS merely because they use this software. EverittOS provides scheduling,
-          communication, job documentation, and payment-status tools. The hiring organization and contractor are
-          responsible for agreeing on compensation, classification, taxes, insurance, licensing, working conditions,
-          and legal compliance. EverittOS does not guarantee work assignments, payment, employment status, or the
-          accuracy of information entered by an organization.
-        </p>
-        <p>
-          EverittOS is software and is not legal, tax, accounting, insurance, or employment advice. Everitt Ventures
-          is not automatically the hiring organization for every workspace using EverittOS.
-        </p>
-        <p>
-          Calendar events are provided for convenience. Confirm appointment details in EverittOS because external
-          calendar updates may be delayed or affected by provider settings.
-        </p>
-
-        <nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}>
-          <Link className="btn" href="/disclaimer">
-            General disclaimer
-          </Link>
-          <Link className="btn" href="/terms">
-            Terms of Service
-          </Link>
-          <Link className="btn" href="/privacy">
-            Privacy Policy
-          </Link>
-          <Link className="btn" href="/portal/contractor">
-            Contractor portal
-          </Link>
-        </nav>
-      </div>
-    </main>
-  );
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
+  return <main className="section"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }}><Link className="btn" href="/disclaimer">{c.general}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/portal/contractor">{c.portal}</Link></nav></div></main>;
 }

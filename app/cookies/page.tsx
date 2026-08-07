@@ -1,62 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import { LegalNotice } from '@/components/legal-notice';
+import { useTranslation } from '@/components/locale-provider';
+
+const copy = {
+  en: { title: 'Cookie Policy', updated: 'Last updated June 2026', signIn: 'Sign in', privacy: 'Privacy Policy', terms: 'Terms of Service', billing: 'Billing terms', sections: [['What are cookies?', 'Cookies are small text files stored on your device. We use cookies and similar technologies to operate EverittOS, remember preferences, and, only with your consent, understand how marketing pages are used.'], ['Categories', 'Necessary cookies support authentication, sessions, and security. Optional analytics cookies help us understand signup and marketing-page usage. Optional marketing cookies are used only when you consent.'], ['Authenticated app', 'Inside the signed-in EverittOS application, marketing analytics scripts are not loaded. Essential session cookies remain active so you can stay signed in.'], ['Managing preferences', 'On marketing and legal pages, you can accept or reject optional analytics and marketing cookies. Inside the signed-in app, only essential session cookies are used.'], ['Third parties', 'Stripe checkout may set its own cookies when you use billing. Review Stripe’s privacy information for details.']] },
+  es: { title: 'Política de cookies', updated: 'Última actualización: junio de 2026', signIn: 'Iniciar sesión', privacy: 'Política de privacidad', terms: 'Términos de servicio', billing: 'Términos de facturación', sections: [['¿Qué son las cookies?', 'Las cookies son pequeños archivos de texto almacenados en tu dispositivo. Usamos cookies y tecnologías similares para operar EverittOS, recordar preferencias y, solo con tu consentimiento, entender cómo se usan las páginas de marketing.'], ['Categorías', 'Las cookies necesarias permiten autenticación, sesiones y seguridad. Las cookies analíticas opcionales ayudan a entender el registro y uso de páginas de marketing. Las cookies de marketing opcionales se usan solo con tu consentimiento.'], ['Aplicación autenticada', 'Dentro de la aplicación EverittOS con sesión iniciada no cargamos scripts de análisis de marketing. Las cookies esenciales de sesión permanecen activas para mantener tu sesión.'], ['Administrar preferencias', 'En páginas de marketing y legales puedes aceptar o rechazar cookies opcionales de análisis y marketing. Dentro de la aplicación autenticada solo se usan cookies esenciales de sesión.'], ['Terceros', 'Stripe Checkout puede establecer sus propias cookies cuando usas la facturación. Consulta la información de privacidad de Stripe para más detalles.']] },
+  vi: { title: 'Chính sách cookie', updated: 'Cập nhật lần cuối: tháng 6 năm 2026', signIn: 'Đăng nhập', privacy: 'Chính sách quyền riêng tư', terms: 'Điều khoản dịch vụ', billing: 'Điều khoản thanh toán', sections: [['Cookie là gì?', 'Cookie là các tệp văn bản nhỏ được lưu trên thiết bị. Chúng tôi dùng cookie và công nghệ tương tự để vận hành EverittOS, ghi nhớ tùy chọn và, chỉ khi bạn đồng ý, hiểu cách các trang tiếp thị được sử dụng.'], ['Phân loại', 'Cookie cần thiết hỗ trợ xác thực, phiên đăng nhập và bảo mật. Cookie phân tích tùy chọn giúp chúng tôi hiểu việc đăng ký và sử dụng trang tiếp thị. Cookie tiếp thị tùy chọn chỉ được dùng khi bạn đồng ý.'], ['Ứng dụng đã đăng nhập', 'Trong ứng dụng EverittOS đã đăng nhập, chúng tôi không tải các tập lệnh phân tích tiếp thị. Cookie phiên thiết yếu vẫn hoạt động để duy trì đăng nhập.'], ['Quản lý tùy chọn', 'Trên các trang tiếp thị và pháp lý, bạn có thể chấp nhận hoặc từ chối cookie phân tích và tiếp thị tùy chọn. Trong ứng dụng đã đăng nhập, chỉ cookie phiên thiết yếu được sử dụng.'], ['Bên thứ ba', 'Stripe Checkout có thể đặt cookie riêng khi bạn sử dụng thanh toán. Hãy xem thông tin quyền riêng tư của Stripe để biết chi tiết.']] }
+} as const;
 
 export default function CookiesPage() {
-  return (
-    <main className="section">
-      <div className="container legal-document" style={{ maxWidth: 720 }}>
-        <h2>Cookie Policy</h2>
-        <p className="muted">Last updated June 2026</p>
-
-        <h3>What are cookies?</h3>
-        <p>
-          Cookies are small text files stored on your device. We use cookies and similar technologies to operate
-          EverittOS, remember preferences, and, only with your consent, understand how marketing pages are used.
-        </p>
-
-        <h3>Categories</h3>
-        <ul>
-          <li>
-            <strong>Necessary</strong>: Required for authentication, session management, and security. These cannot be
-            disabled while using the app.
-          </li>
-          <li>
-            <strong>Analytics</strong>: Optional. Helps us understand signup and marketing page usage. Loaded only if you
-            accept analytics cookies.
-          </li>
-          <li>
-            <strong>Marketing</strong>: Optional. Reserved for future campaign measurement. Not loaded unless you
-            accept marketing cookies.
-          </li>
-        </ul>
-
-        <h3>Authenticated app</h3>
-        <p>
-          Inside the signed-in EverittOS application, we do not load marketing analytics scripts. Essential session
-          cookies remain active so you can stay signed in.
-        </p>
-
-        <h3>Managing preferences</h3>
-        <p>
-          On marketing and legal pages, you can accept or reject optional analytics and marketing cookies from the
-          banner. Inside the signed-in app, only essential session cookies are used.
-        </p>
-
-        <h3>Third parties</h3>
-        <p>
-          Stripe checkout may set its own cookies when you use billing. See their respective
-          privacy policies for details.
-        </p>
-
-        <LegalNotice />
-        <p>
-          <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link> ·{' '}
-          <Link href="/terms#billing">Billing terms</Link>
-        </p>
-        <Link className="btn" href="/login">
-          Sign in
-        </Link>
-      </div>
-    </main>
-  );
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
+  return <main className="section"><div className="container legal-document" style={{ maxWidth: 720 }}><h2>{c.title}</h2><p className="muted">{c.updated}</p>{c.sections.map(([title, body]) => <section key={title}><h3>{title}</h3><p>{body}</p></section>)}<LegalNotice /><p><Link href="/privacy">{c.privacy}</Link> · <Link href="/terms">{c.terms}</Link> · <Link href="/terms#billing">{c.billing}</Link></p><Link className="btn" href="/login">{c.signIn}</Link></div></main>;
 }

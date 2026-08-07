@@ -1,88 +1,21 @@
+'use client';
+
 import Link from 'next/link';
 import { LegalNotice } from '@/components/legal-notice';
+import { useTranslation } from '@/components/locale-provider';
 import { sessionIdleTimeoutMinutes, sessionIdleWarningBeforeMinutes } from '@/lib/session-policy';
 import { SUPPORT_EMAIL } from '@/lib/support';
 
+const copy = {
+  en: { title: 'Security', intro: 'EverittOS is built for service teams that handle customer data, job photos, and billing. This page describes how accounts and organization data are protected.', auth: 'Authentication', authBody: 'EverittOS uses secure authentication and session controls. Inactive sessions are signed out automatically, with a warning before logout.', storage: 'Data storage', storageBody: 'Application data is stored in Supabase. Job photos and organization files are stored in protected storage and scoped to the correct organization through access policies.', access: 'Access controls', accessBody: 'Permissions are based on organization role, assignment, and explicit sharing. Client and contractor portals show only records the account is allowed to access.', encryption: 'Encryption', encryptionBody: 'Traffic uses HTTPS. Infrastructure providers encrypt stored data, production cookies use secure settings, and protected files use controlled access.', backups: 'Backups', backupsBody: 'Database backups and recovery are managed through the configured infrastructure provider. Contact support for data-access questions.', protections: 'Application protections', items: ['Security headers on application pages', 'Rate limits on authentication and sensitive routes', 'Upload restrictions and filename sanitization', 'Input validation on authentication and account routes', 'Production responses omit internal diagnostics'], see: 'See also', privacy: 'Privacy Policy', terms: 'Terms of Service', billing: 'Billing terms', signIn: 'Sign in' },
+  es: { title: 'Seguridad', intro: 'EverittOS está diseñado para equipos de servicio que manejan datos de clientes, fotos de trabajos y facturación. Esta página describe cómo se protegen las cuentas y los datos de la organización.', auth: 'Autenticación', authBody: 'EverittOS utiliza autenticación segura y controles de sesión. Las sesiones inactivas se cierran automáticamente, con un aviso antes del cierre.', storage: 'Almacenamiento de datos', storageBody: 'Los datos de la aplicación se almacenan en Supabase. Las fotos de trabajos y archivos de la organización se guardan en almacenamiento protegido y se limitan a la organización correcta mediante políticas de acceso.', access: 'Controles de acceso', accessBody: 'Los permisos se basan en el rol de la organización, las asignaciones y el uso compartido explícito. Los portales de clientes y contratistas muestran solo los registros a los que la cuenta tiene permiso de acceso.', encryption: 'Cifrado', encryptionBody: 'El tráfico usa HTTPS. Los proveedores de infraestructura cifran los datos almacenados, las cookies de producción usan configuraciones seguras y los archivos protegidos tienen acceso controlado.', backups: 'Copias de seguridad', backupsBody: 'Las copias de seguridad y recuperación de la base de datos se administran mediante el proveedor de infraestructura configurado. Contacta a soporte para preguntas sobre acceso a datos.', protections: 'Protecciones de la aplicación', items: ['Encabezados de seguridad en las páginas de la aplicación', 'Límites de solicitudes en autenticación y rutas sensibles', 'Restricciones de carga y limpieza de nombres de archivo', 'Validación de entradas en rutas de autenticación y cuenta', 'Las respuestas de producción omiten diagnósticos internos'], see: 'Consulta también', privacy: 'Política de privacidad', terms: 'Términos de servicio', billing: 'Términos de facturación', signIn: 'Iniciar sesión' },
+  vi: { title: 'Bảo mật', intro: 'EverittOS được xây dựng cho các đội dịch vụ xử lý dữ liệu khách hàng, ảnh công việc và thanh toán. Trang này mô tả cách tài khoản và dữ liệu tổ chức được bảo vệ.', auth: 'Xác thực', authBody: 'EverittOS sử dụng xác thực an toàn và kiểm soát phiên. Phiên không hoạt động sẽ tự động đăng xuất, kèm cảnh báo trước khi đăng xuất.', storage: 'Lưu trữ dữ liệu', storageBody: 'Dữ liệu ứng dụng được lưu trong Supabase. Ảnh công việc và tệp tổ chức được lưu trong bộ nhớ được bảo vệ và giới hạn đúng tổ chức bằng chính sách truy cập.', access: 'Kiểm soát truy cập', accessBody: 'Quyền được xác định theo vai trò tổ chức, phân công và chia sẻ rõ ràng. Cổng khách hàng và nhà thầu chỉ hiển thị hồ sơ mà tài khoản được phép truy cập.', encryption: 'Mã hóa', encryptionBody: 'Lưu lượng sử dụng HTTPS. Nhà cung cấp hạ tầng mã hóa dữ liệu được lưu, cookie sản xuất dùng cấu hình an toàn và tệp được bảo vệ có quyền truy cập được kiểm soát.', backups: 'Sao lưu', backupsBody: 'Sao lưu và khôi phục cơ sở dữ liệu được quản lý qua nhà cung cấp hạ tầng đã cấu hình. Hãy liên hệ hỗ trợ nếu có câu hỏi về truy cập dữ liệu.', protections: 'Biện pháp bảo vệ ứng dụng', items: ['Tiêu đề bảo mật trên các trang ứng dụng', 'Giới hạn yêu cầu trên xác thực và tuyến nhạy cảm', 'Hạn chế tải lên và làm sạch tên tệp', 'Kiểm tra đầu vào trên tuyến xác thực và tài khoản', 'Phản hồi sản xuất không hiển thị chẩn đoán nội bộ'], see: 'Xem thêm', privacy: 'Chính sách quyền riêng tư', terms: 'Điều khoản dịch vụ', billing: 'Điều khoản thanh toán', signIn: 'Đăng nhập' }
+} as const;
+
 export default function SecurityPage() {
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
   const idleMinutes = sessionIdleTimeoutMinutes();
   const warningMinutes = sessionIdleWarningBeforeMinutes();
-
-  return (
-    <main className="section" id="main-content">
-      <div className="container legal-document" style={{ maxWidth: 720 }}>
-        <h2>Security</h2>
-        <p>
-          EverittOS is built for field service teams that handle customer data, job photos, and billing. This page
-          describes how we protect accounts and organization data.
-        </p>
-
-        <h3>Authentication</h3>
-        <p>
-          You can sign in with email or Google. Sessions are stored in secure HTTP-only cookies. After{' '}
-          {idleMinutes} minutes of inactivity, users are signed out automatically. A warning appears{' '}
-          {warningMinutes} minutes before logout. Mouse movement, keyboard input, touch, and navigation reset the timer.
-        </p>
-        <p>Passkey support is not enabled yet.</p>
-        <p>
-          Password reset and email verification links expire per Supabase settings. Disabled accounts cannot access the
-          app or authenticated APIs.
-        </p>
-
-        <h3>Data storage</h3>
-        <p>
-          Application data (profiles, organizations, jobs, customers, photos, reports) is stored in Supabase Postgres.
-          Job photos and organization logos are stored in private Supabase Storage buckets. Data is scoped to your
-          organization through row-level security policies.
-        </p>
-        <p>
-          Stripe handles payment card data. EverittOS stores subscription status and Stripe customer IDs on the workspace
-          owner profile, not full card numbers.
-        </p>
-
-        <h3>Access controls</h3>
-        <p>
-          Each user belongs to an organization with a role (owner, admin, manager, employee, contractor, client, or
-          viewer). Permissions control which pages and actions are available. API access (Growth and Enterprise plans)
-          uses scoped API keys stored as hashes.
-        </p>
-        <p>
-          Client and contractor portals show only jobs and data explicitly shared with that account. Managers grant and
-          revoke client access per job.
-        </p>
-
-        <h3>Encryption</h3>
-        <p>
-          Traffic to EverittOS uses HTTPS (TLS). Supabase encrypts data at rest on their platform. Session cookies are
-          marked secure in production. Photo URLs use time-limited signed links.
-        </p>
-
-        <h3>Backups</h3>
-        <p>
-          Database backups and point-in-time recovery are managed by Supabase according to your Supabase project plan.
-          Export customer or job data on request by contacting{' '}
-          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
-        </p>
-
-        <h3>Application protections</h3>
-        <ul className="plan-feature-list">
-          <li>Security headers including Content-Security-Policy on all pages</li>
-          <li>Rate limits on login, signup, password reset, and sensitive API routes</li>
-          <li>Image upload restrictions (type, size, and filename sanitization)</li>
-          <li>Input validation on authentication and account routes</li>
-          <li>Production API responses omit internal stack traces and diagnostics</li>
-        </ul>
-
-        <p style={{ marginTop: 24 }}>
-          See also our <Link href="/privacy">Privacy Policy</Link>, <Link href="/terms">Terms of Service</Link>, and{' '}
-          <Link href="/terms#billing">Billing terms</Link>.
-        </p>
-
-        <LegalNotice />
-
-        <Link className="btn" href="/login">
-          Sign in
-        </Link>
-      </div>
-    </main>
-  );
+  return <main className="section" id="main-content"><div className="container legal-document" style={{ maxWidth: 720 }}><h2>{c.title}</h2><p>{c.intro}</p><h3>{c.auth}</h3><p>{c.authBody} ({idleMinutes} / {warningMinutes})</p><h3>{c.storage}</h3><p>{c.storageBody}</p><h3>{c.access}</h3><p>{c.accessBody}</p><h3>{c.encryption}</h3><p>{c.encryptionBody}</p><h3>{c.backups}</h3><p>{c.backupsBody} <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p><h3>{c.protections}</h3><ul className="plan-feature-list">{c.items.map((item) => <li key={item}>{item}</li>)}</ul><p style={{ marginTop: 24 }}>{c.see} <Link href="/privacy">{c.privacy}</Link>, <Link href="/terms">{c.terms}</Link>, <Link href="/terms#billing">{c.billing}</Link>.</p><LegalNotice /><Link className="btn" href="/login">{c.signIn}</Link></div></main>;
 }

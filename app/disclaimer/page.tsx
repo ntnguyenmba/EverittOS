@@ -1,50 +1,16 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from '@/components/locale-provider';
+
+const copy = {
+  en: { title: 'Disclaimer', body: ['EverittOS is business operations software. It does not provide legal, tax, accounting, employment, insurance, financial, or regulatory advice. Organizations and users are responsible for verifying information and complying with laws and obligations that apply to their activities.', 'EverittOS helps record field work, scheduling, communication, documentation, and payment status. It does not replace licensed trade, legal, financial, or safety advice.', 'Reports, photos, estimates, and dashboard totals are operational records based on information entered in EverittOS and may differ from official financial or accounting records.'], related: 'Related disclaimers', contractor: 'Contractor disclaimer', customer: 'Customer portal disclaimer', terms: 'Terms of Service', privacy: 'Privacy Policy', back: 'Back to login' },
+  es: { title: 'Aviso legal', body: ['EverittOS es software para operaciones empresariales. No ofrece asesoría legal, fiscal, contable, laboral, de seguros, financiera ni regulatoria. Las organizaciones y usuarios son responsables de verificar la información y cumplir las leyes y obligaciones aplicables a sus actividades.', 'EverittOS ayuda a registrar trabajo de campo, horarios, comunicación, documentación y estado de pagos. No sustituye asesoría profesional, legal, financiera o de seguridad.', 'Los informes, fotos, estimaciones y totales del panel son registros operativos basados en la información ingresada en EverittOS y pueden diferir de registros financieros o contables oficiales.'], related: 'Avisos relacionados', contractor: 'Aviso para contratistas', customer: 'Aviso del portal del cliente', terms: 'Términos de servicio', privacy: 'Política de privacidad', back: 'Volver al inicio de sesión' },
+  vi: { title: 'Tuyên bố miễn trừ', body: ['EverittOS là phần mềm vận hành doanh nghiệp. EverittOS không cung cấp tư vấn pháp lý, thuế, kế toán, lao động, bảo hiểm, tài chính hoặc quy định. Tổ chức và người dùng chịu trách nhiệm xác minh thông tin và tuân thủ luật cũng như nghĩa vụ áp dụng cho hoạt động của mình.', 'EverittOS hỗ trợ ghi nhận công việc hiện trường, lịch, liên lạc, tài liệu và trạng thái thanh toán. EverittOS không thay thế tư vấn chuyên môn, pháp lý, tài chính hoặc an toàn.', 'Báo cáo, ảnh, ước tính và tổng số trên bảng điều khiển là hồ sơ vận hành dựa trên thông tin được nhập vào EverittOS và có thể khác với hồ sơ tài chính hoặc kế toán chính thức.'], related: 'Tuyên bố liên quan', contractor: 'Tuyên bố cho nhà thầu', customer: 'Tuyên bố cổng khách hàng', terms: 'Điều khoản dịch vụ', privacy: 'Chính sách quyền riêng tư', back: 'Quay lại đăng nhập' }
+} as const;
 
 export default function DisclaimerPage() {
-  return (
-    <main className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
-        <h1>Disclaimer</h1>
-        <p>
-          EverittOS is business operations software. Information entered into the platform is provided by the
-          organization and its users. EverittOS does not provide legal, tax, accounting, employment, insurance,
-          financial, or regulatory advice. Organizations and users are responsible for verifying information and
-          complying with laws, contracts, licensing requirements, tax obligations, and insurance requirements
-          applicable to their activities.
-        </p>
-        <p>
-          EverittOS helps record field work, scheduling, communication, documentation, and payment status. It does
-          not replace licensed trade, legal, or safety advice. You are responsible for compliance in your market.
-        </p>
-        <p>
-          Reports, photos, estimates, and dashboard totals are operational records based on information entered in
-          EverittOS. They may not match bank, tax, payroll, or accounting records. Confirm official financial
-          information in your accounting system.
-        </p>
-        <p>
-          EverittOS is not a law firm, accounting firm, employer, insurance provider, or the service provider for
-          every organization using the software. Questions about work quality, pricing, refunds, warranties,
-          classification, or taxes should be directed to the relevant organization or a qualified professional.
-        </p>
-
-        <nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }} aria-label="Related disclaimers">
-          <Link className="btn" href="/disclaimer/contractor">
-            Contractor disclaimer
-          </Link>
-          <Link className="btn" href="/disclaimer/customer">
-            Customer portal disclaimer
-          </Link>
-          <Link className="btn" href="/terms">
-            Terms of Service
-          </Link>
-          <Link className="btn" href="/privacy">
-            Privacy Policy
-          </Link>
-          <Link className="btn" href="/login">
-            Back to login
-          </Link>
-        </nav>
-      </div>
-    </main>
-  );
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
+  return <main className="section"><div className="container" style={{ maxWidth: 720 }}><h1>{c.title}</h1>{c.body.map((p) => <p key={p}>{p}</p>)}<nav className="button-row" style={{ marginTop: 24, flexWrap: 'wrap', gap: 8 }} aria-label={c.related}><Link className="btn" href="/disclaimer/contractor">{c.contractor}</Link><Link className="btn" href="/disclaimer/customer">{c.customer}</Link><Link className="btn" href="/terms">{c.terms}</Link><Link className="btn" href="/privacy">{c.privacy}</Link><Link className="btn" href="/login">{c.back}</Link></nav></div></main>;
 }

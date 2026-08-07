@@ -1,64 +1,18 @@
+'use client';
+
 import Link from 'next/link';
 import { LegalNotice } from '@/components/legal-notice';
+import { useTranslation } from '@/components/locale-provider';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 
+const copy = {
+  en: { title: 'Delete your EverittOS account', intro: 'You can request account and personal data deletion at any time.', inApp: 'Delete your account in EverittOS', steps: ['Sign in to EverittOS.', 'Open Settings.', 'Select Account.', 'Choose Delete account and follow the confirmation steps.'], without: 'Delete your account without signing in', email: 'Email us from the email address connected to your account and include “Account deletion request” in the subject line. We may ask you to confirm account ownership before processing the request.', deleted: 'What will be deleted', deletedBody: 'Your account profile and personal data will be deleted or anonymized, along with workspace data you own and are permitted to remove. This may include jobs, customers, schedules, notes, photos, documents, reports, messages, exports, and settings.', retained: 'What may be retained', retainedBody: 'Limited billing, security, fraud-prevention, legal, and audit records may be retained when required by law or needed to protect EverittOS and its users. Data belonging to another organization may remain under that organization’s control after your access is removed.', recovery: 'Recovery period', recoveryBody: 'If EverittOS provides a recovery period, your account may remain recoverable for a limited time before permanent deletion. After permanent deletion, the account and deleted data cannot be restored.', help: 'Need help?', privacy: 'Privacy Policy', back: 'Back to login' },
+  es: { title: 'Eliminar tu cuenta de EverittOS', intro: 'Puedes solicitar la eliminación de tu cuenta y datos personales en cualquier momento.', inApp: 'Eliminar tu cuenta dentro de EverittOS', steps: ['Inicia sesión en EverittOS.', 'Abre Configuración.', 'Selecciona Cuenta.', 'Elige Eliminar cuenta y sigue los pasos de confirmación.'], without: 'Eliminar tu cuenta sin iniciar sesión', email: 'Escríbenos desde el correo conectado a tu cuenta e incluye “Solicitud de eliminación de cuenta” en el asunto. Podemos pedirte que confirmes que eres propietario de la cuenta antes de procesar la solicitud.', deleted: 'Qué se eliminará', deletedBody: 'Tu perfil y datos personales se eliminarán o anonimizarán, junto con los datos del espacio de trabajo que poseas y tengas permiso para eliminar. Esto puede incluir trabajos, clientes, horarios, notas, fotos, documentos, informes, mensajes, exportaciones y configuraciones.', retained: 'Qué puede conservarse', retainedBody: 'Podemos conservar registros limitados de facturación, seguridad, prevención de fraude, asuntos legales y auditoría cuando la ley lo requiera o sea necesario para proteger EverittOS y sus usuarios. Los datos que pertenecen a otra organización pueden permanecer bajo el control de esa organización después de eliminar tu acceso.', recovery: 'Período de recuperación', recoveryBody: 'Si EverittOS ofrece un período de recuperación, tu cuenta puede permanecer recuperable durante un tiempo limitado antes de la eliminación permanente. Después de la eliminación permanente, la cuenta y los datos eliminados no se pueden restaurar.', help: '¿Necesitas ayuda?', privacy: 'Política de privacidad', back: 'Volver al inicio de sesión' },
+  vi: { title: 'Xóa tài khoản EverittOS của bạn', intro: 'Bạn có thể yêu cầu xóa tài khoản và dữ liệu cá nhân bất cứ lúc nào.', inApp: 'Xóa tài khoản trong EverittOS', steps: ['Đăng nhập EverittOS.', 'Mở Cài đặt.', 'Chọn Tài khoản.', 'Chọn Xóa tài khoản và làm theo các bước xác nhận.'], without: 'Xóa tài khoản khi không đăng nhập', email: 'Gửi email cho chúng tôi từ địa chỉ email gắn với tài khoản và ghi “Yêu cầu xóa tài khoản” trong tiêu đề. Chúng tôi có thể yêu cầu bạn xác nhận quyền sở hữu tài khoản trước khi xử lý.', deleted: 'Dữ liệu sẽ bị xóa', deletedBody: 'Hồ sơ tài khoản và dữ liệu cá nhân của bạn sẽ bị xóa hoặc ẩn danh, cùng với dữ liệu không gian làm việc mà bạn sở hữu và được phép xóa. Dữ liệu này có thể gồm công việc, khách hàng, lịch, ghi chú, ảnh, tài liệu, báo cáo, tin nhắn, dữ liệu xuất và cài đặt.', retained: 'Dữ liệu có thể được lưu giữ', retainedBody: 'Một số hồ sơ giới hạn về thanh toán, bảo mật, phòng chống gian lận, pháp lý và kiểm toán có thể được giữ lại khi pháp luật yêu cầu hoặc cần thiết để bảo vệ EverittOS và người dùng. Dữ liệu thuộc tổ chức khác có thể vẫn do tổ chức đó kiểm soát sau khi quyền truy cập của bạn bị xóa.', recovery: 'Thời gian khôi phục', recoveryBody: 'Nếu EverittOS có thời gian khôi phục, tài khoản của bạn có thể được khôi phục trong một khoảng thời gian giới hạn trước khi bị xóa vĩnh viễn. Sau khi xóa vĩnh viễn, tài khoản và dữ liệu đã xóa không thể được khôi phục.', help: 'Cần trợ giúp?', privacy: 'Chính sách quyền riêng tư', back: 'Quay lại đăng nhập' }
+} as const;
+
 export default function AccountDeletionPage() {
-  return (
-    <main className="section">
-      <div className="container legal-document" style={{ maxWidth: 720 }}>
-        <h2>Delete your EverittOS account</h2>
-        <p className="muted">You can request account and personal data deletion at any time.</p>
-
-        <h3>Delete your account in EverittOS</h3>
-        <ol>
-          <li>Sign in to EverittOS.</li>
-          <li>Open Settings.</li>
-          <li>Select Account.</li>
-          <li>Choose Delete account and follow the confirmation steps.</li>
-        </ol>
-
-        <h3>Delete your account without signing in</h3>
-        <p>
-          Email <a href={supportMailtoHref('EverittOS account deletion request')}>{SUPPORT_EMAIL}</a> from the email address
-          connected to your account and include the words &quot;Account deletion request&quot; in the subject line.
-        </p>
-        <p>We may ask you to confirm account ownership before processing the request.</p>
-
-        <h3>What will be deleted</h3>
-        <p>
-          Your account profile and personal data will be deleted or anonymized, along with workspace data that you own and
-          are permitted to remove. This may include jobs, customers, schedules, notes, photos, documents, reports, messages,
-          exports, and settings.
-        </p>
-
-        <h3>What may be retained</h3>
-        <p>
-          Limited billing, security, fraud-prevention, legal, and audit records may be retained when required by law or
-          needed to protect EverittOS and its users. Data belonging to another organization may remain under that
-          organization&apos;s control after your access is removed.
-        </p>
-
-        <h3>Recovery period</h3>
-        <p>
-          If EverittOS provides a recovery period, your account may remain recoverable for a limited time before permanent
-          deletion. After permanent deletion, the account and deleted data cannot be restored.
-        </p>
-
-        <h3>Need help?</h3>
-        <p>
-          Contact <a href={supportMailtoHref('EverittOS account deletion help')}>{SUPPORT_EMAIL}</a> for help with deletion,
-          access, or data requests.
-        </p>
-
-        <p>
-          See the <Link href="/privacy">Privacy Policy</Link> for more information about data handling and retention.
-        </p>
-
-        <LegalNotice />
-        <Link className="btn" href="/login">
-          Back to login
-        </Link>
-      </div>
-    </main>
-  );
+  const { locale } = useTranslation();
+  const c = copy[locale] || copy.en;
+  return <main className="section"><div className="container legal-document" style={{ maxWidth: 720 }}><h2>{c.title}</h2><p className="muted">{c.intro}</p><h3>{c.inApp}</h3><ol>{c.steps.map((step) => <li key={step}>{step}</li>)}</ol><h3>{c.without}</h3><p><a href={supportMailtoHref('EverittOS account deletion request')}>{SUPPORT_EMAIL}</a>. {c.email}</p><h3>{c.deleted}</h3><p>{c.deletedBody}</p><h3>{c.retained}</h3><p>{c.retainedBody}</p><h3>{c.recovery}</h3><p>{c.recoveryBody}</p><h3>{c.help}</h3><p><a href={supportMailtoHref('EverittOS account deletion help')}>{SUPPORT_EMAIL}</a></p><p><Link href="/privacy">{c.privacy}</Link></p><LegalNotice /><Link className="btn" href="/login">{c.back}</Link></div></main>;
 }
