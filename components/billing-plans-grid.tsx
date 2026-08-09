@@ -9,6 +9,7 @@ import { resolveBillingPlanCardUi, type PaidPlanKey } from '@/lib/billing-plan-c
 import { BILLING_PLANS } from '@/lib/billing-config';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { resolveBillingVisibility, nativeBillingNotice } from '@/lib/platform/billing';
+import { getAppPlatform } from '@/lib/platform/detect';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/lib/support';
 import { useTranslation } from '@/components/locale-provider';
 
@@ -31,28 +32,28 @@ type LocalPlanCopy = {
 
 const planCopy: Record<'en' | 'es' | 'vi', Record<EverittosPlan, LocalPlanCopy>> = {
   en: {
-    free: { name: 'Free', headline: 'Track jobs and customers without spreadsheets.', features: ['Account and login', 'Dashboard', 'Customer management', 'Basic job tracking', 'Schedule and notifications'], limits: ['3 active jobs', '10 customers', '20 photos', '1 user'] },
-    pro: { name: 'Pro', headline: 'Before/after photos, bookings, and professional job management.', features: ['Everything in Free', 'Bookings & appointments', 'Before and after photos', 'Expanded jobs and customers', 'Ask Everitt search on every plan'], limits: ['25 active jobs', '100 customers', '100 photos', '3 users'] },
-    business: { name: 'Business', headline: 'Team management, crew assignment, activity log, and Everitt AI.', features: ['Everything in Pro', 'Team & crew management', 'Job assignments', 'Activity log', 'Everitt AI writing & analysis'], limits: ['150 active jobs', '1,000 customers', '15 users'] },
-    starter: { name: 'Starter', headline: 'Higher limits for growing teams.', features: ['Everything in Business', 'Higher job and customer limits', 'More team members', 'Everitt AI included', 'Multi-location basics'], limits: ['500 active jobs', '5,000 customers', '50 users'] },
-    growth: { name: 'Growth', headline: 'Workflows, portals, API access, and priority support.', features: ['Everything in Starter', 'Workflows', 'Client & contractor portals', 'Departments', 'API access'], limits: ['2,500 active jobs', '25,000 customers', '250 users'] },
-    enterprise: { name: 'Enterprise', headline: 'Unlimited scale, unlimited Everitt AI, and dedicated support.', features: ['Everything in Growth', 'Unlimited Everitt AI', 'Enterprise permissions', 'Dedicated support', 'Unlimited jobs, customers, and users'], limits: ['Unlimited jobs', 'Unlimited customers', 'Unlimited users'] }
+    free: { name: 'Free', headline: 'Core job and customer tools for getting started.', features: ['Account and login', 'Dashboard', 'Customer management', 'Basic job tracking', 'Schedule and notifications', 'Basic photo uploads'], limits: ['3 active jobs', '10 customers', '20 photos', '1 user', '1 location'] },
+    pro: { name: 'Pro', headline: 'Bookings, before-and-after photos, and professional job management.', features: ['Everything in Free', 'Bookings and appointments', 'Before-and-after photos', 'PDF reports', 'Expanded job and customer limits'], limits: ['25 active jobs', '100 customers', '100 photos', '3 users', '25 reports', '1 location'] },
+    business: { name: 'Business', headline: 'Team management, crew assignment, reporting, and Everitt AI.', features: ['Everything in Pro', 'Team and crew management', 'Job assignments', 'Activity log', 'Everitt AI writing and analysis', 'Advanced reporting'], limits: ['150 active jobs', '1,000 customers', 'Unlimited photos', '15 team members', '100 crew members', '150 reports', '1 location'] },
+    starter: { name: 'Starter', headline: 'Higher limits, multi-location support, and branded reporting for growing teams.', features: ['Everything in Business', 'Multi-location management', 'Custom branding', 'Branded reports', 'Higher team and usage limits'], limits: ['500 active jobs', '5,000 customers', 'Unlimited photos', '50 team members', '200 crew members', '500 reports', '5 locations'] },
+    growth: { name: 'Growth', headline: 'Workflows, portals, API access, and priority support for larger operations.', features: ['Everything in Starter', 'Custom workflows', 'Client and contractor portals', 'API access', 'Priority support'], limits: ['2,500 active jobs', '25,000 customers', 'Unlimited photos', '250 team members', 'Unlimited crew members', '2,500 reports', '25 locations'] },
+    enterprise: { name: 'Enterprise', headline: 'Unlimited scale, unlimited Everitt AI, enterprise permissions, and dedicated support.', features: ['Everything in Growth', 'Unlimited Everitt AI', 'Enterprise permissions', 'Dedicated support', 'Unlimited operational limits'], limits: ['Unlimited jobs', 'Unlimited customers', 'Unlimited photos', 'Unlimited team members', 'Unlimited crew members', 'Unlimited reports', 'Unlimited locations'] }
   },
   es: {
-    free: { name: 'Gratis', headline: 'Controla trabajos y clientes sin hojas de cálculo.', features: ['Cuenta e inicio de sesión', 'Panel', 'Gestión de clientes', 'Seguimiento básico de trabajos', 'Calendario y notificaciones'], limits: ['3 trabajos activos', '10 clientes', '20 fotos', '1 usuario'] },
-    pro: { name: 'Pro', headline: 'Fotos de antes y después, reservas y gestión profesional de trabajos.', features: ['Todo lo de Gratis', 'Reservas y citas', 'Fotos de antes y después', 'Más trabajos y clientes', 'Búsqueda de Ask Everitt en todos los planes'], limits: ['25 trabajos activos', '100 clientes', '100 fotos', '3 usuarios'] },
-    business: { name: 'Negocio', headline: 'Gestión de equipo, asignación de cuadrillas, registro de actividad y Everitt AI.', features: ['Todo lo de Pro', 'Gestión de equipo y cuadrillas', 'Asignación de trabajos', 'Registro de actividad', 'Redacción y análisis con Everitt AI'], limits: ['150 trabajos activos', '1.000 clientes', '15 usuarios'] },
-    starter: { name: 'Inicial', headline: 'Límites más altos para equipos en crecimiento.', features: ['Todo lo de Negocio', 'Más trabajos y clientes', 'Más miembros del equipo', 'Everitt AI incluido', 'Funciones básicas para varias ubicaciones'], limits: ['500 trabajos activos', '5.000 clientes', '50 usuarios'] },
-    growth: { name: 'Crecimiento', headline: 'Flujos de trabajo, portales, acceso API y soporte prioritario.', features: ['Todo lo de Inicial', 'Flujos de trabajo', 'Portales para clientes y contratistas', 'Departamentos', 'Acceso API'], limits: ['2.500 trabajos activos', '25.000 clientes', '250 usuarios'] },
-    enterprise: { name: 'Empresa', headline: 'Escala ilimitada, Everitt AI sin límite y soporte dedicado.', features: ['Todo lo de Crecimiento', 'Everitt AI sin límite', 'Permisos empresariales', 'Soporte dedicado', 'Trabajos, clientes y usuarios sin límite'], limits: ['Trabajos sin límite', 'Clientes sin límite', 'Usuarios sin límite'] }
+    free: { name: 'Gratis', headline: 'Herramientas básicas de trabajos y clientes para comenzar.', features: ['Cuenta e inicio de sesión', 'Panel', 'Gestión de clientes', 'Seguimiento básico de trabajos', 'Calendario y notificaciones', 'Carga básica de fotos'], limits: ['3 trabajos activos', '10 clientes', '20 fotos', '1 usuario', '1 ubicación'] },
+    pro: { name: 'Pro', headline: 'Reservas, fotos de antes y después y gestión profesional de trabajos.', features: ['Todo lo de Gratis', 'Reservas y citas', 'Fotos de antes y después', 'Informes PDF', 'Más trabajos y clientes'], limits: ['25 trabajos activos', '100 clientes', '100 fotos', '3 usuarios', '25 informes', '1 ubicación'] },
+    business: { name: 'Negocio', headline: 'Gestión de equipos, asignación de cuadrillas, informes y Everitt AI.', features: ['Todo lo de Pro', 'Gestión de equipos y cuadrillas', 'Asignación de trabajos', 'Registro de actividad', 'Everitt AI para escritura y análisis', 'Informes avanzados'], limits: ['150 trabajos activos', '1.000 clientes', 'Fotos ilimitadas', '15 miembros del equipo', '100 miembros de cuadrilla', '150 informes', '1 ubicación'] },
+    starter: { name: 'Inicial', headline: 'Más capacidad, varias ubicaciones e informes con marca para equipos en crecimiento.', features: ['Todo lo de Negocio', 'Gestión de varias ubicaciones', 'Marca personalizada', 'Informes con marca', 'Límites más altos'], limits: ['500 trabajos activos', '5.000 clientes', 'Fotos ilimitadas', '50 miembros del equipo', '200 miembros de cuadrilla', '500 informes', '5 ubicaciones'] },
+    growth: { name: 'Crecimiento', headline: 'Flujos de trabajo, portales, acceso API y soporte prioritario.', features: ['Todo lo de Inicial', 'Flujos de trabajo personalizados', 'Portales para clientes y contratistas', 'Acceso API', 'Soporte prioritario'], limits: ['2.500 trabajos activos', '25.000 clientes', 'Fotos ilimitadas', '250 miembros del equipo', 'Cuadrillas ilimitadas', '2.500 informes', '25 ubicaciones'] },
+    enterprise: { name: 'Empresa', headline: 'Escala ilimitada, Everitt AI ilimitado, permisos empresariales y soporte dedicado.', features: ['Todo lo de Crecimiento', 'Everitt AI ilimitado', 'Permisos empresariales', 'Soporte dedicado', 'Límites operativos ilimitados'], limits: ['Trabajos ilimitados', 'Clientes ilimitados', 'Fotos ilimitadas', 'Equipo ilimitado', 'Cuadrillas ilimitadas', 'Informes ilimitados', 'Ubicaciones ilimitadas'] }
   },
   vi: {
-    free: { name: 'Miễn phí', headline: 'Theo dõi công việc và khách hàng mà không cần bảng tính.', features: ['Tài khoản và đăng nhập', 'Bảng điều khiển', 'Quản lý khách hàng', 'Theo dõi công việc cơ bản', 'Lịch và thông báo'], limits: ['3 công việc đang hoạt động', '10 khách hàng', '20 ảnh', '1 người dùng'] },
-    pro: { name: 'Pro', headline: 'Ảnh trước/sau, đặt lịch và quản lý công việc chuyên nghiệp.', features: ['Mọi tính năng của Miễn phí', 'Đặt lịch và cuộc hẹn', 'Ảnh trước và sau', 'Nhiều công việc và khách hàng hơn', 'Tìm kiếm Ask Everitt trên mọi gói'], limits: ['25 công việc đang hoạt động', '100 khách hàng', '100 ảnh', '3 người dùng'] },
-    business: { name: 'Doanh nghiệp', headline: 'Quản lý nhóm, phân công đội, nhật ký hoạt động và Everitt AI.', features: ['Mọi tính năng của Pro', 'Quản lý nhóm và đội', 'Phân công công việc', 'Nhật ký hoạt động', 'Viết và phân tích bằng Everitt AI'], limits: ['150 công việc đang hoạt động', '1.000 khách hàng', '15 người dùng'] },
-    starter: { name: 'Khởi đầu', headline: 'Giới hạn cao hơn cho đội ngũ đang phát triển.', features: ['Mọi tính năng của Doanh nghiệp', 'Giới hạn công việc và khách hàng cao hơn', 'Thêm thành viên nhóm', 'Bao gồm Everitt AI', 'Cơ bản cho nhiều địa điểm'], limits: ['500 công việc đang hoạt động', '5.000 khách hàng', '50 người dùng'] },
-    growth: { name: 'Tăng trưởng', headline: 'Quy trình, cổng thông tin, quyền truy cập API và hỗ trợ ưu tiên.', features: ['Mọi tính năng của Khởi đầu', 'Quy trình làm việc', 'Cổng khách hàng và nhà thầu', 'Phòng ban', 'Quyền truy cập API'], limits: ['2.500 công việc đang hoạt động', '25.000 khách hàng', '250 người dùng'] },
-    enterprise: { name: 'Tập đoàn', headline: 'Quy mô không giới hạn, Everitt AI không giới hạn và hỗ trợ riêng.', features: ['Mọi tính năng của Tăng trưởng', 'Everitt AI không giới hạn', 'Quyền cấp doanh nghiệp', 'Hỗ trợ riêng', 'Không giới hạn công việc, khách hàng và người dùng'], limits: ['Công việc không giới hạn', 'Khách hàng không giới hạn', 'Người dùng không giới hạn'] }
+    free: { name: 'Miễn phí', headline: 'Công cụ cơ bản cho công việc và khách hàng để bắt đầu.', features: ['Tài khoản và đăng nhập', 'Bảng điều khiển', 'Quản lý khách hàng', 'Theo dõi công việc cơ bản', 'Lịch và thông báo', 'Tải ảnh cơ bản'], limits: ['3 công việc đang hoạt động', '10 khách hàng', '20 ảnh', '1 người dùng', '1 địa điểm'] },
+    pro: { name: 'Pro', headline: 'Đặt lịch, ảnh trước và sau, cùng quản lý công việc chuyên nghiệp.', features: ['Mọi tính năng của Miễn phí', 'Đặt lịch và cuộc hẹn', 'Ảnh trước và sau', 'Báo cáo PDF', 'Tăng giới hạn công việc và khách hàng'], limits: ['25 công việc đang hoạt động', '100 khách hàng', '100 ảnh', '3 người dùng', '25 báo cáo', '1 địa điểm'] },
+    business: { name: 'Doanh nghiệp', headline: 'Quản lý đội nhóm, phân công, báo cáo và Everitt AI.', features: ['Mọi tính năng của Pro', 'Quản lý đội nhóm và nhân sự', 'Phân công công việc', 'Nhật ký hoạt động', 'Everitt AI viết và phân tích', 'Báo cáo nâng cao'], limits: ['150 công việc đang hoạt động', '1.000 khách hàng', 'Ảnh không giới hạn', '15 thành viên nhóm', '100 thành viên đội', '150 báo cáo', '1 địa điểm'] },
+    starter: { name: 'Khởi đầu', headline: 'Giới hạn cao hơn, nhiều địa điểm và báo cáo có thương hiệu cho đội đang phát triển.', features: ['Mọi tính năng của Doanh nghiệp', 'Quản lý nhiều địa điểm', 'Thương hiệu tùy chỉnh', 'Báo cáo có thương hiệu', 'Giới hạn sử dụng cao hơn'], limits: ['500 công việc đang hoạt động', '5.000 khách hàng', 'Ảnh không giới hạn', '50 thành viên nhóm', '200 thành viên đội', '500 báo cáo', '5 địa điểm'] },
+    growth: { name: 'Tăng trưởng', headline: 'Quy trình, cổng thông tin, API và hỗ trợ ưu tiên cho hoạt động lớn hơn.', features: ['Mọi tính năng của Khởi đầu', 'Quy trình tùy chỉnh', 'Cổng khách hàng và nhà thầu', 'Truy cập API', 'Hỗ trợ ưu tiên'], limits: ['2.500 công việc đang hoạt động', '25.000 khách hàng', 'Ảnh không giới hạn', '250 thành viên nhóm', 'Đội không giới hạn', '2.500 báo cáo', '25 địa điểm'] },
+    enterprise: { name: 'Tập đoàn', headline: 'Quy mô không giới hạn, Everitt AI không giới hạn, quyền doanh nghiệp và hỗ trợ riêng.', features: ['Mọi tính năng của Tăng trưởng', 'Everitt AI không giới hạn', 'Quyền doanh nghiệp', 'Hỗ trợ riêng', 'Giới hạn vận hành không giới hạn'], limits: ['Công việc không giới hạn', 'Khách hàng không giới hạn', 'Ảnh không giới hạn', 'Nhóm không giới hạn', 'Đội không giới hạn', 'Báo cáo không giới hạn', 'Địa điểm không giới hạn'] }
   }
 };
 
@@ -79,6 +80,14 @@ const noteStyle: CSSProperties = { margin: 0, color: 'var(--muted)', fontSize: 1
 const currentStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, margin: 0, borderRadius: 12, border: '1px solid rgba(37, 54, 74, 0.12)', background: 'rgba(37, 54, 74, 0.035)', color: 'var(--muted)', fontSize: 13, fontWeight: 600, lineHeight: 1.2 };
 const footnotesStyle: CSSProperties = { display: 'grid', gap: 6, marginTop: 22, paddingTop: 16, borderTop: '1px solid rgba(37, 54, 74, 0.1)' };
 
+const nativeCheckoutAvailable: Partial<Record<PaidPlanKey, boolean>> = {
+  pro: true,
+  business: true,
+  starter: true,
+  growth: true,
+  enterprise: true
+};
+
 export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscription = false, portalAvailable = false, onOpenPortal, portalLoading = false, onNativePurchaseSuccess }: BillingPlansGridProps) {
   const { t, locale } = useTranslation();
   const language: 'en' | 'es' | 'vi' = locale === 'es' || locale === 'vi' ? locale : 'en';
@@ -86,7 +95,8 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
   const normalizedCurrent = normalizePlan(currentPlan);
   const isFreeUser = normalizedCurrent === 'free';
   const billingVisibility = resolveBillingVisibility();
-  const visiblePlans = billingVisibility.allowNativeStorePurchase
+  const nativePlatform = getAppPlatform();
+  const visiblePlans = billingVisibility.allowNativeStorePurchase && nativePlatform === 'android'
     ? BILLING_PLANS.filter((tier) => tier.id === 'free' || tier.id === 'pro' || tier.id === 'business')
     : BILLING_PLANS;
   const [checkoutAvailableByPlan, setCheckoutAvailableByPlan] = useState<Partial<Record<PaidPlanKey, boolean>>>({});
@@ -106,25 +116,28 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
     return () => { cancelled = true; };
   }, [billingVisibility.allowCheckout]);
 
+  const planAvailability = billingVisibility.allowNativeStorePurchase ? nativeCheckoutAvailable : checkoutAvailableByPlan;
+
   return (
     <section className="billing-plans-grid-wrap" style={shellStyle}>
       <div style={introStyle}><p style={noteStyle}>{t('billing.planChangeIntro')}</p></div>
       <div className="billing-plans-grid" style={gridStyle}>
         {visiblePlans.map((tier) => {
           const localized = planCopy[language][tier.id];
-          const ui = resolveBillingPlanCardUi({ currentPlan: normalizedCurrent, targetPlan: tier.id, hasActiveSubscription: isFreeUser ? false : hasActiveSubscription, portalAvailable, checkoutAvailableByPlan });
+          const ui = resolveBillingPlanCardUi({ currentPlan: normalizedCurrent, targetPlan: tier.id, hasActiveSubscription: isFreeUser ? false : hasActiveSubscription, portalAvailable, checkoutAvailableByPlan: planAvailability });
           const isCurrent = ui.kind === 'current';
           const isHighlighted = highlightPlan === tier.id;
           const emphasizedCardStyle = isCurrent || isHighlighted ? { ...cardStyle, borderColor: 'rgba(47, 95, 143, 0.36)', boxShadow: '0 0 0 1px rgba(47, 95, 143, 0.16), 0 14px 34px rgba(37, 54, 74, 0.07)' } : cardStyle;
           const price = language === 'en' ? tier.priceLabel : tier.priceLabel.replace('/month', language === 'es' ? '/mes' : '/tháng');
           const actionLabel = ui.kind === 'current' ? t('billing.currentPlanBadge') : ui.kind === 'portal' ? c.manage : ui.kind === 'unavailable' ? c.unavailable : `${c.choose} ${localized.name}`;
+          const isPaidTier = tier.id !== 'free';
           return (
             <article key={tier.id} className={['pricing-plan-card','billing-plan-card',isCurrent ? 'current-plan' : '',isHighlighted ? 'highlighted' : '',tier.featured ? 'featured-plan' : ''].filter(Boolean).join(' ')} data-plan-id={tier.id} data-plan-action={ui.kind} style={emphasizedCardStyle}>
               <div className="billing-plan-card-body" style={mainStyle}>
                 <div style={badgeRowStyle}>{isCurrent ? <span style={badgeStyle}>{t('billing.currentPlanBadge')}</span> : null}{tier.featured && !isCurrent ? <span style={badgeStyle}>{c.popular}</span> : null}</div>
                 <h3 style={{ margin: '0 0 8px', fontSize: 18, lineHeight: 1.25 }}>{localized.name}</h3>
                 {billingVisibility.showUpgradePrices && !billingVisibility.allowNativeStorePurchase ? <p className="pricing-plan-price" style={priceStyle}>{price}</p> : null}
-                {billingVisibility.allowNativeStorePurchase && (tier.id === 'pro' || tier.id === 'business') ? <p className="pricing-plan-price" style={priceStyle}>{c.storePrice}</p> : null}
+                {billingVisibility.allowNativeStorePurchase && isPaidTier ? <p className="pricing-plan-price" style={priceStyle}>{c.storePrice}</p> : null}
                 <p className="billing-plan-headline" style={headlineStyle}>{localized.headline}</p>
                 <ul className="billing-plan-features" style={featuresStyle}>{localized.features.map((feature) => <li key={feature} style={{ margin: 0, overflowWrap: 'anywhere' }}>{feature}</li>)}</ul>
                 <div className="billing-plan-limits" aria-label={`${localized.name} ${c.limits}`} style={limitsStyle}>{localized.limits.map((limit) => <span key={limit} style={limitStyle}>{limit}</span>)}</div>
@@ -132,7 +145,7 @@ export function BillingPlansGrid({ currentPlan, highlightPlan, hasActiveSubscrip
               <div className="billing-plan-card-footer" style={footerStyle}>
                 {ui.kind === 'current' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
                 {ui.kind === 'checkout' && billingVisibility.allowCheckout ? <PlanCheckoutButton plan={ui.plan} label={actionLabel} requireRefundAck={false} disabled={!ui.checkoutAvailable} className="btn btn-primary btn-block" /> : null}
-                {ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase && (ui.plan === 'pro' || ui.plan === 'business') ? <NativeStoreSubscribeButton plan={ui.plan} label={actionLabel} onSuccess={() => onNativePurchaseSuccess?.()} /> : null}
+                {ui.kind === 'checkout' && billingVisibility.allowNativeStorePurchase ? <NativeStoreSubscribeButton plan={ui.plan} label={actionLabel} onSuccess={() => onNativePurchaseSuccess?.()} /> : null}
                 {ui.kind === 'checkout' && !billingVisibility.allowCheckout && !billingVisibility.allowNativeStorePurchase ? <p className="billing-plan-current-label" style={currentStyle}>{nativeBillingNotice(locale)}</p> : null}
                 {ui.kind === 'unavailable' ? <p className="billing-plan-current-label" style={currentStyle}>{actionLabel}</p> : null}
                 {ui.kind === 'portal' && onOpenPortal && billingVisibility.allowPortal ? <button type="button" className="btn btn-primary btn-block" disabled={portalLoading} onClick={onOpenPortal}>{portalLoading ? c.opening : actionLabel}</button> : null}
