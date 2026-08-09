@@ -26,34 +26,34 @@ function envOr(key: string, fallback: string): string {
   return sanitizeBillingEnvValue(process.env[key]) || fallback;
 }
 
-const DEFAULT_IOS_PRO = 'com.everittventures.everittos.pro.monthly.v3';
-const DEFAULT_IOS_BUSINESS = 'com.everittventures.everittos.business.monthly.v2';
-const DEFAULT_IOS_STARTER = 'com.everittventures.everittos.starter.monthly.v4';
-const DEFAULT_IOS_GROWTH = 'com.everittventures.everittos.growth.monthly.v2';
-const DEFAULT_IOS_ENTERPRISE = 'com.everittventures.everittos.enterprise.monthly.v2';
+const IOS_PRO = 'com.everittventures.everittos.pro.monthly.v3';
+const IOS_BUSINESS = 'com.everittventures.everittos.business.monthly.v2';
+const IOS_STARTER = 'com.everittventures.everittos.starter.monthly.v4';
+const IOS_GROWTH = 'com.everittventures.everittos.growth.monthly.v2';
+const IOS_ENTERPRISE = 'com.everittventures.everittos.enterprise.monthly.v2';
 
 const DEFAULT_ANDROID_PRO = 'everittos_pro';
 const DEFAULT_ANDROID_BUSINESS = 'everittos_business';
 const DEFAULT_ANDROID_BASE_PLAN = 'monthly';
 
 export function getIosProMonthlyProductId(): string {
-  return envOr('NEXT_PUBLIC_IOS_PRO_MONTHLY_PRODUCT_ID', DEFAULT_IOS_PRO);
+  return IOS_PRO;
 }
 
 export function getIosBusinessMonthlyProductId(): string {
-  return envOr('NEXT_PUBLIC_IOS_BUSINESS_MONTHLY_PRODUCT_ID', DEFAULT_IOS_BUSINESS);
+  return IOS_BUSINESS;
 }
 
 export function getIosStarterMonthlyProductId(): string {
-  return envOr('NEXT_PUBLIC_IOS_STARTER_MONTHLY_PRODUCT_ID', DEFAULT_IOS_STARTER);
+  return IOS_STARTER;
 }
 
 export function getIosGrowthMonthlyProductId(): string {
-  return envOr('NEXT_PUBLIC_IOS_GROWTH_MONTHLY_PRODUCT_ID', DEFAULT_IOS_GROWTH);
+  return IOS_GROWTH;
 }
 
 export function getIosEnterpriseMonthlyProductId(): string {
-  return envOr('NEXT_PUBLIC_IOS_ENTERPRISE_MONTHLY_PRODUCT_ID', DEFAULT_IOS_ENTERPRISE);
+  return IOS_ENTERPRISE;
 }
 
 export function getAndroidProSubscriptionId(): string {
