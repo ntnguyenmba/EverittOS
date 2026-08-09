@@ -34,7 +34,7 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                         "title": product.displayName,
                         "description": product.description,
                         "price": product.displayPrice,
-                        "priceCurrencyCode": product.priceFormatStyle.locale.currency?.identifier ?? "",
+                        "priceCurrencyCode": product.priceFormatStyle.currencyCode,
                         "billingPeriod": "monthly"
                     ]
                 }
@@ -53,7 +53,7 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
 
         Task {
             do {
-                var products = StoreKitBillingManager.shared.products
+                var products = await StoreKitBillingManager.shared.products
                 if !products.contains(where: { $0.id == productId }) {
                     products = try await StoreKitBillingManager.shared.loadProducts(productIDs: [productId])
                 }
