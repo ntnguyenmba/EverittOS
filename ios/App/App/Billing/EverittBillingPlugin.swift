@@ -16,8 +16,11 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private let defaultProductIds = [
-        "com.everittventures.everittos.pro.monthly",
-        "com.everittventures.everittos.business.monthly"
+        "com.everittventures.everittos.pro.monthly.v3",
+        "com.everittventures.everittos.business.monthly.v2",
+        "com.everittventures.everittos.starter.monthly.v4",
+        "com.everittventures.everittos.growth.monthly.v2",
+        "com.everittventures.everittos.enterprise.monthly.v2"
     ]
 
     @objc func loadProducts(_ call: CAPPluginCall) {
