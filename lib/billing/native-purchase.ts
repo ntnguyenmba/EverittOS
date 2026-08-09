@@ -8,15 +8,25 @@ export type NativePurchaseOutcome =
   | { ok: true; plan: string; status: string; expiresAt: string | null }
   | { ok: false; pending?: boolean; cancelled?: boolean; error: string };
 
+function customerStoreError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : String(error || '');
+  const technical = /plugin|implemented on ios|implemented on android|bridge|productId|purchaseToken|signed transaction|unsupported platform|native app/i.test(message);
+  return technical ? fallback : message || fallback;
+}
+
 export async function loadNativeStoreProducts(productIds: string[]): Promise<StoreProductInfo[]> {
   if (!isStoreBillingAvailable()) return [];
-  const result = await EverittBilling.loadProducts({ productIds });
-  return result.products || [];
+  try {
+    const result = await EverittBilling.loadProducts({ productIds });
+    return result.products || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function purchaseNativePlan(productId: string): Promise<NativePurchaseOutcome> {
   if (!isStoreBillingAvailable()) {
-    return { ok: false, error: 'Store billing is only available in the native app.' };
+    return { ok: false, error: 'Purchases are available in the mobile app.' };
   }
 
   try {
@@ -35,7 +45,7 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
     const platform = getAppPlatform();
     if (platform === 'ios') {
       if (!purchase.signedTransaction) {
-        return { ok: false, error: 'Missing Apple signed transaction.' };
+        return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
       const res = await fetch('/api/billing/apple/verify', {
         method: 'POST',
@@ -54,7 +64,7 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
         error?: string;
       };
       if (!res.ok || !json.ok) {
-        return { ok: false, error: json.error || 'Unable to verify Apple purchase.' };
+        return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
       return {
         ok: true,
@@ -66,7 +76,7 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
 
     if (platform === 'android') {
       if (!purchase.purchaseToken) {
-        return { ok: false, error: 'Missing Google Play purchase token.' };
+        return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
       const res = await fetch('/api/billing/google/verify', {
         method: 'POST',
@@ -87,10 +97,10 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
         message?: string;
       };
       if (json.pending) {
-        return { ok: false, pending: true, error: json.message || 'Purchase pending.' };
+        return { ok: false, pending: true, error: 'Your purchase is pending. Access will activate after Google Play confirms payment.' };
       }
       if (!res.ok || !json.ok) {
-        return { ok: false, error: json.error || 'Unable to verify Google Play purchase.' };
+        return { ok: false, error: 'We could not confirm this purchase. Please try again.' };
       }
       return {
         ok: true,
@@ -100,9 +110,9 @@ export async function purchaseNativePlan(productId: string): Promise<NativePurch
       };
     }
 
-    return { ok: false, error: 'Unsupported platform.' };
+    return { ok: false, error: 'Purchases are unavailable right now. Please try again.' };
   } catch (error) {
-    return { ok: false, error: (error as Error).message || 'Purchase failed.' };
+    return { ok: false, error: customerStoreError(error, 'Purchases are unavailable right now. Please try again.') };
   }
 }
 
@@ -112,7 +122,7 @@ export async function restoreNativePurchases(): Promise<{
   plan?: string;
 }> {
   if (!isStoreBillingAvailable()) {
-    return { restored: false, message: 'Restore is only available in the native app.' };
+    return { restored: false, message: 'Restore purchases is available in the mobile app.' };
   }
 
   try {
@@ -160,16 +170,20 @@ export async function restoreNativePurchases(): Promise<{
     }
 
     if (!lastPlan) {
-      return { restored: false, message: 'Unable to verify purchase.' };
+      return { restored: false, message: 'We could not restore purchases. Please try again.' };
     }
     return { restored: true, message: 'Purchases restored', plan: lastPlan };
   } catch (error) {
-    return { restored: false, message: (error as Error).message || 'Unable to verify purchase.' };
+    return { restored: false, message: customerStoreError(error, 'We could not restore purchases. Please try again.') };
   }
 }
 
 export async function openNativeSubscriptionManagement(): Promise<boolean> {
   if (!isStoreBillingAvailable()) return false;
-  const result = await EverittBilling.manageSubscriptions();
-  return Boolean(result.opened);
+  try {
+    const result = await EverittBilling.manageSubscriptions();
+    return Boolean(result.opened);
+  } catch {
+    return false;
+  }
 }
