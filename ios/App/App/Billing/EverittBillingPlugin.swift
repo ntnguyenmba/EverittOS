@@ -5,7 +5,7 @@ import UIKit
 
 @objc(EverittBillingPlugin)
 public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier = "EverittBillingPlugin"
+    public let identifier = "EverittBilling"
     public let jsName = "EverittBilling"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "loadProducts", returnType: CAPPluginReturnPromise),
@@ -40,14 +40,14 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
                 call.resolve(["products": mapped])
             } catch {
-                call.reject(error.localizedDescription)
+                call.reject("Store products are temporarily unavailable.")
             }
         }
     }
 
     @objc func purchase(_ call: CAPPluginCall) {
         guard let productId = call.getString("productId"), !productId.isEmpty else {
-            call.reject("productId is required")
+            call.reject("This plan is temporarily unavailable.")
             return
         }
 
@@ -58,7 +58,7 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                     products = try await StoreKitBillingManager.shared.loadProducts(productIDs: [productId])
                 }
                 guard let product = products.first(where: { $0.id == productId }) else {
-                    call.reject("Product not found")
+                    call.reject("This plan is temporarily unavailable.")
                     return
                 }
                 let payload = try await StoreKitBillingManager.shared.purchase(product)
@@ -71,7 +71,7 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                     "cancelled": payload.cancelled
                 ])
             } catch {
-                call.reject(error.localizedDescription)
+                call.reject("We could not complete the purchase. Please try again.")
             }
         }
     }
@@ -92,7 +92,7 @@ public class EverittBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
                 call.resolve(["purchases": mapped])
             } catch {
-                call.reject(error.localizedDescription)
+                call.reject("We could not restore purchases. Please try again.")
             }
         }
     }
