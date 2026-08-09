@@ -34,6 +34,9 @@ const IOS_ENTERPRISE = 'com.everittventures.everittos.enterprise.monthly.v2';
 
 const DEFAULT_ANDROID_PRO = 'everittos_pro';
 const DEFAULT_ANDROID_BUSINESS = 'everittos_business';
+const DEFAULT_ANDROID_STARTER = 'everittos_starter';
+const DEFAULT_ANDROID_GROWTH = 'everittos_growth';
+const DEFAULT_ANDROID_ENTERPRISE = 'everittos_enterprise';
 const DEFAULT_ANDROID_BASE_PLAN = 'monthly';
 
 export function getIosProMonthlyProductId(): string {
@@ -64,6 +67,18 @@ export function getAndroidBusinessSubscriptionId(): string {
   return envOr('NEXT_PUBLIC_ANDROID_BUSINESS_SUBSCRIPTION_ID', DEFAULT_ANDROID_BUSINESS);
 }
 
+export function getAndroidStarterSubscriptionId(): string {
+  return envOr('NEXT_PUBLIC_ANDROID_STARTER_SUBSCRIPTION_ID', DEFAULT_ANDROID_STARTER);
+}
+
+export function getAndroidGrowthSubscriptionId(): string {
+  return envOr('NEXT_PUBLIC_ANDROID_GROWTH_SUBSCRIPTION_ID', DEFAULT_ANDROID_GROWTH);
+}
+
+export function getAndroidEnterpriseSubscriptionId(): string {
+  return envOr('NEXT_PUBLIC_ANDROID_ENTERPRISE_SUBSCRIPTION_ID', DEFAULT_ANDROID_ENTERPRISE);
+}
+
 export function getAndroidMonthlyBasePlanId(): string {
   return envOr('NEXT_PUBLIC_ANDROID_MONTHLY_BASE_PLAN_ID', DEFAULT_ANDROID_BASE_PLAN);
 }
@@ -75,20 +90,11 @@ export function getStoreProductCatalog(): BillingProductDefinition[] {
     { platform: 'apple', productId: getIosStarterMonthlyProductId(), plan: 'starter', billingPeriod: 'monthly' },
     { platform: 'apple', productId: getIosGrowthMonthlyProductId(), plan: 'growth', billingPeriod: 'monthly' },
     { platform: 'apple', productId: getIosEnterpriseMonthlyProductId(), plan: 'enterprise', billingPeriod: 'monthly' },
-    {
-      platform: 'google',
-      productId: getAndroidProSubscriptionId(),
-      plan: 'pro',
-      billingPeriod: 'monthly',
-      basePlanId: getAndroidMonthlyBasePlanId()
-    },
-    {
-      platform: 'google',
-      productId: getAndroidBusinessSubscriptionId(),
-      plan: 'business',
-      billingPeriod: 'monthly',
-      basePlanId: getAndroidMonthlyBasePlanId()
-    }
+    { platform: 'google', productId: getAndroidProSubscriptionId(), plan: 'pro', billingPeriod: 'monthly', basePlanId: getAndroidMonthlyBasePlanId() },
+    { platform: 'google', productId: getAndroidBusinessSubscriptionId(), plan: 'business', billingPeriod: 'monthly', basePlanId: getAndroidMonthlyBasePlanId() },
+    { platform: 'google', productId: getAndroidStarterSubscriptionId(), plan: 'starter', billingPeriod: 'monthly', basePlanId: getAndroidMonthlyBasePlanId() },
+    { platform: 'google', productId: getAndroidGrowthSubscriptionId(), plan: 'growth', billingPeriod: 'monthly', basePlanId: getAndroidMonthlyBasePlanId() },
+    { platform: 'google', productId: getAndroidEnterpriseSubscriptionId(), plan: 'enterprise', billingPeriod: 'monthly', basePlanId: getAndroidMonthlyBasePlanId() }
   ];
 }
 
@@ -132,5 +138,11 @@ export function publicStoreProductIds(platform: 'ios' | 'android'): string[] {
       getIosEnterpriseMonthlyProductId()
     ];
   }
-  return [getAndroidProSubscriptionId(), getAndroidBusinessSubscriptionId()];
+  return [
+    getAndroidProSubscriptionId(),
+    getAndroidBusinessSubscriptionId(),
+    getAndroidStarterSubscriptionId(),
+    getAndroidGrowthSubscriptionId(),
+    getAndroidEnterpriseSubscriptionId()
+  ];
 }
