@@ -83,7 +83,7 @@ const REROOT_STRIPE_PRODUCT_ENV_KEYS: Record<ExternalReRootPlan, string> = {
 };
 
 export const BILLING_PLAN_AMOUNT_CENTS: Record<PaidPlanKey, number> = {
-  pro: 900,
+  pro: 1000,
   business: 3900,
   starter: 7900,
   growth: 19900,
@@ -111,8 +111,8 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
   {
     id: 'pro',
     name: 'Pro',
-    priceLabel: '$9/month',
-    priceCents: 900,
+    priceLabel: '$10/month',
+    priceCents: 1000,
     headline: 'Bookings, before-and-after photos, and professional job management.',
     features: [
       'Everything in Free',
@@ -295,7 +295,7 @@ export function planFromKnownStripeProductId(productId: string | null | undefine
 
 export function planFromBillingAmount(amount: number | null | undefined): EverittosPlan | null {
   const cents = amount || 0;
-  if (cents === 900 || cents === 9) return 'pro';
+  if (cents === 1000 || cents === 10) return 'pro';
   if (cents === 3900 || cents === 39) return 'business';
   if (cents === 7900 || cents === 79) return 'starter';
   if (cents === 19900 || cents === 199) return 'growth';
