@@ -8,7 +8,10 @@ import {
 } from '@/lib/billing/native-purchase';
 import {
   getAndroidBusinessSubscriptionId,
+  getAndroidEnterpriseSubscriptionId,
+  getAndroidGrowthSubscriptionId,
   getAndroidProSubscriptionId,
+  getAndroidStarterSubscriptionId,
   getIosBusinessMonthlyProductId,
   getIosEnterpriseMonthlyProductId,
   getIosGrowthMonthlyProductId,
@@ -43,8 +46,14 @@ function productIdForPlan(plan: PaidPlanKey): string | null {
   }
 
   if (platform === 'android') {
-    if (plan === 'pro') return getAndroidProSubscriptionId();
-    if (plan === 'business') return getAndroidBusinessSubscriptionId();
+    const ids: Record<PaidPlanKey, string> = {
+      pro: getAndroidProSubscriptionId(),
+      business: getAndroidBusinessSubscriptionId(),
+      starter: getAndroidStarterSubscriptionId(),
+      growth: getAndroidGrowthSubscriptionId(),
+      enterprise: getAndroidEnterpriseSubscriptionId()
+    };
+    return ids[plan];
   }
 
   return null;
