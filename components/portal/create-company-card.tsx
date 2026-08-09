@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
 import { getCreateCompanyCopy } from '@/lib/i18n/ui-chrome-copy';
 
 type CreateCompanyCardProps = {
   variant: 'client' | 'contractor';
+};
+
+type Membership = {
+  isOwner?: boolean;
 };
 
 export function CreateCompanyCard({ variant: _variant }: CreateCompanyCardProps) {
@@ -15,6 +19,30 @@ export function CreateCompanyCard({ variant: _variant }: CreateCompanyCardProps)
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [checkingCompany, setCheckingCompany] = useState(true);
+  const [hasOwnedCompany, setHasOwnedCompany] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkOwnedCompany() {
+      try {
+        const response = await fetch('/api/org/memberships', { cache: 'no-store' });
+        if (!response.ok) return;
+        const result = (await response.json().catch(() => ({}))) as { memberships?: Membership[] };
+        if (!cancelled) {
+          setHasOwnedCompany(Boolean(result.memberships?.some((membership) => membership.isOwner)));
+        }
+      } finally {
+        if (!cancelled) setCheckingCompany(false);
+      }
+    }
+
+    void checkOwnedCompany();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function createCompany() {
     if (busy) return;
@@ -41,6 +69,8 @@ export function CreateCompanyCard({ variant: _variant }: CreateCompanyCardProps)
 
     window.location.assign('/dashboard');
   }
+
+  if (checkingCompany || hasOwnedCompany) return null;
 
   return (
     <div className="settings-card">
