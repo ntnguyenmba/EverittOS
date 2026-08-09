@@ -10,7 +10,10 @@ import {
   getAndroidBusinessSubscriptionId,
   getAndroidProSubscriptionId,
   getIosBusinessMonthlyProductId,
-  getIosProMonthlyProductId
+  getIosEnterpriseMonthlyProductId,
+  getIosGrowthMonthlyProductId,
+  getIosProMonthlyProductId,
+  getIosStarterMonthlyProductId
 } from '@/lib/billing/product-catalog';
 import { getAppPlatform } from '@/lib/platform/detect';
 import type { PaidPlanKey } from '@/lib/billing-config';
@@ -27,13 +30,23 @@ type NativeStoreSubscribeButtonProps = {
 
 function productIdForPlan(plan: PaidPlanKey): string | null {
   const platform = getAppPlatform();
-  if (plan !== 'pro' && plan !== 'business') return null;
+
   if (platform === 'ios') {
-    return plan === 'pro' ? getIosProMonthlyProductId() : getIosBusinessMonthlyProductId();
+    const ids: Record<PaidPlanKey, string> = {
+      pro: getIosProMonthlyProductId(),
+      business: getIosBusinessMonthlyProductId(),
+      starter: getIosStarterMonthlyProductId(),
+      growth: getIosGrowthMonthlyProductId(),
+      enterprise: getIosEnterpriseMonthlyProductId()
+    };
+    return ids[plan];
   }
+
   if (platform === 'android') {
-    return plan === 'pro' ? getAndroidProSubscriptionId() : getAndroidBusinessSubscriptionId();
+    if (plan === 'pro') return getAndroidProSubscriptionId();
+    if (plan === 'business') return getAndroidBusinessSubscriptionId();
   }
+
   return null;
 }
 
