@@ -1,6 +1,5 @@
 /**
- * Server-side product catalog mapping store product IDs to EverittOS plans.
- * Product IDs come from environment variables; defaults match the app bundle/package.
+ * Store product catalog mapping App Store and Google Play product IDs to EverittOS plans.
  */
 import { MOBILE_APP_CONFIG } from '@/lib/mobile-app-config';
 import { sanitizeBillingEnvValue } from '@/lib/billing-env';
@@ -8,9 +7,9 @@ import { sanitizeBillingEnvValue } from '@/lib/billing-env';
 export type BillingPlatform = 'stripe' | 'apple' | 'google';
 
 /** Plans available via App Store / Play Store digital subscriptions. */
-export type StoreEverittPlan = 'pro' | 'business';
+export type StoreEverittPlan = 'pro' | 'business' | 'starter' | 'growth' | 'enterprise';
 
-export type EverittPlan = 'free' | 'pro' | 'business' | 'starter' | 'growth' | 'enterprise';
+export type EverittPlan = 'free' | StoreEverittPlan;
 
 export type BillingPeriod = 'monthly' | 'annual';
 
@@ -27,8 +26,12 @@ function envOr(key: string, fallback: string): string {
   return sanitizeBillingEnvValue(process.env[key]) || fallback;
 }
 
-const DEFAULT_IOS_PRO = `${MOBILE_APP_CONFIG.iosBundleId}.pro.monthly`;
-const DEFAULT_IOS_BUSINESS = `${MOBILE_APP_CONFIG.iosBundleId}.business.monthly`;
+const DEFAULT_IOS_PRO = 'com.everittventures.everittos.pro.monthly.v3';
+const DEFAULT_IOS_BUSINESS = 'com.everittventures.everittos.business.monthly.v2';
+const DEFAULT_IOS_STARTER = 'com.everittventures.everittos.starter.monthly.v4';
+const DEFAULT_IOS_GROWTH = 'com.everittventures.everittos.growth.monthly.v2';
+const DEFAULT_IOS_ENTERPRISE = 'com.everittventures.everittos.enterprise.monthly.v2';
+
 const DEFAULT_ANDROID_PRO = 'everittos_pro';
 const DEFAULT_ANDROID_BUSINESS = 'everittos_business';
 const DEFAULT_ANDROID_BASE_PLAN = 'monthly';
@@ -39,6 +42,18 @@ export function getIosProMonthlyProductId(): string {
 
 export function getIosBusinessMonthlyProductId(): string {
   return envOr('NEXT_PUBLIC_IOS_BUSINESS_MONTHLY_PRODUCT_ID', DEFAULT_IOS_BUSINESS);
+}
+
+export function getIosStarterMonthlyProductId(): string {
+  return envOr('NEXT_PUBLIC_IOS_STARTER_MONTHLY_PRODUCT_ID', DEFAULT_IOS_STARTER);
+}
+
+export function getIosGrowthMonthlyProductId(): string {
+  return envOr('NEXT_PUBLIC_IOS_GROWTH_MONTHLY_PRODUCT_ID', DEFAULT_IOS_GROWTH);
+}
+
+export function getIosEnterpriseMonthlyProductId(): string {
+  return envOr('NEXT_PUBLIC_IOS_ENTERPRISE_MONTHLY_PRODUCT_ID', DEFAULT_IOS_ENTERPRISE);
 }
 
 export function getAndroidProSubscriptionId(): string {
@@ -55,18 +70,11 @@ export function getAndroidMonthlyBasePlanId(): string {
 
 export function getStoreProductCatalog(): BillingProductDefinition[] {
   return [
-    {
-      platform: 'apple',
-      productId: getIosProMonthlyProductId(),
-      plan: 'pro',
-      billingPeriod: 'monthly'
-    },
-    {
-      platform: 'apple',
-      productId: getIosBusinessMonthlyProductId(),
-      plan: 'business',
-      billingPeriod: 'monthly'
-    },
+    { platform: 'apple', productId: getIosProMonthlyProductId(), plan: 'pro', billingPeriod: 'monthly' },
+    { platform: 'apple', productId: getIosBusinessMonthlyProductId(), plan: 'business', billingPeriod: 'monthly' },
+    { platform: 'apple', productId: getIosStarterMonthlyProductId(), plan: 'starter', billingPeriod: 'monthly' },
+    { platform: 'apple', productId: getIosGrowthMonthlyProductId(), plan: 'growth', billingPeriod: 'monthly' },
+    { platform: 'apple', productId: getIosEnterpriseMonthlyProductId(), plan: 'enterprise', billingPeriod: 'monthly' },
     {
       platform: 'google',
       productId: getAndroidProSubscriptionId(),
@@ -110,15 +118,19 @@ export function appleBundleId(): string {
 }
 
 export function googlePlayPackageName(): string {
-  return (
-    sanitizeBillingEnvValue(process.env.GOOGLE_PLAY_PACKAGE_NAME) || MOBILE_APP_CONFIG.androidPackage
-  );
+  return sanitizeBillingEnvValue(process.env.GOOGLE_PLAY_PACKAGE_NAME) || MOBILE_APP_CONFIG.androidPackage;
 }
 
 /** Public product IDs safe to send to native clients for StoreKit / Play queries. */
 export function publicStoreProductIds(platform: 'ios' | 'android'): string[] {
   if (platform === 'ios') {
-    return [getIosProMonthlyProductId(), getIosBusinessMonthlyProductId()];
+    return [
+      getIosProMonthlyProductId(),
+      getIosBusinessMonthlyProductId(),
+      getIosStarterMonthlyProductId(),
+      getIosGrowthMonthlyProductId(),
+      getIosEnterpriseMonthlyProductId()
+    ];
   }
   return [getAndroidProSubscriptionId(), getAndroidBusinessSubscriptionId()];
 }
