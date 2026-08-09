@@ -18,16 +18,20 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   const homeHref = dashboardPathForRole(normalizedRole);
   const isFocusedPortal = isClientRole(normalizedRole) || isContractorRole(normalizedRole);
 
-  // Customer and contractor portals already show the EverittOS brand in the
-  // shared navigation header, so this row only keeps the language control.
+  // Portal users can also own a separate company. Keep the company switcher
+  // available so they can move between their client/contractor view and their
+  // own owner workspace without losing either membership.
   if (isFocusedPortal) {
     return (
       <div className="app-page-top app-page-top-portal">
-        <div className="app-page-top-language">
-          <LanguageSwitcher
-            id={isContractorRole(normalizedRole) ? 'contractor-portal-top-language' : 'client-portal-language'}
-            variant="compact"
-          />
+        <div className="app-page-top-workspace app-page-top-portal-workspace">
+          <OrgSwitcher />
+          <div className="app-page-top-language">
+            <LanguageSwitcher
+              id={isContractorRole(normalizedRole) ? 'contractor-portal-top-language' : 'client-portal-language'}
+              variant="compact"
+            />
+          </div>
         </div>
 
         <style jsx global>{`
@@ -40,9 +44,23 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
             padding: 0;
           }
 
-          .app-page-top-language {
-            width: min(100%, 8.75rem);
+          .app-page-top-portal-workspace {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            width: min(100%, 34rem);
             margin-left: auto;
+          }
+
+          .app-page-top-portal-workspace .org-switcher {
+            min-width: 0;
+            flex: 1 1 16rem;
+          }
+
+          .app-page-top-language {
+            flex: 0 0 min(8.75rem, 38vw);
+            width: min(100%, 8.75rem);
           }
 
           @media (max-width: 640px) {
@@ -50,7 +68,21 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
               margin-bottom: 10px;
             }
 
+            .app-page-top-portal-workspace {
+              align-items: stretch;
+              flex-direction: column;
+              gap: 8px;
+              width: 100%;
+            }
+
+            .app-page-top-portal-workspace .org-switcher {
+              flex-basis: auto;
+              width: 100%;
+            }
+
             .app-page-top-language {
+              align-self: flex-end;
+              flex-basis: auto;
               width: 8.25rem;
             }
           }
