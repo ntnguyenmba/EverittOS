@@ -25,7 +25,10 @@ public class EverittBillingPlugin extends Plugin {
 
     private static final String[] DEFAULT_PRODUCT_IDS = new String[] {
             "everittos_pro",
-            "everittos_business"
+            "everittos_business",
+            "everittos_starter",
+            "everittos_growth",
+            "everittos_enterprise"
     };
 
     @Override
