@@ -78,7 +78,7 @@ test('stripe price and amount mapping resolves final plans', () => {
   assert.equal(planFromKnownStripePriceId('price_1TcwxB2KsjgU9g9y57f9veQh'), 'business');
   assert.equal(planFromKnownStripePriceId('price_1U2Kge2KsjgU9g9ypMeHRfxb'), 'growth');
   assert.equal(planFromBillingAmount(7900), 'starter');
-  assert.equal(planFromBillingAmount(900), 'pro');
+  assert.equal(planFromBillingAmount(1000), 'pro');
   assert.equal(planFromBillingAmount(39900), 'enterprise');
 });
 
