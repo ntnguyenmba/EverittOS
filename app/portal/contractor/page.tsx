@@ -46,7 +46,7 @@ const LOAD_TIMEOUT_MS = 10000;
 
 const copy = {
   en: {
-    contractor: 'Contractor', dashboard: 'Contractor dashboard', welcome: 'Welcome back', jobs: 'Jobs', schedule: 'Schedule', earnings: 'Earnings', settings: 'Settings', signOut: 'Sign out', signingOut: 'Signing out...',
+    contractor: 'Contractor', dashboard: 'Contractor dashboard', upcomingHeadline: 'upcoming jobs', upcomingHeadlineOne: 'upcoming job', jobs: 'Jobs', schedule: 'Schedule', earnings: 'Earnings', settings: 'Settings', signOut: 'Sign out', signingOut: 'Signing out...',
     loadingTitle: 'Loading your contractor dashboard...', loadingBody: 'This should take only a few seconds.', errorTitle: 'The contractor dashboard could not load', errorSafe: 'No jobs, payments, or earnings were changed.', tryAgain: 'Try again',
     assignedJobs: 'Assigned jobs', upcomingJobs: 'Upcoming jobs', completedJobs: 'Completed jobs', totalEarnings: 'Total earnings', paidToYou: 'Paid to you', stillOwed: 'Still owed',
     job: 'Job', customer: 'Customer', noJobs: 'No assigned jobs yet.', dateNotSet: 'Date not set', scheduleBody: 'Your upcoming assigned jobs appear above in date order.', paid: 'paid', stillOwedLower: 'still owed', earningsBody: 'Earnings are calculated only from contractor payment records linked to your worker profile.',
@@ -54,7 +54,7 @@ const copy = {
     status: { scheduled: 'scheduled', completed: 'completed', complete: 'complete', done: 'done', finished: 'finished', closed: 'closed', cancelled: 'cancelled', canceled: 'canceled' }
   },
   es: {
-    contractor: 'Contratista', dashboard: 'Panel del contratista', welcome: 'Bienvenido de nuevo', jobs: 'Trabajos', schedule: 'Horario', earnings: 'Ganancias', settings: 'Configuración', signOut: 'Cerrar sesión', signingOut: 'Cerrando sesión...',
+    contractor: 'Contratista', dashboard: 'Panel del contratista', upcomingHeadline: 'trabajos próximos', upcomingHeadlineOne: 'trabajo próximo', jobs: 'Trabajos', schedule: 'Horario', earnings: 'Ganancias', settings: 'Configuración', signOut: 'Cerrar sesión', signingOut: 'Cerrando sesión...',
     loadingTitle: 'Cargando tu panel de contratista...', loadingBody: 'Esto solo debería tardar unos segundos.', errorTitle: 'No se pudo cargar el panel del contratista', errorSafe: 'No se cambiaron trabajos, pagos ni ganancias.', tryAgain: 'Intentar de nuevo',
     assignedJobs: 'Trabajos asignados', upcomingJobs: 'Próximos trabajos', completedJobs: 'Trabajos terminados', totalEarnings: 'Ganancias totales', paidToYou: 'Pagado a ti', stillOwed: 'Pendiente de pago',
     job: 'Trabajo', customer: 'Cliente', noJobs: 'Aún no hay trabajos asignados.', dateNotSet: 'Fecha no definida', scheduleBody: 'Tus próximos trabajos asignados aparecen arriba en orden de fecha.', paid: 'pagado', stillOwedLower: 'pendiente', earningsBody: 'Las ganancias se calculan solo con los registros de pago vinculados a tu perfil de contratista.',
@@ -62,7 +62,7 @@ const copy = {
     status: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', done: 'terminado', finished: 'terminado', closed: 'cerrado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
-    contractor: 'Nhà thầu', dashboard: 'Bảng điều khiển nhà thầu', welcome: 'Chào mừng trở lại', jobs: 'Công việc', schedule: 'Lịch', earnings: 'Thu nhập', settings: 'Cài đặt', signOut: 'Đăng xuất', signingOut: 'Đang đăng xuất...',
+    contractor: 'Nhà thầu', dashboard: 'Bảng điều khiển nhà thầu', upcomingHeadline: 'công việc sắp tới', upcomingHeadlineOne: 'công việc sắp tới', jobs: 'Công việc', schedule: 'Lịch', earnings: 'Thu nhập', settings: 'Cài đặt', signOut: 'Đăng xuất', signingOut: 'Đang đăng xuất...',
     loadingTitle: 'Đang tải bảng điều khiển nhà thầu...', loadingBody: 'Quá trình này chỉ mất vài giây.', errorTitle: 'Không thể tải bảng điều khiển nhà thầu', errorSafe: 'Không có công việc, khoản thanh toán hoặc thu nhập nào bị thay đổi.', tryAgain: 'Thử lại',
     assignedJobs: 'Công việc được giao', upcomingJobs: 'Công việc sắp tới', completedJobs: 'Công việc đã xong', totalEarnings: 'Tổng thu nhập', paidToYou: 'Đã trả cho bạn', stillOwed: 'Còn phải trả',
     job: 'Công việc', customer: 'Khách hàng', noJobs: 'Chưa có công việc được giao.', dateNotSet: 'Chưa có ngày', scheduleBody: 'Các công việc sắp tới của bạn được hiển thị phía trên theo thứ tự ngày.', paid: 'đã trả', stillOwedLower: 'còn phải trả', earningsBody: 'Thu nhập chỉ được tính từ các hồ sơ thanh toán được liên kết với hồ sơ nhà thầu của bạn.',
@@ -220,6 +220,10 @@ export default function ContractorPortalPage() {
     [jobs]
   );
 
+  const operationalHeadline = state === 'ready'
+    ? `${totals.upcoming} ${totals.upcoming === 1 ? c.upcomingHeadlineOne : c.upcomingHeadline}`
+    : c.dashboard;
+
   async function signOut() {
     if (signingOut) return;
     setSigningOut(true);
@@ -234,16 +238,16 @@ export default function ContractorPortalPage() {
 
   return (
     <AuthenticatedSection role="contractor" className="contractor-dashboard role-dashboard-minimal">
-      <header className="card" style={{ marginBottom: 18 }}>
-        <p className="eyebrow" style={{ margin: '0 0 12px' }}>{c.dashboard}</p>
-        <h1 style={{ marginBottom: 6 }}>{c.welcome}</h1>
-        <p className="muted" style={{ margin: 0 }}>{workerName || c.contractor}</p>
-        <nav className="button-row contractor-portal-actions" style={{ marginTop: 20 }}>
+      <header className="card contractor-portal-hero">
+        <p className="eyebrow contractor-role-label">{c.contractor}</p>
+        <h1>{operationalHeadline}</h1>
+        <p className="muted contractor-worker-name">{workerName || c.contractor}</p>
+        <nav className="button-row contractor-portal-actions">
           <a className="btn btn-primary" href="#jobs">{c.jobs}</a>
           <a className="btn" href="#schedule">{c.schedule}</a>
           <a className="btn" href="#earnings">{c.earnings}</a>
           <Link className="btn" href="/portal/contractor/settings">{c.settings}</Link>
-          <button type="button" className="btn" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
+          <button type="button" className="btn contractor-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
         </nav>
       </header>
 
@@ -260,16 +264,16 @@ export default function ContractorPortalPage() {
 
       {state === 'ready' ? (
         <>
-          <section className="metric-grid" style={{ marginBottom: 18 }}>
-            <article className="card"><span className="muted">{c.assignedJobs}</span><h2>{totals.assigned}</h2></article>
-            <article className="card"><span className="muted">{c.upcomingJobs}</span><h2>{totals.upcoming}</h2></article>
-            <article className="card"><span className="muted">{c.completedJobs}</span><h2>{totals.completed}</h2></article>
-            <article className="card"><span className="muted">{c.totalEarnings}</span><h2>{money(totals.total, localeCode)}</h2></article>
-            <article className="card"><span className="muted">{c.paidToYou}</span><h2>{money(totals.paid, localeCode)}</h2></article>
-            <article className="card"><span className="muted">{c.stillOwed}</span><h2>{money(totals.owed, localeCode)}</h2></article>
+          <section className="metric-grid contractor-metrics">
+            <article className="card contractor-metric contractor-job-metric"><span className="muted">{c.assignedJobs}</span><h2>{totals.assigned}</h2></article>
+            <article className="card contractor-metric contractor-job-metric contractor-job-metric-primary"><span className="muted">{c.upcomingJobs}</span><h2>{totals.upcoming}</h2></article>
+            <article className="card contractor-metric contractor-job-metric"><span className="muted">{c.completedJobs}</span><h2>{totals.completed}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.totalEarnings}</span><h2>{money(totals.total, localeCode)}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.paidToYou}</span><h2>{money(totals.paid, localeCode)}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.stillOwed}</span><h2>{money(totals.owed, localeCode)}</h2></article>
           </section>
 
-          <section id="jobs" className="card" style={{ marginBottom: 18 }}>
+          <section id="jobs" className="card contractor-content-card">
             <h3 style={{ marginTop: 0 }}>{c.jobs}</h3>
             {sortedJobs.length ? (
               <div className="job-visits-list">
@@ -287,9 +291,9 @@ export default function ContractorPortalPage() {
             ) : <p className="muted">{c.noJobs}</p>}
           </section>
 
-          <section id="schedule" className="card" style={{ marginBottom: 18 }}><h3 style={{ marginTop: 0 }}>{c.schedule}</h3><p className="muted">{c.scheduleBody}</p></section>
+          <section id="schedule" className="card contractor-content-card"><h3 style={{ marginTop: 0 }}>{c.schedule}</h3><p className="muted">{c.scheduleBody}</p></section>
 
-          <section id="earnings" className="card">
+          <section id="earnings" className="card contractor-content-card">
             <h3 style={{ marginTop: 0 }}>{c.earnings}</h3>
             <p><strong>{money(totals.paid, localeCode)}</strong> {c.paid} · <strong>{money(totals.owed, localeCode)}</strong> {c.stillOwedLower}</p>
             <p className="muted">{c.earningsBody}</p>
