@@ -18,14 +18,16 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   const homeHref = dashboardPathForRole(normalizedRole);
   const isFocusedPortal = isClientRole(normalizedRole) || isContractorRole(normalizedRole);
 
-  // Portal users can also own a separate company. Keep the company switcher
+  // Portal users can also own a separate company. Keep the workspace switcher
   // available so they can move between their client/contractor view and their
   // own owner workspace without losing either membership.
   if (isFocusedPortal) {
     return (
       <div className="app-page-top app-page-top-portal">
         <div className="app-page-top-workspace app-page-top-portal-workspace">
-          <OrgSwitcher />
+          <div className="app-page-top-portal-org">
+            <OrgSwitcher />
+          </div>
           <div className="app-page-top-language">
             <LanguageSwitcher
               id={isContractorRole(normalizedRole) ? 'contractor-portal-top-language' : 'client-portal-language'}
@@ -37,7 +39,7 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
         <style jsx global>{`
           .app-page-top-portal {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: flex-end;
             width: 100%;
             margin: 0 0 14px;
@@ -45,22 +47,47 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
           }
 
           .app-page-top-portal-workspace {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
+            display: grid;
+            grid-template-columns: minmax(220px, 300px) minmax(120px, 140px);
+            align-items: end;
+            justify-content: end;
             gap: 10px;
-            width: min(100%, 34rem);
+            width: auto;
+            max-width: 100%;
             margin-left: auto;
           }
 
-          .app-page-top-portal-workspace .org-switcher {
+          .app-page-top-portal-org {
             min-width: 0;
-            flex: 1 1 16rem;
+            width: 100%;
+          }
+
+          .app-page-top-portal-workspace .org-switcher {
+            width: 100%;
+            min-width: 0;
+            margin: 0;
+          }
+
+          .app-page-top-portal-workspace .org-switcher-label {
+            display: block;
+            width: auto;
+            margin: 0 0 5px;
+            white-space: nowrap;
+          }
+
+          .app-page-top-portal-workspace .org-switcher-select {
+            width: 100%;
+            max-width: 100%;
           }
 
           .app-page-top-language {
-            flex: 0 0 min(8.75rem, 38vw);
-            width: min(100%, 8.75rem);
+            width: 100%;
+            min-width: 0;
+          }
+
+          .app-page-top-language select,
+          .app-page-top-language button {
+            width: 100%;
           }
 
           @media (max-width: 640px) {
@@ -69,21 +96,20 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
             }
 
             .app-page-top-portal-workspace {
-              align-items: stretch;
-              flex-direction: column;
+              grid-template-columns: minmax(0, 1fr) 120px;
+              width: 100%;
               gap: 8px;
-              width: 100%;
             }
+          }
 
-            .app-page-top-portal-workspace .org-switcher {
-              flex-basis: auto;
-              width: 100%;
+          @media (max-width: 430px) {
+            .app-page-top-portal-workspace {
+              grid-template-columns: 1fr;
             }
 
             .app-page-top-language {
-              align-self: flex-end;
-              flex-basis: auto;
-              width: 8.25rem;
+              width: 120px;
+              justify-self: end;
             }
           }
         `}</style>
