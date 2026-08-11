@@ -88,6 +88,46 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
     await performClientLogout(router);
   }
 
+  const isFocusedPortal = isClientRole(role) || isContractorRole(role);
+
+  if (isFocusedPortal) {
+    return (
+      <header className="mobile-nav mobile-nav-focused-portal" aria-label={t('ux.mobileNavLabel')}>
+        <div className="mobile-nav-bar">
+          <BrandLogo href={dashboardPathForRole(role)} size={28} showName className="mobile-nav-brand-logo" />
+        </div>
+        <style>{`
+          .mobile-nav-focused-portal {
+            border-bottom: 1px solid #b9c7d0;
+            background: rgba(247, 250, 251, 0.96);
+            box-shadow: 0 8px 24px rgba(24, 44, 59, 0.08);
+            backdrop-filter: blur(18px);
+          }
+
+          .mobile-nav-focused-portal .mobile-nav-bar {
+            min-height: 68px;
+            padding: 10px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
+          }
+
+          .mobile-nav-focused-portal .mobile-nav-brand-logo {
+            color: #173044;
+          }
+
+          @media (max-width: 480px) {
+            .mobile-nav-focused-portal .mobile-nav-bar {
+              min-height: 64px;
+              padding: 9px 20px;
+            }
+          }
+        `}</style>
+      </header>
+    );
+  }
+
   const drawer = open ? (
     <div className="mobile-nav-overlay mobile-nav-overlay-portal" role="presentation" onClick={() => setOpen(false)}>
       <nav
@@ -108,7 +148,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
             <AppNavItems
               plan={normalized}
               role={role}
-              unread={isClientRole(role) || isContractorRole(role) ? 0 : unread}
+              unread={unread}
               linkClassName="mobile-nav-drawer-link"
               onNavigate={() => setOpen(false)}
             />
@@ -117,11 +157,9 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
 
         <div className="mobile-nav-drawer-footer">
           <LanguageSwitcher id="mobile-drawer-language" variant="drawer" />
-          {!isClientRole(role) ? (
-            <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
-              {t('ux.logOut')}
-            </button>
-          ) : null}
+          <button className="btn btn-block mobile-nav-logout" type="button" onClick={() => void logout()}>
+            {t('ux.logOut')}
+          </button>
         </div>
       </nav>
     </div>
@@ -167,15 +205,8 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           box-sizing: border-box;
         }
 
-        .mobile-nav-brand-logo {
-          color: #173044;
-        }
-
-        .mobile-nav-bar-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
+        .mobile-nav-brand-logo { color: #173044; }
+        .mobile-nav-bar-actions { display: flex; align-items: center; gap: 10px; }
 
         .mobile-nav-language select,
         .mobile-nav-language button {
@@ -200,9 +231,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           box-shadow: 0 7px 18px rgba(36, 63, 83, 0.2);
         }
 
-        .mobile-nav-menu-btn:hover {
-          background: #1b3142;
-        }
+        .mobile-nav-menu-btn:hover { background: #1b3142; }
 
         .mobile-nav-overlay-portal {
           position: fixed;
@@ -245,10 +274,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           font-weight: 750;
         }
 
-        .mobile-nav-panel {
-          overflow-y: auto;
-          padding: 16px 14px 24px;
-        }
+        .mobile-nav-panel { overflow-y: auto; padding: 16px 14px 24px; }
 
         .mobile-nav-drawer-link {
           min-height: 50px;
@@ -277,13 +303,6 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           background: #e8eef2;
         }
 
-        .mobile-nav-settings-note {
-          margin: 0;
-          color: #526979;
-          font-size: 13px;
-          line-height: 1.45;
-        }
-
         .mobile-nav-logout {
           min-height: 48px;
           border-color: #8fa2af;
@@ -292,9 +311,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           font-weight: 750;
         }
 
-        body.mobile-nav-open {
-          overflow: hidden;
-        }
+        body.mobile-nav-open { overflow: hidden; }
 
         @keyframes everittDrawerIn {
           from { transform: translateX(28px); opacity: 0; }
@@ -302,39 +319,19 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         }
 
         @media (min-width: 720px) and (max-width: 1100px) {
-          .mobile-nav-bar {
-            min-height: 74px;
-            padding-inline: 44px;
-          }
-
-          .mobile-nav-drawer {
-            width: min(430px, 54vw);
-          }
+          .mobile-nav-bar { min-height: 74px; padding-inline: 44px; }
+          .mobile-nav-drawer { width: min(430px, 54vw); }
         }
 
         @media (max-width: 480px) {
-          .mobile-nav-language {
-            display: none;
-          }
-
-          .mobile-nav-bar {
-            min-height: 64px;
-            padding: 9px 20px;
-          }
-
-          .mobile-nav-drawer {
-            width: calc(100vw - 18px);
-          }
-
-          .mobile-nav-drawer-footer {
-            padding-inline: 14px;
-          }
+          .mobile-nav-language { display: none; }
+          .mobile-nav-bar { min-height: 64px; padding: 9px 20px; }
+          .mobile-nav-drawer { width: calc(100vw - 18px); }
+          .mobile-nav-drawer-footer { padding-inline: 14px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .mobile-nav-drawer {
-            animation: none;
-          }
+          .mobile-nav-drawer { animation: none; }
         }
       `}</style>
     </header>
