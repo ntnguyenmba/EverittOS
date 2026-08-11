@@ -1,6 +1,6 @@
 .role-dashboard-minimal {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .role-dashboard-topbar {
@@ -14,66 +14,66 @@
 .role-period-filter {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   padding: 4px;
-  border: 1px solid rgba(37, 54, 74, 0.16);
-  border-radius: 12px;
-  background: #f5f7f8;
+  border: 1px solid rgba(35, 45, 50, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
   overflow-x: auto;
   max-width: 100%;
 }
 
 .role-period-filter button {
-  min-height: 38px !important;
-  padding: 8px 12px;
+  min-height: 36px !important;
+  padding: 7px 14px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   background: transparent;
-  color: #536577;
-  font-size: 14px;
-  font-weight: 700;
+  color: #657078;
+  font-size: 13px;
+  font-weight: 650;
   white-space: nowrap;
 }
 
 .role-period-filter button.is-active {
-  background: #243f53;
+  background: #283942;
   color: #fff;
 }
 
 .role-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .role-summary-card {
-  min-height: 108px;
-  padding: 16px;
+  min-height: 116px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid rgba(37, 54, 74, 0.17);
-  border-radius: 14px;
+  border: 1px solid rgba(35, 45, 50, 0.1);
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 4px 14px rgba(37, 54, 74, 0.06);
+  box-shadow: 0 8px 24px rgba(31, 43, 49, 0.045);
 }
 
 .role-summary-card strong {
-  color: #243f53;
-  font-size: clamp(30px, 5vw, 42px);
+  color: #24343d;
+  font-size: clamp(32px, 5vw, 44px);
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
 }
 
 .role-summary-card span {
-  color: #5f7186;
-  font-size: 14px;
-  font-weight: 700;
+  color: #77716a;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .portal-dashboard-section {
   margin: 0 !important;
-  padding: 14px !important;
+  padding: 18px !important;
 }
 
 .portal-dashboard-section > summary {
@@ -85,17 +85,18 @@
 .portal-dashboard-section > summary h2 {
   margin: 0;
   font-size: 18px;
+  letter-spacing: -0.02em;
 }
 
 .portal-dashboard-section > summary span {
-  color: #5f7186;
-  font-weight: 700;
+  color: #77716a;
+  font-weight: 650;
 }
 
 .client-job-card-list {
   display: grid;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .simplified-job-card {
@@ -103,21 +104,21 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px;
-  border: 1px solid rgba(37, 54, 74, 0.14);
-  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(35, 45, 50, 0.1);
+  border-radius: 14px;
   background: #fff;
 }
 
 .simplified-job-card h3 {
   margin: 0 0 6px;
-  color: #243f53;
+  color: #24343d;
   font-size: 17px;
 }
 
 .client-job-secondary {
   margin: 3px 0 0;
-  color: #5f7186;
+  color: #77716a;
   font-size: 14px;
 }
 
@@ -129,104 +130,222 @@
   text-align: right;
 }
 
-/* Owner: no greeting, no vague attention or working cards. */
-.dashboard-home > .page-header {
-  display: none !important;
-}
-
+.dashboard-home > .page-header { display: none !important; }
 .dashboard-operations .dashboard-revenue-grid > :nth-child(2),
-.dashboard-operations .dashboard-revenue-grid > :nth-child(3) {
-  display: none !important;
+.dashboard-operations .dashboard-revenue-grid > :nth-child(3) { display: none !important; }
+.dashboard-operations .dashboard-revenue-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.dashboard-home .dashboard-revenue-metric { min-height: 100px !important; }
+.dashboard-home .dashboard-revenue-metric > .muted { display: none !important; }
+
+/* Contractor and client portals: stronger hierarchy, less generic card UI. */
+.role-portal-shell .app-page-top-portal {
+  margin-bottom: 18px !important;
 }
 
-.dashboard-operations .dashboard-revenue-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+.role-portal-shell .app-page-top-portal-workspace {
+  width: min(100%, 31rem) !important;
+  align-items: flex-end !important;
 }
 
-.dashboard-home .dashboard-revenue-metric {
-  min-height: 100px !important;
+.role-portal-shell .org-switcher {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 5px !important;
 }
 
-.dashboard-home .dashboard-revenue-metric > .muted {
-  display: none !important;
+.role-portal-shell .org-switcher-label {
+  width: auto !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  font-weight: 750 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: #77716a !important;
 }
 
-/* Contractor: keep every existing flow but reduce visual weight. */
-.contractor-dashboard .contractor-job-card {
-  box-shadow: none;
+.role-portal-shell .org-switcher-select {
+  min-height: 42px !important;
+  border-radius: 11px !important;
+  border-color: rgba(35,45,50,.14) !important;
+  background: rgba(255,255,255,.88) !important;
+  color: #24343d !important;
+  font-weight: 600 !important;
 }
 
-.contractor-dashboard .contractor-job-card > button {
-  padding: 14px !important;
+.role-portal-contractor .contractor-dashboard > header.card {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 32px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(35,45,50,.1) !important;
+  background: linear-gradient(135deg, #fffdfa 0%, #f5f1eb 100%) !important;
+  box-shadow: 0 18px 45px rgba(31,43,49,.07) !important;
 }
 
-.contractor-dashboard .contractor-dash-header h1 {
-  display: none;
+.role-portal-contractor .contractor-dashboard > header.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34%;
+  height: 3px;
+  background: #9b8068;
 }
 
-.contractor-dashboard .contractor-dash-nav {
-  gap: 6px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  scrollbar-width: none;
+.role-portal-contractor .contractor-dashboard > header.card .eyebrow {
+  display: inline-flex !important;
+  width: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #8a7564 !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: .12em !important;
 }
 
-.contractor-dashboard .contractor-dash-nav::-webkit-scrollbar {
-  display: none;
+.role-portal-contractor .contractor-dashboard > header.card h1 {
+  margin-top: 4px !important;
+  font-size: clamp(34px, 5vw, 52px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.045em !important;
+  color: #21313a !important;
 }
 
+.role-portal-contractor .contractor-dashboard > header.card .muted {
+  color: #746e68 !important;
+  font-size: 15px !important;
+}
+
+.role-portal-shell .contractor-portal-actions {
+  width: min(650px, 100%) !important;
+  gap: 7px !important;
+}
+
+.role-portal-shell .contractor-portal-actions .btn {
+  min-height: 40px !important;
+  padding: 8px 13px !important;
+  border-radius: 10px !important;
+  border-color: rgba(35,45,50,.13) !important;
+  background: rgba(255,255,255,.62) !important;
+  color: #34444d !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+.role-portal-shell .contractor-portal-actions .btn-primary {
+  background: #2e4653 !important;
+  color: #fff !important;
+}
+
+.role-portal-contractor .metric-grid {
+  gap: 12px !important;
+}
+
+.role-portal-contractor .metric-grid > .card {
+  min-height: 108px !important;
+  padding: 18px 20px !important;
+  justify-content: space-between !important;
+  border-radius: 16px !important;
+  border-color: rgba(35,45,50,.09) !important;
+  background: rgba(255,255,255,.82) !important;
+  box-shadow: 0 8px 22px rgba(31,43,49,.04) !important;
+}
+
+.role-portal-contractor .metric-grid > .card .muted {
+  color: #81786f !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  letter-spacing: .01em !important;
+}
+
+.role-portal-contractor .metric-grid > .card h2 {
+  margin: 10px 0 0 !important;
+  color: #233640 !important;
+  font-size: clamp(25px, 3vw, 34px) !important;
+  line-height: 1 !important;
+  letter-spacing: -.035em !important;
+}
+
+.role-portal-contractor .contractor-dashboard > section.card:not(.metric-grid) {
+  border-radius: 18px !important;
+  box-shadow: 0 8px 26px rgba(31,43,49,.045) !important;
+}
+
+.role-portal-contractor .list-row > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid rgba(35,45,50,.12);
+  border-radius: 999px;
+  background: #f2eee9;
+  color: #5f554d;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.role-portal-client .role-dashboard-topbar,
+.role-portal-client .portal-client-nav {
+  padding: 0 2px !important;
+}
+
+.role-portal-client .role-summary-card {
+  min-height: 118px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(145deg,#fff 0%,#faf7f3 100%) !important;
+}
+
+.role-portal-client .role-summary-card strong { color: #233640 !important; }
+.role-portal-client .role-summary-card span { color: #81786f !important; }
+
+.role-portal-client .portal-dashboard-section {
+  border-radius: 18px !important;
+  box-shadow: 0 8px 26px rgba(31,43,49,.045) !important;
+}
+
+.role-portal-client .client-job-card {
+  padding: 18px !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.role-portal-client .status-badge {
+  background: #f2eee9 !important;
+  border-color: rgba(35,45,50,.12) !important;
+  color: #5f554d !important;
+  font-weight: 700;
+}
+
+.contractor-dashboard .contractor-job-card { box-shadow: none; }
+.contractor-dashboard .contractor-job-card > button { padding: 14px !important; }
+.contractor-dashboard .contractor-dash-header h1 { display: none; }
+.contractor-dashboard .contractor-dash-nav { gap: 6px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.contractor-dashboard .contractor-dash-nav::-webkit-scrollbar { display: none; }
 .contractor-dashboard > details.card,
-.contractor-dashboard > section.card {
-  margin-bottom: 12px !important;
-  padding: 14px !important;
-}
-
-.contractor-dashboard .contractor-job-card dl {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 10px !important;
-  margin-top: 12px !important;
-}
+.contractor-dashboard > section.card { margin-bottom: 12px !important; padding: 16px !important; }
+.contractor-dashboard .contractor-job-card dl { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 10px !important; margin-top: 12px !important; }
 
 @media (max-width: 720px) {
-  .role-dashboard-topbar {
-    align-items: stretch;
-  }
-
-  .role-period-filter {
-    width: 100%;
-  }
-
-  .role-period-filter button {
-    flex: 1 0 auto;
-  }
-
-  .role-summary-card {
-    min-height: 94px;
-    padding: 13px;
-  }
-
-  .simplified-job-card {
-    flex-direction: column;
-  }
-
-  .client-job-card-meta {
-    width: 100%;
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  .dashboard-operations .dashboard-revenue-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .contractor-dashboard .contractor-job-card dl {
-    grid-template-columns: 1fr !important;
-  }
+  .role-dashboard-topbar { align-items: stretch; }
+  .role-period-filter { width: 100%; }
+  .role-period-filter button { flex: 1 0 auto; }
+  .role-summary-card { min-height: 94px; padding: 15px; }
+  .simplified-job-card { flex-direction: column; }
+  .client-job-card-meta { width: 100%; align-items: flex-start; text-align: left; }
+  .dashboard-operations .dashboard-revenue-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .contractor-dashboard .contractor-job-card dl { grid-template-columns: 1fr !important; }
+  .role-portal-contractor .contractor-dashboard > header.card { padding: 24px 20px !important; }
+  .role-portal-shell .contractor-portal-actions { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .role-portal-shell .contractor-portal-actions > :last-child { grid-column: span 2; }
+  .role-portal-contractor .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .role-portal-shell .app-page-top-portal-workspace { align-items: stretch !important; }
 }
 
 @media (max-width: 390px) {
   .role-summary-grid,
-  .dashboard-operations .dashboard-revenue-grid {
-    grid-template-columns: 1fr !important;
-  }
+  .dashboard-operations .dashboard-revenue-grid,
+  .role-portal-contractor .metric-grid { grid-template-columns: 1fr !important; }
 }
