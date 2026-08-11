@@ -59,19 +59,20 @@ export function OrgSwitcher() {
 
   return (
     <label className="org-switcher">
-      <span className="org-switcher-label">Company</span>
+      <span className="org-switcher-label">Workspace</span>
       <select
         className="input org-switcher-select"
         value={activeId}
         disabled={switching}
         onChange={(event) => void switchOrg(event.target.value)}
-        aria-label="Switch company"
+        aria-label="Switch workspace"
       >
         {memberships.map((membership) => {
-          const roleName = roleDisplayName(normalizeRole(membership.role));
+          const role = normalizeRole(membership.role);
+          const roleName = role === 'contractor' ? 'Contractor' : roleDisplayName(role);
           return (
             <option key={membership.organizationId} value={membership.organizationId}>
-              {membership.organizationName} — {roleName}
+              {membership.organizationName} · {roleName}
             </option>
           );
         })}
