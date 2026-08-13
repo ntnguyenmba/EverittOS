@@ -1066,6 +1066,27 @@ export const messages: Messages = {
       noSyncAttempts: 'Chưa có lần đồng bộ nào.',
       connectFailed: 'Kết nối QuickBooks thất bại ({reason}).'
     },
+    calendarImport: {
+      title: 'Nhập lịch',
+      description: 'Tự động tạo công việc từ lịch bên ngoài.',
+      urlPlaceholder: 'URL đăng ký lịch',
+      helper: 'Dán liên kết đăng ký lịch iCal hoặc ICS riêng tư.',
+      connect: 'Kết nối và nhập',
+      connected: 'Đã kết nối',
+      lastSync: 'Lần đồng bộ cuối',
+      neverSynced: 'Chưa đồng bộ',
+      syncNow: 'Đồng bộ ngay',
+      disconnect: 'Ngắt kết nối',
+      defaultAmount: 'Số tiền công việc mặc định',
+      connecting: 'Đang kết nối…',
+      syncing: 'Đang đồng bộ…',
+      disconnecting: 'Đang ngắt kết nối…',
+      loadError: 'Không thể tải trạng thái nhập lịch.',
+      connectError: 'Không thể kết nối lịch.',
+      syncError: 'Không thể đồng bộ lịch.',
+      disconnectError: 'Không thể ngắt kết nối lịch.',
+      counts: 'Đã tạo: {created} · Đã cập nhật: {updated} · Đã bỏ qua: {skipped} · Lỗi: {failed}'
+    },
     customers: { notFound: 'Không tìm thấy khách hàng' },
     jobs: {
       notFound: 'Không tìm thấy công việc',

@@ -1064,6 +1064,27 @@ export const messages: Messages = {
       noSyncAttempts: 'No sync attempts yet.',
       connectFailed: 'QuickBooks connection failed ({reason}).'
     },
+    calendarImport: {
+      title: 'Calendar Import',
+      description: 'Automatically create jobs from an external calendar.',
+      urlPlaceholder: 'Calendar subscription URL',
+      helper: 'Paste a private iCal or ICS calendar subscription link.',
+      connect: 'Connect & Import',
+      connected: 'Connected',
+      lastSync: 'Last sync',
+      neverSynced: 'Not synced yet',
+      syncNow: 'Sync now',
+      disconnect: 'Disconnect',
+      defaultAmount: 'Default job amount',
+      connecting: 'Connecting…',
+      syncing: 'Syncing…',
+      disconnecting: 'Disconnecting…',
+      loadError: 'Unable to load calendar import status.',
+      connectError: 'Unable to connect the calendar.',
+      syncError: 'Unable to sync the calendar.',
+      disconnectError: 'Unable to disconnect the calendar.',
+      counts: 'Created: {created} · Updated: {updated} · Skipped: {skipped} · Failed: {failed}'
+    },
     customers: { notFound: 'Customer not found' },
     jobs: {
       notFound: 'Job not found',

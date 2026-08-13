@@ -1068,6 +1068,27 @@ export const messages: Messages = {
       noSyncAttempts: 'Aún no hay intentos de sincronización.',
       connectFailed: 'La conexión con QuickBooks falló ({reason}).'
     },
+    calendarImport: {
+      title: 'Importación de calendario',
+      description: 'Crea trabajos automáticamente desde un calendario externo.',
+      urlPlaceholder: 'URL de suscripción del calendario',
+      helper: 'Pegue un enlace privado de suscripción iCal o ICS.',
+      connect: 'Conectar e importar',
+      connected: 'Conectado',
+      lastSync: 'Última sincronización',
+      neverSynced: 'Aún no sincronizado',
+      syncNow: 'Sincronizar ahora',
+      disconnect: 'Desconectar',
+      defaultAmount: 'Importe predeterminado del trabajo',
+      connecting: 'Conectando…',
+      syncing: 'Sincronizando…',
+      disconnecting: 'Desconectando…',
+      loadError: 'No se pudo cargar el estado de importación del calendario.',
+      connectError: 'No se pudo conectar el calendario.',
+      syncError: 'No se pudo sincronizar el calendario.',
+      disconnectError: 'No se pudo desconectar el calendario.',
+      counts: 'Creados: {created} · Actualizados: {updated} · Omitidos: {skipped} · Fallidos: {failed}'
+    },
     customers: { notFound: 'Cliente no encontrado' },
     jobs: {
       notFound: 'Trabajo no encontrado',

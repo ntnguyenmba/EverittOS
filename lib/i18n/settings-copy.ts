@@ -20,6 +20,7 @@ export type SettingsWorkspaceCopy = {
   save: string;
   integrations: string;
   quickBooks: string;
+  calendarImport: string;
   businessDetails: string;
   legalName: string;
   teamName: string;
@@ -165,6 +166,7 @@ const settingsEn: SettingsWorkspaceCopy = {
   save: 'Save',
   integrations: 'Integrations',
   quickBooks: 'QuickBooks',
+  calendarImport: 'Calendar Import',
   businessDetails: 'Business details',
   legalName: 'Legal name',
   teamName: 'Team name',
@@ -223,6 +225,7 @@ const settingsEs: SettingsWorkspaceCopy = {
   save: 'Guardar',
   integrations: 'Integraciones',
   quickBooks: 'QuickBooks',
+  calendarImport: 'Importación de calendario',
   businessDetails: 'Detalles del negocio',
   legalName: 'Nombre legal',
   teamName: 'Nombre del equipo',
@@ -281,6 +284,7 @@ const settingsVi: SettingsWorkspaceCopy = {
   save: 'Lưu',
   integrations: 'Tích hợp',
   quickBooks: 'QuickBooks',
+  calendarImport: 'Nhập lịch',
   businessDetails: 'Chi tiết doanh nghiệp',
   legalName: 'Tên pháp lý',
   teamName: 'Tên nhóm',

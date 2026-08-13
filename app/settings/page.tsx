@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SettingsShell } from '@/components/settings/settings-shell';
 import { WorkspaceDeleteSection } from '@/components/settings/workspace-delete-section';
 import { AccountDeleteSection } from '@/components/settings/account-delete-section';
+import { CalendarImportPanel } from '@/components/calendar-import-panel';
 import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isOwner, normalizeRole } from '@/lib/roles';
@@ -250,8 +251,11 @@ export default function SettingsPage() {
         <details className="settings-card" style={{ marginTop: 18 }} open>
           <summary><strong>{c.integrations}</strong></summary>
           <div style={{ marginTop: 16 }}>
-            <h3 style={{ marginBottom: 8 }}>{c.quickBooks}</h3>
-            <QuickBooksIntegrationPanel canManage />
+            <CalendarImportPanel />
+            <div style={{ marginTop: 28 }}>
+              <h3 style={{ marginBottom: 8 }}>{c.quickBooks}</h3>
+              <QuickBooksIntegrationPanel canManage />
+            </div>
           </div>
         </details>
       ) : null}

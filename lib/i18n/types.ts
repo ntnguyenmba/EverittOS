@@ -861,6 +861,27 @@ export type MessageTree = {
       noSyncAttempts: string;
       connectFailed: string;
     };
+    calendarImport: {
+      title: string;
+      description: string;
+      urlPlaceholder: string;
+      helper: string;
+      connect: string;
+      connected: string;
+      lastSync: string;
+      neverSynced: string;
+      syncNow: string;
+      disconnect: string;
+      defaultAmount: string;
+      connecting: string;
+      syncing: string;
+      disconnecting: string;
+      loadError: string;
+      connectError: string;
+      syncError: string;
+      disconnectError: string;
+      counts: string;
+    };
     customers: { notFound: string };
     jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string; missingCompletionDate: string };
   };
