@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   classifyJobWriteError,
+  dominantFailureCode,
+  extractUnknownJobColumn,
   logCalendarImportIssue,
   maskCalendarUid,
   safeGroupedFailureMessage,
@@ -29,6 +31,9 @@ const JOB_MATCH_COLUMNS =
 
 const JOB_MATCH_COLUMNS_LEGACY =
   'id, title, notes, address, status, start_date, due_date, scheduled_start, scheduled_end, timezone, assigned_to, assigned_email, revenue_amount, property_id, customer_id, completed_at';
+
+const JOB_MATCH_COLUMNS_MINIMAL =
+  'id, title, notes, address, status, start_date, due_date, scheduled_start, scheduled_end, completed_at';
 
 const PROPERTY_COLUMNS = 'id, customer_id, name, address, formatted_address, timezone, is_archived';
 const PROPERTY_COLUMNS_LEGACY = 'id, customer_id, name, address';
@@ -165,18 +170,23 @@ async function loadImportedJobs(
     .in('external_uid', uids);
   if (!error) return (data || []) as CalendarImportJobRow[];
   if (isMissingSchemaError(error)) {
-    const fallback = await admin
-      .from('jobs')
-      .select(JOB_MATCH_COLUMNS_LEGACY)
-      .eq('organization_id', organizationId)
-      .in('start_date', []);
-    return (fallback.data || []) as CalendarImportJobRow[];
+    for (const columns of [JOB_MATCH_COLUMNS_LEGACY, JOB_MATCH_COLUMNS_MINIMAL]) {
+      const fallback = await admin
+        .from('jobs')
+        .select(columns)
+        .eq('organization_id', organizationId)
+        .in('start_date', []);
+      if (!fallback.error) return (fallback.data || []) as unknown as CalendarImportJobRow[];
+    }
+    return [];
   }
   logCalendarImportIssue({
     organizationId,
     code: 'imported_job_lookup_failed',
+    operation: 'lookup',
     dbCode: error.code,
-    dbMessage: error.message
+    dbMessage: error.message,
+    phase: 'before_write'
   });
   return [];
 }
@@ -210,12 +220,14 @@ async function loadCandidateJobs(
     .in('start_date', dates);
   if (error) {
     if (isMissingSchemaError(error)) {
-      const fallback = await admin
-        .from('jobs')
-        .select(JOB_MATCH_COLUMNS_LEGACY)
-        .eq('organization_id', organizationId)
-        .in('start_date', dates);
-      return (fallback.data || []) as CalendarImportJobRow[];
+      for (const columns of [JOB_MATCH_COLUMNS_LEGACY, JOB_MATCH_COLUMNS_MINIMAL]) {
+        const fallback = await admin
+          .from('jobs')
+          .select(columns)
+          .eq('organization_id', organizationId)
+          .in('start_date', dates);
+        if (!fallback.error) return (fallback.data || []) as unknown as CalendarImportJobRow[];
+      }
     }
     return [];
   }
@@ -265,14 +277,83 @@ async function writeSafeActivity(
   }
 }
 
+const OPTIONAL_WRITE_COLUMNS = [
+  'external_source',
+  'external_uid',
+  'external_last_modified',
+  'timezone',
+  'property_id',
+  'customer_id',
+  'assigned_email',
+  'assigned_to',
+  'revenue_amount',
+  'notes',
+  'address',
+  'scheduled_end',
+  'scheduled_start',
+  'due_date',
+  'start_date'
+] as const;
+
+function omitKeys(payload: Record<string, unknown>, keys: string[]): Record<string, unknown> {
+  const next = { ...payload };
+  for (const key of keys) delete next[key];
+  return next;
+}
+
+function asTimestamptz(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().replace(/\.000Z$/, 'Z');
+}
+
 function fallbackPayloads(payload: Record<string, unknown>): Record<string, unknown>[] {
-  const withoutLinks: Record<string, unknown> = { ...payload, property_id: null, customer_id: null };
-  const withoutTimezone: Record<string, unknown> = { ...withoutLinks, timezone: null };
-  const withoutExternal: Record<string, unknown> = { ...withoutTimezone };
-  delete withoutExternal.external_source;
-  delete withoutExternal.external_uid;
-  delete withoutExternal.external_last_modified;
-  return [payload, withoutLinks, withoutTimezone, withoutExternal];
+  return [
+    payload,
+    omitKeys(payload, ['property_id', 'customer_id']),
+    omitKeys(payload, ['property_id', 'customer_id', 'timezone']),
+    omitKeys(payload, ['property_id', 'customer_id', 'timezone', 'external_source', 'external_uid', 'external_last_modified']),
+    omitKeys(payload, [
+      'property_id',
+      'customer_id',
+      'timezone',
+      'external_source',
+      'external_uid',
+      'external_last_modified',
+      'assigned_email',
+      'assigned_to',
+      'revenue_amount'
+    ]),
+    omitKeys(payload, [...OPTIONAL_WRITE_COLUMNS])
+  ];
+}
+
+function rowFromInsert(
+  id: string,
+  payload: Record<string, unknown>
+): CalendarImportJobRow {
+  return {
+    id,
+    organization_id: String(payload.organization_id || ''),
+    title: String(payload.title || 'Calendar event'),
+    notes: (payload.notes as string | null) || null,
+    address: (payload.address as string | null) || null,
+    status: (payload.status as string | null) || 'new',
+    start_date: (payload.start_date as string | null) || null,
+    due_date: (payload.due_date as string | null) || null,
+    scheduled_start: (payload.scheduled_start as string | null) || null,
+    scheduled_end: (payload.scheduled_end as string | null) || null,
+    timezone: (payload.timezone as string | null) || null,
+    assigned_to: (payload.assigned_to as string | null) || null,
+    assigned_email: (payload.assigned_email as string | null) || null,
+    revenue_amount: payload.revenue_amount == null ? null : Number(payload.revenue_amount),
+    property_id: (payload.property_id as string | null) || null,
+    customer_id: (payload.customer_id as string | null) || null,
+    external_source: (payload.external_source as string | null) || null,
+    external_uid: (payload.external_uid as string | null) || null,
+    external_last_modified: (payload.external_last_modified as string | null) || null
+  };
 }
 
 async function insertJobWithFallback(
@@ -280,16 +361,59 @@ async function insertJobWithFallback(
   payload: Record<string, unknown>
 ): Promise<{ row: CalendarImportJobRow | null; error: { message?: string; code?: string } | null }> {
   let lastError: { message?: string; code?: string } | null = null;
-  for (const candidate of fallbackPayloads(payload)) {
-    const inserted = await admin.from('jobs').insert(candidate).select(JOB_MATCH_COLUMNS).single();
-    if (!inserted.error && inserted.data) return { row: inserted.data as CalendarImportJobRow, error: null };
-    lastError = inserted.error;
-    if (inserted.error && isMissingSchemaError(inserted.error)) {
-      const legacy = await admin.from('jobs').insert(candidate).select(JOB_MATCH_COLUMNS_LEGACY).single();
-      if (!legacy.error && legacy.data) return { row: legacy.data as CalendarImportJobRow, error: null };
-      lastError = legacy.error;
+  const extraOmit = new Set<string>();
+  const seen = new Set<string>();
+  const layers = [
+    ...fallbackPayloads(payload),
+    { ...omitKeys(payload, [...OPTIONAL_WRITE_COLUMNS]), status: 'new' },
+    omitKeys({ ...payload, status: 'new' }, [...OPTIONAL_WRITE_COLUMNS, 'status'])
+  ];
+
+  for (const layer of layers) {
+    let candidate = omitKeys(layer, [...extraOmit]);
+    for (let inner = 0; inner < OPTIONAL_WRITE_COLUMNS.length + 4; inner += 1) {
+      const signature = `${Object.keys(candidate).sort().join(',')}:${String(candidate.status || '')}`;
+      if (seen.has(signature)) break;
+      seen.add(signature);
+
+      // Select only id. Returning optional/external columns rolls back the insert
+      // when PostgREST's schema cache does not know those jobs columns.
+      const inserted = await admin.from('jobs').insert(candidate).select('id').single();
+      if (!inserted.error && inserted.data) {
+        const id = String((inserted.data as { id?: string }).id || '');
+        if (id) return { row: rowFromInsert(id, candidate), error: null };
+      }
+      lastError = inserted.error;
+      if (lastError && isUniqueConflict(lastError)) return { row: null, error: lastError };
+
+      const unknownColumn = extractUnknownJobColumn(lastError);
+      if (unknownColumn && unknownColumn in candidate) {
+        extraOmit.add(unknownColumn);
+        candidate = omitKeys(candidate, [unknownColumn]);
+        continue;
+      }
+
+      const classified = classifyJobWriteError(lastError?.message || '', lastError?.code);
+      if (classified === 'invalid_timezone' && 'timezone' in candidate) {
+        extraOmit.add('timezone');
+        candidate = omitKeys(candidate, ['timezone']);
+        continue;
+      }
+      if (classified === 'invalid_event_time') {
+        const timeFields = ['external_last_modified', 'scheduled_end', 'scheduled_start'] as const;
+        const nextTimeField = timeFields.find((field) => field in candidate);
+        if (nextTimeField) {
+          extraOmit.add(nextTimeField);
+          candidate = omitKeys(candidate, [nextTimeField]);
+          continue;
+        }
+      }
+      if (candidate.status === 'scheduled') {
+        candidate = { ...candidate, status: 'new' };
+        continue;
+      }
+      break;
     }
-    if (lastError && isUniqueConflict(lastError)) return { row: null, error: lastError };
   }
   return { row: null, error: lastError };
 }
@@ -312,23 +436,26 @@ async function createImportedJob(
     user_id: ownerUserId,
     organization_id: connection.organization_id,
     title: patch.title,
-    notes: patch.notes,
-    address: patch.address,
     status: 'scheduled',
     start_date: patch.start_date,
     due_date: patch.due_date,
     scheduled_start: patch.scheduled_start,
-    scheduled_end: patch.scheduled_end,
-    timezone: patch.timezone,
-    revenue_amount: Number.isFinite(revenue as number) ? revenue : null,
-    property_id: property?.id || connection.default_property_id || null,
-    customer_id: property?.customer_id || connection.default_customer_id || null,
-    assigned_to: null,
-    assigned_email: null,
-    external_source: CALENDAR_IMPORT_SOURCE,
-    external_uid: event.uid,
-    external_last_modified: patch.external_last_modified
+    scheduled_end: patch.scheduled_end
   };
+  if (patch.notes) insertPayload.notes = patch.notes;
+  if (patch.address) insertPayload.address = patch.address;
+  if (patch.timezone) insertPayload.timezone = patch.timezone;
+  if (Number.isFinite(revenue as number)) insertPayload.revenue_amount = revenue;
+  if (property?.id || connection.default_property_id) {
+    insertPayload.property_id = property?.id || connection.default_property_id;
+  }
+  if (property?.customer_id || connection.default_customer_id) {
+    insertPayload.customer_id = property?.customer_id || connection.default_customer_id;
+  }
+  insertPayload.external_source = CALENDAR_IMPORT_SOURCE;
+  insertPayload.external_uid = event.uid;
+  const lastModified = asTimestamptz(patch.external_last_modified);
+  if (lastModified) insertPayload.external_last_modified = lastModified;
 
   const first = await insertJobWithFallback(admin, insertPayload);
   if (first.row) return first.row;
@@ -363,11 +490,12 @@ async function updateImportedJob(
     due_date: patch.due_date,
     scheduled_start: patch.scheduled_start,
     scheduled_end: patch.scheduled_end,
-    timezone: patch.timezone,
     external_source: CALENDAR_IMPORT_SOURCE,
-    external_uid: event.uid,
-    external_last_modified: patch.external_last_modified
+    external_uid: event.uid
   };
+  if (patch.timezone) next.timezone = patch.timezone;
+  const lastModified = asTimestamptz(patch.external_last_modified);
+  if (lastModified) next.external_last_modified = lastModified;
 
   if ((job.revenue_amount === null || job.revenue_amount === undefined) && connection.default_revenue_amount != null) {
     next.revenue_amount = Number(connection.default_revenue_amount);
@@ -393,13 +521,35 @@ async function updateImportedJob(
     return 'unchanged';
   }
 
-  const attempts = [next, { ...next, timezone: null }, { ...next, property_id: job.property_id || null, customer_id: job.customer_id || null }];
+  const extraOmit = new Set<string>();
+  const attempts = [
+    next,
+    omitKeys(next, ['timezone']),
+    omitKeys(next, ['timezone', 'property_id', 'customer_id']),
+    omitKeys(next, ['timezone', 'property_id', 'customer_id', 'external_source', 'external_uid', 'external_last_modified'])
+  ];
   let lastError: { message?: string; code?: string } | null = null;
-  for (const attempt of attempts) {
-    const updated = await admin.from('jobs').update(attempt).eq('id', job.id).eq('organization_id', connection.organization_id);
-    if (!updated.error) return 'updated';
-    lastError = updated.error;
-    if (!isMissingSchemaError(updated.error) && !String(updated.error.message || '').toLowerCase().includes('timezone')) {
+  for (const layer of attempts) {
+    let attempt = omitKeys(layer, [...extraOmit]);
+    for (let inner = 0; inner < OPTIONAL_WRITE_COLUMNS.length + 2; inner += 1) {
+      const updated = await admin.from('jobs').update(attempt).eq('id', job.id).eq('organization_id', connection.organization_id);
+      if (!updated.error) return 'updated';
+      lastError = updated.error;
+      const unknownColumn = extractUnknownJobColumn(updated.error);
+      if (unknownColumn && unknownColumn in attempt) {
+        extraOmit.add(unknownColumn);
+        attempt = omitKeys(attempt, [unknownColumn]);
+        continue;
+      }
+      const classified = classifyJobWriteError(updated.error?.message || '', updated.error?.code);
+      if (classified === 'invalid_timezone' && 'timezone' in attempt) {
+        extraOmit.add('timezone');
+        attempt = omitKeys(attempt, ['timezone']);
+        continue;
+      }
+      if (!isMissingSchemaError(updated.error) && classified !== 'invalid_timezone' && classified !== 'schema_mismatch') {
+        break;
+      }
       break;
     }
   }
@@ -459,13 +609,14 @@ export async function importCalendarConnection(
 
     for (const event of relevant) {
       let property: CalendarImportPropertyRow | null = null;
+      let existing: CalendarImportJobRow | null = null;
       try {
         try {
           property = findConfidentProperty(event, properties);
         } catch {
           property = null;
         }
-        const existing = importedByUid.get(event.uid) || null;
+        existing = importedByUid.get(event.uid) || null;
 
         if (existing) {
           const outcome = await updateImportedJob(admin, existing, event, property, connection, fallbackTimeZone);
@@ -545,15 +696,21 @@ export async function importCalendarConnection(
         logCalendarImportIssue({
           organizationId: connection.organization_id,
           code: failureCode || 'job_insert_failed',
+          eventIndex: relevant.indexOf(event),
           uidHash: maskCalendarUid(event.uid),
-          summary: event.summary,
-          dbMessage: error instanceof Error ? error.message : null
+          operation: existing ? 'update' : 'insert',
+          dbCode: error && typeof error === 'object' && 'code' in error ? String((error as { code?: string }).code || '') : null,
+          dbMessage: error instanceof Error ? error.message : null,
+          timezone: event.timezone,
+          propertyMatched: Boolean(property),
+          phase: 'db_write'
         });
       }
     }
 
     const lastSyncAt = now.toISOString();
     const error = safeGroupedFailureMessage(failures);
+    const failureReason = dominantFailureCode(failures);
     await updateCalendarImportSyncState(admin, connection.id, {
       last_sync_at: lastSyncAt,
       last_sync_error: error
@@ -562,7 +719,8 @@ export async function importCalendarConnection(
     return toSafeCalendarImportResult(
       { ...connection, last_sync_at: lastSyncAt, last_sync_error: error },
       counts,
-      error
+      error,
+      failureReason
     );
   } catch (error) {
     const message = error instanceof Error && 'code' in error ? error.message : 'The calendar feed could not be imported.';

@@ -882,6 +882,28 @@ export type MessageTree = {
       syncResult: string;
       syncResultFailedOne: string;
       syncResultFailedMany: string;
+      syncResultFailedOneWithReason: string;
+      syncResultFailedManyWithReason: string;
+      failureReason: {
+        schema_mismatch: string;
+        invalid_timezone: string;
+        invalid_event_time: string;
+        job_insert_failed: string;
+        job_update_failed: string;
+        missing_event_uid: string;
+        duplicate_conflict: string;
+        unsupported_all_day: string;
+      };
+      lastError: {
+        schema_mismatch: string;
+        invalid_timezone: string;
+        invalid_event_time: string;
+        job_insert_failed: string;
+        job_update_failed: string;
+        missing_event_uid: string;
+        duplicate_conflict: string;
+        unsupported_all_day: string;
+      };
     };
     customers: { notFound: string };
     jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string; missingCompletionDate: string };

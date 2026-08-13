@@ -48,6 +48,7 @@ export type CalendarImportCounts = {
 export type CalendarImportResult = CalendarImportStatus &
   CalendarImportCounts & {
     error?: string | null;
+    failureReason?: string | null;
   };
 
 export type CalendarImportJobRow = {

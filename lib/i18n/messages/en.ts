@@ -1084,7 +1084,29 @@ export const messages: Messages = {
       disconnectError: 'Unable to disconnect the calendar.',
       syncResult: '{created} jobs added, {updated} updated, {skipped} already existed.',
       syncResultFailedOne: '{failed} event could not be imported.',
-      syncResultFailedMany: '{failed} events could not be imported.'
+      syncResultFailedMany: '{failed} events could not be imported.',
+      syncResultFailedOneWithReason: '{failed} event could not be imported: {reason}.',
+      syncResultFailedManyWithReason: '{failed} events could not be imported: {reason}.',
+      failureReason: {
+        schema_mismatch: 'calendar job fields do not match the current database schema',
+        invalid_timezone: 'invalid timezone',
+        invalid_event_time: 'the start time could not be read',
+        job_insert_failed: 'the event could not be saved as a job',
+        job_update_failed: 'the existing job could not be updated',
+        missing_event_uid: 'the event was missing a stable identity',
+        duplicate_conflict: 'the event matched an existing job',
+        unsupported_all_day: 'the all-day event could not be imported'
+      },
+      lastError: {
+        schema_mismatch: 'Calendar job fields do not match the current database schema.',
+        invalid_timezone: 'Job timezone was rejected by the database.',
+        invalid_event_time: 'Calendar events could not be imported because their start time could not be read.',
+        job_insert_failed: 'Calendar events could not be saved as jobs.',
+        job_update_failed: 'Existing imported jobs could not be updated because of a database constraint.',
+        missing_event_uid: 'Calendar events could not be imported because they were missing a stable identity.',
+        duplicate_conflict: 'Calendar events matched existing jobs and were left unchanged.',
+        unsupported_all_day: 'All-day calendar events could not be imported.'
+      }
     },
     customers: { notFound: 'Customer not found' },
     jobs: {

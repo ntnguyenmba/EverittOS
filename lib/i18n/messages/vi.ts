@@ -1086,7 +1086,29 @@ export const messages: Messages = {
       disconnectError: 'Không thể ngắt kết nối lịch.',
       syncResult: 'Đã thêm {created} công việc, {updated} đã cập nhật, {skipped} đã tồn tại.',
       syncResultFailedOne: 'Không thể nhập {failed} sự kiện.',
-      syncResultFailedMany: 'Không thể nhập {failed} sự kiện.'
+      syncResultFailedMany: 'Không thể nhập {failed} sự kiện.',
+      syncResultFailedOneWithReason: 'Không thể nhập {failed} sự kiện: {reason}.',
+      syncResultFailedManyWithReason: 'Không thể nhập {failed} sự kiện: {reason}.',
+      failureReason: {
+        schema_mismatch: 'các trường công việc không khớp với schema cơ sở dữ liệu hiện tại',
+        invalid_timezone: 'múi giờ không hợp lệ',
+        invalid_event_time: 'không đọc được thời gian bắt đầu',
+        job_insert_failed: 'không thể lưu sự kiện thành công việc',
+        job_update_failed: 'không thể cập nhật công việc hiện có',
+        missing_event_uid: 'sự kiện thiếu định danh ổn định',
+        duplicate_conflict: 'sự kiện trùng với công việc hiện có',
+        unsupported_all_day: 'không thể nhập sự kiện cả ngày'
+      },
+      lastError: {
+        schema_mismatch: 'Các trường công việc lịch không khớp với schema cơ sở dữ liệu hiện tại.',
+        invalid_timezone: 'Cơ sở dữ liệu đã từ chối múi giờ của công việc.',
+        invalid_event_time: 'Không thể nhập sự kiện lịch vì không đọc được thời gian bắt đầu.',
+        job_insert_failed: 'Không thể lưu các sự kiện lịch thành công việc.',
+        job_update_failed: 'Không thể cập nhật các công việc đã nhập vì ràng buộc cơ sở dữ liệu.',
+        missing_event_uid: 'Không thể nhập sự kiện lịch vì chúng thiếu định danh ổn định.',
+        duplicate_conflict: 'Các sự kiện lịch trùng với công việc hiện có và được giữ nguyên.',
+        unsupported_all_day: 'Không thể nhập các sự kiện cả ngày.'
+      }
     },
     customers: { notFound: 'Không tìm thấy khách hàng' },
     jobs: {

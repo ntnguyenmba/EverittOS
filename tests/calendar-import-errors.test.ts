@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   classifyJobWriteError,
+  extractUnknownJobColumn,
+  inferFailureCodeFromSafeMessage,
   maskCalendarUid,
   safeGroupedFailureMessage,
   sanitizeCalendarErrorText
@@ -14,6 +16,33 @@ describe('calendar import error reporting', () => {
     assert.equal(classifyJobWriteError('invalid input syntax for type date'), 'invalid_event_time');
     assert.equal(classifyJobWriteError('jobs_timezone_valid_check'), 'invalid_timezone');
     assert.equal(classifyJobWriteError('Could not create imported job.'), 'job_insert_failed');
+    assert.equal(
+      classifyJobWriteError("Could not find the 'external_source' column of 'jobs' in the schema cache", 'PGRST204'),
+      'schema_mismatch'
+    );
+    assert.equal(extractUnknownJobColumn({
+      code: 'PGRST204',
+      message: "Could not find the 'external_source' column of 'jobs' in the schema cache"
+    }), 'external_source');
+    assert.equal(
+      extractUnknownJobColumn({
+        message: 'null value in column "title" of relation "jobs" violates not-null constraint'
+      }),
+      null
+    );
+    assert.equal(
+      inferFailureCodeFromSafeMessage('Calendar job fields do not match the current database schema.'),
+      'schema_mismatch'
+    );
+  });
+
+  it('returns a useful schema mismatch reason without database internals', () => {
+    const message = safeGroupedFailureMessage(Array.from({ length: 11 }, () => 'schema_mismatch' as const));
+    assert.equal(
+      message,
+      '11 calendar events could not be saved because the job fields do not match the current database schema.'
+    );
+    assert.doesNotMatch(String(message), /PGRST204|PostgREST|external_source|feed_url|https?:\/\//i);
   });
 
   it('returns a short grouped reason without feed URLs or database internals', () => {

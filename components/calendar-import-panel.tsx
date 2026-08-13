@@ -3,7 +3,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
+import { inferFailureCodeFromSafeMessage } from '@/lib/calendar-import/errors';
 import { formatDateTimeLocale } from '@/lib/i18n/locale-format';
+
+const FAILURE_REASON_KEYS = new Set([
+  'schema_mismatch',
+  'invalid_timezone',
+  'invalid_event_time',
+  'job_insert_failed',
+  'job_update_failed',
+  'missing_event_uid',
+  'duplicate_conflict',
+  'unsupported_all_day'
+]);
 
 type CalendarImportStatus = {
   connected?: boolean;
@@ -15,6 +27,7 @@ type CalendarImportStatus = {
   skipped?: number;
   failed?: number;
   error?: string | null;
+  failureReason?: string | null;
 };
 
 function readStatus(payload: CalendarImportStatus): CalendarImportStatus {
@@ -27,8 +40,14 @@ function readStatus(payload: CalendarImportStatus): CalendarImportStatus {
     updated: payload.updated,
     skipped: payload.skipped,
     failed: payload.failed,
-    error: payload.error || null
+    error: payload.error || null,
+    failureReason: payload.failureReason || inferFailureCodeFromSafeMessage(payload.lastSyncError)
   };
+}
+
+function failureReasonKey(code: string | null | undefined): string | null {
+  if (!code || !FAILURE_REASON_KEYS.has(code)) return null;
+  return code;
 }
 
 function resultMessage(
@@ -41,11 +60,30 @@ function resultMessage(
   const failed = payload.failed ?? 0;
   const summary = t('pages.calendarImport.syncResult', { created, updated, skipped });
   if (failed <= 0) return summary;
+  const reasonKey = failureReasonKey(payload.failureReason);
+  if (reasonKey) {
+    const reason = t(`pages.calendarImport.failureReason.${reasonKey}`);
+    const failure =
+      failed === 1
+        ? t('pages.calendarImport.syncResultFailedOneWithReason', { failed, reason })
+        : t('pages.calendarImport.syncResultFailedManyWithReason', { failed, reason });
+    return `${summary} ${failure}`;
+  }
   const failure =
     failed === 1
       ? t('pages.calendarImport.syncResultFailedOne', { failed })
       : t('pages.calendarImport.syncResultFailedMany', { failed });
   return `${summary} ${failure}`;
+}
+
+function lastErrorMessage(
+  t: (path: string, values?: Record<string, string | number>) => string,
+  payload: CalendarImportStatus
+): string | null {
+  if (!payload.lastSyncError) return null;
+  const reasonKey = failureReasonKey(payload.failureReason || inferFailureCodeFromSafeMessage(payload.lastSyncError));
+  if (reasonKey) return t(`pages.calendarImport.lastError.${reasonKey}`);
+  return payload.lastSyncError;
 }
 
 export function CalendarImportPanel() {
@@ -169,7 +207,9 @@ export function CalendarImportPanel() {
           <p className="muted">
             {t('pages.calendarImport.lastSync')}: {lastSyncLabel}
           </p>
-          {status?.lastSyncError ? <p className="auth-message auth-message-error">{status.lastSyncError}</p> : null}
+          {status && lastErrorMessage(t, status) ? (
+            <p className="auth-message auth-message-error">{lastErrorMessage(t, status)}</p>
+          ) : null}
           <div className="inline-actions" style={{ marginTop: 12 }}>
             <button className="btn btn-primary" type="button" disabled={busy !== ''} onClick={() => void syncNow()}>
               {busy === 'sync' ? t('pages.calendarImport.syncing') : t('pages.calendarImport.syncNow')}

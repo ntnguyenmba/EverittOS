@@ -36,13 +36,15 @@ export function toSafeCalendarImportStatus(
 export function toSafeCalendarImportResult(
   connection: Pick<CalendarImportConnection, 'label' | 'last_sync_at' | 'last_sync_error'> | null | undefined,
   counts: Partial<CalendarImportCounts> = {},
-  error?: string | null
+  error?: string | null,
+  failureReason?: string | null
 ): CalendarImportResult {
   return {
     ...toSafeCalendarImportStatus(connection),
     ...EMPTY_COUNTS,
     ...counts,
-    error: error || null
+    error: error || null,
+    failureReason: failureReason || null
   };
 }
 

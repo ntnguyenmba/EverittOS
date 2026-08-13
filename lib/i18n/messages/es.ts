@@ -1088,7 +1088,29 @@ export const messages: Messages = {
       disconnectError: 'No se pudo desconectar el calendario.',
       syncResult: '{created} trabajos añadidos, {updated} actualizados, {skipped} ya existían.',
       syncResultFailedOne: 'No se pudo importar {failed} evento.',
-      syncResultFailedMany: 'No se pudieron importar {failed} eventos.'
+      syncResultFailedMany: 'No se pudieron importar {failed} eventos.',
+      syncResultFailedOneWithReason: 'No se pudo importar {failed} evento: {reason}.',
+      syncResultFailedManyWithReason: 'No se pudieron importar {failed} eventos: {reason}.',
+      failureReason: {
+        schema_mismatch: 'los campos del trabajo no coinciden con el esquema actual de la base de datos',
+        invalid_timezone: 'zona horaria no válida',
+        invalid_event_time: 'no se pudo leer la hora de inicio',
+        job_insert_failed: 'el evento no se pudo guardar como trabajo',
+        job_update_failed: 'no se pudo actualizar el trabajo existente',
+        missing_event_uid: 'el evento no tenía una identidad estable',
+        duplicate_conflict: 'el evento coincidió con un trabajo existente',
+        unsupported_all_day: 'no se pudo importar el evento de día completo'
+      },
+      lastError: {
+        schema_mismatch: 'Los campos del trabajo de calendario no coinciden con el esquema actual de la base de datos.',
+        invalid_timezone: 'La zona horaria del trabajo fue rechazada por la base de datos.',
+        invalid_event_time: 'No se pudieron importar eventos del calendario porque no se pudo leer su hora de inicio.',
+        job_insert_failed: 'No se pudieron guardar los eventos del calendario como trabajos.',
+        job_update_failed: 'No se pudieron actualizar los trabajos importados por una restricción de la base de datos.',
+        missing_event_uid: 'No se pudieron importar eventos del calendario porque no tenían una identidad estable.',
+        duplicate_conflict: 'Los eventos del calendario coincidieron con trabajos existentes y no se modificaron.',
+        unsupported_all_day: 'No se pudieron importar los eventos de día completo.'
+      }
     },
     customers: { notFound: 'Cliente no encontrado' },
     jobs: {

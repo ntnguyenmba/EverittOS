@@ -50,17 +50,38 @@ function connection(overrides: Partial<CalendarImportConnection> = {}): Calendar
   };
 }
 
+const PRODUCTION_JOBS_COLUMNS_WITHOUT_CALENDAR_FIELDS = [
+  'id',
+  'organization_id',
+  'user_id',
+  'title',
+  'status',
+  'priority',
+  'start_date',
+  'due_date',
+  'scheduled_start',
+  'scheduled_end',
+  'notes',
+  'address',
+  'created_at',
+  'updated_at',
+  'completed_at'
+];
+
 function createMemoryAdmin(state: {
   jobs?: CalendarImportJobRow[];
   properties?: CalendarImportPropertyRow[];
   connections?: CalendarImportConnection[];
   insertError?: { message?: string; code?: string } | null;
+  jobsColumns?: string[] | null;
+  rejectTimezone?: boolean;
 }) {
   const jobs = (state.jobs || []) as Row[];
   const properties = (state.properties || []) as Row[];
   const connections = (state.connections || [connection()]) as Row[];
   const activity: Row[] = [];
   let nextId = jobs.length + 1;
+  const jobsColumns = state.jobsColumns ? new Set(state.jobsColumns) : null;
 
   const tables: Record<string, Row[]> = {
     jobs,
@@ -71,16 +92,30 @@ function createMemoryAdmin(state: {
     activity_logs: activity
   };
 
+  function schemaCacheError(column: string): { code: string; message: string } {
+    return {
+      code: 'PGRST204',
+      message: `Could not find the '${column}' column of 'jobs' in the schema cache`
+    };
+  }
+
+  function unknownJobColumn(keys: string[]): string | null {
+    if (!jobsColumns) return null;
+    return keys.find((key) => key && key !== '*' && !jobsColumns.has(key)) || null;
+  }
+
   function from(table: string) {
     const rows = tables[table] || [];
     const filters: Array<(row: Row) => boolean> = [];
     let mode: 'select' | 'insert' | 'update' | 'delete' = 'select';
     let payload: Row | null = null;
+    let selectColumns = '*';
 
     type QueryResult = { data: unknown; error: { message?: string; code?: string } | null };
 
     const api = {
-      select() {
+      select(columns?: string) {
+        selectColumns = columns || '*';
         return api;
       },
       insert(value: Row) {
@@ -127,10 +162,28 @@ function createMemoryAdmin(state: {
     };
 
     async function execute(single: boolean): Promise<QueryResult> {
+      if (table === 'jobs' && jobsColumns) {
+        const returningUnknown = unknownJobColumn(selectColumns.split(',').map((column) => column.trim()));
+        const bodyUnknown = payload ? unknownJobColumn(Object.keys(payload)) : null;
+        if (mode === 'insert' || mode === 'update') {
+          if (bodyUnknown) return { data: null, error: schemaCacheError(bodyUnknown) };
+          if (returningUnknown) return { data: null, error: schemaCacheError(returningUnknown) };
+        }
+        if (mode === 'select' && returningUnknown) {
+          return { data: null, error: schemaCacheError(returningUnknown) };
+        }
+      }
+
       if (mode === 'insert' && payload) {
         const insertPayload = payload;
         if (table === 'jobs' && state.insertError) {
           return { data: null, error: state.insertError };
+        }
+        if (table === 'jobs' && state.rejectTimezone && insertPayload.timezone) {
+          return {
+            data: null,
+            error: { code: '23514', message: 'new row for relation "jobs" violates check constraint "jobs_timezone_valid_check"' }
+          };
         }
         if (table === 'jobs' && insertPayload.external_uid) {
           const duplicate = rows.some(
@@ -146,13 +199,36 @@ function createMemoryAdmin(state: {
             };
           }
         }
-        const row = { id: payload.id || `${table}-${nextId++}`, ...payload };
+        const row =
+          table === 'jobs'
+            ? {
+                assigned_to: null,
+                assigned_email: null,
+                property_id: null,
+                customer_id: null,
+                revenue_amount: null,
+                notes: null,
+                address: null,
+                timezone: null,
+                external_source: null,
+                external_uid: null,
+                external_last_modified: null,
+                id: payload.id || `${table}-${nextId++}`,
+                ...payload
+              }
+            : { id: payload.id || `${table}-${nextId++}`, ...payload };
         rows.push(row);
         return { data: single ? row : [row], error: null };
       }
 
       const matched = rows.filter((row) => filters.every((filter) => filter(row)));
       if (mode === 'update' && payload) {
+        if (table === 'jobs' && state.rejectTimezone && payload.timezone) {
+          return {
+            data: null,
+            error: { code: '23514', message: 'new row for relation "jobs" violates check constraint "jobs_timezone_valid_check"' }
+          };
+        }
         for (const row of matched) Object.assign(row, payload);
         return { data: single ? matched[0] || null : matched, error: null };
       }
@@ -605,6 +681,12 @@ describe('calendar import job sync', () => {
     assert.doesNotMatch(String(result.error), /23502|PostgREST|schema/i);
   });
 
+  it('never asks PostgREST to return calendar-only job columns on insert', () => {
+    const source = readFileSync('lib/calendar-import/import-calendar.ts', 'utf8');
+    assert.match(source, /\.insert\(candidate\)\.select\('id'\)/);
+    assert.doesNotMatch(source, /insert\([^\n]+\)\.select\(JOB_MATCH_COLUMNS\)/);
+  });
+
   it('connect UI no longer sends a default job amount', () => {
     const panel = readFileSync('components/calendar-import-panel.tsx', 'utf8');
     const connect = readFileSync('app/api/integrations/calendar-import/connect/route.ts', 'utf8');
@@ -614,5 +696,53 @@ describe('calendar import job sync', () => {
     assert.doesNotMatch(panel, /Default job amount/i);
     assert.doesNotMatch(connect, /defaultRevenueAmount/);
     assert.doesNotMatch(connect, /default_revenue_amount/);
+  });
+
+  it('imports 11 valid events when production jobs is missing calendar columns and schema cache', async () => {
+    const db = createMemoryAdmin({
+      jobsColumns: PRODUCTION_JOBS_COLUMNS_WITHOUT_CALENDAR_FIELDS
+    });
+    const events = Array.from({ length: 11 }, (_, index) =>
+      event({
+        uid: `prod-evt-${index + 1}`,
+        summary: `Production home ${index + 1} cleaning`,
+        dtStart: `2026-08-14T${String(8 + index).padStart(2, '0')}:00:00`,
+        dtEnd: `2026-08-14T${String(9 + index).padStart(2, '0')}:00:00`,
+        startDate: '2026-08-14',
+        endDate: '2026-08-14',
+        timezone: 'America/Chicago',
+        location: null,
+        description: null
+      })
+    );
+
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events
+    });
+
+    assert.equal(result.created, 11);
+    assert.equal(result.updated, 0);
+    assert.equal(result.skipped, 0);
+    assert.equal(result.failed, 0);
+    assert.equal(result.error, null);
+    assert.equal(result.failureReason, null);
+    assert.equal(db.jobs.length, 11);
+    assert.ok(db.jobs.every((job) => job.external_source == null));
+    assert.ok(db.jobs.every((job) => job.timezone == null));
+    assert.ok(db.jobs.every((job) => job.property_id == null));
+    assert.ok(db.jobs.every((job) => job.assigned_to == null));
+  });
+
+  it('still imports when the database rejects the job timezone', async () => {
+    const db = createMemoryAdmin({ rejectTimezone: true });
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events: [event({ timezone: 'America/Chicago' })]
+    });
+    assert.equal(result.created, 1);
+    assert.equal(result.failed, 0);
+    assert.equal(db.jobs[0].timezone, null);
+    assert.equal(db.jobs[0].title, 'Frances Ln, Little Elm (Opti) Cleaning');
   });
 });
