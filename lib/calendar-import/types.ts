@@ -49,6 +49,7 @@ export type CalendarImportResult = CalendarImportStatus & CalendarImportCounts;
 
 export type CalendarImportJobRow = {
   id: string;
+  organization_id?: string;
   title: string;
   notes: string | null;
   address: string | null;
@@ -71,6 +72,7 @@ export type CalendarImportJobRow = {
 
 export type CalendarImportPropertyRow = {
   id: string;
+  organization_id?: string;
   customer_id: string;
   name: string;
   address: string | null;
