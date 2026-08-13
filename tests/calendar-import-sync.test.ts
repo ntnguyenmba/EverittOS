@@ -298,6 +298,26 @@ describe('calendar import job sync', () => {
     assert.doesNotMatch(JSON.stringify(status), /feed_url/);
   });
 
+  it('settings and jobs UI keep calendar import generic and hide amounts without financial access', () => {
+    const settings = readFileSync('app/settings/page.tsx', 'utf8');
+    const jobs = readFileSync('app/jobs/page.tsx', 'utf8');
+    const panel = readFileSync('components/calendar-import-panel.tsx', 'utf8');
+    const cron = readFileSync('vercel.json', 'utf8');
+    const migration = readFileSync('supabase/migrations/202610020001_calendar_import.sql', 'utf8');
+    assert.match(settings, /CalendarImportPanel/);
+    assert.match(settings, /QuickBooksIntegrationPanel/);
+    assert.match(jobs, /canAccessFinancials/);
+    assert.match(jobs, /jobs-row-amount/);
+    assert.match(jobs, /formatMoneyUsd/);
+    assert.match(panel, /pages\.calendarImport/);
+    assert.doesNotMatch(panel, /feed_url/);
+    assert.doesNotMatch(panel, /hospitable/i);
+    assert.match(cron, /\/api\/cron\/calendar-import-sync/);
+    assert.match(migration, /calendar_import_connections_deny/);
+    assert.match(migration, /jobs_external_source_uid_unique/);
+    assert.match(migration, /using \(false\)/);
+  });
+
   it('status API selects only safe connection columns', () => {
     const source = readFileSync('app/api/integrations/calendar-import/status/route.ts', 'utf8');
     assert.match(source, /toSafeCalendarImportStatus/);
