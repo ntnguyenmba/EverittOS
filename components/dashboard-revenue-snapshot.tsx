@@ -34,11 +34,11 @@ const VALID_RANGES: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'a
 
 const copy = {
   en: {
-    dashboard: 'Dashboard',
+    dashboard: 'Money overview',
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
-    collected: 'Money received', customerBalanceDue: 'Customers owe', cashAfterPaidCosts: 'Money kept',
+    collected: 'Money in', customerBalanceDue: 'Still owed', cashAfterPaidCosts: 'Money kept',
     jobsToday: 'Jobs today', jobsWeek: 'Jobs this week', jobsMonth: 'Jobs this month', jobsYear: 'Jobs this year', jobsAllTime: 'All jobs',
-    jobsDesc: 'Jobs in this period.', financialDetails: 'Money details', contractorsPaid: 'Paid contractors',
+    jobsDesc: 'Jobs in this period.', financialDetails: 'More money details', contractorsPaid: 'Paid contractors',
     totalContractorCost: 'Contractor costs', expectedRevenue: 'Job revenue', expectedProfit: 'Profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Money customers paid you.', currentBalances: 'Money customers still owe.', periodBalances: 'Money customers still owe for this period.',
     cashDesc: 'Money received minus costs already paid.', contractorsPaidDesc: 'Money already paid to contractors.',
@@ -46,11 +46,11 @@ const copy = {
     expectedProfitDesc: 'What is left after contractor costs and expenses.', expensesDesc: 'Fuel, supplies, software, and other costs.'
   },
   es: {
-    dashboard: 'Panel',
+    dashboard: 'Resumen de dinero',
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
-    collected: 'Dinero recibido', customerBalanceDue: 'Clientes deben', cashAfterPaidCosts: 'Dinero restante',
+    collected: 'Dinero recibido', customerBalanceDue: 'Aún pendiente', cashAfterPaidCosts: 'Dinero restante',
     jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
-    jobsDesc: 'Trabajos de este período.', financialDetails: 'Detalles de dinero', contractorsPaid: 'Contratistas pagados',
+    jobsDesc: 'Trabajos de este período.', financialDetails: 'Más detalles de dinero', contractorsPaid: 'Contratistas pagados',
     totalContractorCost: 'Costos de contratistas', expectedRevenue: 'Ingresos de trabajos', expectedProfit: 'Ganancia', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Dinero que los clientes te pagaron.', currentBalances: 'Dinero que los clientes todavía deben.', periodBalances: 'Dinero que los clientes todavía deben de este período.',
     cashDesc: 'Dinero recibido menos costos ya pagados.', contractorsPaidDesc: 'Dinero ya pagado a contratistas.',
@@ -58,11 +58,11 @@ const copy = {
     expectedProfitDesc: 'Lo que queda después de contratistas y gastos.', expensesDesc: 'Combustible, suministros, software y otros costos.'
   },
   vi: {
-    dashboard: 'Bảng điều khiển',
+    dashboard: 'Tổng quan tiền',
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
-    collected: 'Tiền đã nhận', customerBalanceDue: 'Khách còn nợ', cashAfterPaidCosts: 'Tiền còn lại',
+    collected: 'Tiền vào', customerBalanceDue: 'Còn phải thu', cashAfterPaidCosts: 'Tiền còn lại',
     jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
-    jobsDesc: 'Công việc trong khoảng thời gian này.', financialDetails: 'Chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
+    jobsDesc: 'Công việc trong khoảng thời gian này.', financialDetails: 'Thêm chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
     totalContractorCost: 'Chi phí nhà thầu', expectedRevenue: 'Doanh thu công việc', expectedProfit: 'Lợi nhuận', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Tiền khách đã trả cho bạn.', currentBalances: 'Tiền khách vẫn còn nợ.', periodBalances: 'Tiền khách vẫn còn nợ trong khoảng này.',
     cashDesc: 'Tiền đã nhận trừ các khoản đã trả.', contractorsPaidDesc: 'Tiền đã trả cho nhà thầu.',
@@ -135,8 +135,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     otherExpenses: expenses
   });
 
-  // Display the canonical totals returned by the shared metrics engine. The local
-  // formulas are fallback protection only, so the cards cannot drift from reports.
   const expectedRevenue = Number.isFinite(activeMetrics.expectedRevenue)
     ? activeMetrics.expectedRevenue
     : calculatedRevenue;
@@ -161,26 +159,29 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
   const primaryItems: MetricItem[] = [
     { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc },
-    { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
-    { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
-    { label: jobsLabel, value: String(selectedJobs), href: `/jobs?period=${jobsPeriod}`, description: c.jobsDesc }
+    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc },
+    { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
+    { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc }
   ];
 
   const detailItems: MetricItem[] = [
+    { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
     { label: c.contractorsPaid, value: formatCurrency(contractorPaid), href: DASHBOARD_LINKS.contractorPay, description: c.contractorsPaidDesc },
-    { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
+    { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
     { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedRevenueDesc },
-    { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc },
-    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc }
+    { label: jobsLabel, value: String(selectedJobs), href: `/jobs?period=${jobsPeriod}`, description: c.jobsDesc }
   ];
 
   return (
     <section aria-label={c.dashboard} aria-busy={busy}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
-        <label className="sr-only" htmlFor="dashboard-period">{c.period}</label>
-        <select id="dashboard-period" className="input" value={range} disabled={busy} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 140 }}>
-          {rangeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-        </select>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+        <strong>{c.dashboard}</strong>
+        <div>
+          <label className="sr-only" htmlFor="dashboard-period">{c.period}</label>
+          <select id="dashboard-period" className="input" value={range} disabled={busy} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 140 }}>
+            {rangeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="dashboard-revenue-grid" style={{ opacity: busy ? 0.58 : 1 }}>
