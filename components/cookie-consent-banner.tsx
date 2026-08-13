@@ -10,7 +10,7 @@ import {
   type CookieConsent
 } from '@/lib/cookie-consent';
 import { useTranslation } from '@/components/locale-provider';
-import { getAppPlatform } from '@/lib/platform/detect';
+import { isNativePlatform } from '@/lib/platform/detect';
 
 export function CookieConsentBanner() {
   const { t } = useTranslation();
@@ -19,10 +19,9 @@ export function CookieConsentBanner() {
   const [prefs, setPrefs] = useState<CookieConsent>(defaultConsent());
 
   useEffect(() => {
-    // Apple App Review does not allow a custom tracking-permission prompt in the iOS app.
-    // The native iOS build therefore uses essential session storage only and never shows
-    // this web cookie banner. Optional analytics is separately disabled in AnalyticsGate.
-    if (getAppPlatform() === 'ios') {
+    // Native iOS and Android apps do not show the web cookie-consent banner.
+    // Optional analytics/tracking permissions are handled separately from web cookie consent.
+    if (isNativePlatform()) {
       setVisible(false);
       setManageOpen(false);
       return;
