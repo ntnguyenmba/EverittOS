@@ -10,21 +10,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-function parseDefaultAmount(value: unknown): number | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount < 0) return undefined;
-  return amount;
-}
-
 export async function POST(request: Request) {
   const auth = await requireCalendarImportManager();
   if (!auth.ok) return auth.response;
 
-  let body: { feedUrl?: string; defaultRevenueAmount?: unknown } = {};
+  let body: { feedUrl?: string } = {};
   try {
-    body = (await request.json()) as { feedUrl?: string; defaultRevenueAmount?: unknown };
+    body = (await request.json()) as { feedUrl?: string };
   } catch {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400, headers: CALENDAR_IMPORT_NO_CACHE });
   }
@@ -33,14 +25,6 @@ export async function POST(request: Request) {
   if (!validated.ok) {
     return NextResponse.json(
       { error: calendarFeedErrorMessage(validated.code), code: validated.code },
-      { status: 400, headers: CALENDAR_IMPORT_NO_CACHE }
-    );
-  }
-
-  const defaultRevenueAmount = parseDefaultAmount(body.defaultRevenueAmount);
-  if (body.defaultRevenueAmount !== undefined && defaultRevenueAmount === undefined) {
-    return NextResponse.json(
-      { error: 'Default job amount must be a non-negative number.' },
       { status: 400, headers: CALENDAR_IMPORT_NO_CACHE }
     );
   }
@@ -57,8 +41,7 @@ export async function POST(request: Request) {
     const connection = await saveCalendarImportConnection(auth.admin, {
       organizationId: auth.org.organizationId,
       feedUrl: validated.href,
-      createdBy: auth.user.id,
-      defaultRevenueAmount
+      createdBy: auth.user.id
     });
 
     const result = await importCalendarConnection(auth.admin, connection, {

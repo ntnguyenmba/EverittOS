@@ -14,7 +14,7 @@ type CalendarImportStatus = {
   updated?: number;
   skipped?: number;
   failed?: number;
-  error?: string;
+  error?: string | null;
 };
 
 function readStatus(payload: CalendarImportStatus): CalendarImportStatus {
@@ -26,8 +26,26 @@ function readStatus(payload: CalendarImportStatus): CalendarImportStatus {
     created: payload.created,
     updated: payload.updated,
     skipped: payload.skipped,
-    failed: payload.failed
+    failed: payload.failed,
+    error: payload.error || null
   };
+}
+
+function resultMessage(
+  t: (path: string, values?: Record<string, string | number>) => string,
+  payload: CalendarImportStatus
+): string {
+  const created = payload.created ?? 0;
+  const updated = payload.updated ?? 0;
+  const skipped = payload.skipped ?? 0;
+  const failed = payload.failed ?? 0;
+  const summary = t('pages.calendarImport.syncResult', { created, updated, skipped });
+  if (failed <= 0) return summary;
+  const failure =
+    failed === 1
+      ? t('pages.calendarImport.syncResultFailedOne', { failed })
+      : t('pages.calendarImport.syncResultFailedMany', { failed });
+  return `${summary} ${failure}`;
 }
 
 export function CalendarImportPanel() {
@@ -35,7 +53,6 @@ export function CalendarImportPanel() {
   const feedback = useAppFeedback();
   const [status, setStatus] = useState<CalendarImportStatus | null>(null);
   const [feedUrl, setFeedUrl] = useState('');
-  const [defaultAmount, setDefaultAmount] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<'connect' | 'sync' | 'disconnect' | ''>('');
 
@@ -67,25 +84,14 @@ export function CalendarImportPanel() {
       const response = await fetch('/api/integrations/calendar-import/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feedUrl,
-          defaultRevenueAmount: defaultAmount.trim() === '' ? null : Number(defaultAmount)
-        })
+        body: JSON.stringify({ feedUrl })
       });
       const payload = (await response.json().catch(() => ({}))) as CalendarImportStatus;
       if (!response.ok) throw new Error(payload.error || t('pages.calendarImport.connectError'));
       setFeedUrl('');
-      setDefaultAmount('');
       setStatus(readStatus(payload));
       if (payload.created != null) {
-        feedback.success(
-          t('pages.calendarImport.counts', {
-            created: payload.created ?? 0,
-            updated: payload.updated ?? 0,
-            skipped: payload.skipped ?? 0,
-            failed: payload.failed ?? 0
-          })
-        );
+        feedback.success(resultMessage(t, payload));
       }
     } catch (error) {
       feedback.error(error instanceof Error ? error.message : t('pages.calendarImport.connectError'));
@@ -101,14 +107,7 @@ export function CalendarImportPanel() {
       const payload = (await response.json().catch(() => ({}))) as CalendarImportStatus;
       if (!response.ok) throw new Error(payload.error || t('pages.calendarImport.syncError'));
       setStatus(readStatus(payload));
-      feedback.success(
-        t('pages.calendarImport.counts', {
-          created: payload.created ?? 0,
-          updated: payload.updated ?? 0,
-          skipped: payload.skipped ?? 0,
-          failed: payload.failed ?? 0
-        })
-      );
+      feedback.success(resultMessage(t, payload));
     } catch (error) {
       feedback.error(error instanceof Error ? error.message : t('pages.calendarImport.syncError'));
     } finally {
@@ -142,7 +141,7 @@ export function CalendarImportPanel() {
       {loading ? <p className="muted">{t('pages.calendarImport.connecting')}</p> : null}
       {!loading && !connected ? (
         <>
-          <p className="muted">{t('pages.calendarImport.description')}</p>
+          <p className="muted">{t('pages.calendarImport.helper')}</p>
           <div className="form" style={{ marginTop: 12, maxWidth: 520 }}>
             <label htmlFor="calendar-import-url">{t('pages.calendarImport.urlPlaceholder')}</label>
             <input
@@ -155,18 +154,6 @@ export function CalendarImportPanel() {
               value={feedUrl}
               onChange={(event) => setFeedUrl(event.target.value)}
               placeholder={t('pages.calendarImport.urlPlaceholder')}
-            />
-            <p className="muted">{t('pages.calendarImport.helper')}</p>
-            <label htmlFor="calendar-import-amount">{t('pages.calendarImport.defaultAmount')}</label>
-            <input
-              id="calendar-import-amount"
-              className="input"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={defaultAmount}
-              onChange={(event) => setDefaultAmount(event.target.value)}
             />
             <div className="inline-actions" style={{ marginTop: 12 }}>
               <button className="btn btn-primary" type="button" disabled={busy !== '' || !feedUrl.trim()} onClick={() => void connect()}>
