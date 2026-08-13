@@ -81,7 +81,7 @@ function parseIcsDateParts(value: string): {
   dateOnly: boolean;
 } | null {
   const trimmed = value.trim();
-  const dateOnly = /^(\d{4})(\d{2})(\d{2})$/.exec(trimmed);
+  const dateOnly = /^(\d{4})-?(\d{2})-?(\d{2})$/.exec(trimmed);
   if (dateOnly) {
     return {
       year: Number(dateOnly[1]),
@@ -94,7 +94,10 @@ function parseIcsDateParts(value: string): {
       dateOnly: true
     };
   }
-  const dateTime = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z)?$/i.exec(trimmed);
+  const dateTime =
+    /^(\d{4})-?(\d{2})-?(\d{2})[T ](\d{2}):?(\d{2})(?::?(\d{2}))?(?:\.(\d+))?(Z|[+-]\d{2}:?\d{2})?$/i.exec(
+      trimmed
+    );
   if (!dateTime) return null;
   return {
     year: Number(dateTime[1]),
@@ -103,7 +106,7 @@ function parseIcsDateParts(value: string): {
     hour: Number(dateTime[4]),
     minute: Number(dateTime[5]),
     second: Number(dateTime[6] || '0'),
-    utc: Boolean(dateTime[7]),
+    utc: Boolean(dateTime[8] && (dateTime[8] === 'Z' || dateTime[8] === 'z' || dateTime[8].startsWith('+') || dateTime[8].startsWith('-'))),
     dateOnly: false
   };
 }
@@ -139,12 +142,53 @@ function utcPartsInTimeZone(
   }
 }
 
+const WINDOWS_TIME_ZONES: Record<string, string> = {
+  'central standard time': 'America/Chicago',
+  'central daylight time': 'America/Chicago',
+  'eastern standard time': 'America/New_York',
+  'pacific standard time': 'America/Los_Angeles',
+  'mountain standard time': 'America/Denver'
+};
+
+function normalizeTimeZoneName(value: string): string {
+  const trimmed = value.trim().replace(/^\/+/, '');
+  return WINDOWS_TIME_ZONES[trimmed.toLowerCase()] || trimmed;
+}
+
 function resolveTimeZone(candidate: string | null | undefined, fallback: string | null): string | null {
-  const value = candidate?.trim() || '';
+  const value = normalizeTimeZoneName(candidate || '');
   if (value && isValidTimeZone(value)) return value;
-  const next = fallback?.trim() || '';
+  const next = normalizeTimeZoneName(fallback || '');
   if (next && isValidTimeZone(next)) return next;
   return null;
+}
+
+function addDurationToWallClock(start: string, duration: string): string | null {
+  const match = start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+  const durationMatch = duration.trim().toUpperCase().match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/);
+  if (!match || !durationMatch) return null;
+  const date = new Date(
+    Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6])
+    )
+  );
+  date.setUTCDate(date.getUTCDate() + Number(durationMatch[1] || 0));
+  date.setUTCHours(date.getUTCHours() + Number(durationMatch[2] || 0));
+  date.setUTCMinutes(date.getUTCMinutes() + Number(durationMatch[3] || 0));
+  date.setUTCSeconds(date.getUTCSeconds() + Number(durationMatch[4] || 0));
+  return formatWallClock(
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds()
+  );
 }
 
 export function parseIcsDateTime(
@@ -207,15 +251,15 @@ function readEventField(block: IcsProperty[], name: string): IcsProperty | null 
   return block.find((property) => property.name === name) || null;
 }
 
-function eventFromBlock(block: IcsProperty[], calendarTimeZone: string | null): ParsedCalendarEvent | null {
+function eventFromBlock(block: IcsProperty[], calendarTimeZone: string | null): ParsedCalendarEvent {
   const uid = unescapeIcsText(readEventField(block, 'UID')?.value || '').trim();
-  if (!uid) return null;
 
   const summaryProp = readEventField(block, 'SUMMARY');
   const descriptionProp = readEventField(block, 'DESCRIPTION');
   const locationProp = readEventField(block, 'LOCATION');
   const startProp = readEventField(block, 'DTSTART');
   const endProp = readEventField(block, 'DTEND');
+  const durationProp = readEventField(block, 'DURATION');
   const lastModifiedProp = readEventField(block, 'LAST-MODIFIED') || readEventField(block, 'DTSTAMP');
   const status = unescapeIcsText(readEventField(block, 'STATUS')?.value || '')
     .trim()
@@ -224,9 +268,21 @@ function eventFromBlock(block: IcsProperty[], calendarTimeZone: string | null): 
   const start = startProp
     ? parseIcsDateTime(startProp.value, startProp.params, calendarTimeZone)
     : { wallClock: null, date: null, timezone: calendarTimeZone, allDay: false, utcIso: null };
-  const end = endProp
+  let end = endProp
     ? parseIcsDateTime(endProp.value, endProp.params, start.timezone || calendarTimeZone)
     : { wallClock: null, date: null, timezone: start.timezone, allDay: start.allDay, utcIso: null };
+  if (!end.wallClock && start.wallClock && durationProp?.value) {
+    const durationEnd = addDurationToWallClock(start.wallClock, durationProp.value);
+    if (durationEnd) {
+      end = {
+        wallClock: durationEnd,
+        date: durationEnd.slice(0, 10),
+        timezone: start.timezone,
+        allDay: start.allDay,
+        utcIso: null
+      };
+    }
+  }
 
   let endDate = end.date;
   if (start.allDay && endDate && start.date && endDate > start.date) {

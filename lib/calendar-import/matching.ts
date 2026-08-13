@@ -38,8 +38,14 @@ export function findConfidentProperty(
   event: ParsedCalendarEvent,
   properties: CalendarImportPropertyRow[]
 ): CalendarImportPropertyRow | null {
-  const matches = properties.filter((property) => !property.is_archived && isHighConfidencePropertyMatch(event.summary, property));
-  return matches.length === 1 ? matches[0] : null;
+  try {
+    const matches = (properties || []).filter(
+      (property) => property && !property.is_archived && isHighConfidencePropertyMatch(event.summary, property)
+    );
+    return matches.length === 1 ? matches[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 export function isHighConfidenceManualDuplicate(job: CalendarImportJobRow, event: ParsedCalendarEvent): boolean {

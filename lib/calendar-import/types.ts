@@ -45,7 +45,10 @@ export type CalendarImportCounts = {
   failed: number;
 };
 
-export type CalendarImportResult = CalendarImportStatus & CalendarImportCounts;
+export type CalendarImportResult = CalendarImportStatus &
+  CalendarImportCounts & {
+    error?: string | null;
+  };
 
 export type CalendarImportJobRow = {
   id: string;
