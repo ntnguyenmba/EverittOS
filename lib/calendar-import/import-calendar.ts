@@ -266,9 +266,9 @@ async function writeSafeActivity(
 }
 
 function fallbackPayloads(payload: Record<string, unknown>): Record<string, unknown>[] {
-  const withoutLinks = { ...payload, property_id: null, customer_id: null };
-  const withoutTimezone = { ...withoutLinks, timezone: null };
-  const withoutExternal = { ...withoutTimezone };
+  const withoutLinks: Record<string, unknown> = { ...payload, property_id: null, customer_id: null };
+  const withoutTimezone: Record<string, unknown> = { ...withoutLinks, timezone: null };
+  const withoutExternal: Record<string, unknown> = { ...withoutTimezone };
   delete withoutExternal.external_source;
   delete withoutExternal.external_uid;
   delete withoutExternal.external_last_modified;
@@ -458,8 +458,8 @@ export async function importCalendarConnection(
     const properties = await loadProperties(admin, connection.organization_id);
 
     for (const event of relevant) {
+      let property: CalendarImportPropertyRow | null = null;
       try {
-        let property: CalendarImportPropertyRow | null = null;
         try {
           property = findConfidentProperty(event, properties);
         } catch {

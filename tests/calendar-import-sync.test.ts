@@ -77,6 +77,8 @@ function createMemoryAdmin(state: {
     let mode: 'select' | 'insert' | 'update' | 'delete' = 'select';
     let payload: Row | null = null;
 
+    type QueryResult = { data: unknown; error: { message?: string; code?: string } | null };
+
     const api = {
       select() {
         return api;
@@ -119,22 +121,23 @@ function createMemoryAdmin(state: {
       single() {
         return execute(true);
       },
-      then(resolve: (value: { data: unknown; error: null }) => unknown, reject?: (reason: unknown) => unknown) {
+      then(resolve: (value: QueryResult) => unknown, reject?: (reason: unknown) => unknown) {
         return execute(false).then(resolve, reject);
       }
     };
 
-    async function execute(single: boolean) {
+    async function execute(single: boolean): Promise<QueryResult> {
       if (mode === 'insert' && payload) {
+        const insertPayload = payload;
         if (table === 'jobs' && state.insertError) {
           return { data: null, error: state.insertError };
         }
-        if (table === 'jobs' && payload.external_uid) {
+        if (table === 'jobs' && insertPayload.external_uid) {
           const duplicate = rows.some(
             (row) =>
-              row.organization_id === payload.organization_id &&
-              row.external_source === payload.external_source &&
-              row.external_uid === payload.external_uid
+              row.organization_id === insertPayload.organization_id &&
+              row.external_source === insertPayload.external_source &&
+              row.external_uid === insertPayload.external_uid
           );
           if (duplicate) {
             return {
