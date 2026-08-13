@@ -14,26 +14,25 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
 import { formatMoneyUsd } from '@/lib/i18n/locale-format';
 import { getExportCopy } from '@/lib/i18n/export-copy';
-import { parseAddressParts } from '@/lib/exports/address';
 import { displayPersonName } from '@/lib/exports/format';
 import type { JobBillingStatus } from '@/lib/jobs/billing-status';
 import { isAdminRole, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { filterDemoSeedJobs } from '@/lib/demo-seed-filter';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
-import { fetchPhotoCountsByJobIds } from '@/lib/job-photo-counts';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { supabase } from '@/lib/supabase';
+import { normalizeJobStatus } from '@/lib/worker-assignment';
 
 const copy = {
   en: {
-    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', photo: 'photo', photos: 'photos', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', job: 'Job', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Needs worker', amount: 'Amount'
+    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', photo: 'photo', photos: 'photos', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', job: 'Job', address: 'Address', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Needs worker', amount: 'Amount'
   },
   es: {
-    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', photo: 'foto', photos: 'fotos', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', job: 'Trabajo', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Necesita trabajador', amount: 'Importe'
+    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', photo: 'foto', photos: 'fotos', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', job: 'Trabajo', address: 'Dirección', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Necesita trabajador', amount: 'Importe'
   },
   vi: {
-    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', photo: 'ảnh', photos: 'ảnh', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', job: 'Công việc', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Cần nhân sự', amount: 'Số tiền'
+    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', photo: 'ảnh', photos: 'ảnh', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', job: 'Công việc', address: 'Địa chỉ', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Cần nhân sự', amount: 'Số tiền'
   }
 } as const;
 
@@ -55,7 +54,6 @@ type Job = {
   created_at?: string | null;
   revenue_amount?: number | null;
   billing_status?: JobBillingStatus | string | null;
-  photo_count?: number;
 };
 
 function formatDate(job: Job, locale: string, unscheduled: string) {
@@ -118,8 +116,14 @@ function canCreateInvoiceForJob(job: Job) {
   return Boolean(job.customer_id || job.customer_name) && Number(job.revenue_amount || 0) > 0;
 }
 
-function jobCityState(address: string | null | undefined): string {
-  return parseAddressParts(address || null).cityState;
+function jobNeedsWorker(job: Pick<Job, 'status' | 'assigned_to' | 'assigned_email'>) {
+  const status = normalizeJobStatus(job.status);
+  if (status === 'completed' || status === 'cancelled') return false;
+  return !job.assigned_to && !job.assigned_email;
+}
+
+function jobListAddress(job: Pick<Job, 'address' | 'title'>) {
+  return String(job.address || '').trim() || String(job.title || '').trim();
 }
 
 function filterTabClass(active: boolean, alert = false) {
@@ -184,9 +188,7 @@ function JobsList() {
         return;
       }
       const orgIsDemo = await fetchOrganizationIsDemo(supabase, org?.organizationId);
-      const rows = filterDemoSeedJobs(json.jobs || [], orgIsDemo);
-      const photoCounts = await fetchPhotoCountsByJobIds(rows.map((job) => job.id));
-      setJobs(sortJobs(rows.map((job) => ({ ...job, photo_count: photoCounts[job.id] || 0 }))));
+      setJobs(sortJobs(filterDemoSeedJobs(json.jobs || [], orgIsDemo)));
       let workersQuery = supabase.from('workers').select('id, name, auth_user_id, email');
       if (org?.organizationId) workersQuery = workersQuery.eq('organization_id', org.organizationId);
       else workersQuery = workersQuery.eq('user_id', user.id);
@@ -293,20 +295,18 @@ function JobsList() {
         {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
         {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
-          <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className="jobs-operations-table jobs-mobile-table"><thead><tr>{[c.date, c.job, c.assignedTo, c.status, c.actions].map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
+          <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className="jobs-operations-table jobs-mobile-table"><thead><tr>{[c.date, c.address, c.assignedTo, c.status, c.actions].map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
             {rows.map((job) => {
               const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
-              const assignment = assignedName || displayPersonName(null, job.assigned_email) || c.unassigned;
-              const needsWorker = !job.assigned_to && !job.assigned_email;
-              const cityState = jobCityState(job.address);
-              const primaryName = String(job.customer_name || '').trim() || cityState || job.title;
-              const secondaryLocation = String(job.customer_name || '').trim() && cityState ? cityState : '';
+              const needsWorker = jobNeedsWorker(job);
+              const assignment = assignedName || displayPersonName(null, job.assigned_email) || (needsWorker ? c.unassigned : '—');
+              const locationLabel = jobListAddress(job) || c.unscheduled;
               const showInvoice = canManageFinancials && canCreateInvoiceForJob(job) && String(job.billing_status || '') !== 'paid' && String(job.billing_status || '') !== 'receipt_sent';
               const menuOpen = openMenuId === job.id;
               return (
-                <tr key={job.id} className="jobs-operations-row" tabIndex={0} role="link" aria-label={primaryName} onClick={() => openJob(job.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openJob(job.id); } }}>
+                <tr key={job.id} className="jobs-operations-row" tabIndex={0} role="link" aria-label={locationLabel} onClick={() => openJob(job.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openJob(job.id); } }}>
                   <td data-label={c.date} className="jobs-col-date"><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
-                  <td data-label={c.job} className="jobs-col-property"><Link href={`/jobs/${job.id}`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{primaryName}</Link>{secondaryLocation ? <div className="jobs-secondary">{secondaryLocation}</div> : null}{canManageFinancials && job.revenue_amount != null ? <div className="jobs-secondary jobs-row-amount">{formatMoneyUsd(job.revenue_amount, locale)}</div> : null}{job.photo_count ? <div className="jobs-photo-count">{job.photo_count} {job.photo_count === 1 ? c.photo : c.photos}</div> : null}</td>
+                  <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{canManageFinancials ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
                   <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
                   <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
                   <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={`/jobs/${job.id}`} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
