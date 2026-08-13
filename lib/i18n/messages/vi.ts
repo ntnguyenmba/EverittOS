@@ -1077,7 +1077,6 @@ export const messages: Messages = {
       neverSynced: 'Chưa đồng bộ',
       syncNow: 'Đồng bộ ngay',
       disconnect: 'Ngắt kết nối',
-      defaultAmount: 'Số tiền công việc mặc định',
       connecting: 'Đang kết nối…',
       syncing: 'Đang đồng bộ…',
       disconnecting: 'Đang ngắt kết nối…',
@@ -1085,7 +1084,9 @@ export const messages: Messages = {
       connectError: 'Không thể kết nối lịch.',
       syncError: 'Không thể đồng bộ lịch.',
       disconnectError: 'Không thể ngắt kết nối lịch.',
-      counts: 'Đã tạo: {created} · Đã cập nhật: {updated} · Đã bỏ qua: {skipped} · Lỗi: {failed}'
+      syncResult: 'Đã thêm {created} công việc, {updated} đã cập nhật, {skipped} đã tồn tại.',
+      syncResultFailedOne: 'Không thể nhập {failed} sự kiện.',
+      syncResultFailedMany: 'Không thể nhập {failed} sự kiện.'
     },
     customers: { notFound: 'Không tìm thấy khách hàng' },
     jobs: {

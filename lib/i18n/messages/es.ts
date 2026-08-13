@@ -1079,7 +1079,6 @@ export const messages: Messages = {
       neverSynced: 'Aún no sincronizado',
       syncNow: 'Sincronizar ahora',
       disconnect: 'Desconectar',
-      defaultAmount: 'Importe predeterminado del trabajo',
       connecting: 'Conectando…',
       syncing: 'Sincronizando…',
       disconnecting: 'Desconectando…',
@@ -1087,7 +1086,9 @@ export const messages: Messages = {
       connectError: 'No se pudo conectar el calendario.',
       syncError: 'No se pudo sincronizar el calendario.',
       disconnectError: 'No se pudo desconectar el calendario.',
-      counts: 'Creados: {created} · Actualizados: {updated} · Omitidos: {skipped} · Fallidos: {failed}'
+      syncResult: '{created} trabajos añadidos, {updated} actualizados, {skipped} ya existían.',
+      syncResultFailedOne: 'No se pudo importar {failed} evento.',
+      syncResultFailedMany: 'No se pudieron importar {failed} eventos.'
     },
     customers: { notFound: 'Cliente no encontrado' },
     jobs: {

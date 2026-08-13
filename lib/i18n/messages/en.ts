@@ -1075,7 +1075,6 @@ export const messages: Messages = {
       neverSynced: 'Not synced yet',
       syncNow: 'Sync now',
       disconnect: 'Disconnect',
-      defaultAmount: 'Default job amount',
       connecting: 'Connecting…',
       syncing: 'Syncing…',
       disconnecting: 'Disconnecting…',
@@ -1083,7 +1082,9 @@ export const messages: Messages = {
       connectError: 'Unable to connect the calendar.',
       syncError: 'Unable to sync the calendar.',
       disconnectError: 'Unable to disconnect the calendar.',
-      counts: 'Created: {created} · Updated: {updated} · Skipped: {skipped} · Failed: {failed}'
+      syncResult: '{created} jobs added, {updated} updated, {skipped} already existed.',
+      syncResultFailedOne: '{failed} event could not be imported.',
+      syncResultFailedMany: '{failed} events could not be imported.'
     },
     customers: { notFound: 'Customer not found' },
     jobs: {

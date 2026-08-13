@@ -54,6 +54,7 @@ function createMemoryAdmin(state: {
   jobs?: CalendarImportJobRow[];
   properties?: CalendarImportPropertyRow[];
   connections?: CalendarImportConnection[];
+  insertError?: { message?: string; code?: string } | null;
 }) {
   const jobs = (state.jobs || []) as Row[];
   const properties = (state.properties || []) as Row[];
@@ -125,6 +126,23 @@ function createMemoryAdmin(state: {
 
     async function execute(single: boolean) {
       if (mode === 'insert' && payload) {
+        if (table === 'jobs' && state.insertError) {
+          return { data: null, error: state.insertError };
+        }
+        if (table === 'jobs' && payload.external_uid) {
+          const duplicate = rows.some(
+            (row) =>
+              row.organization_id === payload.organization_id &&
+              row.external_source === payload.external_source &&
+              row.external_uid === payload.external_uid
+          );
+          if (duplicate) {
+            return {
+              data: null,
+              error: { code: '23505', message: 'duplicate key value violates unique constraint jobs_external_source_uid_unique' }
+            };
+          }
+        }
         const row = { id: payload.id || `${table}-${nextId++}`, ...payload };
         rows.push(row);
         return { data: single ? row : [row], error: null };
@@ -349,5 +367,249 @@ describe('calendar import job sync', () => {
     assert.equal(db.jobs[0].property_id, 'prop-1');
     assert.equal(db.jobs[0].customer_id, 'cust-1');
     assert.equal(db.jobs[0].revenue_amount, null);
+  });
+
+  it('still imports when no property matches', async () => {
+    const db = createMemoryAdmin({ properties: [] });
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events: [event({ location: null })]
+    });
+    assert.equal(result.created, 1);
+    assert.equal(result.failed, 0);
+    assert.equal(db.jobs[0].property_id, null);
+    assert.equal(db.jobs[0].customer_id, null);
+    assert.equal(db.jobs[0].assigned_to, null);
+    assert.equal((db.jobs[0] as CalendarImportJobRow & { user_id?: string }).user_id, 'owner-1');
+    assert.equal(db.jobs[0].organization_id, 'org-1');
+  });
+
+  it('imports a multi-event ICS feed with no failures', async () => {
+    const db = createMemoryAdmin({});
+    const icsText = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Example//Calendar//EN',
+      'BEGIN:VEVENT',
+      'UID:example-123',
+      'SUMMARY:Frances Ln, Little Elm (Opti) Cleaning',
+      'DTSTART;TZID=America/Chicago:20260814T141000',
+      'DTEND;TZID=America/Chicago:20260814T171000',
+      'DESCRIPTION:Cleaning task',
+      'LOCATION:Frances Ln, Little Elm',
+      'END:VEVENT',
+      'BEGIN:VEVENT',
+      'UID:utc-job-1',
+      'SUMMARY:Second home cleaning',
+      'DTSTART:20260814T191000Z',
+      'DTEND:20260814T221000Z',
+      'END:VEVENT',
+      'BEGIN:VEVENT',
+      'UID:all-day-job-1',
+      'SUMMARY:All day turnover',
+      'DTSTART;VALUE=DATE:20260815',
+      'DTEND;VALUE=DATE:20260816',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      icsText
+    });
+    assert.equal(result.created, 3);
+    assert.equal(result.updated, 0);
+    assert.ok(result.skipped >= 0);
+    assert.equal(result.failed, 0);
+    assert.equal(result.error, null);
+    assert.equal(db.jobs.length, 3);
+    assert.ok(db.jobs.every((job) => job.assigned_to == null));
+  });
+
+  it('imports local timezone, UTC, and all-day events without failures', async () => {
+    const db = createMemoryAdmin({});
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events: [
+        event({ uid: 'local-1' }),
+        event({
+          uid: 'utc-1',
+          summary: 'UTC cleaning',
+          dtStart: '2026-08-14T14:10:00',
+          dtEnd: '2026-08-14T17:10:00'
+        }),
+        event({
+          uid: 'all-day-1',
+          summary: 'All day turnover',
+          dtStart: '2026-08-14T00:00:00',
+          dtEnd: '2026-08-14T00:00:00',
+          startDate: '2026-08-14',
+          endDate: '2026-08-14',
+          allDay: true,
+          location: null,
+          description: null
+        })
+      ]
+    });
+    assert.equal(result.created, 3);
+    assert.equal(result.failed, 0);
+    assert.equal(result.error, null);
+    assert.equal(db.jobs.length, 3);
+  });
+
+  it('counts a conservative manual duplicate as skipped, not failed', async () => {
+    const db = createMemoryAdmin({
+      jobs: [
+        {
+          id: 'manual-2',
+          organization_id: 'org-1',
+          title: 'Frances Ln, Little Elm (Opti) Cleaning extra note',
+          notes: null,
+          address: null,
+          status: 'scheduled',
+          start_date: '2026-08-14',
+          due_date: '2026-08-14',
+          scheduled_start: '2026-08-14T14:10:00',
+          scheduled_end: '2026-08-14T16:10:00',
+          timezone: 'America/Chicago',
+          assigned_to: null,
+          assigned_email: null,
+          revenue_amount: null,
+          property_id: null,
+          customer_id: null,
+          external_source: null,
+          external_uid: null,
+          external_last_modified: null
+        }
+      ]
+    });
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event()]
+    });
+    assert.equal(result.created, 0);
+    assert.equal(result.failed, 0);
+    assert.equal(result.skipped, 1);
+    assert.equal(db.jobs.length, 1);
+    assert.equal(db.jobs[0].external_uid, null);
+  });
+
+  it('marks a cancelled calendar event on an existing job without deleting it', async () => {
+    const db = createMemoryAdmin({});
+    await importCalendarConnection(db.admin, connection(), { ...importOptions, events: [event()] });
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event({ status: 'CANCELLED', lastModified: '2026-08-03T12:00:00Z' })]
+    });
+    assert.equal(result.failed, 0);
+    assert.equal(db.jobs.length, 1);
+    assert.equal(db.jobs[0].status, 'cancelled');
+    assert.equal(db.jobs[0].title, 'Frances Ln, Little Elm (Opti) Cleaning');
+  });
+
+  it('skips a cancelled event that was never imported', async () => {
+    const db = createMemoryAdmin({});
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event({ status: 'CANCELLED' })]
+    });
+    assert.equal(result.created, 0);
+    assert.equal(result.failed, 0);
+    assert.equal(result.skipped, 1);
+    assert.equal(db.jobs.length, 0);
+  });
+
+  it('imports events that omit description and location', async () => {
+    const db = createMemoryAdmin({});
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events: [event({ description: null, location: null })]
+    });
+    assert.equal(result.created, 1);
+    assert.equal(result.failed, 0);
+    assert.equal(db.jobs[0].notes, null);
+  });
+
+  it('treats a unique UID conflict as an update or skip, not a failure', async () => {
+    const db = createMemoryAdmin({
+      jobs: [
+        {
+          id: 'existing-uid',
+          organization_id: 'org-1',
+          title: 'Old title',
+          notes: 'Bring supplies',
+          address: '123 Frances Ln, Little Elm, TX',
+          status: 'scheduled',
+          start_date: '2026-08-14',
+          due_date: '2026-08-14',
+          scheduled_start: '2026-08-14T14:10:00',
+          scheduled_end: '2026-08-14T16:10:00',
+          timezone: 'America/Chicago',
+          assigned_to: 'keep-me',
+          assigned_email: 'keep@example.com',
+          revenue_amount: 77,
+          property_id: null,
+          customer_id: null,
+          external_source: CALENDAR_IMPORT_SOURCE,
+          external_uid: 'evt-1',
+          external_last_modified: '2026-08-01T12:00:00Z'
+        }
+      ]
+    });
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event({ summary: 'Updated from calendar' })]
+    });
+    assert.equal(result.failed, 0);
+    assert.equal(result.created, 0);
+    assert.equal(result.updated, 1);
+    assert.equal(db.jobs.length, 1);
+    assert.equal(db.jobs[0].title, 'Updated from calendar');
+    assert.equal(db.jobs[0].assigned_to, 'keep-me');
+    assert.equal(db.jobs[0].revenue_amount, 77);
+  });
+
+  it('treats a concurrent unique conflict as skipped, not failed', async () => {
+    const db = createMemoryAdmin({
+      insertError: { code: '23505', message: 'duplicate key value violates unique constraint jobs_external_source_uid_unique' }
+    });
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event()]
+    });
+    assert.equal(result.failed, 0);
+    assert.equal(result.created, 0);
+    assert.equal(result.skipped, 1);
+    assert.equal(result.error, null);
+  });
+
+  it('does not expose the feed URL when a job insert fails', async () => {
+    const db = createMemoryAdmin({
+      insertError: { code: '23502', message: 'null value in column "title" of relation "jobs" violates not-null constraint' }
+    });
+    const result = await importCalendarConnection(db.admin, connection(), {
+      ...importOptions,
+      events: [event()]
+    });
+    assert.equal(result.failed, 1);
+    assert.equal(result.created, 0);
+    assert.match(String(result.error), /could not be saved as a job/i);
+    const serialized = JSON.stringify(result);
+    assert.doesNotMatch(serialized, /calendar\.example\.com/);
+    assert.doesNotMatch(serialized, /feed_url/);
+    assert.doesNotMatch(serialized, /feedUrl/);
+    assert.doesNotMatch(serialized, /private\/feed/);
+    assert.doesNotMatch(String(result.error), /23502|PostgREST|schema/i);
+  });
+
+  it('connect UI no longer sends a default job amount', () => {
+    const panel = readFileSync('components/calendar-import-panel.tsx', 'utf8');
+    const connect = readFileSync('app/api/integrations/calendar-import/connect/route.ts', 'utf8');
+    assert.match(panel, /JSON\.stringify\(\{\s*feedUrl\s*\}\)/);
+    assert.doesNotMatch(panel, /defaultRevenueAmount/);
+    assert.doesNotMatch(panel, /defaultAmount/);
+    assert.doesNotMatch(panel, /Default job amount/i);
+    assert.doesNotMatch(connect, /defaultRevenueAmount/);
+    assert.doesNotMatch(connect, /default_revenue_amount/);
   });
 });
