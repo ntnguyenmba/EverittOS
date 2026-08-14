@@ -198,6 +198,22 @@
   white-space: nowrap !important;
 }
 
+/* Owner finance cards use plain-language labels. */
+.jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label,
+.jobs-owner-finance-row .jobs-col-contractor-pay .jobs-money-label {
+  font-size: 0 !important;
+}
+
+.jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label::after {
+  content: 'Client Pay\00a0';
+  font-size: 1rem !important;
+}
+
+.jobs-owner-finance-row .jobs-col-contractor-pay .jobs-money-label::after {
+  content: 'Worker Pay\00a0';
+  font-size: 1rem !important;
+}
+
 @media (max-width: 900px) {
   .jobs-operations-table tbody {
     grid-template-columns: 1fr !important;
