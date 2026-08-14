@@ -74,3 +74,6 @@ create policy calendar_import_connections_deny on public.calendar_import_connect
 
 revoke all on table public.calendar_import_connections from anon, authenticated, public;
 grant all on table public.calendar_import_connections to service_role;
+
+-- Required after adding Calendar Import columns so PostgREST sees them immediately.
+notify pgrst, 'reload schema';

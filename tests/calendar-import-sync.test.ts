@@ -72,7 +72,7 @@ function createMemoryAdmin(state: {
   jobs?: CalendarImportJobRow[];
   properties?: CalendarImportPropertyRow[];
   connections?: CalendarImportConnection[];
-  insertError?: { message?: string; code?: string } | null;
+  insertError?: { message?: string; code?: string; details?: string; hint?: string } | null;
   jobsColumns?: string[] | null;
   rejectTimezone?: boolean;
 }) {
@@ -92,10 +92,12 @@ function createMemoryAdmin(state: {
     activity_logs: activity
   };
 
-  function schemaCacheError(column: string): { code: string; message: string } {
+  function schemaCacheError(column: string): { code: string; message: string; details: string; hint: string } {
     return {
       code: 'PGRST204',
-      message: `Could not find the '${column}' column of 'jobs' in the schema cache`
+      message: `Could not find the '${column}' column of 'jobs' in the schema cache`,
+      details: `The jobs schema cache does not include '${column}'.`,
+      hint: 'Reload the PostgREST schema cache after applying the Calendar Import migration.'
     };
   }
 
@@ -111,7 +113,7 @@ function createMemoryAdmin(state: {
     let payload: Row | null = null;
     let selectColumns = '*';
 
-    type QueryResult = { data: unknown; error: { message?: string; code?: string } | null };
+    type QueryResult = { data: unknown; error: { message?: string; code?: string; details?: string; hint?: string } | null };
 
     const api = {
       select(columns?: string) {
@@ -413,6 +415,7 @@ describe('calendar import job sync', () => {
     assert.match(migration, /calendar_import_connections_deny/);
     assert.match(migration, /jobs_external_source_uid_unique/);
     assert.match(migration, /using \(false\)/);
+    assert.match(migration, /notify pgrst,\s*'reload schema'/i);
   });
 
   it('status API selects only safe connection columns', () => {
@@ -685,6 +688,11 @@ describe('calendar import job sync', () => {
     const source = readFileSync('lib/calendar-import/import-calendar.ts', 'utf8');
     assert.match(source, /\.insert\(candidate\)\.select\('id'\)/);
     assert.doesNotMatch(source, /insert\([^\n]+\)\.select\(JOB_MATCH_COLUMNS\)/);
+    assert.match(source, /isCalendarIdentityColumn/);
+    assert.doesNotMatch(
+      source,
+      /omitKeys\([^\n]*external_source[^\n]*external_uid[^\n]*external_last_modified/
+    );
   });
 
   it('connect UI no longer sends a default job amount', () => {
@@ -698,7 +706,49 @@ describe('calendar import job sync', () => {
     assert.doesNotMatch(connect, /default_revenue_amount/);
   });
 
-  it('imports 11 valid events when production jobs is missing calendar columns and schema cache', async () => {
+  it('imports 11 valid events with calendar identity columns on a full jobs schema', async () => {
+    const db = createMemoryAdmin({});
+    const events = Array.from({ length: 11 }, (_, index) =>
+      event({
+        uid: `prod-evt-${index + 1}`,
+        summary: `Production home ${index + 1} cleaning`,
+        dtStart: `2026-08-14T${String(8 + index).padStart(2, '0')}:00:00`,
+        dtEnd: `2026-08-14T${String(9 + index).padStart(2, '0')}:00:00`,
+        startDate: '2026-08-14',
+        endDate: '2026-08-14',
+        timezone: 'America/Chicago',
+        lastModified: '2026-08-01T12:00:00Z',
+        location: null,
+        description: null
+      })
+    );
+
+    const first = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events
+    });
+    assert.equal(first.created, 11);
+    assert.equal(first.updated, 0);
+    assert.equal(first.skipped, 0);
+    assert.equal(first.failed, 0);
+    assert.equal(first.error, null);
+    assert.equal(db.jobs.length, 11);
+    assert.ok(db.jobs.every((job) => job.external_source === CALENDAR_IMPORT_SOURCE));
+    assert.ok(db.jobs.every((job) => String(job.external_uid || '').startsWith('prod-evt-')));
+    assert.ok(db.jobs.every((job) => job.external_last_modified === '2026-08-01T12:00:00Z'));
+    assert.ok(db.jobs.every((job) => job.assigned_to == null));
+
+    const second = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events
+    });
+    assert.equal(second.created, 0);
+    assert.equal(second.failed, 0);
+    assert.equal(second.updated + second.skipped, 11);
+    assert.equal(db.jobs.length, 11);
+  });
+
+  it('fails all 11 parsed events when jobs insert is rejected by a missing calendar identity schema', async () => {
     const db = createMemoryAdmin({
       jobsColumns: PRODUCTION_JOBS_COLUMNS_WITHOUT_CALENDAR_FIELDS
     });
@@ -721,17 +771,76 @@ describe('calendar import job sync', () => {
       events
     });
 
-    assert.equal(result.created, 11);
+    assert.equal(result.created, 0);
     assert.equal(result.updated, 0);
     assert.equal(result.skipped, 0);
-    assert.equal(result.failed, 0);
-    assert.equal(result.error, null);
-    assert.equal(result.failureReason, null);
-    assert.equal(db.jobs.length, 11);
-    assert.ok(db.jobs.every((job) => job.external_source == null));
-    assert.ok(db.jobs.every((job) => job.timezone == null));
-    assert.ok(db.jobs.every((job) => job.property_id == null));
-    assert.ok(db.jobs.every((job) => job.assigned_to == null));
+    assert.equal(result.failed, 11);
+    assert.equal(result.failureReason, 'schema_mismatch');
+    assert.match(String(result.error), /do not match the current database schema/i);
+    assert.equal(db.jobs.length, 0);
+    const serialized = JSON.stringify(result);
+    assert.doesNotMatch(serialized, /calendar\.example\.com/);
+    assert.doesNotMatch(serialized, /feed_url|feedUrl|PGRST204|external_source/i);
+  });
+
+  it('fails all 11 parsed events when every jobs insert is rejected', async () => {
+    const db = createMemoryAdmin({
+      insertError: {
+        code: '23502',
+        message: 'null value in column "title" of relation "jobs" violates not-null constraint',
+        details: 'Failing row contains (user_id, organization_id, title).'
+      }
+    });
+    const events = Array.from({ length: 11 }, (_, index) =>
+      event({
+        uid: `prod-fail-${index + 1}`,
+        summary: `Production home ${index + 1} cleaning`,
+        location: null,
+        description: null
+      })
+    );
+
+    const result = await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+      ...importOptions,
+      events
+    });
+
+    assert.equal(result.created, 0);
+    assert.equal(result.updated, 0);
+    assert.equal(result.skipped, 0);
+    assert.equal(result.failed, 11);
+    assert.equal(result.failureReason, 'job_insert_failed');
+    assert.match(String(result.error), /could not be saved as jobs/i);
+    assert.equal(db.jobs.length, 0);
+    assert.doesNotMatch(JSON.stringify(result), /calendar\.example\.com|feed_url|23502/i);
+  });
+
+  it('logs sanitized job-write failures with dbCode, failingColumn, operation, and event index', async () => {
+    const warnings: string[] = [];
+    const originalWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(' '));
+    };
+    try {
+      const db = createMemoryAdmin({
+        jobsColumns: PRODUCTION_JOBS_COLUMNS_WITHOUT_CALENDAR_FIELDS
+      });
+      await importCalendarConnection(db.admin, connection({ default_revenue_amount: null }), {
+        ...importOptions,
+        events: [event({ uid: 'log-evt-1', location: null, description: null })]
+      });
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    const logged = warnings.join('\n');
+    assert.match(logged, /"dbCode":"PGRST204"/);
+    assert.match(logged, /"failingColumn":"external_(source|uid|last_modified)"/);
+    assert.match(logged, /"operation":"insert"/);
+    assert.match(logged, /"eventIndex":0/);
+    assert.match(logged, /"dbMessage":/);
+    assert.doesNotMatch(logged, /calendar\.example\.com/);
+    assert.doesNotMatch(logged, /feed_url|feedUrl|token=/);
   });
 
   it('still imports when the database rejects the job timezone', async () => {

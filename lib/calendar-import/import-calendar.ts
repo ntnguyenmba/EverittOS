@@ -3,10 +3,13 @@ import {
   classifyJobWriteError,
   dominantFailureCode,
   extractUnknownJobColumn,
+  isCalendarIdentityColumn,
+  jobWriteErrorText,
   logCalendarImportIssue,
   maskCalendarUid,
   safeGroupedFailureMessage,
-  type CalendarImportFailureCode
+  type CalendarImportFailureCode,
+  type JobWriteErrorLike
 } from '@/lib/calendar-import/errors';
 import { looksLikeIcsCalendar, parseIcsCalendar } from '@/lib/calendar-import/ical-parser';
 import { fetchPublicCalendarFeed } from '@/lib/calendar-import/feed-security';
@@ -14,6 +17,7 @@ import { findConfidentProperty, isHighConfidenceManualDuplicate, isPossibleExist
 import { toSafeCalendarImportResult } from '@/lib/calendar-import/safe-status';
 import { updateCalendarImportSyncState } from '@/lib/calendar-import/connections';
 import { syncJobToGoogleCalendarSafe } from '@/lib/google-calendar-sync-job';
+import { normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from '@/lib/time-zones';
 import {
@@ -110,8 +114,8 @@ function calendarControlledPatch(
     address: eventAddress(event, property),
     start_date: event.startDate,
     due_date: event.endDate || event.startDate,
-    scheduled_start: event.dtStart,
-    scheduled_end: event.dtEnd,
+    scheduled_start: normalizeJobScheduleTimestamp(event.dtStart),
+    scheduled_end: normalizeJobScheduleTimestamp(event.dtEnd),
     timezone: resolveJobTimeZone(event, property, fallbackTimeZone),
     external_last_modified: event.lastModified
   };
@@ -131,9 +135,9 @@ function calendarFieldsUnchanged(job: CalendarImportJobRow, patch: Record<string
   );
 }
 
-function isUniqueConflict(error: { message?: string; code?: string } | null): boolean {
+function isUniqueConflict(error: JobWriteErrorLike): boolean {
   const code = String(error?.code || '');
-  const message = String(error?.message || '').toLowerCase();
+  const message = jobWriteErrorText(error).toLowerCase();
   return code === '23505' || message.includes('duplicate') || message.includes('unique');
 }
 
@@ -170,14 +174,7 @@ async function loadImportedJobs(
     .in('external_uid', uids);
   if (!error) return (data || []) as CalendarImportJobRow[];
   if (isMissingSchemaError(error)) {
-    for (const columns of [JOB_MATCH_COLUMNS_LEGACY, JOB_MATCH_COLUMNS_MINIMAL]) {
-      const fallback = await admin
-        .from('jobs')
-        .select(columns)
-        .eq('organization_id', organizationId)
-        .in('start_date', []);
-      if (!fallback.error) return (fallback.data || []) as unknown as CalendarImportJobRow[];
-    }
+    // UID matching requires Calendar Import columns in the PostgREST schema cache.
     return [];
   }
   logCalendarImportIssue({
@@ -278,12 +275,10 @@ async function writeSafeActivity(
 }
 
 const OPTIONAL_WRITE_COLUMNS = [
-  'external_source',
-  'external_uid',
-  'external_last_modified',
   'timezone',
   'property_id',
   'customer_id',
+  'company_id',
   'assigned_email',
   'assigned_to',
   'revenue_amount',
@@ -294,6 +289,8 @@ const OPTIONAL_WRITE_COLUMNS = [
   'due_date',
   'start_date'
 ] as const;
+
+const OPTIONAL_TIME_FIELDS = ['scheduled_end', 'scheduled_start', 'start_date', 'due_date', 'external_last_modified'] as const;
 
 function omitKeys(payload: Record<string, unknown>, keys: string[]): Record<string, unknown> {
   const next = { ...payload };
@@ -311,22 +308,34 @@ function asTimestamptz(value: string | null | undefined): string | null {
 function fallbackPayloads(payload: Record<string, unknown>): Record<string, unknown>[] {
   return [
     payload,
-    omitKeys(payload, ['property_id', 'customer_id']),
-    omitKeys(payload, ['property_id', 'customer_id', 'timezone']),
-    omitKeys(payload, ['property_id', 'customer_id', 'timezone', 'external_source', 'external_uid', 'external_last_modified']),
+    omitKeys(payload, ['property_id', 'customer_id', 'company_id']),
+    omitKeys(payload, ['property_id', 'customer_id', 'company_id', 'timezone']),
     omitKeys(payload, [
       'property_id',
       'customer_id',
+      'company_id',
       'timezone',
-      'external_source',
-      'external_uid',
-      'external_last_modified',
       'assigned_email',
       'assigned_to',
       'revenue_amount'
     ]),
     omitKeys(payload, [...OPTIONAL_WRITE_COLUMNS])
   ];
+}
+
+type JobWriteResult = {
+  row: CalendarImportJobRow | null;
+  error: JobWriteErrorLike;
+  failureCode?: CalendarImportFailureCode;
+};
+
+function mentionsCalendarIdentity(error: JobWriteErrorLike): boolean {
+  const lower = jobWriteErrorText(error).toLowerCase();
+  return (
+    lower.includes('external_source') ||
+    lower.includes('external_uid') ||
+    lower.includes('external_last_modified')
+  );
 }
 
 function rowFromInsert(
@@ -359,14 +368,13 @@ function rowFromInsert(
 async function insertJobWithFallback(
   admin: SupabaseClient,
   payload: Record<string, unknown>
-): Promise<{ row: CalendarImportJobRow | null; error: { message?: string; code?: string } | null }> {
-  let lastError: { message?: string; code?: string } | null = null;
+): Promise<JobWriteResult> {
+  let lastError: JobWriteErrorLike = null;
   const extraOmit = new Set<string>();
   const seen = new Set<string>();
   const layers = [
     ...fallbackPayloads(payload),
-    { ...omitKeys(payload, [...OPTIONAL_WRITE_COLUMNS]), status: 'new' },
-    omitKeys({ ...payload, status: 'new' }, [...OPTIONAL_WRITE_COLUMNS, 'status'])
+    { ...omitKeys(payload, [...OPTIONAL_WRITE_COLUMNS]), status: 'new' }
   ];
 
   for (const layer of layers) {
@@ -384,24 +392,29 @@ async function insertJobWithFallback(
         if (id) return { row: rowFromInsert(id, candidate), error: null };
       }
       lastError = inserted.error;
-      if (lastError && isUniqueConflict(lastError)) return { row: null, error: lastError };
+      if (lastError && isUniqueConflict(lastError)) return { row: null, error: lastError, failureCode: 'duplicate_conflict' };
 
       const unknownColumn = extractUnknownJobColumn(lastError);
-      if (unknownColumn && unknownColumn in candidate) {
+      if (isCalendarIdentityColumn(unknownColumn) || mentionsCalendarIdentity(lastError)) {
+        return { row: null, error: lastError, failureCode: 'schema_mismatch' };
+      }
+      if (unknownColumn && unknownColumn in candidate && !isCalendarIdentityColumn(unknownColumn)) {
         extraOmit.add(unknownColumn);
         candidate = omitKeys(candidate, [unknownColumn]);
         continue;
       }
 
-      const classified = classifyJobWriteError(lastError?.message || '', lastError?.code);
+      const classified = classifyJobWriteError(lastError);
+      if (classified === 'schema_mismatch' && mentionsCalendarIdentity(lastError)) {
+        return { row: null, error: lastError, failureCode: 'schema_mismatch' };
+      }
       if (classified === 'invalid_timezone' && 'timezone' in candidate) {
         extraOmit.add('timezone');
         candidate = omitKeys(candidate, ['timezone']);
         continue;
       }
       if (classified === 'invalid_event_time') {
-        const timeFields = ['external_last_modified', 'scheduled_end', 'scheduled_start'] as const;
-        const nextTimeField = timeFields.find((field) => field in candidate);
+        const nextTimeField = OPTIONAL_TIME_FIELDS.find((field) => field in candidate);
         if (nextTimeField) {
           extraOmit.add(nextTimeField);
           candidate = omitKeys(candidate, [nextTimeField]);
@@ -415,7 +428,11 @@ async function insertJobWithFallback(
       break;
     }
   }
-  return { row: null, error: lastError };
+  return {
+    row: null,
+    error: lastError,
+    failureCode: classifyJobWriteError(lastError)
+  };
 }
 
 async function createImportedJob(
@@ -454,8 +471,7 @@ async function createImportedJob(
   }
   insertPayload.external_source = CALENDAR_IMPORT_SOURCE;
   insertPayload.external_uid = event.uid;
-  const lastModified = asTimestamptz(patch.external_last_modified);
-  if (lastModified) insertPayload.external_last_modified = lastModified;
+  insertPayload.external_last_modified = asTimestamptz(patch.external_last_modified);
 
   const first = await insertJobWithFallback(admin, insertPayload);
   if (first.row) return first.row;
@@ -463,13 +479,19 @@ async function createImportedJob(
   if (first.error && isUniqueConflict(first.error)) {
     throw Object.assign(new Error(first.error.message || 'duplicate'), {
       code: first.error.code,
+      details: first.error.details,
+      hint: first.error.hint,
+      failingColumn: extractUnknownJobColumn(first.error),
       failureCode: 'duplicate_conflict' as CalendarImportFailureCode
     });
   }
 
   throw Object.assign(new Error(first.error?.message || 'Could not create imported job.'), {
     code: first.error?.code,
-    failureCode: classifyJobWriteError(first.error?.message || '', first.error?.code)
+    details: first.error?.details,
+    hint: first.error?.hint,
+    failingColumn: extractUnknownJobColumn(first.error),
+    failureCode: first.failureCode || classifyJobWriteError(first.error)
   });
 }
 
@@ -491,11 +513,10 @@ async function updateImportedJob(
     scheduled_start: patch.scheduled_start,
     scheduled_end: patch.scheduled_end,
     external_source: CALENDAR_IMPORT_SOURCE,
-    external_uid: event.uid
+    external_uid: event.uid,
+    external_last_modified: asTimestamptz(patch.external_last_modified)
   };
   if (patch.timezone) next.timezone = patch.timezone;
-  const lastModified = asTimestamptz(patch.external_last_modified);
-  if (lastModified) next.external_last_modified = lastModified;
 
   if ((job.revenue_amount === null || job.revenue_amount === undefined) && connection.default_revenue_amount != null) {
     next.revenue_amount = Number(connection.default_revenue_amount);
@@ -525,10 +546,9 @@ async function updateImportedJob(
   const attempts = [
     next,
     omitKeys(next, ['timezone']),
-    omitKeys(next, ['timezone', 'property_id', 'customer_id']),
-    omitKeys(next, ['timezone', 'property_id', 'customer_id', 'external_source', 'external_uid', 'external_last_modified'])
+    omitKeys(next, ['timezone', 'property_id', 'customer_id', 'company_id'])
   ];
-  let lastError: { message?: string; code?: string } | null = null;
+  let lastError: JobWriteErrorLike = null;
   for (const layer of attempts) {
     let attempt = omitKeys(layer, [...extraOmit]);
     for (let inner = 0; inner < OPTIONAL_WRITE_COLUMNS.length + 2; inner += 1) {
@@ -536,16 +556,33 @@ async function updateImportedJob(
       if (!updated.error) return 'updated';
       lastError = updated.error;
       const unknownColumn = extractUnknownJobColumn(updated.error);
-      if (unknownColumn && unknownColumn in attempt) {
+      if (isCalendarIdentityColumn(unknownColumn) || mentionsCalendarIdentity(updated.error)) {
+        throw Object.assign(new Error(updated.error?.message || 'Could not update imported job.'), {
+          code: updated.error?.code,
+          details: updated.error?.details,
+          hint: updated.error?.hint,
+          failingColumn: unknownColumn,
+          failureCode: 'schema_mismatch' as CalendarImportFailureCode
+        });
+      }
+      if (unknownColumn && unknownColumn in attempt && !isCalendarIdentityColumn(unknownColumn)) {
         extraOmit.add(unknownColumn);
         attempt = omitKeys(attempt, [unknownColumn]);
         continue;
       }
-      const classified = classifyJobWriteError(updated.error?.message || '', updated.error?.code);
+      const classified = classifyJobWriteError(updated.error);
       if (classified === 'invalid_timezone' && 'timezone' in attempt) {
         extraOmit.add('timezone');
         attempt = omitKeys(attempt, ['timezone']);
         continue;
+      }
+      if (classified === 'invalid_event_time') {
+        const nextTimeField = OPTIONAL_TIME_FIELDS.find((field) => field in attempt);
+        if (nextTimeField) {
+          extraOmit.add(nextTimeField);
+          attempt = omitKeys(attempt, [nextTimeField]);
+          continue;
+        }
       }
       if (!isMissingSchemaError(updated.error) && classified !== 'invalid_timezone' && classified !== 'schema_mismatch') {
         break;
@@ -556,7 +593,12 @@ async function updateImportedJob(
 
   throw Object.assign(new Error(lastError?.message || 'Could not update imported job.'), {
     code: lastError?.code,
-    failureCode: 'job_update_failed' as CalendarImportFailureCode
+    details: lastError?.details,
+    hint: lastError?.hint,
+    failingColumn: extractUnknownJobColumn(lastError),
+    failureCode: (classifyJobWriteError(lastError) === 'schema_mismatch'
+      ? 'schema_mismatch'
+      : 'job_update_failed') as CalendarImportFailureCode
   });
 }
 
@@ -671,10 +713,10 @@ export async function importCalendarConnection(
           }
         }
       } catch (error) {
+        const writeError = error && typeof error === 'object' ? (error as JobWriteErrorLike & { failureCode?: CalendarImportFailureCode; failingColumn?: string }) : null;
         const failureCode =
-          error && typeof error === 'object' && 'failureCode' in error
-            ? ((error as { failureCode?: CalendarImportFailureCode }).failureCode as CalendarImportFailureCode)
-            : classifyJobWriteError(error instanceof Error ? error.message : '');
+          writeError?.failureCode ||
+          classifyJobWriteError(writeError || (error instanceof Error ? error.message : ''));
         if (failureCode === 'duplicate_conflict') {
           const existing = await findJobByExternalUid(admin, connection.organization_id, event.uid);
           if (existing) {
@@ -699,8 +741,12 @@ export async function importCalendarConnection(
           eventIndex: relevant.indexOf(event),
           uidHash: maskCalendarUid(event.uid),
           operation: existing ? 'update' : 'insert',
-          dbCode: error && typeof error === 'object' && 'code' in error ? String((error as { code?: string }).code || '') : null,
-          dbMessage: error instanceof Error ? error.message : null,
+          dbCode: writeError?.code || null,
+          dbMessage: jobWriteErrorText(
+            { message: writeError?.message, details: writeError?.details, hint: writeError?.hint },
+            error instanceof Error ? error.message : null
+          ),
+          failingColumn: writeError?.failingColumn || extractUnknownJobColumn(writeError),
           timezone: event.timezone,
           propertyMatched: Boolean(property),
           phase: 'db_write'

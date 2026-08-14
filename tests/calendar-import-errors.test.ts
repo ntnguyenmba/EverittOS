@@ -20,10 +20,27 @@ describe('calendar import error reporting', () => {
       classifyJobWriteError("Could not find the 'external_source' column of 'jobs' in the schema cache", 'PGRST204'),
       'schema_mismatch'
     );
+    assert.equal(
+      classifyJobWriteError({
+        code: 'PGRST204',
+        message: 'Schema cache error',
+        details: "Could not find the 'external_uid' column of 'jobs' in the schema cache"
+      }),
+      'schema_mismatch'
+    );
     assert.equal(extractUnknownJobColumn({
       code: 'PGRST204',
       message: "Could not find the 'external_source' column of 'jobs' in the schema cache"
     }), 'external_source');
+    assert.equal(
+      extractUnknownJobColumn({
+        code: 'PGRST204',
+        message: 'Schema cache error',
+        details: "Could not find the 'external_uid' column of 'jobs' in the schema cache",
+        hint: 'Reload the schema cache'
+      }),
+      'external_uid'
+    );
     assert.equal(
       extractUnknownJobColumn({
         message: 'null value in column "title" of relation "jobs" violates not-null constraint'

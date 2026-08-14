@@ -8,6 +8,15 @@ export type CalendarImportFailureCode =
   | 'invalid_timezone'
   | 'schema_mismatch';
 
+export type JobWriteErrorLike = {
+  message?: string | null;
+  code?: string | null;
+  details?: string | null;
+  hint?: string | null;
+} | null | undefined;
+
+export const CALENDAR_IDENTITY_COLUMNS = ['external_source', 'external_uid', 'external_last_modified'] as const;
+
 const FAILURE_MESSAGES: Record<CalendarImportFailureCode, { one: string; many: string }> = {
   invalid_event_time: {
     one: '1 calendar event could not be imported because its start time could not be read.',
@@ -45,8 +54,15 @@ const FAILURE_MESSAGES: Record<CalendarImportFailureCode, { one: string; many: s
 
 const UNKNOWN_COLUMN_PATTERNS = [
   /could not find the ['"]([a-z_]+)['"] column of ['"]jobs['"]/i,
-  /column ['"]([a-z_]+)['"] of relation ['"]jobs['"] does not exist/i
+  /could not find the ['"]jobs\.([a-z_]+)['"] column/i,
+  /could not find the ['"]([a-z_]+)['"] column/i,
+  /column ['"]([a-z_]+)['"] of relation ['"]jobs['"] does not exist/i,
+  /column ['"]jobs\.([a-z_]+)['"] does not exist/i
 ];
+
+export function isCalendarIdentityColumn(column: string | null | undefined): boolean {
+  return Boolean(column && (CALENDAR_IDENTITY_COLUMNS as readonly string[]).includes(column));
+}
 
 export function maskCalendarUid(uid: string): string {
   const value = uid.trim();
@@ -66,10 +82,24 @@ export function sanitizeCalendarErrorText(value: string | null | undefined): str
     .slice(0, 180);
 }
 
-export function extractUnknownJobColumn(error: { message?: string; code?: string } | null | undefined): string | null {
-  const message = String(error?.message || '');
+export function jobWriteErrorText(error: JobWriteErrorLike, message?: string | null, code?: string | null): string {
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  for (const part of [code, error?.code, message, error?.message, error?.details, error?.hint]) {
+    const value = String(part || '').trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(value);
+  }
+  return parts.join(' | ');
+}
+
+export function extractUnknownJobColumn(error: JobWriteErrorLike): string | null {
+  const haystack = jobWriteErrorText(error);
   for (const pattern of UNKNOWN_COLUMN_PATTERNS) {
-    const match = pattern.exec(message);
+    const match = pattern.exec(haystack);
     if (match?.[1]) return match[1];
   }
   return null;
@@ -97,8 +127,16 @@ export function inferFailureCodeFromSafeMessage(message: string | null | undefin
   return null;
 }
 
-export function classifyJobWriteError(message: string, code?: string | null): CalendarImportFailureCode {
-  const lower = `${code || ''} ${message || ''}`.toLowerCase();
+export function classifyJobWriteError(
+  messageOrError: string | JobWriteErrorLike,
+  code?: string | null
+): CalendarImportFailureCode {
+  const error = typeof messageOrError === 'object' ? messageOrError : { message: messageOrError, code };
+  const lower = jobWriteErrorText(
+    error,
+    typeof messageOrError === 'string' ? messageOrError : null,
+    typeof messageOrError === 'string' ? code : error?.code || code
+  ).toLowerCase();
   if (lower.includes('23505') || lower.includes('duplicate') || lower.includes('unique')) return 'duplicate_conflict';
   if (
     lower.includes('pgrst204') ||
@@ -130,8 +168,8 @@ export function safeGroupedFailureMessage(codes: CalendarImportFailureCode[]): s
     counts.set(code, (counts.get(code) || 0) + 1);
   }
   const ranked = [...counts.entries()].sort((left, right) => right[1] - left[1]);
-  const [code, count] = ranked[0];
-  const template = count === 1 ? FAILURE_MESSAGES[code].one : FAILURE_MESSAGES[code].many;
+  const [failureCode, count] = ranked[0];
+  const template = count === 1 ? FAILURE_MESSAGES[failureCode].one : FAILURE_MESSAGES[failureCode].many;
   return template.replace('{count}', String(count));
 }
 
