@@ -23,9 +23,10 @@ function normalizeAddress(value: string | null | undefined): string {
     .replace(/\bboulevard\b/g, 'blvd')
     .replace(/\bcourt\b/g, 'ct')
     .replace(/\bhighway\b/g, 'hwy')
-    .replace(/\s*,\s*/g, ',')
+    .replace(/\bunit\b/g, 'unit')
+    .replace(/\busa?\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/,us$/i, '')
     .trim();
 }
 
@@ -48,8 +49,9 @@ export function isHighConfidencePropertyMatch(eventTitle: string, property: Cale
   if (!eventName || !propertyName) return false;
   if (eventName === propertyName) return true;
 
-  const propertyAddress = normalizeCalendarTitle(property.formatted_address || property.address || '');
-  return Boolean(propertyAddress && eventName === propertyAddress);
+  const eventAddress = normalizeAddress(eventTitle);
+  const propertyAddress = normalizeAddress(property.formatted_address || property.address || '');
+  return Boolean(eventAddress && propertyAddress && eventAddress === propertyAddress);
 }
 
 export function findConfidentProperty(
