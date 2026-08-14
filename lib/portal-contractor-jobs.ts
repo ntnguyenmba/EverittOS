@@ -22,6 +22,7 @@ export type ContractorPortalJobRow = {
   address: string | null;
   status: string | null;
   scheduledStart: string | null;
+  completedAt: string | null;
   startDate: string | null;
   dueDate: string | null;
   payAmount: number | null;
@@ -53,6 +54,7 @@ type JobRow = {
   start_date?: string | null;
   due_date?: string | null;
   scheduled_start?: string | null;
+  completed_at?: string | null;
   assigned_to?: string | null;
   notes?: string | null;
   customer_notes?: string | null;
@@ -117,6 +119,7 @@ function toListJob(job: JobRow, pay: ReturnType<typeof contractorPayFromLabor>):
     address: job.address || null,
     status: job.status || null,
     scheduledStart: job.scheduled_start || null,
+    completedAt: job.completed_at || null,
     startDate: job.start_date || null,
     dueDate: job.due_date || null,
     payAmount: pay.payAmount,
