@@ -85,8 +85,6 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
               </Link>
             ))}
           </nav>
-
-          <p className="contractor-role-note">{c.roleNote}</p>
         </div>
       </aside>
 
