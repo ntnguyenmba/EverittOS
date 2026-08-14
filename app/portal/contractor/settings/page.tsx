@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalAccountSettings } from '@/components/portal/portal-account-settings';
-import { CONTRACTOR_HOME_PATH, CONTRACTOR_SETTINGS_PATH } from '@/lib/contractor-dashboard';
+import { CONTRACTOR_HOME_PATH, CONTRACTOR_SETTINGS_PATH } from '@/lib/worker-dashboard';
 import { performClientLogout } from '@/lib/client-logout';
 
 export default function ContractorPortalSettingsPage() {
@@ -26,13 +26,13 @@ export default function ContractorPortalSettingsPage() {
   }
 
   return (
-    <div className="contractor-dashboard">
+    <div className="worker-dashboard">
       <header style={{ marginBottom: 20 }}>
         <p className="muted" style={{ marginBottom: 4 }}>
-          {t('portal.contractor.accountLabel')}
+          {t('portal.worker.accountLabel')}
         </p>
-        <h1>{t('portal.contractor.settingsTitle')}</h1>
-        <p className="muted">{t('portal.contractor.settingsDescription')}</p>
+        <h1>{t('portal.worker.settingsTitle')}</h1>
+        <p className="muted">{t('portal.worker.settingsDescription')}</p>
         <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
           <Link href={CONTRACTOR_HOME_PATH} className="btn">
             {t('portal.account.backToOverview')}
@@ -46,7 +46,7 @@ export default function ContractorPortalSettingsPage() {
         </div>
       </header>
 
-      <PortalAccountSettings variant="contractor" homeHref={CONTRACTOR_HOME_PATH} />
+      <PortalAccountSettings variant="worker" homeHref={CONTRACTOR_HOME_PATH} />
     </div>
   );
 }
