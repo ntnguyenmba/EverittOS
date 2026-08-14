@@ -22,17 +22,18 @@ import { fetchOrganizationContext } from '@/lib/organization';
 import { fetchOrganizationIsDemo } from '@/lib/organization-is-demo';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { supabase } from '@/lib/supabase';
+import { sortJobs, type JobListSortMode } from '@/lib/jobs-list-sort';
 import { normalizeJobStatus } from '@/lib/worker-assignment';
 
 const copy = {
   en: {
-    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', photo: 'photo', photos: 'photos', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', job: 'Job', address: 'Address', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Needs worker', amount: 'Amount'
+    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', photo: 'photo', photos: 'photos', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', job: 'Job', address: 'Address', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Needs worker', amount: 'Amount', sortBy: 'Sort by', sortByAssigned: 'Assigned worker'
   },
   es: {
-    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', photo: 'foto', photos: 'fotos', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', job: 'Trabajo', address: 'Dirección', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Necesita trabajador', amount: 'Importe'
+    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', photo: 'foto', photos: 'fotos', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', job: 'Trabajo', address: 'Dirección', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Necesita trabajador', amount: 'Importe', sortBy: 'Ordenar por', sortByAssigned: 'Trabajador asignado'
   },
   vi: {
-    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', photo: 'ảnh', photos: 'ảnh', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', job: 'Công việc', address: 'Địa chỉ', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Cần nhân sự', amount: 'Số tiền'
+    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', photo: 'ảnh', photos: 'ảnh', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', job: 'Công việc', address: 'Địa chỉ', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Cần nhân sự', amount: 'Số tiền', sortBy: 'Sắp xếp theo', sortByAssigned: 'Nhân sự được giao'
   }
 } as const;
 
@@ -78,30 +79,6 @@ function formatTime(job: Job, locale: string) {
   if (!job.scheduled_end) return start;
   const end = new Intl.DateTimeFormat(locale, options).format(new Date(job.scheduled_end));
   return `${start} – ${end}`;
-}
-
-function jobDateValue(job: Job) {
-  return job.scheduled_start || job.start_date || job.due_date || '';
-}
-
-function sortJobs(rows: Job[]) {
-  const today = new Date();
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  return [...rows].sort((a, b) => {
-    const aValue = jobDateValue(a);
-    const bValue = jobDateValue(b);
-    if (!aValue && !bValue) return String(b.created_at || '').localeCompare(String(a.created_at || ''));
-    if (!aValue) return 1;
-    if (!bValue) return -1;
-    const aDate = aValue.slice(0, 10);
-    const bDate = bValue.slice(0, 10);
-    const aUpcoming = aDate >= todayKey;
-    const bUpcoming = bDate >= todayKey;
-    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
-    const byDate = aUpcoming ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    if (byDate !== 0) return byDate;
-    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
-  });
 }
 
 function invoiceHref(job: Job) {
@@ -153,6 +130,7 @@ function JobsList() {
   const [removingId, setRemovingId] = useState('');
   const [duplicatingId, setDuplicatingId] = useState('');
   const [openMenuId, setOpenMenuId] = useState('');
+  const [sortMode, setSortMode] = useState<JobListSortMode>('date');
   const loadingRef = useRef(false);
 
   const load = useCallback(async (silent = false) => {
@@ -188,7 +166,7 @@ function JobsList() {
         return;
       }
       const orgIsDemo = await fetchOrganizationIsDemo(supabase, org?.organizationId);
-      setJobs(sortJobs(filterDemoSeedJobs(json.jobs || [], orgIsDemo)));
+      setJobs(filterDemoSeedJobs(json.jobs || [], orgIsDemo));
       let workersQuery = supabase.from('workers').select('id, name, auth_user_id, email');
       if (org?.organizationId) workersQuery = workersQuery.eq('organization_id', org.organizationId);
       else workersQuery = workersQuery.eq('user_id', user.id);
@@ -269,7 +247,7 @@ function JobsList() {
   const canManageFinancials = canAccessFinancials(role, plan);
   const canExport = managerView;
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
-  const rows = useMemo(() => sortJobs(jobs), [jobs]);
+  const rows = useMemo(() => sortJobs(jobs, sortMode, workerNames, localeCode), [jobs, sortMode, workerNames, localeCode]);
   const exportQuery = useMemo(() => ({ customer: customerFilter, status: statusFilter, period: periodFilter, filter: assignmentFilter, assigned_to: assignedToFilter, from: createdFromFilter }), [customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter]);
   const activeAll = !periodFilter && !statusFilter && assignmentFilter !== 'unassigned';
   const activeToday = periodFilter === 'today';
@@ -282,12 +260,25 @@ function JobsList() {
     <AppShell plan={plan} role={role} className="jobs-shell-minimal">
       <div className="jobs-list-page">
         <PageHeader title={t('nav.jobs')} action={<div className="jobs-header-actions">{managerView ? <Link className="btn btn-secondary" href="/jobs/duplicate-cleanup">{t('pages.duplicateCleanup.findDuplicates')}</Link> : null}{canExport ? <ExportMenu endpoint="/api/exports/jobs" query={exportQuery} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} /> : null}<Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link></div>} />
-        <div className="jobs-filter-tabs" aria-label="Job filters">
-          <Link href="/jobs" className={filterTabClass(activeAll)} aria-current={activeAll ? 'page' : undefined}>{c.all}</Link>
-          <Link href="/jobs?period=today" className={filterTabClass(activeToday)} aria-current={activeToday ? 'page' : undefined}>{c.today}</Link>
-          <Link href="/jobs?status=active" className={filterTabClass(activeActive)} aria-current={activeActive ? 'page' : undefined}>{c.active}</Link>
-          <Link href="/jobs?status=finished" className={filterTabClass(activeFinished)} aria-current={activeFinished ? 'page' : undefined}>{c.finished}</Link>
-          {managerView ? <Link href="/jobs?filter=unassigned" className={filterTabClass(activeNeedsWorker, true)} aria-current={activeNeedsWorker ? 'page' : undefined}>{c.needsWorker}</Link> : null}
+        <div className="jobs-filter-bar">
+          <div className="jobs-filter-tabs" aria-label="Job filters">
+            <Link href="/jobs" className={filterTabClass(activeAll)} aria-current={activeAll ? 'page' : undefined}>{c.all}</Link>
+            <Link href="/jobs?period=today" className={filterTabClass(activeToday)} aria-current={activeToday ? 'page' : undefined}>{c.today}</Link>
+            <Link href="/jobs?status=active" className={filterTabClass(activeActive)} aria-current={activeActive ? 'page' : undefined}>{c.active}</Link>
+            <Link href="/jobs?status=finished" className={filterTabClass(activeFinished)} aria-current={activeFinished ? 'page' : undefined}>{c.finished}</Link>
+            {managerView ? <Link href="/jobs?filter=unassigned" className={filterTabClass(activeNeedsWorker, true)} aria-current={activeNeedsWorker ? 'page' : undefined}>{c.needsWorker}</Link> : null}
+          </div>
+          <label className="jobs-sort-control">
+            <span>{c.sortBy}</span>
+            <select
+              value={sortMode}
+              aria-label={c.sortBy}
+              onChange={(event) => setSortMode(event.target.value === 'assigned' ? 'assigned' : 'date')}
+            >
+              <option value="date">{c.date}</option>
+              <option value="assigned">{c.sortByAssigned}</option>
+            </select>
+          </label>
         </div>
         {filtered ? <p className="muted" style={{ marginBottom: 12 }}>{c.filtered} · <Link href="/jobs">{c.showAll}</Link></p> : null}
         {isAdminRole(role) && assignmentFilter === 'missing_completion_date' ? <p className="muted" style={{ marginBottom: 12 }}>{c.missingFinish}</p> : null}

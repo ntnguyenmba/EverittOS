@@ -40,6 +40,19 @@ describe('jobs list overview', () => {
     assert.match(page, /createInvoice/);
   });
 
+  it('adds assigned-worker sorting next to the existing filters', () => {
+    assert.match(page, /jobs-sort-control/);
+    assert.match(page, /sortBy: 'Sort by'/);
+    assert.match(page, /sortBy: 'Ordenar por'/);
+    assert.match(page, /sortBy: 'Sắp xếp theo'/);
+    assert.match(page, /sortByAssigned: 'Assigned worker'/);
+    assert.match(page, /sortByAssigned: 'Trabajador asignado'/);
+    assert.match(page, /sortByAssigned: 'Nhân sự được giao'/);
+    assert.match(page, /useState<JobListSortMode>\('date'\)/);
+    assert.match(page, /filter=unassigned/);
+    assert.match(page, /jobs-col-assigned/);
+  });
+
   it('does not label completed or cancelled jobs as needing a worker', () => {
     assert.match(page, /normalizeJobStatus/);
     assert.match(page, /jobNeedsWorker/);

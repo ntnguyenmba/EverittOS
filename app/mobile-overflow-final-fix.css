@@ -104,6 +104,7 @@ iframe {
   .finance-actions,
   .filter-row,
   .jobs-filter-row,
+  .jobs-filter-bar,
   .portal-tabs {
     display: flex !important;
     flex-wrap: wrap !important;
