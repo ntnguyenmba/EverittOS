@@ -38,7 +38,7 @@ const copy = {
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
     collected: 'Money in', customerBalanceDue: 'Still owed', cashAfterPaidCosts: 'Money kept',
     jobsToday: 'Jobs today', jobsWeek: 'Jobs this week', jobsMonth: 'Jobs this month', jobsYear: 'Jobs this year', jobsAllTime: 'All jobs',
-    jobsDesc: 'Jobs in this period.', financialDetails: 'More money details', contractorsPaid: 'Paid contractors',
+    jobsDesc: 'Jobs in this period.', showFinancialDetails: 'Show more money details', hideFinancialDetails: 'Hide money details', contractorsPaid: 'Paid contractors',
     totalContractorCost: 'Contractor costs', expectedRevenue: 'Job revenue', expectedProfit: 'Profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Money customers paid you.', currentBalances: 'Money customers still owe.', periodBalances: 'Money customers still owe for this period.',
     cashDesc: 'Money received minus costs already paid.', contractorsPaidDesc: 'Money already paid to contractors.',
@@ -50,7 +50,7 @@ const copy = {
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
     collected: 'Dinero recibido', customerBalanceDue: 'Aún pendiente', cashAfterPaidCosts: 'Dinero restante',
     jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
-    jobsDesc: 'Trabajos de este período.', financialDetails: 'Más detalles de dinero', contractorsPaid: 'Contratistas pagados',
+    jobsDesc: 'Trabajos de este período.', showFinancialDetails: 'Mostrar más detalles de dinero', hideFinancialDetails: 'Ocultar detalles de dinero', contractorsPaid: 'Contratistas pagados',
     totalContractorCost: 'Costos de contratistas', expectedRevenue: 'Ingresos de trabajos', expectedProfit: 'Ganancia', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Dinero que los clientes te pagaron.', currentBalances: 'Dinero que los clientes todavía deben.', periodBalances: 'Dinero que los clientes todavía deben de este período.',
     cashDesc: 'Dinero recibido menos costos ya pagados.', contractorsPaidDesc: 'Dinero ya pagado a contratistas.',
@@ -62,7 +62,7 @@ const copy = {
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
     collected: 'Tiền vào', customerBalanceDue: 'Còn phải thu', cashAfterPaidCosts: 'Tiền còn lại',
     jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
-    jobsDesc: 'Công việc trong khoảng thời gian này.', financialDetails: 'Thêm chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
+    jobsDesc: 'Công việc trong khoảng thời gian này.', showFinancialDetails: 'Hiện thêm chi tiết tiền', hideFinancialDetails: 'Ẩn chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
     totalContractorCost: 'Chi phí nhà thầu', expectedRevenue: 'Doanh thu công việc', expectedProfit: 'Lợi nhuận', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Tiền khách đã trả cho bạn.', currentBalances: 'Tiền khách vẫn còn nợ.', periodBalances: 'Tiền khách vẫn còn nợ trong khoảng này.',
     cashDesc: 'Tiền đã nhận trừ các khoản đã trả.', contractorsPaidDesc: 'Tiền đã trả cho nhà thầu.',
@@ -195,7 +195,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <button type="button" className="button secondary" disabled={busy} aria-expanded={showFinancialDetails} onClick={() => setShowFinancialDetails((current) => !current)}>{c.financialDetails}</button>
+        <button type="button" className="button secondary" disabled={busy} aria-expanded={showFinancialDetails} onClick={() => setShowFinancialDetails((current) => !current)}>{showFinancialDetails ? c.hideFinancialDetails : c.showFinancialDetails}</button>
       </div>
 
       {showFinancialDetails ? (
