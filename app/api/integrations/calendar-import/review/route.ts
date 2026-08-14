@@ -104,8 +104,16 @@ export async function GET() {
       month: '2-digit',
       day: '2-digit'
     }).format(new Date());
+
+    const ignoredResult = await auth.admin
+      .from('calendar_import_ignored_events')
+      .select('event_uid')
+      .eq('organization_id', auth.org.organizationId)
+      .eq('connection_id', connection.id);
+    const ignored = new Set((ignoredResult.data || []).map((row: { event_uid: string }) => row.event_uid));
+
     const events = parseIcsCalendar(feed.body, timezone)
-      .filter((event) => event.uid && relevantEvent(event, today))
+      .filter((event) => event.uid && !ignored.has(event.uid) && relevantEvent(event, today))
       .slice(0, 100);
     const uids = events.map((event) => event.uid);
     const dates = Array.from(
@@ -182,8 +190,6 @@ export async function GET() {
         normalizeCalendarTitle(a.title).localeCompare(normalizeCalendarTitle(b.title))
     );
 
-    // A successful review proves the feed is readable and the review workflow is working.
-    // Clear stale errors left by the old auto-import behavior without changing last_sync_at.
     if (connection.last_sync_error) {
       await updateCalendarImportSyncState(auth.admin, connection.id, { last_sync_error: null });
     }
