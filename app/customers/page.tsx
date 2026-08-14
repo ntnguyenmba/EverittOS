@@ -322,7 +322,8 @@ function CustomersPageContent() {
           )}
           {!loading &&
             customers.map((customer) => (
-              <div key={customer.id} className="card customer-card-row" style={{ marginTop: 12 }}>
+              <div key={customer.id} className="card customer-card-row open-in-new-tab-card" style={{ marginTop: 12 }}>
+                <Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${customerDisplayName(customer)} in a new tab`}><span className="record-card-overlay-label">Open {customerDisplayName(customer)} in a new tab</span></Link>
                 <CustomerLogo logoPath={customer.logo_path} alt={customerDisplayName(customer)} size={48} />
                 <div>
                 <h3><Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(customer)}</Link></h3>

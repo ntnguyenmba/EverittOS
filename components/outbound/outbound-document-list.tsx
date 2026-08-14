@@ -244,7 +244,10 @@ export function OutboundDocumentList({
           stillOwed > 0 &&
           !['draft', 'cancelled', 'canceled'].includes(String(doc.status || '').toLowerCase());
         return (
-          <div key={doc.id} className="outbound-document-row">
+          <div key={doc.id} className={`outbound-document-row${doc.doc_type === 'invoice' ? ' open-in-new-tab-card' : ''}`}>
+            {doc.doc_type === 'invoice' ? (
+              <Link href={`/invoices?invoiceId=${encodeURIComponent(doc.source_entity_id || doc.id)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${doc.subject || doc.recipient_email || billingCopy.untitled} in a new tab`}><span className="record-card-overlay-label">Open {doc.subject || doc.recipient_email || billingCopy.untitled} in a new tab</span></Link>
+            ) : null}
             <div className="outbound-document-main">
               {doc.doc_type === 'invoice' ? (
                 <Link

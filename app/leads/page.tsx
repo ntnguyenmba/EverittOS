@@ -248,9 +248,10 @@ export default function LeadsPage() {
             return (
               <div
                 key={lead.id}
-                className="dashboard-today-row"
+                className="dashboard-today-row open-in-new-tab-card"
                 style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
               >
+                <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${customerDisplayName(lead)} in a new tab`}><span className="record-card-overlay-label">Open {customerDisplayName(lead)} in a new tab</span></Link>
                 <div style={{ flex: '1 1 220px' }}>
                   <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(lead)}</Link>
                   <div className="muted" style={{ marginTop: 3 }}>

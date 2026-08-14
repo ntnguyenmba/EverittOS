@@ -69,6 +69,8 @@ function ExpensesContent() {
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterWorkerId, setFilterWorkerId] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
+  const requestedExpenseId = searchParams.get('edit') || searchParams.get('expense') || '';
+  const shouldEditRequestedExpense = Boolean(searchParams.get('edit'));
 
   const hasAccess = canAccessFinancials(role, plan);
   const canManage = hasAccess;
@@ -149,6 +151,13 @@ function ExpensesContent() {
     setReceiptFile(null);
     setEditingId(null);
     setShowForm(false);
+    if (requestedExpenseId) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('edit');
+      params.delete('expense');
+      const query = params.toString();
+      router.replace(query ? `/expenses?${query}` : '/expenses');
+    }
   }
 
   function startEdit(expense: ExpenseView) {
@@ -172,6 +181,33 @@ function ExpensesContent() {
     });
     setReceiptFile(null);
   }
+
+  useEffect(() => {
+    if (!requestedExpenseId || loading) return;
+    const expense = expenses.find((item) => item.id === requestedExpenseId);
+    if (!expense) return;
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(`expense-${requestedExpenseId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    if (!shouldEditRequestedExpense || expense.source === 'quickbooks' || editingId === expense.id) return;
+    setEditingId(expense.id);
+    setShowForm(true);
+    setForm({
+      date: expense.date,
+      category: expense.category,
+      vendor: expense.vendor || '',
+      description: expense.description || '',
+      amount: String(expense.amount),
+      payment_method: expense.payment_method || '',
+      notes: expense.notes || '',
+      job_id: expense.job_id || '',
+      customer_id: expense.customer_id || '',
+      worker_id: expense.worker_id || ''
+    });
+    setReceiptFile(null);
+  }, [editingId, expenses, loading, requestedExpenseId, shouldEditRequestedExpense]);
 
   async function saveExpense() {
     if (saving) return;
@@ -496,7 +532,16 @@ function ExpensesContent() {
         {!loading && expenses.length > 0 ? (
           <div className="finance-expense-list">
             {expenses.map((expense) => (
-              <article key={expense.id} className="finance-list-card">
+              <article id={`expense-${expense.id}`} key={expense.id} className="finance-list-card open-in-new-tab-card">
+                <Link
+                  href={expense.source === 'quickbooks' ? `/expenses?expense=${encodeURIComponent(expense.id)}` : `/expenses?edit=${encodeURIComponent(expense.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="record-card-overlay-link"
+                  aria-label={`Open ${expense.description || expense.category} in a new tab`}
+                >
+                  <span className="record-card-overlay-label">Open {expense.description || expense.category} in a new tab</span>
+                </Link>
                 <div className="finance-list-card-main">
                   <div className="finance-list-card-head">
                     <strong>{expense.amount < 0 ? `${expense.category} · Credit` : expense.category}</strong>

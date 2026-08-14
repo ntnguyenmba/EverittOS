@@ -188,7 +188,8 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
           {contractors.map((contractor) => {
             const contact = contractor.phone || contractor.email;
             return (
-              <article key={contractor.id} className="list-row team-member-card">
+              <article key={contractor.id} className="list-row team-member-card open-in-new-tab-card">
+                <Link href={`/jobs?assigned_to=${encodeURIComponent(contractor.id)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${contractor.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {contractor.name} in a new tab</span></Link>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong><Link href={`/jobs?assigned_to=${encodeURIComponent(contractor.id)}`} target="_blank" rel="noopener noreferrer">{contractor.name}</Link></strong>
                   <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>

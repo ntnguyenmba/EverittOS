@@ -288,7 +288,8 @@ export default function ContractorPortalPage() {
             {sortedJobs.length ? (
               <div className="job-visits-list">
                 {sortedJobs.map((job) => (
-                  <article key={job.id} className="list-row portal-job-row">
+                  <article key={job.id} className="list-row portal-job-row open-in-new-tab-card">
+                    <Link href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${job.title || c.job} in a new tab`}><span className="record-card-overlay-label">Open {job.title || c.job} in a new tab</span></Link>
                     <div>
                       <Link href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer">
                         <strong>{job.title || c.job}</strong>

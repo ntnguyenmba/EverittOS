@@ -202,7 +202,8 @@ function ScheduleCard({ job, workerNames, canAssign, onAssign, onReschedule }: {
   const actionLabel = status === 'in_progress' || status === 'in progress' || status === 'started' ? text.continue : text.start;
 
   return (
-    <article className="card">
+    <article className="card open-in-new-tab-card">
+      <Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${job.title} in a new tab`}><span className="record-card-overlay-label">Open {job.title} in a new tab</span></Link>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
         <div>
           <h3 style={{ marginBottom: 6 }}>{job.title}</h3>

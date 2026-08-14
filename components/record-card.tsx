@@ -44,20 +44,13 @@ export function RecordCard({
   );
 
   return (
-    <article className={className ? `record-card ${className}` : 'record-card'}>
+    <article className={className ? `record-card ${href ? 'open-in-new-tab-card ' : ''}${className}` : `record-card${href ? ' open-in-new-tab-card' : ''}`}>
       {href ? (
-        <Link
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="record-card-link"
-          aria-label={`Open ${title} in a new tab`}
-        >
-          {content}
+        <Link href={href} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${title} in a new tab`}>
+          <span className="record-card-overlay-label">Open {title} in a new tab</span>
         </Link>
-      ) : (
-        <div className="record-card-link">{content}</div>
-      )}
+      ) : null}
+      <div className="record-card-link">{content}</div>
       {actions ? <div className="record-card-actions">{actions}</div> : null}
     </article>
   );

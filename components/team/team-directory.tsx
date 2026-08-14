@@ -293,7 +293,8 @@ export function TeamDirectory() {
         {filtered.map((member) => {
           const summary = jobSummaries[member.userId] || emptySummary();
           return (
-            <article key={member.userId} className="list-row customer-row team-member-card">
+            <article key={member.userId} className="list-row customer-row team-member-card open-in-new-tab-card">
+              <Link href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open jobs for ${member.name} in a new tab`}><span className="record-card-overlay-label">Open jobs for {member.name} in a new tab</span></Link>
               <div className="team-member-copy">
                 <strong>{member.name}</strong>
                 <p className="muted team-member-meta">{roleLabel(member.role)} · {member.active ? 'Active' : 'Inactive'}</p>

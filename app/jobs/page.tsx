@@ -338,8 +338,6 @@ function JobsList() {
     setYearFilter('');
   }
 
-  function openJob(jobId: string) { window.open(`/jobs/${jobId}`, '_blank', 'noopener,noreferrer'); }
-
   return (
     <AppShell plan={plan} role={role} className="jobs-shell-minimal">
       <div className="jobs-list-page">
@@ -389,8 +387,8 @@ function JobsList() {
               const menuOpen = openMenuId === job.id;
               const ownerMoney = isOwner ? ownerFinancials[job.id] : undefined;
               return (
-                <tr key={job.id} className={`jobs-operations-row${isOwner ? ' jobs-owner-finance-row' : ''}`} tabIndex={0} role="link" aria-label={locationLabel} onClick={() => openJob(job.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openJob(job.id); } }}>
-                  <td data-label={c.date} className="jobs-col-date"><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
+                <tr key={job.id} className={`jobs-operations-row open-in-new-tab-card${isOwner ? ' jobs-owner-finance-row' : ''}`}>
+                  <td data-label={c.date} className="jobs-col-date"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${locationLabel} in a new tab`}><span className="record-card-overlay-label">Open {locationLabel} in a new tab</span></Link><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
                   <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{isOwner && job.customer_name ? <div className="jobs-secondary">{c.client}: {job.customer_name}</div> : null}{canManageFinancials && !isOwner ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
                   <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
                   {isOwner ? (
