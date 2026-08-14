@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalAccountSettings } from '@/components/portal/portal-account-settings';
 import { CONTRACTOR_HOME_PATH, CONTRACTOR_SETTINGS_PATH } from '@/lib/contractor-dashboard';
@@ -27,7 +26,7 @@ export default function ContractorPortalSettingsPage() {
   }
 
   return (
-    <AuthenticatedSection role="contractor" className="contractor-dashboard">
+    <div className="contractor-dashboard">
       <header style={{ marginBottom: 20 }}>
         <p className="muted" style={{ marginBottom: 4 }}>
           {t('portal.contractor.accountLabel')}
@@ -48,6 +47,6 @@ export default function ContractorPortalSettingsPage() {
       </header>
 
       <PortalAccountSettings variant="contractor" homeHref={CONTRACTOR_HOME_PATH} />
-    </AuthenticatedSection>
+    </div>
   );
 }
