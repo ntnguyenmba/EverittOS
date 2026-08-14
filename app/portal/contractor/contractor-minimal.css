@@ -927,3 +927,98 @@
   color: #ffffff !important;
   opacity: 1 !important;
 }
+
+
+/* Full-height portal menu, visible language control, and flatter work cards. */
+@media (min-width: 761px) {
+  .contractor-dashboard-shell > .contractor-sidebar,
+  .client-dashboard-shell > .contractor-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    align-self: start !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .contractor-sidebar-inner {
+    position: static !important;
+    min-height: calc(100vh - 52px) !important;
+  }
+}
+
+.contractor-sidebar .portal-language-switcher {
+  display: grid !important;
+  gap: 7px !important;
+  margin: 16px 4px 0 !important;
+}
+
+.contractor-sidebar .portal-language-switcher .language-switcher-label {
+  color: rgba(255, 255, 255, 0.74) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.contractor-sidebar .portal-language-switcher select,
+.contractor-mobile-header .portal-language-switcher select {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  background: #ffffff !important;
+  color: #1f3443 !important;
+}
+
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(36, 63, 83, 0.055) !important;
+}
+
+.contractor-main .portal-job-row,
+.contractor-main .client-job-card {
+  margin: 0 !important;
+  padding: 18px 10px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(36, 63, 83, 0.12) !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.contractor-main .portal-job-row:last-child,
+.contractor-main .client-job-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.contractor-main .portal-job-row:hover,
+.contractor-main .client-job-card:hover {
+  background: #f5f8fa !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.contractor-main header.card {
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(36, 63, 83, 0.055) !important;
+}
+
+.contractor-main header.card::after {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .contractor-mobile-header .portal-language-switcher {
+    width: min(42vw, 160px) !important;
+  }
+
+  .contractor-mobile-header .portal-language-switcher select {
+    min-height: 40px !important;
+    padding: 7px 28px 7px 9px !important;
+  }
+}
