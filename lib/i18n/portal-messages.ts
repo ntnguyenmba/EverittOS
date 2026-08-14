@@ -50,7 +50,7 @@ export const portalMessagesEn: PortalMessages = {
     terms: 'Terms of Service',
     generalDisclaimer: 'General Disclaimer',
     customerDisclaimer: 'Customer Dashboard Disclaimer',
-    contractorDisclaimer: 'Contractor Disclaimer'
+    contractorDisclaimer: 'Worker Disclaimer'
   },
   account: {
     title: 'Account settings',
@@ -74,7 +74,7 @@ export const portalMessagesEn: PortalMessages = {
     notifications: {
       title: 'Notifications',
       clientDescription: 'Choose which appointment and invoice updates you want by email.',
-      contractorDescription: 'Choose which contractor updates you want by email.',
+      contractorDescription: 'Choose which worker updates you want by email.',
       emailNotifications: 'Email notifications',
       clientOperational: 'Appointment and invoice updates',
       contractorOperational: 'Job and payment updates',
@@ -206,8 +206,8 @@ export const portalMessagesEn: PortalMessages = {
     }
   },
   contractor: {
-    portal: 'Contractor dashboard',
-    accountLabel: 'Contractor account',
+    portal: 'Worker dashboard',
+    accountLabel: 'Worker account',
     settingsTitle: 'Account settings',
     settingsDescription: 'Manage your profile, notifications, legal links, and account deletion.',
     today: 'Today',
@@ -328,7 +328,7 @@ export const portalMessagesEs: PortalMessages = {
     terms: 'Términos del servicio',
     generalDisclaimer: 'Aviso legal general',
     customerDisclaimer: 'Aviso del panel del cliente',
-    contractorDisclaimer: 'Aviso del contratista'
+    workerDisclaimer: 'Aviso del contratista'
   },
   account: {
     title: 'Configuración de la cuenta',
@@ -352,17 +352,17 @@ export const portalMessagesEs: PortalMessages = {
     notifications: {
       title: 'Notificaciones',
       clientDescription: 'Elige qué actualizaciones de citas y facturas deseas recibir por correo electrónico.',
-      contractorDescription: 'Elige qué actualizaciones del contratista deseas recibir por correo electrónico.',
+      workerDescription: 'Elige qué actualizaciones del contratista deseas recibir por correo electrónico.',
       emailNotifications: 'Notificaciones por correo electrónico',
       clientOperational: 'Actualizaciones de citas y facturas',
-      contractorOperational: 'Actualizaciones de trabajos y pagos',
+      workerOperational: 'Actualizaciones de trabajos y pagos',
       productUpdates: 'Actualizaciones del producto'
     },
     calendar: {
       title: 'Calendario',
       clientDescription:
         'Usa Añadir al calendario en tus citas para Google, Outlook o Apple Calendar. Este panel no incluye integraciones de la empresa.',
-      contractorDescription:
+      workerDescription:
         'Usa Añadir al calendario en un trabajo asignado para crear un evento puntual. Las conexiones de Google Calendar y QuickBooks de toda la empresa las gestiona el propietario de la empresa.'
     },
     delete: {
@@ -386,7 +386,7 @@ export const portalMessagesEs: PortalMessages = {
       unableToDeleteRetry: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
       clientRetention:
         'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales de tu perfil. Las facturas, los pagos, los trabajos completados y otros registros del servicio permanecen con tu proveedor de servicios cuando sea necesario.',
-      contractorRetention:
+      workerRetention:
         'Eliminar tu inicio de sesión quita tu acceso y los datos personales de tu perfil. El historial de trabajos de la empresa, los registros de clientes y los registros de pagos permanecen con la empresa contratante.',
       defaultPortalRetention:
         'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales del perfil. Los registros de trabajos, facturas, pagos y auditoría de la empresa permanecen con el proveedor de servicios cuando sea necesario.',
@@ -484,7 +484,7 @@ export const portalMessagesEs: PortalMessages = {
       jobUpdate: 'Actualización del trabajo'
     }
   },
-  contractor: {
+  worker: {
     portal: 'Panel del contratista',
     accountLabel: 'Cuenta de contratista',
     settingsTitle: 'Configuración de la cuenta',
@@ -609,7 +609,7 @@ export const portalMessagesVi: PortalMessages = {
     terms: 'Điều khoản dịch vụ',
     generalDisclaimer: 'Tuyên bố miễn trừ trách nhiệm chung',
     customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của bảng điều khiển khách hàng',
-    contractorDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của nhà thầu'
+    workerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của nhà thầu'
   },
   account: {
     title: 'Cài đặt tài khoản',
@@ -633,17 +633,17 @@ export const portalMessagesVi: PortalMessages = {
     notifications: {
       title: 'Thông báo',
       clientDescription: 'Chọn các cập nhật về lịch hẹn và hóa đơn mà bạn muốn nhận qua email.',
-      contractorDescription: 'Chọn các cập nhật dành cho nhà thầu mà bạn muốn nhận qua email.',
+      workerDescription: 'Chọn các cập nhật dành cho nhà thầu mà bạn muốn nhận qua email.',
       emailNotifications: 'Thông báo qua email',
       clientOperational: 'Cập nhật lịch hẹn và hóa đơn',
-      contractorOperational: 'Cập nhật công việc và thanh toán',
+      workerOperational: 'Cập nhật công việc và thanh toán',
       productUpdates: 'Cập nhật sản phẩm'
     },
     calendar: {
       title: 'Lịch',
       clientDescription:
         'Dùng Thêm vào lịch trên các lịch hẹn của bạn cho Google, Outlook hoặc Apple Calendar. Bảng điều khiển này không bao gồm tích hợp của công ty.',
-      contractorDescription:
+      workerDescription:
         'Dùng Thêm vào lịch trên công việc được giao để tạo sự kiện lịch một lần. Kết nối Google Calendar và QuickBooks toàn công ty do chủ công ty quản lý.'
     },
     delete: {
@@ -667,7 +667,7 @@ export const portalMessagesVi: PortalMessages = {
       unableToDeleteRetry: 'Không thể xóa tài khoản. Vui lòng thử lại.',
       clientRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân của bạn. Hóa đơn, thanh toán, công việc đã hoàn thành và các hồ sơ dịch vụ khác vẫn thuộc nhà cung cấp dịch vụ khi cần thiết.',
-      contractorRetention:
+      workerRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập và thông tin hồ sơ cá nhân của bạn. Lịch sử công việc của công ty, hồ sơ khách hàng và hồ sơ thanh toán vẫn thuộc công ty thuê.',
       defaultPortalRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân. Hồ sơ công việc, hóa đơn, thanh toán và kiểm toán thuộc công ty vẫn được giữ lại với nhà cung cấp dịch vụ khi cần thiết.',
@@ -765,7 +765,7 @@ export const portalMessagesVi: PortalMessages = {
       jobUpdate: 'Cập nhật công việc'
     }
   },
-  contractor: {
+  worker: {
     portal: 'Bảng điều khiển nhà thầu',
     accountLabel: 'Tài khoản nhà thầu',
     settingsTitle: 'Cài đặt tài khoản',
