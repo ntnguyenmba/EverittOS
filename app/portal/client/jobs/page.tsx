@@ -207,7 +207,7 @@ export default function ClientPortalJobsPage() {
       >
         <div className="client-job-card-main">
           <h3>{job.title}</h3>
-          <p className="client-job-secondary">{[date || c.dateNotSet, time].filter(Boolean).join(' · ')}</p>
+          {date || time ? <p className="client-job-secondary">{[date, time].filter(Boolean).join(' · ')}</p> : null}
           {location ? <p className="client-job-secondary">{location}</p> : null}
         </div>
         <div className="client-job-card-meta">
