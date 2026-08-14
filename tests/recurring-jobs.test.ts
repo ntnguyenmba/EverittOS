@@ -239,7 +239,7 @@ test('request-time generation tops up series without paid scheduler', () => {
 
 test('recurring create path also writes job_assignments for preferred contractor', () => {
   const source = read('app/api/recurring-jobs/route.ts');
-  assert.match(source, /job_assignments/);
+  assert.match(source, /saveJobAssignment/);
   assert.match(source, /preferredContractorId/);
   assert.match(source, /occurrence_date/);
 });

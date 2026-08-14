@@ -23,7 +23,7 @@ function enterprisePrice(overrides: Partial<Stripe.Price> = {}): Stripe.Price {
     type: 'recurring',
     currency: 'usd',
     livemode: false,
-    unit_amount: 79900,
+    unit_amount: 39900,
     recurring: { interval: 'month', interval_count: 1 } as Stripe.Price.Recurring,
     ...overrides
   } as Stripe.Price;
@@ -104,7 +104,7 @@ test('validateStripeSubscriptionPriceForPlan rejects enterprise amount mismatch'
   assert.equal(result.ok, false);
   if (!result.ok) {
     assert.equal(result.code, 'amount_mismatch');
-    assert.match(result.message, /79900/);
+    assert.match(result.message, /39900/);
   }
 });
 

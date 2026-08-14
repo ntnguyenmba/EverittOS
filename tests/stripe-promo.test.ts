@@ -100,9 +100,9 @@ describe('validatePromotionCodeForPlan', () => {
     assert.equal(result.valid, true);
     if (result.valid) {
       assert.equal(result.code, 'VIP');
-      assert.equal(result.discountedPriceCents, 720);
-      assert.equal(result.originalPriceCents, 900);
-      assert.match(result.discountedPriceLabel, /\$7/);
+      assert.equal(result.discountedPriceCents, 800);
+      assert.equal(result.originalPriceCents, 1000);
+      assert.match(result.discountedPriceLabel, /\$8/);
     }
   });
 
@@ -134,7 +134,7 @@ describe('validatePromotionCodeForPlan', () => {
     assert.equal(result.valid, true);
     if (result.valid) {
       assert.equal(result.code, 'STAY25');
-      assert.equal(result.discountedPriceCents, 675);
+      assert.equal(result.discountedPriceCents, 750);
       assert.match(result.durationLabel, /25%/);
     }
   });

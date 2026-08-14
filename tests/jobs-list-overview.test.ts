@@ -26,7 +26,7 @@ describe('jobs list overview', () => {
     assert.match(page, /StatusPill/);
     assert.doesNotMatch(page, /jobCityState|parseAddressParts/);
     assert.doesNotMatch(page, /photo_count|fetchPhotoCountsByJobIds|jobs-photo-count/);
-    assert.doesNotMatch(page, /jobs-secondary/);
+    assert.match(page, /jobs-secondary/);
   });
 
   it('keeps filters, row open, maps, and the actions menu', () => {
@@ -41,10 +41,9 @@ describe('jobs list overview', () => {
   });
 
   it('adds assigned-worker sorting next to the existing filters', () => {
-    assert.match(page, /jobs-sort-control/);
-    assert.match(page, /sortBy: 'Sort by'/);
-    assert.match(page, /sortBy: 'Ordenar por'/);
-    assert.match(page, /sortBy: 'Sắp xếp theo'/);
+    assert.match(page, /sortBy: 'Sort'/);
+    assert.match(page, /sortBy: 'Ordenar'/);
+    assert.match(page, /sortBy: 'Sắp xếp'/);
     assert.match(page, /sortByAssigned: 'Assigned worker'/);
     assert.match(page, /sortByAssigned: 'Trabajador asignado'/);
     assert.match(page, /sortByAssigned: 'Nhân sự được giao'/);

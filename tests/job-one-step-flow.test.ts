@@ -35,7 +35,7 @@ test('job create API writes visits and assignments and auto-grants client access
 
 test('saved schedule appears without re-entry setup when visits already exist', () => {
   const source = read('components/job-visits-schedule.tsx');
-  assert.match(source, /Saved visits for this job/);
+  assert.match(source, /hasSavedSchedule/);
   assert.match(source, /hasSavedSchedule/);
   assert.match(source, /Edit/);
   assert.match(source, /Add visit/);

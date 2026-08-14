@@ -157,7 +157,7 @@ test('editing one occurrence finance does not rewrite series defaults in API', (
 test('contractor assignment saved on create for series and occurrences', () => {
   const create = read('app/api/recurring-jobs/route.ts');
   assert.match(create, /preferred_contractor_id/);
-  assert.match(create, /job_assignments/);
+  assert.match(create, /saveJobAssignment/);
   assert.match(create, /expected_contractor_cost/);
   assert.match(create, /default_additional_expense/);
   assert.match(create, /seedOccurrenceLabor/);
@@ -166,7 +166,7 @@ test('contractor assignment saved on create for series and occurrences', () => {
   assert.match(jobsCreate, /Keep jobs\.assigned_to and job_assignments in sync/);
   const assignments = read('components/job-assignments.tsx');
   assert.match(assignments, /assignments\.length === 0/);
-  assert.match(assignments, /This job only/);
+  assert.match(assignments, /This visit only/);
 });
 
 test('client price contractor pay and expenses copied onto occurrences', () => {

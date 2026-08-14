@@ -108,9 +108,12 @@ describe('settings links by role', () => {
     assert.deepEqual(hrefs, [
       '/dashboard',
       '/jobs',
+      '/schedule',
       '/customers',
       '/people',
       '/expenses',
+      '/bookkeeping',
+      '/knowledge',
       '/settings'
     ]);
     assert.equal(items.some((item) => /invoice|payment/i.test(item.label)), false);
@@ -122,9 +125,12 @@ describe('settings links by role', () => {
     assert.deepEqual(hrefs, [
       '/dashboard',
       '/jobs',
+      '/schedule',
       '/customers',
       '/people',
       '/expenses',
+      '/bookkeeping',
+      '/knowledge',
       '/settings'
     ]);
     assert.equal(items.some((item) => /invoice|payment/i.test(item.label)), false);
