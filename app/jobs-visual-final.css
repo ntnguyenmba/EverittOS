@@ -198,29 +198,44 @@
   white-space: nowrap !important;
 }
 
-/* Owner finance cards use plain-language labels and a two-column finance layout. */
-.jobs-owner-finance-row {
+/* Owner-only finance layout: Client and Worker Pay stack left; Owner Profit sits right. */
+.jobs-operations-table tbody > .jobs-owner-finance-row {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto) !important;
   grid-template-areas:
     'job date'
     'client profit'
     'worker status' !important;
+  row-gap: 10px !important;
+  min-height: 190px !important;
 }
 
-.jobs-owner-finance-row > .jobs-col-customer-pay {
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-customer-pay {
+  display: block !important;
   grid-area: client !important;
   align-self: end !important;
+  justify-self: start !important;
+  text-align: left !important;
 }
 
-.jobs-owner-finance-row > .jobs-col-contractor-pay {
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-contractor-pay {
+  display: block !important;
   grid-area: worker !important;
   align-self: start !important;
+  justify-self: start !important;
+  text-align: left !important;
 }
 
-.jobs-owner-finance-row > .jobs-col-owner-profit {
+.jobs-operations-table tbody > .jobs-owner-finance-row > .jobs-col-owner-profit {
+  display: block !important;
   grid-area: profit !important;
   align-self: end !important;
   justify-self: end !important;
   text-align: right !important;
+}
+
+.jobs-owner-finance-row .jobs-col-money {
+  white-space: nowrap !important;
+  line-height: 1.35 !important;
 }
 
 .jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label,
@@ -262,6 +277,7 @@
   }
 
   .jobs-operations-table tbody > .jobs-owner-finance-row {
+    grid-template-columns: 1fr !important;
     grid-template-areas:
       'job'
       'date'
@@ -269,6 +285,7 @@
       'worker'
       'profit'
       'status' !important;
+    min-height: 0 !important;
   }
 
   .jobs-owner-finance-row > .jobs-col-owner-profit {
