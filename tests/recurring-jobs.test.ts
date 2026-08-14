@@ -51,8 +51,8 @@ test('job creator autofills client email/phone and requires multi-property selec
   assert.match(source, /client-summary-card/);
   assert.match(source, /customerEmail/);
   assert.match(source, /setCustomerEmail/);
-  assert.match(source, /multiple properties/);
-  assert.match(source, /Select a property/);
+  assert.match(source, /createCopy\.multipleProperties/);
+  assert.match(source, /createCopy\.selectProperty/);
   assert.match(source, /assigned_to: assignedTo/);
   assert.match(source, /\/api\/recurring-jobs/);
 });

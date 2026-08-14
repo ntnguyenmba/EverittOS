@@ -22,6 +22,7 @@ import type { StructuredAddress } from '@/lib/address/types';
 import { PROPERTY_TYPE_LABELS, type PropertyType } from '@/lib/customer-property';
 import { calculateExpectedJobFinance, multiplyMoneyDollars, parseMoneyDollars } from '@/lib/money-decimal';
 import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
+import { getJobCreateCopy } from '@/lib/i18n/job-create-copy';
 import { getRecurrenceCopy } from '@/lib/i18n/recurrence-copy';
 import {
   RECURRING_GENERATION_WINDOW_DAYS,
@@ -93,6 +94,7 @@ type CustomerOption = {
 };
 
 type AddressMode = 'job_only' | 'save_new_property' | 'update_selected_property';
+type CustomerEntryMode = 'existing' | 'new';
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -136,10 +138,10 @@ function optionalMoneyInput(value: string): number | null {
   return moneyValue(trimmed);
 }
 
-function propertyLabel(property: PropertyOption) {
+function propertyLabel(property: PropertyOption, fallbackType: string, noAddress: string) {
   const type = (property.property_type || 'home') as PropertyType;
-  const typeLabel = PROPERTY_TYPE_LABELS[type] || 'Property';
-  const address = property.display_address || property.formatted_address || property.address || 'No address';
+  const typeLabel = PROPERTY_TYPE_LABELS[type] || fallbackType;
+  const address = property.display_address || property.formatted_address || property.address || noAddress;
   return `${property.name} · ${typeLabel} · ${address}`;
 }
 
@@ -191,6 +193,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [creatingNewProperty, setCreatingNewProperty] = useState(false);
+  const [customerMode, setCustomerMode] = useState<CustomerEntryMode | null>(
+    searchParams.get('customerId') || searchParams.get('customer_id') ? 'existing' : null
+  );
   const [addressMode, setAddressMode] = useState<AddressMode>('job_only');
   const [showAdvancedProperty, setShowAdvancedProperty] = useState(false);
   const [newPropertyName, setNewPropertyName] = useState('');
@@ -201,6 +206,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
   const appFeedback = useAppFeedback();
   const { t, locale } = useTranslation();
   const recurrenceCopy = getRecurrenceCopy(locale);
+  const createCopy = getJobCreateCopy(locale);
 
   useEffect(() => {
     async function loadTeamMembers() {
@@ -304,6 +310,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     setPhone(customer.phone || '');
     setCustomerResults([]);
     setCreatingNewProperty(false);
+    setCustomerMode('existing');
 
     const preferred =
       (propertyId && customer.properties.find((p) => p.id === propertyId)) ||
@@ -322,7 +329,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       setSelectedPropertyId('');
       setCreatingNewProperty(true);
       setAddressMode('save_new_property');
-      setNewPropertyName('Primary');
+      setNewPropertyName(createCopy.propertyNamePlaceholder);
     }
   }
 
@@ -353,6 +360,35 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       });
     }
     setAccessInstructions(property.access_instructions || '');
+  }
+
+  function resetCustomerDraft() {
+    setSelectedCustomer(null);
+    setSelectedPropertyId('');
+    setCustomerQuery('');
+    setCustomerResults([]);
+    setCustomerName('');
+    setCustomerEmail('');
+    setPhone('');
+    setAddress('');
+    setStructuredAddress(null);
+    setAccessInstructions('');
+    setNewPropertyName('');
+    setCreatingNewProperty(false);
+    setAddressMode('job_only');
+    setShowAdvancedProperty(false);
+  }
+
+  function chooseExistingCustomer() {
+    if (customerMode !== 'existing') resetCustomerDraft();
+    setCustomerMode('existing');
+  }
+
+  function chooseNewCustomer() {
+    if (customerMode !== 'new') resetCustomerDraft();
+    setCustomerMode('new');
+    setCreatingNewProperty(true);
+    setAddressMode('save_new_property');
   }
 
   useEffect(() => {
@@ -475,9 +511,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
     if (forceNew) {
       if (!address.trim()) {
-        throw new Error('Add a service address to save the property.');
+        throw new Error(createCopy.addServiceAddress);
       }
-      const name = newPropertyName.trim() || 'Primary';
+      const name = newPropertyName.trim() || createCopy.propertyNamePlaceholder;
       const res = await fetch(`/api/customers/${customerId}/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -503,7 +539,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       });
       const json = (await res.json().catch(() => ({}))) as { property?: { id: string }; error?: string };
       if (!res.ok || !json.property?.id) {
-        throw new Error(json.error || 'Unable to save property.');
+        throw new Error(json.error || createCopy.unableToSaveProperty);
       }
       return json.property.id;
     }
@@ -521,7 +557,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
 
     if (selectedCustomer && selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty) {
-      appFeedback.error('Select which property this job is for.');
+      appFeedback.error(createCopy.selectPropertyRequired);
       return;
     }
 
@@ -680,7 +716,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     let autoLinkedCustomer = false;
 
     try {
-      if (!customerId && customerName.trim()) {
+      const creatingNewCustomer = customerMode === 'new' && !selectedCustomer && Boolean(customerName.trim());
+      if (creatingNewCustomer) {
         const createCustomerRes = await fetch('/api/customers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -698,31 +735,31 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           error?: string;
         };
         if (!createCustomerRes.ok || !createCustomerJson.customer?.id) {
-          throw new Error(createCustomerJson.error || 'Unable to create customer.');
+          throw new Error(createCustomerJson.error || createCopy.unableToCreateCustomer);
         }
         customerId = createCustomerJson.customer.id;
         autoLinkedCustomer = true;
-        setAddressMode('save_new_property');
       }
 
       const needsNewProperty =
         Boolean(address.trim()) &&
-        (autoLinkedCustomer ||
-          creatingNewProperty ||
-          addressMode === 'save_new_property' ||
-          Boolean(customerId && !selectedPropertyId && (!selectedCustomer || selectedCustomer.properties.length === 0)));
+        (creatingNewCustomer || autoLinkedCustomer || creatingNewProperty) &&
+        !(selectedPropertyId && !creatingNewProperty);
 
-      if (customerId && (selectedPropertyId || needsNewProperty || addressMode === 'update_selected_property')) {
-        propertyId = await ensurePropertyForJob(customerId, { forceNew: needsNewProperty });
-      }
-
-      if (needsNewProperty && !propertyId) {
-        throw new Error('Unable to save property for this job.');
+      if (customerId && selectedPropertyId && !creatingNewProperty && !needsNewProperty) {
+        propertyId = await ensurePropertyForJob(customerId, { forceNew: false });
+      } else if (customerId && needsNewProperty) {
+        propertyId = await ensurePropertyForJob(customerId, { forceNew: true });
+        if (!propertyId) {
+          throw new Error(createCopy.unableToSaveProperty);
+        }
+      } else if (customerId && (selectedPropertyId || addressMode === 'update_selected_property')) {
+        propertyId = await ensurePropertyForJob(customerId);
       }
     } catch (error) {
       // Fail before creating the job so customer/property errors never leave a partially linked job.
       setLoading(false);
-      appFeedback.error(error instanceof Error ? error.message : 'Unable to prepare customer/property.');
+      appFeedback.error(error instanceof Error ? error.message : createCopy.prepareCustomerProperty);
       return;
     }
 
@@ -958,131 +995,154 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       (recurrenceFrequency === 'custom' && recurrenceIntervalUnit === 'weeks'));
   const weekdayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const selectedProperty = selectedCustomer?.properties.find((p) => p.id === selectedPropertyId) || null;
-  const addressChangedFromProperty =
-    Boolean(selectedProperty) &&
-    Boolean(address.trim()) &&
-    address.trim() !== (selectedProperty?.display_address || selectedProperty?.formatted_address || selectedProperty?.address || '').trim();
 
   return (
     <div className="card">
       <h3>{t('pages.jobs.createTitle')}</h3>
-      <p className="muted">Select a customer and property first, then confirm the schedule. Most fields fill automatically.</p>
+      <p className="muted">{createCopy.intro}</p>
       <form className="form unified-job-form" onSubmit={createJob}>
         <section className="job-create-section">
-          <h4>1. Customer</h4>
-          <label htmlFor="customer-search">Search customers</label>
-          <input
-            id="customer-search"
-            className="input"
-            value={customerQuery}
-            placeholder="Name, phone, email, company, or property address"
-            autoComplete="off"
-            onChange={(e) => {
-              setCustomerQuery(e.target.value);
-              if (selectedCustomer) setSelectedCustomer(null);
-            }}
-          />
-          {customerSearching ? <p className="muted" role="status">Searching…</p> : null}
-          {customerResults.length > 0 ? (
-            <div role="listbox" aria-label="Customer matches" style={{ border: '1px solid var(--line)', borderRadius: 12, marginTop: 8 }}>
-              {customerResults.map((customer) => {
-                const contactLine = customer.email || customer.phone || null;
-                const property = customer.properties[0];
-                const propertyLine = property
-                  ? [property.name, property.display_address || property.formatted_address || property.address]
-                      .filter(Boolean)
-                      .join(' · ')
-                  : customer.address || null;
-                return (
+          <h4>{createCopy.customerHeading}</h4>
+          <div className="job-customer-mode" role="group" aria-label={createCopy.customerChoice}>
+            <button
+              type="button"
+              aria-pressed={customerMode === 'existing'}
+              onClick={chooseExistingCustomer}
+            >
+              {createCopy.existingCustomer}
+            </button>
+            <button
+              type="button"
+              aria-pressed={customerMode === 'new'}
+              onClick={chooseNewCustomer}
+            >
+              {createCopy.newCustomer}
+            </button>
+          </div>
+
+          {customerMode === 'existing' ? (
+            <>
+              <label htmlFor="customer-search">{createCopy.searchCustomers}</label>
+              <input
+                id="customer-search"
+                className="input"
+                value={customerQuery}
+                placeholder={createCopy.searchPlaceholder}
+                autoComplete="off"
+                onChange={(e) => {
+                  setCustomerQuery(e.target.value);
+                  if (selectedCustomer) setSelectedCustomer(null);
+                }}
+              />
+              {customerSearching ? <p className="muted" role="status">{createCopy.searching}</p> : null}
+              {customerResults.length > 0 ? (
+                <div role="listbox" aria-label={createCopy.customerMatches} style={{ border: '1px solid var(--line)', borderRadius: 12, marginTop: 8 }}>
+                  {customerResults.map((customer) => {
+                    const contactLine = customer.email || customer.phone || null;
+                    const property = customer.properties[0];
+                    const propertyLine = property
+                      ? [property.name, property.display_address || property.formatted_address || property.address]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : customer.address || null;
+                    return (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        role="option"
+                        aria-selected="false"
+                        className="btn"
+                        style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }}
+                        onClick={() => applyCustomer(customer)}
+                      >
+                        <strong>{customer.name}</strong>
+                        {contactLine ? (
+                          <span className="muted" style={{ display: 'block' }}>
+                            {contactLine}
+                          </span>
+                        ) : null}
+                        {propertyLine ? (
+                          <span className="muted" style={{ display: 'block', fontSize: '0.92em' }}>
+                            {propertyLine}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {selectedCustomer ? (
+                <div
+                  className="client-summary-card"
+                  style={{
+                    marginTop: 12,
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    padding: 12,
+                    background: 'var(--surface-subtle, var(--surface))'
+                  }}
+                >
+                  <p style={{ margin: 0 }}>
+                    <strong>{selectedCustomer.name}</strong>
+                  </p>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>
+                    {createCopy.email}: {customerEmail || selectedCustomer.email || createCopy.notOnFile}
+                  </p>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>
+                    {createCopy.phone}: {phone || selectedCustomer.phone || createCopy.notOnFile}
+                  </p>
+                  {selectedCustomer.company_name ? (
+                    <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.company}: {selectedCustomer.company_name}</p>
+                  ) : null}
+                  {selectedProperty && !creatingNewProperty ? (
+                    <p className="muted" style={{ margin: '4px 0 0' }}>
+                      {createCopy.serviceAddress}: {address || createCopy.noAddress}
+                    </p>
+                  ) : null}
                   <button
-                    key={customer.id}
                     type="button"
-                    role="option"
-                    aria-selected="false"
                     className="btn"
-                    style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }}
-                    onClick={() => applyCustomer(customer)}
+                    style={{ marginTop: 10 }}
+                    onClick={() => {
+                      resetCustomerDraft();
+                      setCustomerMode('existing');
+                    }}
                   >
-                    <strong>{customer.name}</strong>
-                    {contactLine ? (
-                      <span className="muted" style={{ display: 'block' }}>
-                        {contactLine}
-                      </span>
-                    ) : null}
-                    {propertyLine ? (
-                      <span className="muted" style={{ display: 'block', fontSize: '0.92em' }}>
-                        {propertyLine}
-                      </span>
-                    ) : null}
+                    {createCopy.changeCustomer}
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              ) : null}
+            </>
           ) : null}
 
-          {!selectedCustomer ? (
+          {customerMode === 'new' ? (
             <div className="grid-2" style={{ marginTop: 12 }}>
               <div className="form-group">
-                <label>New customer name</label>
-                <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                <label htmlFor="new-customer-name">{createCopy.customerName}</label>
+                <input id="new-customer-name" className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
               </div>
               <div className="form-group">
-                <label>Email</label>
-                <input className="input" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
+                <label htmlFor="new-customer-email">{createCopy.email}</label>
+                <input id="new-customer-email" className="input" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
               </div>
               <div className="form-group">
-                <label>Phone</label>
-                <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <label htmlFor="new-customer-phone">{createCopy.phone}</label>
+                <input id="new-customer-phone" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
             </div>
-          ) : (
-            <div
-              className="client-summary-card"
-              style={{
-                marginTop: 12,
-                border: '1px solid var(--line)',
-                borderRadius: 12,
-                padding: 12,
-                background: 'var(--surface-subtle, var(--surface))'
-              }}
-            >
-              <p style={{ margin: 0 }}>
-                <strong>{selectedCustomer.name}</strong>
-              </p>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
-                Email: {customerEmail || selectedCustomer.email || 'Not on file'}
-              </p>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
-                Phone: {phone || selectedCustomer.phone || 'Not on file'}
-              </p>
-              {selectedCustomer.company_name ? (
-                <p className="muted" style={{ margin: '4px 0 0' }}>Company: {selectedCustomer.company_name}</p>
-              ) : null}
-              <button
-                type="button"
-                className="btn"
-                style={{ marginTop: 10 }}
-                onClick={() => {
-                  setSelectedCustomer(null);
-                  setSelectedPropertyId('');
-                  setCustomerQuery('');
-                  setCustomerEmail('');
-                }}
-              >
-                Change customer
-              </button>
-            </div>
-          )}
+          ) : null}
         </section>
 
+        {customerMode === 'existing' && selectedCustomer ? (
         <section className="job-create-section">
-          <h4>2. Property / service location</h4>
-          {selectedCustomer && selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty ? (
-            <p className="muted">This client has multiple properties. Choose the correct one before saving.</p>
+          <h4>{createCopy.propertyHeading}</h4>
+          {selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty ? (
+            <p className="muted">{createCopy.multipleProperties}</p>
           ) : null}
-          {selectedCustomer && selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
+          {selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
             <>
-              <label htmlFor="property-select">Saved properties</label>
+              <label htmlFor="property-select">{createCopy.savedProperties}</label>
               <select
                 id="property-select"
                 className="input"
@@ -1093,10 +1153,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   if (property) applyProperty(property);
                 }}
               >
-                {selectedCustomer.properties.length > 1 ? <option value="">Select a property</option> : null}
+                {selectedCustomer.properties.length > 1 ? <option value="">{createCopy.selectProperty}</option> : null}
                 {selectedCustomer.properties.map((property) => (
                   <option key={property.id} value={property.id}>
-                    {propertyLabel(property)}
+                    {propertyLabel(property, createCopy.noProperty, createCopy.noAddress)}
                   </option>
                 ))}
               </select>
@@ -1109,98 +1169,107 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 setNewPropertyName('');
                 setAccessInstructions('');
               }}>
-                Add another property
+                {createCopy.addAnotherProperty}
               </button>
             </>
           ) : null}
 
+          {creatingNewProperty || selectedCustomer.properties.length === 0 ? (
+            <>
+              {selectedCustomer.properties.length > 0 ? (
+                <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
+                  setCreatingNewProperty(false);
+                  setAddressMode('job_only');
+                  const preferred = selectedCustomer.properties.length === 1 ? selectedCustomer.properties[0] : null;
+                  if (preferred) applyProperty(preferred);
+                  else {
+                    setSelectedPropertyId('');
+                    setAddress('');
+                    setStructuredAddress(null);
+                  }
+                }}>
+                  {createCopy.useSavedProperty}
+                </button>
+              ) : null}
+              <div className="form-group" style={{ marginTop: 8 }}>
+                <label htmlFor="property-name">{createCopy.propertyName}</label>
+                <input
+                  id="property-name"
+                  className="input"
+                  value={newPropertyName}
+                  onChange={(e) => setNewPropertyName(e.target.value)}
+                  placeholder={createCopy.propertyNamePlaceholder}
+                />
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <AddressAutocomplete
+                  id="job-address"
+                  label={createCopy.serviceAddress}
+                  placeholder={createCopy.addressPlaceholder}
+                  value={address}
+                  onChange={(formatted, structured) => {
+                    setAddress(formatted);
+                    setStructuredAddress(structured);
+                    setAddressMode('save_new_property');
+                  }}
+                  onSelect={(suggestion) => {
+                    void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude);
+                  }}
+                />
+              </div>
+              <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
+                <summary>{createCopy.accessNotes}</summary>
+                <label style={{ marginTop: 10 }}>{createCopy.accessInstructions}</label>
+                <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
+                <p className="muted">{createCopy.accessPrivacy}</p>
+              </details>
+            </>
+          ) : null}
+        </section>
+        ) : null}
+
+        {customerMode === 'new' ? (
+        <section className="job-create-section">
+          <h4>{createCopy.propertyHeading}</h4>
           <div className="form-group" style={{ marginTop: 8 }}>
-            <label htmlFor="property-name">Property name</label>
+            <label htmlFor="property-name">{createCopy.propertyName}</label>
             <input
               id="property-name"
               className="input"
               value={newPropertyName}
               onChange={(e) => setNewPropertyName(e.target.value)}
-              placeholder="Primary"
+              placeholder={createCopy.propertyNamePlaceholder}
             />
           </div>
-
           <div style={{ marginTop: 12 }}>
             <AddressAutocomplete
               id="job-address"
-              label="Service address"
+              label={createCopy.serviceAddress}
+              placeholder={createCopy.addressPlaceholder}
               value={address}
               onChange={(formatted, structured) => {
                 setAddress(formatted);
                 setStructuredAddress(structured);
-                if (selectedPropertyId && !creatingNewProperty) {
-                  setAddressMode('job_only');
-                } else {
-                  setAddressMode('save_new_property');
-                }
+                setAddressMode('save_new_property');
               }}
               onSelect={(suggestion) => {
                 void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude);
               }}
             />
           </div>
-
-          {selectedPropertyId && addressChangedFromProperty ? (
-            <fieldset style={{ marginTop: 12, border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
-              <legend>Address changed</legend>
-              <p className="muted">Choose how to use this address. Saved property data is never overwritten silently.</p>
-              <label style={{ display: 'block' }}>
-                <input
-                  type="radio"
-                  name="address-mode"
-                  checked={addressMode === 'job_only'}
-                  onChange={() => setAddressMode('job_only')}
-                />{' '}
-                Use only for this job
-              </label>
-              <label style={{ display: 'block' }}>
-                <input
-                  type="radio"
-                  name="address-mode"
-                  checked={addressMode === 'save_new_property'}
-                  onChange={() => {
-                    setAddressMode('save_new_property');
-                    setCreatingNewProperty(true);
-                    setNewPropertyName(newPropertyName || 'New property');
-                  }}
-                />{' '}
-                Save as a new property
-              </label>
-              <label style={{ display: 'block' }}>
-                <input
-                  type="radio"
-                  name="address-mode"
-                  checked={addressMode === 'update_selected_property'}
-                  onChange={() => setAddressMode('update_selected_property')}
-                />{' '}
-                Update the selected property
-              </label>
-            </fieldset>
-          ) : null}
-
           <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
-            <summary>Access instructions and notes</summary>
-            <label style={{ marginTop: 10 }}>Access instructions</label>
+            <summary>{createCopy.accessNotes}</summary>
+            <label style={{ marginTop: 10 }}>{createCopy.accessInstructions}</label>
             <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
-            <p className="muted">Gate and lockbox codes stay on the property record. They are not shown in search previews or notifications.</p>
+            <p className="muted">{createCopy.accessPrivacy}</p>
           </details>
         </section>
+        ) : null}
 
         <section className="job-create-section">
           <h4>3. Job details</h4>
           <label>Job title *</label>
           <input className="input" placeholder="Example: Move-out cleaning" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          {selectedCustomer ? null : (
-            <div className="grid-2">
-              <div className="form-group"><label>Customer name</label><input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
-              <div className="form-group"><label>Phone</label><input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-            </div>
-          )}
         </section>
 
         <section className="job-create-section">

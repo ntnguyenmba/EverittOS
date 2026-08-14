@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/page-header';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/components/locale-provider';
 import styles from './job-form-simplify.module.css';
 
 type MembershipResponse = {
@@ -18,6 +19,7 @@ type MembershipResponse = {
 
 export default function NewJobPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('employee');
   const [authorized, setAuthorized] = useState(false);
@@ -60,14 +62,14 @@ export default function NewJobPage() {
   }, [router]);
 
   if (!authorized) {
-    return <p className="loading-state">Loading...</p>;
+    return <p className="loading-state">{t('common.loading')}</p>;
   }
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title="New job" />
+      <PageHeader title={t('dashboard.newJob')} />
       <div className={styles.formWrap}>
-        <Suspense fallback={<p className="loading-state">Loading job form...</p>}>
+        <Suspense fallback={<p className="loading-state">{t('common.loading')}</p>}>
           <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
           <JobContractorOptions />
         </Suspense>

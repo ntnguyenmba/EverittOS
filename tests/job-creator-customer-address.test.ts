@@ -186,14 +186,14 @@ test('job creator auto-creates and links customer and primary property without p
   assert.match(source, /record_type: 'customer'/);
   assert.match(source, /pipeline_stage: 'active'/);
   assert.match(source, /address: address\.trim\(\) \|\| null/);
-  assert.match(source, /forceNew: needsNewProperty/);
-  assert.match(source, /newPropertyName\.trim\(\) \|\| 'Primary'/);
+  assert.match(source, /forceNew: true/);
+  assert.match(source, /newPropertyName\.trim\(\) \|\| createCopy\.propertyNamePlaceholder/);
   assert.match(source, /\/api\/customers\/\$\{customerId\}\/properties/);
   assert.match(source, /Fail before creating the job/);
-  assert.match(source, /Unable to prepare customer\/property/);
+  assert.match(source, /createCopy\.prepareCustomerProperty/);
   assert.match(source, /customer_id: customerId/);
   assert.match(source, /property_id: propertyId/);
-  const prepareCatch = source.indexOf('Unable to prepare customer/property');
+  const prepareCatch = source.indexOf('createCopy.prepareCustomerProperty');
   const jobsPost = source.indexOf("fetch('/api/jobs'");
   const recurringPost = source.indexOf("fetch('/api/recurring-jobs'");
   assert.ok(prepareCatch > 0);
@@ -215,7 +215,27 @@ test('selected address saves structured property location fields', () => {
 test('job creator keeps property name free text and service address editable', () => {
   const source = read('components/job-creator.tsx');
   assert.match(source, /htmlFor="property-name"/);
-  assert.match(source, /label="Service address"/);
+  assert.match(source, /createCopy\.serviceAddress/);
   assert.match(source, /AddressAutocomplete/);
-  assert.match(source, /placeholder="Primary"/);
+  assert.match(source, /createCopy\.propertyNamePlaceholder/);
+});
+
+test('job creator shows exclusive existing and new customer flows', () => {
+  const source = read('components/job-creator.tsx');
+  const copy = read('lib/i18n/job-create-copy.ts');
+  assert.match(source, /customerMode === 'existing'/);
+  assert.match(source, /customerMode === 'new'/);
+  assert.match(source, /chooseExistingCustomer/);
+  assert.match(source, /chooseNewCustomer/);
+  assert.match(source, /createCopy\.existingCustomer/);
+  assert.match(source, /createCopy\.newCustomer/);
+  assert.doesNotMatch(source, /New customer name/);
+  assert.doesNotMatch(source, /Unable to save property for this job/);
+  assert.match(source, /creatingNewCustomer \|\| autoLinkedCustomer \|\| creatingNewProperty/);
+  assert.match(copy, /existingCustomer: 'Existing customer'/);
+  assert.match(copy, /existingCustomer: 'Cliente existente'/);
+  assert.match(copy, /existingCustomer: 'Khách hàng có sẵn'/);
+  assert.match(copy, /newCustomer: 'New customer'/);
+  assert.match(copy, /newCustomer: 'Cliente nuevo'/);
+  assert.match(copy, /newCustomer: 'Khách hàng mới'/);
 });
