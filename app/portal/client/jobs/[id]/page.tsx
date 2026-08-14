@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { PhotoGallery } from '@/components/photo-gallery';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalClientNav } from '@/components/portal/portal-client-nav';
@@ -118,16 +117,16 @@ export default function ClientPortalJobDetailPage() {
 
   if (loading) {
     return (
-      <AuthenticatedSection role="client">
+      <div className="client-portal-job-detail">
         <div className="card" role="status" aria-live="polite">
           {t('portal.common.loading')}
         </div>
-      </AuthenticatedSection>
+      </div>
     );
   }
 
   return (
-    <AuthenticatedSection role="client">
+    <div className="client-portal-job-detail">
       <header style={{ marginBottom: 20 }}>
         <p className="eyebrow">{t('portal.client.portal')}</p>
         <h2>{job?.title || t('portal.client.sharedJob')}</h2>
@@ -224,6 +223,6 @@ export default function ClientPortalJobDetailPage() {
           ) : null}
         </>
       ) : null}
-    </AuthenticatedSection>
+    </div>
   );
 }
