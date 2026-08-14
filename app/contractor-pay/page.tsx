@@ -87,7 +87,7 @@ function ContractorPayContent() {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth.user;
     if (!user) {
-      router.push('/login?next=/worker-pay');
+      router.push('/login?next=/contractor-pay');
       return;
     }
 
@@ -149,7 +149,7 @@ function ContractorPayContent() {
     if (jobIds.length) {
       const { data: jobRows } = await supabase
         .from('jobs')
-        .select('id, title, customer_name, expected_worker_cost, assigned_to')
+        .select('id, title, customer_name, expected_contractor_cost, assigned_to')
         .eq('organization_id', org.organizationId)
         .in('id', jobIds);
       const map: Record<string, JobSummary> = {};
@@ -282,7 +282,7 @@ function ContractorPayContent() {
         action={
           canManage ? (
             <ExportMenu
-              endpoint="/api/exports/worker-pay"
+              endpoint="/api/exports/contractor-pay"
               query={{ status: filter, jobId: jobIdFilter }}
               locale={locale}
               disabled={loading}

@@ -250,7 +250,7 @@ export const portalMessagesEn: PortalMessages = {
     instructions: 'Instructions',
     yourPay: 'Your pay',
     payNotRecorded: 'Pay not recorded',
-    growthRequired: 'Contractor dashboard requires Growth plan or a contractor role.',
+    growthRequired: 'Worker dashboard requires the Growth plan or a worker role.',
     loadErrorTitle: 'Could not load everything',
     tryAgain: 'Try again',
     job: 'Job',
@@ -267,13 +267,13 @@ export const portalMessagesEn: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Your contractor account is not linked to a contractor profile yet. Ask your company owner to assign you on a job.',
+        'Your worker account is not linked to a worker profile yet. Ask your company owner to assign you on a job.',
       jobsQueryFailed: 'Could not load your assigned jobs.',
       assignmentsQueryFailed: 'Could not load your job assignments.',
-      laborQueryFailed: 'Could not load your contractor pay records.',
+      laborQueryFailed: 'Could not load your worker pay records.',
       notificationsQueryFailed: 'Could not load your notifications.',
-      permissionDenied: 'Access to contractor pay or jobs was blocked. Contact your company owner.',
-      unknown: 'Your contractor dashboard could not be loaded. Refresh the page or contact your company owner.'
+      permissionDenied: 'Access to worker pay or jobs was blocked. Contact your company owner.',
+      unknown: 'Your worker dashboard could not be loaded. Refresh the page or contact your company owner.'
     }
   }
 };
@@ -328,7 +328,7 @@ export const portalMessagesEs: PortalMessages = {
     terms: 'Términos del servicio',
     generalDisclaimer: 'Aviso legal general',
     customerDisclaimer: 'Aviso del panel del cliente',
-    workerDisclaimer: 'Aviso del contratista'
+    contractorDisclaimer: 'Aviso del trabajador'
   },
   account: {
     title: 'Configuración de la cuenta',
@@ -352,17 +352,17 @@ export const portalMessagesEs: PortalMessages = {
     notifications: {
       title: 'Notificaciones',
       clientDescription: 'Elige qué actualizaciones de citas y facturas deseas recibir por correo electrónico.',
-      workerDescription: 'Elige qué actualizaciones del contratista deseas recibir por correo electrónico.',
+      contractorDescription: 'Elige qué actualizaciones del trabajador deseas recibir por correo electrónico.',
       emailNotifications: 'Notificaciones por correo electrónico',
       clientOperational: 'Actualizaciones de citas y facturas',
-      workerOperational: 'Actualizaciones de trabajos y pagos',
+      contractorOperational: 'Actualizaciones de trabajos y pagos',
       productUpdates: 'Actualizaciones del producto'
     },
     calendar: {
       title: 'Calendario',
       clientDescription:
         'Usa Añadir al calendario en tus citas para Google, Outlook o Apple Calendar. Este panel no incluye integraciones de la empresa.',
-      workerDescription:
+      contractorDescription:
         'Usa Añadir al calendario en un trabajo asignado para crear un evento puntual. Las conexiones de Google Calendar y QuickBooks de toda la empresa las gestiona el propietario de la empresa.'
     },
     delete: {
@@ -386,7 +386,7 @@ export const portalMessagesEs: PortalMessages = {
       unableToDeleteRetry: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
       clientRetention:
         'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales de tu perfil. Las facturas, los pagos, los trabajos completados y otros registros del servicio permanecen con tu proveedor de servicios cuando sea necesario.',
-      workerRetention:
+      contractorRetention:
         'Eliminar tu inicio de sesión quita tu acceso y los datos personales de tu perfil. El historial de trabajos de la empresa, los registros de clientes y los registros de pagos permanecen con la empresa contratante.',
       defaultPortalRetention:
         'Eliminar tu inicio de sesión quita el acceso al panel y los datos personales del perfil. Los registros de trabajos, facturas, pagos y auditoría de la empresa permanecen con el proveedor de servicios cuando sea necesario.',
@@ -484,9 +484,9 @@ export const portalMessagesEs: PortalMessages = {
       jobUpdate: 'Actualización del trabajo'
     }
   },
-  worker: {
-    portal: 'Panel del contratista',
-    accountLabel: 'Cuenta de contratista',
+  contractor: {
+    portal: 'Panel del trabajador',
+    accountLabel: 'Cuenta de trabajador',
     settingsTitle: 'Configuración de la cuenta',
     settingsDescription: 'Administra tu perfil, notificaciones, enlaces legales y eliminación de la cuenta.',
     today: 'Hoy',
@@ -529,7 +529,7 @@ export const portalMessagesEs: PortalMessages = {
     instructions: 'Instrucciones',
     yourPay: 'Tu pago',
     payNotRecorded: 'Pago no registrado',
-    growthRequired: 'El panel del contratista requiere el plan Growth o un rol de contratista.',
+    growthRequired: 'El panel del trabajador requiere el plan Growth o un rol de trabajador.',
     loadErrorTitle: 'No se pudo cargar todo',
     tryAgain: 'Intentar de nuevo',
     job: 'Trabajo',
@@ -546,15 +546,15 @@ export const portalMessagesEs: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Tu cuenta de contratista aún no está vinculada a un perfil de contratista. Pide al propietario de la empresa que te asigne a un trabajo.',
+        'Tu cuenta de trabajador aún no está vinculada a un perfil de trabajador. Pide al propietario de la empresa que te asigne a un trabajo.',
       jobsQueryFailed: 'No se pudieron cargar tus trabajos asignados.',
       assignmentsQueryFailed: 'No se pudieron cargar tus asignaciones de trabajo.',
-      laborQueryFailed: 'No se pudieron cargar tus registros de pago de contratista.',
+      laborQueryFailed: 'No se pudieron cargar tus registros de pago de trabajador.',
       notificationsQueryFailed: 'No se pudieron cargar tus notificaciones.',
       permissionDenied:
-        'Se bloqueó el acceso a los pagos o trabajos del contratista. Contacta al propietario de la empresa.',
+        'Se bloqueó el acceso a los pagos o trabajos del trabajador. Contacta al propietario de la empresa.',
       unknown:
-        'No se pudo cargar tu panel de contratista. Actualiza la página o contacta al propietario de la empresa.'
+        'No se pudo cargar tu panel de trabajador. Actualiza la página o contacta al propietario de la empresa.'
     }
   }
 };
@@ -609,7 +609,7 @@ export const portalMessagesVi: PortalMessages = {
     terms: 'Điều khoản dịch vụ',
     generalDisclaimer: 'Tuyên bố miễn trừ trách nhiệm chung',
     customerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của bảng điều khiển khách hàng',
-    workerDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của nhà thầu'
+    contractorDisclaimer: 'Tuyên bố miễn trừ trách nhiệm của nhân viên'
   },
   account: {
     title: 'Cài đặt tài khoản',
@@ -633,17 +633,17 @@ export const portalMessagesVi: PortalMessages = {
     notifications: {
       title: 'Thông báo',
       clientDescription: 'Chọn các cập nhật về lịch hẹn và hóa đơn mà bạn muốn nhận qua email.',
-      workerDescription: 'Chọn các cập nhật dành cho nhà thầu mà bạn muốn nhận qua email.',
+      contractorDescription: 'Chọn các cập nhật dành cho nhân viên mà bạn muốn nhận qua email.',
       emailNotifications: 'Thông báo qua email',
       clientOperational: 'Cập nhật lịch hẹn và hóa đơn',
-      workerOperational: 'Cập nhật công việc và thanh toán',
+      contractorOperational: 'Cập nhật công việc và thanh toán',
       productUpdates: 'Cập nhật sản phẩm'
     },
     calendar: {
       title: 'Lịch',
       clientDescription:
         'Dùng Thêm vào lịch trên các lịch hẹn của bạn cho Google, Outlook hoặc Apple Calendar. Bảng điều khiển này không bao gồm tích hợp của công ty.',
-      workerDescription:
+      contractorDescription:
         'Dùng Thêm vào lịch trên công việc được giao để tạo sự kiện lịch một lần. Kết nối Google Calendar và QuickBooks toàn công ty do chủ công ty quản lý.'
     },
     delete: {
@@ -667,7 +667,7 @@ export const portalMessagesVi: PortalMessages = {
       unableToDeleteRetry: 'Không thể xóa tài khoản. Vui lòng thử lại.',
       clientRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân của bạn. Hóa đơn, thanh toán, công việc đã hoàn thành và các hồ sơ dịch vụ khác vẫn thuộc nhà cung cấp dịch vụ khi cần thiết.',
-      workerRetention:
+      contractorRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập và thông tin hồ sơ cá nhân của bạn. Lịch sử công việc của công ty, hồ sơ khách hàng và hồ sơ thanh toán vẫn thuộc công ty thuê.',
       defaultPortalRetention:
         'Xóa thông tin đăng nhập sẽ gỡ quyền truy cập bảng điều khiển và thông tin hồ sơ cá nhân. Hồ sơ công việc, hóa đơn, thanh toán và kiểm toán thuộc công ty vẫn được giữ lại với nhà cung cấp dịch vụ khi cần thiết.',
@@ -765,9 +765,9 @@ export const portalMessagesVi: PortalMessages = {
       jobUpdate: 'Cập nhật công việc'
     }
   },
-  worker: {
-    portal: 'Bảng điều khiển nhà thầu',
-    accountLabel: 'Tài khoản nhà thầu',
+  contractor: {
+    portal: 'Bảng điều khiển nhân viên',
+    accountLabel: 'Tài khoản nhân viên',
     settingsTitle: 'Cài đặt tài khoản',
     settingsDescription: 'Quản lý hồ sơ, thông báo, liên kết pháp lý và việc xóa tài khoản của bạn.',
     today: 'Hôm nay',
@@ -810,7 +810,7 @@ export const portalMessagesVi: PortalMessages = {
     instructions: 'Hướng dẫn',
     yourPay: 'Tiền công của bạn',
     payNotRecorded: 'Chưa ghi nhận tiền công',
-    growthRequired: 'Bảng điều khiển nhà thầu yêu cầu gói Growth hoặc vai trò nhà thầu.',
+    growthRequired: 'Bảng điều khiển nhân viên yêu cầu gói Growth hoặc vai trò nhân viên.',
     loadErrorTitle: 'Không thể tải mọi thứ',
     tryAgain: 'Thử lại',
     job: 'Công việc',
@@ -827,15 +827,15 @@ export const portalMessagesVi: PortalMessages = {
     },
     errors: {
       workerNotLinked:
-        'Tài khoản nhà thầu của bạn chưa được liên kết với hồ sơ nhà thầu. Hãy nhờ chủ công ty gán bạn vào một công việc.',
+        'Tài khoản nhân viên của bạn chưa được liên kết với hồ sơ nhân viên. Hãy nhờ chủ công ty gán bạn vào một công việc.',
       jobsQueryFailed: 'Không thể tải các công việc được giao của bạn.',
       assignmentsQueryFailed: 'Không thể tải các phân công công việc của bạn.',
-      laborQueryFailed: 'Không thể tải hồ sơ thanh toán nhà thầu của bạn.',
+      laborQueryFailed: 'Không thể tải hồ sơ thanh toán nhân viên của bạn.',
       notificationsQueryFailed: 'Không thể tải thông báo của bạn.',
       permissionDenied:
-        'Quyền truy cập thanh toán hoặc công việc nhà thầu đã bị chặn. Hãy liên hệ chủ công ty.',
+        'Quyền truy cập thanh toán hoặc công việc nhân viên đã bị chặn. Hãy liên hệ chủ công ty.',
       unknown:
-        'Không thể tải bảng điều khiển nhà thầu của bạn. Hãy làm mới trang hoặc liên hệ chủ công ty.'
+        'Không thể tải bảng điều khiển nhân viên của bạn. Hãy làm mới trang hoặc liên hệ chủ công ty.'
     }
   }
 };

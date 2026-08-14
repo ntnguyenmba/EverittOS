@@ -26,13 +26,13 @@ export default function ContractorPortalSettingsPage() {
   }
 
   return (
-    <div className="worker-dashboard">
+    <div className="contractor-dashboard">
       <header style={{ marginBottom: 20 }}>
         <p className="muted" style={{ marginBottom: 4 }}>
-          {t('portal.worker.accountLabel')}
+          {t('portal.contractor.accountLabel')}
         </p>
-        <h1>{t('portal.worker.settingsTitle')}</h1>
-        <p className="muted">{t('portal.worker.settingsDescription')}</p>
+        <h1>{t('portal.contractor.settingsTitle')}</h1>
+        <p className="muted">{t('portal.contractor.settingsDescription')}</p>
         <div className="button-row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
           <Link href={CONTRACTOR_HOME_PATH} className="btn">
             {t('portal.account.backToOverview')}
@@ -46,7 +46,7 @@ export default function ContractorPortalSettingsPage() {
         </div>
       </header>
 
-      <PortalAccountSettings variant="worker" homeHref={CONTRACTOR_HOME_PATH} />
+      <PortalAccountSettings variant="contractor" homeHref={CONTRACTOR_HOME_PATH} />
     </div>
   );
 }

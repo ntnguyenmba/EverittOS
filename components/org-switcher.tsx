@@ -85,7 +85,7 @@ export function OrgSwitcher() {
         {memberships.map((membership) => {
           const role = normalizeRole(membership.role);
           const roleName = role === 'contractor'
-            ? locale === 'es' ? 'Contratista' : locale === 'vi' ? 'Nhà thầu' : 'Contractor'
+            ? locale === 'es' ? 'Trabajador' : locale === 'vi' ? 'Nhân viên' : 'Worker'
             : role === 'client'
               ? locale === 'es' ? 'Cliente' : locale === 'vi' ? 'Khách hàng' : 'Client'
               : roleDisplayName(role);

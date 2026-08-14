@@ -150,16 +150,16 @@ export default function ContractorPortalPage() {
       const auth = (await withTimeout(supabase.auth.getUser(), c.sessionTimeout)) as AuthResult;
       const user = auth.data.user;
       if (auth.error || !user) {
-        router.replace('/login?next=%2Fportal%2Fworker');
+        router.replace('/login?next=%2Fportal%2Fcontractor');
         return;
       }
 
       const response = (await withTimeout(
-        fetch('/api/portal/worker/jobs', { cache: 'no-store' }),
+        fetch('/api/portal/contractor/jobs', { cache: 'no-store' }),
         c.jobsTimeout
       )) as Response;
       if (response.status === 401) {
-        router.replace('/login?next=%2Fportal%2Fworker');
+        router.replace('/login?next=%2Fportal%2Fcontractor');
         return;
       }
       const payload = (await response.json().catch(() => ({}))) as PortalDashboardResponse;
@@ -221,28 +221,28 @@ export default function ContractorPortalPage() {
   }
 
   return (
-    <div className="worker-dashboard role-dashboard-minimal">
-      <header className="card worker-portal-hero">
-        <p className="eyebrow worker-role-label">{c.contractor}</p>
+    <div className="contractor-dashboard role-dashboard-minimal">
+      <header className="card contractor-portal-hero">
+        <p className="eyebrow contractor-role-label">{c.contractor}</p>
         <h1>{operationalHeadline}</h1>
-        <p className="muted worker-worker-name">{operationalSubhead}</p>
+        <p className="muted contractor-worker-name">{operationalSubhead}</p>
         {state === 'ready' && nextJob ? (
-          <div className="worker-next-job">
+          <div className="contractor-next-job">
             <div>
-              <span className="worker-next-label">{c.nextUp}</span>
+              <span className="contractor-next-label">{c.nextUp}</span>
               <strong>{nextJob.title || c.job}</strong>
               <span>{[jobDate(nextJob), nextJob.customerName, nextJob.address].filter(Boolean).join(' · ')}</span>
             </div>
             <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)}>{c.openJob}</Link>
           </div>
         ) : null}
-        <nav className="button-row worker-portal-actions">
+        <nav className="button-row contractor-portal-actions">
           <a className="btn btn-primary" href="#jobs">{c.jobs}</a>
           <a className="btn" href="#schedule">{c.schedule}</a>
           <a className="btn" href="#earnings">{c.earnings}</a>
-          <Link className="btn" href="/portal/worker/settings">{c.settings}</Link>
+          <Link className="btn" href="/portal/contractor/settings">{c.settings}</Link>
           <ExportMenu
-            endpoint="/api/exports/portal/worker/jobs"
+            endpoint="/api/exports/portal/contractor/jobs"
             locale={locale}
             labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
             disabled={state === 'loading'}
@@ -255,7 +255,7 @@ export default function ContractorPortalPage() {
               setExportNotice(format === 'share' ? exportCopy.shareSent : '');
             }}
           />
-          <button type="button" className="btn worker-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
+          <button type="button" className="btn contractor-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
         </nav>
       </header>
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
@@ -274,16 +274,16 @@ export default function ContractorPortalPage() {
 
       {state === 'ready' ? (
         <>
-          <section className="metric-grid worker-metrics">
-            <article className="card worker-metric worker-job-metric"><span className="muted">{c.assignedJobs}</span><h2>{totals.assigned}</h2></article>
-            <article className="card worker-metric worker-job-metric worker-job-metric-primary"><span className="muted">{c.upcomingJobs}</span><h2>{totals.upcoming}</h2></article>
-            <article className="card worker-metric worker-job-metric"><span className="muted">{c.completedJobs}</span><h2>{totals.completed}</h2></article>
-            <article className="card worker-metric worker-earnings-metric"><span className="muted">{c.totalEarnings}</span><h2>{money(totals.total, localeCode)}</h2></article>
-            <article className="card worker-metric worker-earnings-metric"><span className="muted">{c.paidToYou}</span><h2>{money(totals.paid, localeCode)}</h2></article>
-            <article className="card worker-metric worker-earnings-metric"><span className="muted">{c.stillOwed}</span><h2>{money(totals.owed, localeCode)}</h2></article>
+          <section className="metric-grid contractor-metrics">
+            <article className="card contractor-metric contractor-job-metric"><span className="muted">{c.assignedJobs}</span><h2>{totals.assigned}</h2></article>
+            <article className="card contractor-metric contractor-job-metric contractor-job-metric-primary"><span className="muted">{c.upcomingJobs}</span><h2>{totals.upcoming}</h2></article>
+            <article className="card contractor-metric contractor-job-metric"><span className="muted">{c.completedJobs}</span><h2>{totals.completed}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.totalEarnings}</span><h2>{money(totals.total, localeCode)}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.paidToYou}</span><h2>{money(totals.paid, localeCode)}</h2></article>
+            <article className="card contractor-metric contractor-earnings-metric"><span className="muted">{c.stillOwed}</span><h2>{money(totals.owed, localeCode)}</h2></article>
           </section>
 
-          <section id="jobs" className="card worker-content-card">
+          <section id="jobs" className="card contractor-content-card">
             <h3 style={{ marginTop: 0 }}>{c.jobs}</h3>
             {sortedJobs.length ? (
               <div className="job-visits-list">
@@ -313,9 +313,9 @@ export default function ContractorPortalPage() {
             ) : <p className="muted">{c.noJobs}</p>}
           </section>
 
-          <section id="schedule" className="card worker-content-card"><h3 style={{ marginTop: 0 }}>{c.schedule}</h3><p className="muted">{c.scheduleBody}</p></section>
+          <section id="schedule" className="card contractor-content-card"><h3 style={{ marginTop: 0 }}>{c.schedule}</h3><p className="muted">{c.scheduleBody}</p></section>
 
-          <section id="earnings" className="card worker-content-card">
+          <section id="earnings" className="card contractor-content-card">
             <h3 style={{ marginTop: 0 }}>{c.earnings}</h3>
             <p><strong>{money(totals.paid, localeCode)}</strong> {c.paid} · <strong>{money(totals.owed, localeCode)}</strong> {c.stillOwedLower}</p>
             <p className="muted">{c.earningsBody}</p>
