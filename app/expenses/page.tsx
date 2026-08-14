@@ -173,8 +173,8 @@ function ExpensesContent() {
   async function saveExpense() {
     if (saving) return;
     const amount = Number.parseFloat(form.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      appFeedback.error('Enter a valid amount.');
+    if (!Number.isFinite(amount) || amount === 0) {
+      appFeedback.error('Enter an amount other than zero. Use a negative amount for a refund or credit.');
       return;
     }
 
@@ -392,11 +392,11 @@ function ExpensesContent() {
           <input
             className="input"
             type="number"
-            min="0"
             step="0.01"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
           />
+          <small className="muted">Enter a negative amount for a refund or credit, for example -12.47.</small>
           <label>Related job (optional)</label>
           <select className="input" value={form.job_id} onChange={(e) => setForm({ ...form, job_id: e.target.value })}>
             <option value="">None</option>
@@ -476,7 +476,7 @@ function ExpensesContent() {
               <article key={expense.id} className="finance-list-card">
                 <div className="finance-list-card-main">
                   <div className="finance-list-card-head">
-                    <strong>{expense.category}</strong>
+                    <strong>{expense.amount < 0 ? `${expense.category} · Credit` : expense.category}</strong>
                     <span>{formatCurrency(expense.amount)}</span>
                   </div>
                   <p className="muted">
