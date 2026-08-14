@@ -669,3 +669,141 @@
     gap: 5px;
   }
 }
+
+
+/* Work-first summary and next-action treatment. */
+.contractor-main .contractor-next-job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px solid rgba(36, 63, 83, 0.14);
+  border-left: 4px solid var(--portal-blue);
+  border-radius: 12px;
+  background: var(--portal-mist);
+}
+
+.contractor-main .contractor-next-job > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.contractor-main .contractor-next-label {
+  color: var(--portal-blue);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contractor-main .contractor-next-job strong {
+  color: var(--portal-text);
+  font-size: 17px;
+}
+
+.contractor-main .contractor-next-job span:last-child {
+  color: var(--portal-muted);
+  font-size: 13px;
+}
+
+.contractor-main .metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--portal-line);
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 7px 20px rgba(36, 63, 83, 0.055);
+}
+
+.contractor-main .metric-grid .card {
+  min-height: 86px !important;
+  margin: 0 !important;
+  padding: 16px 18px !important;
+  border: 0 !important;
+  border-right: 1px solid var(--portal-line) !important;
+  border-bottom: 1px solid var(--portal-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.contractor-main .metric-grid .card:nth-child(3n) {
+  border-right: 0 !important;
+}
+
+.contractor-main .metric-grid .card:nth-last-child(-n + 3) {
+  border-bottom: 0 !important;
+}
+
+.contractor-main .metric-grid .card h2 {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(22px, 2.4vw, 28px) !important;
+  line-height: 1.05 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contractor-main .portal-job-open {
+  display: inline-flex;
+  margin-top: 10px;
+  color: var(--portal-blue) !important;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.contractor-main .portal-job-open::after {
+  content: " →";
+  margin-left: 4px;
+}
+
+@media (max-width: 760px) {
+  .contractor-main .contractor-next-job {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contractor-main .contractor-next-job .btn {
+    width: 100%;
+  }
+
+  .contractor-main .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .contractor-main .metric-grid .card:nth-child(3n) {
+    border-right: 1px solid var(--portal-line) !important;
+  }
+
+  .contractor-main .metric-grid .card:nth-child(2n) {
+    border-right: 0 !important;
+  }
+
+  .contractor-main .metric-grid .card:nth-last-child(-n + 3) {
+    border-bottom: 1px solid var(--portal-line) !important;
+  }
+
+  .contractor-main .metric-grid .card:nth-last-child(-n + 2) {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .contractor-main .metric-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .contractor-main .metric-grid .card {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--portal-line) !important;
+  }
+
+  .contractor-main .metric-grid .card:last-child {
+    border-bottom: 0 !important;
+  }
+}
