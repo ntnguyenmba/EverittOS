@@ -395,9 +395,9 @@ function JobsList() {
                   <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
                   {isOwner ? (
                     <>
-                      <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay"><span className="jobs-money-label">{c.customerPay}</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</span></td>
-                      <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay"><span className="jobs-money-label">{c.contractorPay}</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</span></td>
-                      <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit"><span className="jobs-money-label">{c.ownerProfit}</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</span></td>
+                      <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay"><span className="jobs-money-label">{c.customerPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</span></td>
+                      <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay"><span className="jobs-money-label">{c.contractorPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</span></td>
+                      <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit"><span className="jobs-money-label">{c.ownerProfit}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</span></td>
                     </>
                   ) : null}
                   <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
