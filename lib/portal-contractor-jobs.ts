@@ -42,7 +42,6 @@ type WorkerRow = {
   auth_user_id?: string | null;
   email?: string | null;
   name?: string | null;
-  full_name?: string | null;
 };
 
 type JobRow = {
@@ -80,7 +79,7 @@ async function resolveContractorWorkers(
   userId: string,
   email?: string | null
 ) {
-  const workerFields = 'id, auth_user_id, email, name, full_name';
+  const workerFields = 'id, auth_user_id, email, name';
   const lookupEmail = String(email || '')
     .trim()
     .toLowerCase();
@@ -103,8 +102,7 @@ async function resolveContractorWorkers(
   const identity = contractorIdentityFromWorkers(userId, workers, lookupEmail);
   const workerIds = uniqueWorkerIds(identity.workerIds || workers.map((row) => row.id));
   const workerName =
-    workers.find((row) => String(row.name || row.full_name || '').trim())?.name ||
-    workers.find((row) => String(row.full_name || '').trim())?.full_name ||
+    workers.find((row) => String(row.name || '').trim())?.name ||
     lookupEmail ||
     '';
 
