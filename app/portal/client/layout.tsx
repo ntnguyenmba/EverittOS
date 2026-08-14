@@ -22,21 +22,21 @@ const copy: Record<Locale, {
     settings: 'Settings',
     navAria: 'Client navigation',
     subtitle: 'Client portal',
-    roleNote: 'You can only view jobs, photos, reports, invoices, and account details shared with you.'
+    roleNote: 'Your appointments, photos, reports, and invoices in one place.'
   },
   es: {
     appointments: 'Citas',
     settings: 'Configuración',
     navAria: 'Navegación del cliente',
     subtitle: 'Portal del cliente',
-    roleNote: 'Solo puede ver trabajos, fotos, informes, facturas y datos de cuenta compartidos con usted.'
+    roleNote: 'Sus citas, fotos, informes y facturas en un solo lugar.'
   },
   vi: {
     appointments: 'Lịch hẹn',
     settings: 'Cài đặt',
     navAria: 'Điều hướng khách hàng',
     subtitle: 'Cổng khách hàng',
-    roleNote: 'Bạn chỉ có thể xem công việc, ảnh, báo cáo, hóa đơn và thông tin tài khoản được chia sẻ với bạn.'
+    roleNote: 'Lịch hẹn, ảnh, báo cáo và hóa đơn của bạn ở cùng một nơi.'
   }
 };
 
