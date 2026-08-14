@@ -75,8 +75,8 @@ export function ContractorStaticSections() {
     const applyOnce = () => {
       attempts += 1;
 
-      const contractorCurrent = document.querySelector('.contractor-dashboard #current-jobs');
-      const contractorPast = document.querySelector('.contractor-dashboard #history');
+      const contractorCurrent = document.querySelector('.worker-dashboard #current-jobs');
+      const contractorPast = document.querySelector('.worker-dashboard #history');
       const clientCurrent = document.querySelector('.client-portal-jobs #current-jobs');
       const clientPast = document.querySelector('.client-portal-jobs #history');
 
