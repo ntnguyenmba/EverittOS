@@ -11,6 +11,24 @@ export function normalizeCalendarTitle(value: string | null | undefined): string
     .trim();
 }
 
+function normalizeAddress(value: string | null | undefined): string {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\bavenue\b/g, 'ave')
+    .replace(/\bstreet\b/g, 'st')
+    .replace(/\broad\b/g, 'rd')
+    .replace(/\bdrive\b/g, 'dr')
+    .replace(/\blane\b/g, 'ln')
+    .replace(/\bboulevard\b/g, 'blvd')
+    .replace(/\bcourt\b/g, 'ct')
+    .replace(/\bhighway\b/g, 'hwy')
+    .replace(/\s*,\s*/g, ',')
+    .replace(/\s+/g, ' ')
+    .replace(/,us$/i, '')
+    .trim();
+}
+
 export function wallClockTime(value: string | null | undefined): string | null {
   const match = String(value || '').match(/T(\d{2}):(\d{2})/);
   return match ? `${match[1]}:${match[2]}` : null;
@@ -39,10 +57,19 @@ export function findConfidentProperty(
   properties: CalendarImportPropertyRow[]
 ): CalendarImportPropertyRow | null {
   try {
-    const matches = (properties || []).filter(
-      (property) => property && !property.is_archived && isHighConfidencePropertyMatch(event.summary, property)
-    );
-    return matches.length === 1 ? matches[0] : null;
+    const active = (properties || []).filter((property) => property && !property.is_archived);
+    const eventLocation = normalizeAddress(event.location);
+    if (eventLocation) {
+      const addressMatches = active.filter((property) => {
+        const formatted = normalizeAddress(property.formatted_address);
+        const address = normalizeAddress(property.address);
+        return Boolean((formatted && formatted === eventLocation) || (address && address === eventLocation));
+      });
+      if (addressMatches.length === 1) return addressMatches[0];
+    }
+
+    const titleMatches = active.filter((property) => isHighConfidencePropertyMatch(event.summary, property));
+    return titleMatches.length === 1 ? titleMatches[0] : null;
   } catch {
     return null;
   }
