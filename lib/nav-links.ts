@@ -22,6 +22,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Customers', href: '/customers' },
   { label: 'Team', href: '/people' },
   { label: 'Expenses', href: '/expenses' },
+  { label: 'Bookkeeping', href: '/bookkeeping' },
   { label: 'Playbook', href: '/knowledge' },
   { label: 'Settings', href: '/settings' }
 ];
@@ -52,6 +53,7 @@ export const SECONDARY_APP_ROUTES = [
   '/estimates',
   '/invoices',
   '/expenses',
+  '/bookkeeping',
   '/messages',
   '/projects',
   '/knowledge',
