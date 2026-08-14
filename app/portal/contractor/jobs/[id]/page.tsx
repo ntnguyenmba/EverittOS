@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useTranslation } from '@/components/locale-provider';
 import { CONTRACTOR_HOME_PATH, formatContractorMoney } from '@/lib/contractor-dashboard';
 import { contractorJobDetailPath, type ContractorSafeJobView } from '@/lib/contractor-job-access';
@@ -66,7 +65,7 @@ export default function ContractorJobDetailPage() {
   }, [load]);
 
   return (
-    <AuthenticatedSection role="contractor">
+    <div className="contractor-dashboard">
       <div style={{ marginBottom: 16 }}>
         <Link href={CONTRACTOR_HOME_PATH} className="btn">
           {t('portal.contractor.back')}
@@ -158,6 +157,6 @@ export default function ContractorJobDetailPage() {
           </div>
         </section>
       ) : null}
-    </AuthenticatedSection>
+    </div>
   );
 }
