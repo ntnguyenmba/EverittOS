@@ -1,6 +1,5 @@
 'use client';
 
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalAccountSettings } from '@/components/portal/portal-account-settings';
 import { PortalClientNav } from '@/components/portal/portal-client-nav';
@@ -11,7 +10,7 @@ export default function ClientPortalSettingsPage() {
   const { t } = useTranslation();
 
   return (
-    <AuthenticatedSection role="client">
+    <div className="client-portal-settings">
       <header style={{ marginBottom: 20 }}>
         <p className="muted" style={{ marginBottom: 4 }}>
           {t('portal.client.portal')}
@@ -28,6 +27,6 @@ export default function ClientPortalSettingsPage() {
       />
 
       <PortalAccountSettings variant="client" homeHref={CLIENT_HOME_PATH} />
-    </AuthenticatedSection>
+    </div>
   );
 }
