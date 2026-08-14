@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/components/locale-provider';
-import { CONTRACTOR_HOME_PATH, formatContractorMoney } from '@/lib/worker-dashboard';
-import { contractorJobDetailPath, type ContractorSafeJobView } from '@/lib/worker-job-access';
+import { CONTRACTOR_HOME_PATH, formatContractorMoney } from '@/lib/contractor-dashboard';
+import { contractorJobDetailPath, type ContractorSafeJobView } from '@/lib/contractor-job-access';
 import { translatePortalJobStatus, translatePortalPaymentStatus } from '@/lib/portal-status-i18n';
 
 export default function ContractorJobDetailPage() {
