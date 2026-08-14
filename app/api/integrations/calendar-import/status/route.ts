@@ -6,14 +6,6 @@ import { assertNoFeedSecret, toSafeCalendarImportStatus } from '@/lib/calendar-i
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function isLegacyAutoImportError(message: string | null | undefined): boolean {
-  const value = String(message || '').toLowerCase();
-  return (
-    value.includes('calendar events could not be saved as jobs') ||
-    value.includes('event could not be saved as a job')
-  );
-}
-
 export async function GET() {
   const auth = await requireCalendarImportManager();
   if (!auth.ok) return auth.response;
@@ -21,11 +13,11 @@ export async function GET() {
   try {
     const connection = await getPrimaryCalendarImportConnection(auth.admin, auth.org.organizationId);
 
-    // Calendar Import is review-first now. Remove stale errors created by the retired
-    // auto-import flow so Settings does not imply that calendar events should be
-    // written to Jobs before the user reviews and approves them.
-    if (connection && isLegacyAutoImportError(connection.last_sync_error)) {
-      await updateCalendarImportSyncState(auth.admin, connection.id, { last_sync_error: null });
+    // Calendar Import is review-first now. Any persisted last_sync_error came from
+    // the retired auto-write flow and should not be shown in Settings anymore.
+    // Review failures are returned directly by the review endpoint instead.
+    if (connection?.last_sync_error) {
+      await updateCalendarImportSyncState(auth.admin, connection.id, { last_sync_error: null }).catch(() => undefined);
       connection.last_sync_error = null;
     }
 
