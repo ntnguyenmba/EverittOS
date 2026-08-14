@@ -31,6 +31,33 @@ function languageInstruction(locale: AskEverittLocale): string {
   return 'Respond in English.';
 }
 
+function currentPageContext(request: Request): string {
+  const referer = request.headers.get('referer');
+  if (!referer) return '';
+  try {
+    const url = new URL(referer);
+    const params = new URLSearchParams(url.search);
+    const safePairs: string[] = [];
+    for (const [key, value] of params.entries()) {
+      if (!key || !value) continue;
+      if (/token|secret|key|code|email|phone|feed|url/i.test(key)) continue;
+      safePairs.push(`${key}=${value.slice(0, 120)}`);
+      if (safePairs.length >= 12) break;
+    }
+    const filterText = safePairs.length ? ` Active filters: ${safePairs.join(', ')}.` : '';
+    return `Current EverittOS page: ${url.pathname}.${filterText}`;
+  } catch {
+    return '';
+  }
+}
+
+function pageAwarePrompt(prompt: string, pageContext: string): string {
+  if (!pageContext) return prompt;
+  return `${prompt}\n\n[Current app context: ${pageContext}]`;
+}
+
+const BUSINESS_DATA_RULES = `Use current workspace data as the source of truth. When the current page or its active filters are relevant, answer in that context instead of silently switching to all-time or all-workspace data. Keep these concepts separate: Money in = customer cash actually received; Still owed = customer balances not yet collected; Job revenue = money received plus customer balances for the selected period; Paid contractors = cash already paid to contractors; Contractor costs = labor cost whether paid or unpaid; Business expenses = non-contractor operating expenses; Money kept = cash received minus paid contractor cash and business expenses; Profit = job revenue minus contractor costs and business expenses. Bookkeeping is operational recordkeeping and is not tax, accounting, or legal advice. If data is insufficient, say what is missing instead of guessing. Prefer exact records and amounts from workspace data, and point the user to the relevant job, customer, invoice, expense, worker, or report when available. Never expose data the user's role is not allowed to access.`;
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
   const {
@@ -64,6 +91,8 @@ export async function POST(request: Request) {
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
   const mode = body.forceMode || detectAskEverittMode(prompt);
+  const pageContext = currentPageContext(request);
+  const contextualPrompt = pageAwarePrompt(prompt, pageContext);
 
   if (mode === 'search') {
     const searchAccess = await assertAskEverittSearchAccess(
@@ -80,7 +109,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const searchResult = await runAskEverittSearchEngine(supabase, org.organizationId, prompt);
+    const searchResult = await runAskEverittSearchEngine(supabase, org.organizationId, contextualPrompt);
     await recordAiUsage(admin, searchUsageEvent({
       workspaceId: org.organizationId,
       userId: user.id,
@@ -115,17 +144,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, prompt);
+  const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, contextualPrompt);
   const dataContext = formatPrefetchedContextForAi(prefetched);
 
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
   const messages: AiChatMessage[] = [
     {
       role: 'user',
-      content: `${languageInstruction(locale)}\n\n${prompt}\n\n--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
+      content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
     }
   ];
-  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${orgContext}`, {
+  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, {
     feature: 'ask_everitt'
   });
 
