@@ -20,10 +20,10 @@ export type ExportMenuProps = {
     pdf?: string;
   };
   onError?: (message: string) => void;
-  onSuccess?: (format: 'csv' | 'pdf') => void;
+  onSuccess?: (format: 'csv' | 'pdf' | 'share') => void;
 };
 
-function buildUrl(endpoint: string, query: ExportMenuProps['query'], format: 'csv' | 'pdf', locale?: Locale) {
+function queryRecord(query: ExportMenuProps['query']): Record<string, string> {
   const params = new URLSearchParams();
   if (query instanceof URLSearchParams) {
     query.forEach((value, key) => {
@@ -39,6 +39,15 @@ function buildUrl(endpoint: string, query: ExportMenuProps['query'], format: 'cs
       if (value != null && value !== '') params.set(key, String(value));
     }
   }
+  const out: Record<string, string> = {};
+  params.forEach((value, key) => {
+    out[key] = value;
+  });
+  return out;
+}
+
+function buildUrl(endpoint: string, query: ExportMenuProps['query'], format: 'csv' | 'pdf', locale?: Locale) {
+  const params = new URLSearchParams(queryRecord(query));
   params.set('format', format);
   if (locale) params.set('locale', locale);
   const qs = params.toString();
@@ -57,17 +66,28 @@ export function ExportMenu({
 }: ExportMenuProps) {
   const copy = getExportCopy(locale);
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState<'csv' | 'pdf' | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [busy, setBusy] = useState<'csv' | 'pdf' | 'share-csv' | 'share-pdf' | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setShareOpen(false);
+        setShareMessage('');
+      }
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        setShareOpen(false);
+        setShareMessage('');
+      }
     }
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKey);
@@ -81,6 +101,7 @@ export function ExportMenu({
     if (disabled || busy) return;
     setBusy(format);
     setOpen(false);
+    setShareOpen(false);
     const result = await downloadExportFromApi(buildUrl(endpoint, query, format, locale), {
       fallbackFilename: `everittos-export.${format === 'pdf' ? 'html' : 'csv'}`
     });
@@ -92,8 +113,48 @@ export function ExportMenu({
     onSuccess?.(format);
   }
 
+  async function runShare(format: 'csv' | 'pdf') {
+    if (disabled || busy) return;
+    setShareMessage('');
+    setBusy(format === 'csv' ? 'share-csv' : 'share-pdf');
+    let response: Response;
+    try {
+      response = await fetch('/api/exports/share', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint,
+          format,
+          to: email,
+          query: queryRecord(query),
+          locale
+        })
+      });
+    } catch {
+      setBusy(null);
+      setShareMessage(copy.shareFailed);
+      onError?.(copy.shareFailed);
+      return;
+    }
+
+    const json = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+    setBusy(null);
+    if (!response.ok) {
+      const message = json.error || copy.shareFailed;
+      setShareMessage(message);
+      onError?.(message);
+      return;
+    }
+    setShareMessage(copy.shareSent);
+    setOpen(false);
+    setShareOpen(false);
+    onSuccess?.('share');
+  }
+
   const isDisabled = disabled || Boolean(busy);
-  const triggerLabel = busy ? copy.preparingExport : labels?.export || copy.export;
+  const triggerLabel = busy ? (String(busy).startsWith('share') ? copy.sending : copy.preparingExport) : labels?.export || copy.export;
 
   return (
     <div
@@ -108,7 +169,11 @@ export function ExportMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setOpen((value) => !value);
+          setShareOpen(false);
+          setShareMessage('');
+        }}
       >
         {triggerLabel}
       </button>
@@ -120,7 +185,7 @@ export function ExportMenu({
             position: 'absolute',
             right: 0,
             top: 'calc(100% + 4px)',
-            minWidth: 160,
+            minWidth: shareOpen ? 240 : 160,
             zIndex: 40,
             background: 'var(--surface, #fff)',
             border: '1px solid var(--border, #e4e1d8)',
@@ -149,6 +214,51 @@ export function ExportMenu({
           >
             {labels?.pdf || copy.exportPdf}
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="btn"
+            style={{ width: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent' }}
+            disabled={isDisabled}
+            onClick={() => {
+              setShareOpen(true);
+              setShareMessage('');
+            }}
+          >
+            {copy.shareByEmail}
+          </button>
+          {shareOpen ? (
+            <form
+              style={{ display: 'grid', gap: 6, padding: 6 }}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void runShare('pdf');
+              }}
+            >
+              <label className="muted" htmlFor={`${menuId}-email`} style={{ fontSize: 12 }}>
+                {copy.emailAddress}
+              </label>
+              <input
+                id={`${menuId}-email`}
+                className="input"
+                type="email"
+                autoComplete="email"
+                value={email}
+                aria-label={copy.emailAddress}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={isDisabled}
+              />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" className="btn" disabled={isDisabled} onClick={() => void runShare('csv')}>
+                  {busy === 'share-csv' ? copy.sending : copy.sendCsv}
+                </button>
+                <button type="submit" className="btn" disabled={isDisabled}>
+                  {busy === 'share-pdf' ? copy.sending : copy.sendPdf}
+                </button>
+              </div>
+              {shareMessage ? <p className="muted" style={{ margin: 0, fontSize: 12 }}>{shareMessage}</p> : null}
+            </form>
+          ) : null}
         </div>
       ) : null}
     </div>

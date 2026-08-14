@@ -261,7 +261,10 @@ export default function PeoplePage() {
             endpoint="/api/exports/team"
             locale={locale}
             onError={(message) => setExportError(message || exportCopy.exportFailed)}
-            onSuccess={() => setExportError('')}
+            onSuccess={(format) => {
+              setExportError('');
+              if (format === 'share') setExportError('');
+            }}
           />
         ) : null}
       </div>

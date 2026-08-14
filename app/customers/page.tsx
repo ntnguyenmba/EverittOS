@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ContactLink } from '@/components/contact-link';
 import { CustomerLogo } from '@/components/customer-logo';
+import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -31,50 +32,11 @@ import {
   customerStageLabel,
   getCustomerLifecycleCopy
 } from '@/lib/i18n/customer-lifecycle-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { monthStartIso } from '@/lib/date-filters';
 import { supabase } from '@/lib/supabase';
 import { RecordActions } from '@/components/record-actions';
 import { ensureWorkspaceForSave } from '@/lib/workspace-client';
-
-function cleanExportValue(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  return String(value).replace(/\s+/g, ' ').trim();
-}
-
-function escapeHtml(value: unknown): string {
-  return cleanExportValue(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function downloadFile(filename: string, content: string, type: string) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function exportRows(customers: CustomerRecord[]) {
-  return customers.map((customer) => ({
-    Name: customerDisplayName(customer),
-    Phone: customer.phone || '',
-    Email: customer.email || '',
-    Address: customerDisplayAddress(customer),
-    Stage: customer.pipeline_stage || 'lead',
-    Source: customer.lead_source || '',
-    Notes: customer.notes || '',
-    Created: customer.created_at ? new Date(customer.created_at).toLocaleDateString() : '',
-    Updated: customer.updated_at ? new Date(customer.updated_at).toLocaleDateString() : ''
-  }));
-}
 
 function CustomersPageContent() {
   const router = useRouter();
@@ -88,6 +50,7 @@ function CustomersPageContent() {
     vi: { edit: 'Sửa' }
   }[locale];
   const lifecycle = getCustomerLifecycleCopy(locale);
+  const exportCopy = getExportCopy(locale);
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
@@ -103,16 +66,6 @@ function CustomersPageContent() {
   const [role, setRole] = useState(normalizeRole('owner'));
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const exportMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function onPointerDown(event: MouseEvent) {
-      if (!exportMenuRef.current?.contains(event.target as Node)) setExportOpen(false);
-    }
-    window.addEventListener('mousedown', onPointerDown);
-    return () => window.removeEventListener('mousedown', onPointerDown);
-  }, []);
 
   async function load() {
     setLoading(true);
@@ -168,56 +121,6 @@ function CustomersPageContent() {
       return;
     }
     setCustomers(filterDemoSeedCustomers(data || [], orgIsDemo));
-  }
-
-  function exportExcel() {
-    if (!customers.length) {
-      appFeedback.error('No customer data to export.');
-      return;
-    }
-
-    const rows = exportRows(customers);
-    const headers = Object.keys(rows[0]);
-    const tableRows = rows
-      .map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header as keyof typeof row])}</td>`).join('')}</tr>`)
-      .join('');
-    const html = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table><thead><tr>${headers
-      .map((header) => `<th>${escapeHtml(header)}</th>`)
-      .join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
-
-    downloadFile('everittos-customers.xls', html, 'application/vnd.ms-excel;charset=utf-8');
-  }
-
-  function exportPdf() {
-    if (!customers.length) {
-      appFeedback.error('No customer data to export.');
-      return;
-    }
-
-    const rows = exportRows(customers);
-    const headers = Object.keys(rows[0]);
-    const tableRows = rows
-      .map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header as keyof typeof row])}</td>`).join('')}</tr>`)
-      .join('');
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      appFeedback.error('Allow popups to create a PDF.');
-      return;
-    }
-
-    printWindow.document.write(`<!doctype html><html><head><title>EverittOS Customer Export</title><style>
-      body { font-family: Arial, sans-serif; padding: 32px; color: #1f2528; }
-      h1 { font-size: 24px; margin-bottom: 8px; }
-      p { color: #5f686f; margin-bottom: 24px; }
-      table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th, td { border: 1px solid #d9dedc; padding: 8px; text-align: left; vertical-align: top; }
-      th { background: #f4f2ee; }
-    </style></head><body><h1>EverittOS Customer Export</h1><p>Customer list exported from EverittOS.</p><table><thead><tr>${headers
-      .map((header) => `<th>${escapeHtml(header)}</th>`)
-      .join('')}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   }
 
   function onLogoSelected(file: File | null) {
@@ -344,58 +247,18 @@ function CustomersPageContent() {
                   Import CSV
                 </Link>
               ) : null}
-              <div ref={exportMenuRef} style={{ position: 'relative' }}>
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={loading || customers.length === 0}
-                  aria-expanded={exportOpen}
-                  onClick={() => setExportOpen((current) => !current)}
-                >
-                  Export
-                </button>
-                {exportOpen ? (
-                  <div
-                    role="menu"
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: 'calc(100% + 6px)',
-                      minWidth: 140,
-                      background: 'var(--surface, #fff)',
-                      border: '1px solid var(--line, #d9dedc)',
-                      borderRadius: 10,
-                      padding: 6,
-                      zIndex: 20,
-                      display: 'grid',
-                      gap: 4
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ justifyContent: 'flex-start' }}
-                      onClick={() => {
-                        setExportOpen(false);
-                        exportPdf();
-                      }}
-                    >
-                      PDF
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ justifyContent: 'flex-start' }}
-                      onClick={() => {
-                        setExportOpen(false);
-                        exportExcel();
-                      }}
-                    >
-                      Excel
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              {isManagerRole(role) ? (
+                <ExportMenu
+                  endpoint="/api/exports/customers"
+                  query={{ period: periodFilter, stage: stageFilter }}
+                  locale={locale}
+                  disabled={loading}
+                  onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+                  onSuccess={(format) => {
+                    if (format === 'share') appFeedback.success(exportCopy.shareSent);
+                  }}
+                />
+              ) : null}
               {canManage ? (
                 <Link className="btn btn-primary" href="/customers/new">
                   Add customer

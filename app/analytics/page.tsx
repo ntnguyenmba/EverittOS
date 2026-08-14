@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { LocalizedEmptyState } from '@/components/localized-empty-state';
 import { PageHeader } from '@/components/page-header';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { BusinessPerformanceSection } from '@/components/business-performance-section';
 import { SimpleBarChart } from '@/components/charts/simple-bar-chart';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { limitsForPlan } from '@/lib/everittos-limits';
 import { useTranslation } from '@/components/locale-provider';
 import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canSeeOrgWideData } from '@/lib/permissions';
 import { isAdminRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -34,6 +37,8 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const copy = getDashboardFinanceCopy(locale);
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
@@ -85,7 +90,23 @@ export default function AnalyticsPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title="Business numbers" />
+      <PageHeader
+        title="Business numbers"
+        action={
+          canAccessFinancials(role, plan) ? (
+            <ExportMenu
+              endpoint="/api/exports/dashboard"
+              query={{ range: 'all_time' }}
+              locale={locale}
+              disabled={loading}
+              onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+              onSuccess={(format) => {
+                if (format === 'share') appFeedback.success(exportCopy.shareSent);
+              }}
+            />
+          ) : undefined
+        }
+      />
 
       {loading ? <p className="loading-state">Loading...</p> : null}
       {error ? <p className="auth-message auth-message-error">{error}</p> : null}

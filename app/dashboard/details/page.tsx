@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import type { DashboardDetailResult } from '@/lib/dashboard-metric-details';
@@ -11,6 +13,7 @@ import { isDashboardDetailMetric } from '@/lib/dashboard-metric-details';
 import type { DashboardDateRange } from '@/lib/dashboard-metrics';
 import { formatCurrency } from '@/lib/finance-format';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 
 const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
 
@@ -24,6 +27,8 @@ function formatTotal(details: DashboardDetailResult, metric: string) {
 function DashboardMetricDetailsContent() {
   const { t, locale } = useTranslation();
   const copy = getDashboardFinanceCopy(locale);
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const router = useRouter();
   const searchParams = useSearchParams();
   const metricParam = searchParams.get('metric');
@@ -88,6 +93,20 @@ function DashboardMetricDetailsContent() {
           details
             ? `${details.rangeLabel}. ${copy.details.exactTotal}: ${formatTotal(details, metric || '')}`
             : copy.details.subtitle
+        }
+        action={
+          metric ? (
+            <ExportMenu
+              endpoint="/api/exports/dashboard-details"
+              query={{ metric, range }}
+              locale={locale}
+              disabled={loading}
+              onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+              onSuccess={(format) => {
+                if (format === 'share') appFeedback.success(exportCopy.shareSent);
+              }}
+            />
+          ) : undefined
         }
       />
 

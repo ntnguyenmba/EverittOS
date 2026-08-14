@@ -4,11 +4,14 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
 import { QuickBooksIntegrationPanel } from '@/components/quickbooks-integration-panel';
 import { RecurringInvoicesPanel } from '@/components/recurring-invoices-panel';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { fetchOrganizationContext } from '@/lib/organization';
@@ -18,6 +21,8 @@ function InvoicesPageContent() {
   const searchParams = useSearchParams();
   const { t, locale } = useTranslation();
   const billingCopy = getBillingOpsCopy(locale);
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
   const forceNew = searchParams.get('action') === 'new' || searchParams.get('forceNew') === '1';
@@ -53,10 +58,23 @@ function InvoicesPageContent() {
   return (
     <AppShell plan={plan} role={role}>
       <header className="page-header">
-        <h1>{focusOutstanding ? billingCopy.outstandingBalances : t('pages.invoices.title')}</h1>
-        <p className="page-subtitle">
-          {focusOutstanding ? billingCopy.outstandingSubtitle : t('pages.invoices.subtitle')}
-        </p>
+        <div>
+          <h1>{focusOutstanding ? billingCopy.outstandingBalances : t('pages.invoices.title')}</h1>
+          <p className="page-subtitle">
+            {focusOutstanding ? billingCopy.outstandingSubtitle : t('pages.invoices.subtitle')}
+          </p>
+        </div>
+        {canManage ? (
+          <ExportMenu
+            endpoint="/api/exports/invoices"
+            query={{ jobId, customerId, payment: paymentFilter === 'all' ? '' : paymentFilter }}
+            locale={locale}
+            onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+            onSuccess={(format) => {
+              if (format === 'share') appFeedback.success(exportCopy.shareSent);
+            }}
+          />
+        ) : null}
       </header>
 
       <OutboundHub

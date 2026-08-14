@@ -33,6 +33,7 @@ export type ApiErrorCode =
   | 'enter_recipient_email'
   | 'no_records'
   | 'export_failed'
+  | 'invalid_email'
   | 'forbidden'
   | 'unknown';
 
@@ -94,6 +95,7 @@ export function getApiErrorMessage(
     enter_recipient_email: billing.enterRecipientEmail,
     no_records: exportCopy.noRecords,
     export_failed: exportCopy.exportFailed,
+    invalid_email: exportCopy.invalidEmail,
     forbidden: billing.permissionDenied
   };
 

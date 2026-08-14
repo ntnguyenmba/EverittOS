@@ -19,6 +19,8 @@ export type PdfReportInput = {
   pageLabel: string;
   privateLabel?: string;
   sections: PdfReportSection[];
+  /** Browser print dialog. Disable when attaching the HTML to email. */
+  autoPrint?: boolean;
 };
 
 export function buildPdfReportHtml(input: PdfReportInput): string {
@@ -93,11 +95,11 @@ export function buildPdfReportHtml(input: PdfReportInput): string {
   </header>
   ${sections}
   <div class="footer">${escapeHtml(input.pageLabel)}</div>
-  <script>
+  ${input.autoPrint === false ? '' : `<script>
     window.addEventListener('load', function () {
       setTimeout(function () { window.print(); }, 250);
     });
-  </script>
+  </script>`}
 </body>
 </html>`;
 }

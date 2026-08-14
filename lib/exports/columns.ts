@@ -108,6 +108,80 @@ export const CONTRACTOR_JOBS_COLUMNS = cols([
   ['payAmount', 'Pay amount']
 ]);
 
+export const EXPENSES_EXPORT_COLUMNS = cols([
+  ['date', 'Date'],
+  ['category', 'Category'],
+  ['vendor', 'Vendor'],
+  ['description', 'Description'],
+  ['amount', 'Amount'],
+  ['paymentMethod', 'Payment method'],
+  ['jobTitle', 'Job'],
+  ['customerName', 'Customer'],
+  ['workerName', 'Worker'],
+  ['notes', 'Notes']
+]);
+
+export const CUSTOMERS_EXPORT_COLUMNS = cols([
+  ['name', 'Name'],
+  ['phone', 'Phone'],
+  ['email', 'Email'],
+  ['address', 'Address'],
+  ['stage', 'Stage'],
+  ['source', 'Source'],
+  ['notes', 'Notes'],
+  ['createdDate', 'Created date'],
+  ['updatedDate', 'Updated date']
+]);
+
+export const INVOICES_EXPORT_COLUMNS = cols([
+  ['invoiceDate', 'Invoice date'],
+  ['dueDate', 'Due date'],
+  ['customerName', 'Customer'],
+  ['jobTitle', 'Job'],
+  ['amount', 'Amount'],
+  ['amountPaid', 'Amount paid'],
+  ['balanceDue', 'Balance due'],
+  ['status', 'Status'],
+  ['paymentStatus', 'Payment status'],
+  ['description', 'Description']
+]);
+
+export const PAYMENTS_EXPORT_COLUMNS = cols([
+  ['paidAt', 'Paid date'],
+  ['source', 'Source'],
+  ['amount', 'Amount'],
+  ['paymentMethod', 'Payment method'],
+  ['paymentReference', 'Reference'],
+  ['customerName', 'Customer'],
+  ['jobTitle', 'Job'],
+  ['notes', 'Notes']
+]);
+
+export const CONTRACTOR_PAY_EXPORT_COLUMNS = cols([
+  ['workerName', 'Worker'],
+  ['jobTitle', 'Job'],
+  ['customerName', 'Customer'],
+  ['hours', 'Hours'],
+  ['hourlyCost', 'Hourly cost'],
+  ['totalCost', 'Amount'],
+  ['paymentStatus', 'Pay status'],
+  ['paidAt', 'Paid date'],
+  ['paymentMethod', 'Payment method'],
+  ['paymentReference', 'Reference']
+]);
+
+export const DASHBOARD_EXPORT_COLUMNS = cols([
+  ['metric', 'Metric'],
+  ['amount', 'Amount']
+]);
+
+export const DASHBOARD_DETAILS_EXPORT_COLUMNS = cols([
+  ['section', 'Section'],
+  ['title', 'Title'],
+  ['details', 'Details'],
+  ['amount', 'Amount']
+]);
+
 export function ownerJobsColumns(includeFinance: boolean): ExportColumnDef[] {
   return includeFinance ? OWNER_JOBS_FINANCIAL_COLUMNS : OWNER_JOBS_OPERATIONAL_COLUMNS;
 }

@@ -127,7 +127,7 @@ describe('role-based exports', () => {
   });
 
   it('unauthorized team export route returns 403', () => {
-    const source = readFileSync('app/api/exports/team/route.ts', 'utf8');
+    const source = readFileSync('lib/exports/resolve-export.ts', 'utf8');
     assert.match(source, /canViewTeam/);
     assert.match(source, /status: 403/);
     assert.match(source, /privateCompanyRecord|privateLabel/);
@@ -200,20 +200,23 @@ describe('role-based exports', () => {
   });
 
   it('export with no rows returns a clear response', () => {
+    const prepared = readFileSync('lib/exports/prepared.ts', 'utf8');
+    assert.match(prepared, /no_records/);
+    assert.match(prepared, /422/);
     for (const path of [
       'app/api/exports/jobs/route.ts',
       'app/api/exports/team/route.ts',
       'app/api/exports/portal/client/jobs/route.ts',
-      'app/api/exports/portal/contractor/jobs/route.ts'
+      'app/api/exports/portal/contractor/jobs/route.ts',
+      'app/api/exports/expenses/route.ts'
     ]) {
       const source = readFileSync(path, 'utf8');
-      assert.match(source, /no_records/);
-      assert.match(source, /422/);
+      assert.match(source, /exportGetResponse/);
     }
   });
 
   it('customer cannot alter query parameters to access another customer', () => {
-    const source = readFileSync('app/api/exports/portal/client/jobs/route.ts', 'utf8');
+    const source = readFileSync('lib/exports/resolve-export.ts', 'utf8');
     assert.match(source, /loadClientPortalJobsExport/);
     assert.doesNotMatch(source, /customerId|clientId|userId=.*searchParams/);
     const loader = readFileSync('lib/exports/portal-export-data.ts', 'utf8');
@@ -223,12 +226,13 @@ describe('role-based exports', () => {
   });
 
   it('contractor cannot alter query parameters to access another contractor', () => {
-    const source = readFileSync('app/api/exports/portal/contractor/jobs/route.ts', 'utf8');
+    const source = readFileSync('lib/exports/resolve-export.ts', 'utf8');
     assert.match(source, /loadContractorPortalJobsExport/);
-    assert.doesNotMatch(source, /workerId|contractorId/);
     const loader = readFileSync('lib/exports/portal-export-data.ts', 'utf8');
     assert.match(loader, /auth_user_id', input\.userId/);
     assert.match(loader, /isJobAssignedToWorker/);
+    const resources = readFileSync('lib/exports/resources.ts', 'utf8');
+    assert.match(resources, /'portal-contractor-jobs': \[\]/);
   });
 
   it('organization isolation is enforced for owner jobs and team exports', () => {
@@ -245,6 +249,8 @@ describe('role-based exports', () => {
     assert.match(menu, /ExportMenu/);
     assert.match(menu, /preparingExport|busy/);
     assert.match(menu, /downloadExportFromApi/);
+    assert.match(menu, /shareByEmail/);
+    assert.match(menu, /\/api\/exports\/share/);
 
     const page = readFileSync('app/jobs/page.tsx', 'utf8');
     assert.match(page, /jobs-shell-minimal/);
@@ -306,6 +312,10 @@ describe('role-based exports', () => {
     assert.notEqual(vi.noRecords, en.noRecords);
     assert.equal(es.privateCompanyRecord.includes('Private'), false);
     assert.equal(vi.privateCompanyRecord.includes('Private'), false);
+    assert.equal(es.shareByEmail.includes('Share'), false);
+    assert.equal(vi.shareByEmail.includes('Share'), false);
+    assert.notEqual(es.shareSent, en.shareSent);
+    assert.notEqual(vi.invalidEmail, en.invalidEmail);
   });
 
   it('portal and team pages wire export menus', () => {

@@ -89,7 +89,7 @@ export async function loadTeamExportData(input: {
 
   const { data: workers } = await db
     .from('workers')
-    .select('id, auth_user_id, email')
+    .select('id, auth_user_id, email, name, created_at, active, contractor_classification')
     .eq('organization_id', organizationId);
 
   const workerIdsByUser = new Map<string, string[]>();
@@ -220,6 +220,48 @@ export async function loadTeamExportData(input: {
       completedJobCount: 0,
       currentActiveJobCount: 0
     });
+  }
+
+  const memberUserIds = new Set(userIds);
+  const emailsInExport = new Set(rows.map((row) => String(row.email).toLowerCase()).filter(Boolean));
+  for (const worker of workers || []) {
+    const authUserId = worker.auth_user_id ? String(worker.auth_user_id) : '';
+    if (authUserId && memberUserIds.has(authUserId)) continue;
+    const email = String(worker.email || '').trim();
+    if (email && emailsInExport.has(email.toLowerCase())) continue;
+    const workerId = String(worker.id || '');
+    let assignedJobCount = 0;
+    let completedJobCount = 0;
+    let currentActiveJobCount = 0;
+    for (const job of jobs || []) {
+      if (String(job.assigned_to || '') !== workerId) continue;
+      assignedJobCount += 1;
+      const normalized = normalizeJobStatus(job.status as string);
+      if (normalized === 'completed') completedJobCount += 1;
+      else if (jobIsActive(job.status as string)) currentActiveJobCount += 1;
+    }
+    for (const row of assignments || []) {
+      if (String(row.worker_id || '') !== workerId) continue;
+      const job = jobById.get(String(row.job_id || ''));
+      if (!job) continue;
+      assignedJobCount += 1;
+      const normalized = normalizeJobStatus(job.status as string);
+      if (normalized === 'completed') completedJobCount += 1;
+      else if (jobIsActive(job.status as string)) currentActiveJobCount += 1;
+    }
+    rows.push({
+      memberName: displayPersonName(worker.name as string | null, email),
+      email,
+      role: String(worker.contractor_classification || 'contractor'),
+      accountStatus: worker.active === false ? 'inactive' : 'active',
+      invitationStatus: 'worker',
+      joinedDate: formatExportDateTime(worker.created_at as string | null),
+      lastActiveDate: '',
+      assignedJobCount,
+      completedJobCount,
+      currentActiveJobCount
+    });
+    if (email) emailsInExport.add(email.toLowerCase());
   }
 
   return {

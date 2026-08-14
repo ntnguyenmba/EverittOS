@@ -3,9 +3,12 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { OutboundHub } from '@/components/outbound/outbound-hub';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { getBillingOpsCopy } from '@/lib/i18n/billing-ops-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
@@ -16,6 +19,8 @@ function ReceiptsPageContent() {
   const searchParams = useSearchParams();
   const { locale } = useTranslation();
   const billingCopy = getBillingOpsCopy(locale);
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const invoiceId = searchParams.get('invoiceId') || '';
   const paymentId = searchParams.get('paymentId') || '';
   const jobId = searchParams.get('jobId') || '';
@@ -44,8 +49,21 @@ function ReceiptsPageContent() {
   return (
     <AppShell plan={plan} role={role}>
       <header className="page-header">
-        <h1>{billingCopy.paymentReceipt}</h1>
-        <p className="page-subtitle">{billingCopy.receiptsSubtitle}</p>
+        <div>
+          <h1>{billingCopy.paymentReceipt}</h1>
+          <p className="page-subtitle">{billingCopy.receiptsSubtitle}</p>
+        </div>
+        {canManage ? (
+          <ExportMenu
+            endpoint="/api/exports/payments"
+            query={{ jobId, customerId, invoiceId }}
+            locale={locale}
+            onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+            onSuccess={(format) => {
+              if (format === 'share') appFeedback.success(exportCopy.shareSent);
+            }}
+          />
+        ) : null}
       </header>
 
       <OutboundHub

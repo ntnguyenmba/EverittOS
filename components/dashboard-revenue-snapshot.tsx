@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ExportMenu } from '@/components/export-menu';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import {
   calculateJobRevenue,
@@ -14,6 +16,7 @@ import {
   type DashboardRevenueMetrics
 } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -74,6 +77,8 @@ const copy = {
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { locale } = useTranslation();
   const c = copy[locale];
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const [range, setRange] = useState<DashboardDateRange>('month');
   const [activeMetrics, setActiveMetrics] = useState(metrics);
   const [rangeLoading, setRangeLoading] = useState(false);
@@ -176,11 +181,21 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     <section aria-label={c.dashboard} aria-busy={busy}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
         <strong>{c.dashboard}</strong>
-        <div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="sr-only" htmlFor="dashboard-period">{c.period}</label>
           <select id="dashboard-period" className="input" value={range} disabled={busy} onChange={(event) => setRange(event.target.value as DashboardDateRange)} style={{ width: 'auto', minWidth: 140 }}>
             {rangeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
           </select>
+          <ExportMenu
+            endpoint="/api/exports/dashboard"
+            query={{ range }}
+            locale={locale}
+            disabled={busy}
+            onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+            onSuccess={(format) => {
+              if (format === 'share') appFeedback.success(exportCopy.shareSent);
+            }}
+          />
         </div>
       </div>
 

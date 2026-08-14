@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
+import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { contractorJobDetailPath } from '@/lib/contractor-job-access';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { supabase } from '@/lib/supabase';
 import { performClientLogout } from '@/lib/client-logout';
 
@@ -103,9 +105,12 @@ export default function ContractorPortalPage() {
   const router = useRouter();
   const { locale } = useTranslation();
   const c = copy[locale] || copy.en;
+  const exportCopy = getExportCopy(locale);
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState('');
+  const [exportError, setExportError] = useState('');
+  const [exportNotice, setExportNotice] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [totals, setTotals] = useState<PortalTotals>({
@@ -218,9 +223,25 @@ export default function ContractorPortalPage() {
           <a className="btn" href="#schedule">{c.schedule}</a>
           <a className="btn" href="#earnings">{c.earnings}</a>
           <Link className="btn" href="/portal/contractor/settings">{c.settings}</Link>
+          <ExportMenu
+            endpoint="/api/exports/portal/contractor/jobs"
+            locale={locale}
+            labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
+            disabled={state === 'loading'}
+            onError={(message) => {
+              setExportNotice('');
+              setExportError(message || exportCopy.exportFailed);
+            }}
+            onSuccess={(format) => {
+              setExportError('');
+              setExportNotice(format === 'share' ? exportCopy.shareSent : '');
+            }}
+          />
           <button type="button" className="btn contractor-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
         </nav>
       </header>
+      {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
+      {exportNotice ? <p className="muted">{exportNotice}</p> : null}
 
       {state === 'loading' ? <section className="card" aria-live="polite"><h3 style={{ marginTop: 0 }}>{c.loadingTitle}</h3><p className="muted">{c.loadingBody}</p></section> : null}
 

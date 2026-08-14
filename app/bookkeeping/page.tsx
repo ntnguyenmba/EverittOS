@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { PageHeader } from '@/components/page-header';
+import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { fetchDashboardMetricDetails, type DashboardDetailResult, type DashboardDetailRow } from '@/lib/dashboard-metric-details';
 import { formatCurrency, type DashboardDateRange } from '@/lib/dashboard-metrics';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
@@ -90,6 +93,8 @@ export default function BookkeepingPage() {
   const router = useRouter();
   const { locale } = useTranslation();
   const c = copy[locale];
+  const exportCopy = getExportCopy(locale);
+  const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [range, setRange] = useState<DashboardDateRange>('year');
@@ -155,7 +160,22 @@ export default function BookkeepingPage() {
   return (
     <AppShell plan={plan} role={role}>
       <div className="today-page">
-        <PageHeader title={c.title} subtitle={c.subtitle} />
+        <PageHeader
+          title={c.title}
+          subtitle={c.subtitle}
+          action={
+            <ExportMenu
+              endpoint="/api/exports/bookkeeping"
+              query={{ range }}
+              locale={locale}
+              disabled={loading}
+              onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+              onSuccess={(format) => {
+                if (format === 'share') appFeedback.success(exportCopy.shareSent);
+              }}
+            />
+          }
+        />
 
         <div className="inline-actions" style={{ marginBottom: 18, gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className={range === 'year' ? 'btn btn-primary' : 'btn'} onClick={() => setRange('year')}>{c.thisYear}</button>

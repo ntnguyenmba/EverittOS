@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials } from '@/lib/finance-access';
@@ -11,6 +12,7 @@ import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/contractor-cost';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +53,7 @@ function paymentCountLabel(count: number) {
 function ContractorPayContent() {
   const { locale } = useTranslation();
   const copy = getDashboardFinanceCopy(locale).contractorPayPage;
+  const exportCopy = getExportCopy(locale);
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedFilter = searchParams.get('status');
@@ -273,7 +276,24 @@ function ContractorPayContent() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <PageHeader title={copy.title} subtitle={copy.subtitle} />
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        action={
+          canManage ? (
+            <ExportMenu
+              endpoint="/api/exports/contractor-pay"
+              query={{ status: filter, jobId: jobIdFilter }}
+              locale={locale}
+              disabled={loading}
+              onError={(message) => setMessage(message || exportCopy.exportFailed)}
+              onSuccess={(format) => {
+                if (format === 'share') setMessage(exportCopy.shareSent);
+              }}
+            />
+          ) : undefined
+        }
+      />
       <p className="muted" style={{ marginTop: -8, marginBottom: 16 }}>
         {copy.privacyNotice}
       </p>

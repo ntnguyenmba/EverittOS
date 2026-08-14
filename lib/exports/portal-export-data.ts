@@ -13,6 +13,7 @@ import {
   formatExportMoney,
   formatExportTime
 } from '@/lib/exports/format';
+import { getJobOperationalDate } from '@/lib/job-operational-date';
 import { getEffectiveJobSchedule, isJobAssignedToWorker, normalizeJobStatus } from '@/lib/worker-assignment';
 
 export type PortalExportRow = Record<string, string | number>;
@@ -42,10 +43,23 @@ async function selectInChunks<T>(
   return out;
 }
 
+function clientPortalRangeBounds(range: string): { start: string; end: string } | null {
+  if (range !== 'today' && range !== 'week' && range !== 'month' && range !== 'year') return null;
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  if (range === 'today') end.setDate(end.getDate() + 1);
+  if (range === 'week') end.setDate(end.getDate() + 7);
+  if (range === 'month') end.setMonth(end.getMonth() + 1);
+  if (range === 'year') end.setFullYear(end.getFullYear() + 1);
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
+
 export async function loadClientPortalJobsExport(input: {
   supabase: SupabaseClient;
   admin: SupabaseClient;
   userId: string;
+  range?: string | null;
 }): Promise<{ ok: true; data: PortalExportResult } | { ok: false; error: string; status: number }> {
   const { data: accessRows, error: accessError } = await input.admin
     .from('job_client_access')
@@ -158,9 +172,17 @@ export async function loadClientPortalJobsExport(input: {
     invoiceByJob.set(invoice.job_id, invoice);
   }
 
-  const companyName = orgNameById.get(jobs[0]?.organization_id || '') || 'EverittOS';
+  const bounds = clientPortalRangeBounds(String(input.range || '').toLowerCase());
+  const scopedJobs = bounds
+    ? jobs.filter((job) => {
+        const date = getJobOperationalDate(job);
+        return Boolean(date && date >= bounds.start && date < bounds.end);
+      })
+    : jobs;
 
-  const rows: PortalExportRow[] = jobs.map((job) => {
+  const companyName = orgNameById.get(scopedJobs[0]?.organization_id || jobs[0]?.organization_id || '') || 'EverittOS';
+
+  const rows: PortalExportRow[] = scopedJobs.map((job) => {
     const tz = job.timezone;
     const invoice = invoiceByJob.get(job.id);
     const total = num(invoice?.amount);
@@ -193,7 +215,7 @@ export async function loadClientPortalJobsExport(input: {
     data: {
       rows,
       summary: { jobCount: rows.length },
-      appliedFilters: ['Shared jobs'],
+      appliedFilters: bounds ? ['Shared jobs', `range=${String(input.range || '')}`] : ['Shared jobs'],
       companyName
     }
   };

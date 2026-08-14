@@ -303,7 +303,7 @@ function JobsList() {
   return (
     <AppShell plan={plan} role={role} className="jobs-shell-minimal">
       <div className="jobs-list-page">
-        <PageHeader title={t('nav.jobs')} action={<div className="jobs-header-actions">{managerView ? <Link className="btn btn-secondary" href="/jobs/duplicate-cleanup">{t('pages.duplicateCleanup.findDuplicates')}</Link> : null}{canExport ? <ExportMenu endpoint="/api/exports/jobs" query={exportQuery} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} /> : null}<Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link></div>} />
+        <PageHeader title={t('nav.jobs')} action={<div className="jobs-header-actions">{managerView ? <Link className="btn btn-secondary" href="/jobs/duplicate-cleanup">{t('pages.duplicateCleanup.findDuplicates')}</Link> : null}{canExport ? <ExportMenu endpoint="/api/exports/jobs" query={exportQuery} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} /> : null}<Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link></div>} />
 
         <div className="jobs-filter-tabs" aria-label="Job status filters">
           <Link href="/jobs" className={filterTabClass(activeAll)} aria-current={activeAll ? 'page' : undefined}>{c.all}</Link>

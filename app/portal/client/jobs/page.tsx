@@ -254,11 +254,12 @@ export default function ClientPortalJobsPage() {
         </div>
         <ExportMenu
           endpoint="/api/exports/portal/client/jobs"
+          query={{ range }}
           locale={locale}
           labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
           disabled={loading || Boolean(message)}
           onError={(err) => setExportError(err || exportCopy.exportFailed)}
-          onSuccess={() => setExportError('')}
+          onSuccess={(format) => setExportError(format === 'share' ? '' : '')}
         />
       </div>
 

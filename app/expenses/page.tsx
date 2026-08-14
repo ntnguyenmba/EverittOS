@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
+import { ExportMenu } from '@/components/export-menu';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { FEEDBACK } from '@/lib/feedback-labels';
@@ -12,6 +13,7 @@ import { canAccessFinancials, FINANCIAL_TRACKING_MIN_PLAN } from '@/lib/finance-
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OPTIONS, type ExpenseCategory, type ExpenseRecord } from '@/lib/finance-types';
 import { formatCurrency } from '@/lib/finance-format';
 import { formatExpensesCopy, getExpensesPageCopy } from '@/lib/i18n/expenses-copy';
+import { getExportCopy } from '@/lib/i18n/export-copy';
 import { billingUpgradeHref } from '@/lib/nav-access';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, planDisplayName, type EverittosPlan } from '@/lib/everittos-plans';
@@ -43,6 +45,7 @@ function ExpensesContent() {
   const appFeedback = useAppFeedback();
   const { locale } = useTranslation();
   const copy = getExpensesPageCopy(locale);
+  const exportCopy = getExportCopy(locale);
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [expenses, setExpenses] = useState<ExpenseView[]>([]);
@@ -288,11 +291,31 @@ function ExpensesContent() {
         title={copy.title}
         subtitle={copy.subtitle}
         action={
-          canManage ? (
-            <button type="button" className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-              {showForm ? copy.close : copy.addExpense}
-            </button>
-          ) : undefined
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <ExportMenu
+              endpoint="/api/exports/expenses"
+              query={{
+                from: filterFrom,
+                to: filterTo,
+                category: filterCategory,
+                jobId: filterJobId,
+                customerId: filterCustomerId,
+                workerId: filterWorkerId,
+                q: filterSearch
+              }}
+              locale={locale}
+              disabled={loading}
+              onError={(message) => appFeedback.error(message || exportCopy.exportFailed)}
+              onSuccess={(format) => {
+                if (format === 'share') appFeedback.success(exportCopy.shareSent);
+              }}
+            />
+            {canManage ? (
+              <button type="button" className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
+                {showForm ? copy.close : copy.addExpense}
+              </button>
+            ) : null}
+          </div>
         }
       />
 
