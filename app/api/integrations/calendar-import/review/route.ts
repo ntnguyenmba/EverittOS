@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getPrimaryCalendarImportConnection } from '@/lib/calendar-import/connections';
+import { getPrimaryCalendarImportConnection, updateCalendarImportSyncState } from '@/lib/calendar-import/connections';
 import { fetchPublicCalendarFeed } from '@/lib/calendar-import/feed-security';
 import { looksLikeIcsCalendar, parseIcsCalendar } from '@/lib/calendar-import/ical-parser';
-import { isPossibleExistingJob, normalizeCalendarTitle, wallClockTime } from '@/lib/calendar-import/matching';
+import { isPossibleExistingJob, normalizeCalendarTitle } from '@/lib/calendar-import/matching';
 import { CALENDAR_IMPORT_NO_CACHE, requireCalendarImportManager } from '@/lib/calendar-import/request-auth';
 import { normalizeJobScheduleTimestamp } from '@/lib/schedule-times';
 import { DEFAULT_TIME_ZONE } from '@/lib/time-zones';
@@ -74,14 +74,22 @@ export async function GET() {
   if (!auth.ok) return auth.response;
 
   try {
-    const connection = await getPrimaryCalendarImportConnection(auth.admin, auth.org.organizationId, { includeFeedUrl: true });
+    const connection = await getPrimaryCalendarImportConnection(auth.admin, auth.org.organizationId, {
+      includeFeedUrl: true
+    });
     if (!connection?.feed_url) {
-      return NextResponse.json({ error: 'Calendar import is not connected.' }, { status: 404, headers: CALENDAR_IMPORT_NO_CACHE });
+      return NextResponse.json(
+        { error: 'Calendar import is not connected.' },
+        { status: 404, headers: CALENDAR_IMPORT_NO_CACHE }
+      );
     }
 
     const feed = await fetchPublicCalendarFeed(connection.feed_url);
     if (!looksLikeIcsCalendar(feed.body)) {
-      return NextResponse.json({ error: 'The URL did not return a calendar feed.' }, { status: 422, headers: CALENDAR_IMPORT_NO_CACHE });
+      return NextResponse.json(
+        { error: 'The URL did not return a calendar feed.' },
+        { status: 422, headers: CALENDAR_IMPORT_NO_CACHE }
+      );
     }
 
     const timezoneResult = await auth.admin
@@ -90,10 +98,19 @@ export async function GET() {
       .eq('organization_id', auth.org.organizationId)
       .maybeSingle();
     const timezone = timezoneResult.data?.timezone || DEFAULT_TIME_ZONE;
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-    const events = parseIcsCalendar(feed.body, timezone).filter((event) => event.uid && relevantEvent(event, today)).slice(0, 100);
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+    const events = parseIcsCalendar(feed.body, timezone)
+      .filter((event) => event.uid && relevantEvent(event, today))
+      .slice(0, 100);
     const uids = events.map((event) => event.uid);
-    const dates = Array.from(new Set(events.map((event) => event.startDate).filter((value): value is string => Boolean(value))));
+    const dates = Array.from(
+      new Set(events.map((event) => event.startDate).filter((value): value is string => Boolean(value)))
+    );
 
     const importedResult = uids.length
       ? await auth.admin
@@ -151,11 +168,31 @@ export async function GET() {
       };
     });
 
-    const order: Record<ReviewKind, number> = { changed: 0, cancelled: 1, new: 2, possible_match: 3, no_change: 4 };
-    items.sort((a, b) => order[a.kind] - order[b.kind] || String(a.start || '').localeCompare(String(b.start || '')) || normalizeCalendarTitle(a.title).localeCompare(normalizeCalendarTitle(b.title)));
+    const order: Record<ReviewKind, number> = {
+      changed: 0,
+      cancelled: 1,
+      new: 2,
+      possible_match: 3,
+      no_change: 4
+    };
+    items.sort(
+      (a, b) =>
+        order[a.kind] - order[b.kind] ||
+        String(a.start || '').localeCompare(String(b.start || '')) ||
+        normalizeCalendarTitle(a.title).localeCompare(normalizeCalendarTitle(b.title))
+    );
+
+    // A successful review proves the feed is readable and the review workflow is working.
+    // Clear stale errors left by the old auto-import behavior without changing last_sync_at.
+    if (connection.last_sync_error) {
+      await updateCalendarImportSyncState(auth.admin, connection.id, { last_sync_error: null });
+    }
 
     return NextResponse.json({ connected: true, items }, { headers: CALENDAR_IMPORT_NO_CACHE });
   } catch {
-    return NextResponse.json({ error: 'Calendar changes could not be reviewed.' }, { status: 502, headers: CALENDAR_IMPORT_NO_CACHE });
+    return NextResponse.json(
+      { error: 'Calendar changes could not be reviewed.' },
+      { status: 502, headers: CALENDAR_IMPORT_NO_CACHE }
+    );
   }
 }
