@@ -27,13 +27,13 @@ import { normalizeJobStatus } from '@/lib/worker-assignment';
 
 const copy = {
   en: {
-    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', photo: 'photo', photos: 'photos', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', job: 'Job', address: 'Address', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Needs worker', amount: 'Amount', sortBy: 'Sort by', sortByAssigned: 'Assigned worker'
+    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', address: 'Address', assignedTo: 'Assigned to', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Unassigned', sortBy: 'Sort', sortByAssigned: 'Assigned worker', filters: 'Filter jobs', worker: 'Worker', allWorkers: 'All workers', client: 'Client', allClients: 'All clients', property: 'Property', allProperties: 'All properties', month: 'Month', allMonths: 'All months', year: 'Year', allYears: 'All years', clearFilters: 'Clear filters'
   },
   es: {
-    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', photo: 'foto', photos: 'fotos', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', job: 'Trabajo', address: 'Dirección', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Necesita trabajador', amount: 'Importe', sortBy: 'Ordenar por', sortByAssigned: 'Trabajador asignado'
+    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', address: 'Dirección', assignedTo: 'Asignado a', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Sin asignar', sortBy: 'Ordenar', sortByAssigned: 'Trabajador asignado', filters: 'Filtrar trabajos', worker: 'Trabajador', allWorkers: 'Todos los trabajadores', client: 'Cliente', allClients: 'Todos los clientes', property: 'Propiedad', allProperties: 'Todas las propiedades', month: 'Mes', allMonths: 'Todos los meses', year: 'Año', allYears: 'Todos los años', clearFilters: 'Borrar filtros'
   },
   vi: {
-    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', photo: 'ảnh', photos: 'ảnh', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', job: 'Công việc', address: 'Địa chỉ', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Cần nhân sự', amount: 'Số tiền', sortBy: 'Sắp xếp theo', sortByAssigned: 'Nhân sự được giao'
+    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', address: 'Địa chỉ', assignedTo: 'Phân công', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Chưa phân công', sortBy: 'Sắp xếp', sortByAssigned: 'Nhân sự được giao', filters: 'Lọc công việc', worker: 'Nhân sự', allWorkers: 'Tất cả nhân sự', client: 'Khách hàng', allClients: 'Tất cả khách hàng', property: 'Địa điểm', allProperties: 'Tất cả địa điểm', month: 'Tháng', allMonths: 'Tất cả tháng', year: 'Năm', allYears: 'Tất cả năm', clearFilters: 'Xóa bộ lọc'
   }
 } as const;
 
@@ -63,10 +63,7 @@ function formatDate(job: Job, locale: string, unscheduled: string) {
   const date = job.scheduled_start ? new Date(value) : new Date(`${value.slice(0, 10)}T12:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
     ...(job.scheduled_start && job.timezone ? { timeZone: job.timezone } : {})
   }).format(date);
 }
@@ -103,6 +100,13 @@ function jobListAddress(job: Pick<Job, 'address' | 'title'>) {
   return String(job.address || '').trim() || String(job.title || '').trim();
 }
 
+function jobDateValue(job: Job) {
+  const value = job.scheduled_start || job.start_date || job.due_date || job.created_at;
+  if (!value) return null;
+  const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function filterTabClass(active: boolean, alert = false) {
   return ['jobs-filter-tab', active ? 'jobs-filter-tab-active' : '', alert ? 'jobs-filter-tab-alert' : ''].filter(Boolean).join(' ');
 }
@@ -131,6 +135,11 @@ function JobsList() {
   const [duplicatingId, setDuplicatingId] = useState('');
   const [openMenuId, setOpenMenuId] = useState('');
   const [sortMode, setSortMode] = useState<JobListSortMode>('date');
+  const [workerFilter, setWorkerFilter] = useState(assignmentFilter === 'unassigned' ? '__unassigned__' : '');
+  const [clientFilter, setClientFilter] = useState('');
+  const [propertyFilter, setPropertyFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
   const loadingRef = useRef(false);
 
   const load = useCallback(async (silent = false) => {
@@ -212,12 +221,7 @@ function JobsList() {
     if (!window.confirm(c.removeConfirm.replace('{title}', job.title))) return;
     setRemovingId(job.id);
     const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
-    const json = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      message?: string;
-      deletedJobIds?: string[];
-      deletedJobCount?: number;
-    };
+    const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
     setRemovingId('');
     setOpenMenuId('');
     if (!res.ok) {
@@ -242,46 +246,88 @@ function JobsList() {
     router.push(json.redirectTo || `/jobs/${json.job.id}?confirmSchedule=1`);
   }
 
-  const filtered = Boolean(assignedToFilter || statusFilter || createdFromFilter || assignmentFilter || periodFilter);
   const managerView = isManagerRole(role);
   const canManageFinancials = canAccessFinancials(role, plan);
   const canExport = managerView;
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
-  const rows = useMemo(() => sortJobs(jobs, sortMode, workerNames, localeCode), [jobs, sortMode, workerNames, localeCode]);
+
+  const workerOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    jobs.forEach((job) => {
+      if (job.assigned_to) options.set(job.assigned_to, workerNames[job.assigned_to] || job.assigned_email || job.assigned_to);
+      else if (job.assigned_email) options.set(`email:${job.assigned_email}`, displayPersonName(null, job.assigned_email));
+    });
+    return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1], localeCode));
+  }, [jobs, workerNames, localeCode]);
+
+  const clientOptions = useMemo(() => [...new Set(jobs.map((job) => String(job.customer_name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, localeCode)), [jobs, localeCode]);
+  const propertyOptions = useMemo(() => [...new Set(jobs.map((job) => jobListAddress(job)).filter(Boolean))].sort((a, b) => a.localeCompare(b, localeCode)), [jobs, localeCode]);
+  const yearOptions = useMemo(() => [...new Set(jobs.map(jobDateValue).filter((d): d is Date => Boolean(d)).map((date) => String(date.getFullYear())))].sort((a, b) => Number(b) - Number(a)), [jobs]);
+
+  const filteredJobs = useMemo(() => jobs.filter((job) => {
+    if (workerFilter === '__unassigned__' && !jobNeedsWorker(job)) return false;
+    if (workerFilter && workerFilter !== '__unassigned__') {
+      const matchesWorker = workerFilter.startsWith('email:')
+        ? job.assigned_email === workerFilter.slice(6)
+        : job.assigned_to === workerFilter;
+      if (!matchesWorker) return false;
+    }
+    if (clientFilter && String(job.customer_name || '').trim() !== clientFilter) return false;
+    if (propertyFilter && jobListAddress(job) !== propertyFilter) return false;
+    const date = jobDateValue(job);
+    if (monthFilter && (!date || String(date.getMonth() + 1).padStart(2, '0') !== monthFilter)) return false;
+    if (yearFilter && (!date || String(date.getFullYear()) !== yearFilter)) return false;
+    return true;
+  }), [jobs, workerFilter, clientFilter, propertyFilter, monthFilter, yearFilter]);
+
+  const rows = useMemo(() => sortJobs(filteredJobs, sortMode, workerNames, localeCode), [filteredJobs, sortMode, workerNames, localeCode]);
+  const hasLocalFilters = Boolean(workerFilter || clientFilter || propertyFilter || monthFilter || yearFilter);
+  const filtered = Boolean(assignedToFilter || statusFilter || createdFromFilter || assignmentFilter || periodFilter || hasLocalFilters);
   const exportQuery = useMemo(() => ({ customer: customerFilter, status: statusFilter, period: periodFilter, filter: assignmentFilter, assigned_to: assignedToFilter, from: createdFromFilter }), [customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter]);
   const activeAll = !periodFilter && !statusFilter && assignmentFilter !== 'unassigned';
   const activeToday = periodFilter === 'today';
   const activeActive = statusFilter === 'active';
   const activeFinished = statusFilter === 'finished' || statusFilter === 'completed';
   const activeNeedsWorker = assignmentFilter === 'unassigned';
+
+  function clearLocalFilters() {
+    setWorkerFilter('');
+    setClientFilter('');
+    setPropertyFilter('');
+    setMonthFilter('');
+    setYearFilter('');
+  }
+
   function openJob(jobId: string) { router.push(`/jobs/${jobId}`); }
 
   return (
     <AppShell plan={plan} role={role} className="jobs-shell-minimal">
       <div className="jobs-list-page">
         <PageHeader title={t('nav.jobs')} action={<div className="jobs-header-actions">{managerView ? <Link className="btn btn-secondary" href="/jobs/duplicate-cleanup">{t('pages.duplicateCleanup.findDuplicates')}</Link> : null}{canExport ? <ExportMenu endpoint="/api/exports/jobs" query={exportQuery} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} /> : null}<Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link></div>} />
-        <div className="jobs-filter-bar">
-          <div className="jobs-filter-tabs" aria-label="Job filters">
-            <Link href="/jobs" className={filterTabClass(activeAll)} aria-current={activeAll ? 'page' : undefined}>{c.all}</Link>
-            <Link href="/jobs?period=today" className={filterTabClass(activeToday)} aria-current={activeToday ? 'page' : undefined}>{c.today}</Link>
-            <Link href="/jobs?status=active" className={filterTabClass(activeActive)} aria-current={activeActive ? 'page' : undefined}>{c.active}</Link>
-            <Link href="/jobs?status=finished" className={filterTabClass(activeFinished)} aria-current={activeFinished ? 'page' : undefined}>{c.finished}</Link>
-            {managerView ? <Link href="/jobs?filter=unassigned" className={filterTabClass(activeNeedsWorker, true)} aria-current={activeNeedsWorker ? 'page' : undefined}>{c.needsWorker}</Link> : null}
-          </div>
-          <label className="jobs-sort-control">
-            <span>{c.sortBy}</span>
-            <select
-              value={sortMode}
-              aria-label={c.sortBy}
-              onChange={(event) => setSortMode(event.target.value === 'assigned' ? 'assigned' : 'date')}
-            >
-              <option value="date">{c.date}</option>
-              <option value="assigned">{c.sortByAssigned}</option>
-            </select>
-          </label>
+
+        <div className="jobs-filter-tabs" aria-label="Job status filters">
+          <Link href="/jobs" className={filterTabClass(activeAll)} aria-current={activeAll ? 'page' : undefined}>{c.all}</Link>
+          <Link href="/jobs?period=today" className={filterTabClass(activeToday)} aria-current={activeToday ? 'page' : undefined}>{c.today}</Link>
+          <Link href="/jobs?status=active" className={filterTabClass(activeActive)} aria-current={activeActive ? 'page' : undefined}>{c.active}</Link>
+          <Link href="/jobs?status=finished" className={filterTabClass(activeFinished)} aria-current={activeFinished ? 'page' : undefined}>{c.finished}</Link>
+          {managerView ? <Link href="/jobs?filter=unassigned" className={filterTabClass(activeNeedsWorker, true)} aria-current={activeNeedsWorker ? 'page' : undefined}>{c.needsWorker}</Link> : null}
         </div>
-        {filtered ? <p className="muted" style={{ marginBottom: 12 }}>{c.filtered} · <Link href="/jobs">{c.showAll}</Link></p> : null}
-        {isAdminRole(role) && assignmentFilter === 'missing_completion_date' ? <p className="muted" style={{ marginBottom: 12 }}>{c.missingFinish}</p> : null}
+
+        <section className="jobs-advanced-filters" aria-label={c.filters}>
+          <div className="jobs-filter-heading">{c.filters}</div>
+          <div className="jobs-filter-grid">
+            <label className="jobs-filter-control"><span>{c.worker}</span><select value={workerFilter} onChange={(event) => setWorkerFilter(event.target.value)}><option value="">{c.allWorkers}</option><option value="__unassigned__">{c.unassigned}</option>{workerOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.client}</span><select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}><option value="">{c.allClients}</option>{clientOptions.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.property}</span><select value={propertyFilter} onChange={(event) => setPropertyFilter(event.target.value)}><option value="">{c.allProperties}</option>{propertyOptions.map((property) => <option key={property} value={property}>{property}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.month}</span><select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}><option value="">{c.allMonths}</option>{Array.from({ length: 12 }, (_, index) => { const value = String(index + 1).padStart(2, '0'); const label = new Intl.DateTimeFormat(localeCode, { month: 'long' }).format(new Date(2026, index, 1)); return <option key={value} value={value}>{label}</option>; })}</select></label>
+            <label className="jobs-filter-control"><span>{c.year}</span><select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="">{c.allYears}</option>{yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+            <label className="jobs-filter-control"><span>{c.sortBy}</span><select value={sortMode} onChange={(event) => setSortMode(event.target.value === 'assigned' ? 'assigned' : 'date')}><option value="date">{c.date}</option><option value="assigned">{c.sortByAssigned}</option></select></label>
+          </div>
+          {hasLocalFilters ? <button type="button" className="btn jobs-clear-filters" onClick={clearLocalFilters}>{c.clearFilters}</button> : null}
+        </section>
+
+        {filtered ? <p className="muted jobs-filter-summary">{c.filtered}{!hasLocalFilters ? <> · <Link href="/jobs">{c.showAll}</Link></> : null}</p> : null}
+        {isAdminRole(role) && assignmentFilter === 'missing_completion_date' ? <p className="muted jobs-filter-summary">{c.missingFinish}</p> : null}
         {loadError ? <p className="auth-message auth-message-error">{loadError}</p> : null}
         {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
         {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
