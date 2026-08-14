@@ -247,8 +247,8 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     schedule: 'Schedule',
     earnings: 'Earnings',
     settings: 'Settings',
-    navAria: 'Contractor navigation',
-    portalSubtitle: 'Contractor portal',
+    navAria: 'Worker navigation',
+    portalSubtitle: 'Worker portal',
     roleNote: 'Your assigned work, schedule, and earnings in one place.'
   },
   es: {
@@ -257,8 +257,8 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     schedule: 'Horario',
     earnings: 'Ganancias',
     settings: 'Configuración',
-    navAria: 'Navegación del contratista',
-    portalSubtitle: 'Portal del contratista',
+    navAria: 'Navegación del trabajador',
+    portalSubtitle: 'Portal del trabajador',
     roleNote: 'Su trabajo asignado, horario y ganancias en un solo lugar.'
   },
   vi: {
@@ -267,8 +267,8 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     schedule: 'Lịch',
     earnings: 'Thu nhập',
     settings: 'Cài đặt',
-    navAria: 'Điều hướng nhà thầu',
-    portalSubtitle: 'Cổng nhà thầu',
+    navAria: 'Điều hướng nhân viên',
+    portalSubtitle: 'Cổng nhân viên',
     roleNote: 'Công việc, lịch và thu nhập của bạn ở cùng một nơi.'
   }
 };
