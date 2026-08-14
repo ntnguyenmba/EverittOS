@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalClientNav } from '@/components/portal/portal-client-nav';
@@ -242,10 +241,10 @@ export default function ClientPortalJobsPage() {
     );
   }
 
-  if (loading) return <AuthenticatedSection role="client"><div className="card" role="status">{t('portal.client.loadingSharedJobs')}</div></AuthenticatedSection>;
+  if (loading) return <div className="client-portal-jobs"><div className="card" role="status">{t('portal.client.loadingSharedJobs')}</div></div>;
 
   return (
-    <AuthenticatedSection role="client" className="client-portal-jobs role-dashboard-minimal">
+    <div className="client-portal-jobs role-dashboard-minimal">
       <div className="role-dashboard-topbar">
         <div className="role-period-filter" aria-label={c.timePeriod}>
           {(['today', 'week', 'month', 'year', 'all'] as TimeRange[]).map((item) => (
@@ -278,6 +277,6 @@ export default function ClientPortalJobsPage() {
           {renderSection('history', c.past, groupedJobs.history, c.noCompleted)}
         </>
       )}
-    </AuthenticatedSection>
+    </div>
   );
 }
