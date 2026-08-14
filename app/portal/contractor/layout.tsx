@@ -59,10 +59,6 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
               </Link>
             ))}
           </nav>
-
-          <p className="contractor-role-note">
-            {c.roleNote}
-          </p>
         </div>
       </aside>
 
