@@ -186,6 +186,7 @@ export function CalendarImportPanel() {
   const [feedUrl, setFeedUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<'connect' | 'sync' | 'disconnect' | 'review' | ''>('');
+  const [applyingUid, setApplyingUid] = useState('');
   const [reviewItems, setReviewItems] = useState<ReviewItem[] | null>(null);
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
 
@@ -262,17 +263,18 @@ export function CalendarImportPanel() {
     setReviewItems((current) => current?.filter((item) => item.uid !== uid) || current);
   }
 
-  async function applySelected() {
-    if (selectedUids.size === 0) {
+  async function applyEventUids(eventUids: string[], singleUid = '') {
+    if (eventUids.length === 0) {
       feedback.error(c.selectOne);
       return;
     }
     setBusy('sync');
+    setApplyingUid(singleUid);
     try {
       const response = await fetch('/api/integrations/calendar-import/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventUids: Array.from(selectedUids) })
+        body: JSON.stringify({ eventUids })
       });
       const payload = (await response.json().catch(() => ({}))) as CalendarImportStatus;
       if (!response.ok) throw new Error(payload.error || t('pages.calendarImport.syncError'));
@@ -284,8 +286,13 @@ export function CalendarImportPanel() {
     } catch (error) {
       feedback.error(error instanceof Error ? error.message : t('pages.calendarImport.syncError'));
     } finally {
+      setApplyingUid('');
       setBusy('');
     }
+  }
+
+  async function applySelected() {
+    await applyEventUids(Array.from(selectedUids));
   }
 
   async function disconnect() {
@@ -362,7 +369,7 @@ export function CalendarImportPanel() {
             </button>
             {reviewItems !== null && selectedUids.size > 0 ? (
               <button className="btn" type="button" disabled={busy !== ''} onClick={() => void applySelected()}>
-                {busy === 'sync' ? c.applying : `${c.apply} (${selectedUids.size})`}
+                {busy === 'sync' && !applyingUid ? c.applying : `${c.apply} (${selectedUids.size})`}
               </button>
             ) : null}
             <button className="btn" type="button" disabled={busy !== ''} onClick={() => void disconnect()}>
@@ -396,7 +403,11 @@ export function CalendarImportPanel() {
                     ) : null}
                     {item.kind === 'possible_match' ? <p className="muted" style={{ marginTop: 8 }}>{c.possibleHelp}</p> : null}
                     <div className="inline-actions" style={{ marginTop: 10 }}>
-                      {item.kind !== 'possible_match' ? (
+                      {item.kind === 'new' ? (
+                        <button className="btn btn-primary" type="button" disabled={busy !== ''} onClick={() => void applyEventUids([item.uid], item.uid)}>
+                          {applyingUid === item.uid ? c.applying : c.add}
+                        </button>
+                      ) : item.kind !== 'possible_match' ? (
                         <button className={selected ? 'btn btn-primary' : 'btn'} type="button" disabled={busy !== ''} onClick={() => selectItem(item.uid)}>
                           {selected ? c.selected : actionLabel}
                         </button>
