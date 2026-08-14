@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { AppFooter } from '@/components/app-footer';
+import { OrgSwitcher } from '@/components/org-switcher';
 import { LOCALE_COOKIE_NAME, normalizeLocale, type Locale } from '@/lib/i18n/config';
 import '../contractor/contractor-minimal.css';
 
@@ -57,9 +58,12 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
         <Link className="contractor-mobile-brand" href="/portal/client/jobs">
           EverittOS
         </Link>
-        <Link className="btn" href="/portal/client/settings">
-          {c.settings}
-        </Link>
+        <div className="portal-header-actions">
+          <OrgSwitcher />
+          <Link className="btn" href="/portal/client/settings">
+            {c.settings}
+          </Link>
+        </div>
       </div>
 
       <aside className="sidebar contractor-sidebar" aria-label={c.navAria}>
@@ -71,6 +75,8 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
               <small>{c.subtitle}</small>
             </span>
           </Link>
+
+          <OrgSwitcher />
 
           <nav className="contractor-nav">
             {clientLinks.map((item) => (
