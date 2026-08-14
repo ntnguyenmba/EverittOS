@@ -198,7 +198,31 @@
   white-space: nowrap !important;
 }
 
-/* Owner finance cards use plain-language labels. */
+/* Owner finance cards use plain-language labels and a two-column finance layout. */
+.jobs-owner-finance-row {
+  grid-template-areas:
+    'job date'
+    'client profit'
+    'worker status' !important;
+}
+
+.jobs-owner-finance-row > .jobs-col-customer-pay {
+  grid-area: client !important;
+  align-self: end !important;
+}
+
+.jobs-owner-finance-row > .jobs-col-contractor-pay {
+  grid-area: worker !important;
+  align-self: start !important;
+}
+
+.jobs-owner-finance-row > .jobs-col-owner-profit {
+  grid-area: profit !important;
+  align-self: end !important;
+  justify-self: end !important;
+  text-align: right !important;
+}
+
 .jobs-owner-finance-row .jobs-col-customer-pay .jobs-money-label,
 .jobs-owner-finance-row .jobs-col-contractor-pay .jobs-money-label {
   font-size: 0 !important;
@@ -235,6 +259,21 @@
     gap: 12px !important;
     min-height: 0 !important;
     padding: 18px !important;
+  }
+
+  .jobs-operations-table tbody > .jobs-owner-finance-row {
+    grid-template-areas:
+      'job'
+      'date'
+      'client'
+      'worker'
+      'profit'
+      'status' !important;
+  }
+
+  .jobs-owner-finance-row > .jobs-col-owner-profit {
+    justify-self: start !important;
+    text-align: left !important;
   }
 
   .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-date {
