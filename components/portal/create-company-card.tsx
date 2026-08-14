@@ -73,7 +73,7 @@ export function CreateCompanyCard({ variant: _variant }: CreateCompanyCardProps)
   if (checkingCompany || hasOwnedCompany) return null;
 
   return (
-    <div className="settings-card">
+    <div id="create-company" className="settings-card portal-create-company-card">
       <p className="muted" style={{ marginBottom: 4 }}>{t('ux.appName')}</p>
       <h3>{c.title}</h3>
       <p className="muted">{c.body}</p>
