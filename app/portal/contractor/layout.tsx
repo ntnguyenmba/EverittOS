@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { AppFooter } from '@/components/app-footer';
 import { OrgSwitcher } from '@/components/org-switcher';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { PortalShellNav } from '@/components/portal/portal-shell-nav';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import { getContractorLayoutCopy } from '@/lib/i18n/ui-chrome-copy';
@@ -35,6 +36,7 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
         </Link>
         <div className="portal-header-actions">
           <OrgSwitcher />
+          <LanguageSwitcher id="portal-mobile-language" variant="compact" className="portal-language-switcher" />
           <Link className="btn" href="/portal/contractor/settings">
             {c.settings}
           </Link>
@@ -52,6 +54,7 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
           </Link>
 
           <OrgSwitcher />
+          <LanguageSwitcher id="portal-sidebar-language" variant="drawer" className="portal-language-switcher" />
 
           <PortalShellNav links={contractorLinks} />
         </div>
