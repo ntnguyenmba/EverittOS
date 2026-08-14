@@ -118,7 +118,7 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
   }
 
   return (
-    <div className="app-page-top app-page-top-branded">
+    <div className={`app-page-top app-page-top-branded${normalizedRole === 'owner' ? ' app-page-top-owner' : ''}`}>
       <BrandLogo href={homeHref} size={34} showName className="app-page-brand" />
       <div className="app-page-top-workspace">
         <OrgSwitcher />
@@ -166,6 +166,31 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
           margin-left: auto;
         }
 
+        .app-page-top-owner .app-page-top-workspace {
+          max-width: 100%;
+          flex-wrap: nowrap;
+        }
+
+        .app-page-top-owner .org-switcher {
+          flex: 1 1 220px;
+          min-width: 0;
+          max-width: 280px;
+          margin-left: 0;
+          flex-wrap: nowrap;
+        }
+
+        .app-page-top-owner .org-switcher-label {
+          display: none;
+        }
+
+        .app-page-top-owner .org-switcher-select {
+          width: 100%;
+          min-width: 0;
+          max-width: 280px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+
         /* AppShell already shows the brand in its sidebar or mobile navigation. */
         .dashboard-shell .app-page-brand {
           display: none;
@@ -187,6 +212,14 @@ export function AppPageTop({ role, showBackButton = true }: AppPageTopProps) {
 
           .app-page-top-workspace {
             gap: 8px;
+          }
+
+          .app-page-top-owner .org-switcher {
+            max-width: min(220px, calc(100vw - 92px));
+          }
+
+          .app-page-top-owner .org-switcher-select {
+            max-width: 100%;
           }
         }
       `}</style>
