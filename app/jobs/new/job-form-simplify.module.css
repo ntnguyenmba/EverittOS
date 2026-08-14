@@ -44,7 +44,8 @@
 
 .formWrap :global(.job-customer-mode button[aria-pressed='true']) {
   background: #243f53;
-  color: #fff;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
   border-color: #243f53;
 }
 
