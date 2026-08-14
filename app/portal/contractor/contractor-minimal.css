@@ -887,3 +887,43 @@
     width: 5px;
   }
 }
+
+
+/* Compact shared worker and client portal navigation. */
+@media (min-width: 761px) {
+  .contractor-dashboard-shell,
+  .client-dashboard-shell {
+    grid-template-columns: 224px minmax(0, 1fr) !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-sidebar,
+  .client-dashboard-shell > .contractor-sidebar {
+    width: 224px !important;
+    min-width: 224px !important;
+    max-width: 224px !important;
+    padding-inline: 12px !important;
+  }
+}
+
+.contractor-sidebar .contractor-nav a,
+.client-dashboard-shell .contractor-nav a {
+  min-height: 40px !important;
+  padding: 9px 10px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  white-space: normal !important;
+}
+
+.contractor-sidebar .contractor-nav a[aria-current='page'],
+.client-dashboard-shell .contractor-nav a[aria-current='page'] {
+  background: #36566d !important;
+  border-color: #d6b77a !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 0 0 #d6b77a !important;
+}
+
+.contractor-sidebar .contractor-nav a[aria-current='page'] :where(span, strong, small),
+.client-dashboard-shell .contractor-nav a[aria-current='page'] :where(span, strong, small) {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
