@@ -73,10 +73,12 @@
   }
 }
 
-/* Owner jobs overview: keep finance labels visible in card/table layouts. */
+/* Owner jobs overview: keep finance labels readable without changing the card layout. */
 .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-owner-finance-row .jobs-col-money {
-  display: block !important;
+  display: flex !important;
   position: relative !important;
+  align-items: baseline !important;
+  column-gap: 8px !important;
   padding-top: 20px !important;
   color: #243f53 !important;
   font-size: 16px !important;
@@ -92,7 +94,7 @@
 
 .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-owner-finance-row .jobs-money-label {
   display: inline-block !important;
-  margin-right: 8px !important;
+  margin: 0 !important;
   color: #657789 !important;
   font-size: 12px !important;
   font-weight: 800 !important;
@@ -103,6 +105,7 @@
 
 .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-owner-finance-row .jobs-money-value {
   display: inline-block !important;
+  margin: 0 !important;
   color: #243f53 !important;
   font-size: 16px !important;
   font-weight: 800 !important;
@@ -114,5 +117,6 @@
   .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-owner-finance-row .jobs-col-money {
     min-height: 44px !important;
     padding-top: 20px !important;
+    column-gap: 10px !important;
   }
 }
