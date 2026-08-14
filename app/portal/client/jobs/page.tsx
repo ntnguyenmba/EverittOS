@@ -37,21 +37,21 @@ const copy = {
     today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All', timePeriod: 'Time period',
     upcoming: 'Upcoming jobs', completed: 'Completed jobs', current: 'Upcoming', past: 'Completed',
     noUpcoming: 'No upcoming jobs.', noCompleted: 'No completed jobs.',
-    jobTotal: 'Job total', paid: 'Paid', balanceDue: 'Balance due', status: 'Status', dateNotSet: 'Date not set',
+    jobTotal: 'Job total', paid: 'Paid', balanceDue: 'Balance due', status: 'Status', dateNotSet: 'Schedule pending',
     statuses: { scheduled: 'scheduled', completed: 'completed', complete: 'completed', finished: 'completed', done: 'completed', cancelled: 'cancelled', canceled: 'cancelled' }
   },
   es: {
     today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo', timePeriod: 'Período',
     upcoming: 'Próximos trabajos', completed: 'Trabajos terminados', current: 'Próximos', past: 'Terminados',
     noUpcoming: 'No hay trabajos próximos.', noCompleted: 'No hay trabajos terminados.',
-    jobTotal: 'Total del trabajo', paid: 'Pagado', balanceDue: 'Saldo pendiente', status: 'Estado', dateNotSet: 'Fecha no definida',
+    jobTotal: 'Total del trabajo', paid: 'Pagado', balanceDue: 'Saldo pendiente', status: 'Estado', dateNotSet: 'Horario pendiente',
     statuses: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', finished: 'terminado', done: 'terminado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
     today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả', timePeriod: 'Khoảng thời gian',
     upcoming: 'Công việc sắp tới', completed: 'Công việc đã xong', current: 'Sắp tới', past: 'Đã xong',
     noUpcoming: 'Không có công việc sắp tới.', noCompleted: 'Không có công việc đã xong.',
-    jobTotal: 'Tổng công việc', paid: 'Đã thanh toán', balanceDue: 'Số còn lại', status: 'Trạng thái', dateNotSet: 'Chưa có ngày',
+    jobTotal: 'Tổng công việc', paid: 'Đã thanh toán', balanceDue: 'Số còn lại', status: 'Trạng thái', dateNotSet: 'Lịch đang chờ',
     statuses: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', finished: 'đã xong', done: 'đã xong', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
 } as const;
@@ -211,7 +211,7 @@ export default function ClientPortalJobsPage() {
           {location ? <p className="client-job-secondary">{location}</p> : null}
         </div>
         <div className="client-job-card-meta">
-          {job.status ? <span className="status-badge">{statusLabel(job)}</span> : null}
+          {job.status ? <span className={`status-badge portal-status-${normalizedStatus(job)}`}>{statusLabel(job)}</span> : null}
           {hasCharges ? (
             <p className="portal-finance-line">
               <span>
