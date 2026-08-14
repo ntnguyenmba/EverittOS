@@ -8,7 +8,7 @@ import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/worker-cost';
+import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/contractor-cost';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
