@@ -13,6 +13,12 @@ export function parseMoneyInput(value: string | number): number {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
+export function parseSignedMoneyInput(value: string | number): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const parsed = Number.parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function laborTotal(hours: number, hourlyCost: number): number {
   const h = Number.isFinite(hours) ? hours : 0;
   const rate = Number.isFinite(hourlyCost) ? hourlyCost : 0;
