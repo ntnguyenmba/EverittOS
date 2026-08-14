@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { AppFooter } from '@/components/app-footer';
 import { OrgSwitcher } from '@/components/org-switcher';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { PortalShellNav } from '@/components/portal/portal-shell-nav';
 import { LOCALE_COOKIE_NAME, normalizeLocale, type Locale } from '@/lib/i18n/config';
 import '../contractor/contractor-minimal.css';
@@ -61,6 +62,7 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
         </Link>
         <div className="portal-header-actions">
           <OrgSwitcher />
+          <LanguageSwitcher id="portal-mobile-language" variant="compact" className="portal-language-switcher" />
           <Link className="btn" href="/portal/client/settings">
             {c.settings}
           </Link>
@@ -78,6 +80,7 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
           </Link>
 
           <OrgSwitcher />
+          <LanguageSwitcher id="portal-sidebar-language" variant="drawer" className="portal-language-switcher" />
 
           <PortalShellNav links={clientLinks} />
         </div>
