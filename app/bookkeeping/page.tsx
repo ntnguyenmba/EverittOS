@@ -31,17 +31,29 @@ const copy = {
 
 function TransactionSection({ title, rows, empty }: { title: string; rows: DashboardDetailRow[]; empty: string }) {
   return (
-    <section className="card" style={{ padding: 20, width: '100%', minWidth: 0 }}>
-      <h2 style={{ marginTop: 0 }}>{title}</h2>
+    <section className="card" style={{ padding: '24px 26px', width: '100%', minWidth: 0, borderRadius: 16 }}>
+      <h2 style={{ margin: '0 0 16px', fontSize: 20, lineHeight: 1.2 }}>{title}</h2>
       {rows.length === 0 ? <p className="muted" style={{ marginBottom: 0 }}>{empty}</p> : (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {rows.map((row) => (
-            <Link key={row.id} href={row.href} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 16, alignItems: 'start', textDecoration: 'none', padding: '12px 0', borderBottom: '1px solid var(--border, rgba(0,0,0,.08))' }}>
+        <div style={{ display: 'grid', gap: 0 }}>
+          {rows.map((row, index) => (
+            <Link
+              key={row.id}
+              href={row.href}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                gap: 20,
+                alignItems: 'center',
+                textDecoration: 'none',
+                padding: '14px 2px',
+                borderBottom: index === rows.length - 1 ? '0' : '1px solid var(--border, rgba(0,0,0,.08))'
+              }}
+            >
               <span style={{ minWidth: 0 }}>
-                <strong style={{ display: 'block', overflowWrap: 'anywhere' }}>{row.title}</strong>
-                {row.subtitle ? <small className="muted" style={{ display: 'block', marginTop: 4, overflowWrap: 'anywhere' }}>{row.subtitle}</small> : null}
+                <strong style={{ display: 'block', overflowWrap: 'anywhere', lineHeight: 1.35 }}>{row.title}</strong>
+                {row.subtitle ? <small className="muted" style={{ display: 'block', marginTop: 4, overflowWrap: 'anywhere', lineHeight: 1.4 }}>{row.subtitle}</small> : null}
               </span>
-              <strong style={{ whiteSpace: 'nowrap' }}>{row.amountLabel || formatCurrency(row.amount || 0)}</strong>
+              <strong style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{row.amountLabel || formatCurrency(row.amount || 0)}</strong>
             </Link>
           ))}
         </div>
@@ -109,36 +121,65 @@ export default function BookkeepingPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <main style={{ width: '100%', maxWidth: 1180, margin: '0 auto', display: 'block', minWidth: 0 }}>
+      <main style={{ width: '100%', maxWidth: 1180, margin: '0 auto', display: 'block', minWidth: 0, paddingBottom: 12 }}>
         <PageHeader
           title={c.title}
           subtitle={c.subtitle}
           action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />}
         />
 
-        <div className="inline-actions" style={{ marginBottom: 22, gap: 8, flexWrap: 'wrap', width: '100%' }}>
+        <div className="inline-actions" style={{ margin: '4px 0 26px', gap: 10, flexWrap: 'wrap', width: '100%' }}>
           <button type="button" className={range === 'year' ? 'btn btn-primary' : 'btn'} onClick={() => setRange('year')}>{c.thisYear}</button>
           <button type="button" className={range === 'all_time' ? 'btn btn-primary' : 'btn'} onClick={() => setRange('all_time')}>{c.allTime}</button>
         </div>
 
         {loading ? <p className="muted">{c.loading}</p> : (
           <div style={{ width: '100%', minWidth: 0 }}>
-            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, width: '100%', marginBottom: 22 }}>
+            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, width: '100%', marginBottom: 30 }}>
               {metrics.map(([label, value]) => (
-                <div key={label} className="card" style={{ padding: '18px 20px', minHeight: 108, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
-                  <strong style={{ display: 'block', fontSize: 'clamp(24px, 3vw, 34px)', lineHeight: 1.05, overflowWrap: 'normal', wordBreak: 'normal' }}>{formatCurrency(value)}</strong>
+                <div
+                  key={label}
+                  className="card"
+                  style={{
+                    padding: '20px 22px',
+                    minHeight: 118,
+                    minWidth: 0,
+                    borderRadius: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: 14
+                  }}
+                >
+                  <span className="muted" style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{label}</span>
+                  <strong style={{ display: 'block', fontSize: 'clamp(26px, 3vw, 36px)', lineHeight: 1, overflowWrap: 'normal', wordBreak: 'normal', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(value)}</strong>
                 </div>
               ))}
             </section>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 18, width: '100%', minWidth: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 24, width: '100%', minWidth: 0 }}>
               <TransactionSection title={c.incomeReceived} rows={incomeRows} empty={c.empty} />
               <TransactionSection title={c.contractorsPaid} rows={contractorSection?.rows || []} empty={c.empty} />
               <TransactionSection title={c.expensesPaid} rows={expenseSection?.rows || []} empty={c.empty} />
             </div>
 
-            <p className="muted" style={{ fontSize: 11, lineHeight: 1.5, marginTop: 18, marginBottom: 0, maxWidth: 760, width: '100%', overflowWrap: 'normal', wordBreak: 'normal' }}>{c.disclaimer}</p>
+            <div style={{ width: '100%', marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--border, rgba(0,0,0,.08))' }}>
+              <p
+                className="muted"
+                style={{
+                  fontSize: 11,
+                  lineHeight: 1.6,
+                  margin: '0 auto',
+                  maxWidth: 720,
+                  width: '100%',
+                  textAlign: 'center',
+                  overflowWrap: 'normal',
+                  wordBreak: 'normal'
+                }}
+              >
+                {c.disclaimer}
+              </p>
+            </div>
           </div>
         )}
       </main>
