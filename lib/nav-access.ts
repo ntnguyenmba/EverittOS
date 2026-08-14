@@ -65,7 +65,7 @@ export function canShowNavHref(role: UserRole, href: string): boolean {
     case '/settings/integrations': return canManageOrganizationSettings(role);
     case '/notifications': return hasPermission(role, 'view_assigned_jobs');
     case '/projects': case '/forms': case '/templates': case '/reviews': case '/services': case '/bookings': case '/photos': case '/inventory': case '/routes': case '/workflows': return canSeeOrgWideData(role) || role === 'manager';
-    case '/knowledge': case '/proposals': case '/automations': case '/clients': case '/workers': case '/activity': case '/expenses': return isManagerRole(role);
+    case '/knowledge': case '/proposals': case '/automations': case '/clients': case '/workers': case '/activity': case '/expenses': case '/bookkeeping': return isManagerRole(role);
     case '/analytics': return canSeeOrgWideData(role);
     case '/contractor-pay': return isManagerRole(role);
     case '/settings/people': case '/settings/team': return canViewTeam(role);
@@ -162,8 +162,8 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 export function primaryNavHrefsForRole(role: UserRole): string[] {
   if (isClientRole(role)) return ['/portal/client', '/portal/client?tab=jobs', '/portal/client/settings'];
   if (isContractorRole(role)) return ['/portal/contractor', '/portal/contractor#jobs', '/portal/contractor#schedule', '/portal/contractor#earnings', '/knowledge', '/portal/contractor/settings'];
-  if (role === 'manager') return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/knowledge', '/reports', '/settings'];
-  if (canSeeOrgWideData(role)) return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/knowledge', '/reports', '/settings'];
+  if (role === 'manager') return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
+  if (canSeeOrgWideData(role)) return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
   return ['/dashboard', '/jobs', '/schedule', '/settings'];
 }
 
