@@ -136,3 +136,28 @@ textarea {
     min-width: 0;
   }
 }
+
+
+/* Keep active navigation labels readable on every light selected surface. */
+.sidebar .nav-item.active,
+.sidebar a.nav-item.active,
+.sidebar .nav-item[aria-current='page'],
+.sidebar a[aria-current='page'],
+.mobile-nav-drawer .nav-item.active,
+.mobile-nav-drawer .nav-item[aria-current='page'],
+.mobile-bottom-nav-item.active,
+.mobile-bottom-nav-item[aria-current='page'] {
+  color: #172532 !important;
+}
+
+.sidebar .nav-item.active :where(span, strong, small),
+.sidebar a.nav-item.active :where(span, strong, small),
+.sidebar .nav-item[aria-current='page'] :where(span, strong, small),
+.sidebar a[aria-current='page'] :where(span, strong, small),
+.mobile-nav-drawer .nav-item.active :where(span, strong, small),
+.mobile-nav-drawer .nav-item[aria-current='page'] :where(span, strong, small),
+.mobile-bottom-nav-item.active :where(span, strong, small),
+.mobile-bottom-nav-item[aria-current='page'] :where(span, strong, small) {
+  color: inherit !important;
+  opacity: 1 !important;
+}
