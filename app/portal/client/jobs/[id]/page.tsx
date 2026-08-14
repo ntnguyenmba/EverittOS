@@ -32,14 +32,22 @@ type ClientInvoice = {
   id: string;
   job_id: string | null;
   amount: number | null;
+  amount_paid: number | null;
   status: string | null;
   due_date: string | null;
+};
+
+type ClientCharges = {
+  jobTotal: number | null;
+  paid: number;
+  balanceDue: number | null;
 };
 
 type SharedJobResponse = {
   job?: ClientJob;
   reports?: ClientReport[];
   invoices?: ClientInvoice[];
+  charges?: ClientCharges;
   canViewPhotos?: boolean;
   error?: string;
 };
@@ -47,14 +55,17 @@ type SharedJobResponse = {
 export default function ClientPortalJobDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const jobId = String(params?.id || '');
   const [job, setJob] = useState<ClientJob | null>(null);
   const [reports, setReports] = useState<ClientReport[]>([]);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
+  const [charges, setCharges] = useState<ClientCharges | null>(null);
   const [canViewPhotos, setCanViewPhotos] = useState(true);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+
+  const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
 
   const sharedReports = useMemo(
     () => reports.filter((report) => report.share_token && !report.share_revoked_at),
@@ -93,6 +104,7 @@ export default function ClientPortalJobDetailPage() {
         setJob(payload.job);
         setReports(payload.reports || []);
         setInvoices(payload.invoices || []);
+        setCharges(payload.charges || null);
         setCanViewPhotos(payload.canViewPhotos !== false);
         setLoading(false);
       } catch {
@@ -147,6 +159,28 @@ export default function ClientPortalJobDetailPage() {
               {t('portal.common.due')}: {job.due_date || t('portal.common.notSet')}
             </p>
             {job.customer_notes ? <p>{job.customer_notes}</p> : null}
+            {charges && charges.jobTotal != null ? (
+              <p className="portal-finance-line" style={{ marginTop: 12 }}>
+                <span>
+                  {t('portal.client.jobTotal')}{' '}
+                  <strong className="portal-finance-amount">
+                    {new Intl.NumberFormat(localeCode, { style: 'currency', currency: 'USD' }).format(charges.jobTotal)}
+                  </strong>
+                </span>
+                <span>
+                  {t('portal.client.paid')}{' '}
+                  <strong>
+                    {new Intl.NumberFormat(localeCode, { style: 'currency', currency: 'USD' }).format(charges.paid)}
+                  </strong>
+                </span>
+                <span>
+                  {t('portal.client.balanceDue')}{' '}
+                  <strong className="portal-finance-amount">
+                    {new Intl.NumberFormat(localeCode, { style: 'currency', currency: 'USD' }).format(charges.balanceDue || 0)}
+                  </strong>
+                </span>
+              </p>
+            ) : null}
           </article>
 
           <section className="card" style={{ marginTop: 16 }}>
@@ -179,7 +213,7 @@ export default function ClientPortalJobDetailPage() {
                     <strong>{translatePortalPaymentStatus(t, invoice.status)}</strong>
                     <p className="muted">
                       {invoice.amount != null
-                        ? `$${Number(invoice.amount).toFixed(2)}`
+                        ? new Intl.NumberFormat(localeCode, { style: 'currency', currency: 'USD' }).format(Number(invoice.amount))
                         : t('portal.client.amountPending')}
                       {invoice.due_date ? ` · ${t('portal.common.due')} ${invoice.due_date}` : ''}
                     </p>

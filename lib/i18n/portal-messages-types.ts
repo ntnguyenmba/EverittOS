@@ -127,6 +127,9 @@ export type PortalMessages = {
     photos: string;
     invoices: string;
     amountPending: string;
+    jobTotal: string;
+    paid: string;
+    balanceDue: string;
     jobNotFound: string;
     jobLoadError: string;
     growthRequired: string;
@@ -234,6 +237,7 @@ export type PortalMessages = {
     contact: string;
     instructions: string;
     yourPay: string;
+    payNotRecorded: string;
     growthRequired: string;
     loadErrorTitle: string;
     tryAgain: string;

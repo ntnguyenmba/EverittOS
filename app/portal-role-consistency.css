@@ -205,3 +205,68 @@
     border-radius: 12px !important;
   }
 }
+
+.portal-job-row {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.portal-job-finance {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  min-width: 8rem;
+  text-align: right;
+}
+
+.portal-finance-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  color: #405866;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.portal-finance-line strong,
+.portal-finance-amount {
+  color: #1f313b;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.portal-finance-empty {
+  color: #5b6f7c;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.client-job-card.simplified-job-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+@media (max-width: 720px) {
+  .portal-job-row {
+    flex-direction: column;
+  }
+
+  .portal-job-finance,
+  .client-job-card-meta {
+    width: 100%;
+    min-width: 0;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .portal-finance-line {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .portal-finance-amount {
+    font-size: 16px;
+  }
+}

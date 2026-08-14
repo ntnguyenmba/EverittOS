@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadClientPortalJob } from '@/lib/portal-client-jobs';
+import { loadClientPortalJobs } from '@/lib/portal-client-jobs';
 import { objectHasForbiddenField, CLIENT_FORBIDDEN_FIELDS } from '@/lib/portal-role-financials';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -7,11 +7,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id: jobId } = await context.params;
+export async function GET() {
   const supabase = await createServerSupabase();
   const admin = createAdminSupabase();
   const {
@@ -22,24 +18,17 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const loaded = await loadClientPortalJob({
+  const loaded = await loadClientPortalJobs({
     admin,
     userId: user.id,
-    email: user.email,
-    jobId
+    email: user.email
   });
 
   if (!loaded.ok) {
     return NextResponse.json({ error: loaded.error }, { status: loaded.status });
   }
 
-  const payload = {
-    job: loaded.job,
-    reports: loaded.reports,
-    invoices: loaded.invoices,
-    charges: loaded.charges,
-    canViewPhotos: loaded.canViewPhotos
-  };
+  const payload = { jobs: loaded.jobs };
   const leaked = objectHasForbiddenField(payload, CLIENT_FORBIDDEN_FIELDS);
   if (leaked) {
     return NextResponse.json({ error: 'Forbidden financial field.' }, { status: 500 });

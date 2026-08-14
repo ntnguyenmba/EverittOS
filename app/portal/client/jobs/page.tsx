@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
@@ -17,15 +18,17 @@ type ClientJob = {
   id: string;
   title: string;
   status: string | null;
-  customer_name: string | null;
+  customerName: string | null;
   address: string | null;
-  revenue_amount: number | null;
-  scheduled_start: string | null;
-  scheduled_end: string | null;
-  start_date: string | null;
-  due_date: string | null;
-  completed_at: string | null;
-  created_at: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  startDate: string | null;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
+  jobTotal: number | null;
+  paid: number;
+  balanceDue: number | null;
 };
 
 type TimeRange = 'today' | 'week' | 'month' | 'year' | 'all';
@@ -35,21 +38,21 @@ const copy = {
     today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All', timePeriod: 'Time period',
     upcoming: 'Upcoming jobs', completed: 'Completed jobs', current: 'Upcoming', past: 'Completed',
     noUpcoming: 'No upcoming jobs.', noCompleted: 'No completed jobs.',
-    serviceAmount: 'Price', status: 'Status', dateNotSet: 'Date not set',
+    jobTotal: 'Job total', paid: 'Paid', balanceDue: 'Balance due', status: 'Status', dateNotSet: 'Date not set',
     statuses: { scheduled: 'scheduled', completed: 'completed', complete: 'completed', finished: 'completed', done: 'completed', cancelled: 'cancelled', canceled: 'cancelled' }
   },
   es: {
     today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo', timePeriod: 'Período',
     upcoming: 'Próximos trabajos', completed: 'Trabajos terminados', current: 'Próximos', past: 'Terminados',
     noUpcoming: 'No hay trabajos próximos.', noCompleted: 'No hay trabajos terminados.',
-    serviceAmount: 'Precio', status: 'Estado', dateNotSet: 'Fecha no definida',
+    jobTotal: 'Total del trabajo', paid: 'Pagado', balanceDue: 'Saldo pendiente', status: 'Estado', dateNotSet: 'Fecha no definida',
     statuses: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', finished: 'terminado', done: 'terminado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
     today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả', timePeriod: 'Khoảng thời gian',
     upcoming: 'Công việc sắp tới', completed: 'Công việc đã xong', current: 'Sắp tới', past: 'Đã xong',
     noUpcoming: 'Không có công việc sắp tới.', noCompleted: 'Không có công việc đã xong.',
-    serviceAmount: 'Giá', status: 'Trạng thái', dateNotSet: 'Chưa có ngày',
+    jobTotal: 'Tổng công việc', paid: 'Đã thanh toán', balanceDue: 'Số còn lại', status: 'Trạng thái', dateNotSet: 'Chưa có ngày',
     statuses: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', finished: 'đã xong', done: 'đã xong', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
 } as const;
@@ -62,10 +65,10 @@ function cityState(address: string | null) {
 
 function operationalDate(job: ClientJob) {
   return (
-    wallClockFromTimestamp(job.scheduled_start)?.date ||
-    job.start_date?.slice(0, 10) ||
-    job.due_date?.slice(0, 10) ||
-    job.created_at?.slice(0, 10) ||
+    wallClockFromTimestamp(job.scheduledStart)?.date ||
+    job.startDate?.slice(0, 10) ||
+    job.dueDate?.slice(0, 10) ||
+    job.createdAt?.slice(0, 10) ||
     ''
   );
 }
@@ -91,8 +94,8 @@ function jobDate(job: ClientJob, locale: string) {
 }
 
 function jobTime(job: ClientJob, locale: string) {
-  const start = wallClockFromTimestamp(job.scheduled_start);
-  const end = wallClockFromTimestamp(job.scheduled_end);
+  const start = wallClockFromTimestamp(job.scheduledStart);
+  const end = wallClockFromTimestamp(job.scheduledEnd);
   if (!start?.time) return '';
   const format = (time: string) => new Date(`2000-01-01T${time}:00`).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   return end?.time ? `${format(start.time)} – ${format(end.time)}` : format(start.time);
@@ -134,27 +137,30 @@ export default function ClientPortalJobsPage() {
         return;
       }
 
-      try { await fetch('/api/portal/client/repair', { method: 'POST' }); } catch {}
-
       const { data: profileRow } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       if (!isClientRole(normalizeRole(profileRow?.role))) {
         router.replace(CLIENT_PORTAL_HOME);
         return;
       }
 
-      const { data: access } = await supabase.from('job_client_access').select('job_id').eq('client_user_id', user.id);
-      const jobIds = ((access || []) as Array<{ job_id: string }>).map((row) => String(row.job_id)).filter(Boolean);
-      if (jobIds.length === 0) {
+      const response = await fetch('/api/portal/client/jobs', { cache: 'no-store' });
+      if (response.status === 401) {
+        router.push(`/login?next=${encodeURIComponent(clientPortalJobsPath())}`);
+        return;
+      }
+      const payload = (await response.json().catch(() => ({}))) as { jobs?: ClientJob[]; error?: string };
+      if (!response.ok) {
+        setMessage(payload.error || t('portal.client.jobLoadError'));
+        setLoading(false);
+        return;
+      }
+      const jobRows = payload.jobs || [];
+      if (jobRows.length === 0) {
         setMessage(t('portal.client.noSharedMessage'));
         setLoading(false);
         return;
       }
-
-      const { data: jobRows } = await supabase
-        .from('jobs')
-        .select('id, title, status, customer_name, address, revenue_amount, scheduled_start, scheduled_end, start_date, due_date, completed_at, created_at')
-        .in('id', jobIds);
-      setJobs((jobRows || []) as ClientJob[]);
+      setJobs(jobRows);
       setLoading(false);
     }
     void load();
@@ -192,9 +198,14 @@ export default function ClientPortalJobsPage() {
     const date = jobDate(job, localeCode);
     const time = jobTime(job, localeCode);
     const location = cityState(job.address);
-    const amount = formatMoney(job.revenue_amount, localeCode);
+    const hasCharges = job.jobTotal != null;
     return (
-      <article key={job.id} className="client-job-card simplified-job-card" aria-label={job.title}>
+      <Link
+        key={job.id}
+        href={clientPortalJobsPath(job.id)}
+        className="client-job-card simplified-job-card"
+        aria-label={job.title}
+      >
         <div className="client-job-card-main">
           <h3>{job.title}</h3>
           <p className="client-job-secondary">{[date || c.dateNotSet, time].filter(Boolean).join(' · ')}</p>
@@ -202,9 +213,23 @@ export default function ClientPortalJobsPage() {
         </div>
         <div className="client-job-card-meta">
           {job.status ? <span className="status-badge">{statusLabel(job)}</span> : null}
-          {amount ? <strong>{c.serviceAmount}: {amount}</strong> : null}
+          {hasCharges ? (
+            <p className="portal-finance-line">
+              <span>
+                {c.jobTotal}{' '}
+                <strong className="portal-finance-amount">{formatMoney(job.jobTotal, localeCode)}</strong>
+              </span>
+              <span>
+                {c.paid} <strong>{formatMoney(job.paid, localeCode)}</strong>
+              </span>
+              <span>
+                {c.balanceDue}{' '}
+                <strong className="portal-finance-amount">{formatMoney(job.balanceDue, localeCode)}</strong>
+              </span>
+            </p>
+          ) : null}
         </div>
-      </article>
+      </Link>
     );
   }
 

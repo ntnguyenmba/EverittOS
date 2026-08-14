@@ -72,7 +72,7 @@ export type ContractorJobCardModel = {
   date: string | null;
   address: string;
   status: string;
-  payAmount: number;
+  payAmount: number | null;
   payIsPlanned: boolean;
   paymentStatus: 'paid' | 'pending' | 'unpaid' | 'none';
   userId: string | null;
@@ -330,9 +330,8 @@ export function buildContractorJobCards(
     .map((job) => {
       const rows = laborByJob.get(job.id) || [];
       const recordedPay = Number(rows.reduce((sum, row) => sum + num(row.total_cost), 0).toFixed(2));
-      const plannedPay = Number(num(job.expected_contractor_cost).toFixed(2));
-      const payAmount = rows.length ? recordedPay : plannedPay;
-      const payIsPlanned = rows.length === 0 && plannedPay > 0;
+      const payAmount = rows.length ? recordedPay : null;
+      const payIsPlanned = false;
       let paymentStatus: ContractorJobCardModel['paymentStatus'] = 'none';
       if (rows.length) {
         const statuses = rows.map((row) => normalizeLaborPaymentStatus(row.payment_status));

@@ -5,42 +5,40 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthenticatedSection } from '@/components/authenticated-section';
 import { useTranslation } from '@/components/locale-provider';
+import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import { supabase } from '@/lib/supabase';
 import { performClientLogout } from '@/lib/client-logout';
 
-type WorkerRow = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  auth_user_id: string | null;
-};
-
-type AssignmentRow = {
-  job_id: string;
-  worker_id: string;
+type PortalDashboardResponse = {
+  notLinked?: boolean;
+  workerName?: string;
+  jobs?: JobRow[];
+  totals?: PortalTotals;
+  error?: string;
 };
 
 type JobRow = {
   id: string;
   title: string | null;
-  customer_name: string | null;
+  customerName: string | null;
   address: string | null;
   status: string | null;
-  start_date: string | null;
-  due_date: string | null;
-  scheduled_start: string | null;
-  assigned_to: string | null;
+  startDate: string | null;
+  dueDate: string | null;
+  scheduledStart: string | null;
+  payAmount: number | null;
+  paymentStatus: 'paid' | 'pending' | 'unpaid' | null;
 };
 
-type LaborRow = {
-  id: string;
-  job_id: string;
-  worker_id: string;
-  total_cost: number | string | null;
-  payment_status: string | null;
+type PortalTotals = {
+  assigned: number;
+  upcoming: number;
+  completed: number;
+  total: number;
+  paid: number;
+  owed: number;
 };
 
-type QueryResult<T> = { data: T[] | null; error: { message?: string } | null };
 type AuthResult = { data: { user: { id: string; email?: string | null } | null }; error: { message?: string } | null };
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -53,6 +51,7 @@ const copy = {
     loadingTitle: 'Loading your contractor dashboard...', loadingBody: 'This should take only a few seconds.', errorTitle: 'The contractor dashboard could not load', errorSafe: 'No jobs, payments, or earnings were changed.', tryAgain: 'Try again',
     assignedJobs: 'Assigned jobs', upcomingJobs: 'Upcoming jobs', completedJobs: 'Completed jobs', totalEarnings: 'Total earnings', paidToYou: 'Paid to you', stillOwed: 'Still owed',
     job: 'Job', customer: 'Customer', noJobs: 'No assigned jobs yet.', dateNotSet: 'Date not set', scheduleBody: 'Your upcoming assigned jobs appear above in date order.', paid: 'paid', stillOwedLower: 'still owed', earningsBody: 'Earnings are calculated only from contractor payment records linked to your worker profile.',
+    yourPay: 'Your pay', payNotRecorded: 'Pay not recorded',
     sessionTimeout: 'Your session took too long to load.', profileTimeout: 'Your contractor profile took too long to load.', assignmentsTimeout: 'Assigned jobs took too long to load.', jobsTimeout: 'Jobs took too long to load.', earningsTimeout: 'Earnings took too long to load.', detailsTimeout: 'Assigned job details took too long to load.', notLinked: 'Your login is not linked to a contractor profile yet. Ask the company owner to link your email to your worker record.', loadFailed: 'The contractor dashboard could not load.',
     status: { scheduled: 'scheduled', completed: 'completed', complete: 'complete', done: 'done', finished: 'finished', closed: 'closed', cancelled: 'cancelled', canceled: 'canceled' }
   },
@@ -61,6 +60,7 @@ const copy = {
     loadingTitle: 'Cargando tu panel de contratista...', loadingBody: 'Esto solo debería tardar unos segundos.', errorTitle: 'No se pudo cargar el panel del contratista', errorSafe: 'No se cambiaron trabajos, pagos ni ganancias.', tryAgain: 'Intentar de nuevo',
     assignedJobs: 'Trabajos asignados', upcomingJobs: 'Próximos trabajos', completedJobs: 'Trabajos terminados', totalEarnings: 'Ganancias totales', paidToYou: 'Pagado a ti', stillOwed: 'Pendiente de pago',
     job: 'Trabajo', customer: 'Cliente', noJobs: 'Aún no hay trabajos asignados.', dateNotSet: 'Fecha no definida', scheduleBody: 'Tus próximos trabajos asignados aparecen arriba en orden de fecha.', paid: 'pagado', stillOwedLower: 'pendiente', earningsBody: 'Las ganancias se calculan solo con los registros de pago vinculados a tu perfil de contratista.',
+    yourPay: 'Tu pago', payNotRecorded: 'Pago no registrado',
     sessionTimeout: 'Tu sesión tardó demasiado en cargar.', profileTimeout: 'Tu perfil de contratista tardó demasiado en cargar.', assignmentsTimeout: 'Los trabajos asignados tardaron demasiado en cargar.', jobsTimeout: 'Los trabajos tardaron demasiado en cargar.', earningsTimeout: 'Las ganancias tardaron demasiado en cargar.', detailsTimeout: 'Los detalles del trabajo asignado tardaron demasiado en cargar.', notLinked: 'Tu inicio de sesión aún no está vinculado a un perfil de contratista. Pide al propietario de la empresa que vincule tu correo electrónico con tu registro de trabajador.', loadFailed: 'No se pudo cargar el panel del contratista.',
     status: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', done: 'terminado', finished: 'terminado', closed: 'cerrado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
@@ -69,6 +69,7 @@ const copy = {
     loadingTitle: 'Đang tải bảng điều khiển nhà thầu...', loadingBody: 'Quá trình này chỉ mất vài giây.', errorTitle: 'Không thể tải bảng điều khiển nhà thầu', errorSafe: 'Không có công việc, khoản thanh toán hoặc thu nhập nào bị thay đổi.', tryAgain: 'Thử lại',
     assignedJobs: 'Công việc được giao', upcomingJobs: 'Công việc sắp tới', completedJobs: 'Công việc đã xong', totalEarnings: 'Tổng thu nhập', paidToYou: 'Đã trả cho bạn', stillOwed: 'Còn phải trả',
     job: 'Công việc', customer: 'Khách hàng', noJobs: 'Chưa có công việc được giao.', dateNotSet: 'Chưa có ngày', scheduleBody: 'Các công việc sắp tới của bạn được hiển thị phía trên theo thứ tự ngày.', paid: 'đã trả', stillOwedLower: 'còn phải trả', earningsBody: 'Thu nhập chỉ được tính từ các hồ sơ thanh toán được liên kết với hồ sơ nhà thầu của bạn.',
+    yourPay: 'Tiền công của bạn', payNotRecorded: 'Chưa ghi nhận tiền công',
     sessionTimeout: 'Phiên đăng nhập mất quá lâu để tải.', profileTimeout: 'Hồ sơ nhà thầu mất quá lâu để tải.', assignmentsTimeout: 'Công việc được giao mất quá lâu để tải.', jobsTimeout: 'Công việc mất quá lâu để tải.', earningsTimeout: 'Thu nhập mất quá lâu để tải.', detailsTimeout: 'Chi tiết công việc được giao mất quá lâu để tải.', notLinked: 'Tài khoản của bạn chưa được liên kết với hồ sơ nhà thầu. Hãy nhờ chủ công ty liên kết email của bạn với hồ sơ nhân viên.', loadFailed: 'Không thể tải bảng điều khiển nhà thầu.',
     status: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', done: 'đã xong', finished: 'đã xong', closed: 'đã đóng', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
@@ -98,14 +99,6 @@ function normalizedStatus(value: string | null) {
   return String(value || 'scheduled').trim().toLowerCase().replace(/\s+/g, '_');
 }
 
-function isCompleted(value: string | null) {
-  return ['completed', 'complete', 'done', 'finished', 'closed'].includes(normalizedStatus(value));
-}
-
-function isCancelled(value: string | null) {
-  return ['cancelled', 'canceled'].includes(normalizedStatus(value));
-}
-
 export default function ContractorPortalPage() {
   const router = useRouter();
   const { locale } = useTranslation();
@@ -115,11 +108,18 @@ export default function ContractorPortalPage() {
   const [error, setError] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [jobs, setJobs] = useState<JobRow[]>([]);
-  const [labor, setLabor] = useState<LaborRow[]>([]);
+  const [totals, setTotals] = useState<PortalTotals>({
+    assigned: 0,
+    upcoming: 0,
+    completed: 0,
+    total: 0,
+    paid: 0,
+    owed: 0
+  });
   const [signingOut, setSigningOut] = useState(false);
 
   const jobDate = useCallback((job: JobRow) => {
-    const value = job.scheduled_start || job.start_date || job.due_date;
+    const value = job.scheduledStart || job.startDate || job.dueDate;
     if (!value) return c.dateNotSet;
     const date = new Date(value.includes('T') ? value : `${value}T12:00:00`);
     return Number.isNaN(date.getTime())
@@ -149,56 +149,32 @@ export default function ContractorPortalPage() {
         return;
       }
 
-      const email = String(user.email || '').trim().toLowerCase();
-      const workerFields = 'id, name, email, auth_user_id';
-      const [byUser, byEmail] = (await Promise.all([
-        withTimeout(supabase.from('workers').select(workerFields).eq('auth_user_id', user.id), c.profileTimeout),
-        email
-          ? withTimeout(supabase.from('workers').select(workerFields).ilike('email', email), c.profileTimeout)
-          : Promise.resolve({ data: [] as WorkerRow[], error: null })
-      ])) as [QueryResult<WorkerRow>, QueryResult<WorkerRow>];
+      const response = (await withTimeout(
+        fetch('/api/portal/contractor/jobs', { cache: 'no-store' }),
+        c.jobsTimeout
+      )) as Response;
+      if (response.status === 401) {
+        router.replace('/login?next=%2Fportal%2Fcontractor');
+        return;
+      }
+      const payload = (await response.json().catch(() => ({}))) as PortalDashboardResponse;
+      if (!response.ok) {
+        throw new Error(payload.error || c.loadFailed);
+      }
 
-      if (byUser.error && byEmail.error) throw new Error(byUser.error.message || byEmail.error.message);
-
-      const workerMap = new Map<string, WorkerRow>();
-      for (const row of [...(byUser.data || []), ...(byEmail.data || [])]) workerMap.set(row.id, row);
-      const workers = Array.from(workerMap.values());
-      const workerIds = workers.map((row) => row.id).filter(Boolean);
-      setWorkerName(workers.find((row) => row.name?.trim())?.name?.trim() || email || c.contractor);
-
-      if (!workerIds.length) {
+      setWorkerName(payload.workerName || user.email || c.contractor);
+      if (payload.notLinked) {
         setJobs([]);
-        setLabor([]);
+        setTotals({ assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
         setError(c.notLinked);
         setState('error');
         return;
       }
 
-      const [assignmentsResult, directJobsResult, laborResult] = (await Promise.all([
-        withTimeout(supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', workerIds), c.assignmentsTimeout),
-        withTimeout(supabase.from('jobs').select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to').in('assigned_to', workerIds), c.jobsTimeout),
-        withTimeout(supabase.from('job_labor').select('id, job_id, worker_id, total_cost, payment_status').in('worker_id', workerIds), c.earningsTimeout)
-      ])) as [QueryResult<AssignmentRow>, QueryResult<JobRow>, QueryResult<LaborRow>];
-
-      if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
-      if (directJobsResult.error) throw new Error(directJobsResult.error.message);
-      if (laborResult.error) throw new Error(laborResult.error.message);
-
-      const assignmentJobIds = Array.from(new Set((assignmentsResult.data || []).map((row) => row.job_id).filter(Boolean)));
-      let assignedJobs: JobRow[] = [];
-      if (assignmentJobIds.length) {
-        const assignedResult = (await withTimeout(
-          supabase.from('jobs').select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to').in('id', assignmentJobIds),
-          c.detailsTimeout
-        )) as QueryResult<JobRow>;
-        if (assignedResult.error) throw new Error(assignedResult.error.message);
-        assignedJobs = assignedResult.data || [];
-      }
-
-      const merged = new Map<string, JobRow>();
-      for (const job of [...((directJobsResult.data || []) as JobRow[]), ...assignedJobs]) merged.set(job.id, job);
-      setJobs(Array.from(merged.values()));
-      setLabor((laborResult.data || []) as LaborRow[]);
+      setJobs(payload.jobs || []);
+      setTotals(
+        payload.totals || { assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 }
+      );
       setState('ready');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : c.loadFailed);
@@ -210,16 +186,8 @@ export default function ContractorPortalPage() {
     void load();
   }, [load]);
 
-  const totals = useMemo(() => {
-    const currentJobs = jobs.filter((job) => !isCompleted(job.status) && !isCancelled(job.status));
-    const completedJobs = jobs.filter((job) => isCompleted(job.status));
-    const total = labor.reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
-    const paid = labor.filter((row) => normalizedStatus(row.payment_status) === 'paid').reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
-    return { assigned: jobs.length, upcoming: currentJobs.length, completed: completedJobs.length, total, paid, owed: Math.max(0, total - paid) };
-  }, [jobs, labor]);
-
   const sortedJobs = useMemo(
-    () => [...jobs].sort((a, b) => String(a.scheduled_start || a.start_date || '').localeCompare(String(b.scheduled_start || b.start_date || ''))),
+    () => [...jobs].sort((a, b) => String(a.scheduledStart || a.startDate || '').localeCompare(String(b.scheduledStart || b.startDate || ''))),
     [jobs]
   );
 
@@ -281,13 +249,24 @@ export default function ContractorPortalPage() {
             {sortedJobs.length ? (
               <div className="job-visits-list">
                 {sortedJobs.map((job) => (
-                  <article key={job.id} className="list-row" style={{ alignItems: 'flex-start' }}>
+                  <article key={job.id} className="list-row portal-job-row">
                     <div>
-                      <strong>{job.title || c.job}</strong>
+                      <Link href={contractorJobDetailPath(job.id)}>
+                        <strong>{job.title || c.job}</strong>
+                      </Link>
                       <p className="muted" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p>
-                      <p style={{ margin: '5px 0 0' }}>{job.customer_name || c.customer}{job.address ? ` · ${job.address}` : ''}</p>
+                      <p style={{ margin: '5px 0 0' }}>{job.customerName || c.customer}{job.address ? ` · ${job.address}` : ''}</p>
                     </div>
-                    <span>{statusLabel(job.status)}</span>
+                    <div className="portal-job-finance">
+                      <span>{statusLabel(job.status)}</span>
+                      {job.payAmount == null ? (
+                        <span className="portal-finance-empty">{c.payNotRecorded}</span>
+                      ) : (
+                        <strong className="portal-finance-amount">
+                          {c.yourPay}: {money(job.payAmount, localeCode)}
+                        </strong>
+                      )}
+                    </div>
                   </article>
                 ))}
               </div>
