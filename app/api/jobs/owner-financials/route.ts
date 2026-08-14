@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ownerProfitFromAmounts, parseOwnerMoney } from '@/lib/jobs-owner-financials';
 import { normalizeRole } from '@/lib/roles';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 
@@ -54,15 +55,15 @@ export async function GET(request: Request) {
 
   const financials = Object.fromEntries(
     ((data || []) as OwnerFinancialRow[]).map((row) => {
-      const customerPay = Number(row.revenue_amount || 0);
-      const contractorPay = Number(row.expected_contractor_cost || 0);
-      const additionalExpense = Number(row.expected_additional_expense || 0);
+      const customerPay = parseOwnerMoney(row.revenue_amount);
+      const contractorPay = parseOwnerMoney(row.expected_contractor_cost);
+      const additionalExpense = parseOwnerMoney(row.expected_additional_expense);
       return [
         row.id,
         {
           customerPay,
           contractorPay,
-          ownerProfit: customerPay - contractorPay - additionalExpense
+          ownerProfit: ownerProfitFromAmounts(customerPay, contractorPay, additionalExpense)
         }
       ];
     })

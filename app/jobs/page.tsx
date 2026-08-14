@@ -27,13 +27,13 @@ import { normalizeJobStatus } from '@/lib/worker-assignment';
 
 const copy = {
   en: {
-    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', address: 'Address', assignedTo: 'Assigned to', clientPay: 'Client Pay', workerPay: 'Worker Pay', ownerProfit: 'Owner Profit', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Unassigned', sortBy: 'Sort', sortByAssigned: 'Assigned worker', filters: 'Filter jobs', moreFilters: 'More filters', worker: 'Worker', allWorkers: 'All workers', client: 'Client', allClients: 'All clients', property: 'Property', allProperties: 'All properties', month: 'Month', allMonths: 'All months', year: 'Year', allYears: 'All years', clearFilters: 'Clear filters'
+    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', address: 'Address', assignedTo: 'Assigned to', customerPay: 'Customer Pay', contractorPay: 'Contractor Pay', ownerProfit: 'Owner Profit', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Unassigned', sortBy: 'Sort', sortByAssigned: 'Assigned worker', filters: 'Filter jobs', moreFilters: 'More filters', worker: 'Worker', allWorkers: 'All workers', client: 'Client', allClients: 'All clients', property: 'Property', allProperties: 'All properties', month: 'Month', allMonths: 'All months', year: 'Year', allYears: 'All years', clearFilters: 'Clear filters'
   },
   es: {
-    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', address: 'Dirección', assignedTo: 'Asignado a', clientPay: 'Pago del cliente', workerPay: 'Pago al trabajador', ownerProfit: 'Ganancia del propietario', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Sin asignar', sortBy: 'Ordenar', sortByAssigned: 'Trabajador asignado', filters: 'Filtrar trabajos', moreFilters: 'Más filtros', worker: 'Trabajador', allWorkers: 'Todos los trabajadores', client: 'Cliente', allClients: 'Todos los clientes', property: 'Propiedad', allProperties: 'Todas las propiedades', month: 'Mes', allMonths: 'Todos los meses', year: 'Año', allYears: 'Todos los años', clearFilters: 'Borrar filtros'
+    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', address: 'Dirección', assignedTo: 'Asignado a', customerPay: 'Pago del cliente', contractorPay: 'Pago al contratista', ownerProfit: 'Ganancia del propietario', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Sin asignar', sortBy: 'Ordenar', sortByAssigned: 'Trabajador asignado', filters: 'Filtrar trabajos', moreFilters: 'Más filtros', worker: 'Trabajador', allWorkers: 'Todos los trabajadores', client: 'Cliente', allClients: 'Todos los clientes', property: 'Propiedad', allProperties: 'Todas las propiedades', month: 'Mes', allMonths: 'Todos los meses', year: 'Año', allYears: 'Todos los años', clearFilters: 'Borrar filtros'
   },
   vi: {
-    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', address: 'Địa chỉ', assignedTo: 'Phân công', clientPay: 'Khách trả', workerPay: 'Trả nhân sự', ownerProfit: 'Lợi nhuận chủ', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Chưa phân công', sortBy: 'Sắp xếp', sortByAssigned: 'Nhân sự được giao', filters: 'Lọc công việc', moreFilters: 'Bộ lọc khác', worker: 'Nhân sự', allWorkers: 'Tất cả nhân sự', client: 'Khách hàng', allClients: 'Tất cả khách hàng', property: 'Địa điểm', allProperties: 'Tất cả địa điểm', month: 'Tháng', allMonths: 'Tất cả tháng', year: 'Năm', allYears: 'Tất cả năm', clearFilters: 'Xóa bộ lọc'
+    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', address: 'Địa chỉ', assignedTo: 'Phân công', customerPay: 'Khách trả', contractorPay: 'Trả nhà thầu', ownerProfit: 'Lợi nhuận chủ', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Chưa phân công', sortBy: 'Sắp xếp', sortByAssigned: 'Nhân sự được giao', filters: 'Lọc công việc', moreFilters: 'Bộ lọc khác', worker: 'Nhân sự', allWorkers: 'Tất cả nhân sự', client: 'Khách hàng', allClients: 'Tất cả khách hàng', property: 'Địa điểm', allProperties: 'Tất cả địa điểm', month: 'Tháng', allMonths: 'Tất cả tháng', year: 'Năm', allYears: 'Tất cả năm', clearFilters: 'Xóa bộ lọc'
   }
 } as const;
 
@@ -57,11 +57,16 @@ type Job = {
   billing_status?: JobBillingStatus | string | null;
 };
 
-type OwnerFinancialSummary = {
-  customerPay: number;
-  contractorPay: number;
-  ownerProfit: number;
+type OwnerJobFinancials = {
+  customerPay: number | null;
+  contractorPay: number | null;
+  ownerProfit: number | null;
 };
+
+function formatOwnerJobMoney(value: number | null | undefined, locale: string) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  return formatMoneyUsd(value, locale);
+}
 
 function formatDate(job: Job, locale: string, unscheduled: string) {
   const value = job.scheduled_start || job.start_date || job.due_date;
@@ -133,7 +138,7 @@ function JobsList() {
   const createdFromFilter = searchParams.get('from');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [workerNames, setWorkerNames] = useState<Record<string, string>>({});
-  const [ownerFinancials, setOwnerFinancials] = useState<Record<string, OwnerFinancialSummary>>({});
+  const [ownerFinancials, setOwnerFinancials] = useState<Record<string, OwnerJobFinancials>>({});
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [loading, setLoading] = useState(true);
@@ -187,14 +192,20 @@ function JobsList() {
       setJobs(visibleJobs);
 
       if (workspaceRole === 'owner' && visibleJobs.length) {
-        const ids = visibleJobs.map((job) => job.id).join(',');
-        const financialRes = await fetch(`/api/jobs/owner-financials?ids=${encodeURIComponent(ids)}`, { cache: 'no-store' });
-        if (financialRes.ok) {
-          const financialJson = (await financialRes.json()) as { financials?: Record<string, OwnerFinancialSummary> };
-          setOwnerFinancials(financialJson.financials || {});
-        } else {
-          setOwnerFinancials({});
+        const ids = visibleJobs.map((job) => job.id).filter(Boolean);
+        const merged: Record<string, OwnerJobFinancials> = {};
+        let loaded = true;
+        for (let index = 0; index < ids.length; index += 250) {
+          const chunk = ids.slice(index, index + 250);
+          const financialRes = await fetch(`/api/jobs/owner-financials?ids=${encodeURIComponent(chunk.join(','))}`, { cache: 'no-store' });
+          if (!financialRes.ok) {
+            loaded = false;
+            break;
+          }
+          const financialJson = (await financialRes.json()) as { financials?: Record<string, OwnerJobFinancials> };
+          Object.assign(merged, financialJson.financials || {});
         }
+        setOwnerFinancials(loaded ? merged : {});
       } else {
         setOwnerFinancials({});
       }
@@ -275,7 +286,7 @@ function JobsList() {
   }
 
   const managerView = isManagerRole(role);
-  const ownerView = role === 'owner';
+  const isOwner = role === 'owner';
   const canManageFinancials = canAccessFinancials(role, plan);
   const canExport = managerView;
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
@@ -368,7 +379,7 @@ function JobsList() {
         {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
         {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
-          <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className="jobs-operations-table jobs-mobile-table"><thead><tr>{[c.date, c.address, c.assignedTo, ...(ownerView ? [c.clientPay, c.workerPay, c.ownerProfit] : []), c.status, c.actions].map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
+          <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
             {rows.map((job) => {
               const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
               const needsWorker = jobNeedsWorker(job);
@@ -376,15 +387,19 @@ function JobsList() {
               const locationLabel = jobListAddress(job) || c.unscheduled;
               const showInvoice = canManageFinancials && canCreateInvoiceForJob(job) && String(job.billing_status || '') !== 'paid' && String(job.billing_status || '') !== 'receipt_sent';
               const menuOpen = openMenuId === job.id;
-              const financials = ownerFinancials[job.id];
+              const ownerMoney = isOwner ? ownerFinancials[job.id] : undefined;
               return (
-                <tr key={job.id} className="jobs-operations-row" tabIndex={0} role="link" aria-label={locationLabel} onClick={() => openJob(job.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openJob(job.id); } }}>
+                <tr key={job.id} className={`jobs-operations-row${isOwner ? ' jobs-owner-finance-row' : ''}`} tabIndex={0} role="link" aria-label={locationLabel} onClick={() => openJob(job.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openJob(job.id); } }}>
                   <td data-label={c.date} className="jobs-col-date"><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
-                  <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{canManageFinancials && !ownerView ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
+                  <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{canManageFinancials && !isOwner ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
                   <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
-                  {ownerView ? <td data-label={c.clientPay} className="jobs-col-money"><strong>{financials ? formatMoneyUsd(financials.customerPay, locale) : '—'}</strong></td> : null}
-                  {ownerView ? <td data-label={c.workerPay} className="jobs-col-money"><strong>{financials ? formatMoneyUsd(financials.contractorPay, locale) : '—'}</strong></td> : null}
-                  {ownerView ? <td data-label={c.ownerProfit} className="jobs-col-money"><strong>{financials ? formatMoneyUsd(financials.ownerProfit, locale) : '—'}</strong></td> : null}
+                  {isOwner ? (
+                    <>
+                      <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</td>
+                      <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</td>
+                      <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</td>
+                    </>
+                  ) : null}
                   <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
                   <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={`/jobs/${job.id}`} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
                 </tr>
