@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { AppFooter } from '@/components/app-footer';
 import { OrgSwitcher } from '@/components/org-switcher';
+import { PortalShellNav } from '@/components/portal/portal-shell-nav';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import { getContractorLayoutCopy } from '@/lib/i18n/ui-chrome-copy';
 import './contractor-minimal.css';
@@ -52,13 +53,7 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
 
           <OrgSwitcher />
 
-          <nav className="contractor-nav">
-            {contractorLinks.map((item) => (
-              <Link key={item.href} href={item.href}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <PortalShellNav links={contractorLinks} />
         </div>
       </aside>
 
