@@ -12,6 +12,7 @@ import {
   isCancelledOrSkippedStatus,
   isCompletedLikeStatus
 } from '@/lib/recurring-jobs';
+import { effectiveContractorCost } from '@/lib/finance/contractor-cost';
 
 const CANCELLED_JOB_STATUSES = ['cancelled', 'canceled'];
 const CANCELLED_BOOKING_STATUSES = ['cancelled', 'canceled'];
@@ -33,8 +34,8 @@ export type DashboardRevenueMetrics = {
   /** Uninvoiced job expected revenue in the selected period (excludes jobs that already have an invoice) */
   uninvoicedCompletedWork: number;
   /**
-   * Job revenue = Money received + Customers owe for the selected filter.
-   * Always reconciles with paidToYou and periodOutstanding/stillOwed.
+   * Job revenue for jobs whose scheduled service date is in the selected period.
+   * This is job-based and does not move when a customer pays on a different day.
    */
   expectedRevenue: number;
   /**
@@ -1041,6 +1042,47 @@ export type JobExpectedRevenueRow = JobDateFields & {
   revenue_amount?: unknown;
 };
 
+export type DashboardJobFinanceRow = JobCountRow & {
+  revenue_amount?: unknown;
+  expected_contractor_cost?: unknown;
+  expected_additional_expense?: unknown;
+};
+
+/** Job revenue attributed only by each job's operational service date. */
+export function calculateJobRevenueFromJobs(jobs: DashboardJobFinanceRow[]): number {
+  return Number(
+    jobs
+      .reduce((sum, job) => sum + Math.max(0, num(job.revenue_amount)), 0)
+      .toFixed(2)
+  );
+}
+
+/**
+ * Match the cost shown on job cards: use recorded labor when present,
+ * otherwise use the job's planned contractor cost.
+ */
+export function calculateEffectiveContractorCostForJobs(
+  jobs: DashboardJobFinanceRow[],
+  laborRows: LaborCostRow[]
+): number {
+  const laborByJobId = new Map<string, number>();
+  for (const row of laborRows) {
+    const jobId = String(row.job_id || '').trim();
+    if (!jobId) continue;
+    laborByJobId.set(jobId, (laborByJobId.get(jobId) || 0) + num(row.total_cost));
+  }
+
+  return Number(
+    jobs
+      .reduce((sum, job) => {
+        const jobId = String(job.id || '').trim();
+        const recordedLabor = jobId ? laborByJobId.get(jobId) || 0 : 0;
+        return sum + effectiveContractorCost(num(job.expected_contractor_cost), recordedLabor);
+      }, 0)
+      .toFixed(2)
+  );
+}
+
 /**
  * Uninvoiced expected revenue for jobs in the period.
  * Jobs that already have an invoice are never included.
@@ -1163,7 +1205,7 @@ export function buildPrimaryDashboardMetrics(input: {
   const defaults: Record<PrimaryDashboardMetricKey, { label: string; help: string }> = {
     expectedRevenue: {
       label: 'Job revenue',
-      help: 'Money received plus money customers still owe. Always reconciles with those two cards.'
+      help: 'Total customer pay for jobs scheduled in the selected period.'
     },
     collected: {
       label: 'Money received',
@@ -1385,7 +1427,7 @@ export async function fetchDashboardRevenueMetrics(
     supabase
       .from('jobs')
       .select(
-        'id, status, created_at, start_date, scheduled_start, completed_at, due_date, is_skipped, recurring_series_id, occurrence_date'
+        'id, status, created_at, start_date, scheduled_start, completed_at, due_date, is_skipped, recurring_series_id, occurrence_date, revenue_amount, expected_contractor_cost, expected_additional_expense'
       )
       .eq('organization_id', organizationId),
     // Expenses have only amount + date (no payment_status). Treat date as cash-expense date.
@@ -1412,7 +1454,9 @@ export async function fetchDashboardRevenueMetrics(
   if (jobsRes.error && /column|schema cache|does not exist/i.test(String((jobsRes.error as { message?: string }).message || ''))) {
     jobsForCountingRes = await supabase
       .from('jobs')
-      .select('id, status, created_at, start_date, scheduled_start, completed_at, due_date')
+      .select(
+        'id, status, created_at, start_date, scheduled_start, completed_at, due_date, revenue_amount, expected_contractor_cost, expected_additional_expense'
+      )
       .eq('organization_id', organizationId);
   }
 
@@ -1450,7 +1494,7 @@ export async function fetchDashboardRevenueMetrics(
 
   const revenueJobs = withVisitFallback(safeData(manualRevenueJobsRes, []) as JobRevenueRow[]);
   const rangeJobsSource = withVisitFallback(
-    safeData(jobsForCountingRes, []) as Array<JobDateFields & JobCountRow>
+    safeData(jobsForCountingRes, []) as Array<JobDateFields & DashboardJobFinanceRow>
   );
   // Job operational dates for period attribution (invoices + contractor labor).
   const jobDates = buildJobOperationalDateMap([
@@ -1508,21 +1552,22 @@ export async function fetchDashboardRevenueMetrics(
   const uninvoicedCompletedWork = Number(
     calculateUninvoicedExpectedRevenue(revenueJobs as JobExpectedRevenueRow[], invoicedJobIds, start, end).toFixed(2)
   );
-  // Canonical job revenue: Money received + Customers owe (never a separate accrual path).
-  const customersOwe = customersOweForRange(range, stillOwed, periodOutstanding);
-  const expectedRevenue = calculateJobRevenue(paidToYou, customersOwe);
 
   const averageDaysToPayment = paymentDurations.length
     ? paymentDurations.reduce((sum, days) => sum + days, 0) / paymentDurations.length
     : null;
 
-  // Single job-count engine for every dashboard filter.
-  const rangeJobs = filterValidJobsInPeriod(rangeJobsSource as JobCountRow[], range);
+  // One period job set drives job count, revenue, contractor cost, and profit.
+  const rangeJobs = filterValidJobsInPeriod(
+    rangeJobsSource as DashboardJobFinanceRow[],
+    range
+  );
   const jobsByStatus = buildJobsByStatusCounts(rangeJobs);
   const totalJobsInPeriod = rangeJobs.length;
+  const expectedRevenue = calculateJobRevenueFromJobs(rangeJobs);
 
   const laborRows = safeData(laborRes, []) as LaborCostRow[];
-  const contractorPay = calculateContractorAccruedCost(laborRows, start, end, jobDates);
+  const contractorPay = calculateEffectiveContractorCostForJobs(rangeJobs, laborRows);
   const contractorPaymentsPaid = calculateContractorCashPaid(laborRows, start, end, range);
   const periodUnpaidContractorPay = calculatePeriodUnpaidContractorPay(laborRows, start, end, jobDates);
   const unpaidContractorPay = calculateUnpaidContractorPay(laborRows);
