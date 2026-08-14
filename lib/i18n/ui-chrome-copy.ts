@@ -249,7 +249,7 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     settings: 'Settings',
     navAria: 'Contractor navigation',
     portalSubtitle: 'Contractor portal',
-    roleNote: 'You can only view work assigned or shared with your contractor profile.'
+    roleNote: 'Your assigned work, schedule, and earnings in one place.'
   },
   es: {
     dashboard: 'Panel',
@@ -259,7 +259,7 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     settings: 'Configuración',
     navAria: 'Navegación del contratista',
     portalSubtitle: 'Portal del contratista',
-    roleNote: 'Solo puede ver el trabajo asignado o compartido con su perfil de contratista.'
+    roleNote: 'Su trabajo asignado, horario y ganancias en un solo lugar.'
   },
   vi: {
     dashboard: 'Bảng điều khiển',
@@ -269,7 +269,7 @@ const contractorLayoutByLocale: Record<Locale, ContractorLayoutCopy> = {
     settings: 'Cài đặt',
     navAria: 'Điều hướng nhà thầu',
     portalSubtitle: 'Cổng nhà thầu',
-    roleNote: 'Bạn chỉ có thể xem công việc được giao hoặc chia sẻ với hồ sơ nhà thầu của mình.'
+    roleNote: 'Công việc, lịch và thu nhập của bạn ở cùng một nơi.'
   }
 };
 
