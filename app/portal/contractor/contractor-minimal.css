@@ -1,12 +1,29 @@
 .contractor-dashboard-shell {
+  --portal-navy: #243f53;
+  --portal-blue: #3f586a;
+  --portal-blue-soft: #dce7ed;
+  --portal-mist: #edf3f6;
+  --portal-line: rgba(36, 63, 83, 0.14);
+  --portal-text: #1f3443;
+  --portal-muted: #62727d;
   position: relative;
+  display: grid !important;
+  grid-template-columns: 268px minmax(0, 1fr) !important;
+  grid-template-areas: "portal-sidebar portal-main" !important;
   min-height: 100vh;
-  background: #f3efe8;
-  color: #24313d;
+  background: var(--portal-mist) !important;
+  color: var(--portal-text);
 }
 
 .contractor-background {
-  display: none !important;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block !important;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(88, 122, 144, 0.13), transparent 30%),
+    linear-gradient(180deg, #f5f8fa 0%, #e7eff3 100%);
 }
 
 .contractor-sidebar,
@@ -17,17 +34,22 @@
 }
 
 .contractor-sidebar {
+  grid-area: portal-sidebar !important;
+  display: flex !important;
+  min-width: 0;
   min-height: 100vh;
-  padding: 24px 18px;
-  background: #e9e1d7;
-  border-right: 1px solid rgba(58, 48, 40, 0.12);
+  padding: 26px 22px;
+  background: var(--portal-navy) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
 }
 
 .contractor-sidebar-inner {
   position: sticky;
-  top: 24px;
+  top: 26px;
   display: flex;
-  min-height: calc(100vh - 48px);
+  width: 100%;
+  min-height: calc(100vh - 52px);
   flex-direction: column;
 }
 
@@ -35,182 +57,337 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
-  color: #24313d;
+  margin: 0 4px;
+  padding: 10px 8px;
+  color: #ffffff !important;
+  text-decoration: none;
 }
 
 .contractor-brand-mark {
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   place-items: center;
-  border-radius: 10px;
-  background: #40515f;
-  color: #fff;
-  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .contractor-brand strong,
 .contractor-brand small {
   display: block;
+  color: #ffffff !important;
 }
 
 .contractor-brand small {
-  margin-top: 2px;
-  color: #756b61;
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.7) !important;
   font-size: 12px;
+}
+
+.contractor-sidebar .org-switcher {
+  display: grid;
+  gap: 7px;
+  margin: 22px 4px 0;
+}
+
+.contractor-sidebar .org-switcher-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.contractor-sidebar .org-switcher-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 10px;
+  background: #ffffff !important;
+  color: var(--portal-navy) !important;
 }
 
 .contractor-nav {
   display: grid;
-  gap: 6px;
-  margin-top: 28px;
+  gap: 7px;
+  margin-top: 24px;
 }
 
 .contractor-nav a {
-  padding: 11px 13px;
-  border-radius: 8px;
-  color: #59636c;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.8) !important;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .contractor-nav a:hover,
 .contractor-nav a:focus-visible {
-  background: rgba(255, 255, 255, 0.58);
-  color: #24313d;
+  background: rgba(255, 255, 255, 0.11);
+  color: #ffffff !important;
 }
 
 .contractor-role-note {
-  margin-top: auto;
-  padding: 14px;
-  border: 1px solid rgba(58, 48, 40, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.42);
-  color: #756b61;
+  margin: auto 4px 0;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .contractor-main {
+  grid-area: portal-main !important;
+  display: block !important;
   width: 100%;
-  max-width: none;
-  padding: 0;
-  background: #f3efe8 !important;
-}
-
-.contractor-main > main {
-  width: min(1120px, calc(100% - 48px));
-  max-width: 1120px !important;
-  margin: 0 auto !important;
-  padding: 34px 0 64px !important;
+  min-width: 0;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 40px clamp(28px, 4vw, 64px) 56px !important;
   background: transparent !important;
+  box-sizing: border-box;
 }
 
-.contractor-main > main > header.card {
-  margin: 0 0 20px !important;
-  padding: 28px 30px;
-  border: 1px solid rgba(58, 48, 40, 0.11) !important;
+.contractor-main > .contractor-dashboard,
+.contractor-main > .client-portal-jobs,
+.contractor-main > .client-portal-job-detail,
+.contractor-main > .client-portal-settings {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.contractor-main > footer {
+  width: min(1180px, 100%);
+  margin: 42px auto 0 !important;
+}
+
+.contractor-main .card,
+.contractor-main .settings-card,
+.contractor-main .role-summary-card,
+.contractor-main .client-job-card {
+  border: 1px solid var(--portal-line) !important;
   border-radius: 16px !important;
-  background: #fcfaf6 !important;
-  box-shadow: 0 10px 28px rgba(73, 62, 51, 0.07) !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  box-shadow: 0 8px 24px rgba(36, 63, 83, 0.065) !important;
 }
 
-.contractor-main > main > header.card .page-head {
-  margin-bottom: 0;
+.contractor-main header.card {
+  margin: 0 0 24px !important;
+  padding: 30px 32px !important;
 }
 
-.contractor-main > main > header.card .button-row {
-  display: none !important;
-}
-
-.contractor-main > main > .card,
-.contractor-main > main > .metric-grid .card {
-  border: 1px solid rgba(58, 48, 40, 0.1) !important;
-  border-radius: 14px !important;
-  background: #fffdf9 !important;
-  box-shadow: 0 6px 20px rgba(73, 62, 51, 0.055) !important;
+.contractor-main .metric-grid,
+.contractor-main .role-summary-grid {
+  display: grid;
+  gap: 18px !important;
+  margin: 0 0 24px;
 }
 
 .contractor-main .metric-grid {
-  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
 }
 
-.contractor-main .metric-grid .card {
-  min-height: 118px;
-  padding: 20px;
+.contractor-main .metric-grid .card,
+.contractor-main .role-summary-card {
+  min-height: 124px;
+  padding: 22px !important;
+  box-sizing: border-box;
 }
 
-.contractor-main .metric-grid .card h2 {
-  margin: 8px 0 0;
-  font-size: clamp(28px, 3vw, 36px);
-  font-weight: 500;
-  letter-spacing: -0.035em;
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .settings-card {
+  margin-top: 20px;
+  padding: 26px !important;
+}
+
+.contractor-main .list-row,
+.contractor-main .client-job-card {
+  padding: 18px 0 !important;
+  border-color: var(--portal-line) !important;
+}
+
+.contractor-main .client-job-card {
+  margin-top: 14px;
+  padding: 20px !important;
+}
+
+.contractor-main .button-row,
+.contractor-main .contractor-portal-actions,
+.contractor-main .role-dashboard-topbar,
+.contractor-main .portal-client-nav {
+  gap: 10px !important;
+  margin-top: 18px;
+}
+
+.contractor-main .btn,
+.contractor-mobile-header .btn {
+  border-color: rgba(36, 63, 83, 0.22) !important;
+  background: #ffffff !important;
+  color: var(--portal-navy) !important;
+}
+
+.contractor-main .btn-primary,
+.contractor-main .is-active,
+.contractor-mobile-header .btn-primary {
+  border-color: var(--portal-blue) !important;
+  background: var(--portal-blue) !important;
+  color: #ffffff !important;
 }
 
 .contractor-main .eyebrow {
-  background: #eee4d6;
-  border-color: #ded0bf;
-  color: #685b4f;
+  border-color: rgba(63, 88, 106, 0.18) !important;
+  background: var(--portal-blue-soft) !important;
+  color: var(--portal-navy) !important;
 }
 
-.contractor-main .list-row {
-  border-color: rgba(58, 48, 40, 0.09);
+.contractor-main .muted {
+  color: var(--portal-muted) !important;
 }
 
 .contractor-mobile-header {
+  grid-area: portal-header;
+  display: none !important;
   align-items: center;
   justify-content: space-between;
-  min-height: 64px;
-  background: #fcfaf6;
-  border-bottom: 1px solid rgba(58, 48, 40, 0.1);
+  min-height: 72px;
+  padding: 12px 20px;
+  background: var(--portal-navy) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 
 .contractor-mobile-brand {
-  color: #24313d;
+  margin-left: 2px;
+  color: #ffffff !important;
   font-size: 19px;
-  font-weight: 600;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-@media (max-width: 900px) {
-  .contractor-main .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.portal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-header-actions .org-switcher {
+  display: block;
+}
+
+.portal-header-actions .org-switcher-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.portal-header-actions .org-switcher-select {
+  width: min(48vw, 250px);
+  min-height: 46px;
+  background: #ffffff !important;
+  color: var(--portal-navy) !important;
+}
+
+.portal-create-company-card {
+  scroll-margin-top: 96px;
+  border-left: 4px solid var(--portal-blue) !important;
+}
+
+@media (max-width: 1050px) {
+  .contractor-dashboard-shell {
+    display: block !important;
+  }
+
+  .contractor-sidebar {
+    display: none !important;
+  }
+
+  .contractor-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex !important;
+  }
+
+  .contractor-main {
+    padding: 28px 24px 44px !important;
   }
 }
 
 @media (max-width: 760px) {
-  .contractor-dashboard-shell {
-    display: block;
-  }
-
   .contractor-mobile-header {
-    display: flex;
+    min-height: 68px;
+    padding: 10px 14px;
   }
 
-  .contractor-sidebar {
-    display: none;
+  .contractor-main {
+    padding: 20px 14px 36px !important;
   }
 
-  .contractor-main > main {
-    width: min(100% - 24px, 1120px);
-    padding: 16px 0 40px !important;
+  .contractor-main header.card {
+    padding: 22px 20px !important;
   }
 
-  .contractor-main > main > header.card {
-    padding: 22px 18px;
+  .contractor-main .metric-grid,
+  .contractor-main .role-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .contractor-main .metric-grid .card,
+  .contractor-main .role-summary-card {
+    min-height: 108px;
+    padding: 18px !important;
+  }
+
+  .contractor-main .contractor-content-card,
+  .contractor-main .portal-dashboard-section,
+  .contractor-main .settings-card {
+    padding: 20px !important;
   }
 }
 
-@media (max-width: 560px) {
-  .contractor-main .metric-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+@media (max-width: 540px) {
+  .contractor-mobile-header {
+    align-items: flex-start;
+    gap: 10px;
   }
 
-  .contractor-main .metric-grid .card {
-    min-height: 102px;
-    padding: 18px;
+  .portal-header-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .portal-header-actions .org-switcher-select {
+    width: min(58vw, 220px);
+    min-height: 42px;
+  }
+
+  .portal-header-actions .btn {
+    min-height: 40px !important;
+  }
+
+  .contractor-main .metric-grid,
+  .contractor-main .role-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .contractor-main .contractor-portal-actions,
+  .contractor-main .portal-client-nav,
+  .contractor-main .role-period-filter {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
   }
 }
