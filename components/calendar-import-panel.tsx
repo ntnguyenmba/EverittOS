@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
 import { inferFailureCodeFromSafeMessage } from '@/lib/calendar-import/errors';
@@ -41,6 +42,13 @@ type ReviewItem = {
   changes: Array<'time' | 'location' | 'title' | 'status'>;
   jobId: string | null;
   jobTitle: string | null;
+  propertyId: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  timezone: string | null;
+  revenueAmount: number | null;
 };
 
 type CalendarImportPanelProps = {
@@ -49,13 +57,13 @@ type CalendarImportPanelProps = {
 
 const reviewCopy = {
   en: {
-    review: 'Review changes', reviewing: 'Checking…', applying: 'Applying…', ignoring: 'Ignoring…', new: 'New event', changed: 'Job changed', possible_match: 'Possible match', cancelled: 'Cancellation', no_change: 'No change', time: 'Time changed', location: 'Location changed', title: 'Name changed', status: 'Status changed', none: 'No calendar changes need action.', intro: 'Calendar events stay here for review. Nothing is added to or changed in Jobs until you approve it.', matched: 'Possible existing job', reviewError: 'Calendar changes could not be reviewed.', add: 'Add as Job', update: 'Update Job', applyCancellation: 'Apply cancellation', ignore: 'Ignore', viewJob: 'View existing job', possibleHelp: 'Review the existing job before deciding. EverittOS will not create a duplicate automatically.', statusConnected: 'Connected', statusDisconnected: 'Not connected', manageInSchedule: 'Manage in Schedule', statusHelp: 'Calendar import is managed from Schedule.', jobAdded: 'Job added.'
+    review: 'Review changes', reviewing: 'Checking…', applying: 'Applying…', ignoring: 'Ignoring…', new: 'New event', changed: 'Job changed', possible_match: 'Possible match', cancelled: 'Cancellation', no_change: 'No change', time: 'Time changed', location: 'Location changed', title: 'Name changed', status: 'Status changed', none: 'No calendar changes need action.', intro: 'Calendar events stay here for review. Nothing is added to or changed in Jobs until you approve it.', matched: 'Possible existing job', reviewError: 'Calendar changes could not be reviewed.', add: 'Add as Job', update: 'Update Job', applyCancellation: 'Apply cancellation', ignore: 'Ignore', viewJob: 'View existing job', possibleHelp: 'Review the existing job before deciding. EverittOS will not create a duplicate automatically.', statusConnected: 'Connected', statusDisconnected: 'Not connected', manageInSchedule: 'Manage in Schedule', statusHelp: 'Calendar import is managed from Schedule.', jobAdded: 'Job added.', client: 'Client'
   },
   es: {
-    review: 'Revisar cambios', reviewing: 'Revisando…', applying: 'Aplicando…', ignoring: 'Ignorando…', new: 'Evento nuevo', changed: 'Trabajo modificado', possible_match: 'Posible coincidencia', cancelled: 'Cancelación', no_change: 'Sin cambios', time: 'Cambió la hora', location: 'Cambió la ubicación', title: 'Cambió el nombre', status: 'Cambió el estado', none: 'No hay cambios del calendario que requieran acción.', intro: 'Los eventos del calendario permanecen aquí para revisión. Nada se agrega ni cambia en Trabajos hasta que lo apruebe.', matched: 'Posible trabajo existente', reviewError: 'No se pudieron revisar los cambios del calendario.', add: 'Agregar como trabajo', update: 'Actualizar trabajo', applyCancellation: 'Aplicar cancelación', ignore: 'Ignorar', viewJob: 'Ver trabajo existente', possibleHelp: 'Revise el trabajo existente antes de decidir. EverittOS no creará un duplicado automáticamente.', statusConnected: 'Conectado', statusDisconnected: 'No conectado', manageInSchedule: 'Administrar en Horario', statusHelp: 'La importación del calendario se administra desde Horario.', jobAdded: 'Trabajo agregado.'
+    review: 'Revisar cambios', reviewing: 'Revisando…', applying: 'Aplicando…', ignoring: 'Ignorando…', new: 'Evento nuevo', changed: 'Trabajo modificado', possible_match: 'Posible coincidencia', cancelled: 'Cancelación', no_change: 'Sin cambios', time: 'Cambió la hora', location: 'Cambió la ubicación', title: 'Cambió el nombre', status: 'Cambió el estado', none: 'No hay cambios del calendario que requieran acción.', intro: 'Los eventos del calendario permanecen aquí para revisión. Nada se agrega ni cambia en Trabajos hasta que lo apruebe.', matched: 'Posible trabajo existente', reviewError: 'No se pudieron revisar los cambios del calendario.', add: 'Agregar como trabajo', update: 'Actualizar trabajo', applyCancellation: 'Aplicar cancelación', ignore: 'Ignorar', viewJob: 'Ver trabajo existente', possibleHelp: 'Revise el trabajo existente antes de decidir. EverittOS no creará un duplicado automáticamente.', statusConnected: 'Conectado', statusDisconnected: 'No conectado', manageInSchedule: 'Administrar en Horario', statusHelp: 'La importación del calendario se administra desde Horario.', jobAdded: 'Trabajo agregado.', client: 'Cliente'
   },
   vi: {
-    review: 'Xem thay đổi', reviewing: 'Đang kiểm tra…', applying: 'Đang áp dụng…', ignoring: 'Đang bỏ qua…', new: 'Sự kiện mới', changed: 'Công việc đã thay đổi', possible_match: 'Có thể trùng', cancelled: 'Hủy lịch', no_change: 'Không thay đổi', time: 'Đổi thời gian', location: 'Đổi địa điểm', title: 'Đổi tên', status: 'Đổi trạng thái', none: 'Không có thay đổi lịch nào cần xử lý.', intro: 'Sự kiện lịch sẽ ở đây để bạn xem trước. Không có gì được thêm hoặc thay đổi trong Công việc cho đến khi bạn đồng ý.', matched: 'Có thể là công việc hiện có', reviewError: 'Không thể xem các thay đổi của lịch.', add: 'Thêm thành công việc', update: 'Cập nhật công việc', applyCancellation: 'Áp dụng hủy lịch', ignore: 'Bỏ qua', viewJob: 'Xem công việc hiện có', possibleHelp: 'Xem công việc hiện có trước khi quyết định. EverittOS sẽ không tự tạo bản trùng.', statusConnected: 'Đã kết nối', statusDisconnected: 'Chưa kết nối', manageInSchedule: 'Quản lý trong Lịch', statusHelp: 'Nhập lịch được quản lý từ trang Lịch.', jobAdded: 'Đã thêm công việc.'
+    review: 'Xem thay đổi', reviewing: 'Đang kiểm tra…', applying: 'Đang áp dụng…', ignoring: 'Đang bỏ qua…', new: 'Sự kiện mới', changed: 'Công việc đã thay đổi', possible_match: 'Có thể trùng', cancelled: 'Hủy lịch', no_change: 'Không thay đổi', time: 'Đổi thời gian', location: 'Đổi địa điểm', title: 'Đổi tên', status: 'Đổi trạng thái', none: 'Không có thay đổi lịch nào cần xử lý.', intro: 'Sự kiện lịch sẽ ở đây để bạn xem trước. Không có gì được thêm hoặc thay đổi trong Công việc cho đến khi bạn đồng ý.', matched: 'Có thể là công việc hiện có', reviewError: 'Không thể xem các thay đổi của lịch.', add: 'Thêm thành công việc', update: 'Cập nhật công việc', applyCancellation: 'Áp dụng hủy lịch', ignore: 'Bỏ qua', viewJob: 'Xem công việc hiện có', possibleHelp: 'Xem công việc hiện có trước khi quyết định. EverittOS sẽ không tự tạo bản trùng.', statusConnected: 'Đã kết nối', statusDisconnected: 'Chưa kết nối', manageInSchedule: 'Quản lý trong Lịch', statusHelp: 'Nhập lịch được quản lý từ trang Lịch.', jobAdded: 'Đã thêm công việc.', client: 'Khách hàng'
   }
 } as const;
 
@@ -96,6 +104,7 @@ function lastErrorMessage(t: (path: string, values?: Record<string, string | num
 }
 
 export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const c = reviewCopy[locale] || reviewCopy.en;
   const feedback = useAppFeedback();
@@ -161,7 +170,14 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: item.title?.trim() || item.location?.trim() || 'Calendar event',
+        customer_id: item.customerId,
+        property_id: item.propertyId,
+        customer_name: item.customerName,
+        customer_email: item.customerEmail,
+        phone: item.customerPhone,
         address: item.location?.trim() || null,
+        timezone: item.timezone,
+        revenue_amount: item.revenueAmount,
         status: item.start ? 'scheduled' : 'new',
         scheduled_start: item.start || null,
         scheduled_end: item.end || null
@@ -170,9 +186,13 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
     const payload = (await response.json().catch(() => ({}))) as { error?: string; job?: { id?: string }; id?: string };
     if (!response.ok) throw new Error(payload.error || 'The job could not be added.');
 
+    const jobId = payload.job?.id || payload.id;
+    if (!jobId) throw new Error('The job was added, but EverittOS could not open it.');
+
     await markCalendarEventHandled(item.uid);
     setReviewItems((current) => current?.filter((row) => row.uid !== item.uid) || current);
     feedback.success(c.jobAdded);
+    router.push(`/jobs/${jobId}`);
   }
 
   async function applyEvent(item: ReviewItem) {
@@ -181,7 +201,6 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
     try {
       if (item.kind === 'new') {
         await createNewJob(item);
-        await loadStatus();
         return;
       }
 
@@ -289,6 +308,7 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}><strong>{item.title}</strong><span className="muted">{c[item.kind]}</span></div>
                     {item.start ? <div className="muted" style={{ marginTop: 4 }}>{formatDateTimeLocale(item.start, locale)}</div> : null}
                     {item.location ? <div className="muted">{item.location}</div> : null}
+                    {item.customerName ? <div className="muted" style={{ marginTop: 4 }}>{c.client}: {item.customerName}</div> : null}
                     {item.jobTitle && item.kind === 'possible_match' ? <div className="muted" style={{ marginTop: 4 }}>{c.matched}: {item.jobTitle}</div> : null}
                     {item.changes.length ? <div className="muted" style={{ marginTop: 4 }}>{item.changes.map((change) => c[change]).join(' · ')}</div> : null}
                     {item.kind === 'possible_match' ? <p className="muted" style={{ marginTop: 8 }}>{c.possibleHelp}</p> : null}
