@@ -3,7 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
-import { parseMoneyInput } from '@/lib/finance-format';
+import { parseSignedMoneyInput } from '@/lib/finance-format';
 import { isValidUuid } from '@/lib/input-validation';
 import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { createAdminSupabase } from '@/lib/supabase-admin';
@@ -61,9 +61,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (body.vendor !== undefined) patch.vendor = body.vendor?.trim() || null;
   if (body.description !== undefined) patch.description = body.description?.trim() || null;
   if (body.amount !== undefined) {
-    const amount = parseMoneyInput(body.amount);
-    if (amount <= 0) {
-      return NextResponse.json({ error: 'Amount must be greater than zero' }, { status: 400 });
+    const amount = parseSignedMoneyInput(body.amount);
+    if (amount === 0) {
+      return NextResponse.json({ error: 'Amount must not be zero' }, { status: 400 });
     }
     patch.amount = amount;
   }
