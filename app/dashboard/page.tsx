@@ -282,12 +282,12 @@ export default function DashboardPage() {
       pipeline_stage: string | null;
     }>;
 
-    // Ops "today" uses the shared engine, limited to non-completed work for the schedule card.
-    const todayActiveJobs = filterValidJobsInPeriod(
-      jobs.filter((job) => !isCompletedLikeStatus(String(job.status || ''))),
-      'today'
+    // Count every valid job scheduled today; keep the team count limited to active work.
+    const todayJobs = filterValidJobsInPeriod(jobs, 'today');
+    const todayActiveJobs = todayJobs.filter(
+      (job) => !isCompletedLikeStatus(String(job.status || ''))
     );
-    const todayJobsCount = todayActiveJobs.length;
+    const todayJobsCount = todayJobs.length;
     const activeJobs = jobs.filter(
       (job) =>
         !['completed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) &&
