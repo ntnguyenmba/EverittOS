@@ -49,13 +49,13 @@ type CalendarImportPanelProps = {
 
 const reviewCopy = {
   en: {
-    review: 'Review changes', reviewing: 'Checking…', applying: 'Applying…', ignoring: 'Ignoring…', new: 'New event', changed: 'Job changed', possible_match: 'Possible match', cancelled: 'Cancellation', no_change: 'No change', time: 'Time changed', location: 'Location changed', title: 'Name changed', status: 'Status changed', none: 'No calendar changes need action.', intro: 'Calendar events stay here for review. Nothing is added to or changed in Jobs until you approve it.', matched: 'Possible existing job', reviewError: 'Calendar changes could not be reviewed.', add: 'Add as Job', update: 'Update Job', applyCancellation: 'Apply cancellation', ignore: 'Ignore', viewJob: 'View existing job', possibleHelp: 'Review the existing job before deciding. EverittOS will not create a duplicate automatically.', statusConnected: 'Connected', statusDisconnected: 'Not connected', manageInSchedule: 'Manage in Schedule', statusHelp: 'Calendar import is managed from Schedule.'
+    review: 'Review changes', reviewing: 'Checking…', applying: 'Applying…', ignoring: 'Ignoring…', new: 'New event', changed: 'Job changed', possible_match: 'Possible match', cancelled: 'Cancellation', no_change: 'No change', time: 'Time changed', location: 'Location changed', title: 'Name changed', status: 'Status changed', none: 'No calendar changes need action.', intro: 'Calendar events stay here for review. Nothing is added to or changed in Jobs until you approve it.', matched: 'Possible existing job', reviewError: 'Calendar changes could not be reviewed.', add: 'Add as Job', update: 'Update Job', applyCancellation: 'Apply cancellation', ignore: 'Ignore', viewJob: 'View existing job', possibleHelp: 'Review the existing job before deciding. EverittOS will not create a duplicate automatically.', statusConnected: 'Connected', statusDisconnected: 'Not connected', manageInSchedule: 'Manage in Schedule', statusHelp: 'Calendar import is managed from Schedule.', jobAdded: 'Job added.'
   },
   es: {
-    review: 'Revisar cambios', reviewing: 'Revisando…', applying: 'Aplicando…', ignoring: 'Ignorando…', new: 'Evento nuevo', changed: 'Trabajo modificado', possible_match: 'Posible coincidencia', cancelled: 'Cancelación', no_change: 'Sin cambios', time: 'Cambió la hora', location: 'Cambió la ubicación', title: 'Cambió el nombre', status: 'Cambió el estado', none: 'No hay cambios del calendario que requieran acción.', intro: 'Los eventos del calendario permanecen aquí para revisión. Nada se agrega ni cambia en Trabajos hasta que lo apruebe.', matched: 'Posible trabajo existente', reviewError: 'No se pudieron revisar los cambios del calendario.', add: 'Agregar como trabajo', update: 'Actualizar trabajo', applyCancellation: 'Aplicar cancelación', ignore: 'Ignorar', viewJob: 'Ver trabajo existente', possibleHelp: 'Revise el trabajo existente antes de decidir. EverittOS no creará un duplicado automáticamente.', statusConnected: 'Conectado', statusDisconnected: 'No conectado', manageInSchedule: 'Administrar en Horario', statusHelp: 'La importación del calendario se administra desde Horario.'
+    review: 'Revisar cambios', reviewing: 'Revisando…', applying: 'Aplicando…', ignoring: 'Ignorando…', new: 'Evento nuevo', changed: 'Trabajo modificado', possible_match: 'Posible coincidencia', cancelled: 'Cancelación', no_change: 'Sin cambios', time: 'Cambió la hora', location: 'Cambió la ubicación', title: 'Cambió el nombre', status: 'Cambió el estado', none: 'No hay cambios del calendario que requieran acción.', intro: 'Los eventos del calendario permanecen aquí para revisión. Nada se agrega ni cambia en Trabajos hasta que lo apruebe.', matched: 'Posible trabajo existente', reviewError: 'No se pudieron revisar los cambios del calendario.', add: 'Agregar como trabajo', update: 'Actualizar trabajo', applyCancellation: 'Aplicar cancelación', ignore: 'Ignorar', viewJob: 'Ver trabajo existente', possibleHelp: 'Revise el trabajo existente antes de decidir. EverittOS no creará un duplicado automáticamente.', statusConnected: 'Conectado', statusDisconnected: 'No conectado', manageInSchedule: 'Administrar en Horario', statusHelp: 'La importación del calendario se administra desde Horario.', jobAdded: 'Trabajo agregado.'
   },
   vi: {
-    review: 'Xem thay đổi', reviewing: 'Đang kiểm tra…', applying: 'Đang áp dụng…', ignoring: 'Đang bỏ qua…', new: 'Sự kiện mới', changed: 'Công việc đã thay đổi', possible_match: 'Có thể trùng', cancelled: 'Hủy lịch', no_change: 'Không thay đổi', time: 'Đổi thời gian', location: 'Đổi địa điểm', title: 'Đổi tên', status: 'Đổi trạng thái', none: 'Không có thay đổi lịch nào cần xử lý.', intro: 'Sự kiện lịch sẽ ở đây để bạn xem trước. Không có gì được thêm hoặc thay đổi trong Công việc cho đến khi bạn đồng ý.', matched: 'Có thể là công việc hiện có', reviewError: 'Không thể xem các thay đổi của lịch.', add: 'Thêm thành công việc', update: 'Cập nhật công việc', applyCancellation: 'Áp dụng hủy lịch', ignore: 'Bỏ qua', viewJob: 'Xem công việc hiện có', possibleHelp: 'Xem công việc hiện có trước khi quyết định. EverittOS sẽ không tự tạo bản trùng.', statusConnected: 'Đã kết nối', statusDisconnected: 'Chưa kết nối', manageInSchedule: 'Quản lý trong Lịch', statusHelp: 'Nhập lịch được quản lý từ trang Lịch.'
+    review: 'Xem thay đổi', reviewing: 'Đang kiểm tra…', applying: 'Đang áp dụng…', ignoring: 'Đang bỏ qua…', new: 'Sự kiện mới', changed: 'Công việc đã thay đổi', possible_match: 'Có thể trùng', cancelled: 'Hủy lịch', no_change: 'Không thay đổi', time: 'Đổi thời gian', location: 'Đổi địa điểm', title: 'Đổi tên', status: 'Đổi trạng thái', none: 'Không có thay đổi lịch nào cần xử lý.', intro: 'Sự kiện lịch sẽ ở đây để bạn xem trước. Không có gì được thêm hoặc thay đổi trong Công việc cho đến khi bạn đồng ý.', matched: 'Có thể là công việc hiện có', reviewError: 'Không thể xem các thay đổi của lịch.', add: 'Thêm thành công việc', update: 'Cập nhật công việc', applyCancellation: 'Áp dụng hủy lịch', ignore: 'Bỏ qua', viewJob: 'Xem công việc hiện có', possibleHelp: 'Xem công việc hiện có trước khi quyết định. EverittOS sẽ không tự tạo bản trùng.', statusConnected: 'Đã kết nối', statusDisconnected: 'Chưa kết nối', manageInSchedule: 'Quản lý trong Lịch', statusHelp: 'Nhập lịch được quản lý từ trang Lịch.', jobAdded: 'Đã thêm công việc.'
   }
 } as const;
 
@@ -145,11 +145,51 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
     } finally { setBusy(''); }
   }
 
-  async function applyEvent(uid: string) {
+  async function markCalendarEventHandled(uid: string) {
+    const response = await fetch('/api/integrations/calendar-import/ignore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventUid: uid })
+    });
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) throw new Error(payload.error || 'The calendar event could not be marked as handled.');
+  }
+
+  async function createNewJob(item: ReviewItem) {
+    const response = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: item.title?.trim() || item.location?.trim() || 'Calendar event',
+        address: item.location?.trim() || null,
+        status: item.start ? 'scheduled' : 'new',
+        scheduled_start: item.start || null,
+        scheduled_end: item.end || null
+      })
+    });
+    const payload = (await response.json().catch(() => ({}))) as { error?: string; job?: { id?: string }; id?: string };
+    if (!response.ok) throw new Error(payload.error || 'The job could not be added.');
+
+    await markCalendarEventHandled(item.uid);
+    setReviewItems((current) => current?.filter((row) => row.uid !== item.uid) || current);
+    feedback.success(c.jobAdded);
+  }
+
+  async function applyEvent(item: ReviewItem) {
     setBusy('sync');
-    setBusyUid(uid);
+    setBusyUid(item.uid);
     try {
-      const response = await fetch('/api/integrations/calendar-import/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventUids: [uid] }) });
+      if (item.kind === 'new') {
+        await createNewJob(item);
+        await loadStatus();
+        return;
+      }
+
+      const response = await fetch('/api/integrations/calendar-import/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventUids: [item.uid] })
+      });
       const payload = (await response.json().catch(() => ({}))) as CalendarImportStatus;
       if (!response.ok) throw new Error(payload.error || t('pages.calendarImport.syncError'));
       setStatus(readStatus(payload));
@@ -168,9 +208,7 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
     setBusy('ignore');
     setBusyUid(uid);
     try {
-      const response = await fetch('/api/integrations/calendar-import/ignore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventUid: uid }) });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || 'The calendar event could not be ignored.');
+      await markCalendarEventHandled(uid);
       setReviewItems((current) => current?.filter((item) => item.uid !== uid) || current);
     } catch (error) {
       feedback.error(error instanceof Error ? error.message : 'The calendar event could not be ignored.');
@@ -255,7 +293,7 @@ export function CalendarImportPanel({ mode = 'status' }: CalendarImportPanelProp
                     {item.changes.length ? <div className="muted" style={{ marginTop: 4 }}>{item.changes.map((change) => c[change]).join(' · ')}</div> : null}
                     {item.kind === 'possible_match' ? <p className="muted" style={{ marginTop: 8 }}>{c.possibleHelp}</p> : null}
                     <div className="inline-actions" style={{ marginTop: 10 }}>
-                      {item.kind !== 'possible_match' ? <button className="btn btn-primary" type="button" disabled={busy !== ''} onClick={() => void applyEvent(item.uid)}>{isApplying ? c.applying : actionLabel}</button> : null}
+                      {item.kind !== 'possible_match' ? <button className="btn btn-primary" type="button" disabled={busy !== ''} onClick={() => void applyEvent(item)}>{isApplying ? c.applying : actionLabel}</button> : null}
                       {item.kind === 'possible_match' && item.jobId ? <a className="btn" href={`/jobs/${item.jobId}`}>{c.viewJob}</a> : null}
                       <button className="btn" type="button" disabled={busy !== ''} onClick={() => void ignoreItem(item.uid)}>{isIgnoring ? c.ignoring : c.ignore}</button>
                     </div>
