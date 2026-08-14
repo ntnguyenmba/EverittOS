@@ -150,9 +150,17 @@
   line-height: 1.45 !important;
 }
 
-.jobs-col-property .jobs-secondary:first-of-type,
 .jobs-photo-count {
   display: none !important;
+}
+
+.jobs-owner-finance-row .jobs-col-property .jobs-secondary:first-of-type {
+  display: block !important;
+  margin-top: -2px !important;
+  color: #75858f !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row > .jobs-col-date {
