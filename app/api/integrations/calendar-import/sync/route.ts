@@ -17,13 +17,45 @@ type ApplyRequest = {
   eventUids?: string[];
 };
 
+type CalendarImportAdmin = Awaited<ReturnType<typeof requireCalendarImportManager>> extends {
+  ok: true;
+  admin: infer T;
+}
+  ? T
+  : never;
+
+async function markEventHandled(
+  admin: CalendarImportAdmin,
+  organizationId: string,
+  connectionId: string,
+  userId: string,
+  eventUid: string
+): Promise<void> {
+  try {
+    await admin
+      .from('calendar_import_ignored_events')
+      .upsert(
+        {
+          organization_id: organizationId,
+          connection_id: connectionId,
+          event_uid: eventUid,
+          ignored_by: userId,
+          ignored_at: new Date().toISOString()
+        },
+        { onConflict: 'connection_id,event_uid' }
+      );
+  } catch {
+    /* Legacy handling marker is best effort; the created job must remain successful. */
+  }
+}
+
 async function fallbackCreateJob(
-  admin: Awaited<ReturnType<typeof requireCalendarImportManager>> extends { ok: true; admin: infer T } ? T : never,
+  admin: CalendarImportAdmin,
   organizationId: string,
   ownerUserId: string,
   event: ParsedCalendarEvent,
   timeZone: string
-): Promise<string | null> {
+): Promise<{ id: string; usedLegacyPayload: boolean } | null> {
   const title = event.summary?.trim() || event.location?.trim() || 'Calendar event';
   const address = event.location?.trim() || null;
   const notes = event.description?.trim() || null;
@@ -60,27 +92,62 @@ async function fallbackCreateJob(
   };
   if (companyId) base.company_id = companyId;
 
-  const attempts: Record<string, unknown>[] = [
-    base,
-    { ...base, status: 'scheduled' },
-    Object.fromEntries(Object.entries(base).filter(([key]) => !['company_id', 'timezone'].includes(key))),
-    Object.fromEntries(Object.entries(base).filter(([key]) => !['company_id', 'timezone', 'scheduled_end', 'scheduled_start'].includes(key)))
+  const withoutCalendarIdentity = Object.fromEntries(
+    Object.entries(base).filter(
+      ([key]) => !['external_source', 'external_uid', 'external_last_modified'].includes(key)
+    )
+  );
+
+  const attempts: Array<{ payload: Record<string, unknown>; usedLegacyPayload: boolean }> = [
+    { payload: base, usedLegacyPayload: false },
+    { payload: { ...base, status: 'scheduled' }, usedLegacyPayload: false },
+    {
+      payload: Object.fromEntries(
+        Object.entries(base).filter(([key]) => !['company_id', 'timezone'].includes(key))
+      ),
+      usedLegacyPayload: false
+    },
+    { payload: withoutCalendarIdentity, usedLegacyPayload: true },
+    {
+      payload: Object.fromEntries(
+        Object.entries(withoutCalendarIdentity).filter(
+          ([key]) => !['company_id', 'timezone'].includes(key)
+        )
+      ),
+      usedLegacyPayload: true
+    },
+    {
+      payload: Object.fromEntries(
+        Object.entries(withoutCalendarIdentity).filter(
+          ([key]) => !['company_id', 'timezone', 'scheduled_end', 'scheduled_start'].includes(key)
+        )
+      ),
+      usedLegacyPayload: true
+    }
   ];
 
-  for (const payload of attempts) {
-    const inserted = await admin.from('jobs').insert(payload).select('id').single();
-    if (!inserted.error && inserted.data?.id) return String(inserted.data.id);
+  for (const attempt of attempts) {
+    const inserted = await admin.from('jobs').insert(attempt.payload).select('id').single();
+    if (!inserted.error && inserted.data?.id) {
+      return { id: String(inserted.data.id), usedLegacyPayload: attempt.usedLegacyPayload };
+    }
 
     const text = `${inserted.error?.code || ''} ${inserted.error?.message || ''}`.toLowerCase();
     if (text.includes('duplicate') || text.includes('23505') || text.includes('unique')) {
-      const existing = await admin
-        .from('jobs')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .eq('external_source', CALENDAR_IMPORT_SOURCE)
-        .eq('external_uid', event.uid)
-        .maybeSingle();
-      if (existing.data?.id) return String(existing.data.id);
+      try {
+        const existing = await admin
+          .from('jobs')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('external_source', CALENDAR_IMPORT_SOURCE)
+          .eq('external_uid', event.uid)
+          .maybeSingle();
+        if (existing.data?.id) {
+          return { id: String(existing.data.id), usedLegacyPayload: false };
+        }
+      } catch {
+        /* Older jobs schemas may not have calendar identity columns. */
+      }
     }
   }
 
@@ -146,18 +213,28 @@ export async function POST(request: Request) {
     });
     assertNoFeedSecret(result);
 
-    // Older workspaces can have a jobs schema that the calendar-import helper cannot
-    // write cleanly even though normal job creation works. For a one-click Add as Job,
-    // fall back to a minimal workspace-scoped insert instead of making the user retry.
+    // Older workspaces can have a jobs schema without the calendar identity columns.
+    // In that case, create a normal workspace-scoped job using only fields that older
+    // schemas accept, then persist the event UID in the handled-events table so the
+    // same calendar event does not return to Review Changes.
     if (events.length === 1 && result.created === 0 && result.updated === 0 && result.failed > 0) {
-      const createdId = await fallbackCreateJob(
-        auth.admin as never,
+      const fallback = await fallbackCreateJob(
+        auth.admin as CalendarImportAdmin,
         auth.org.organizationId,
         auth.user.id,
         events[0],
         timeZone
       );
-      if (createdId) {
+      if (fallback) {
+        if (fallback.usedLegacyPayload) {
+          await markEventHandled(
+            auth.admin as CalendarImportAdmin,
+            auth.org.organizationId,
+            connection.id,
+            auth.user.id,
+            events[0].uid
+          );
+        }
         result = {
           ...result,
           created: 1,
