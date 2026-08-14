@@ -33,7 +33,7 @@ export const CLIENT_FORBIDDEN_FIELDS = [
 ] as const;
 
 export const CONTRACTOR_SAFE_JOB_COLUMNS =
-  'id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to, notes, customer_notes, phone';
+  'id, title, customer_name, address, status, start_date, due_date, scheduled_start, completed_at, assigned_to, notes, customer_notes, phone';
 
 export const CLIENT_SAFE_JOB_COLUMNS =
   'id, title, status, customer_name, customer_notes, address, scheduled_start, scheduled_end, start_date, due_date, timezone, completed_at, created_at, revenue_amount';
