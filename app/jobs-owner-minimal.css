@@ -215,3 +215,30 @@
     grid-template-areas: 'job actions' 'date date' 'assigned status' !important;
   }
 }
+
+/* Owner finance cards: make every amount self-explanatory even when the table becomes cards. */
+.jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-money::before {
+  content: attr(data-label) !important;
+  display: block !important;
+  margin: 0 0 3px !important;
+  color: #657789 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-money {
+  min-width: 0 !important;
+  color: #243f53 !important;
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-width: 1100px) {
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-money {
+    padding-top: 7px !important;
+  }
+}
