@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { PageHeader } from '@/components/page-header';
 import { useTranslation } from '@/components/locale-provider';
@@ -13,21 +13,8 @@ import { supabase } from '@/lib/supabase';
 
 type DuplicateSeries = { jobId: string; date: string; title: string; address: string };
 
-const copy = {
-  en: {
-    title: 'Duplicate cleanup', back: 'Back to jobs', checking: 'Checking recurring jobs…', none: 'No duplicate recurring series found.', found: 'duplicate recurring series found', remove: 'Remove duplicates', removing: 'Removing…', confirm: 'This will remove the duplicate recurring series and its future visits while keeping the original series. Continue?', failed: 'Unable to check duplicate jobs.', done: 'Duplicate recurring jobs removed.'
-  },
-  es: {
-    title: 'Limpieza de duplicados', back: 'Volver a trabajos', checking: 'Revisando trabajos recurrentes…', none: 'No se encontraron series recurrentes duplicadas.', found: 'series recurrentes duplicadas encontradas', remove: 'Eliminar duplicados', removing: 'Eliminando…', confirm: 'Esto eliminará la serie recurrente duplicada y sus visitas futuras, conservando la serie original. ¿Continuar?', failed: 'No se pudieron revisar los trabajos duplicados.', done: 'Se eliminaron los trabajos recurrentes duplicados.'
-  },
-  vi: {
-    title: 'Dọn công việc trùng', back: 'Quay lại công việc', checking: 'Đang kiểm tra công việc định kỳ…', none: 'Không tìm thấy chuỗi công việc định kỳ bị trùng.', found: 'chuỗi công việc định kỳ bị trùng', remove: 'Xóa bản trùng', removing: 'Đang xóa…', confirm: 'Thao tác này sẽ xóa chuỗi định kỳ bị trùng và các lần hẹn tương lai, đồng thời giữ lại chuỗi gốc. Tiếp tục?', failed: 'Không thể kiểm tra công việc bị trùng.', done: 'Đã xóa các công việc định kỳ bị trùng.'
-  }
-} as const;
-
 export default function DuplicateCleanupPage() {
-  const { locale } = useTranslation();
-  const c = copy[locale];
+  const { t } = useTranslation();
   const appFeedback = useAppFeedback();
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
@@ -35,10 +22,12 @@ export default function DuplicateCleanupPage() {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
       if (!user) return;
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
       setPlan(normalizePlan(profile?.plan));
@@ -46,32 +35,37 @@ export default function DuplicateCleanupPage() {
       setRole(normalizeRole(org?.role || profile?.role));
       const res = await fetch('/api/jobs/duplicate-series', { cache: 'no-store' });
       const json = (await res.json().catch(() => ({}))) as { duplicateSeries?: DuplicateSeries[]; error?: string };
-      if (!res.ok) throw new Error(json.error || c.failed);
+      if (!res.ok) throw new Error(json.error || t('pages.duplicateCleanup.failed'));
       setItems(json.duplicateSeries || []);
     } catch (error) {
-      appFeedback.error(error instanceof Error ? error.message : c.failed);
+      appFeedback.error(error instanceof Error ? error.message : t('pages.duplicateCleanup.failed'));
     } finally {
       setLoading(false);
     }
-  }
+  }, [appFeedback, t]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const countLabel = useMemo(() => `${items.length} ${c.found}`, [items.length, c.found]);
+  const countLabel = useMemo(
+    () => t('pages.duplicateCleanup.found', { count: items.length }),
+    [items.length, t]
+  );
 
   async function removeDuplicates() {
-    if (!items.length || !window.confirm(c.confirm)) return;
+    if (!items.length || !window.confirm(t('pages.duplicateCleanup.confirm'))) return;
     setRemoving(true);
     try {
       for (const item of items) {
         const res = await fetch(`/api/jobs/${item.jobId}`, { method: 'DELETE' });
         const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error || c.failed);
+        if (!res.ok) throw new Error(json.error || t('pages.duplicateCleanup.failed'));
       }
-      appFeedback.success(c.done);
+      appFeedback.success(t('pages.duplicateCleanup.done'));
       await load();
     } catch (error) {
-      appFeedback.error(error instanceof Error ? error.message : c.failed);
+      appFeedback.error(error instanceof Error ? error.message : t('pages.duplicateCleanup.failed'));
     } finally {
       setRemoving(false);
     }
@@ -80,22 +74,43 @@ export default function DuplicateCleanupPage() {
   return (
     <AppShell plan={plan} role={role}>
       <div className="page-stack">
-        <PageHeader title={c.title} action={<Link className="btn btn-secondary" href="/jobs">{c.back}</Link>} />
-        {loading ? <p className="muted">{c.checking}</p> : null}
-        {!loading && items.length === 0 ? <div className="card"><p>{c.none}</p></div> : null}
+        <PageHeader
+          title={t('pages.duplicateCleanup.title')}
+          action={
+            <Link className="btn btn-secondary" href="/jobs">
+              {t('pages.duplicateCleanup.back')}
+            </Link>
+          }
+        />
+        {loading ? <p className="muted">{t('pages.duplicateCleanup.checking')}</p> : null}
+        {!loading && items.length === 0 ? (
+          <div className="card">
+            <p>{t('pages.duplicateCleanup.none')}</p>
+          </div>
+        ) : null}
         {!loading && items.length > 0 ? (
           <div className="card">
-            <p><strong>{countLabel}</strong></p>
+            <p>
+              <strong>{countLabel}</strong>
+            </p>
             <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
               {items.map((item) => (
                 <div key={item.jobId} style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                  <strong>{item.date} · {item.title}</strong>
-                  <div className="muted">{item.address || '—'}</div>
+                  <strong>
+                    {item.date} · {item.title}
+                  </strong>
+                  <div className="muted">{item.address || t('pages.duplicateCleanup.noAddress')}</div>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn btn-danger" style={{ marginTop: 18 }} disabled={removing} onClick={() => void removeDuplicates()}>
-              {removing ? c.removing : c.remove}
+            <button
+              type="button"
+              className="btn btn-danger"
+              style={{ marginTop: 18 }}
+              disabled={removing}
+              onClick={() => void removeDuplicates()}
+            >
+              {removing ? t('pages.duplicateCleanup.removing') : t('pages.duplicateCleanup.remove')}
             </button>
           </div>
         ) : null}

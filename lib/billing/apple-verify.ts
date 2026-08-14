@@ -3,12 +3,12 @@
  * Credentials stay server-only.
  */
 import { createPublicKey, createVerify, createSign, createPrivateKey } from 'node:crypto';
-import { appleBundleId, planFromAppleProductId } from '@/lib/billing/product-catalog';
+import { appleBundleId, planFromAppleProductId, type StoreEverittPlan } from '@/lib/billing/product-catalog';
 import { normalizeStoreStatus, type SubscriptionStatus } from '@/lib/billing/subscription-status';
 
 export type AppleVerifiedTransaction = {
   productId: string;
-  plan: 'pro' | 'business';
+  plan: StoreEverittPlan;
   transactionId: string;
   originalTransactionId: string;
   bundleId: string;

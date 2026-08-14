@@ -1108,6 +1108,21 @@ export const messages: Messages = {
         unsupported_all_day: 'All-day calendar events could not be imported.'
       }
     },
+    duplicateCleanup: {
+      title: 'Duplicate cleanup',
+      back: 'Back to jobs',
+      checking: 'Checking recurring jobs…',
+      none: 'No duplicate recurring series found.',
+      found: '{count} duplicate recurring series found',
+      remove: 'Remove duplicates',
+      removing: 'Removing…',
+      confirm:
+        'This will remove the duplicate recurring series and its future visits while keeping the original series. Completed historical jobs stay untouched. Continue?',
+      failed: 'Unable to check duplicate jobs.',
+      done: 'Duplicate recurring jobs removed.',
+      noAddress: 'No address',
+      findDuplicates: 'Find duplicates'
+    },
     customers: { notFound: 'Customer not found' },
     jobs: {
       notFound: 'Job not found',

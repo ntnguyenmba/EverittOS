@@ -40,6 +40,9 @@ type LaborRow = {
   payment_status: string | null;
 };
 
+type QueryResult<T> = { data: T[] | null; error: { message?: string } | null };
+type AuthResult = { data: { user: { id: string; email?: string | null } | null }; error: { message?: string } | null };
+
 type LoadState = 'loading' | 'ready' | 'error';
 
 const LOAD_TIMEOUT_MS = 10000;
@@ -139,7 +142,7 @@ export default function ContractorPortalPage() {
     setError('');
 
     try {
-      const auth = await withTimeout(supabase.auth.getUser(), c.sessionTimeout);
+      const auth = (await withTimeout(supabase.auth.getUser(), c.sessionTimeout)) as AuthResult;
       const user = auth.data.user;
       if (auth.error || !user) {
         router.replace('/login?next=%2Fportal%2Fcontractor');
@@ -148,17 +151,17 @@ export default function ContractorPortalPage() {
 
       const email = String(user.email || '').trim().toLowerCase();
       const workerFields = 'id, name, email, auth_user_id';
-      const [byUser, byEmail] = await Promise.all([
+      const [byUser, byEmail] = (await Promise.all([
         withTimeout(supabase.from('workers').select(workerFields).eq('auth_user_id', user.id), c.profileTimeout),
         email
           ? withTimeout(supabase.from('workers').select(workerFields).ilike('email', email), c.profileTimeout)
           : Promise.resolve({ data: [] as WorkerRow[], error: null })
-      ]);
+      ])) as [QueryResult<WorkerRow>, QueryResult<WorkerRow>];
 
       if (byUser.error && byEmail.error) throw new Error(byUser.error.message || byEmail.error.message);
 
       const workerMap = new Map<string, WorkerRow>();
-      for (const row of [...((byUser.data || []) as WorkerRow[]), ...((byEmail.data || []) as WorkerRow[])]) workerMap.set(row.id, row);
+      for (const row of [...(byUser.data || []), ...(byEmail.data || [])]) workerMap.set(row.id, row);
       const workers = Array.from(workerMap.values());
       const workerIds = workers.map((row) => row.id).filter(Boolean);
       setWorkerName(workers.find((row) => row.name?.trim())?.name?.trim() || email || c.contractor);
@@ -171,25 +174,25 @@ export default function ContractorPortalPage() {
         return;
       }
 
-      const [assignmentsResult, directJobsResult, laborResult] = await Promise.all([
+      const [assignmentsResult, directJobsResult, laborResult] = (await Promise.all([
         withTimeout(supabase.from('job_assignments').select('job_id, worker_id').in('worker_id', workerIds), c.assignmentsTimeout),
         withTimeout(supabase.from('jobs').select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to').in('assigned_to', workerIds), c.jobsTimeout),
         withTimeout(supabase.from('job_labor').select('id, job_id, worker_id, total_cost, payment_status').in('worker_id', workerIds), c.earningsTimeout)
-      ]);
+      ])) as [QueryResult<AssignmentRow>, QueryResult<JobRow>, QueryResult<LaborRow>];
 
       if (assignmentsResult.error) throw new Error(assignmentsResult.error.message);
       if (directJobsResult.error) throw new Error(directJobsResult.error.message);
       if (laborResult.error) throw new Error(laborResult.error.message);
 
-      const assignmentJobIds = Array.from(new Set(((assignmentsResult.data || []) as AssignmentRow[]).map((row) => row.job_id).filter(Boolean)));
+      const assignmentJobIds = Array.from(new Set((assignmentsResult.data || []).map((row) => row.job_id).filter(Boolean)));
       let assignedJobs: JobRow[] = [];
       if (assignmentJobIds.length) {
-        const assignedResult = await withTimeout(
+        const assignedResult = (await withTimeout(
           supabase.from('jobs').select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to').in('id', assignmentJobIds),
           c.detailsTimeout
-        );
+        )) as QueryResult<JobRow>;
         if (assignedResult.error) throw new Error(assignedResult.error.message);
-        assignedJobs = (assignedResult.data || []) as JobRow[];
+        assignedJobs = assignedResult.data || [];
       }
 
       const merged = new Map<string, JobRow>();

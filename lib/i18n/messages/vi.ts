@@ -1110,6 +1110,21 @@ export const messages: Messages = {
         unsupported_all_day: 'Không thể nhập các sự kiện cả ngày.'
       }
     },
+    duplicateCleanup: {
+      title: 'Dọn công việc trùng',
+      back: 'Quay lại công việc',
+      checking: 'Đang kiểm tra công việc định kỳ…',
+      none: 'Không tìm thấy chuỗi công việc định kỳ bị trùng.',
+      found: 'Tìm thấy {count} chuỗi công việc định kỳ bị trùng',
+      remove: 'Xóa bản trùng',
+      removing: 'Đang xóa…',
+      confirm:
+        'Thao tác này sẽ xóa chuỗi định kỳ bị trùng và các lần hẹn tương lai, đồng thời giữ lại chuỗi gốc. Các công việc lịch sử đã hoàn thành không bị thay đổi. Tiếp tục?',
+      failed: 'Không thể kiểm tra công việc bị trùng.',
+      done: 'Đã xóa các công việc định kỳ bị trùng.',
+      noAddress: 'Không có địa chỉ',
+      findDuplicates: 'Tìm bản trùng'
+    },
     customers: { notFound: 'Không tìm thấy khách hàng' },
     jobs: {
       notFound: 'Không tìm thấy công việc',

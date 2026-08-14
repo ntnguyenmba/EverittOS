@@ -113,7 +113,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     ctx.supabase,
     ctx.workspace,
     ctx.userId,
-    updatedSeries as Parameters<typeof generateSeriesWindow>[3]
+    updatedSeries as unknown as Parameters<typeof generateSeriesWindow>[3]
   );
 
   return NextResponse.json({

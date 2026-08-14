@@ -52,7 +52,8 @@ const homeCopy = {
         description: 'A simple place to start managing customers and jobs.',
         features: ['Dashboard', 'Customer management', 'Basic job tracking', 'Schedule and notifications', 'Basic photo uploads'],
         href: '/signup?plan=free',
-        label: 'Start free'
+        label: 'Start free',
+        featured: false
       },
       {
         name: 'Pro',
@@ -71,7 +72,8 @@ const homeCopy = {
         description: 'For teams that need assignments, activity tracking, and Everitt AI.',
         features: ['Everything in Pro', 'Team and crew management', 'Job assignments', 'Activity log', 'Everitt AI'],
         href: '/signup?plan=business',
-        label: 'Choose Business'
+        label: 'Choose Business',
+        featured: false
       }
     ]
   },
@@ -116,7 +118,8 @@ const homeCopy = {
         description: 'Un lugar simple para empezar a administrar clientes y trabajos.',
         features: ['Panel', 'Gestión de clientes', 'Seguimiento básico de trabajos', 'Horario y notificaciones', 'Carga básica de fotos'],
         href: '/signup?plan=free',
-        label: 'Comenzar gratis'
+        label: 'Comenzar gratis',
+        featured: false
       },
       {
         name: 'Pro',
@@ -135,7 +138,8 @@ const homeCopy = {
         description: 'Para equipos que necesitan asignaciones, seguimiento de actividad y Everitt AI.',
         features: ['Todo lo de Pro', 'Gestión de equipo y cuadrillas', 'Asignaciones de trabajos', 'Registro de actividad', 'Everitt AI'],
         href: '/signup?plan=business',
-        label: 'Elegir Business'
+        label: 'Elegir Business',
+        featured: false
       }
     ]
   },
@@ -180,7 +184,8 @@ const homeCopy = {
         description: 'Một nơi đơn giản để bắt đầu quản lý khách hàng và công việc.',
         features: ['Bảng điều khiển', 'Quản lý khách hàng', 'Theo dõi công việc cơ bản', 'Lịch và thông báo', 'Tải ảnh cơ bản'],
         href: '/signup?plan=free',
-        label: 'Bắt đầu miễn phí'
+        label: 'Bắt đầu miễn phí',
+        featured: false
       },
       {
         name: 'Pro',
@@ -199,7 +204,8 @@ const homeCopy = {
         description: 'Cho đội nhóm cần phân công, theo dõi hoạt động và Everitt AI.',
         features: ['Mọi thứ trong Pro', 'Quản lý đội nhóm và tổ làm việc', 'Phân công công việc', 'Nhật ký hoạt động', 'Everitt AI'],
         href: '/signup?plan=business',
-        label: 'Chọn Business'
+        label: 'Chọn Business',
+        featured: false
       }
     ]
   }

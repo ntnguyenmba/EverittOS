@@ -907,6 +907,20 @@ export type MessageTree = {
     };
     customers: { notFound: string };
     jobs: { notFound: string; needsAssignment: string; showAll: string; assignedEmail: string; assignedEmailHint: string; createTitle: string; createPermissionBlocked: string; restoreJob: string; cancelJob: string; missingCompletionDate: string };
+    duplicateCleanup: {
+      title: string;
+      back: string;
+      checking: string;
+      none: string;
+      found: string;
+      remove: string;
+      removing: string;
+      confirm: string;
+      failed: string;
+      done: string;
+      noAddress: string;
+      findDuplicates: string;
+    };
   };
   portal: import('@/lib/i18n/portal-messages-types').PortalMessages;
 };

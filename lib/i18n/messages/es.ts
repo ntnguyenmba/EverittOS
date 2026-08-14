@@ -1112,6 +1112,21 @@ export const messages: Messages = {
         unsupported_all_day: 'No se pudieron importar los eventos de día completo.'
       }
     },
+    duplicateCleanup: {
+      title: 'Limpieza de duplicados',
+      back: 'Volver a trabajos',
+      checking: 'Revisando trabajos recurrentes…',
+      none: 'No se encontraron series recurrentes duplicadas.',
+      found: '{count} series recurrentes duplicadas encontradas',
+      remove: 'Eliminar duplicados',
+      removing: 'Eliminando…',
+      confirm:
+        'Esto eliminará la serie recurrente duplicada y sus visitas futuras, conservando la serie original. Los trabajos históricos completados no se modifican. ¿Continuar?',
+      failed: 'No se pudieron revisar los trabajos duplicados.',
+      done: 'Se eliminaron los trabajos recurrentes duplicados.',
+      noAddress: 'Sin dirección',
+      findDuplicates: 'Buscar duplicados'
+    },
     customers: { notFound: 'Cliente no encontrado' },
     jobs: {
       notFound: 'Trabajo no encontrado',

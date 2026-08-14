@@ -5,13 +5,14 @@
 import { createSign, createPrivateKey } from 'node:crypto';
 import {
   googlePlayPackageName,
-  planFromGoogleProductId
+  planFromGoogleProductId,
+  type StoreEverittPlan
 } from '@/lib/billing/product-catalog';
 import { normalizeStoreStatus, type SubscriptionStatus } from '@/lib/billing/subscription-status';
 
 export type GoogleVerifiedPurchase = {
   productId: string;
-  plan: 'pro' | 'business';
+  plan: StoreEverittPlan;
   purchaseToken: string;
   packageName: string;
   orderId: string | null;
