@@ -105,15 +105,23 @@ export async function GET() {
       day: '2-digit'
     }).format(new Date());
 
-    const ignoredResult = await auth.admin
-      .from('calendar_import_ignored_events')
-      .select('event_uid')
+    const handledResult = await auth.admin
+      .from('activity_logs')
+      .select('metadata')
       .eq('organization_id', auth.org.organizationId)
-      .eq('connection_id', connection.id);
-    const ignored = new Set((ignoredResult.data || []).map((row: { event_uid: string }) => row.event_uid));
+      .eq('entity_type', 'integration')
+      .eq('entity_id', connection.id)
+      .eq('action', 'calendar_event_handled')
+      .limit(1000);
+
+    const handled = new Set(
+      (handledResult.data || [])
+        .map((row: { metadata?: { event_uid?: string } | null }) => String(row.metadata?.event_uid || '').trim())
+        .filter(Boolean)
+    );
 
     const events = parseIcsCalendar(feed.body, timezone)
-      .filter((event) => event.uid && !ignored.has(event.uid) && relevantEvent(event, today))
+      .filter((event) => event.uid && !handled.has(event.uid) && relevantEvent(event, today))
       .slice(0, 100);
     const uids = events.map((event) => event.uid);
     const dates = Array.from(
