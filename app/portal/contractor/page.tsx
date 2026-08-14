@@ -52,7 +52,7 @@ const copy = {
     loadingTitle: 'Loading your contractor dashboard...', loadingBody: 'This should take only a few seconds.', errorTitle: 'The contractor dashboard could not load', errorSafe: 'No jobs, payments, or earnings were changed.', tryAgain: 'Try again',
     assignedJobs: 'Assigned jobs', upcomingJobs: 'Upcoming jobs', completedJobs: 'Completed jobs', totalEarnings: 'Total earnings', paidToYou: 'Paid to you', stillOwed: 'Still owed',
     job: 'Job', customer: 'Customer', noJobs: 'No assigned jobs yet.', dateNotSet: 'Schedule pending', scheduleBody: 'Your upcoming assigned jobs appear above in date order.', paid: 'paid', stillOwedLower: 'still owed', earningsBody: 'Earnings are calculated only from contractor payment records linked to your worker profile.',
-    yourPay: 'Your pay', payNotRecorded: 'Pay details pending',
+    yourPay: 'Your pay', payNotRecorded: 'Pay details pending', nextUp: 'Next job', openJob: 'Open job',
     sessionTimeout: 'Your session took too long to load.', profileTimeout: 'Your contractor profile took too long to load.', assignmentsTimeout: 'Assigned jobs took too long to load.', jobsTimeout: 'Jobs took too long to load.', earningsTimeout: 'Earnings took too long to load.', detailsTimeout: 'Assigned job details took too long to load.', notLinked: 'Your login is not linked to a contractor profile yet. Ask the company owner to link your email to your worker record.', loadFailed: 'The contractor dashboard could not load.',
     status: { scheduled: 'scheduled', completed: 'completed', complete: 'complete', done: 'done', finished: 'finished', closed: 'closed', cancelled: 'cancelled', canceled: 'canceled' }
   },
@@ -61,7 +61,7 @@ const copy = {
     loadingTitle: 'Cargando tu panel de contratista...', loadingBody: 'Esto solo debería tardar unos segundos.', errorTitle: 'No se pudo cargar el panel del contratista', errorSafe: 'No se cambiaron trabajos, pagos ni ganancias.', tryAgain: 'Intentar de nuevo',
     assignedJobs: 'Trabajos asignados', upcomingJobs: 'Próximos trabajos', completedJobs: 'Trabajos terminados', totalEarnings: 'Ganancias totales', paidToYou: 'Pagado a ti', stillOwed: 'Pendiente de pago',
     job: 'Trabajo', customer: 'Cliente', noJobs: 'Aún no hay trabajos asignados.', dateNotSet: 'Horario pendiente', scheduleBody: 'Tus próximos trabajos asignados aparecen arriba en orden de fecha.', paid: 'pagado', stillOwedLower: 'pendiente', earningsBody: 'Las ganancias se calculan solo con los registros de pago vinculados a tu perfil de contratista.',
-    yourPay: 'Tu pago', payNotRecorded: 'Detalles de pago pendientes',
+    yourPay: 'Tu pago', payNotRecorded: 'Detalles de pago pendientes', nextUp: 'Próximo trabajo', openJob: 'Abrir trabajo',
     sessionTimeout: 'Tu sesión tardó demasiado en cargar.', profileTimeout: 'Tu perfil de contratista tardó demasiado en cargar.', assignmentsTimeout: 'Los trabajos asignados tardaron demasiado en cargar.', jobsTimeout: 'Los trabajos tardaron demasiado en cargar.', earningsTimeout: 'Las ganancias tardaron demasiado en cargar.', detailsTimeout: 'Los detalles del trabajo asignado tardaron demasiado en cargar.', notLinked: 'Tu inicio de sesión aún no está vinculado a un perfil de contratista. Pide al propietario de la empresa que vincule tu correo electrónico con tu registro de trabajador.', loadFailed: 'No se pudo cargar el panel del contratista.',
     status: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', done: 'terminado', finished: 'terminado', closed: 'cerrado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
@@ -70,7 +70,7 @@ const copy = {
     loadingTitle: 'Đang tải bảng điều khiển nhà thầu...', loadingBody: 'Quá trình này chỉ mất vài giây.', errorTitle: 'Không thể tải bảng điều khiển nhà thầu', errorSafe: 'Không có công việc, khoản thanh toán hoặc thu nhập nào bị thay đổi.', tryAgain: 'Thử lại',
     assignedJobs: 'Công việc được giao', upcomingJobs: 'Công việc sắp tới', completedJobs: 'Công việc đã xong', totalEarnings: 'Tổng thu nhập', paidToYou: 'Đã trả cho bạn', stillOwed: 'Còn phải trả',
     job: 'Công việc', customer: 'Khách hàng', noJobs: 'Chưa có công việc được giao.', dateNotSet: 'Lịch đang chờ', scheduleBody: 'Các công việc sắp tới của bạn được hiển thị phía trên theo thứ tự ngày.', paid: 'đã trả', stillOwedLower: 'còn phải trả', earningsBody: 'Thu nhập chỉ được tính từ các hồ sơ thanh toán được liên kết với hồ sơ nhà thầu của bạn.',
-    yourPay: 'Tiền công của bạn', payNotRecorded: 'Chi tiết tiền công đang chờ',
+    yourPay: 'Tiền công của bạn', payNotRecorded: 'Chi tiết tiền công đang chờ', nextUp: 'Công việc tiếp theo', openJob: 'Mở công việc',
     sessionTimeout: 'Phiên đăng nhập mất quá lâu để tải.', profileTimeout: 'Hồ sơ nhà thầu mất quá lâu để tải.', assignmentsTimeout: 'Công việc được giao mất quá lâu để tải.', jobsTimeout: 'Công việc mất quá lâu để tải.', earningsTimeout: 'Thu nhập mất quá lâu để tải.', detailsTimeout: 'Chi tiết công việc được giao mất quá lâu để tải.', notLinked: 'Tài khoản của bạn chưa được liên kết với hồ sơ nhà thầu. Hãy nhờ chủ công ty liên kết email của bạn với hồ sơ nhân viên.', loadFailed: 'Không thể tải bảng điều khiển nhà thầu.',
     status: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', done: 'đã xong', finished: 'đã xong', closed: 'đã đóng', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
@@ -124,10 +124,10 @@ export default function ContractorPortalPage() {
 
   const jobDate = useCallback((job: JobRow) => {
     const value = job.scheduledStart || job.startDate || job.dueDate;
-    if (!value) return c.dateNotSet;
+    if (!value) return '';
     const date = new Date(value.includes('T') ? value : `${value}T12:00:00`);
     return Number.isNaN(date.getTime())
-      ? c.dateNotSet
+      ? ''
       : date.toLocaleString(localeCode, {
           month: 'short',
           day: 'numeric',
@@ -198,6 +198,10 @@ export default function ContractorPortalPage() {
   const operationalHeadline = state === 'ready'
     ? `${totals.upcoming} ${totals.upcoming === 1 ? c.upcomingHeadlineOne : c.upcomingHeadline}`
     : c.dashboard;
+  const nextJob = sortedJobs.find((job) => {
+    const status = normalizedStatus(job.status);
+    return !['completed', 'complete', 'done', 'finished', 'closed', 'cancelled', 'canceled'].includes(status);
+  });
 
   async function signOut() {
     if (signingOut) return;
@@ -217,6 +221,16 @@ export default function ContractorPortalPage() {
         <p className="eyebrow contractor-role-label">{c.contractor}</p>
         <h1>{operationalHeadline}</h1>
         <p className="muted contractor-worker-name">{workerName || c.contractor}</p>
+        {state === 'ready' && nextJob ? (
+          <div className="contractor-next-job">
+            <div>
+              <span className="contractor-next-label">{c.nextUp}</span>
+              <strong>{nextJob.title || c.job}</strong>
+              <span>{[jobDate(nextJob), nextJob.customerName, nextJob.address].filter(Boolean).join(' · ')}</span>
+            </div>
+            <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)}>{c.openJob}</Link>
+          </div>
+        ) : null}
         <nav className="button-row contractor-portal-actions">
           <a className="btn btn-primary" href="#jobs">{c.jobs}</a>
           <a className="btn" href="#schedule">{c.schedule}</a>
@@ -274,8 +288,9 @@ export default function ContractorPortalPage() {
                       <Link href={contractorJobDetailPath(job.id)}>
                         <strong>{job.title || c.job}</strong>
                       </Link>
-                      <p className="muted" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p>
+                      {jobDate(job) ? <p className="muted portal-job-date" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p> : null}
                       <p style={{ margin: '5px 0 0' }}>{job.customerName || c.customer}{job.address ? ` · ${job.address}` : ''}</p>
+                      <Link className="portal-job-open" href={contractorJobDetailPath(job.id)}>{c.openJob}</Link>
                     </div>
                     <div className="portal-job-finance">
                       <span className={`status-badge portal-status-${normalizedStatus(job.status)}`}>{statusLabel(job.status)}</span>
