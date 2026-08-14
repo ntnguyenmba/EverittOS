@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
-import { contractorJobDetailPath } from '@/lib/worker-job-access';
+import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { supabase } from '@/lib/supabase';
 import { performClientLogout } from '@/lib/client-logout';
