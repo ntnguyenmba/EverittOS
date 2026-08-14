@@ -10,7 +10,7 @@ import {
   contractorClassificationOptions,
   normalizeContractorClassification,
   type ContractorClassification
-} from '@/lib/contractor-compensation';
+} from '@/lib/worker-compensation';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { getExportCopy } from '@/lib/i18n/export-copy';
@@ -35,7 +35,7 @@ const EMPTY_CONTRACTOR = {
   email: '',
   phone: '',
   companyName: '',
-  contractorClassification: 'contractor' as ContractorClassification
+  contractorClassification: 'worker' as ContractorClassification
 };
 
 function ContractorPanel({ canManage }: { canManage: boolean }) {
@@ -47,7 +47,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
 
   const loadContractors = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/contractors', { cache: 'no-store' });
+    const res = await fetch('/api/workers', { cache: 'no-store' });
     const json = (await res.json().catch(() => ({}))) as {
       contractors?: Contractor[];
       error?: string;
@@ -82,7 +82,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
     setSaving(true);
     setMessage('');
 
-    const res = await fetch('/api/contractors', {
+    const res = await fetch('/api/workers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
