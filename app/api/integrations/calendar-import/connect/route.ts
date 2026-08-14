@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { saveCalendarImportConnection } from '@/lib/calendar-import/connections';
 import { calendarFeedErrorMessage, fetchPublicCalendarFeed, validatePublicFeedUrl } from '@/lib/calendar-import/feed-security';
 import { looksLikeIcsCalendar } from '@/lib/calendar-import/ical-parser';
-import { importCalendarConnection } from '@/lib/calendar-import/import-calendar';
 import { CALENDAR_IMPORT_NO_CACHE, requireCalendarImportManager } from '@/lib/calendar-import/request-auth';
-import { assertNoFeedSecret } from '@/lib/calendar-import/safe-status';
+import { assertNoFeedSecret, toSafeCalendarImportStatus } from '@/lib/calendar-import/safe-status';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +29,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Validate that the subscription URL is reachable and actually returns an ICS feed,
+    // but do not create or update Jobs here. Calendar Import is review-first.
     const feed = await fetchPublicCalendarFeed(validated.href);
     if (!looksLikeIcsCalendar(feed.body)) {
       return NextResponse.json(
@@ -44,10 +45,7 @@ export async function POST(request: Request) {
       createdBy: auth.user.id
     });
 
-    const result = await importCalendarConnection(auth.admin, connection, {
-      icsText: feed.body,
-      ownerUserId: auth.user.id
-    });
+    const result = toSafeCalendarImportStatus(connection);
     assertNoFeedSecret(result);
 
     await auth.admin.from('activity_logs').insert({
@@ -56,8 +54,8 @@ export async function POST(request: Request) {
       entity_type: 'integration',
       entity_id: connection.id,
       action: 'calendar_connected',
-      message: 'Calendar connected',
-      metadata: { source: 'calendar_import' }
+      message: 'Calendar connected for review',
+      metadata: { source: 'calendar_import', mode: 'review_first' }
     });
 
     return NextResponse.json(result, { headers: CALENDAR_IMPORT_NO_CACHE });
