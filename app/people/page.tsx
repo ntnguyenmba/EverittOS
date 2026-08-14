@@ -10,7 +10,7 @@ import {
   contractorClassificationOptions,
   normalizeContractorClassification,
   type ContractorClassification
-} from '@/lib/worker-compensation';
+} from '@/lib/contractor-compensation';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { getExportCopy } from '@/lib/i18n/export-copy';
