@@ -110,7 +110,12 @@
   font-size: 16px !important;
   font-weight: 800 !important;
   line-height: 1.25 !important;
-  white-space: nowrap !important;
+  white-space: pre !important;
+}
+
+.jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-owner-finance-row .jobs-money-value::before {
+  content: '\00a0' !important;
+  white-space: pre !important;
 }
 
 @media (max-width: 820px) {
