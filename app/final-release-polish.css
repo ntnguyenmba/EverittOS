@@ -245,7 +245,7 @@ textarea {
 }
 
 /* Client portal color correction: cool Everitt blue-white palette only. */
-.dashboard-shell.role-portal-client {
+.dashboard-shell.client-dashboard-shell {
   --client-portal-surface: #ffffff;
   --client-portal-soft: #f4f7f9;
   --client-portal-soft-strong: #e8f0f4;
@@ -255,65 +255,65 @@ textarea {
   --client-portal-accent: #3f586a;
 }
 
-.role-portal-client .client-portal-jobs {
+.client-dashboard-shell .client-portal-jobs {
   color: var(--client-portal-text) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-dashboard-topbar {
+.client-dashboard-shell .client-portal-jobs .role-dashboard-topbar {
   border-color: var(--client-portal-border) !important;
   background: var(--client-portal-surface) !important;
   box-shadow: 0 8px 24px rgba(36, 63, 83, 0.06) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-period-filter {
+.client-dashboard-shell .client-portal-jobs .role-period-filter {
   border-color: var(--client-portal-border) !important;
   background: var(--client-portal-soft) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-period-filter button {
+.client-dashboard-shell .client-portal-jobs .role-period-filter button {
   border-color: rgba(36, 63, 83, 0.18) !important;
   background: var(--client-portal-surface) !important;
   color: #314b5c !important;
 }
 
-.role-portal-client .client-portal-jobs .role-period-filter button:hover,
-.role-portal-client .client-portal-jobs .role-period-filter button:focus-visible {
+.client-dashboard-shell .client-portal-jobs .role-period-filter button:hover,
+.client-dashboard-shell .client-portal-jobs .role-period-filter button:focus-visible {
   border-color: rgba(36, 63, 83, 0.28) !important;
   background: var(--client-portal-soft-strong) !important;
   color: var(--client-portal-text) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-period-filter button.is-active {
+.client-dashboard-shell .client-portal-jobs .role-period-filter button.is-active {
   border-color: var(--client-portal-accent) !important;
   background: var(--client-portal-accent) !important;
   color: #ffffff !important;
 }
 
-.role-portal-client .client-portal-jobs .portal-client-nav {
+.client-dashboard-shell .client-portal-jobs .portal-client-nav {
   border-color: var(--client-portal-border) !important;
   background: var(--client-portal-soft-strong) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-summary-card,
-.role-portal-client .client-portal-jobs .card,
-.role-portal-client .client-portal-jobs .portal-dashboard-section,
-.role-portal-client .client-portal-jobs .client-job-card {
+.client-dashboard-shell .client-portal-jobs .role-summary-card,
+.client-dashboard-shell .client-portal-jobs .card,
+.client-dashboard-shell .client-portal-jobs .portal-dashboard-section,
+.client-dashboard-shell .client-portal-jobs .client-job-card {
   border-color: var(--client-portal-border) !important;
   background: var(--client-portal-surface) !important;
   box-shadow: 0 8px 24px rgba(36, 63, 83, 0.06) !important;
   color: var(--client-portal-text) !important;
 }
 
-.role-portal-client .client-portal-jobs .role-summary-card {
+.client-dashboard-shell .client-portal-jobs .role-summary-card {
   border-left: 3px solid var(--client-portal-accent) !important;
   background: linear-gradient(145deg, #ffffff 0%, #f2f6f8 100%) !important;
 }
 
-.role-portal-client .client-portal-jobs :is(h1, h2, h3, strong) {
+.client-dashboard-shell .client-portal-jobs :is(h1, h2, h3, strong) {
   color: var(--client-portal-text) !important;
 }
 
-.role-portal-client .client-portal-jobs :is(
+.client-dashboard-shell .client-portal-jobs :is(
   .muted,
   .client-job-secondary,
   .role-summary-card span
@@ -321,24 +321,38 @@ textarea {
   color: var(--client-portal-muted) !important;
 }
 
-.role-portal-client .client-portal-jobs .btn:not(.btn-primary),
-.role-portal-client .client-portal-jobs .export-menu button {
+.client-dashboard-shell .client-portal-jobs .btn:not(.btn-primary),
+.client-dashboard-shell .client-portal-jobs .export-menu button {
   border-color: var(--client-portal-border) !important;
   background: var(--client-portal-surface) !important;
   color: #263f50 !important;
 }
 
-.role-portal-client .client-portal-jobs .btn:not(.btn-primary):hover,
-.role-portal-client .client-portal-jobs .export-menu button:hover {
+.client-dashboard-shell .client-portal-jobs .btn:not(.btn-primary):hover,
+.client-dashboard-shell .client-portal-jobs .export-menu button:hover {
   border-color: rgba(36, 63, 83, 0.28) !important;
   background: var(--client-portal-soft) !important;
 }
 
-.role-portal-client .sidebar .nav-item.active,
-.role-portal-client .sidebar a.nav-item.active,
-.role-portal-client .sidebar .nav-item[aria-current='page'],
-.role-portal-client .sidebar a[aria-current='page'] {
+.client-dashboard-shell .sidebar .nav-item.active,
+.client-dashboard-shell .sidebar a.nav-item.active,
+.client-dashboard-shell .sidebar .nav-item[aria-current='page'],
+.client-dashboard-shell .sidebar a[aria-current='page'] {
   border-color: #7893a4 !important;
   background: #36566d !important;
   color: #ffffff !important;
+}
+
+
+/* Client portal navigation removes the remaining warm gold accent. */
+.client-dashboard-shell .contractor-nav a[aria-current='page'] {
+  border-color: #8fa9b9 !important;
+  background: #36566d !important;
+  color: #ffffff !important;
+  box-shadow: inset 3px 0 0 #8fa9b9 !important;
+}
+
+.client-dashboard-shell .contractor-nav a[aria-current='page'] .portal-nav-mark {
+  background: #afc3cf !important;
+  box-shadow: 0 0 0 4px rgba(175, 195, 207, 0.14) !important;
 }
