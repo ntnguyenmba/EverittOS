@@ -3,7 +3,7 @@ import { logWorkspaceActivity } from '@/lib/activity-server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { mapWorkspaceSaveError } from '@/lib/workspace-server';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@/lib/finance-types';
-import { parseMoneyInput } from '@/lib/finance-format';
+import { parseSignedMoneyInput } from '@/lib/finance-format';
 import { assertCustomerInOrganization, assertJobInOrganization } from '@/lib/org-resource-validation';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 
@@ -82,9 +82,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Valid category is required' }, { status: 400 });
   }
 
-  const amount = parseMoneyInput(body.amount);
-  if (amount <= 0) {
-    return NextResponse.json({ error: 'Amount must be greater than zero' }, { status: 400 });
+  const amount = parseSignedMoneyInput(body.amount);
+  if (amount === 0) {
+    return NextResponse.json({ error: 'Amount must not be zero' }, { status: 400 });
   }
 
   const date = String(body.date || '').trim() || new Date().toISOString().slice(0, 10);
@@ -128,8 +128,8 @@ export async function POST(request: Request) {
     'expense',
     data.id,
     'expense_created',
-    `Expense added: ${category} $${amount.toFixed(2)}`
+    `${amount < 0 ? 'Expense credit added' : 'Expense added'}: ${category} $${amount.toFixed(2)}`
   );
 
-  return NextResponse.json({ expense: data, message: 'Expense saved successfully.' });
+  return NextResponse.json({ expense: data, message: amount < 0 ? 'Expense credit saved successfully.' : 'Expense saved successfully.' });
 }
