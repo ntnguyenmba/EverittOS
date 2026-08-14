@@ -8,7 +8,7 @@ import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { PageHeader } from '@/components/page-header';
 import { canAccessFinancials } from '@/lib/finance-access';
-import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/contractor-cost';
+import { UNASSIGNED_CONTRACTOR_LABEL } from '@/lib/finance/worker-cost';
 import { fetchOrganizationContext } from '@/lib/organization';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { formatDashboardCopy, getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
@@ -87,7 +87,7 @@ function ContractorPayContent() {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth.user;
     if (!user) {
-      router.push('/login?next=/contractor-pay');
+      router.push('/login?next=/worker-pay');
       return;
     }
 
@@ -149,7 +149,7 @@ function ContractorPayContent() {
     if (jobIds.length) {
       const { data: jobRows } = await supabase
         .from('jobs')
-        .select('id, title, customer_name, expected_contractor_cost, assigned_to')
+        .select('id, title, customer_name, expected_worker_cost, assigned_to')
         .eq('organization_id', org.organizationId)
         .in('id', jobIds);
       const map: Record<string, JobSummary> = {};
@@ -282,7 +282,7 @@ function ContractorPayContent() {
         action={
           canManage ? (
             <ExportMenu
-              endpoint="/api/exports/contractor-pay"
+              endpoint="/api/exports/worker-pay"
               query={{ status: filter, jobId: jobIdFilter }}
               locale={locale}
               disabled={loading}
