@@ -45,7 +45,7 @@ const copy = {
     totalContractorCost: 'Contractor costs', expectedRevenue: 'Job revenue', expectedProfit: 'Profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Money customers paid you.', currentBalances: 'Money customers still owe.', periodBalances: 'Money customers still owe for this period.',
     cashDesc: 'Money received minus costs already paid.', contractorsPaidDesc: 'Money already paid to contractors.',
-    contractorCostDesc: 'What the work costs you, paid or not.', expectedRevenueDesc: 'Money received plus money customers still owe.',
+    contractorCostDesc: 'What the work costs you, paid or not.', expectedRevenueDesc: 'Total customer pay for jobs scheduled in this period.',
     expectedProfitDesc: 'What is left after contractor costs and expenses.', expensesDesc: 'Fuel, supplies, software, and other costs.'
   },
   es: {
@@ -57,7 +57,7 @@ const copy = {
     totalContractorCost: 'Costos de contratistas', expectedRevenue: 'Ingresos de trabajos', expectedProfit: 'Ganancia', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Dinero que los clientes te pagaron.', currentBalances: 'Dinero que los clientes todavía deben.', periodBalances: 'Dinero que los clientes todavía deben de este período.',
     cashDesc: 'Dinero recibido menos costos ya pagados.', contractorsPaidDesc: 'Dinero ya pagado a contratistas.',
-    contractorCostDesc: 'Lo que cuesta el trabajo, pagado o pendiente.', expectedRevenueDesc: 'Dinero recibido más dinero que los clientes todavía deben.',
+    contractorCostDesc: 'Lo que cuesta el trabajo, pagado o pendiente.', expectedRevenueDesc: 'Pago total del cliente por los trabajos programados en este período.',
     expectedProfitDesc: 'Lo que queda después de contratistas y gastos.', expensesDesc: 'Combustible, suministros, software y otros costos.'
   },
   vi: {
@@ -69,7 +69,7 @@ const copy = {
     totalContractorCost: 'Chi phí nhà thầu', expectedRevenue: 'Doanh thu công việc', expectedProfit: 'Lợi nhuận', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Tiền khách đã trả cho bạn.', currentBalances: 'Tiền khách vẫn còn nợ.', periodBalances: 'Tiền khách vẫn còn nợ trong khoảng này.',
     cashDesc: 'Tiền đã nhận trừ các khoản đã trả.', contractorsPaidDesc: 'Tiền đã trả cho nhà thầu.',
-    contractorCostDesc: 'Chi phí của công việc, dù đã trả hay chưa.', expectedRevenueDesc: 'Tiền đã nhận cộng với tiền khách vẫn còn nợ.',
+    contractorCostDesc: 'Chi phí của công việc, dù đã trả hay chưa.', expectedRevenueDesc: 'Tổng tiền khách trả cho các công việc được lên lịch trong khoảng này.',
     expectedProfitDesc: 'Số tiền còn lại sau chi phí nhà thầu và chi phí khác.', expensesDesc: 'Xăng, vật tư, phần mềm và các chi phí khác.'
   }
 } as const;
