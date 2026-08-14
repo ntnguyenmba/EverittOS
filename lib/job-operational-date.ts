@@ -49,24 +49,24 @@ export function latestVisitDate(
 
 /**
  * Reporting date for completed jobs used in period totals.
- * Prefer completed_at; otherwise latest completed visit, start_date, scheduled_start.
- * Returns null when no safe operational date exists (exclude from date-based totals).
- * Does not use created_at for completed-job period assignment.
+ * Keep the job on its scheduled service date so marking older work complete today
+ * does not move its revenue, cost, profit, or job count into today.
+ * Completion dates are used only when the job has no service date.
  */
 export function getCompletedJobReportingDate(job: JobDateFields): string | null {
   if (!isCompletedJobStatus(job.status)) return null;
   return (
-    asDateOnly(job.completed_at) ||
-    asDateOnly(job.latest_completed_visit_date) ||
-    asDateOnly(job.start_date) ||
     asDateOnly(job.scheduled_start) ||
+    asDateOnly(job.start_date) ||
+    asDateOnly(job.latest_completed_visit_date) ||
+    asDateOnly(job.completed_at) ||
     null
   );
 }
 
 /**
  * Returns YYYY-MM-DD for the date that should drive operational reports.
- * Completed jobs: completed_at -> latest visit -> start_date -> scheduled_start (else null).
+ * Completed jobs: scheduled_start -> start_date -> latest visit -> completed_at.
  * Other jobs: scheduled_start first so Dashboard Today matches Schedule Today,
  * then start/visit/due, and created_at only when no operational date exists.
  */
