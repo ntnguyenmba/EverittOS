@@ -460,3 +460,24 @@
     margin: 0 !important;
   }
 }
+
+
+/* Final shared portal spacing and contrast guard. */
+.contractor-dashboard-shell .contractor-sidebar-inner > .contractor-role-note,
+.contractor-dashboard-shell .contractor-sidebar-inner > .contractor-role-note * {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+@media (min-width: 761px) {
+  .contractor-dashboard-shell > .contractor-main {
+    padding: 40px clamp(28px, 4vw, 64px) 56px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .contractor-dashboard-shell > .contractor-main {
+    padding: 20px 14px 36px !important;
+    box-sizing: border-box !important;
+  }
+}
