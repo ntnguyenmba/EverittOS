@@ -252,7 +252,7 @@ export default function LeadsPage() {
                 style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
               >
                 <div style={{ flex: '1 1 220px' }}>
-                  <Link href={`/leads/${lead.id}`}>{customerDisplayName(lead)}</Link>
+                  <Link href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(lead)}</Link>
                   <div className="muted" style={{ marginTop: 3 }}>
                     {[lead.phone, lead.email].filter(Boolean).join(' · ') || leadSourceLabel(lead.lead_source)}
                   </div>
@@ -281,7 +281,7 @@ export default function LeadsPage() {
 
                 {updatingStageId === lead.id ? <span className="muted">{FEEDBACK.loading}</span> : null}
 
-                <Link className="btn btn-sm" href={`/leads/${lead.id}`}>
+                <Link className="btn btn-sm" href={`/leads/${lead.id}`} target="_blank" rel="noopener noreferrer">
                   Open
                 </Link>
 

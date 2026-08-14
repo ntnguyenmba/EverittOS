@@ -25,6 +25,7 @@ function InvoicesPageContent() {
   const appFeedback = useAppFeedback();
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
+  const invoiceId = searchParams.get('invoiceId') || '';
   const forceNew = searchParams.get('action') === 'new' || searchParams.get('forceNew') === '1';
   const paymentParam = (searchParams.get('payment') || 'all').toLowerCase();
   const focusOutstanding = searchParams.get('focus') === 'outstanding';
@@ -83,6 +84,7 @@ function InvoicesPageContent() {
         showAmount
         initialJobId={jobId}
         initialCustomerId={customerId}
+        initialInvoiceId={invoiceId}
         forceNew={forceNew}
         paymentFilter={paymentFilter}
         focusOutstanding={focusOutstanding}

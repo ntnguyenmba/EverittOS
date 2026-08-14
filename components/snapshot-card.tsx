@@ -17,7 +17,7 @@ export function SnapshotCard({ title, value, actionLabel, href, hint, loading }:
       <h3 className="card-title-sm">{title}</h3>
       <strong className="metric-value snapshot-card-value">{loading ? '…' : value}</strong>
       {hint ? <p className="metric-hint">{hint}</p> : null}
-      <Link href={href} className="snapshot-card-action">
+      <Link href={href} target="_blank" rel="noopener noreferrer" className="snapshot-card-action">
         {actionLabel}
       </Link>
     </section>

@@ -304,7 +304,7 @@ export function TeamDirectory() {
               </div>
               {member.active ? (
                 <div className="inline-actions team-member-actions">
-                  <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`}>View jobs</Link>
+                  <Link className="btn btn-sm" href={`/jobs?assigned_to=${encodeURIComponent(member.userId)}`} target="_blank" rel="noopener noreferrer">View jobs</Link>
                   <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${encodeURIComponent(member.userId)}`}>Assign to job</Link>
                 </div>
               ) : null}

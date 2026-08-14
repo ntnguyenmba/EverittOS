@@ -512,9 +512,9 @@ function ExpensesContent() {
                     <p className="muted">Managed in QuickBooks. Edit or delete it there to avoid duplicate totals.</p>
                   ) : null}
                   <p className="muted finance-tags">
-                    {expense.job_id ? <span>Job: {jobMap.get(expense.job_id) || 'Linked job'}</span> : null}
-                    {expense.customer_id ? <span>Customer: {customerMap.get(expense.customer_id)}</span> : null}
-                    {expense.worker_id ? <span>Team member: {workerMap.get(expense.worker_id)}</span> : null}
+                    {expense.job_id ? <span>Job: <Link href={`/jobs/${expense.job_id}`} target="_blank" rel="noopener noreferrer">{jobMap.get(expense.job_id) || 'Linked job'}</Link></span> : null}
+                    {expense.customer_id ? <span>Customer: <Link href={`/customers/${expense.customer_id}`} target="_blank" rel="noopener noreferrer">{customerMap.get(expense.customer_id)}</Link></span> : null}
+                    {expense.worker_id ? <span>Team member: <Link href={`/jobs?assigned_to=${encodeURIComponent(expense.worker_id)}`} target="_blank" rel="noopener noreferrer">{workerMap.get(expense.worker_id)}</Link></span> : null}
                     {expense.created_at ? <span>Added {expense.created_at.slice(0, 10)}</span> : null}
                   </p>
                   {expense.receipt_signed_url ? (

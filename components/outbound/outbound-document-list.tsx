@@ -246,7 +246,17 @@ export function OutboundDocumentList({
         return (
           <div key={doc.id} className="outbound-document-row">
             <div className="outbound-document-main">
-              <strong>{doc.subject || doc.recipient_email || billingCopy.untitled}</strong>
+              {doc.doc_type === 'invoice' ? (
+                <Link
+                  href={`/invoices?invoiceId=${encodeURIComponent(doc.source_entity_id || doc.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <strong>{doc.subject || doc.recipient_email || billingCopy.untitled}</strong>
+                </Link>
+              ) : (
+                <strong>{doc.subject || doc.recipient_email || billingCopy.untitled}</strong>
+              )}
               <span className="muted">
                 {doc.recipient_email || billingCopy.noRecipient}
                 {amount ? ` · ${billingCopy.invoiceTotal} ${amount}` : ''}

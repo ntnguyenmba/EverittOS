@@ -46,7 +46,13 @@ export function RecordCard({
   return (
     <article className={className ? `record-card ${className}` : 'record-card'}>
       {href ? (
-        <Link href={href} className="record-card-link" aria-label={`Open ${title}`}>
+        <Link
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="record-card-link"
+          aria-label={`Open ${title} in a new tab`}
+        >
           {content}
         </Link>
       ) : (

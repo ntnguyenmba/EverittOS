@@ -215,7 +215,7 @@ export function RecurringInvoicesPanel({ canManage }: { canManage: boolean }) {
                   {run.invoice_id ? (
                     <>
                       {' '}
-                      · <Link href="/invoices">{t('pages.recurring.invoiceCreated')}</Link>
+                      · <Link href={`/invoices?invoiceId=${encodeURIComponent(run.invoice_id)}`} target="_blank" rel="noopener noreferrer">{t('pages.recurring.invoiceCreated')}</Link>
                     </>
                   ) : null}
                 </li>

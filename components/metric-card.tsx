@@ -43,7 +43,7 @@ export function MetricCard({ value, label, hint, href, loading }: MetricCardProp
 
   if (href) {
     return (
-      <Link href={href} className="progress-card progress-card-link metric-stack" style={cardStyle}>
+      <Link href={href} target="_blank" rel="noopener noreferrer" className="progress-card progress-card-link metric-stack" style={cardStyle}>
         {body}
       </Link>
     );

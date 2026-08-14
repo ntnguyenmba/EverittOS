@@ -201,7 +201,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
 
       <div className="dashboard-revenue-grid" style={{ opacity: busy ? 0.58 : 1 }}>
         {primaryItems.map((item) => (
-          <Link key={item.label} href={item.href} className="dashboard-revenue-metric is-primary" style={{ minHeight: 120, pointerEvents: busy ? 'none' : 'auto' }}>
+          <Link key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="dashboard-revenue-metric is-primary" style={{ minHeight: 120, pointerEvents: busy ? 'none' : 'auto' }}>
             <span className="dashboard-revenue-metric-label">{item.label}</span>
             <strong className="dashboard-revenue-metric-value">{item.value}</strong>
             {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}
@@ -216,7 +216,7 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       {showFinancialDetails ? (
         <div className="dashboard-revenue-grid" style={{ marginTop: 14, opacity: busy ? 0.58 : 1 }}>
           {detailItems.map((item) => (
-            <Link key={item.label} href={item.href} className="dashboard-revenue-metric" style={{ minHeight: 100, pointerEvents: busy ? 'none' : 'auto' }}>
+            <Link key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="dashboard-revenue-metric" style={{ minHeight: 100, pointerEvents: busy ? 'none' : 'auto' }}>
               <span className="dashboard-revenue-metric-label">{item.label}</span>
               <strong className="dashboard-revenue-metric-value">{item.value}</strong>
               {item.description ? <span className="muted" style={{ marginTop: 8 }}>{item.description}</span> : null}

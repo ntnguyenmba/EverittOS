@@ -325,7 +325,7 @@ function CustomersPageContent() {
               <div key={customer.id} className="card customer-card-row" style={{ marginTop: 12 }}>
                 <CustomerLogo logoPath={customer.logo_path} alt={customerDisplayName(customer)} size={48} />
                 <div>
-                <h3>{customerDisplayName(customer)}</h3>
+                <h3><Link href={`/customers/${customer.id}`} target="_blank" rel="noopener noreferrer">{customerDisplayName(customer)}</Link></h3>
                 <p className="muted">
                   {customerStageLabel(customer.pipeline_stage || customer.record_type || 'active', locale)}
                   {customer.lead_source ? ` · ${customer.lead_source}` : ''}

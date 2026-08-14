@@ -16,6 +16,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 import { canViewTeam, isManagerRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -189,7 +190,7 @@ function ContractorPanel({ canManage }: { canManage: boolean }) {
             return (
               <article key={contractor.id} className="list-row team-member-card">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong>{contractor.name}</strong>
+                  <strong><Link href={`/jobs?assigned_to=${encodeURIComponent(contractor.id)}`} target="_blank" rel="noopener noreferrer">{contractor.name}</Link></strong>
                   <p className="muted" style={{ margin: '3px 0 0', overflowWrap: 'anywhere' }}>
                     {contractorClassificationLabel(contractor.contractor_classification)}
                     {contractor.company_name ? ` · ${contractor.company_name}` : ''}

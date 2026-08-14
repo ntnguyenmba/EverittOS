@@ -41,12 +41,12 @@ export function RecordActions({
   return (
     <div className={`record-actions record-actions-${layout}`}>
       {viewHref ? (
-        <Link className={btnClass} href={viewHref}>
+        <Link className={btnClass} href={viewHref} target="_blank" rel="noopener noreferrer">
           {viewLabel}
         </Link>
       ) : null}
       {editHref ? (
-        <Link className={btnClass} href={editHref}>
+        <Link className={btnClass} href={editHref} target="_blank" rel="noopener noreferrer">
           {resolvedEditLabel}
         </Link>
       ) : null}

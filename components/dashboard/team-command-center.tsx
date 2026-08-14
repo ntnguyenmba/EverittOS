@@ -190,6 +190,8 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
           <Link
             key={card.label}
             href={card.href}
+            target="_blank"
+            rel="noopener noreferrer"
             aria-disabled={showInitialLoading}
             style={{
               ...metricCardStyle,
@@ -356,7 +358,7 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                           </strong>
                           {member.nextUpcomingJob ? (
                             <p className="muted" style={{ margin: '4px 0 0' }}>
-                              <Link href={`/jobs/${member.nextUpcomingJob.id}`}>{member.nextUpcomingJob.title}</Link> · {member.nextUpcomingJob.date}
+                              <Link href={`/jobs/${member.nextUpcomingJob.id}`} target="_blank" rel="noopener noreferrer">{member.nextUpcomingJob.title}</Link> · {member.nextUpcomingJob.date}
                             </p>
                           ) : (
                             <p className="muted" style={{ margin: '4px 0 0' }}>
@@ -375,10 +377,10 @@ export function TeamCommandCenter({ enabled }: TeamCommandCenterProps) {
                       </div>
 
                       <div className="team-command-member-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        <Link className="btn btn-sm" href={`/schedule?member=${member.userId}`}>
+                        <Link className="btn btn-sm" href={`/schedule?member=${member.userId}`} target="_blank" rel="noopener noreferrer">
                           {t('dashboard.teamCommand.member.viewSchedule')}
                         </Link>
-                        <Link className="btn btn-sm" href={`/jobs?assigned_to=${member.userId}`}>
+                        <Link className="btn btn-sm" href={`/jobs?assigned_to=${member.userId}`} target="_blank" rel="noopener noreferrer">
                           {t('dashboard.teamCommand.member.viewJobs')}
                         </Link>
                         <Link className="btn btn-sm btn-primary" href={`/jobs/new?assigned_to=${member.userId}`}>

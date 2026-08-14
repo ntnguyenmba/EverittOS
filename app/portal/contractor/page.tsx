@@ -233,7 +233,7 @@ export default function ContractorPortalPage() {
               <strong>{nextJob.title || c.job}</strong>
               <span>{[jobDate(nextJob), nextJob.customerName, nextJob.address].filter(Boolean).join(' · ')}</span>
             </div>
-            <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)}>{c.openJob}</Link>
+            <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)} target="_blank" rel="noopener noreferrer">{c.openJob}</Link>
           </div>
         ) : null}
         <nav className="button-row contractor-portal-actions">
@@ -290,12 +290,12 @@ export default function ContractorPortalPage() {
                 {sortedJobs.map((job) => (
                   <article key={job.id} className="list-row portal-job-row">
                     <div>
-                      <Link href={contractorJobDetailPath(job.id)}>
+                      <Link href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer">
                         <strong>{job.title || c.job}</strong>
                       </Link>
                       {jobDate(job) ? <p className="muted portal-job-date" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p> : null}
                       <p style={{ margin: '5px 0 0' }}>{job.customerName || c.customer}{job.address ? ` · ${job.address}` : ''}</p>
-                      <Link className="portal-job-open" href={contractorJobDetailPath(job.id)}>{c.openJob}</Link>
+                      <Link className="portal-job-open" href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer">{c.openJob}</Link>
                     </div>
                     <div className="portal-job-finance">
                       <span className={`status-badge portal-status-${normalizedStatus(job.status)}`}>{statusLabel(job.status)}</span>

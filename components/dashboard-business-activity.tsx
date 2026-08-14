@@ -38,7 +38,7 @@ export function DashboardBusinessActivity({ items, loading }: DashboardBusinessA
 
             if (row.href) {
               return (
-                <Link key={row.id} href={row.href} className="dashboard-today-row dashboard-activity-row">
+                <Link key={row.id} href={row.href} target="_blank" rel="noopener noreferrer" className="dashboard-today-row dashboard-activity-row">
                   {content}
                 </Link>
               );

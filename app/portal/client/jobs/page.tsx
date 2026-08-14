@@ -202,6 +202,8 @@ export default function ClientPortalJobsPage() {
       <Link
         key={job.id}
         href={clientPortalJobsPath(job.id)}
+        target="_blank"
+        rel="noopener noreferrer"
         className="client-job-card simplified-job-card"
         aria-label={job.title}
       >

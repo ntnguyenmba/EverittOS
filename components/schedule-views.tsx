@@ -162,7 +162,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
                   {dayJobs.length === 0 ? <p className="muted">{text.noWork}</p> : null}
                   {dayJobs.map((job) => (
                     <div key={job.id} className="schedule-job-chip" draggable={canAssign && Boolean(onReschedule)} onDragStart={() => setDragJobId(job.id)} onDragEnd={() => setDragJobId(null)}>
-                      <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+                      <Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer">{job.title}</Link>
                     </div>
                   ))}
                 </div>
@@ -178,7 +178,7 @@ export function ScheduleViews({ jobs, workerNames, canAssign, onAssign, onResche
           <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
             {unscheduled.map((job) => (
               <div key={job.id} className="list-row">
-                <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+                <Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer">{job.title}</Link>
                 {canAssign && onReschedule ? <input className="input" type="date" onChange={(event) => event.target.value && onReschedule(job.id, event.target.value)} /> : null}
               </div>
             ))}
@@ -214,7 +214,7 @@ function ScheduleCard({ job, workerNames, canAssign, onAssign, onReschedule }: {
       </div>
 
       <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
-        <Link className="btn btn-primary" href={`/jobs/${job.id}`}>{actionLabel}</Link>
+        <Link className="btn btn-primary" href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer">{actionLabel}</Link>
         {job.address ? <a className="btn" href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} target="_blank" rel="noreferrer">{text.maps}</a> : null}
         {job.phone ? <a className="btn" href={`tel:${job.phone}`}>{text.call}</a> : null}
       </div>
