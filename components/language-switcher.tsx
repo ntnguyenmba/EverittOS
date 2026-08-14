@@ -3,6 +3,7 @@
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n/config';
 import { useTranslation } from '@/components/locale-provider';
 import { persistLocaleChoice } from '@/lib/locale-persist';
+import { useRouter } from 'next/navigation';
 
 type LanguageSwitcherProps = {
   className?: string;
@@ -17,10 +18,12 @@ export function LanguageSwitcher({
   variant = 'default'
 }: LanguageSwitcherProps) {
   const { locale, setLocale, t } = useTranslation();
+  const router = useRouter();
 
   async function onChange(next: Locale) {
     setLocale(next);
     await persistLocaleChoice(next);
+    router.refresh();
   }
 
   const showLabel = variant !== 'compact';
