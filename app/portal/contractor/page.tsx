@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthenticatedSection } from '@/components/authenticated-section';
 import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { contractorJobDetailPath } from '@/lib/contractor-job-access';
@@ -213,7 +212,7 @@ export default function ContractorPortalPage() {
   }
 
   return (
-    <AuthenticatedSection role="contractor" className="contractor-dashboard role-dashboard-minimal">
+    <div className="contractor-dashboard role-dashboard-minimal">
       <header className="card contractor-portal-hero">
         <p className="eyebrow contractor-role-label">{c.contractor}</p>
         <h1>{operationalHeadline}</h1>
@@ -303,6 +302,6 @@ export default function ContractorPortalPage() {
           </section>
         </>
       ) : null}
-    </AuthenticatedSection>
+    </div>
   );
 }
