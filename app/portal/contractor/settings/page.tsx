@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { PortalAccountSettings } from '@/components/portal/portal-account-settings';
-import { CONTRACTOR_HOME_PATH, CONTRACTOR_SETTINGS_PATH } from '@/lib/worker-dashboard';
+import { CONTRACTOR_HOME_PATH, CONTRACTOR_SETTINGS_PATH } from '@/lib/contractor-dashboard';
 import { performClientLogout } from '@/lib/client-logout';
 
 export default function ContractorPortalSettingsPage() {
