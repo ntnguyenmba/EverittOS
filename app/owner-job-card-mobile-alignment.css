@@ -1,0 +1,112 @@
+/* Owner jobs: keep the full quick-glance card while aligning mobile details cleanly. */
+
+@media (max-width: 720px) {
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-areas:
+      'property property property'
+      'date date date'
+      'assigned assigned assigned'
+      'customer contractor profit'
+      'status status actions' !important;
+    gap: 14px 10px !important;
+    align-items: start !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-property {
+    grid-area: property !important;
+    min-width: 0 !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-date {
+    grid-area: date !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-assigned {
+    grid-area: assigned !important;
+    width: auto !important;
+    min-width: 0 !important;
+    align-self: start !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-customer-pay {
+    grid-area: customer !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-contractor-pay {
+    grid-area: contractor !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-owner-profit {
+    grid-area: profit !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-money {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 2px 0 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-money::before {
+    margin: 0 !important;
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.035em !important;
+    white-space: normal !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-money-label {
+    display: block !important;
+    max-width: 100% !important;
+    color: #536577 !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-money-value {
+    display: block !important;
+    max-width: 100% !important;
+    color: #172637 !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-status {
+    grid-area: status !important;
+    width: auto !important;
+    justify-self: start !important;
+    align-self: start !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row > .jobs-col-actions {
+    grid-area: actions !important;
+    width: auto !important;
+    justify-self: end !important;
+    align-self: start !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .jobs-shell-minimal .jobs-operations-table-owner-finance tbody > .jobs-owner-finance-row {
+    gap: 13px 8px !important;
+  }
+
+  .jobs-shell-minimal .jobs-operations-table-owner-finance .jobs-money-value {
+    font-size: 16px !important;
+  }
+}
