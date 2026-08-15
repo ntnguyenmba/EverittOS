@@ -51,7 +51,7 @@ function isManagerOperationalModule(path: string): boolean {
 export function canShowNavHref(role: UserRole, href: string): boolean {
   const path = navPath(href);
   if (isClientRole(role)) return path === CLIENT_PORTAL_HOME || path === CLIENT_PORTAL_SETTINGS || path.startsWith(`${CLIENT_PORTAL_HOME}/`) || isPortalPersonalSettingsPath(path);
-  if (isContractorRole(role)) return path === '/knowledge' || path === CONTRACTOR_PORTAL_HOME || path === CONTRACTOR_PORTAL_SETTINGS || path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) || path.startsWith('/jobs/') || isPortalPersonalSettingsPath(path);
+  if (isContractorRole(role)) return path === CONTRACTOR_PORTAL_HOME || path === CONTRACTOR_PORTAL_SETTINGS || path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) || path.startsWith('/jobs/') || isPortalPersonalSettingsPath(path);
 
   switch (path) {
     case '/dashboard': return true;
@@ -161,7 +161,7 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 
 export function primaryNavHrefsForRole(role: UserRole): string[] {
   if (isClientRole(role)) return ['/portal/client', '/portal/client?tab=jobs', '/portal/client/settings'];
-  if (isContractorRole(role)) return ['/portal/contractor', '/portal/contractor#jobs', '/portal/contractor#schedule', '/portal/contractor#earnings', '/knowledge', '/portal/contractor/settings'];
+  if (isContractorRole(role)) return ['/portal/contractor', '/portal/contractor#jobs', '/portal/contractor#schedule', '/portal/contractor#earnings', '/portal/contractor/settings'];
   if (role === 'manager') return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
   if (canSeeOrgWideData(role)) return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
   return ['/dashboard', '/jobs', '/schedule', '/settings'];
