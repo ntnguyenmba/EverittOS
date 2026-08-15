@@ -89,13 +89,6 @@ function displayValue(value: string | null | undefined, fallback: string) {
   return value && value.trim() ? value : fallback;
 }
 
-function formatPriority(value: string | null, labels: { low: string; normal: string; high: string; urgent: string }) {
-  if (value === 'low') return labels.low;
-  if (value === 'high') return labels.high;
-  if (value === 'urgent') return labels.urgent;
-  return labels.normal;
-}
-
 function formatDateTime(value: string | null, fallback: string, locale: string) {
   if (!value) return fallback;
   return new Date(value).toLocaleString(locale);
@@ -246,7 +239,19 @@ export default function JobDetailPage({ params }: PageProps) {
       appFeedback.error(msg);
       return;
     }
-    setJob({ ...data, internal_notes: canReadInternalNotes ? data.internal_notes ?? null : null } as Job);
+    const loaded = { ...data, internal_notes: canReadInternalNotes ? data.internal_notes ?? null : null } as Job;
+    if (loaded.customer_id) {
+      const { data: customerRow } = await supabase
+        .from('customers')
+        .select('email, phone')
+        .eq('id', loaded.customer_id)
+        .maybeSingle();
+      if (customerRow) {
+        loaded.customer_email = customerRow.email || loaded.customer_email || null;
+        loaded.phone = customerRow.phone || loaded.phone || null;
+      }
+    }
+    setJob(loaded);
   }
 
   async function patchJob(fields: Record<string, unknown>, successMessage: string) {
@@ -404,7 +409,6 @@ export default function JobDetailPage({ params }: PageProps) {
   if (!job) return <AppShell plan={plan} role={userRole}><div className="card">{loadError || copy.jobAccessDenied}</div></AppShell>;
 
   const canWorkJob = canManage || canEditStatus;
-  const priorityLabels = { low: copy.priorityLow, normal: copy.priorityNormal, high: copy.priorityHigh, urgent: copy.priorityUrgent };
   const isCancelledJob = job.status === 'cancelled';
   const refreshFinancials = () => setFinanceRefresh((key) => key + 1);
   const assignedContractorName = assignments
@@ -452,27 +456,15 @@ export default function JobDetailPage({ params }: PageProps) {
             <div className="form">
               <label>{copy.title}</label><input className="input" value={job.title} onChange={(e) => setJob({ ...job, title: e.target.value })} />
               <label>{copy.customer}</label><input className="input" value={job.customer_name || ''} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} />
-              <label>{copy.email}</label><input className="input" type="email" value={job.customer_email || ''} onChange={(e) => setJob({ ...job, customer_email: e.target.value })} />
-              <label>{copy.phone}</label><input className="input" value={job.phone || ''} onChange={(e) => setJob({ ...job, phone: e.target.value })} />
               <AddressAutocomplete label={copy.address} value={job.address || ''} onChange={(formatted) => setJob({ ...job, address: formatted })} />
               <label>{copy.jobNotes}</label><textarea className="input" rows={2} value={job.notes || ''} onChange={(e) => setJob({ ...job, notes: e.target.value })} />
-              <label>{copy.priority}</label>
-              <select className="input" value={job.priority || 'normal'} onChange={(e) => setJob({ ...job, priority: e.target.value })}>
-                <option value="low">{copy.priorityLow}</option><option value="normal">{copy.priorityNormal}</option>
-                <option value="high">{copy.priorityHigh}</option><option value="urgent">{copy.priorityUrgent}</option>
-              </select>
-              <label>{copy.customerNotes}</label><textarea className="input" rows={3} value={job.customer_notes || ''} onChange={(e) => setJob({ ...job, customer_notes: e.target.value })} />
-              <label><input type="checkbox" checked={!!job.completion_verified} onChange={(e) => setJob({ ...job, completion_verified: e.target.checked })} />{' '}{copy.completionVerified}</label>
               <button type="button" className="btn btn-primary" disabled={savingDetails} onClick={() => void saveJobFields()}>{savingDetails ? copy.saving : copy.saveDetails}</button>
             </div>
           ) : (
             <>
               <p><strong>{copy.customer}:</strong> {displayValue(job.customer_name, copy.notSet)}</p>
-              <p><strong>{copy.email}:</strong> {displayValue(job.customer_email, copy.notSet)}</p>
-              <p><strong>{copy.phone}:</strong> {displayValue(job.phone, copy.notSet)}</p>
               <p><strong>{copy.address}:</strong> {displayValue(job.address, copy.notSet)}</p>
               <p><strong>{copy.notes}:</strong> {displayValue(job.notes, copy.noNotes)}</p>
-              <p><strong>{copy.priority}:</strong> {formatPriority(job.priority, priorityLabels)}</p>
             </>
           )}
           <p><strong>{copy.created}:</strong> {formatDateTime(job.created_at, copy.notSet, locale)}</p>
@@ -488,11 +480,14 @@ export default function JobDetailPage({ params }: PageProps) {
             </div>
           ) : null}
           {canManage ? (
-            <div className="card" style={{ marginTop: 16, padding: 12 }}>
-              <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} customerName={job.customer_name} customerEmail={job.customer_email}
-                onCustomerEmailChange={(email) => setJob({ ...job, customer_email: email })}
-                onSaveCustomerEmail={(email) => saveJobFields(FEEDBACK.saved, { customer_email: email })} />
-            </div>
+            <details style={{ marginTop: 16 }}>
+              <summary>Customer access</summary>
+              <div className="card" style={{ marginTop: 16, padding: 12 }}>
+                <ClientAccessPanel jobId={job.id} plan={plan} canManage={canManage} customerName={job.customer_name} customerEmail={job.customer_email}
+                  onCustomerEmailChange={(email) => setJob({ ...job, customer_email: email })}
+                  onSaveCustomerEmail={(email) => saveJobFields(FEEDBACK.saved, { customer_email: email })} />
+              </div>
+            </details>
           ) : null}
         </section>
 

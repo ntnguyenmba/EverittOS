@@ -11,24 +11,24 @@ import {
 
 const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
-test('Starts on input appears for recurring jobs and is hidden for one-time jobs', () => {
+test('main date stays visible and wires recurrence start date', () => {
   const source = read('components/job-creator.tsx');
   assert.match(source, /id="recurrence-starts-on"/);
   assert.match(source, /recurrenceCopy\.startsOn/);
   assert.match(source, /recurrenceStartDate/);
   assert.match(source, /setSeriesStartDate/);
-  // Recurring-only branch wraps the starts-on field.
-  const recurringBlock = source.slice(source.indexOf('{isRecurring ? ('));
-  assert.match(recurringBlock, /recurrence-starts-on/);
-  assert.match(source, /\{isRecurring \? \([\s\S]*recurrence-starts-on[\s\S]*\) : \(/);
+  const moreOptions = source.slice(source.indexOf('<summary>More options</summary>'));
+  assert.match(moreOptions, /recurrenceCopy\.scheduleType/);
+  assert.match(moreOptions, /\{isRecurring \? \(/);
 });
 
-test('form field order is Repeats, Starts on, Start time', () => {
+test('form field order is Date, Start time, then Repeats in More options', () => {
   const source = read('components/job-creator.tsx');
-  const repeats = source.indexOf('recurrenceCopy.scheduleType');
-  const startsOn = source.indexOf('recurrenceCopy.startsOn', repeats);
+  const startsOn = source.indexOf('recurrenceCopy.startsOn');
   const startTime = source.indexOf('recurrenceCopy.startTime', startsOn);
-  assert.ok(repeats >= 0 && startsOn > repeats && startTime > startsOn);
+  const moreOptions = source.indexOf('<summary>More options</summary>', startTime);
+  const repeats = source.indexOf('recurrenceCopy.scheduleType', moreOptions);
+  assert.ok(startsOn >= 0 && startTime > startsOn && moreOptions > startTime && repeats > moreOptions);
 });
 
 test('recurring job cannot be saved without a start date', () => {

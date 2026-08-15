@@ -1217,12 +1217,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   }}
                 />
               </div>
-              <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
-                <summary>{createCopy.accessNotes}</summary>
-                <label style={{ marginTop: 10 }}>{createCopy.accessInstructions}</label>
-                <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
-                <p className="muted">{createCopy.accessPrivacy}</p>
-              </details>
             </>
           ) : null}
         </section>
@@ -1257,12 +1251,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               }}
             />
           </div>
-          <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
-            <summary>{createCopy.accessNotes}</summary>
-            <label style={{ marginTop: 10 }}>{createCopy.accessInstructions}</label>
-            <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
-            <p className="muted">{createCopy.accessPrivacy}</p>
-          </details>
         </section>
         ) : null}
 
@@ -1274,234 +1262,54 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
         <section className="job-create-section">
           <h4>{recurrenceCopy.scheduleHeading}</h4>
-          <label htmlFor="recurrence-frequency">{recurrenceCopy.scheduleType}</label>
-          <select
-            id="recurrence-frequency"
+          <label htmlFor="recurrence-starts-on">{isRecurring ? recurrenceCopy.startsOn : 'Date'}</label>
+          <input
+            id="recurrence-starts-on"
+            name="recurrence_starts_on"
             className="input"
-            value={recurrenceFrequency}
-            onChange={(e) => {
-              const next = e.target.value as RecurrenceFrequency;
-              setRecurrenceFrequency(next);
-              if (next !== 'none' && visits.length > 1) {
-                setVisits((rows) => [rows[0]]);
-              }
-              if (next === 'daily') setRecurrenceIntervalUnit('days');
-              if (next === 'monthly') setRecurrenceIntervalUnit('months');
-              if (next === 'weekly' || next === 'biweekly' || next === 'every_three_weeks' || next === 'every_four_weeks') {
-                setRecurrenceIntervalUnit('weeks');
-              }
-            }}
-          >
-            <option value="none">{recurrenceCopy.oneTime}</option>
-            <option value="daily">{recurrenceCopy.daily}</option>
-            <option value="weekly">{recurrenceCopy.weekly}</option>
-            <option value="biweekly">{recurrenceCopy.everyTwoWeeks}</option>
-            <option value="every_three_weeks">{recurrenceCopy.everyThreeWeeks}</option>
-            <option value="every_four_weeks">{recurrenceCopy.everyFourWeeks}</option>
-            <option value="monthly">{recurrenceCopy.monthly}</option>
-            <option value="custom">{recurrenceCopy.custom}</option>
-          </select>
-
-          {isRecurring ? (
-            <>
-              <label htmlFor="recurrence-starts-on" style={{ marginTop: 12 }}>{recurrenceCopy.startsOn}</label>
+            type="date"
+            required={isRecurring}
+            aria-required={isRecurring ? 'true' : undefined}
+            aria-invalid={Boolean(recurrenceFieldErrors.startDate)}
+            value={primaryVisit?.visit_date || recurrenceStartDate}
+            onChange={(e) => setSeriesStartDate(e.target.value)}
+          />
+          {recurrenceFieldErrors.startDate ? (
+            <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startDate}</p>
+          ) : null}
+          <div className="grid-2" style={{ marginTop: 12 }}>
+            <div className="form-group">
+              <label htmlFor="job-start-time">{recurrenceCopy.startTime}</label>
               <input
-                id="recurrence-starts-on"
-                name="recurrence_starts_on"
+                id="job-start-time"
                 className="input"
-                type="date"
-                required
-                aria-required="true"
-                aria-invalid={Boolean(recurrenceFieldErrors.startDate)}
-                value={recurrenceStartDate}
-                onChange={(e) => setSeriesStartDate(e.target.value)}
-              />
-              {recurrenceFieldErrors.startDate ? (
-                <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startDate}</p>
-              ) : null}
-
-              <div className="grid-2" style={{ marginTop: 12 }}>
-                <div className="form-group">
-                  <label htmlFor="recurring-start-time">{recurrenceCopy.startTime}</label>
-                  <input
-                    id="recurring-start-time"
-                    className="input"
-                    type="time"
-                    aria-invalid={Boolean(recurrenceFieldErrors.startTime)}
-                    value={primaryVisit?.start_time || ''}
-                    onChange={(e) => {
-                      if (!primaryVisit) return;
-                      setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined }));
-                      updateVisit(primaryVisit.id, { start_time: e.target.value });
-                    }}
-                  />
-                  {recurrenceFieldErrors.startTime ? (
-                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p>
-                  ) : null}
-                </div>
-                <div className="form-group">
-                  <label htmlFor="recurring-end-time">{recurrenceCopy.endTime}</label>
-                  <input
-                    id="recurring-end-time"
-                    className="input"
-                    type="time"
-                    value={primaryVisit?.end_time || ''}
-                    onChange={(e) => {
-                      if (!primaryVisit) return;
-                      updateVisit(primaryVisit.id, { end_time: e.target.value });
-                    }}
-                  />
-                </div>
-              </div>
-
-              {showWeekdays ? (
-                <fieldset style={{ marginTop: 12, border: 0, padding: 0 }}>
-                  <legend style={{ fontWeight: 600 }}>{recurrenceCopy.weekdays}</legend>
-                  <p className="muted">{recurrenceCopy.weekdaysHelp}</p>
-                  <div className="segmented-control" role="group" aria-label={recurrenceCopy.weekdays} style={{ flexWrap: 'wrap' }}>
-                    {weekdayLabels.map((label, index) => {
-                      const selected = recurrenceWeekdays.includes(index);
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          className={`btn${selected ? ' btn-primary' : ''}`}
-                          aria-pressed={selected}
-                          onClick={() => {
-                            setRecurrenceFieldErrors((current) => ({ ...current, weekdays: undefined }));
-                            setRecurrenceWeekdays((current) => {
-                              if (current.includes(index)) {
-                                const next = current.filter((day) => day !== index);
-                                return next.length ? next : current;
-                              }
-                              return [...current, index].sort((a, b) => a - b);
-                            });
-                          }}
-                        >
-                          {label.slice(0, 3)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {recurrenceFieldErrors.weekdays ? (
-                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.weekdays}</p>
-                  ) : null}
-                </fieldset>
-              ) : null}
-
-              <label htmlFor="job-timezone">{recurrenceCopy.jobTimezone}</label>
-              <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
-                <option value="">{recurrenceCopy.companyDefaultTimezone}</option>
-                {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-              <p className="muted">{recurrenceCopy.timezoneHelp}</p>
-
-              <label htmlFor="recurrence-end-mode" style={{ marginTop: 12 }}>{recurrenceCopy.ends}</label>
-              <select
-                id="recurrence-end-mode"
-                className="input"
-                value={recurrenceEndMode}
+                type="time"
+                aria-invalid={Boolean(recurrenceFieldErrors.startTime)}
+                value={primaryVisit?.start_time || ''}
                 onChange={(e) => {
-                  setRecurrenceEndMode(e.target.value as RecurrenceEndMode);
-                  setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined, limit: undefined }));
+                  if (!primaryVisit) return;
+                  setRecurrenceFieldErrors((current) => ({ ...current, startTime: undefined }));
+                  updateVisit(primaryVisit.id, { start_time: e.target.value });
                 }}
-              >
-                <option value="never">{recurrenceCopy.neverEnds}</option>
-                <option value="on_date">{recurrenceCopy.endsOnDate}</option>
-                <option value="after_count">{recurrenceCopy.endsAfterCount}</option>
-              </select>
-              {recurrenceEndMode === 'on_date' ? (
-                <>
-                  <label htmlFor="recurrence-end-date">{recurrenceCopy.endDate}</label>
-                  <input
-                    id="recurrence-end-date"
-                    className="input"
-                    type="date"
-                    aria-invalid={Boolean(recurrenceFieldErrors.endDate)}
-                    value={recurrenceEndDate}
-                    onChange={(e) => {
-                      setRecurrenceEndDate(e.target.value);
-                      setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined }));
-                    }}
-                  />
-                  {recurrenceFieldErrors.endDate ? (
-                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.endDate}</p>
-                  ) : null}
-                </>
+              />
+              {recurrenceFieldErrors.startTime ? (
+                <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p>
               ) : null}
-              {recurrenceEndMode === 'after_count' ? (
-                <>
-                  <label htmlFor="recurrence-limit">{recurrenceCopy.occurrenceCount}</label>
-                  <input
-                    id="recurrence-limit"
-                    className="input"
-                    type="number"
-                    min="1"
-                    aria-invalid={Boolean(recurrenceFieldErrors.limit)}
-                    value={recurrenceLimit}
-                    onChange={(e) => {
-                      setRecurrenceLimit(e.target.value);
-                      setRecurrenceFieldErrors((current) => ({ ...current, limit: undefined }));
-                    }}
-                  />
-                  {recurrenceFieldErrors.limit ? (
-                    <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.limit}</p>
-                  ) : null}
-                </>
-              ) : null}
-
-              <details
-                open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'}
-                onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}
-              >
-                <summary>{recurrenceCopy.advanced}</summary>
-                {recurrenceFrequency === 'custom' ? (
-                  <div className="grid-2" style={{ marginTop: 8 }}>
-                    <div className="form-group">
-                      <label>{recurrenceCopy.every}</label>
-                      <input className="input" type="number" min="1" max="365" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label>{recurrenceCopy.unit}</label>
-                      <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as RecurrenceIntervalUnit)}>
-                        <option value="days">{recurrenceCopy.days}</option>
-                        <option value="weeks">{recurrenceCopy.weeks}</option>
-                        <option value="months">{recurrenceCopy.months}</option>
-                      </select>
-                    </div>
-                  </div>
-                ) : null}
-                <p className="muted">{recurrenceCopy.windowHelp}</p>
-              </details>
-              <p className="muted" style={{ marginTop: 8 }} aria-live="polite">
-                <strong>{recurrenceCopy.summaryLabel}:</strong> {recurrenceSummary}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="muted">Add one or more visits. Times use the job timezone below.</p>
-              <label htmlFor="job-timezone">Job timezone</label>
-              <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
-                <option value="">Use company default</option>
-                {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-              <p className="muted">Filled from the property address when available. You can change it.</p>
-              {visits.map((visit, index) => (
-                <div key={visit.id} className="form visit-editor">
-                  <label>Visit {index + 1}</label>
-                  <input className="input" type="date" value={visit.visit_date} onChange={(e) => updateVisit(visit.id, { visit_date: e.target.value })} />
-                  <div className="grid-2">
-                    <div className="form-group"><label>Start time</label><input className="input" type="time" value={visit.start_time} onChange={(e) => updateVisit(visit.id, { start_time: e.target.value })} /></div>
-                    <div className="form-group"><label>End time</label><input className="input" type="time" value={visit.end_time} onChange={(e) => updateVisit(visit.id, { end_time: e.target.value })} /></div>
-                  </div>
-                  <label>Visit notes</label>
-                  <input className="input" value={visit.notes} onChange={(e) => updateVisit(visit.id, { notes: e.target.value })} />
-                  {visits.length > 1 ? <button className="btn" type="button" onClick={() => removeVisit(visit.id)}>Remove visit</button> : null}
-                </div>
-              ))}
-              <button className="btn" type="button" onClick={() => setVisits((rows) => [...rows, newVisit()])}>Add another visit</button>
-            </>
-          )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="job-end-time">{recurrenceCopy.endTime}</label>
+              <input
+                id="job-end-time"
+                className="input"
+                type="time"
+                value={primaryVisit?.end_time || ''}
+                onChange={(e) => {
+                  if (!primaryVisit) return;
+                  updateVisit(primaryVisit.id, { end_time: e.target.value });
+                }}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="job-create-section">
@@ -1522,67 +1330,273 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           </p>
           <label>What the customer pays</label>
           <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
-
-          <label style={{ marginTop: 12 }}>How the contractor is paid</label>
-          <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
-            <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
-            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
-          </div>
-          {contractorPayMode === 'hourly' ? (
-            <>
-              <div className="grid-2">
-                <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
-                <div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
-              </div>
-              <div className="finance-metric" style={{ marginTop: 8 }}>
-                <span className="finance-metric-label">Calculated contractor pay</span>
-                <strong>${previewContractorPay.toFixed(2)}</strong>
-              </div>
-            </>
-          ) : (
-            <div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
-          )}
-          <label>Contractor pay notes (optional)</label>
-          <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
-
-          <label style={{ marginTop: 12 }}>Additional expected expenses</label>
-          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={additionalExpenses} onChange={(e) => setAdditionalExpenses(e.target.value)} />
-          <label>Expense description (optional)</label>
-          <input className="input" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)} placeholder="Supplies, parking, travel…" />
-
-          <div className="finance-metric-grid financials-summary-grid" style={{ marginTop: 14 }}>
-            <div className="finance-metric"><span className="finance-metric-label">Client price</span><strong>${previewFinance.expectedRevenue.toFixed(2)}</strong></div>
-            <div className="finance-metric"><span className="finance-metric-label">Contractor pay</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
-            <div className="finance-metric"><span className="finance-metric-label">Additional expenses</span><strong>${previewFinance.expectedAdditionalExpense.toFixed(2)}</strong></div>
-            <div className="finance-metric featured"><span className="finance-metric-label">Expected profit</span><strong>${previewProfit.toFixed(2)}</strong></div>
-          </div>
-          <p className="muted">Expected profit = Client price − Contractor pay − Additional expected expenses</p>
         </section>
 
-        <section className="job-create-section">
-          <h4>7. Review before saving</h4>
-          <p style={{ margin: 0 }}><strong>{recurrenceFrequency === 'none' ? 'One-time job' : 'Recurring series'}</strong></p>
-          <p className="muted" style={{ marginTop: 6 }}>{recurrenceSummary}</p>
-          {recurrenceFrequency !== 'none' ? (
-            <p className="muted">
-              Only the next {RECURRING_GENERATION_WINDOW_DAYS} days of visits are scheduled now. Financial defaults apply to each generated visit.
+        <details style={{ marginTop: 12 }}>
+          <summary>More options</summary>
+
+          <section className="job-create-section">
+            <label htmlFor="recurrence-frequency">{recurrenceCopy.scheduleType}</label>
+            <select
+              id="recurrence-frequency"
+              className="input"
+              value={recurrenceFrequency}
+              onChange={(e) => {
+                const next = e.target.value as RecurrenceFrequency;
+                setRecurrenceFrequency(next);
+                if (next !== 'none') {
+                  if (visits.length > 1) {
+                    setVisits((rows) => [rows[0]]);
+                  }
+                  const date = visits[0]?.visit_date || recurrenceStartDate;
+                  if (date) setRecurrenceStartDate(date);
+                }
+                if (next === 'daily') setRecurrenceIntervalUnit('days');
+                if (next === 'monthly') setRecurrenceIntervalUnit('months');
+                if (next === 'weekly' || next === 'biweekly' || next === 'every_three_weeks' || next === 'every_four_weeks') {
+                  setRecurrenceIntervalUnit('weeks');
+                }
+              }}
+            >
+              <option value="none">{recurrenceCopy.oneTime}</option>
+              <option value="daily">{recurrenceCopy.daily}</option>
+              <option value="weekly">{recurrenceCopy.weekly}</option>
+              <option value="biweekly">{recurrenceCopy.everyTwoWeeks}</option>
+              <option value="every_three_weeks">{recurrenceCopy.everyThreeWeeks}</option>
+              <option value="every_four_weeks">{recurrenceCopy.everyFourWeeks}</option>
+              <option value="monthly">{recurrenceCopy.monthly}</option>
+              <option value="custom">{recurrenceCopy.custom}</option>
+            </select>
+
+            {isRecurring ? (
+              <>
+                {showWeekdays ? (
+                  <fieldset style={{ marginTop: 12, border: 0, padding: 0 }}>
+                    <legend style={{ fontWeight: 600 }}>{recurrenceCopy.weekdays}</legend>
+                    <p className="muted">{recurrenceCopy.weekdaysHelp}</p>
+                    <div className="segmented-control" role="group" aria-label={recurrenceCopy.weekdays} style={{ flexWrap: 'wrap' }}>
+                      {weekdayLabels.map((label, index) => {
+                        const selected = recurrenceWeekdays.includes(index);
+                        return (
+                          <button
+                            key={label}
+                            type="button"
+                            className={`btn${selected ? ' btn-primary' : ''}`}
+                            aria-pressed={selected}
+                            onClick={() => {
+                              setRecurrenceFieldErrors((current) => ({ ...current, weekdays: undefined }));
+                              setRecurrenceWeekdays((current) => {
+                                if (current.includes(index)) {
+                                  const next = current.filter((day) => day !== index);
+                                  return next.length ? next : current;
+                                }
+                                return [...current, index].sort((a, b) => a - b);
+                              });
+                            }}
+                          >
+                            {label.slice(0, 3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {recurrenceFieldErrors.weekdays ? (
+                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.weekdays}</p>
+                    ) : null}
+                  </fieldset>
+                ) : null}
+
+                <label htmlFor="job-timezone">{recurrenceCopy.jobTimezone}</label>
+                <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                  <option value="">{recurrenceCopy.companyDefaultTimezone}</option>
+                  {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <p className="muted">{recurrenceCopy.timezoneHelp}</p>
+
+                <label htmlFor="recurrence-end-mode" style={{ marginTop: 12 }}>{recurrenceCopy.ends}</label>
+                <select
+                  id="recurrence-end-mode"
+                  className="input"
+                  value={recurrenceEndMode}
+                  onChange={(e) => {
+                    setRecurrenceEndMode(e.target.value as RecurrenceEndMode);
+                    setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined, limit: undefined }));
+                  }}
+                >
+                  <option value="never">{recurrenceCopy.neverEnds}</option>
+                  <option value="on_date">{recurrenceCopy.endsOnDate}</option>
+                  <option value="after_count">{recurrenceCopy.endsAfterCount}</option>
+                </select>
+                {recurrenceEndMode === 'on_date' ? (
+                  <>
+                    <label htmlFor="recurrence-end-date">{recurrenceCopy.endDate}</label>
+                    <input
+                      id="recurrence-end-date"
+                      className="input"
+                      type="date"
+                      aria-invalid={Boolean(recurrenceFieldErrors.endDate)}
+                      value={recurrenceEndDate}
+                      onChange={(e) => {
+                        setRecurrenceEndDate(e.target.value);
+                        setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined }));
+                      }}
+                    />
+                    {recurrenceFieldErrors.endDate ? (
+                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.endDate}</p>
+                    ) : null}
+                  </>
+                ) : null}
+                {recurrenceEndMode === 'after_count' ? (
+                  <>
+                    <label htmlFor="recurrence-limit">{recurrenceCopy.occurrenceCount}</label>
+                    <input
+                      id="recurrence-limit"
+                      className="input"
+                      type="number"
+                      min="1"
+                      aria-invalid={Boolean(recurrenceFieldErrors.limit)}
+                      value={recurrenceLimit}
+                      onChange={(e) => {
+                        setRecurrenceLimit(e.target.value);
+                        setRecurrenceFieldErrors((current) => ({ ...current, limit: undefined }));
+                      }}
+                    />
+                    {recurrenceFieldErrors.limit ? (
+                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.limit}</p>
+                    ) : null}
+                  </>
+                ) : null}
+
+                <details
+                  open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'}
+                  onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}
+                >
+                  <summary>{recurrenceCopy.advanced}</summary>
+                  {recurrenceFrequency === 'custom' ? (
+                    <div className="grid-2" style={{ marginTop: 8 }}>
+                      <div className="form-group">
+                        <label>{recurrenceCopy.every}</label>
+                        <input className="input" type="number" min="1" max="365" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label>{recurrenceCopy.unit}</label>
+                        <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as RecurrenceIntervalUnit)}>
+                          <option value="days">{recurrenceCopy.days}</option>
+                          <option value="weeks">{recurrenceCopy.weeks}</option>
+                          <option value="months">{recurrenceCopy.months}</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="muted">{recurrenceCopy.windowHelp}</p>
+                </details>
+                <p className="muted" style={{ marginTop: 8 }} aria-live="polite">
+                  <strong>{recurrenceCopy.summaryLabel}:</strong> {recurrenceSummary}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="muted">Add one or more visits. Times use the job timezone below.</p>
+                <label htmlFor="job-timezone">Job timezone</label>
+                <select id="job-timezone" className="input" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                  <option value="">Use company default</option>
+                  {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <p className="muted">Filled from the property address when available. You can change it.</p>
+                {primaryVisit ? (
+                  <>
+                    <label>Visit notes</label>
+                    <input className="input" value={primaryVisit.notes} onChange={(e) => updateVisit(primaryVisit.id, { notes: e.target.value })} />
+                  </>
+                ) : null}
+                {visits.slice(1).map((visit, index) => (
+                  <div key={visit.id} className="form visit-editor">
+                    <label>Visit {index + 2}</label>
+                    <input className="input" type="date" value={visit.visit_date} onChange={(e) => updateVisit(visit.id, { visit_date: e.target.value })} />
+                    <div className="grid-2">
+                      <div className="form-group"><label>Start time</label><input className="input" type="time" value={visit.start_time} onChange={(e) => updateVisit(visit.id, { start_time: e.target.value })} /></div>
+                      <div className="form-group"><label>End time</label><input className="input" type="time" value={visit.end_time} onChange={(e) => updateVisit(visit.id, { end_time: e.target.value })} /></div>
+                    </div>
+                    <label>Visit notes</label>
+                    <input className="input" value={visit.notes} onChange={(e) => updateVisit(visit.id, { notes: e.target.value })} />
+                    <button className="btn" type="button" onClick={() => removeVisit(visit.id)}>Remove visit</button>
+                  </div>
+                ))}
+                <button className="btn" type="button" onClick={() => setVisits((rows) => [...rows, newVisit()])}>Add another visit</button>
+              </>
+            )}
+          </section>
+
+          <section className="job-create-section">
+            <label style={{ marginTop: 12 }}>How the contractor is paid</label>
+            <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
+              <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
+              <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
+            </div>
+            {contractorPayMode === 'hourly' ? (
+              <>
+                <div className="grid-2">
+                  <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
+                  <div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
+                </div>
+                <div className="finance-metric" style={{ marginTop: 8 }}>
+                  <span className="finance-metric-label">Calculated contractor pay</span>
+                  <strong>${previewContractorPay.toFixed(2)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
+            )}
+            <label>Contractor pay notes (optional)</label>
+            <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
+
+            <label style={{ marginTop: 12 }}>Additional expected expenses</label>
+            <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={additionalExpenses} onChange={(e) => setAdditionalExpenses(e.target.value)} />
+            <label>Expense description (optional)</label>
+            <input className="input" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)} placeholder="Supplies, parking, travel…" />
+
+            <div className="finance-metric-grid financials-summary-grid" style={{ marginTop: 14 }}>
+              <div className="finance-metric"><span className="finance-metric-label">Client price</span><strong>${previewFinance.expectedRevenue.toFixed(2)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Contractor pay</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Additional expenses</span><strong>${previewFinance.expectedAdditionalExpense.toFixed(2)}</strong></div>
+              <div className="finance-metric featured"><span className="finance-metric-label">Expected profit</span><strong>${previewProfit.toFixed(2)}</strong></div>
+            </div>
+            <p className="muted">Expected profit = Client price − Contractor pay − Additional expected expenses</p>
+          </section>
+
+          <section className="job-create-section">
+            <details style={{ marginTop: 12 }} open={showAdvancedProperty} onToggle={(e) => setShowAdvancedProperty((e.target as HTMLDetailsElement).open)}>
+              <summary>{createCopy.accessNotes}</summary>
+              <label style={{ marginTop: 10 }}>{createCopy.accessInstructions}</label>
+              <textarea className="input" rows={3} value={accessInstructions} onChange={(e) => setAccessInstructions(e.target.value)} />
+              <p className="muted">{createCopy.accessPrivacy}</p>
+            </details>
+          </section>
+
+          <section className="job-create-section">
+            <h4>Initial photos</h4>
+            <p className="muted">Optional before photos. You can edit or add more photos after the job is created.</p>
+            <input className="input" type="file" accept="image/*" multiple onChange={(e) => setInitialPhotos(Array.from(e.target.files || []))} />
+            {initialPhotos.length > 0 ? <p className="muted">{initialPhotos.length} photo{initialPhotos.length === 1 ? '' : 's'} selected</p> : null}
+          </section>
+
+          <section className="job-create-section">
+            <h4>7. Review before saving</h4>
+            <p style={{ margin: 0 }}><strong>{recurrenceFrequency === 'none' ? 'One-time job' : 'Recurring series'}</strong></p>
+            <p className="muted" style={{ marginTop: 6 }}>{recurrenceSummary}</p>
+            {recurrenceFrequency !== 'none' ? (
+              <p className="muted">
+                Only the next {RECURRING_GENERATION_WINDOW_DAYS} days of visits are scheduled now. Financial defaults apply to each generated visit.
+              </p>
+            ) : null}
+            <p className="muted" style={{ marginTop: 6 }}>
+              Per visit: ${previewFinance.expectedRevenue.toFixed(2)} revenue · ${previewContractorPay.toFixed(2)} contractor ·
+              ${previewFinance.expectedAdditionalExpense.toFixed(2)} expenses · ${previewProfit.toFixed(2)} expected profit
             </p>
-          ) : null}
-          <p className="muted" style={{ marginTop: 6 }}>
-            Per visit: ${previewFinance.expectedRevenue.toFixed(2)} revenue · ${previewContractorPay.toFixed(2)} contractor ·
-            ${previewFinance.expectedAdditionalExpense.toFixed(2)} expenses · ${previewProfit.toFixed(2)} expected profit
-          </p>
-        </section>
-
-        <section className="job-create-section">
-          <h4>Initial photos</h4>
-          <p className="muted">Optional before photos. You can edit or add more photos after the job is created.</p>
-          <input className="input" type="file" accept="image/*" multiple onChange={(e) => setInitialPhotos(Array.from(e.target.files || []))} />
-          {initialPhotos.length > 0 ? <p className="muted">{initialPhotos.length} photo{initialPhotos.length === 1 ? '' : 's'} selected</p> : null}
-        </section>
+          </section>
+        </details>
 
         <Button className="btn-primary unified-job-save" type="submit" disabled={loading}>
-          {loading ? FEEDBACK.loading : 'Save job'}
+          {loading ? FEEDBACK.loading : 'Create Job'}
         </Button>
       </form>
     </div>

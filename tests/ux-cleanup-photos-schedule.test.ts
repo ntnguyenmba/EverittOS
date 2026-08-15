@@ -39,11 +39,11 @@ test('recurring schedule UI has one schedule block and no fake 9:00 AM default',
   assert.match(source, /companyDefaultTimezone/);
   assert.match(source, /recurrenceEndMode/);
   assert.doesNotMatch(source, /\|\| '09:00'/);
-  const scheduleIdx = source.indexOf('recurrenceCopy.scheduleType');
-  const startDateIdx = source.indexOf('recurrenceCopy.startsOn', scheduleIdx);
-  const timezoneIdx = source.indexOf('recurrenceCopy.jobTimezone', startDateIdx);
+  const moreOptionsIdx = source.indexOf('<summary>More options</summary>');
+  const scheduleIdx = source.indexOf('recurrenceCopy.scheduleType', moreOptionsIdx);
+  const timezoneIdx = source.indexOf('recurrenceCopy.jobTimezone', scheduleIdx);
   const endsIdx = source.indexOf('recurrenceCopy.ends', timezoneIdx);
-  assert.ok(scheduleIdx < startDateIdx && startDateIdx < timezoneIdx && timezoneIdx < endsIdx);
+  assert.ok(moreOptionsIdx >= 0 && scheduleIdx > moreOptionsIdx && timezoneIdx > scheduleIdx && endsIdx > timezoneIdx);
 });
 
 test('recurrence summary omits time until chosen and can include timezone abbrev', () => {
