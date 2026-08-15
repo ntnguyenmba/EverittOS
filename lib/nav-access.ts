@@ -162,8 +162,8 @@ export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): Setti
 export function primaryNavHrefsForRole(role: UserRole): string[] {
   if (isClientRole(role)) return ['/portal/client', '/portal/client?tab=jobs', '/portal/client/settings'];
   if (isContractorRole(role)) return ['/portal/contractor', '/portal/contractor#jobs', '/portal/contractor#schedule', '/portal/contractor#earnings', '/portal/contractor/settings'];
-  if (role === 'manager') return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
-  if (canSeeOrgWideData(role)) return ['/dashboard', '/jobs', '/schedule', '/customers', '/people', '/expenses', '/bookkeeping', '/knowledge', '/reports', '/settings'];
+  if (role === 'manager') return ['/dashboard', '/customers', '/jobs', '/schedule', '/people', '/invoices', '/expenses', '/settings'];
+  if (canSeeOrgWideData(role)) return ['/dashboard', '/customers', '/jobs', '/schedule', '/people', '/invoices', '/expenses', '/settings'];
   return ['/dashboard', '/jobs', '/schedule', '/settings'];
 }
 
