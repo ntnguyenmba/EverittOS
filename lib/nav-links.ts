@@ -28,6 +28,7 @@ const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Team', href: '/people' },
   { label: 'Invoices', href: '/invoices' },
   { label: 'Expenses', href: '/expenses' },
+  { label: 'Bookkeeping', href: '/bookkeeping' },
   { label: 'Settings', href: '/settings' }
 ];
 
