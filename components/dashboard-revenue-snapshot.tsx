@@ -17,7 +17,7 @@ import {
 } from '@/lib/dashboard-metrics';
 import { DASHBOARD_LINKS } from '@/lib/dashboard-links';
 import { getExportCopy } from '@/lib/i18n/export-copy';
-import { ensureOrganizationForUser } from '@/lib/workspace-client';
+import { fetchOrganizationContext } from '@/lib/organization';
 import { supabase } from '@/lib/supabase';
 
 type DashboardRevenueSnapshotProps = {
@@ -106,8 +106,15 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        const org = await ensureOrganizationForUser(user.id);
-        const next = await fetchDashboardRevenueMetrics(supabase, org?.organizationId || null, range);
+        // Period changes must not use the short 800ms workspace helper timeout.
+        // A transient timeout there returns null, and the finance engine correctly
+        // returns an all-zero snapshot for a missing organization id.
+        const org = await fetchOrganizationContext(user.id);
+        if (!org?.organizationId) {
+          // Keep the last known-good metrics instead of replacing real data with zeros.
+          return;
+        }
+        const next = await fetchDashboardRevenueMetrics(supabase, org.organizationId, range);
         if (!cancelled) setActiveMetrics(next);
       } finally {
         if (!cancelled) setRangeLoading(false);
