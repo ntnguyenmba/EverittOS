@@ -56,8 +56,12 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
   }
 
   const items = appNavItemsForRole(normalizedRole, normalized);
+  const showBookkeeping = normalizedRole === 'owner' || normalizedRole === 'admin' || normalizedRole === 'manager';
+  const bookkeepingResolution = resolveNavItem(normalizedRole, normalized, '/bookkeeping');
+
   return <nav className="app-nav" aria-label={t('ux.mobileNavLabel')}>
     {items.map(({ label, href, resolution }) => <NavLinkRow key={href} href={href} label={navLabel(href, t, label, locale)} accessible={resolution.accessible} requiredPlan={resolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} />)}
+    {showBookkeeping ? <NavLinkRow href="/bookkeeping" label="Bookkeeping" accessible={bookkeepingResolution.accessible} requiredPlan={bookkeepingResolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} /> : null}
     {unread > 0 ? <a href="/notifications" className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`} onClick={onNavigate}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></a> : null}
   </nav>;
 }
