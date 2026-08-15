@@ -47,12 +47,11 @@ export function isTeamInviteAcceptPath(pathname: string): boolean {
 
 /**
  * Paths a contractor may open without being bounced back to the portal home.
- * Job detail pages and Playbook data enforce assignment/shared access themselves.
+ * Job detail pages enforce assignment/shared access themselves.
  */
 export function isContractorAllowedPath(pathname: string): boolean {
   const path = pathOnly(pathname);
   if (pathMatchesPrefix(path, CONTRACTOR_PORTAL_HOME)) return true;
-  if (pathMatchesPrefix(path, '/knowledge')) return true;
   if (isPortalPersonalSettingsPath(path)) return true;
   if (path.startsWith('/jobs/')) return true;
   if (isTeamInviteAcceptPath(path)) return true;
