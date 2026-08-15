@@ -56,6 +56,7 @@ describe('navigation visibility by role', () => {
     assert.equal(canShowNavHref('contractor', '/portal/contractor'), true);
     assert.equal(canShowNavHref('contractor', '/portal/contractor/settings'), true);
     assert.equal(canShowNavHref('contractor', '/settings/account'), true);
+    assert.equal(canShowNavHref('contractor', '/knowledge'), false);
     assert.equal(canShowNavHref('contractor', '/invoices'), false);
     assert.equal(canShowNavHref('contractor', '/customers'), false);
     assert.equal(canShowNavHref('contractor', '/dashboard'), false);
@@ -64,7 +65,7 @@ describe('navigation visibility by role', () => {
 
     const items = appNavItemsForRole('contractor', 'free');
     assert.equal(
-      items.some((item) => item.href === '/invoices' || item.href === '/customers' || item.href === '/analytics'),
+      items.some((item) => item.href === '/knowledge' || item.href === '/invoices' || item.href === '/customers' || item.href === '/analytics'),
       false
     );
   });
@@ -153,6 +154,8 @@ describe('route landing and portal path helpers', () => {
     assert.equal(isContractorAllowedPath('/portal/contractor/settings'), true);
     assert.equal(isContractorAllowedPath('/settings/account'), true);
     assert.equal(isContractorAllowedPath('/jobs/abc'), true);
+    assert.equal(isContractorAllowedPath('/knowledge'), false);
+    assert.equal(isContractorAllowedPath('/knowledge/playbook-1'), false);
     assert.equal(isContractorAllowedPath('/invoices'), false);
     assert.equal(isContractorAllowedPath('/customers'), false);
 
