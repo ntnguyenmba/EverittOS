@@ -41,36 +41,36 @@ const copy = {
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
     collected: 'Money received', customerBalanceDue: 'Still owed', cashAfterPaidCosts: 'Cash after paid costs',
     jobsToday: 'Jobs today', jobsWeek: 'Jobs this week', jobsMonth: 'Jobs this month', jobsYear: 'Jobs this year', jobsAllTime: 'All jobs',
-    jobsDesc: 'Jobs scheduled in this period.', showFinancialDetails: 'Show more money details', hideFinancialDetails: 'Hide money details', contractorsPaid: 'Contractors paid',
-    totalContractorCost: 'Job contractor costs', expectedRevenue: 'Scheduled job revenue', expectedProfit: 'Job profit', businessExpenses: 'Business expenses',
+    jobsDesc: 'Jobs scheduled in this period.', showFinancialDetails: 'Show more money details', hideFinancialDetails: 'Hide money details', contractorsPaid: 'Workers paid',
+    totalContractorCost: 'Worker Costs', expectedRevenue: 'Scheduled job revenue', expectedProfit: 'Job profit', businessExpenses: 'Business expenses',
     collectedDesc: 'Customer payments received in this period.', currentBalances: 'Current unpaid customer balances.', periodBalances: 'Customer balances tied to work in this period.',
-    cashDesc: 'Money received minus contractor payments and business expenses already paid.', contractorsPaidDesc: 'Contractor payments actually paid in this period.',
-    contractorCostDesc: 'Contractor cost tied to jobs in this period, whether paid yet or not.', expectedRevenueDesc: 'Customer revenue tied to jobs scheduled in this period.',
-    expectedProfitDesc: 'Scheduled job revenue minus job contractor costs and business expenses for this period.', expensesDesc: 'Business expenses recorded in this period.'
+    cashDesc: 'Money received minus worker payments and business expenses already paid.', contractorsPaidDesc: 'Worker payments actually paid in this period.',
+    contractorCostDesc: 'Worker cost tied to jobs in this period, whether paid yet or not.', expectedRevenueDesc: 'Customer revenue tied to jobs scheduled in this period.',
+    expectedProfitDesc: 'Scheduled job revenue minus worker costs and business expenses for this period.', expensesDesc: 'Business expenses recorded in this period.'
   },
   es: {
     dashboard: 'Resumen de dinero',
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
     collected: 'Dinero recibido', customerBalanceDue: 'Aún pendiente', cashAfterPaidCosts: 'Efectivo después de costos pagados',
     jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
-    jobsDesc: 'Trabajos programados en este período.', showFinancialDetails: 'Mostrar más detalles de dinero', hideFinancialDetails: 'Ocultar detalles de dinero', contractorsPaid: 'Contratistas pagados',
-    totalContractorCost: 'Costos de contratistas por trabajo', expectedRevenue: 'Ingresos de trabajos programados', expectedProfit: 'Ganancia de trabajos', businessExpenses: 'Gastos del negocio',
+    jobsDesc: 'Trabajos programados en este período.', showFinancialDetails: 'Mostrar más detalles de dinero', hideFinancialDetails: 'Ocultar detalles de dinero', contractorsPaid: 'Trabajadores pagados',
+    totalContractorCost: 'Costos de trabajadores', expectedRevenue: 'Ingresos de trabajos programados', expectedProfit: 'Ganancia de trabajos', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Pagos de clientes recibidos en este período.', currentBalances: 'Saldos actuales pendientes de clientes.', periodBalances: 'Saldos de clientes vinculados al trabajo de este período.',
-    cashDesc: 'Dinero recibido menos pagos a contratistas y gastos del negocio ya pagados.', contractorsPaidDesc: 'Pagos a contratistas realmente pagados en este período.',
-    contractorCostDesc: 'Costo de contratistas vinculado a trabajos de este período, esté pagado o no.', expectedRevenueDesc: 'Ingresos de clientes vinculados a trabajos programados en este período.',
-    expectedProfitDesc: 'Ingresos de trabajos menos costos de contratistas y gastos del negocio de este período.', expensesDesc: 'Gastos del negocio registrados en este período.'
+    cashDesc: 'Dinero recibido menos pagos a trabajadores y gastos del negocio ya pagados.', contractorsPaidDesc: 'Pagos a trabajadores realmente pagados en este período.',
+    contractorCostDesc: 'Costo de trabajadores vinculado a trabajos de este período, esté pagado o no.', expectedRevenueDesc: 'Ingresos de clientes vinculados a trabajos programados en este período.',
+    expectedProfitDesc: 'Ingresos de trabajos menos costos de trabajadores y gastos del negocio de este período.', expensesDesc: 'Gastos del negocio registrados en este período.'
   },
   vi: {
     dashboard: 'Tổng quan tiền',
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
     collected: 'Tiền đã nhận', customerBalanceDue: 'Còn phải thu', cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả',
     jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
-    jobsDesc: 'Công việc được lên lịch trong khoảng thời gian này.', showFinancialDetails: 'Hiện thêm chi tiết tiền', hideFinancialDetails: 'Ẩn chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
-    totalContractorCost: 'Chi phí nhà thầu theo công việc', expectedRevenue: 'Doanh thu công việc đã lên lịch', expectedProfit: 'Lợi nhuận công việc', businessExpenses: 'Chi phí kinh doanh',
+    jobsDesc: 'Công việc được lên lịch trong khoảng thời gian này.', showFinancialDetails: 'Hiện thêm chi tiết tiền', hideFinancialDetails: 'Ẩn chi tiết tiền', contractorsPaid: 'Đã trả nhân sự',
+    totalContractorCost: 'Chi phí nhân sự', expectedRevenue: 'Doanh thu công việc đã lên lịch', expectedProfit: 'Lợi nhuận công việc', businessExpenses: 'Chi phí kinh doanh',
     collectedDesc: 'Các khoản thanh toán từ khách đã nhận trong khoảng thời gian này.', currentBalances: 'Số dư khách hàng hiện còn nợ.', periodBalances: 'Số dư khách hàng gắn với công việc trong khoảng thời gian này.',
-    cashDesc: 'Tiền đã nhận trừ các khoản đã trả cho nhà thầu và chi phí kinh doanh.', contractorsPaidDesc: 'Khoản thanh toán nhà thầu đã thực sự trả trong khoảng thời gian này.',
-    contractorCostDesc: 'Chi phí nhà thầu gắn với công việc trong khoảng thời gian này, dù đã trả hay chưa.', expectedRevenueDesc: 'Doanh thu khách hàng gắn với công việc được lên lịch trong khoảng thời gian này.',
-    expectedProfitDesc: 'Doanh thu công việc trừ chi phí nhà thầu và chi phí kinh doanh trong khoảng thời gian này.', expensesDesc: 'Chi phí kinh doanh được ghi nhận trong khoảng thời gian này.'
+    cashDesc: 'Tiền đã nhận trừ các khoản đã trả cho nhân sự và chi phí kinh doanh.', contractorsPaidDesc: 'Khoản thanh toán nhân sự đã thực sự trả trong khoảng thời gian này.',
+    contractorCostDesc: 'Chi phí nhân sự gắn với công việc trong khoảng thời gian này, dù đã trả hay chưa.', expectedRevenueDesc: 'Doanh thu khách hàng gắn với công việc được lên lịch trong khoảng thời gian này.',
+    expectedProfitDesc: 'Doanh thu công việc trừ chi phí nhân sự và chi phí kinh doanh trong khoảng thời gian này.', expensesDesc: 'Chi phí kinh doanh được ghi nhận trong khoảng thời gian này.'
   }
 } as const;
 
@@ -106,14 +106,8 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        // Period changes must not use the short 800ms workspace helper timeout.
-        // A transient timeout there returns null, and the finance engine correctly
-        // returns an all-zero snapshot for a missing organization id.
         const org = await fetchOrganizationContext(user.id);
-        if (!org?.organizationId) {
-          // Keep the last known-good metrics instead of replacing real data with zeros.
-          return;
-        }
+        if (!org?.organizationId) return;
         const next = await fetchDashboardRevenueMetrics(supabase, org.organizationId, range);
         if (!cancelled) setActiveMetrics(next);
       } finally {
