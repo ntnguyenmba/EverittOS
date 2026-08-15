@@ -14,16 +14,20 @@ export type NavSectionDef = {
   items: NavLinkDef[];
 };
 
-/** Slim primary navigation — role filtering happens in nav-access. */
+/**
+ * Keep the everyday owner navigation focused on the work service businesses
+ * do most often. Advanced and secondary tools still exist and remain
+ * reachable from their contextual screens and Settings, but they do not
+ * compete for attention in the main menu.
+ */
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
   { label: 'Schedule', href: '/schedule' },
-  { label: 'Customers', href: '/customers' },
   { label: 'Team', href: '/people' },
+  { label: 'Invoices', href: '/invoices' },
   { label: 'Expenses', href: '/expenses' },
-  { label: 'Bookkeeping', href: '/bookkeeping' },
-  { label: 'Playbook', href: '/knowledge' },
   { label: 'Settings', href: '/settings' }
 ];
 
@@ -66,6 +70,7 @@ export const SECONDARY_APP_ROUTES = [
   '/reports',
   '/leads',
   '/analytics',
+  '/activity',
   '/portal/client',
   '/portal/contractor',
   '/settings/billing',
