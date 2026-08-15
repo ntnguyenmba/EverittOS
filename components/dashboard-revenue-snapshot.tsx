@@ -39,38 +39,38 @@ const copy = {
   en: {
     dashboard: 'Money overview',
     period: 'Period', today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', allTime: 'All Time',
-    collected: 'Money in', customerBalanceDue: 'Still owed', cashAfterPaidCosts: 'Money kept',
+    collected: 'Money received', customerBalanceDue: 'Still owed', cashAfterPaidCosts: 'Cash after paid costs',
     jobsToday: 'Jobs today', jobsWeek: 'Jobs this week', jobsMonth: 'Jobs this month', jobsYear: 'Jobs this year', jobsAllTime: 'All jobs',
-    jobsDesc: 'Jobs in this period.', showFinancialDetails: 'Show more money details', hideFinancialDetails: 'Hide money details', contractorsPaid: 'Paid contractors',
-    totalContractorCost: 'Contractor costs', expectedRevenue: 'Job revenue', expectedProfit: 'Profit', businessExpenses: 'Business expenses',
-    collectedDesc: 'Money customers paid you.', currentBalances: 'Money customers still owe.', periodBalances: 'Money customers still owe for this period.',
-    cashDesc: 'Money received minus costs already paid.', contractorsPaidDesc: 'Money already paid to contractors.',
-    contractorCostDesc: 'What the work costs you, paid or not.', expectedRevenueDesc: 'Total customer pay for jobs scheduled in this period.',
-    expectedProfitDesc: 'What is left after contractor costs and expenses.', expensesDesc: 'Fuel, supplies, software, and other costs.'
+    jobsDesc: 'Jobs scheduled in this period.', showFinancialDetails: 'Show more money details', hideFinancialDetails: 'Hide money details', contractorsPaid: 'Contractors paid',
+    totalContractorCost: 'Job contractor costs', expectedRevenue: 'Scheduled job revenue', expectedProfit: 'Job profit', businessExpenses: 'Business expenses',
+    collectedDesc: 'Customer payments received in this period.', currentBalances: 'Current unpaid customer balances.', periodBalances: 'Customer balances tied to work in this period.',
+    cashDesc: 'Money received minus contractor payments and business expenses already paid.', contractorsPaidDesc: 'Contractor payments actually paid in this period.',
+    contractorCostDesc: 'Contractor cost tied to jobs in this period, whether paid yet or not.', expectedRevenueDesc: 'Customer revenue tied to jobs scheduled in this period.',
+    expectedProfitDesc: 'Scheduled job revenue minus job contractor costs and business expenses for this period.', expensesDesc: 'Business expenses recorded in this period.'
   },
   es: {
     dashboard: 'Resumen de dinero',
     period: 'Período', today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', allTime: 'Todo el tiempo',
-    collected: 'Dinero recibido', customerBalanceDue: 'Aún pendiente', cashAfterPaidCosts: 'Dinero restante',
+    collected: 'Dinero recibido', customerBalanceDue: 'Aún pendiente', cashAfterPaidCosts: 'Efectivo después de costos pagados',
     jobsToday: 'Trabajos de hoy', jobsWeek: 'Trabajos de esta semana', jobsMonth: 'Trabajos de este mes', jobsYear: 'Trabajos de este año', jobsAllTime: 'Todos los trabajos',
-    jobsDesc: 'Trabajos de este período.', showFinancialDetails: 'Mostrar más detalles de dinero', hideFinancialDetails: 'Ocultar detalles de dinero', contractorsPaid: 'Contratistas pagados',
-    totalContractorCost: 'Costos de contratistas', expectedRevenue: 'Ingresos de trabajos', expectedProfit: 'Ganancia', businessExpenses: 'Gastos del negocio',
-    collectedDesc: 'Dinero que los clientes te pagaron.', currentBalances: 'Dinero que los clientes todavía deben.', periodBalances: 'Dinero que los clientes todavía deben de este período.',
-    cashDesc: 'Dinero recibido menos costos ya pagados.', contractorsPaidDesc: 'Dinero ya pagado a contratistas.',
-    contractorCostDesc: 'Lo que cuesta el trabajo, pagado o pendiente.', expectedRevenueDesc: 'Pago total del cliente por los trabajos programados en este período.',
-    expectedProfitDesc: 'Lo que queda después de contratistas y gastos.', expensesDesc: 'Combustible, suministros, software y otros costos.'
+    jobsDesc: 'Trabajos programados en este período.', showFinancialDetails: 'Mostrar más detalles de dinero', hideFinancialDetails: 'Ocultar detalles de dinero', contractorsPaid: 'Contratistas pagados',
+    totalContractorCost: 'Costos de contratistas por trabajo', expectedRevenue: 'Ingresos de trabajos programados', expectedProfit: 'Ganancia de trabajos', businessExpenses: 'Gastos del negocio',
+    collectedDesc: 'Pagos de clientes recibidos en este período.', currentBalances: 'Saldos actuales pendientes de clientes.', periodBalances: 'Saldos de clientes vinculados al trabajo de este período.',
+    cashDesc: 'Dinero recibido menos pagos a contratistas y gastos del negocio ya pagados.', contractorsPaidDesc: 'Pagos a contratistas realmente pagados en este período.',
+    contractorCostDesc: 'Costo de contratistas vinculado a trabajos de este período, esté pagado o no.', expectedRevenueDesc: 'Ingresos de clientes vinculados a trabajos programados en este período.',
+    expectedProfitDesc: 'Ingresos de trabajos menos costos de contratistas y gastos del negocio de este período.', expensesDesc: 'Gastos del negocio registrados en este período.'
   },
   vi: {
     dashboard: 'Tổng quan tiền',
     period: 'Khoảng thời gian', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', allTime: 'Tất cả thời gian',
-    collected: 'Tiền vào', customerBalanceDue: 'Còn phải thu', cashAfterPaidCosts: 'Tiền còn lại',
+    collected: 'Tiền đã nhận', customerBalanceDue: 'Còn phải thu', cashAfterPaidCosts: 'Tiền mặt sau chi phí đã trả',
     jobsToday: 'Công việc hôm nay', jobsWeek: 'Công việc tuần này', jobsMonth: 'Công việc tháng này', jobsYear: 'Công việc năm nay', jobsAllTime: 'Tất cả công việc',
-    jobsDesc: 'Công việc trong khoảng thời gian này.', showFinancialDetails: 'Hiện thêm chi tiết tiền', hideFinancialDetails: 'Ẩn chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
-    totalContractorCost: 'Chi phí nhà thầu', expectedRevenue: 'Doanh thu công việc', expectedProfit: 'Lợi nhuận', businessExpenses: 'Chi phí kinh doanh',
-    collectedDesc: 'Tiền khách đã trả cho bạn.', currentBalances: 'Tiền khách vẫn còn nợ.', periodBalances: 'Tiền khách vẫn còn nợ trong khoảng này.',
-    cashDesc: 'Tiền đã nhận trừ các khoản đã trả.', contractorsPaidDesc: 'Tiền đã trả cho nhà thầu.',
-    contractorCostDesc: 'Chi phí của công việc, dù đã trả hay chưa.', expectedRevenueDesc: 'Tổng tiền khách trả cho các công việc được lên lịch trong khoảng này.',
-    expectedProfitDesc: 'Số tiền còn lại sau chi phí nhà thầu và chi phí khác.', expensesDesc: 'Xăng, vật tư, phần mềm và các chi phí khác.'
+    jobsDesc: 'Công việc được lên lịch trong khoảng thời gian này.', showFinancialDetails: 'Hiện thêm chi tiết tiền', hideFinancialDetails: 'Ẩn chi tiết tiền', contractorsPaid: 'Đã trả nhà thầu',
+    totalContractorCost: 'Chi phí nhà thầu theo công việc', expectedRevenue: 'Doanh thu công việc đã lên lịch', expectedProfit: 'Lợi nhuận công việc', businessExpenses: 'Chi phí kinh doanh',
+    collectedDesc: 'Các khoản thanh toán từ khách đã nhận trong khoảng thời gian này.', currentBalances: 'Số dư khách hàng hiện còn nợ.', periodBalances: 'Số dư khách hàng gắn với công việc trong khoảng thời gian này.',
+    cashDesc: 'Tiền đã nhận trừ các khoản đã trả cho nhà thầu và chi phí kinh doanh.', contractorsPaidDesc: 'Khoản thanh toán nhà thầu đã thực sự trả trong khoảng thời gian này.',
+    contractorCostDesc: 'Chi phí nhà thầu gắn với công việc trong khoảng thời gian này, dù đã trả hay chưa.', expectedRevenueDesc: 'Doanh thu khách hàng gắn với công việc được lên lịch trong khoảng thời gian này.',
+    expectedProfitDesc: 'Doanh thu công việc trừ chi phí nhà thầu và chi phí kinh doanh trong khoảng thời gian này.', expensesDesc: 'Chi phí kinh doanh được ghi nhận trong khoảng thời gian này.'
   }
 } as const;
 
