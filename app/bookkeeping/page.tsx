@@ -19,13 +19,13 @@ import { supabase } from '@/lib/supabase';
 
 const copy = {
   en: {
-    title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, contractor payments, and what is left.', thisYear: 'This Year', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Contractor Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Contractor Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.'
+    title: 'Bookkeeping', subtitle: 'A simple record of money in, business expenses, worker payments, and what is left.', thisYear: 'This Year', allTime: 'All Time', income: 'Income', expenses: 'Expenses', contractorPay: 'Worker Payments', net: 'Net', incomeReceived: 'Income Received', expensesPaid: 'Expenses Paid', contractorsPaid: 'Worker Payments', empty: 'No records in this period.', loading: 'Loading bookkeeping…', disclaimer: 'For recordkeeping only. EverittOS does not provide tax, accounting, or legal advice. Consult a qualified professional for guidance applicable to your business.'
   },
   es: {
-    title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a contratistas y lo que queda.', thisYear: 'Este año', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a contratistas', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a contratistas', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.'
+    title: 'Registros financieros', subtitle: 'Un registro simple del dinero recibido, gastos del negocio, pagos a trabajadores y lo que queda.', thisYear: 'Este año', allTime: 'Todo el tiempo', income: 'Ingresos', expenses: 'Gastos', contractorPay: 'Pagos a trabajadores', net: 'Neto', incomeReceived: 'Ingresos recibidos', expensesPaid: 'Gastos pagados', contractorsPaid: 'Pagos a trabajadores', empty: 'No hay registros en este período.', loading: 'Cargando registros…', disclaimer: 'Solo para mantenimiento de registros. EverittOS no brinda asesoramiento fiscal, contable ni legal. Consulte a un profesional calificado para orientación aplicable a su negocio.'
   },
   vi: {
-    title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhà thầu và số còn lại.', thisYear: 'Năm nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhà thầu', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhà thầu', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.'
+    title: 'Sổ thu chi', subtitle: 'Bản ghi đơn giản về tiền vào, chi phí kinh doanh, tiền trả nhân sự và số còn lại.', thisYear: 'Năm nay', allTime: 'Tất cả thời gian', income: 'Thu nhập', expenses: 'Chi phí', contractorPay: 'Thanh toán nhân sự', net: 'Còn lại', incomeReceived: 'Thu nhập đã nhận', expensesPaid: 'Chi phí đã trả', contractorsPaid: 'Thanh toán nhân sự', empty: 'Không có bản ghi trong khoảng thời gian này.', loading: 'Đang tải sổ thu chi…', disclaimer: 'Chỉ dùng để lưu hồ sơ. EverittOS không cung cấp tư vấn thuế, kế toán hoặc pháp lý. Hãy tham khảo chuyên gia đủ điều kiện về hướng dẫn phù hợp với doanh nghiệp của bạn.'
   }
 } as const;
 
@@ -121,34 +121,50 @@ export default function BookkeepingPage() {
 
   return (
     <AppShell plan={plan} role={role}>
-      <main style={{ width: '100%', maxWidth: 1180, margin: '0 auto', display: 'block', minWidth: 0, paddingBottom: 12 }}>
-        <PageHeader
-          title={c.title}
-          subtitle={c.subtitle}
-          action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />}
-        />
+      <main style={{ width: '100%', maxWidth: 1180, margin: '0 auto', display: 'block', minWidth: 0, padding: '6px 0 18px' }}>
+        <div style={{ marginBottom: 18 }}>
+          <PageHeader
+            title={c.title}
+            subtitle={c.subtitle}
+            action={<ExportMenu endpoint="/api/exports/bookkeeping" query={{ range }} locale={locale} disabled={loading} onError={(message) => appFeedback.error(message || exportCopy.exportFailed)} onSuccess={(format) => { if (format === 'share') appFeedback.success(exportCopy.shareSent); }} />}
+          />
+        </div>
 
-        <div className="inline-actions" style={{ margin: '4px 0 26px', gap: 10, flexWrap: 'wrap', width: '100%' }}>
-          <button type="button" className={range === 'year' ? 'btn btn-primary' : 'btn'} onClick={() => setRange('year')}>{c.thisYear}</button>
-          <button type="button" className={range === 'all_time' ? 'btn btn-primary' : 'btn'} onClick={() => setRange('all_time')}>{c.allTime}</button>
+        <div className="inline-actions" style={{ margin: '10px 0 34px', gap: 14, flexWrap: 'wrap', width: '100%', alignItems: 'center' }}>
+          <button
+            type="button"
+            className={range === 'year' ? 'btn btn-primary' : 'btn'}
+            onClick={() => setRange('year')}
+            style={{ minHeight: 46, padding: '11px 20px', borderRadius: 12, minWidth: 104 }}
+          >
+            {c.thisYear}
+          </button>
+          <button
+            type="button"
+            className={range === 'all_time' ? 'btn btn-primary' : 'btn'}
+            onClick={() => setRange('all_time')}
+            style={{ minHeight: 46, padding: '11px 20px', borderRadius: 12, minWidth: 96 }}
+          >
+            {c.allTime}
+          </button>
         </div>
 
         {loading ? <p className="muted">{c.loading}</p> : (
           <div style={{ width: '100%', minWidth: 0 }}>
-            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, width: '100%', marginBottom: 30 }}>
+            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 20, width: '100%', marginBottom: 32 }}>
               {metrics.map(([label, value]) => (
                 <div
                   key={label}
                   className="card"
                   style={{
-                    padding: '20px 22px',
-                    minHeight: 118,
+                    padding: '22px 24px',
+                    minHeight: 126,
                     minWidth: 0,
                     borderRadius: 16,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: 14
+                    gap: 16
                   }}
                 >
                   <span className="muted" style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{label}</span>
@@ -157,13 +173,13 @@ export default function BookkeepingPage() {
               ))}
             </section>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 24, width: '100%', minWidth: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 26, width: '100%', minWidth: 0 }}>
               <TransactionSection title={c.incomeReceived} rows={incomeRows} empty={c.empty} />
               <TransactionSection title={c.contractorsPaid} rows={contractorSection?.rows || []} empty={c.empty} />
               <TransactionSection title={c.expensesPaid} rows={expenseSection?.rows || []} empty={c.empty} />
             </div>
 
-            <div style={{ width: '100%', marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--border, rgba(0,0,0,.08))' }}>
+            <div style={{ width: '100%', marginTop: 34, paddingTop: 22, borderTop: '1px solid var(--border, rgba(0,0,0,.08))' }}>
               <p
                 className="muted"
                 style={{
