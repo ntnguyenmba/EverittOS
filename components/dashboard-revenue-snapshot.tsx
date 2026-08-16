@@ -57,7 +57,7 @@ const copy = {
     totalContractorCost: 'Costos de trabajadores', expectedRevenue: 'Ingresos de trabajos programados', expectedProfit: 'Ganancia de trabajos', businessExpenses: 'Gastos del negocio',
     collectedDesc: 'Pagos de clientes recibidos en este período.', currentBalances: 'Saldos actuales pendientes de clientes.', periodBalances: 'Saldos de clientes vinculados al trabajo de este período.',
     cashDesc: 'Dinero recibido menos pagos a trabajadores y gastos del negocio ya pagados.', contractorsPaidDesc: 'Pagos a trabajadores realmente pagados en este período.',
-    contractorCostDesc: 'Costo de trabajadores vinculado a trabajos de este período, esté pagado o no.', expectedRevenueDesc: 'Ingresos de clientes vinculados a trabajos programados en este período.',
+    contractorCostDesc: 'Costo de trabajadores vinculado a trabajos en este período, esté pagado o no.', expectedRevenueDesc: 'Ingresos de clientes vinculados a trabajos programados en este período.',
     expectedProfitDesc: 'Ingresos de trabajos menos costos de trabajadores y gastos del negocio de este período.', expensesDesc: 'Gastos del negocio registrados en este período.'
   },
   vi: {
@@ -120,14 +120,22 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   }, [range, loading]);
 
   const collected = activeMetrics.paidToYou ?? activeMetrics.cashCollected ?? 0;
-  const outstanding = customersOweForRange(
+  const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
+  const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
+  const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
+
+  const rawOutstanding = customersOweForRange(
     range,
     activeMetrics.stillOwed ?? 0,
     activeMetrics.periodOutstanding ?? activeMetrics.stillOwed ?? 0
   );
-  const contractorPaid = activeMetrics.contractorPaymentsPaid ?? 0;
-  const contractorCost = activeMetrics.contractorPayThisMonth ?? 0;
-  const expenses = activeMetrics.otherExpensesThisMonth ?? 0;
+  const expectedRevenue = Number.isFinite(activeMetrics.expectedRevenue)
+    ? activeMetrics.expectedRevenue
+    : calculateJobRevenue(collected, rawOutstanding);
+  const periodRemainingRevenue = Math.max(0, Number((expectedRevenue - collected).toFixed(2)));
+  const outstanding = range === 'all_time'
+    ? rawOutstanding
+    : Math.min(rawOutstanding, periodRemainingRevenue);
 
   const calculatedRevenue = calculateJobRevenue(collected, outstanding);
   const calculatedMoneyKept = calculateMoneyKept({
@@ -141,9 +149,6 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
     otherExpenses: expenses
   });
 
-  const expectedRevenue = Number.isFinite(activeMetrics.expectedRevenue)
-    ? activeMetrics.expectedRevenue
-    : calculatedRevenue;
   const cashAfterPaidCosts = Number.isFinite(activeMetrics.cashAfterPaidCosts)
     ? activeMetrics.cashAfterPaidCosts
     : calculatedMoneyKept;
