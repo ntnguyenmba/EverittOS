@@ -10,7 +10,7 @@ export const DASHBOARD_LINKS = {
   unpaidInvoices: '/dashboard/details?metric=unpaid-invoices',
   cashAfterExpenses: '/dashboard/details?metric=net-cash',
   estimatedProfit: '/dashboard/details?metric=estimated-profit',
-  contractorPay: '/dashboard/details?metric=contractor-pay',
+  contractorPay: '/dashboard/worker-pay',
   contractorPayOwed: '/dashboard/details?metric=contractor-pay-owed',
   contractorPayPending: '/dashboard/details?metric=contractor-pay-pending',
   otherExpenses: '/expenses',
@@ -20,9 +20,6 @@ export const DASHBOARD_LINKS = {
   upcomingJobs: '/schedule?range=upcoming',
   todayTasks: '/projects',
   notifications: '/notifications',
-  customers: '/customers',
-  activeCustomers: '/dashboard/details?metric=active-customers',
-  requests: '/leads',
   customersLeads: '/leads',
   people: '/people',
   workers: '/people',
@@ -30,5 +27,8 @@ export const DASHBOARD_LINKS = {
   bookings: '/bookings',
   messages: '/messages',
   jobs: '/jobs',
-  reports: '/jobs'
+  reports: '/jobs',
+  customers: '/customers',
+  activeCustomers: '/dashboard/details?metric=active-customers',
+  requests: '/leads'
 } as const;
