@@ -8,13 +8,15 @@ import type { NextResponse } from 'next/server';
 
 type CookieInput = { name: string; value: string; options?: Record<string, unknown> };
 
-/** Auth cookies are session-only (no Max-Age) so closing the browser ends the session. */
+/**
+ * Keep Supabase's auth-cookie lifetime intact.
+ * Removing Max-Age/Expires made authentication depend on WebView session-cookie
+ * behavior, which can drop a valid login during navigation on iPad/iOS shells.
+ */
 export function sanitizeAuthCookieOptions(options?: Record<string, unknown>): Record<string, unknown> {
   const secure = process.env.NODE_ENV === 'production';
   return {
     ...options,
-    maxAge: undefined,
-    expires: undefined,
     path: '/',
     sameSite: 'lax',
     secure,
@@ -45,8 +47,15 @@ export function createSupabaseCookieAdapter(handlers: {
   };
 }
 
+/** Activity markers remain session-scoped; only auth tokens need their provider lifetime. */
 export function sessionMarkerCookieOptions(): Record<string, unknown> {
-  return sanitizeAuthCookieOptions({ httpOnly: true });
+  const secure = process.env.NODE_ENV === 'production';
+  return {
+    path: '/',
+    sameSite: 'lax',
+    secure,
+    httpOnly: true
+  };
 }
 
 export function applySessionMarkers(response: NextResponse, tabId?: string): string {
