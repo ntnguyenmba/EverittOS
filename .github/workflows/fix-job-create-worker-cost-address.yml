@@ -1,0 +1,115 @@
+name: Fix job create address and worker cost
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-job-create-worker-cost-address.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply focused UX fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one {label} block, found {count}")
+              return text.replace(old, new, 1)
+
+          # 1) Preserve the typed house number when Photon only returns a street-level result.
+          parse_path = Path('lib/address/parse-photon.ts')
+          parse_text = parse_path.read_text()
+          old_same_street = '''    } else if (
+      queryWithoutHouseNumber &&
+      (lineWithoutHouseNumber.includes(queryWithoutHouseNumber) ||
+        queryWithoutHouseNumber.includes(lineWithoutHouseNumber))
+    ) {
+      sameStreet.push(suggestion);
+    } else {
+'''
+          new_same_street = '''    } else if (
+      queryWithoutHouseNumber &&
+      (lineWithoutHouseNumber.includes(queryWithoutHouseNumber) ||
+        queryWithoutHouseNumber.includes(lineWithoutHouseNumber))
+    ) {
+      if (!suggestedHouseNumber && suggestion.addressLine1.trim()) {
+        const projectedLine = `${typedHouseNumber} ${suggestion.addressLine1}`.trim();
+        const projectedFormattedAddress = suggestion.formattedAddress.startsWith(suggestion.addressLine1)
+          ? `${projectedLine}${suggestion.formattedAddress.slice(suggestion.addressLine1.length)}`
+          : `${projectedLine}, ${suggestion.formattedAddress}`;
+        sameStreet.push({
+          ...suggestion,
+          id: `${suggestion.id}-typed-${typedHouseNumber}`,
+          label: projectedLine,
+          addressLine1: projectedLine,
+          formattedAddress: projectedFormattedAddress
+        });
+      } else {
+        sameStreet.push(suggestion);
+      }
+    } else {
+'''
+          parse_text = replace_once(parse_text, old_same_street, new_same_street, 'street suggestion')
+          parse_path.write_text(parse_text)
+
+          # 2) Bust old browser autocomplete cache so the corrected labels show immediately.
+          auto_path = Path('components/address-autocomplete.tsx')
+          auto_text = auto_path.read_text()
+          auto_text = replace_once(
+              auto_text,
+              "const CLIENT_CACHE_VERSION = 'v2';",
+              "const CLIENT_CACHE_VERSION = 'v3';",
+              'autocomplete cache version'
+          )
+          auto_path.write_text(auto_text)
+
+          # 3) Put worker cost directly in the main create-job flow instead of hiding it in More options.
+          job_path = Path('components/job-creator.tsx')
+          job_text = job_path.read_text()
+          job_text = replace_once(
+              job_text,
+              '''        <section className="job-create-section">\n          <h4>5. Contractor</h4>\n          <label htmlFor="assigned-to">Assign contractor</label>''',
+              '''        <section className="job-create-section">\n          <h4>5. Worker</h4>\n          <label htmlFor="assigned-to">Assign worker</label>''',
+              'worker heading'
+          )
+
+          old_financial = '''        <section className="job-create-section">\n          <h4>6. Financial details</h4>\n          <p className="muted">\n            Enter amounts once. For recurring jobs these become defaults on each generated visit and can be edited per visit later.\n          </p>\n          <label>What the customer pays</label>\n          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />\n        </section>'''
+          new_financial = '''        <section className="job-create-section">\n          <h4>6. Financial details</h4>\n          <p className="muted">\n            Enter the customer price and worker cost now so the job profit is correct from the start.\n          </p>\n          <label>What the customer pays</label>\n          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />\n\n          <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid var(--line)' }}>\n            <label style={{ fontWeight: 700 }}>Worker cost</label>\n            <p className="muted" style={{ marginTop: 4 }}>Enter what you expect to pay the worker for this job.</p>\n            <label style={{ marginTop: 10 }}>How the worker is paid</label>\n            <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>\n              <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>\n              <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>\n            </div>\n            {contractorPayMode === 'hourly' ? (\n              <>\n                <div className="grid-2" style={{ marginTop: 10 }}>\n                  <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" placeholder="0" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>\n                  <div className="form-group"><label>Worker hourly rate</label><input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>\n                </div>\n                <div className="finance-metric" style={{ marginTop: 8 }}>\n                  <span className="finance-metric-label">Calculated worker cost</span>\n                  <strong>${previewContractorPay.toFixed(2)}</strong>\n                </div>\n              </>\n            ) : (\n              <div className="form-group" style={{ marginTop: 10 }}><label>Worker cost</label><input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>\n            )}\n            <label>Worker pay notes (optional)</label>\n            <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />\n          </div>\n        </section>'''
+          job_text = replace_once(job_text, old_financial, new_financial, 'financial section')
+
+          old_hidden_worker = '''            <label style={{ marginTop: 12 }}>How the contractor is paid</label>\n            <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>\n              <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>\n              <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>\n            </div>\n            {contractorPayMode === 'hourly' ? (\n              <>\n                <div className="grid-2">\n                  <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>\n                  <div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>\n                </div>\n                <div className="finance-metric" style={{ marginTop: 8 }}>\n                  <span className="finance-metric-label">Calculated contractor pay</span>\n                  <strong>${previewContractorPay.toFixed(2)}</strong>\n                </div>\n              </>\n            ) : (\n              <div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>\n            )}\n            <label>Contractor pay notes (optional)</label>\n            <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />\n\n'''
+          job_text = replace_once(job_text, old_hidden_worker, '', 'hidden worker pay controls')
+          job_path.write_text(job_text)
+          PY
+
+      - name: Run focused tests
+        shell: bash
+        run: |
+          npm ci
+          npm test -- --runInBand tests/job-creator-customer-address.test.ts tests/job-one-step-flow.test.ts tests/team-pay-contractor-cost.test.ts
+
+      - name: Commit fixes to main
+        shell: bash
+        run: |
+          git config user.name "EverittOS Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/address/parse-photon.ts components/address-autocomplete.tsx components/job-creator.tsx
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Make worker cost visible and preserve address house numbers"
+          git push origin main
