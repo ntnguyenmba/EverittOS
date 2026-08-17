@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/components/locale-provider';
 import { navLabel } from '@/lib/nav-i18n';
@@ -24,10 +25,10 @@ function navItemClassName(pathname: string, href: string, accessible: boolean, l
 function NavLinkRow({ href, label, accessible, requiredPlan, pathname, linkClassName, lockedClassName, onNavigate }: { href: string; label: string; accessible: boolean; requiredPlan?: EverittosPlan; pathname: string; linkClassName: string; lockedClassName: string; onNavigate?: () => void }) {
   const destination = accessible ? href : billingUpgradeHref(requiredPlan || 'pro', label);
   const active = isNavLinkActive(pathname, href);
-  return <a href={destination} className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName)} aria-current={active ? 'page' : undefined} aria-disabled={accessible ? undefined : true} onClick={onNavigate}>
+  return <Link href={destination} className={navItemClassName(pathname, href, accessible, linkClassName, lockedClassName)} aria-current={active ? 'page' : undefined} aria-disabled={accessible ? undefined : true} onClick={onNavigate}>
     <span className="nav-item-label">{label}</span>
     {!accessible && requiredPlan ? <span className="nav-item-meta"><NavLockIcon /><span className="nav-plan-chip">{planShortBadgeName(requiredPlan)}</span></span> : null}
-  </a>;
+  </Link>;
 }
 
 export function AppNavItems({ plan, role, unread = 0, linkClassName = '', lockedClassName = 'nav-link-locked', onNavigate }: AppNavItemsProps) {
@@ -62,6 +63,6 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
   return <nav className="app-nav" aria-label={t('ux.mobileNavLabel')}>
     {items.map(({ label, href, resolution }) => <NavLinkRow key={href} href={href} label={navLabel(href, t, label, locale)} accessible={resolution.accessible} requiredPlan={resolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} />)}
     {showBookkeeping ? <NavLinkRow href="/bookkeeping" label="Bookkeeping" accessible={bookkeepingResolution.accessible} requiredPlan={bookkeepingResolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} /> : null}
-    {unread > 0 ? <a href="/notifications" className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`} onClick={onNavigate}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></a> : null}
+    {unread > 0 ? <Link href="/notifications" className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`} onClick={onNavigate}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></Link> : null}
   </nav>;
 }
