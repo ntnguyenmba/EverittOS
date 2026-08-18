@@ -34,7 +34,31 @@ export function JobContractorOptions() {
     let contractors: Contractor[] = [];
     const originalFetch = window.fetch.bind(window);
 
+    function removeLegacyWorkerPayBlock() {
+      document.querySelectorAll<HTMLElement>('[data-visible-worker-pay="true"]').forEach((element) => element.remove());
+      const legacyInput = document.getElementById('visible-worker-pay');
+      const legacySection = legacyInput?.closest('.job-create-section');
+      legacySection?.remove();
+
+      const form = document.querySelector<HTMLFormElement>('form.unified-job-form');
+      if (!form) return;
+      const sectionSix = Array.from(form.querySelectorAll<HTMLElement>('.job-create-section')).find((section) =>
+        section.querySelector('h4')?.textContent?.trim() === '6. Worker'
+      );
+      if (!sectionSix) return;
+
+      for (const section of Array.from(form.querySelectorAll<HTMLElement>('.job-create-section'))) {
+        if (section === sectionSix) continue;
+        const heading = section.querySelector('h4')?.textContent?.trim().toLowerCase();
+        const help = section.querySelector('.muted')?.textContent?.trim().toLowerCase();
+        if (heading === 'worker pay' && help === 'enter what you will pay the worker for this job.') {
+          section.remove();
+        }
+      }
+    }
+
     function exposeRecurringOptions() {
+      removeLegacyWorkerPayBlock();
       const form = document.querySelector<HTMLFormElement>('form.unified-job-form');
       const assignedSelect = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!form || !assignedSelect) return;
@@ -65,6 +89,7 @@ export function JobContractorOptions() {
     }
 
     function applyOptions() {
+      removeLegacyWorkerPayBlock();
       exposeRecurringOptions();
       const select = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!select || contractors.length === 0) return;
@@ -162,6 +187,7 @@ export function JobContractorOptions() {
     };
 
     void loadContractors();
+    removeLegacyWorkerPayBlock();
     exposeRecurringOptions();
     const observer = new MutationObserver(applyOptions);
     observer.observe(document.body, { childList: true, subtree: true });
