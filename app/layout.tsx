@@ -22,6 +22,7 @@ import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
 import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { JobFinanceWordingAndCustomerRate } from '@/components/job-finance-wording-and-customer-rate';
+import { CreateFormCancelControls } from '@/components/create-form-cancel-controls';
 import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { ContractorJobPayVisibility } from '@/components/contractor-job-pay-visibility';
 import { OwnerTopPerformerMetric } from '@/components/owner-top-performer-metric';
@@ -137,6 +138,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SuppressVercelToolbar />
         <LocaleProvider initialLocale={initialLocale}>
           <JobFinanceWordingAndCustomerRate />
+          <CreateFormCancelControls />
           <DashboardTodayCountFix />
           <ContractorJobPayVisibility />
           <OwnerTopPerformerMetric />
