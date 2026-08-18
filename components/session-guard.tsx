@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { SessionIdleWarning } from '@/components/session-idle-warning';
 import { pingActivityHeartbeat } from '@/lib/activity-heartbeat';
@@ -28,9 +28,38 @@ async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
   window.location.assign(`/login?${params.toString()}`);
 }
 
+async function getAuthenticatedUserWithRefresh() {
+  const first = await supabase.auth.getUser();
+  if (first.data.user) return first.data.user;
+
+  const refreshed = await supabase.auth.refreshSession();
+  if (!refreshed.data.session?.user) return null;
+
+  const second = await supabase.auth.getUser();
+  return second.data.user || refreshed.data.session.user || null;
+}
+
+async function requestTabSession() {
+  try {
+    let response = await fetch('/api/auth/tab-session', { cache: 'no-store' });
+
+    if (response.status === 401) {
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed.data.session?.user) {
+        response = await fetch('/api/auth/tab-session', { cache: 'no-store' });
+      }
+    }
+
+    if (!response.ok) return null;
+    const json = (await response.json().catch(() => ({}))) as { tabSessionId?: string };
+    return json.tabSessionId || null;
+  } catch {
+    return null;
+  }
+}
+
 export function SessionGuard({ children }: { children?: ReactNode }) {
   const pathname = usePathname() || '/';
-  const router = useRouter();
   const lastActivityRef = useRef(Date.now());
   const lastTouchRef = useRef(0);
   const lastMouseMoveRef = useRef(0);
@@ -68,9 +97,8 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
     try {
       await fetch('/api/auth/session-touch', { method: 'POST' });
     } catch {
-      /* network blip; server middleware still tracks activity on navigation */
+      /* A brief network or cookie sync issue should not sign out an active user. */
     }
-    // Throttled last-seen heartbeat on significant authenticated activity.
     void pingActivityHeartbeat();
   }, []);
 
@@ -133,28 +161,23 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
       checkingRef.current = true;
 
       try {
-        const {
-          data: { user }
-        } = await supabase.auth.getUser();
+        const user = await getAuthenticatedUserWithRefresh();
 
         if (!user) {
-          checkingRef.current = false;
+          if (!cancelled) {
+            await signOutToLogin(
+              'session',
+              'Your session expired. Sign in again to continue.'
+            );
+          }
           return;
         }
 
         const storedTabId = readTabSessionId();
         if (!storedTabId) {
-          const res = await fetch('/api/auth/tab-session');
-          if (res.status === 401) {
-            router.replace('/login?reason=session');
-            return;
-          }
-          if (res.ok) {
-            const json = await res.json();
-            if (json.tabSessionId) {
-              storeTabSessionId(json.tabSessionId);
-            }
-          }
+          const tabSessionId = await requestTabSession();
+          if (tabSessionId) storeTabSessionId(tabSessionId);
+          // A missing tab-session ID must never override a valid Supabase login.
         }
 
         if (cancelled) return;
@@ -178,18 +201,21 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
       recordActivity();
     };
 
-    ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity, { passive: true }));
-    document.addEventListener('visibilitychange', () => {
+    const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') recordActivity();
-    });
+    };
+
+    ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity, { passive: true }));
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       cancelled = true;
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity));
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       clearTimers();
       closeWarning();
     };
-  }, [pathname, recordActivity, router, scheduleIdleTimers, touchSession, clearTimers, closeWarning]);
+  }, [pathname, recordActivity, scheduleIdleTimers, touchSession, clearTimers, closeWarning]);
 
   return (
     <>
