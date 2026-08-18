@@ -21,19 +21,11 @@ type CreateResponse = {
 };
 
 const MANUAL_WORKER_PREFIX = 'worker:';
-const WORKER_PAY_FIELD_ID = 'visible-worker-pay';
 
 function contractorLabel(contractor: Contractor) {
   return contractor.company_name
     ? `${contractor.name} · Contractor · ${contractor.company_name}`
     : `${contractor.name} · Contractor`;
-}
-
-function setReactInputValue(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-  setter?.call(input, value);
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 export function JobContractorOptions() {
@@ -42,7 +34,7 @@ export function JobContractorOptions() {
     let contractors: Contractor[] = [];
     const originalFetch = window.fetch.bind(window);
 
-    function installWorkerPayAndRecurring() {
+    function exposeRecurringOptions() {
       const form = document.querySelector<HTMLFormElement>('form.unified-job-form');
       const assignedSelect = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!form || !assignedSelect) return;
@@ -70,54 +62,10 @@ export function JobContractorOptions() {
 
         moreDetails.style.display = 'none';
       }
-
-      if (document.getElementById(WORKER_PAY_FIELD_ID)) return;
-
-      const section = document.createElement('section');
-      section.className = 'job-create-section';
-      section.dataset.visibleWorkerPay = 'true';
-
-      const heading = document.createElement('h4');
-      heading.textContent = 'Worker pay';
-
-      const help = document.createElement('p');
-      help.className = 'muted';
-      help.textContent = 'Enter what you will pay the worker for this job.';
-
-      const label = document.createElement('label');
-      label.htmlFor = WORKER_PAY_FIELD_ID;
-      label.textContent = 'Worker pay';
-
-      const input = document.createElement('input');
-      input.id = WORKER_PAY_FIELD_ID;
-      input.className = 'input';
-      input.type = 'number';
-      input.min = '0';
-      input.step = '0.01';
-      input.placeholder = '0.00';
-      input.inputMode = 'decimal';
-
-      input.addEventListener('input', () => {
-        if (moreDetails) moreDetails.open = true;
-        const flatButton = Array.from(form.querySelectorAll<HTMLButtonElement>('button')).find(
-          (button) => button.textContent?.trim().toLowerCase() === 'flat rate'
-        );
-        flatButton?.click();
-
-        const hiddenPayInput = Array.from(form.querySelectorAll<HTMLInputElement>('input[type="number"]')).find((candidate) => {
-          const candidateLabel = candidate.closest('.form-group')?.querySelector('label')?.textContent?.toLowerCase() || '';
-          return candidateLabel.includes('contractor earns') || candidateLabel === 'worker cost' || candidateLabel === 'worker pay';
-        });
-        if (hiddenPayInput) setReactInputValue(hiddenPayInput, input.value);
-        if (moreDetails) moreDetails.open = false;
-      });
-
-      section.append(heading, help, label, input);
-      assignedSection.insertAdjacentElement('afterend', section);
     }
 
     function applyOptions() {
-      installWorkerPayAndRecurring();
+      exposeRecurringOptions();
       const select = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!select || contractors.length === 0) return;
 
@@ -214,7 +162,7 @@ export function JobContractorOptions() {
     };
 
     void loadContractors();
-    installWorkerPayAndRecurring();
+    exposeRecurringOptions();
     const observer = new MutationObserver(applyOptions);
     observer.observe(document.body, { childList: true, subtree: true });
 
