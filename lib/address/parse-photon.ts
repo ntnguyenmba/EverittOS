@@ -140,14 +140,26 @@ export function filterAddressSuggestionsForQuery(
       (lineWithoutHouseNumber.includes(queryWithoutHouseNumber) ||
         queryWithoutHouseNumber.includes(lineWithoutHouseNumber))
     ) {
-      sameStreet.push(suggestion);
+      if (!suggestedHouseNumber && suggestion.addressLine1.trim()) {
+        const projectedLine = `${typedHouseNumber} ${suggestion.addressLine1}`.trim();
+        const projectedFormattedAddress = suggestion.formattedAddress.startsWith(suggestion.addressLine1)
+          ? `${projectedLine}${suggestion.formattedAddress.slice(suggestion.addressLine1.length)}`
+          : `${projectedLine}, ${suggestion.formattedAddress}`;
+        sameStreet.push({
+          ...suggestion,
+          id: `${suggestion.id}-typed-${typedHouseNumber}`,
+          label: projectedLine,
+          addressLine1: projectedLine,
+          formattedAddress: projectedFormattedAddress
+        });
+      } else {
+        sameStreet.push(suggestion);
+      }
     } else {
       remaining.push(suggestion);
     }
   }
 
-  // Prefer the exact house number, but never hide useful street suggestions when
-  // Photon only returns a street-level result for a fully typed address.
   return [...exactHouseNumber, ...sameStreet, ...remaining];
 }
 
