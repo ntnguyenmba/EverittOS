@@ -319,7 +319,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     if (preferred) {
       applyProperty(preferred);
     } else if (customer.properties.length > 1) {
-      // Require an explicit property choice when multiple homes/locations exist.
       setSelectedPropertyId('');
       setCreatingNewProperty(false);
       setAddress('');
@@ -422,7 +421,6 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       const json = (await res.json().catch(() => ({}))) as { timezone?: string };
       if (json.timezone) setTimeZone(json.timezone);
     } catch {
-      // Manual timezone selection remains available.
     }
   }
 
@@ -473,10 +471,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
   }
 
-  async function ensurePropertyForJob(
-    customerId: string,
-    options?: { forceNew?: boolean }
-  ): Promise<string | null> {
+  async function ensurePropertyForJob(customerId: string, options?: { forceNew?: boolean }): Promise<string | null> {
     const forceNew = Boolean(options?.forceNew) || addressMode === 'save_new_property' || creatingNewProperty;
 
     if (selectedPropertyId && !forceNew) {
@@ -510,9 +505,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
 
     if (forceNew) {
-      if (!address.trim()) {
-        throw new Error(createCopy.addServiceAddress);
-      }
+      if (!address.trim()) throw new Error(createCopy.addServiceAddress);
       const name = newPropertyName.trim() || createCopy.propertyNamePlaceholder;
       const res = await fetch(`/api/customers/${customerId}/properties`, {
         method: 'POST',
@@ -538,9 +531,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         })
       });
       const json = (await res.json().catch(() => ({}))) as { property?: { id: string }; error?: string };
-      if (!res.ok || !json.property?.id) {
-        throw new Error(json.error || createCopy.unableToSaveProperty);
-      }
+      if (!res.ok || !json.property?.id) throw new Error(json.error || createCopy.unableToSaveProperty);
       return json.property.id;
     }
 
@@ -574,15 +565,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       if (needsWeekdays && recurrenceWeekdays.length === 0) nextErrors.weekdays = recurrenceCopy.selectWeekday;
       if (recurrenceEndMode === 'on_date') {
         if (!recurrenceEndDate.trim()) nextErrors.endDate = recurrenceCopy.endDateRequired;
-        else if (recurrenceStartDate && recurrenceEndDate < recurrenceStartDate) {
-          nextErrors.endDate = recurrenceCopy.endDateBeforeStart;
-        }
+        else if (recurrenceStartDate && recurrenceEndDate < recurrenceStartDate) nextErrors.endDate = recurrenceCopy.endDateBeforeStart;
       }
       if (recurrenceEndMode === 'after_count') {
         const count = Number(recurrenceLimit);
-        if (!recurrenceLimit.trim() || !Number.isFinite(count) || count < 1) {
-          nextErrors.limit = recurrenceCopy.occurrenceCountRequired;
-        }
+        if (!recurrenceLimit.trim() || !Number.isFinite(count) || count < 1) nextErrors.limit = recurrenceCopy.occurrenceCountRequired;
       }
       if (!visits[0]?.start_time) nextErrors.startTime = recurrenceCopy.startTimeRequired;
       if (Object.keys(nextErrors).length > 0) {
@@ -593,15 +580,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
     }
 
     const scheduledVisits = isRecurringJob
-      ? [
-          {
-            ...(visits[0] || newVisit()),
-            visit_date: recurrenceStartDate.trim(),
-            start_time: visits[0]?.start_time || '',
-            end_time: visits[0]?.end_time || ''
-          }
-        ]
+      ? [{ ...(visits[0] || newVisit()), visit_date: recurrenceStartDate.trim(), start_time: visits[0]?.start_time || '', end_time: visits[0]?.end_time || '' }]
       : validVisits(visits);
+
     for (const visit of scheduledVisits) {
       if (isRecurringJob) {
         if (!visit.visit_date || !visit.start_time) {
@@ -626,25 +607,26 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       contractorPayMode === 'hourly'
         ? Boolean(contractorHours.trim() || contractorHourlyRate.trim())
         : Boolean(contractorFlatRate.trim());
+
     if (hasContractorPay && contractorPayMode === 'hourly') {
       const hours = moneyValue(contractorHours);
       const rate = moneyValue(contractorHourlyRate);
       if (!Number.isFinite(hours) || hours < 0 || !Number.isFinite(rate) || rate < 0) {
-        appFeedback.error('Enter valid contractor hours and hourly rate.');
+        appFeedback.error('Enter valid worker hours and hourly rate.');
         return;
       }
     }
     if (hasContractorPay && contractorPayMode === 'flat') {
       const flat = moneyValue(contractorFlatRate);
       if (!Number.isFinite(flat) || flat < 0) {
-        appFeedback.error('Enter a valid flat-rate contractor amount.');
+        appFeedback.error('Enter a valid worker price.');
         return;
       }
     }
     if (clientIncome.trim()) {
       const clientPay = moneyValue(clientIncome);
       if (!Number.isFinite(clientPay) || clientPay < 0) {
-        appFeedback.error('Enter a valid client pay amount.');
+        appFeedback.error('Enter a valid customer price.');
         return;
       }
     }
@@ -730,13 +712,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             pipeline_stage: 'active'
           })
         });
-        const createCustomerJson = (await createCustomerRes.json().catch(() => ({}))) as {
-          customer?: { id: string };
-          error?: string;
-        };
-        if (!createCustomerRes.ok || !createCustomerJson.customer?.id) {
-          throw new Error(createCustomerJson.error || createCopy.unableToCreateCustomer);
-        }
+        const createCustomerJson = (await createCustomerRes.json().catch(() => ({}))) as { customer?: { id: string }; error?: string };
+        if (!createCustomerRes.ok || !createCustomerJson.customer?.id) throw new Error(createCustomerJson.error || createCopy.unableToCreateCustomer);
         customerId = createCustomerJson.customer.id;
         autoLinkedCustomer = true;
       }
@@ -750,14 +727,11 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         propertyId = await ensurePropertyForJob(customerId, { forceNew: false });
       } else if (customerId && needsNewProperty) {
         propertyId = await ensurePropertyForJob(customerId, { forceNew: true });
-        if (!propertyId) {
-          throw new Error(createCopy.unableToSaveProperty);
-        }
+        if (!propertyId) throw new Error(createCopy.unableToSaveProperty);
       } else if (customerId && (selectedPropertyId || addressMode === 'update_selected_property')) {
         propertyId = await ensurePropertyForJob(customerId);
       }
     } catch (error) {
-      // Fail before creating the job so customer/property errors never leave a partially linked job.
       setLoading(false);
       appFeedback.error(error instanceof Error ? error.message : createCopy.prepareCustomerProperty);
       return;
@@ -770,12 +744,12 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           : null
         : optionalMoneyInput(contractorFlatRate);
     const assignedMember = teamMembers.find((member) => member.userId === assignedTo);
-    const resolvedContractorName = assignedMember?.label || 'Unassigned contractor';
+    const resolvedContractorName = assignedMember?.label || 'Unassigned worker';
     const durationMinutes =
       firstVisit?.start_time && firstVisit?.end_time
         ? Math.max(
             0,
-            (Number(firstVisit.end_time.slice(0, 2)) * 60 + Number(firstVisit.end_time.slice(3, 5))) -
+            Number(firstVisit.end_time.slice(0, 2)) * 60 + Number(firstVisit.end_time.slice(3, 5)) -
               (Number(firstVisit.start_time.slice(0, 2)) * 60 + Number(firstVisit.start_time.slice(3, 5)))
           )
         : null;
@@ -800,8 +774,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           expected_additional_expense: optionalMoneyInput(additionalExpenses),
           expected_expense_description: expenseDescription.trim() || null,
           contractor_pay_basis: contractorPayMode,
-          contractor_hours:
-            contractorPayMode === 'hourly' && contractorHours.trim() ? moneyValue(contractorHours) : null,
+          contractor_hours: contractorPayMode === 'hourly' && contractorHours.trim() ? moneyValue(contractorHours) : null,
           contractor_hourly_rate:
             contractorPayMode === 'hourly' && contractorHourlyRate.trim()
               ? moneyValue(contractorHourlyRate)
@@ -820,18 +793,12 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             startDate,
             endMode: recurrenceEndMode,
             endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
-            occurrenceLimit:
-              recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
+            occurrenceLimit: recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
             preferredStartTime: firstVisit?.start_time || null
           }
         })
       });
-      const recurringJson = (await recurringRes.json().catch(() => ({}))) as {
-        firstJobId?: string;
-        job?: { id: string };
-        error?: string;
-        summary?: string;
-      };
+      const recurringJson = (await recurringRes.json().catch(() => ({}))) as { firstJobId?: string; job?: { id: string }; error?: string; summary?: string };
       setLoading(false);
       if (!recurringRes.ok || !(recurringJson.firstJobId || recurringJson.job?.id)) {
         appFeedback.error(recurringJson.error || 'Unable to create recurring jobs.');
@@ -842,10 +809,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       return;
     }
 
-    const jobNotes = [
-      notes.trim(),
-      contractorNotes.trim() ? `Contractor pay notes: ${contractorNotes.trim()}` : ''
-    ]
+    const jobNotes = [notes.trim(), contractorNotes.trim() ? `Worker pay notes: ${contractorNotes.trim()}` : '']
       .filter(Boolean)
       .join('\n\n');
 
@@ -898,13 +862,38 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ revenue_amount: clientPayAmount, revenue_notes: 'Added during job creation' })
+        }).then(async (response) => {
+          if (!response.ok) {
+            const json = await response.json().catch(() => ({}));
+            throw new Error(json.error || 'Customer price could not be saved.');
+          }
+          return response;
         })
       );
     }
 
-    // Planned contractor pay is stored on the job as expected_contractor_cost only.
-    // Team Pay / labor records are created later when payment is reviewed, so metrics
-    // never count the same $200 as both expected and labor.
+    if (expectedContractorPay !== null) {
+      followUpTasks.push(
+        fetch(`/api/jobs/${jobId}/labor`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            worker_name: assignedTo ? resolvedContractorName : 'Unassigned worker',
+            payment_basis: contractorPayMode,
+            hours: contractorPayMode === 'hourly' ? moneyValue(contractorHours) : 1,
+            hourly_cost: contractorPayMode === 'hourly' ? moneyValue(contractorHourlyRate) : expectedContractorPay,
+            payment_status: 'unpaid',
+            notes: contractorNotes.trim() || 'Added during job creation'
+          })
+        }).then(async (response) => {
+          if (!response.ok) {
+            const json = await response.json().catch(() => ({}));
+            throw new Error(json.error || 'Worker price could not be saved.');
+          }
+          return response;
+        })
+      );
+    }
 
     const additionalExpenseAmount = optionalMoneyInput(additionalExpenses);
     if (additionalExpenseAmount !== null || expectedContractorPay !== null) {
@@ -921,22 +910,33 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               : {}),
             ...(expectedContractorPay !== null ? { expected_contractor_cost: expectedContractorPay } : {})
           })
-        }).catch(() => undefined)
+        }).then(async (response) => {
+          if (!response.ok) {
+            const json = await response.json().catch(() => ({}));
+            throw new Error(json.error || 'Job financial details could not be saved.');
+          }
+          return response;
+        })
       );
     }
 
     if (initialPhotos.length > 0) {
       followUpTasks.push(
-        uploadInitialPhotos(
-          jobId,
-          org.organizationId,
-          user.id,
-          profile?.full_name || profile?.email || user.email || 'Team member'
-        )
+        uploadInitialPhotos(jobId, org.organizationId, user.id, profile?.full_name || profile?.email || user.email || 'Team member')
       );
     }
 
-    await Promise.allSettled(followUpTasks);
+    const followUpResults = await Promise.allSettled(followUpTasks);
+    const failedFollowUp = followUpResults.find((result) => result.status === 'rejected');
+    if (failedFollowUp?.status === 'rejected') {
+      setLoading(false);
+      appFeedback.error(
+        failedFollowUp.reason instanceof Error
+          ? failedFollowUp.reason.message
+          : 'Job saved, but one or more financial details could not be saved.'
+      );
+      return;
+    }
 
     void fetch('/api/integrations/google-calendar/sync-job', {
       method: 'POST',
@@ -960,10 +960,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
   const previewFinance = calculateExpectedJobFinance({
     clientPrice: clientIncome,
-    contractorPay:
-      contractorPayMode === 'hourly'
-        ? multiplyMoneyDollars(contractorHourlyRate, contractorHours)
-        : contractorFlatRate,
+    contractorPay: contractorPayMode === 'hourly' ? multiplyMoneyDollars(contractorHourlyRate, contractorHours) : contractorFlatRate,
     additionalExpenses
   });
   const previewContractorPay = previewFinance.expectedContractorCost;
@@ -979,8 +976,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
       weekdays: recurrenceWeekdays,
       startDate: recurrenceStartDate,
       endDate: recurrenceEndMode === 'on_date' ? recurrenceEndDate || null : null,
-      occurrenceLimit:
-        recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
+      occurrenceLimit: recurrenceEndMode === 'after_count' && recurrenceLimit ? Number(recurrenceLimit) : null,
       preferredStartTime: primaryVisit?.start_time || null,
       timezone: timeZone || null
     },
@@ -1004,18 +1000,10 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
         <section className="job-create-section">
           <h4>{createCopy.customerHeading}</h4>
           <div className="job-customer-mode" role="group" aria-label={createCopy.customerChoice}>
-            <button
-              type="button"
-              aria-pressed={customerMode === 'existing'}
-              onClick={chooseExistingCustomer}
-            >
+            <button type="button" aria-pressed={customerMode === 'existing'} onClick={chooseExistingCustomer}>
               {createCopy.existingCustomer}
             </button>
-            <button
-              type="button"
-              aria-pressed={customerMode === 'new'}
-              onClick={chooseNewCustomer}
-            >
+            <button type="button" aria-pressed={customerMode === 'new'} onClick={chooseNewCustomer}>
               {createCopy.newCustomer}
             </button>
           </div>
@@ -1041,9 +1029,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                     const contactLine = customer.email || customer.phone || null;
                     const property = customer.properties[0];
                     const propertyLine = property
-                      ? [property.name, property.display_address || property.formatted_address || property.address]
-                          .filter(Boolean)
-                          .join(' · ')
+                      ? [property.name, property.display_address || property.formatted_address || property.address].filter(Boolean).join(' · ')
                       : customer.address || null;
                     return (
                       <button
@@ -1056,16 +1042,8 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                         onClick={() => applyCustomer(customer)}
                       >
                         <strong>{customer.name}</strong>
-                        {contactLine ? (
-                          <span className="muted" style={{ display: 'block' }}>
-                            {contactLine}
-                          </span>
-                        ) : null}
-                        {propertyLine ? (
-                          <span className="muted" style={{ display: 'block', fontSize: '0.92em' }}>
-                            {propertyLine}
-                          </span>
-                        ) : null}
+                        {contactLine ? <span className="muted" style={{ display: 'block' }}>{contactLine}</span> : null}
+                        {propertyLine ? <span className="muted" style={{ display: 'block', fontSize: '0.92em' }}>{propertyLine}</span> : null}
                       </button>
                     );
                   })}
@@ -1075,30 +1053,14 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
               {selectedCustomer ? (
                 <div
                   className="client-summary-card"
-                  style={{
-                    marginTop: 12,
-                    border: '1px solid var(--line)',
-                    borderRadius: 12,
-                    padding: 12,
-                    background: 'var(--surface-subtle, var(--surface))'
-                  }}
+                  style={{ marginTop: 12, border: '1px solid var(--line)', borderRadius: 12, padding: 12, background: 'var(--surface-subtle, var(--surface))' }}
                 >
-                  <p style={{ margin: 0 }}>
-                    <strong>{selectedCustomer.name}</strong>
-                  </p>
-                  <p className="muted" style={{ margin: '4px 0 0' }}>
-                    {createCopy.email}: {customerEmail || selectedCustomer.email || createCopy.notOnFile}
-                  </p>
-                  <p className="muted" style={{ margin: '4px 0 0' }}>
-                    {createCopy.phone}: {phone || selectedCustomer.phone || createCopy.notOnFile}
-                  </p>
-                  {selectedCustomer.company_name ? (
-                    <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.company}: {selectedCustomer.company_name}</p>
-                  ) : null}
+                  <p style={{ margin: 0 }}><strong>{selectedCustomer.name}</strong></p>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.email}: {customerEmail || selectedCustomer.email || createCopy.notOnFile}</p>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.phone}: {phone || selectedCustomer.phone || createCopy.notOnFile}</p>
+                  {selectedCustomer.company_name ? <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.company}: {selectedCustomer.company_name}</p> : null}
                   {selectedProperty && !creatingNewProperty ? (
-                    <p className="muted" style={{ margin: '4px 0 0' }}>
-                      {createCopy.serviceAddress}: {address || createCopy.noAddress}
-                    </p>
+                    <p className="muted" style={{ margin: '4px 0 0' }}>{createCopy.serviceAddress}: {address || createCopy.noAddress}</p>
                   ) : null}
                   <button
                     type="button"
@@ -1118,140 +1080,107 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
 
           {customerMode === 'new' ? (
             <div className="grid-2" style={{ marginTop: 12 }}>
-              <div className="form-group">
-                <label htmlFor="new-customer-name">{createCopy.customerName}</label>
-                <input id="new-customer-name" className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-customer-email">{createCopy.email}</label>
-                <input id="new-customer-email" className="input" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-customer-phone">{createCopy.phone}</label>
-                <input id="new-customer-phone" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
+              <div className="form-group"><label htmlFor="new-customer-name">{createCopy.customerName}</label><input id="new-customer-name" className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
+              <div className="form-group"><label htmlFor="new-customer-email">{createCopy.email}</label><input id="new-customer-email" className="input" type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} /></div>
+              <div className="form-group"><label htmlFor="new-customer-phone">{createCopy.phone}</label><input id="new-customer-phone" className="input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
             </div>
           ) : null}
         </section>
 
         {customerMode === 'existing' && selectedCustomer ? (
-        <section className="job-create-section">
-          <h4>{createCopy.propertyHeading}</h4>
-          {selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty ? (
-            <p className="muted">{createCopy.multipleProperties}</p>
-          ) : null}
-          {selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
-            <>
-              <label htmlFor="property-select">{createCopy.savedProperties}</label>
-              <select
-                id="property-select"
-                className="input"
-                value={selectedPropertyId}
-                required={selectedCustomer.properties.length > 1}
-                onChange={(e) => {
-                  const property = selectedCustomer.properties.find((p) => p.id === e.target.value);
-                  if (property) applyProperty(property);
-                }}
-              >
-                {selectedCustomer.properties.length > 1 ? <option value="">{createCopy.selectProperty}</option> : null}
-                {selectedCustomer.properties.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {propertyLabel(property, createCopy.noProperty, createCopy.noAddress)}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
-                setCreatingNewProperty(true);
-                setSelectedPropertyId('');
-                setAddressMode('save_new_property');
-                setAddress('');
-                setStructuredAddress(null);
-                setNewPropertyName('');
-                setAccessInstructions('');
-              }}>
-                {createCopy.addAnotherProperty}
-              </button>
-            </>
-          ) : null}
-
-          {creatingNewProperty || selectedCustomer.properties.length === 0 ? (
-            <>
-              {selectedCustomer.properties.length > 0 ? (
-                <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
-                  setCreatingNewProperty(false);
-                  setAddressMode('job_only');
-                  const preferred = selectedCustomer.properties.length === 1 ? selectedCustomer.properties[0] : null;
-                  if (preferred) applyProperty(preferred);
-                  else {
-                    setSelectedPropertyId('');
-                    setAddress('');
-                    setStructuredAddress(null);
-                  }
-                }}>
-                  {createCopy.useSavedProperty}
-                </button>
-              ) : null}
-              <div className="form-group" style={{ marginTop: 8 }}>
-                <label htmlFor="property-name">{createCopy.propertyName}</label>
-                <input
-                  id="property-name"
+          <section className="job-create-section">
+            <h4>{createCopy.propertyHeading}</h4>
+            {selectedCustomer.properties.length > 1 && !selectedPropertyId && !creatingNewProperty ? <p className="muted">{createCopy.multipleProperties}</p> : null}
+            {selectedCustomer.properties.length > 0 && !creatingNewProperty ? (
+              <>
+                <label htmlFor="property-select">{createCopy.savedProperties}</label>
+                <select
+                  id="property-select"
                   className="input"
-                  value={newPropertyName}
-                  onChange={(e) => setNewPropertyName(e.target.value)}
-                  placeholder={createCopy.propertyNamePlaceholder}
-                />
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <AddressAutocomplete
-                  id="job-address"
-                  label={createCopy.serviceAddress}
-                  placeholder={createCopy.addressPlaceholder}
-                  value={address}
-                  onChange={(formatted, structured) => {
-                    setAddress(formatted);
-                    setStructuredAddress(structured);
-                    setAddressMode('save_new_property');
+                  value={selectedPropertyId}
+                  required={selectedCustomer.properties.length > 1}
+                  onChange={(e) => {
+                    const property = selectedCustomer.properties.find((p) => p.id === e.target.value);
+                    if (property) applyProperty(property);
                   }}
-                  onSelect={(suggestion) => {
-                    void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude);
-                  }}
-                />
-              </div>
-            </>
-          ) : null}
-        </section>
+                >
+                  {selectedCustomer.properties.length > 1 ? <option value="">{createCopy.selectProperty}</option> : null}
+                  {selectedCustomer.properties.map((property) => (
+                    <option key={property.id} value={property.id}>{propertyLabel(property, createCopy.noProperty, createCopy.noAddress)}</option>
+                  ))}
+                </select>
+                <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
+                  setCreatingNewProperty(true);
+                  setSelectedPropertyId('');
+                  setAddressMode('save_new_property');
+                  setAddress('');
+                  setStructuredAddress(null);
+                  setNewPropertyName('');
+                  setAccessInstructions('');
+                }}>{createCopy.addAnotherProperty}</button>
+              </>
+            ) : null}
+
+            {creatingNewProperty || selectedCustomer.properties.length === 0 ? (
+              <>
+                {selectedCustomer.properties.length > 0 ? (
+                  <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => {
+                    setCreatingNewProperty(false);
+                    setAddressMode('job_only');
+                    const preferred = selectedCustomer.properties.length === 1 ? selectedCustomer.properties[0] : null;
+                    if (preferred) applyProperty(preferred);
+                    else {
+                      setSelectedPropertyId('');
+                      setAddress('');
+                      setStructuredAddress(null);
+                    }
+                  }}>{createCopy.useSavedProperty}</button>
+                ) : null}
+                <div className="form-group" style={{ marginTop: 8 }}>
+                  <label htmlFor="property-name">{createCopy.propertyName}</label>
+                  <input id="property-name" className="input" value={newPropertyName} onChange={(e) => setNewPropertyName(e.target.value)} placeholder={createCopy.propertyNamePlaceholder} />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <AddressAutocomplete
+                    id="job-address"
+                    label={createCopy.serviceAddress}
+                    placeholder={createCopy.addressPlaceholder}
+                    value={address}
+                    onChange={(formatted, structured) => {
+                      setAddress(formatted);
+                      setStructuredAddress(structured);
+                      setAddressMode('save_new_property');
+                    }}
+                    onSelect={(suggestion) => void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude)}
+                  />
+                </div>
+              </>
+            ) : null}
+          </section>
         ) : null}
 
         {customerMode === 'new' ? (
-        <section className="job-create-section">
-          <h4>{createCopy.propertyHeading}</h4>
-          <div className="form-group" style={{ marginTop: 8 }}>
-            <label htmlFor="property-name">{createCopy.propertyName}</label>
-            <input
-              id="property-name"
-              className="input"
-              value={newPropertyName}
-              onChange={(e) => setNewPropertyName(e.target.value)}
-              placeholder={createCopy.propertyNamePlaceholder}
-            />
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <AddressAutocomplete
-              id="job-address"
-              label={createCopy.serviceAddress}
-              placeholder={createCopy.addressPlaceholder}
-              value={address}
-              onChange={(formatted, structured) => {
-                setAddress(formatted);
-                setStructuredAddress(structured);
-                setAddressMode('save_new_property');
-              }}
-              onSelect={(suggestion) => {
-                void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude);
-              }}
-            />
-          </div>
-        </section>
+          <section className="job-create-section">
+            <h4>{createCopy.propertyHeading}</h4>
+            <div className="form-group" style={{ marginTop: 8 }}>
+              <label htmlFor="property-name">{createCopy.propertyName}</label>
+              <input id="property-name" className="input" value={newPropertyName} onChange={(e) => setNewPropertyName(e.target.value)} placeholder={createCopy.propertyNamePlaceholder} />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <AddressAutocomplete
+                id="job-address"
+                label={createCopy.serviceAddress}
+                placeholder={createCopy.addressPlaceholder}
+                value={address}
+                onChange={(formatted, structured) => {
+                  setAddress(formatted);
+                  setStructuredAddress(structured);
+                  setAddressMode('save_new_property');
+                }}
+                onSelect={(suggestion) => void resolveTimezoneFromCoords(suggestion.latitude, suggestion.longitude)}
+              />
+            </div>
+          </section>
         ) : null}
 
         <section className="job-create-section">
@@ -1274,9 +1203,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             value={primaryVisit?.visit_date || recurrenceStartDate}
             onChange={(e) => setSeriesStartDate(e.target.value)}
           />
-          {recurrenceFieldErrors.startDate ? (
-            <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startDate}</p>
-          ) : null}
+          {recurrenceFieldErrors.startDate ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startDate}</p> : null}
           <div className="grid-2" style={{ marginTop: 12 }}>
             <div className="form-group">
               <label htmlFor="job-start-time">{recurrenceCopy.startTime}</label>
@@ -1292,44 +1219,48 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   updateVisit(primaryVisit.id, { start_time: e.target.value });
                 }}
               />
-              {recurrenceFieldErrors.startTime ? (
-                <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p>
-              ) : null}
+              {recurrenceFieldErrors.startTime ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.startTime}</p> : null}
             </div>
             <div className="form-group">
               <label htmlFor="job-end-time">{recurrenceCopy.endTime}</label>
-              <input
-                id="job-end-time"
-                className="input"
-                type="time"
-                value={primaryVisit?.end_time || ''}
-                onChange={(e) => {
-                  if (!primaryVisit) return;
-                  updateVisit(primaryVisit.id, { end_time: e.target.value });
-                }}
-              />
+              <input id="job-end-time" className="input" type="time" value={primaryVisit?.end_time || ''} onChange={(e) => primaryVisit && updateVisit(primaryVisit.id, { end_time: e.target.value })} />
             </div>
           </div>
         </section>
 
         <section className="job-create-section">
-          <h4>5. Contractor</h4>
-          <label htmlFor="assigned-to">Assign contractor</label>
+          <h4>5. Customer price</h4>
+          <p className="muted">This is what the customer will pay for this job.</p>
+          <label>Customer price</label>
+          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
+        </section>
+
+        <section className="job-create-section">
+          <h4>6. Worker</h4>
+          <label htmlFor="assigned-to">Assign worker</label>
           <select id="assigned-to" className="input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} disabled={loadingTeam}>
             <option value="">Unassigned</option>
             {teamMembers.map((member) => <option key={member.userId} value={member.userId}>{member.label} · {roleLabel(member.role)}</option>)}
           </select>
+          <label style={{ marginTop: 16 }}>Worker price</label>
+          <p className="muted">This is what you will pay the worker for this job.</p>
+          <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
+            <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
+            <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
+          </div>
+          {contractorPayMode === 'hourly' ? (
+            <>
+              <div className="grid-2" style={{ marginTop: 10 }}>
+                <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
+                <div className="form-group"><label>Worker hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
+              </div>
+              <p className="muted">Worker cost: ${previewContractorPay.toFixed(2)}</p>
+            </>
+          ) : (
+            <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} />
+          )}
           <label>Job notes</label>
           <textarea className="input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </section>
-
-        <section className="job-create-section">
-          <h4>6. Financial details</h4>
-          <p className="muted">
-            Enter amounts once. For recurring jobs these become defaults on each generated visit and can be edited per visit later.
-          </p>
-          <label>What the customer pays</label>
-          <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={clientIncome} onChange={(e) => setClientIncome(e.target.value)} />
         </section>
 
         <details style={{ marginTop: 12 }}>
@@ -1345,17 +1276,13 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 const next = e.target.value as RecurrenceFrequency;
                 setRecurrenceFrequency(next);
                 if (next !== 'none') {
-                  if (visits.length > 1) {
-                    setVisits((rows) => [rows[0]]);
-                  }
+                  if (visits.length > 1) setVisits((rows) => [rows[0]]);
                   const date = visits[0]?.visit_date || recurrenceStartDate;
                   if (date) setRecurrenceStartDate(date);
                 }
                 if (next === 'daily') setRecurrenceIntervalUnit('days');
                 if (next === 'monthly') setRecurrenceIntervalUnit('months');
-                if (next === 'weekly' || next === 'biweekly' || next === 'every_three_weeks' || next === 'every_four_weeks') {
-                  setRecurrenceIntervalUnit('weeks');
-                }
+                if (next === 'weekly' || next === 'biweekly' || next === 'every_three_weeks' || next === 'every_four_weeks') setRecurrenceIntervalUnit('weeks');
               }}
             >
               <option value="none">{recurrenceCopy.oneTime}</option>
@@ -1399,9 +1326,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                         );
                       })}
                     </div>
-                    {recurrenceFieldErrors.weekdays ? (
-                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.weekdays}</p>
-                    ) : null}
+                    {recurrenceFieldErrors.weekdays ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.weekdays}</p> : null}
                   </fieldset>
                 ) : null}
 
@@ -1429,69 +1354,35 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                 {recurrenceEndMode === 'on_date' ? (
                   <>
                     <label htmlFor="recurrence-end-date">{recurrenceCopy.endDate}</label>
-                    <input
-                      id="recurrence-end-date"
-                      className="input"
-                      type="date"
-                      aria-invalid={Boolean(recurrenceFieldErrors.endDate)}
-                      value={recurrenceEndDate}
-                      onChange={(e) => {
-                        setRecurrenceEndDate(e.target.value);
-                        setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined }));
-                      }}
-                    />
-                    {recurrenceFieldErrors.endDate ? (
-                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.endDate}</p>
-                    ) : null}
+                    <input id="recurrence-end-date" className="input" type="date" aria-invalid={Boolean(recurrenceFieldErrors.endDate)} value={recurrenceEndDate} onChange={(e) => {
+                      setRecurrenceEndDate(e.target.value);
+                      setRecurrenceFieldErrors((current) => ({ ...current, endDate: undefined }));
+                    }} />
+                    {recurrenceFieldErrors.endDate ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.endDate}</p> : null}
                   </>
                 ) : null}
                 {recurrenceEndMode === 'after_count' ? (
                   <>
                     <label htmlFor="recurrence-limit">{recurrenceCopy.occurrenceCount}</label>
-                    <input
-                      id="recurrence-limit"
-                      className="input"
-                      type="number"
-                      min="1"
-                      aria-invalid={Boolean(recurrenceFieldErrors.limit)}
-                      value={recurrenceLimit}
-                      onChange={(e) => {
-                        setRecurrenceLimit(e.target.value);
-                        setRecurrenceFieldErrors((current) => ({ ...current, limit: undefined }));
-                      }}
-                    />
-                    {recurrenceFieldErrors.limit ? (
-                      <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.limit}</p>
-                    ) : null}
+                    <input id="recurrence-limit" className="input" type="number" min="1" aria-invalid={Boolean(recurrenceFieldErrors.limit)} value={recurrenceLimit} onChange={(e) => {
+                      setRecurrenceLimit(e.target.value);
+                      setRecurrenceFieldErrors((current) => ({ ...current, limit: undefined }));
+                    }} />
+                    {recurrenceFieldErrors.limit ? <p className="auth-message auth-message-error" role="alert">{recurrenceFieldErrors.limit}</p> : null}
                   </>
                 ) : null}
 
-                <details
-                  open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'}
-                  onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}
-                >
+                <details open={showRecurrenceAdvanced || recurrenceFrequency === 'custom'} onToggle={(e) => setShowRecurrenceAdvanced((e.target as HTMLDetailsElement).open)}>
                   <summary>{recurrenceCopy.advanced}</summary>
                   {recurrenceFrequency === 'custom' ? (
                     <div className="grid-2" style={{ marginTop: 8 }}>
-                      <div className="form-group">
-                        <label>{recurrenceCopy.every}</label>
-                        <input className="input" type="number" min="1" max="365" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} />
-                      </div>
-                      <div className="form-group">
-                        <label>{recurrenceCopy.unit}</label>
-                        <select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as RecurrenceIntervalUnit)}>
-                          <option value="days">{recurrenceCopy.days}</option>
-                          <option value="weeks">{recurrenceCopy.weeks}</option>
-                          <option value="months">{recurrenceCopy.months}</option>
-                        </select>
-                      </div>
+                      <div className="form-group"><label>{recurrenceCopy.every}</label><input className="input" type="number" min="1" max="365" value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value)} /></div>
+                      <div className="form-group"><label>{recurrenceCopy.unit}</label><select className="input" value={recurrenceIntervalUnit} onChange={(e) => setRecurrenceIntervalUnit(e.target.value as RecurrenceIntervalUnit)}><option value="days">{recurrenceCopy.days}</option><option value="weeks">{recurrenceCopy.weeks}</option><option value="months">{recurrenceCopy.months}</option></select></div>
                     </div>
                   ) : null}
                   <p className="muted">{recurrenceCopy.windowHelp}</p>
                 </details>
-                <p className="muted" style={{ marginTop: 8 }} aria-live="polite">
-                  <strong>{recurrenceCopy.summaryLabel}:</strong> {recurrenceSummary}
-                </p>
+                <p className="muted" style={{ marginTop: 8 }} aria-live="polite"><strong>{recurrenceCopy.summaryLabel}:</strong> {recurrenceSummary}</p>
               </>
             ) : (
               <>
@@ -1502,12 +1393,7 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
                   {TIME_ZONE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
                 <p className="muted">Filled from the property address when available. You can change it.</p>
-                {primaryVisit ? (
-                  <>
-                    <label>Visit notes</label>
-                    <input className="input" value={primaryVisit.notes} onChange={(e) => updateVisit(primaryVisit.id, { notes: e.target.value })} />
-                  </>
-                ) : null}
+                {primaryVisit ? <><label>Visit notes</label><input className="input" value={primaryVisit.notes} onChange={(e) => updateVisit(primaryVisit.id, { notes: e.target.value })} /></> : null}
                 {visits.slice(1).map((visit, index) => (
                   <div key={visit.id} className="form visit-editor">
                     <label>Visit {index + 2}</label>
@@ -1527,40 +1413,21 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
           </section>
 
           <section className="job-create-section">
-            <label style={{ marginTop: 12 }}>How the contractor is paid</label>
-            <div className="segmented-control" role="group" aria-label={getBillingOpsCopy(locale).paymentMethod} style={{ marginTop: 8 }}>
-              <button type="button" className={`btn${contractorPayMode === 'flat' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('flat')}>Flat rate</button>
-              <button type="button" className={`btn${contractorPayMode === 'hourly' ? ' btn-primary' : ''}`} onClick={() => setContractorPayMode('hourly')}>Hourly</button>
-            </div>
-            {contractorPayMode === 'hourly' ? (
-              <>
-                <div className="grid-2">
-                  <div className="form-group"><label>Hours</label><input className="input" type="number" min="0" step="0.25" value={contractorHours} onChange={(e) => setContractorHours(e.target.value)} /></div>
-                  <div className="form-group"><label>Contractor hourly rate</label><input className="input" type="number" min="0" step="0.01" value={contractorHourlyRate} onChange={(e) => setContractorHourlyRate(e.target.value)} /></div>
-                </div>
-                <div className="finance-metric" style={{ marginTop: 8 }}>
-                  <span className="finance-metric-label">Calculated contractor pay</span>
-                  <strong>${previewContractorPay.toFixed(2)}</strong>
-                </div>
-              </>
-            ) : (
-              <div className="form-group"><label>What the contractor earns</label><input className="input" type="number" min="0" step="0.01" value={contractorFlatRate} onChange={(e) => setContractorFlatRate(e.target.value)} /></div>
-            )}
-            <label>Contractor pay notes (optional)</label>
-            <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
-
             <label style={{ marginTop: 12 }}>Additional expected expenses</label>
             <input className="input" type="number" min="0" step="0.01" placeholder="0.00" value={additionalExpenses} onChange={(e) => setAdditionalExpenses(e.target.value)} />
             <label>Expense description (optional)</label>
             <input className="input" value={expenseDescription} onChange={(e) => setExpenseDescription(e.target.value)} placeholder="Supplies, parking, travel…" />
 
+            <label style={{ marginTop: 12 }}>Worker pay notes (optional)</label>
+            <input className="input" value={contractorNotes} onChange={(e) => setContractorNotes(e.target.value)} />
+
             <div className="finance-metric-grid financials-summary-grid" style={{ marginTop: 14 }}>
-              <div className="finance-metric"><span className="finance-metric-label">Client price</span><strong>${previewFinance.expectedRevenue.toFixed(2)}</strong></div>
-              <div className="finance-metric"><span className="finance-metric-label">Contractor pay</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Customer price</span><strong>${previewFinance.expectedRevenue.toFixed(2)}</strong></div>
+              <div className="finance-metric"><span className="finance-metric-label">Worker price</span><strong>${previewContractorPay.toFixed(2)}</strong></div>
               <div className="finance-metric"><span className="finance-metric-label">Additional expenses</span><strong>${previewFinance.expectedAdditionalExpense.toFixed(2)}</strong></div>
               <div className="finance-metric featured"><span className="finance-metric-label">Expected profit</span><strong>${previewProfit.toFixed(2)}</strong></div>
             </div>
-            <p className="muted">Expected profit = Client price − Contractor pay − Additional expected expenses</p>
+            <p className="muted">Expected profit = Customer price − Worker price − Additional expected expenses</p>
           </section>
 
           <section className="job-create-section">
@@ -1583,14 +1450,9 @@ export function JobCreator({ onJobCreated }: JobCreatorProps) {
             <h4>7. Review before saving</h4>
             <p style={{ margin: 0 }}><strong>{recurrenceFrequency === 'none' ? 'One-time job' : 'Recurring series'}</strong></p>
             <p className="muted" style={{ marginTop: 6 }}>{recurrenceSummary}</p>
-            {recurrenceFrequency !== 'none' ? (
-              <p className="muted">
-                Only the next {RECURRING_GENERATION_WINDOW_DAYS} days of visits are scheduled now. Financial defaults apply to each generated visit.
-              </p>
-            ) : null}
+            {recurrenceFrequency !== 'none' ? <p className="muted">Only the next {RECURRING_GENERATION_WINDOW_DAYS} days of visits are scheduled now. Financial defaults apply to each generated visit.</p> : null}
             <p className="muted" style={{ marginTop: 6 }}>
-              Per visit: ${previewFinance.expectedRevenue.toFixed(2)} revenue · ${previewContractorPay.toFixed(2)} contractor ·
-              ${previewFinance.expectedAdditionalExpense.toFixed(2)} expenses · ${previewProfit.toFixed(2)} expected profit
+              Per visit: ${previewFinance.expectedRevenue.toFixed(2)} customer price · ${previewContractorPay.toFixed(2)} worker price · ${previewFinance.expectedAdditionalExpense.toFixed(2)} expenses · ${previewProfit.toFixed(2)} expected profit
             </p>
           </section>
         </details>
