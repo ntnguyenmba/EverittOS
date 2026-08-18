@@ -34,7 +34,33 @@ export function JobContractorOptions() {
     let contractors: Contractor[] = [];
     const originalFetch = window.fetch.bind(window);
 
+    function promoteWorkerPay() {
+      const summaries = Array.from(document.querySelectorAll('summary'));
+      const moreSummary = summaries.find((summary) => summary.textContent?.trim().toLowerCase() === 'more options');
+      const details = moreSummary?.closest('details');
+      if (!details) return;
+
+      const sections = Array.from(details.querySelectorAll<HTMLElement>('.job-create-section'));
+      const paySection = sections.find((section) => {
+        const text = section.textContent?.toLowerCase() || '';
+        return text.includes('how the contractor is paid') || text.includes('what the contractor earns');
+      });
+      if (!paySection || paySection.parentElement !== details.parentElement) {
+        if (paySection && details.parentElement) {
+          const labels = Array.from(paySection.querySelectorAll('label, .finance-metric-label, p'));
+          for (const label of labels) {
+            if (!label.textContent) continue;
+            label.textContent = label.textContent
+              .replaceAll('contractor', 'worker')
+              .replaceAll('Contractor', 'Worker');
+          }
+          details.parentElement.insertBefore(paySection, details);
+        }
+      }
+    }
+
     function applyOptions() {
+      promoteWorkerPay();
       const select = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!select || contractors.length === 0) return;
 
@@ -131,6 +157,7 @@ export function JobContractorOptions() {
     };
 
     void loadContractors();
+    promoteWorkerPay();
     const observer = new MutationObserver(applyOptions);
     observer.observe(document.body, { childList: true, subtree: true });
 
