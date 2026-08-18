@@ -28,39 +28,76 @@ function contractorLabel(contractor: Contractor) {
     : `${contractor.name} · Contractor`;
 }
 
+function surfaceWorkerPay() {
+  const assignedSelect = document.querySelector<HTMLSelectElement>('#assigned-to');
+  const contractorSection = assignedSelect?.closest<HTMLElement>('section');
+  const form = assignedSelect?.closest<HTMLFormElement>('form');
+  if (!contractorSection || !form) return;
+
+  const moreDetails = Array.from(form.querySelectorAll<HTMLDetailsElement>('details')).find((item) =>
+    item.querySelector('summary')?.textContent?.trim().toLowerCase().includes('more options')
+  );
+  if (!moreDetails) return;
+
+  const paySection = Array.from(moreDetails.querySelectorAll<HTMLElement>('section')).find((section) => {
+    const text = section.textContent?.toLowerCase() || '';
+    return (
+      text.includes('how the contractor is paid') ||
+      text.includes('what the contractor earns') ||
+      text.includes('contractor hourly rate') ||
+      text.includes('worker pay')
+    );
+  });
+  if (!paySection) return;
+
+  if (paySection.dataset.workerPayReady !== 'true') {
+    paySection.dataset.workerPayReady = 'true';
+
+    const heading = document.createElement('h4');
+    heading.textContent = 'Worker pay';
+    heading.style.marginBottom = '12px';
+    paySection.prepend(heading);
+
+    for (const node of Array.from(paySection.querySelectorAll<HTMLElement>('label, .finance-metric-label, p'))) {
+      if (!node.textContent) continue;
+      node.textContent = node.textContent
+        .replaceAll('contractor', 'worker')
+        .replaceAll('Contractor', 'Worker');
+    }
+
+    for (const label of Array.from(paySection.querySelectorAll<HTMLLabelElement>('label'))) {
+      const text = label.textContent?.trim().toLowerCase() || '';
+      if (text.includes('additional expected expenses') || text.includes('expense description')) {
+        const input = label.nextElementSibling as HTMLElement | null;
+        label.style.display = 'none';
+        if (input) input.style.display = 'none';
+      }
+    }
+
+    for (const grid of Array.from(paySection.querySelectorAll<HTMLElement>('.financials-summary-grid'))) {
+      grid.style.display = 'none';
+    }
+
+    for (const paragraph of Array.from(paySection.querySelectorAll<HTMLParagraphElement>('p.muted'))) {
+      if (paragraph.textContent?.toLowerCase().includes('expected profit')) {
+        paragraph.style.display = 'none';
+      }
+    }
+  }
+
+  if (paySection.parentElement !== form || paySection.previousElementSibling !== contractorSection) {
+    contractorSection.insertAdjacentElement('afterend', paySection);
+  }
+}
+
 export function JobContractorOptions() {
   useEffect(() => {
     let cancelled = false;
     let contractors: Contractor[] = [];
     const originalFetch = window.fetch.bind(window);
 
-    function promoteWorkerPay() {
-      const summaries = Array.from(document.querySelectorAll('summary'));
-      const moreSummary = summaries.find((summary) => summary.textContent?.trim().toLowerCase() === 'more options');
-      const details = moreSummary?.closest('details');
-      if (!details) return;
-
-      const sections = Array.from(details.querySelectorAll<HTMLElement>('.job-create-section'));
-      const paySection = sections.find((section) => {
-        const text = section.textContent?.toLowerCase() || '';
-        return text.includes('how the contractor is paid') || text.includes('what the contractor earns');
-      });
-      if (!paySection || paySection.parentElement !== details.parentElement) {
-        if (paySection && details.parentElement) {
-          const labels = Array.from(paySection.querySelectorAll('label, .finance-metric-label, p'));
-          for (const label of labels) {
-            if (!label.textContent) continue;
-            label.textContent = label.textContent
-              .replaceAll('contractor', 'worker')
-              .replaceAll('Contractor', 'Worker');
-          }
-          details.parentElement.insertBefore(paySection, details);
-        }
-      }
-    }
-
     function applyOptions() {
-      promoteWorkerPay();
+      surfaceWorkerPay();
       const select = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!select || contractors.length === 0) return;
 
@@ -157,8 +194,12 @@ export function JobContractorOptions() {
     };
 
     void loadContractors();
-    promoteWorkerPay();
-    const observer = new MutationObserver(applyOptions);
+    surfaceWorkerPay();
+
+    const observer = new MutationObserver(() => {
+      applyOptions();
+      surfaceWorkerPay();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
