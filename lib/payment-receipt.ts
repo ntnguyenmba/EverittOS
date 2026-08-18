@@ -172,14 +172,14 @@ export function resolveReceiptCustomer(input: {
   const displayName = linkedName || trimText(job?.customer_name) || null;
   const email = trimText(linked?.email) || null;
   const phone = trimText(linked?.phone) || trimText(job?.phone) || null;
-  const addressLines =
-    structured.length > 0
+  const jobServiceAddress = trimText(job?.address);
+  const addressLines = jobServiceAddress
+    ? [jobServiceAddress]
+    : structured.length > 0
       ? structured
       : linkedAddressFallback
         ? [linkedAddressFallback]
-        : trimText(job?.address)
-          ? [String(trimText(job?.address))]
-          : [];
+        : [];
 
   return { displayName, email, phone, addressLines };
 }
