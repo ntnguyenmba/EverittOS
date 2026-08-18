@@ -42,21 +42,36 @@ export function JobContractorOptions() {
     let contractors: Contractor[] = [];
     const originalFetch = window.fetch.bind(window);
 
-    function installWorkerPayField() {
+    function installWorkerPayAndRecurring() {
       const form = document.querySelector<HTMLFormElement>('form.unified-job-form');
       const assignedSelect = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!form || !assignedSelect) return;
+
+      const assignedSection = assignedSelect.closest('.job-create-section');
+      if (!assignedSection) return;
 
       const moreSummary = Array.from(form.querySelectorAll('summary')).find(
         (summary) => summary.textContent?.trim().toLowerCase() === 'more options'
       );
       const moreDetails = moreSummary?.closest('details') as HTMLDetailsElement | null;
-      if (moreDetails) moreDetails.style.display = 'none';
+
+      if (moreDetails) {
+        const recurrenceSection = Array.from(moreDetails.querySelectorAll<HTMLElement>(':scope > .job-create-section')).find(
+          (section) => Boolean(section.querySelector('#recurrence-frequency'))
+        );
+
+        if (recurrenceSection && recurrenceSection.dataset.visibleRecurring !== 'true') {
+          recurrenceSection.dataset.visibleRecurring = 'true';
+          const heading = document.createElement('h4');
+          heading.textContent = 'Recurring';
+          recurrenceSection.insertBefore(heading, recurrenceSection.firstChild);
+          assignedSection.parentElement?.insertBefore(recurrenceSection, assignedSection);
+        }
+
+        moreDetails.style.display = 'none';
+      }
 
       if (document.getElementById(WORKER_PAY_FIELD_ID)) return;
-
-      const assignedSection = assignedSelect.closest('.job-create-section');
-      if (!assignedSection) return;
 
       const section = document.createElement('section');
       section.className = 'job-create-section';
@@ -102,7 +117,7 @@ export function JobContractorOptions() {
     }
 
     function applyOptions() {
-      installWorkerPayField();
+      installWorkerPayAndRecurring();
       const select = document.querySelector<HTMLSelectElement>('#assigned-to');
       if (!select || contractors.length === 0) return;
 
@@ -199,7 +214,7 @@ export function JobContractorOptions() {
     };
 
     void loadContractors();
-    installWorkerPayField();
+    installWorkerPayAndRecurring();
     const observer = new MutationObserver(applyOptions);
     observer.observe(document.body, { childList: true, subtree: true });
 
