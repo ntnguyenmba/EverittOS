@@ -173,14 +173,18 @@ export function JobGuidancePanel() {
   else if (!workerPaySet) action = { label: c.setWorkerPay, terms: ['money', 'labor', 'worker'], direct: '' };
   else if (!scheduleSet) action = { label: c.setSchedule, terms: ['schedule'], direct: '' };
   else if (pastDue) action = { label: c.startJob, terms: [], direct: 'active' };
-  else if (status === 'completed' && !invoiceExists) action = { label: c.createInvoice, terms: [], direct: 'invoice' };
-  else if (invoiceExists && paymentState !== c.paid) action = { label: c.recordPayment, terms: [], direct: 'invoice' };
+  else if (status === 'completed' && !invoiceExists) action = { label: c.createInvoice, terms: [], direct: 'create_invoice' };
+  else if (invoiceExists && paymentState !== c.paid) action = { label: c.recordPayment, terms: [], direct: 'record_payment' };
   else if (status !== 'completed' && status !== 'cancelled') action = { label: c.markComplete, terms: [], direct: 'completed' };
   else if (status === 'completed') action = { label: c.complete, terms: ['overview'], direct: '' };
 
   async function runAction() {
-    if (action.direct === 'invoice') {
-      window.location.href = `/invoices?jobId=${jobId}`;
+    if (action.direct === 'create_invoice') {
+      window.location.href = `/invoices?jobId=${jobId}&action=new`;
+      return;
+    }
+    if (action.direct === 'record_payment') {
+      window.location.href = `/invoices?jobId=${jobId}&payment=unpaid`;
       return;
     }
     if (action.direct === 'active' || action.direct === 'completed') {
@@ -194,12 +198,12 @@ export function JobGuidancePanel() {
   }
 
   const items = [
-    { label: c.clientPay, value: clientPaySet ? c.set : c.missing, bad: !clientPaySet, terms: ['money', 'profit'] },
-    { label: c.worker, value: state.assigned ? c.assigned : c.missing, bad: !state.assigned, terms: ['assigned', 'worker', 'contractor'] },
-    { label: c.workerPay, value: workerPaySet ? c.set : c.missing, bad: !workerPaySet, terms: ['money', 'labor'] },
-    { label: c.schedule, value: scheduleSet ? c.scheduled : c.missing, bad: !scheduleSet, terms: ['schedule'] },
-    { label: c.invoice, value: invoiceExists ? c.created : c.notCreated, bad: !invoiceExists, terms: [] },
-    { label: c.payment, value: paymentState, bad: paymentState !== c.paid, terms: [] }
+    { label: c.clientPay, value: clientPaySet ? c.set : c.missing, bad: !clientPaySet, terms: ['money', 'profit'], href: '' },
+    { label: c.worker, value: state.assigned ? c.assigned : c.missing, bad: !state.assigned, terms: ['assigned', 'worker', 'contractor'], href: '' },
+    { label: c.workerPay, value: workerPaySet ? c.set : c.missing, bad: !workerPaySet, terms: ['money', 'labor'], href: '' },
+    { label: c.schedule, value: scheduleSet ? c.scheduled : c.missing, bad: !scheduleSet, terms: ['schedule'], href: '' },
+    { label: c.invoice, value: invoiceExists ? c.created : c.notCreated, bad: !invoiceExists, terms: [], href: invoiceExists ? `/invoices?jobId=${jobId}` : `/invoices?jobId=${jobId}&action=new` },
+    { label: c.payment, value: paymentState, bad: paymentState !== c.paid, terms: [], href: `/invoices?jobId=${jobId}&payment=unpaid` }
   ];
 
   return (
@@ -214,7 +218,7 @@ export function JobGuidancePanel() {
       </div>
       <div className="job-guidance-status" aria-label="Job status summary">
         {items.map((item) => (
-          <button key={item.label} type="button" className={item.bad ? 'is-missing' : 'is-complete'} onClick={() => item.terms.length ? scrollToSection(item.terms) : item.label === c.invoice || item.label === c.payment ? (window.location.href = `/invoices?jobId=${jobId}`) : undefined}>
+          <button key={item.label} type="button" className={item.bad ? 'is-missing' : 'is-complete'} onClick={() => item.href ? (window.location.href = item.href) : item.terms.length ? scrollToSection(item.terms) : undefined}>
             <span>{item.label}</span><strong>{item.value}</strong>
           </button>
         ))}
