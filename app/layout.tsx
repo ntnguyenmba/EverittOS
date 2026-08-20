@@ -79,6 +79,7 @@ import './settings-card-spacing-final.css';
 import './notification-settings-layout-fix.css';
 import './final-release-polish.css';
 import './owner-job-card-mobile-alignment.css';
+import './jobs-filter-mobile-alignment.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
