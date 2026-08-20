@@ -1,6 +1,7 @@
 'use client';
 
 import { JobGuidancePanel } from '@/components/job-guidance-panel';
+import { JobsListNextActionHints } from '@/components/jobs-list-next-action-hints';
 
 type AppPageContentProps = {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
       }}
     >
       <JobGuidancePanel />
+      <JobsListNextActionHints />
       {children}
     </div>
   );
