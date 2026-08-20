@@ -26,6 +26,7 @@ import { CreateFormCancelControls } from '@/components/create-form-cancel-contro
 import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { ContractorJobPayVisibility } from '@/components/contractor-job-pay-visibility';
 import { OwnerTopPerformerMetric } from '@/components/owner-top-performer-metric';
+import { ExpensesListEnhancer } from '@/components/expenses-list-enhancer';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import './everitt-theme.css';
@@ -142,6 +143,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <DashboardTodayCountFix />
           <ContractorJobPayVisibility />
           <OwnerTopPerformerMetric />
+          <ExpensesListEnhancer />
           <ToastProvider>
             <LocaleSync />
             <SessionGuard>
