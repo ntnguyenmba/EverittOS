@@ -74,6 +74,11 @@ const copy = {
   }
 } as const;
 
+function withRange(href: string, range: DashboardDateRange) {
+  const separator = href.includes('?') ? '&' : '?';
+  return `${href}${separator}range=${encodeURIComponent(range)}`;
+}
+
 export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueSnapshotProps) {
   const { locale } = useTranslation();
   const c = copy[locale];
@@ -169,17 +174,17 @@ export function DashboardRevenueSnapshot({ metrics, loading }: DashboardRevenueS
   const jobsLabel = range === 'today' ? c.jobsToday : range === 'week' ? c.jobsWeek : range === 'month' ? c.jobsMonth : range === 'year' ? c.jobsYear : c.jobsAllTime;
 
   const primaryItems: MetricItem[] = [
-    { label: c.collected, value: formatCurrency(collected), href: DASHBOARD_LINKS.paidToYou, description: c.collectedDesc },
-    { label: c.businessExpenses, value: formatCurrency(expenses), href: DASHBOARD_LINKS.otherExpenses, description: c.expensesDesc },
-    { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: DASHBOARD_LINKS.contractorPay, description: c.contractorCostDesc },
-    { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedProfitDesc }
+    { label: c.collected, value: formatCurrency(collected), href: withRange(DASHBOARD_LINKS.paidToYou, range), description: c.collectedDesc },
+    { label: c.businessExpenses, value: formatCurrency(expenses), href: withRange(DASHBOARD_LINKS.otherExpenses, range), description: c.expensesDesc },
+    { label: c.totalContractorCost, value: formatCurrency(contractorCost), href: withRange(DASHBOARD_LINKS.contractorPay, range), description: c.contractorCostDesc },
+    { label: c.expectedProfit, value: formatCurrency(expectedProfit), href: withRange(DASHBOARD_LINKS.estimatedProfit, range), description: c.expectedProfitDesc }
   ];
 
   const detailItems: MetricItem[] = [
-    { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: DASHBOARD_LINKS.cashAfterExpenses, description: c.cashDesc },
-    { label: c.contractorsPaid, value: formatCurrency(contractorPaid), href: DASHBOARD_LINKS.contractorPay, description: c.contractorsPaidDesc },
-    { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: DASHBOARD_LINKS.stillOwed, description: range === 'all_time' ? c.currentBalances : c.periodBalances },
-    { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: DASHBOARD_LINKS.estimatedProfit, description: c.expectedRevenueDesc },
+    { label: c.cashAfterPaidCosts, value: formatCurrency(cashAfterPaidCosts), href: withRange(DASHBOARD_LINKS.cashAfterExpenses, range), description: c.cashDesc },
+    { label: c.contractorsPaid, value: formatCurrency(contractorPaid), href: withRange(DASHBOARD_LINKS.contractorPay, range), description: c.contractorsPaidDesc },
+    { label: c.customerBalanceDue, value: formatCurrency(outstanding), href: withRange(DASHBOARD_LINKS.stillOwed, range), description: range === 'all_time' ? c.currentBalances : c.periodBalances },
+    { label: c.expectedRevenue, value: formatCurrency(expectedRevenue), href: withRange(DASHBOARD_LINKS.estimatedProfit, range), description: c.expectedRevenueDesc },
     { label: jobsLabel, value: String(selectedJobs), href: `/jobs?period=${jobsPeriod}`, description: c.jobsDesc }
   ];
 
