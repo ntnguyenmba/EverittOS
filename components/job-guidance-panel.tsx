@@ -89,8 +89,8 @@ function scrollToSection(terms: string[]) {
   });
   const section = target?.closest<HTMLElement>('section, details, .card') || target;
   if (section) {
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (section instanceof HTMLDetailsElement) section.open = true;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -223,21 +223,36 @@ export function JobGuidancePanel() {
         {showMoreDetails ? c.fewerDetails : c.moreDetails}
       </button>
       <style jsx>{`
-        .job-guidance-panel { margin: 0 0 18px; display: grid; gap: 10px; }
-        .job-guidance-next { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; border: 1px solid rgba(37,54,74,.14); border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(37,54,74,.07); }
+        .job-guidance-panel { width: 100%; min-width: 0; margin: 0 0 18px; display: grid; gap: 10px; box-sizing: border-box; }
+        .job-guidance-next { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; border: 1px solid rgba(37,54,74,.14); border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(37,54,74,.07); box-sizing: border-box; }
         .job-guidance-next > div { min-width: 0; }
         .job-guidance-eyebrow { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #52606d; }
-        .job-guidance-next strong { display: block; font-size: clamp(20px, 3vw, 28px); line-height: 1.15; }
-        .job-guidance-next p { margin: 6px 0 0; color: #66727c; font-size: 14px; }
-        .job-guidance-next .btn { flex: 0 0 auto; min-height: 44px; }
-        .job-guidance-status { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; }
-        .job-guidance-status button { min-width: 0; min-height: 64px; padding: 10px 12px; border: 1px solid rgba(37,54,74,.12); border-radius: 12px; background: rgba(255,255,255,.92); color: inherit; text-align: left; cursor: pointer; }
-        .job-guidance-status button span { display: block; color: #66727c; font-size: 12px; margin-bottom: 4px; }
-        .job-guidance-status button strong { display: block; font-size: 14px; line-height: 1.2; }
+        .job-guidance-next strong { display: block; max-width: 100%; font-size: clamp(20px, 3vw, 28px); line-height: 1.15; overflow-wrap: anywhere; }
+        .job-guidance-next p { margin: 6px 0 0; color: #66727c; font-size: 14px; line-height: 1.45; }
+        .job-guidance-next .btn { flex: 0 0 auto; min-height: 48px; touch-action: manipulation; }
+        .job-guidance-status { min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; }
+        .job-guidance-status button { min-width: 0; min-height: 64px; padding: 10px 12px; border: 1px solid rgba(37,54,74,.12); border-radius: 12px; background: rgba(255,255,255,.92); color: inherit; text-align: left; cursor: pointer; touch-action: manipulation; box-sizing: border-box; }
+        .job-guidance-status button span { display: block; color: #66727c; font-size: 12px; line-height: 1.2; margin-bottom: 4px; overflow-wrap: anywhere; }
+        .job-guidance-status button strong { display: block; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
         .job-guidance-status button.is-missing { border-color: rgba(158,83,58,.28); background: rgba(255,249,246,.97); }
-        .job-guidance-more { min-height: 42px; width: fit-content; padding: 0 4px; border: 0; background: transparent; color: #3f586a; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+        .job-guidance-more { min-height: 48px; width: fit-content; padding: 0 4px; border: 0; background: transparent; color: #3f586a; font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; text-decoration: underline; text-underline-offset: 3px; }
         @media (max-width: 900px) { .job-guidance-status { grid-template-columns: repeat(3, minmax(0,1fr)); } }
-        @media (max-width: 640px) { .job-guidance-next { align-items: stretch; flex-direction: column; padding: 16px; } .job-guidance-next .btn { width: 100%; } .job-guidance-status { grid-template-columns: repeat(2, minmax(0,1fr)); } .job-guidance-status button { min-height: 60px; } .job-guidance-more { width: 100%; text-align: center; } }
+        @media (max-width: 640px) {
+          .job-guidance-panel { gap: 8px; margin-bottom: 14px; }
+          .job-guidance-next { align-items: stretch; flex-direction: column; gap: 12px; padding: 15px; border-radius: 14px; }
+          .job-guidance-next strong { font-size: 22px; }
+          .job-guidance-next p { font-size: 13px; margin-top: 5px; }
+          .job-guidance-next .btn { width: 100%; min-height: 50px; }
+          .job-guidance-status { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+          .job-guidance-status button { min-height: 62px; padding: 9px 10px; border-radius: 11px; }
+          .job-guidance-status button span { font-size: 11px; }
+          .job-guidance-status button strong { font-size: 13px; }
+          .job-guidance-more { width: 100%; min-height: 48px; text-align: center; }
+        }
+        @media (max-width: 360px) {
+          .job-guidance-status button { padding-inline: 8px; }
+          .job-guidance-next strong { font-size: 20px; }
+        }
       `}</style>
       <style jsx global>{`
         html:not(.job-secondary-details-expanded) .job-detail-shell > .job-photos-card,
@@ -247,6 +262,18 @@ export function JobGuidancePanel() {
         html.job-secondary-details-expanded .job-detail-shell > .job-photos-card,
         html.job-secondary-details-expanded .job-detail-shell > details.card {
           display: block;
+        }
+        @media (max-width: 640px) {
+          .job-detail-shell { min-width: 0; overflow-x: hidden; }
+          .job-detail-shell .page-head { gap: 10px !important; margin-bottom: 14px !important; }
+          .job-detail-shell .page-head h2 { line-height: 1.12; overflow-wrap: anywhere; }
+          .job-detail-shell .page-head p { overflow-wrap: anywhere; }
+          .job-detail-shell > section.card,
+          .job-detail-shell > section:not(.job-guidance-panel),
+          .job-detail-shell > details.card { margin-bottom: 14px !important; }
+          .job-detail-shell .button-row { gap: 8px !important; }
+          .job-detail-shell .button-row .btn,
+          .job-detail-shell button.btn { min-height: 48px; }
         }
       `}</style>
     </section>
