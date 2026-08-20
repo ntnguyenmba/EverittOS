@@ -14,7 +14,7 @@ import { formatCurrency } from '@/lib/finance-format';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 
-const RANGES = new Set<DashboardDateRange>(['month', 'quarter', 'year', 'last_year', 'all_time']);
+const RANGES = new Set<DashboardDateRange>(['today', 'week', 'month', 'year', 'all_time']);
 
 export async function GET(request: Request) {
   const ctx = await requireFinanceApiAccess();
