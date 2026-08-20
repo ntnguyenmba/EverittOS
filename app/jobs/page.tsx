@@ -25,15 +25,17 @@ import { supabase } from '@/lib/supabase';
 import { sortJobs, type JobListSortMode } from '@/lib/jobs-list-sort';
 import { normalizeJobStatus } from '@/lib/worker-assignment';
 
+const JOBS_PAGE_SIZE = 10;
+
 const copy = {
   en: {
-    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', address: 'Address', assignedTo: 'Assigned to', customerPay: 'Customer Pay', contractorPay: 'Contractor Pay', ownerProfit: 'Owner Profit', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Unassigned', sortBy: 'Sort', sortByAssigned: 'Assigned worker', filters: 'Filter jobs', moreFilters: 'More filters', worker: 'Worker', allWorkers: 'All workers', client: 'Client', allClients: 'All clients', property: 'Property', allProperties: 'All properties', month: 'Month', allMonths: 'All months', year: 'Year', allYears: 'All years', clearFilters: 'Clear filters'
+    newJob: 'New job', all: 'All', today: 'Today', active: 'Active', finished: 'Finished', needsWorker: 'Needs worker', filtered: 'Filtered', showAll: 'Show all', missingFinish: 'Finished jobs missing a finish date.', loading: 'Loading…', unableLoad: 'Unable to load jobs.', removeConfirm: 'Remove job "{title}"?', unableRemove: 'Unable to remove job.', noCustomer: 'No customer', maps: 'Maps', more: 'More', removing: 'Removing…', remove: 'Remove', bookAgain: 'Book again', creating: 'Creating…', date: 'Date', address: 'Address', assignedTo: 'Assigned to', customerPay: 'Customer Pay', contractorPay: 'Contractor Pay', ownerProfit: 'Owner Profit', status: 'Status', actions: 'Actions', openJob: 'Open job', unscheduled: 'Unscheduled', unassigned: 'Unassigned', sortBy: 'Sort', sortByAssigned: 'Assigned worker', filters: 'Filter jobs', moreFilters: 'More filters', worker: 'Worker', allWorkers: 'All workers', client: 'Client', allClients: 'All clients', property: 'Property', allProperties: 'All properties', month: 'Month', allMonths: 'All months', year: 'Year', allYears: 'All years', clearFilters: 'Clear filters', showMore: 'Show 10 more', showing: 'Showing {visible} of {total}'
   },
   es: {
-    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', address: 'Dirección', assignedTo: 'Asignado a', customerPay: 'Pago del cliente', contractorPay: 'Pago al contratista', ownerProfit: 'Ganancia del propietario', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Sin asignar', sortBy: 'Ordenar', sortByAssigned: 'Trabajador asignado', filters: 'Filtrar trabajos', moreFilters: 'Más filtros', worker: 'Trabajador', allWorkers: 'Todos los trabajadores', client: 'Cliente', allClients: 'Todos los clientes', property: 'Propiedad', allProperties: 'Todas las propiedades', month: 'Mes', allMonths: 'Todos los meses', year: 'Año', allYears: 'Todos los años', clearFilters: 'Borrar filtros'
+    newJob: 'Nuevo trabajo', all: 'Todos', today: 'Hoy', active: 'Activos', finished: 'Finalizados', needsWorker: 'Necesita trabajador', filtered: 'Filtrado', showAll: 'Mostrar todos', missingFinish: 'Trabajos finalizados sin fecha de finalización.', loading: 'Cargando…', unableLoad: 'No se pudieron cargar los trabajos.', removeConfirm: '¿Eliminar el trabajo "{title}"?', unableRemove: 'No se pudo eliminar el trabajo.', noCustomer: 'Sin cliente', maps: 'Mapas', more: 'Más', removing: 'Eliminando…', remove: 'Eliminar', bookAgain: 'Reservar de nuevo', creating: 'Creando…', date: 'Fecha', address: 'Dirección', assignedTo: 'Asignado a', customerPay: 'Pago del cliente', contractorPay: 'Pago al contratista', ownerProfit: 'Ganancia del propietario', status: 'Estado', actions: 'Acciones', openJob: 'Abrir trabajo', unscheduled: 'Sin programar', unassigned: 'Sin asignar', sortBy: 'Ordenar', sortByAssigned: 'Trabajador asignado', filters: 'Filtrar trabajos', moreFilters: 'Más filtros', worker: 'Trabajador', allWorkers: 'Todos los trabajadores', client: 'Cliente', allClients: 'Todos los clientes', property: 'Propiedad', allProperties: 'Todas las propiedades', month: 'Mes', allMonths: 'Todos los meses', year: 'Año', allYears: 'Todos los años', clearFilters: 'Borrar filtros', showMore: 'Mostrar 10 más', showing: 'Mostrando {visible} de {total}'
   },
   vi: {
-    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', address: 'Địa chỉ', assignedTo: 'Phân công', customerPay: 'Khách trả', contractorPay: 'Trả nhà thầu', ownerProfit: 'Lợi nhuận chủ', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Chưa phân công', sortBy: 'Sắp xếp', sortByAssigned: 'Nhân sự được giao', filters: 'Lọc công việc', moreFilters: 'Bộ lọc khác', worker: 'Nhân sự', allWorkers: 'Tất cả nhân sự', client: 'Khách hàng', allClients: 'Tất cả khách hàng', property: 'Địa điểm', allProperties: 'Tất cả địa điểm', month: 'Tháng', allMonths: 'Tất cả tháng', year: 'Năm', allYears: 'Tất cả năm', clearFilters: 'Xóa bộ lọc'
+    newJob: 'Công việc mới', all: 'Tất cả', today: 'Hôm nay', active: 'Đang hoạt động', finished: 'Đã hoàn thành', needsWorker: 'Cần nhân sự', filtered: 'Đã lọc', showAll: 'Hiển thị tất cả', missingFinish: 'Công việc đã hoàn thành nhưng thiếu ngày hoàn tất.', loading: 'Đang tải…', unableLoad: 'Không thể tải công việc.', removeConfirm: 'Xóa công việc "{title}"?', unableRemove: 'Không thể xóa công việc.', noCustomer: 'Không có khách hàng', maps: 'Bản đồ', more: 'Thêm', removing: 'Đang xóa…', remove: 'Xóa', bookAgain: 'Đặt lại', creating: 'Đang tạo…', date: 'Ngày', address: 'Địa chỉ', assignedTo: 'Phân công', customerPay: 'Khách trả', contractorPay: 'Trả nhà thầu', ownerProfit: 'Lợi nhuận chủ', status: 'Trạng thái', actions: 'Thao tác', openJob: 'Mở công việc', unscheduled: 'Chưa lên lịch', unassigned: 'Chưa phân công', sortBy: 'Sắp xếp', sortByAssigned: 'Nhân sự được giao', filters: 'Lọc công việc', moreFilters: 'Bộ lọc khác', worker: 'Nhân sự', allWorkers: 'Tất cả nhân sự', client: 'Khách hàng', allClients: 'Tất cả khách hàng', property: 'Địa điểm', allProperties: 'Tất cả địa điểm', month: 'Tháng', allMonths: 'Tất cả tháng', year: 'Năm', allYears: 'Tất cả năm', clearFilters: 'Xóa bộ lọc', showMore: 'Hiển thị thêm 10', showing: 'Đang hiển thị {visible} trên {total}'
   }
 } as const;
 
@@ -152,6 +154,7 @@ function JobsList() {
   const [propertyFilter, setPropertyFilter] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
   const [yearFilter, setYearFilter] = useState('');
+  const [visibleCount, setVisibleCount] = useState(JOBS_PAGE_SIZE);
   const loadingRef = useRef(false);
 
   const load = useCallback(async (silent = false) => {
@@ -251,6 +254,10 @@ function JobsList() {
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, [openMenuId]);
 
+  useEffect(() => {
+    setVisibleCount(JOBS_PAGE_SIZE);
+  }, [customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter, workerFilter, clientFilter, propertyFilter, monthFilter, yearFilter, sortMode]);
+
   async function removeJob(job: Job) {
     if (!window.confirm(c.removeConfirm.replace('{title}', job.title))) return;
     setRemovingId(job.id);
@@ -321,6 +328,8 @@ function JobsList() {
   }), [jobs, workerFilter, clientFilter, propertyFilter, monthFilter, yearFilter]);
 
   const rows = useMemo(() => sortJobs(filteredJobs, sortMode, workerNames, localeCode), [filteredJobs, sortMode, workerNames, localeCode]);
+  const visibleRows = rows.slice(0, visibleCount);
+  const hasMoreRows = visibleCount < rows.length;
   const hasLocalFilters = Boolean(workerFilter || clientFilter || propertyFilter || monthFilter || yearFilter);
   const filtered = Boolean(assignedToFilter || statusFilter || createdFromFilter || assignmentFilter || periodFilter || hasLocalFilters);
   const exportQuery = useMemo(() => ({ customer: customerFilter, status: statusFilter, period: periodFilter, filter: assignmentFilter, assigned_to: assignedToFilter, from: createdFromFilter }), [customerFilter, statusFilter, periodFilter, assignmentFilter, assignedToFilter, createdFromFilter]);
@@ -377,33 +386,39 @@ function JobsList() {
         {loading ? <p className="loading-state" role="status">{c.loading}</p> : null}
         {!loading && rows.length === 0 ? <LocalizedEmptyState emptyKey="jobs" /> : null}
         {!loading && rows.length > 0 ? (
-          <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
-            {rows.map((job) => {
-              const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
-              const needsWorker = jobNeedsWorker(job);
-              const assignment = assignedName || displayPersonName(null, job.assigned_email) || (needsWorker ? c.unassigned : '—');
-              const locationLabel = jobListAddress(job) || c.unscheduled;
-              const showInvoice = canManageFinancials && canCreateInvoiceForJob(job) && String(job.billing_status || '') !== 'paid' && String(job.billing_status || '') !== 'receipt_sent';
-              const menuOpen = openMenuId === job.id;
-              const ownerMoney = isOwner ? ownerFinancials[job.id] : undefined;
-              return (
-                <tr key={job.id} className={`jobs-operations-row open-in-new-tab-card${isOwner ? ' jobs-owner-finance-row' : ''}`}>
-                  <td data-label={c.date} className="jobs-col-date"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${locationLabel} in a new tab`}><span className="record-card-overlay-label">Open {locationLabel} in a new tab</span></Link><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
-                  <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{isOwner && job.customer_name ? <div className="jobs-secondary">{c.client}: {job.customer_name}</div> : null}{canManageFinancials && !isOwner ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
-                  <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
-                  {isOwner ? (
-                    <>
-                      <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay"><span className="jobs-money-label">{c.customerPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</span></td>
-                      <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay"><span className="jobs-money-label">{c.contractorPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</span></td>
-                      <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit"><span className="jobs-money-label">{c.ownerProfit}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</span></td>
-                    </>
-                  ) : null}
-                  <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
-                  <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
-                </tr>
-              );
-            })}
-          </tbody></table></div></div>
+          <>
+            <div className="card jobs-table-card"><div className="jobs-mobile-table-wrap"><table className={`jobs-operations-table jobs-mobile-table${isOwner ? ' jobs-operations-table-owner-finance' : ''}`}><thead><tr>{(isOwner ? [c.date, c.address, c.assignedTo, c.customerPay, c.contractorPay, c.ownerProfit, c.status, c.actions] : [c.date, c.address, c.assignedTo, c.status, c.actions]).map((label) => <th key={label}>{label}</th>)}</tr></thead><tbody>
+              {visibleRows.map((job) => {
+                const assignedName = job.assigned_to ? workerNames[job.assigned_to] : null;
+                const needsWorker = jobNeedsWorker(job);
+                const assignment = assignedName || displayPersonName(null, job.assigned_email) || (needsWorker ? c.unassigned : '—');
+                const locationLabel = jobListAddress(job) || c.unscheduled;
+                const showInvoice = canManageFinancials && canCreateInvoiceForJob(job) && String(job.billing_status || '') !== 'paid' && String(job.billing_status || '') !== 'receipt_sent';
+                const menuOpen = openMenuId === job.id;
+                const ownerMoney = isOwner ? ownerFinancials[job.id] : undefined;
+                return (
+                  <tr key={job.id} className={`jobs-operations-row open-in-new-tab-card${isOwner ? ' jobs-owner-finance-row' : ''}`}>
+                    <td data-label={c.date} className="jobs-col-date"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${locationLabel} in a new tab`}><span className="record-card-overlay-label">Open {locationLabel} in a new tab</span></Link><strong>{formatDate(job, localeCode, c.unscheduled)}</strong><span className="jobs-row-time">{formatTime(job, localeCode)}</span></td>
+                    <td data-label={c.address} className="jobs-col-property"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="jobs-property-link">{locationLabel}</Link>{isOwner && job.customer_name ? <div className="jobs-secondary">{c.client}: {job.customer_name}</div> : null}{canManageFinancials && !isOwner ? <div className="jobs-row-amount">{job.revenue_amount != null ? formatMoneyUsd(job.revenue_amount, locale) : '—'}</div> : null}</td>
+                    <td data-label={c.assignedTo} className="jobs-col-assigned"><span className={needsWorker ? 'jobs-needs-worker' : undefined}>{assignment}</span></td>
+                    {isOwner ? (
+                      <>
+                        <td data-label={c.customerPay} className="jobs-col-money jobs-col-customer-pay"><span className="jobs-money-label">{c.customerPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.customerPay, locale)}</span></td>
+                        <td data-label={c.contractorPay} className="jobs-col-money jobs-col-contractor-pay"><span className="jobs-money-label">{c.contractorPay}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.contractorPay, locale)}</span></td>
+                        <td data-label={c.ownerProfit} className="jobs-col-money jobs-col-owner-profit"><span className="jobs-money-label">{c.ownerProfit}&nbsp;</span><span className="jobs-money-value">{formatOwnerJobMoney(ownerMoney?.ownerProfit, locale)}</span></td>
+                      </>
+                    ) : null}
+                    <td data-label={c.status} className="jobs-col-status"><StatusPill status={job.status} /></td>
+                    <td data-label={c.actions} className="jobs-col-actions" onClick={(event) => event.stopPropagation()}><div className="jobs-more-menu" data-jobs-menu={job.id}><button type="button" className="jobs-menu-trigger" aria-label={c.more} aria-haspopup="menu" aria-expanded={menuOpen} onClick={(event) => { event.stopPropagation(); setOpenMenuId(menuOpen ? '' : job.id); }}>•••</button>{menuOpen ? <div className="jobs-more-panel" role="menu"><Link href={`/jobs/${job.id}`} target="_blank" rel="noopener noreferrer" className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{c.openJob}</Link>{job.address ? <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address)}`} className="jobs-menu-item" role="menuitem" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>{c.maps}</a> : null}{managerView ? <button type="button" className="jobs-menu-item" role="menuitem" disabled={duplicatingId === job.id} onClick={(event) => { event.stopPropagation(); void bookAgain(job); }}>{duplicatingId === job.id ? c.creating : c.bookAgain}</button> : null}{showInvoice ? <Link href={invoiceHref(job)} className="jobs-menu-item" role="menuitem" onClick={(event) => event.stopPropagation()}>{billingCopy.createInvoice}</Link> : null}{managerView ? <button type="button" className="jobs-menu-item jobs-menu-danger" role="menuitem" disabled={removingId === job.id} onClick={(event) => { event.stopPropagation(); void removeJob(job); }}>{removingId === job.id ? c.removing : c.remove}</button> : null}</div> : null}</div></td>
+                  </tr>
+                );
+              })}
+            </tbody></table></div></div>
+            <div className="jobs-list-more" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginTop: 14 }}>
+              <span className="muted">{c.showing.replace('{visible}', String(Math.min(visibleCount, rows.length))).replace('{total}', String(rows.length))}</span>
+              {hasMoreRows ? <button type="button" className="btn btn-secondary" onClick={() => setVisibleCount((count) => count + JOBS_PAGE_SIZE)}>{c.showMore}</button> : null}
+            </div>
+          </>
         ) : null}
       </div>
     </AppShell>
