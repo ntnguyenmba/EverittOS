@@ -5,10 +5,15 @@ import {
 } from '@/lib/dashboard-metric-details';
 import {
   buildJobOperationalDateMap,
+  calculateOutstandingBreakdown,
   inRange,
   num,
   rangeBounds,
-  type DashboardDateRange
+  type DashboardDateRange,
+  type InvoiceMetricRow,
+  type InvoicePaymentRow,
+  type JobPaymentMetricRow,
+  type JobRevenueRow
 } from '@/lib/dashboard-metrics';
 import { formatCurrency } from '@/lib/finance-format';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
@@ -97,6 +102,106 @@ export async function GET(request: Request) {
             href: row.job_id ? `/jobs/${row.job_id}` : '/contractor-pay',
             badge: String(row.payment_status || 'unpaid')
           }))
+        }
+      ];
+    }
+
+    // Still Owed must show only balances attributed to the selected dashboard
+    // period. The old detail page showed lifetime rows even when the card was
+    // filtered to Today, This Week, This Month, or This Year.
+    if (metricParam === 'outstanding') {
+      const [invoicesRes, jobsRes, jobPaymentsRes, invoicePaymentsRes] = await Promise.all([
+        ctx.supabase
+          .from('invoices')
+          .select('id, job_id, amount, amount_paid, invoice_date, created_at, due_date, payment_status, status')
+          .eq('organization_id', ctx.organizationId),
+        ctx.supabase
+          .from('jobs')
+          .select('id, title, customer_name, revenue_amount, status, completed_at, start_date, scheduled_start, created_at')
+          .eq('organization_id', ctx.organizationId),
+        ctx.supabase
+          .from('job_payments')
+          .select('amount, paid_at, job_id')
+          .eq('organization_id', ctx.organizationId),
+        ctx.supabase
+          .from('invoice_payments')
+          .select('amount, paid_at, invoice_id')
+          .eq('organization_id', ctx.organizationId)
+      ]);
+
+      const invoices = (invoicesRes.data || []) as InvoiceMetricRow[];
+      const jobs = (jobsRes.data || []) as JobRevenueRow[];
+      const jobPayments = (jobPaymentsRes.data || []) as JobPaymentMetricRow[];
+      const invoicePayments = invoicePaymentsRes.error
+        ? []
+        : ((invoicePaymentsRes.data || []) as InvoicePaymentRow[]);
+      const jobLookup = new Map(
+        (jobsRes.data || []).map((job) => [String(job.id), { title: job.title, customer_name: job.customer_name }])
+      );
+      const jobDates = buildJobOperationalDateMap(jobsRes.data || []);
+      const invoiceMap = new Map(invoices.map((invoice) => [String(invoice.id || ''), invoice]));
+      const { start, end } = rangeBounds(range);
+      const breakdown = calculateOutstandingBreakdown({
+        invoices,
+        jobs,
+        jobPayments,
+        invoicePayments,
+        jobLookup
+      });
+
+      const selectedRows = breakdown.rows.filter((row) => {
+        if (range === 'all_time') return true;
+        if (row.sourceType === 'job') {
+          const attributed = jobDates.get(row.id);
+          return Boolean(attributed && inRange(attributed, start, end));
+        }
+
+        const invoice = invoiceMap.get(row.id);
+        if (!invoice) return false;
+        const jobId = String(invoice.job_id || '');
+        const attributed = (jobId && jobDates.get(jobId)) || String(invoice.invoice_date || invoice.created_at || '').slice(0, 10);
+        return inRange(attributed, start, end);
+      });
+
+      const invoiceRows = selectedRows.filter((row) => row.sourceType === 'invoice');
+      const jobRows = selectedRows.filter((row) => row.sourceType === 'job');
+      const invoiceTotal = Number(invoiceRows.reduce((sum, row) => sum + row.amountOwed, 0).toFixed(2));
+      const jobTotal = Number(jobRows.reduce((sum, row) => sum + row.amountOwed, 0).toFixed(2));
+      const total = Number((invoiceTotal + jobTotal).toFixed(2));
+      const toDetailRow = (row: (typeof selectedRows)[number]) => ({
+        id: row.id,
+        title: row.customerName ? `${row.customerName} · ${row.title}` : row.title,
+        subtitle:
+          row.sourceType === 'invoice'
+            ? `Invoice · Invoiced ${formatCurrency(row.expectedOrInvoiced)} · Paid ${formatCurrency(row.amountPaid)} · Owed ${formatCurrency(row.amountOwed)}`
+            : `No invoice · Expected ${formatCurrency(row.expectedOrInvoiced)} · Paid ${formatCurrency(row.amountPaid)} · Owed ${formatCurrency(row.amountOwed)}`,
+        amount: row.amountOwed,
+        amountLabel: formatCurrency(row.amountOwed),
+        href: row.href,
+        badge: row.sourceType === 'invoice' ? 'Invoice' : 'No invoice'
+      });
+
+      details.total = total;
+      details.formula =
+        range === 'all_time'
+          ? 'Still owed = all current unpaid customer balances.'
+          : 'Still owed = current unpaid balances tied to work in the selected period.';
+      details.sections = [
+        {
+          id: 'unpaid-invoices',
+          title: 'Unpaid invoices',
+          formula: 'Unpaid invoice balances tied to the selected period',
+          total: invoiceTotal,
+          totalLabel: formatCurrency(invoiceTotal),
+          rows: invoiceRows.map(toDetailRow)
+        },
+        {
+          id: 'uninvoiced-jobs',
+          title: 'Uninvoiced job balances',
+          formula: 'Unpaid expected job balances tied to the selected period',
+          total: jobTotal,
+          totalLabel: formatCurrency(jobTotal),
+          rows: jobRows.map(toDetailRow)
         }
       ];
     }
