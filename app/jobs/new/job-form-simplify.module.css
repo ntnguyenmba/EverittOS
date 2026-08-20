@@ -1,7 +1,14 @@
+.formWrap {
+  width: 100%;
+  min-width: 0;
+}
+
 .formWrap :global(.unified-job-form) {
   display: flex;
   flex-direction: column;
   gap: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .formWrap :global(.unified-job-form) > h3,
@@ -13,6 +20,7 @@
    Customer -> property/address -> job + client pay -> schedule -> worker + pay -> optional details. */
 .formWrap :global(.unified-job-form > *) {
   order: 10;
+  min-width: 0;
 }
 
 .formWrap :global(.unified-job-form > .job-create-section:has(.job-customer-mode)) {
@@ -59,8 +67,7 @@
   content: none;
 }
 
-/* One-time jobs can be created before schedule, worker, or worker pay are known.
-   Make that clear instead of making those sections feel required. */
+/* One-time jobs can be created before schedule, worker, or worker pay are known. */
 .formWrap :global(.unified-job-form > .job-create-section:has(#recurrence-starts-on) > h4::after),
 .formWrap :global(.unified-job-form > .job-create-section:has(#assigned-to) > h4::after) {
   display: inline-flex;
@@ -84,6 +91,7 @@
 }
 
 .formWrap :global(.job-create-section) {
+  min-width: 0;
   padding-block: 1rem;
 }
 
@@ -93,6 +101,9 @@
 
 .formWrap :global(.job-create-section .input) {
   min-height: 46px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .formWrap :global(.job-customer-mode) {
@@ -142,10 +153,18 @@
   cursor: pointer;
 }
 
-/* Keep the save action easy to reach on phones without hiding the form. */
 @media (max-width: 720px) {
+  .formWrap :global(.card) {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
   .formWrap :global(.job-create-section) {
-    padding-block: 0.85rem;
+    padding-block: 0.8rem;
+  }
+
+  .formWrap :global(.job-create-section:first-of-type) {
+    padding-top: 0.25rem;
   }
 
   .formWrap :global(.job-customer-mode) {
@@ -164,13 +183,47 @@
     min-height: 48px;
   }
 
-  .formWrap :global(.job-create-section .grid-2) {
+  .formWrap :global(.job-create-section .grid-2),
+  .formWrap :global(.financials-summary-grid) {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .formWrap :global(.segmented-control) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .formWrap :global(.segmented-control .btn) {
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+  }
+
+  .formWrap :global(.client-summary-card) {
+    padding: 12px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .formWrap :global(.unified-job-form > details) {
+    margin-top: 10px !important;
   }
 
   .formWrap :global(.unified-job-form button[type='submit']) {
     min-height: 52px;
     width: 100%;
     margin-top: 14px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .formWrap :global(.card) {
+    padding: 14px !important;
+  }
+
+  .formWrap :global(.segmented-control) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
