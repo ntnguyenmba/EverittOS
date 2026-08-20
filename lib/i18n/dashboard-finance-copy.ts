@@ -3,7 +3,7 @@ import type { DashboardDateRange } from '@/lib/dashboard-metrics';
 import type { DashboardDetailMetric } from '@/lib/dashboard-metric-details';
 
 export type DashboardFinanceCopy = {
-  ranges: Partial<Record<DashboardDateRange, string>>;
+  ranges: Record<DashboardDateRange, string>;
   metricTitles: Record<DashboardDetailMetric, string>;
   formulas: Record<DashboardDetailMetric, string>;
   details: { titleFallback: string; subtitle: string; exactTotal: string; empty: string; tryAgain: string; unknownMetric: string; loadError: string; loading: string };
@@ -12,11 +12,11 @@ export type DashboardFinanceCopy = {
   contractorPayPage: Record<string, string>;
 };
 
-const ranges = {
+const ranges: Record<Locale, Record<DashboardDateRange, string>> = {
   en: { today: 'Today', week: 'This week', month: 'This month', quarter: 'This quarter', ytd: 'YTD', year: 'This year', last_year: 'Last year', all_time: 'All time' },
   es: { today: 'Hoy', week: 'Esta semana', month: 'Este mes', quarter: 'Este trimestre', ytd: 'Año hasta hoy', year: 'Este año', last_year: 'El año pasado', all_time: 'Todo el tiempo' },
   vi: { today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', quarter: 'Quý này', ytd: 'Từ đầu năm đến nay', year: 'Năm nay', last_year: 'Năm trước', all_time: 'Toàn thời gian' }
-} satisfies Record<Locale, Partial<Record<DashboardDateRange, string>>>;
+};
 
 const metricTitles: Record<DashboardDetailMetric, string> = { collected: 'Collected', invoiced: 'Invoiced', outstanding: 'Outstanding', late: 'Late payments', 'unpaid-invoices': 'Unpaid invoices', 'net-cash': 'Cash after paid costs', 'estimated-profit': 'Expected profit', 'contractor-pay': 'Worker cost', 'contractor-pay-owed': 'Worker pay owed', 'contractor-pay-pending': 'Worker pay pending', expenses: 'Expenses', 'completed-jobs': 'Completed jobs', jobs: 'Jobs', 'active-customers': 'Active customers' };
 const formulas: Record<DashboardDetailMetric, string> = { collected: 'Money received = invoice payments + direct job payments in the selected period. The same payment is never counted twice.', invoiced: 'Invoiced = collectible invoice totals created in the selected period.', outstanding: 'Customers owe = remaining unpaid invoice balances plus unpaid direct jobs without invoices.', late: 'Late = unpaid invoice balances past their due date.', 'unpaid-invoices': 'Unpaid invoices = invoices with a remaining balance.', 'net-cash': 'Money kept = money received minus paid workers minus business expenses.', 'estimated-profit': 'Profit = job revenue minus worker costs minus business expenses. Job revenue = money received + customers owe.', 'contractor-pay': 'Worker costs = labor totals for jobs in the selected period.', 'contractor-pay-owed': 'Worker pay owed = labor still marked unpaid.', 'contractor-pay-pending': 'Worker pay pending = labor marked pending.', expenses: 'Business expenses = expense amounts with dates in the selected period.', 'completed-jobs': 'Completed jobs counted by completion date or operational date fallback.', jobs: 'Jobs counted by operational work date in the selected period.', 'active-customers': 'Active customers = current customer records.' };
