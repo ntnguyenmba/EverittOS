@@ -1,5 +1,7 @@
 'use client';
 
+import { JobGuidancePanel } from '@/components/job-guidance-panel';
+
 type AppPageContentProps = {
   children: React.ReactNode;
   className?: string;
@@ -20,6 +22,7 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
         marginRight: 0
       }}
     >
+      <JobGuidancePanel />
       {children}
     </div>
   );
