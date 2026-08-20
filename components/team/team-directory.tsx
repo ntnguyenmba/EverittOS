@@ -209,6 +209,7 @@ export function TeamDirectory() {
       }
 
       const summaries: Record<string, JobSummary> = {};
+      const now = Date.now();
       for (const id of ids) {
         const summary = emptySummary();
         for (const jobId of jobIdsByUserId.get(id) || []) {
@@ -218,8 +219,15 @@ export function TeamDirectory() {
           if (status === 'completed') summary.completed += 1;
           else if (status === 'active' || status === 'unknown') summary.active += 1;
 
-          const value = job.completed_at || job.scheduled_start || job.start_date;
-          if (value && (!summary.lastJobAt || value > summary.lastJobAt)) summary.lastJobAt = value;
+          const candidates = [job.completed_at, job.scheduled_start, job.start_date]
+            .filter((value): value is string => Boolean(value))
+            .map((value) => ({ value, time: new Date(value).getTime() }))
+            .filter(({ time }) => Number.isFinite(time) && time <= now)
+            .sort((a, b) => b.time - a.time);
+          const latestPastJob = candidates[0]?.value || null;
+          if (latestPastJob && (!summary.lastJobAt || new Date(latestPastJob).getTime() > new Date(summary.lastJobAt).getTime())) {
+            summary.lastJobAt = latestPastJob;
+          }
         }
         summaries[id] = summary;
       }
