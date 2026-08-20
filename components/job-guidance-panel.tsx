@@ -61,13 +61,15 @@ const copy = {
     markComplete: 'Mark job complete',
     complete: 'Job is complete',
     review: 'Review job',
+    moreDetails: 'More job details',
+    fewerDetails: 'Show fewer details',
     hint: 'Suggested from the current job status. You can still jump to any section below.'
   },
   es: {
-    nextAction: 'Siguiente acción', clientPay: 'Pago del cliente', worker: 'Trabajador', workerPay: 'Pago al trabajador', schedule: 'Horario', invoice: 'Factura', payment: 'Pago', set: 'Listo', missing: 'Falta', assigned: 'Asignado', scheduled: 'Programado', created: 'Creada', notCreated: 'No creada', paid: 'Pagado', unpaid: 'Pendiente', partial: 'Parcial', setClientPay: 'Agregar pago del cliente', assignWorker: 'Asignar trabajador', setWorkerPay: 'Agregar pago del trabajador', setSchedule: 'Programar trabajo', startJob: 'Iniciar trabajo', createInvoice: 'Crear factura', recordPayment: 'Registrar pago', markComplete: 'Marcar trabajo completo', complete: 'Trabajo completo', review: 'Revisar trabajo', hint: 'Sugerencia basada en el estado actual. Aún puedes ir a cualquier sección.'
+    nextAction: 'Siguiente acción', clientPay: 'Pago del cliente', worker: 'Trabajador', workerPay: 'Pago al trabajador', schedule: 'Horario', invoice: 'Factura', payment: 'Pago', set: 'Listo', missing: 'Falta', assigned: 'Asignado', scheduled: 'Programado', created: 'Creada', notCreated: 'No creada', paid: 'Pagado', unpaid: 'Pendiente', partial: 'Parcial', setClientPay: 'Agregar pago del cliente', assignWorker: 'Asignar trabajador', setWorkerPay: 'Agregar pago del trabajador', setSchedule: 'Programar trabajo', startJob: 'Iniciar trabajo', createInvoice: 'Crear factura', recordPayment: 'Registrar pago', markComplete: 'Marcar trabajo completo', complete: 'Trabajo completo', review: 'Revisar trabajo', moreDetails: 'Más detalles del trabajo', fewerDetails: 'Mostrar menos detalles', hint: 'Sugerencia basada en el estado actual. Aún puedes ir a cualquier sección.'
   },
   vi: {
-    nextAction: 'Việc tiếp theo', clientPay: 'Khách trả', worker: 'Nhân sự', workerPay: 'Trả nhân sự', schedule: 'Lịch', invoice: 'Hóa đơn', payment: 'Thanh toán', set: 'Đã đặt', missing: 'Còn thiếu', assigned: 'Đã giao', scheduled: 'Đã lên lịch', created: 'Đã tạo', notCreated: 'Chưa tạo', paid: 'Đã trả', unpaid: 'Chưa trả', partial: 'Một phần', setClientPay: 'Nhập tiền khách trả', assignWorker: 'Giao nhân sự', setWorkerPay: 'Nhập tiền trả nhân sự', setSchedule: 'Đặt lịch', startJob: 'Bắt đầu công việc', createInvoice: 'Tạo hóa đơn', recordPayment: 'Ghi nhận thanh toán', markComplete: 'Đánh dấu hoàn tất', complete: 'Công việc đã hoàn tất', review: 'Xem công việc', hint: 'Gợi ý dựa trên trạng thái hiện tại. Bạn vẫn có thể mở bất kỳ mục nào bên dưới.'
+    nextAction: 'Việc tiếp theo', clientPay: 'Khách trả', worker: 'Nhân sự', workerPay: 'Trả nhân sự', schedule: 'Lịch', invoice: 'Hóa đơn', payment: 'Thanh toán', set: 'Đã đặt', missing: 'Còn thiếu', assigned: 'Đã giao', scheduled: 'Đã lên lịch', created: 'Đã tạo', notCreated: 'Chưa tạo', paid: 'Đã trả', unpaid: 'Chưa trả', partial: 'Một phần', setClientPay: 'Nhập tiền khách trả', assignWorker: 'Giao nhân sự', setWorkerPay: 'Nhập tiền trả nhân sự', setSchedule: 'Đặt lịch', startJob: 'Bắt đầu công việc', createInvoice: 'Tạo hóa đơn', recordPayment: 'Ghi nhận thanh toán', markComplete: 'Đánh dấu hoàn tất', complete: 'Công việc đã hoàn tất', review: 'Xem công việc', moreDetails: 'Xem thêm chi tiết', fewerDetails: 'Thu gọn chi tiết', hint: 'Gợi ý dựa trên trạng thái hiện tại. Bạn vẫn có thể mở bất kỳ mục nào bên dưới.'
   }
 } as const;
 
@@ -98,6 +100,17 @@ export function JobGuidancePanel() {
   const c = copy[locale];
   const jobId = useMemo(() => isJobDetailPath(pathname), [pathname]);
   const [state, setState] = useState<GuidanceState | null>(null);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+
+  useEffect(() => {
+    setShowMoreDetails(false);
+  }, [jobId]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    document.documentElement.classList.toggle('job-secondary-details-expanded', showMoreDetails);
+    return () => document.documentElement.classList.remove('job-secondary-details-expanded');
+  }, [jobId, showMoreDetails]);
 
   useEffect(() => {
     if (!jobId) {
@@ -206,6 +219,9 @@ export function JobGuidancePanel() {
           </button>
         ))}
       </div>
+      <button type="button" className="job-guidance-more" aria-expanded={showMoreDetails} onClick={() => setShowMoreDetails((value) => !value)}>
+        {showMoreDetails ? c.fewerDetails : c.moreDetails}
+      </button>
       <style jsx>{`
         .job-guidance-panel { margin: 0 0 18px; display: grid; gap: 10px; }
         .job-guidance-next { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; border: 1px solid rgba(37,54,74,.14); border-radius: 16px; background: rgba(255,255,255,.96); box-shadow: 0 8px 24px rgba(37,54,74,.07); }
@@ -219,8 +235,19 @@ export function JobGuidancePanel() {
         .job-guidance-status button span { display: block; color: #66727c; font-size: 12px; margin-bottom: 4px; }
         .job-guidance-status button strong { display: block; font-size: 14px; line-height: 1.2; }
         .job-guidance-status button.is-missing { border-color: rgba(158,83,58,.28); background: rgba(255,249,246,.97); }
+        .job-guidance-more { min-height: 42px; width: fit-content; padding: 0 4px; border: 0; background: transparent; color: #3f586a; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
         @media (max-width: 900px) { .job-guidance-status { grid-template-columns: repeat(3, minmax(0,1fr)); } }
-        @media (max-width: 640px) { .job-guidance-next { align-items: stretch; flex-direction: column; padding: 16px; } .job-guidance-next .btn { width: 100%; } .job-guidance-status { grid-template-columns: repeat(2, minmax(0,1fr)); } .job-guidance-status button { min-height: 60px; } }
+        @media (max-width: 640px) { .job-guidance-next { align-items: stretch; flex-direction: column; padding: 16px; } .job-guidance-next .btn { width: 100%; } .job-guidance-status { grid-template-columns: repeat(2, minmax(0,1fr)); } .job-guidance-status button { min-height: 60px; } .job-guidance-more { width: 100%; text-align: center; } }
+      `}</style>
+      <style jsx global>{`
+        html:not(.job-secondary-details-expanded) .job-detail-shell > .job-photos-card,
+        html:not(.job-secondary-details-expanded) .job-detail-shell > details.card {
+          display: none !important;
+        }
+        html.job-secondary-details-expanded .job-detail-shell > .job-photos-card,
+        html.job-secondary-details-expanded .job-detail-shell > details.card {
+          display: block;
+        }
       `}</style>
     </section>
   );
