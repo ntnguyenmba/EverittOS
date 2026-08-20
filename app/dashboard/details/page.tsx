@@ -15,7 +15,7 @@ import { formatCurrency } from '@/lib/finance-format';
 import { getDashboardFinanceCopy } from '@/lib/i18n/dashboard-finance-copy';
 import { getExportCopy } from '@/lib/i18n/export-copy';
 
-const RANGE_IDS: DashboardDateRange[] = ['month', 'quarter', 'year', 'last_year', 'all_time'];
+const RANGE_IDS: DashboardDateRange[] = ['today', 'week', 'month', 'year', 'all_time'];
 
 function formatTotal(details: DashboardDetailResult, metric: string) {
   if (metric === 'jobs' || metric === 'completed-jobs' || metric === 'active-customers') {
