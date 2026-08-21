@@ -46,40 +46,31 @@ alter table public.pricing_helper_templates enable row level security;
 drop policy if exists "pricing settings org read" on public.pricing_helper_settings;
 create policy "pricing settings org read" on public.pricing_helper_settings
 for select to authenticated
-using (public.is_org_member(organization_id));
+using (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_settings.organization_id and m.user_id=(select auth.uid()) and m.active=true));
 
 drop policy if exists "pricing settings org manage" on public.pricing_helper_settings;
 create policy "pricing settings org manage" on public.pricing_helper_settings
 for all to authenticated
-using (public.can_manage_organization(organization_id))
-with check (public.can_manage_organization(organization_id));
+using (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_settings.organization_id and m.user_id=(select auth.uid()) and m.active=true and m.role in ('owner','admin','manager')))
+with check (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_settings.organization_id and m.user_id=(select auth.uid()) and m.active=true and m.role in ('owner','admin','manager')));
 
 drop policy if exists "pricing templates org read" on public.pricing_helper_templates;
 create policy "pricing templates org read" on public.pricing_helper_templates
 for select to authenticated
-using (public.is_org_member(organization_id));
+using (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_templates.organization_id and m.user_id=(select auth.uid()) and m.active=true));
 
 drop policy if exists "pricing templates org manage" on public.pricing_helper_templates;
 create policy "pricing templates org manage" on public.pricing_helper_templates
 for all to authenticated
-using (public.can_manage_organization(organization_id))
-with check (public.can_manage_organization(organization_id));
+using (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_templates.organization_id and m.user_id=(select auth.uid()) and m.active=true and m.role in ('owner','admin','manager')))
+with check (exists (select 1 from public.organization_members m where m.organization_id=pricing_helper_templates.organization_id and m.user_id=(select auth.uid()) and m.active=true and m.role in ('owner','admin','manager')));
 
 grant select, insert, update, delete on public.pricing_helper_settings to authenticated;
 grant select, insert, update, delete on public.pricing_helper_templates to authenticated;
 
 create or replace function public.touch_pricing_helper_updated_at()
-returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
+returns trigger language plpgsql as $$ begin new.updated_at=now(); return new; end; $$;
 drop trigger if exists pricing_helper_settings_touch on public.pricing_helper_settings;
-create trigger pricing_helper_settings_touch before update on public.pricing_helper_settings
-for each row execute function public.touch_pricing_helper_updated_at();
-
+create trigger pricing_helper_settings_touch before update on public.pricing_helper_settings for each row execute function public.touch_pricing_helper_updated_at();
 drop trigger if exists pricing_helper_templates_touch on public.pricing_helper_templates;
-create trigger pricing_helper_templates_touch before update on public.pricing_helper_templates
-for each row execute function public.touch_pricing_helper_updated_at();
+create trigger pricing_helper_templates_touch before update on public.pricing_helper_templates for each row execute function public.touch_pricing_helper_updated_at();
