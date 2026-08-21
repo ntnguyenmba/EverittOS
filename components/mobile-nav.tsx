@@ -97,20 +97,39 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
     </div>
   ) : null;
 
+  const nativeControls = (
+    <div className="native-mobile-controls" aria-label={t('ux.mobileNavLabel')}>
+      <div className="native-mobile-language">
+        <LanguageSwitcher id="native-mobile-language" variant="compact" />
+      </div>
+      <button
+        type="button"
+        className="mobile-nav-menu-btn native-menu-fab"
+        aria-label={open ? t('common.close') : 'Open menu'}
+        aria-expanded={open}
+        aria-controls="mobile-nav-panel"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="mobile-nav-menu-icon" aria-hidden="true" />
+        <span className="sr-only">{open ? t('common.close') : 'Open menu'}</span>
+      </button>
+    </div>
+  );
+
   return (
     <header className={`mobile-nav${isFocusedPortal ? ' mobile-nav-focused-portal' : ''}${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
       <div className="mobile-nav-bar">
         <BrandLogo href={homeHref} size={28} showName className="mobile-nav-brand-logo" />
         <div className="mobile-nav-bar-actions">
           <LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" />
-          <button type="button" className="mobile-nav-menu-btn native-menu-fab" aria-label={open ? t('common.close') : 'Open menu'} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}>
+          <button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : 'Open menu'} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}>
             <span className="mobile-nav-menu-icon" aria-hidden="true" />
             <span className="sr-only">{open ? t('common.close') : 'Open menu'}</span>
           </button>
         </div>
       </div>
 
-      {mounted && drawer ? createPortal(drawer, document.body) : null}
+      {mounted ? createPortal(<>{nativeControls}{drawer}</>, document.body) : null}
 
       <style>{`
         .mobile-nav {
@@ -131,7 +150,9 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
         .mobile-nav-brand-logo { color: #173044; }
         .mobile-nav-bar-actions { display: flex; align-items: center; gap: 10px; }
         .mobile-nav-language select,
-        .mobile-nav-language button {
+        .mobile-nav-language button,
+        .native-mobile-language select,
+        .native-mobile-language button {
           min-height: 44px;
           border: 1px solid #afbdc8;
           border-radius: 10px;
@@ -153,6 +174,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
           cursor: pointer;
         }
         .mobile-nav-menu-btn:hover { background: #1b3142; }
+        .native-mobile-controls { display: none; }
         .mobile-nav-overlay-portal {
           position: fixed;
           inset: 0;
