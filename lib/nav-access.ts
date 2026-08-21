@@ -4,60 +4,27 @@ import { meetsMinimumPlan, minimumPlanForPath, planRank } from '@/lib/plan-acces
 import { canSeeOrgWideData, hasPermission } from '@/lib/permissions';
 import type { AppNavHref } from '@/lib/nav-links';
 import { APP_NAV_LINKS } from '@/lib/nav-links';
-import {
-  CLIENT_PORTAL_HOME,
-  CLIENT_PORTAL_SETTINGS,
-  CONTRACTOR_PORTAL_HOME,
-  CONTRACTOR_PORTAL_SETTINGS,
-  isPortalPersonalSettingsPath
-} from '@/lib/portal-access';
-import {
-  canManageBilling,
-  canManageOrganizationSettings,
-  canViewTeam,
-  isClientRole,
-  isContractorRole,
-  isManagerRole,
-  type UserRole
-} from '@/lib/roles';
+import { CLIENT_PORTAL_HOME, CLIENT_PORTAL_SETTINGS, CONTRACTOR_PORTAL_HOME, CONTRACTOR_PORTAL_SETTINGS, isPortalPersonalSettingsPath } from '@/lib/portal-access';
+import { canManageBilling, canManageOrganizationSettings, canViewTeam, isClientRole, isContractorRole, isManagerRole, type UserRole } from '@/lib/roles';
 
 export type SettingsNavLink = { href: string; label: string };
-
 export const SETTINGS_NAV_LINKS: SettingsNavLink[] = [
-  { href: '/settings/account', label: 'Profile' },
-  { href: '/settings', label: 'Organization' },
-  { href: '/settings/notifications', label: 'Notifications' },
-  { href: '/settings/branding', label: 'Appearance' },
-  { href: '/settings/privacy', label: 'Privacy' },
-  { href: '/terms', label: 'Terms' },
-  { href: '/settings/privacy#delete-account', label: 'Delete Account' },
-  { href: '/settings/billing', label: 'Subscription' }
+  { href: '/settings/account', label: 'Profile' }, { href: '/settings', label: 'Organization' }, { href: '/settings/notifications', label: 'Notifications' }, { href: '/settings/branding', label: 'Appearance' }, { href: '/settings/privacy', label: 'Privacy' }, { href: '/terms', label: 'Terms' }, { href: '/settings/privacy#delete-account', label: 'Delete Account' }, { href: '/settings/billing', label: 'Subscription' }
 ];
-
-const PORTAL_SETTINGS_LINKS: SettingsNavLink[] = [
-  { href: '/settings/account', label: 'Profile' },
-  { href: '/settings/notifications', label: 'Notifications' },
-  { href: '/settings/privacy', label: 'Privacy' }
-];
-
+const PORTAL_SETTINGS_LINKS: SettingsNavLink[] = [{ href: '/settings/account', label: 'Profile' }, { href: '/settings/notifications', label: 'Notifications' }, { href: '/settings/privacy', label: 'Privacy' }];
 export type NavItemResolution = { visible: boolean; accessible: boolean; requiredPlan?: EverittosPlan };
-
 function navPath(href: string): string { return href.split('?')[0]; }
-
-function isManagerOperationalModule(path: string): boolean {
-  return ['/customers','/projects','/forms','/templates','/reviews','/services','/bookings','/leads','/photos','/reports','/inventory','/routes','/workflows'].includes(path);
-}
+function isManagerOperationalModule(path: string): boolean { return ['/customers','/projects','/forms','/templates','/reviews','/services','/bookings','/leads','/estimates','/photos','/reports','/inventory','/routes','/workflows'].includes(path); }
 
 export function canShowNavHref(role: UserRole, href: string): boolean {
   const path = navPath(href);
   if (isClientRole(role)) return path === CLIENT_PORTAL_HOME || path === CLIENT_PORTAL_SETTINGS || path.startsWith(`${CLIENT_PORTAL_HOME}/`) || isPortalPersonalSettingsPath(path);
   if (isContractorRole(role)) return path === CONTRACTOR_PORTAL_HOME || path === CONTRACTOR_PORTAL_SETTINGS || path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) || path.startsWith('/jobs/') || isPortalPersonalSettingsPath(path);
-
   switch (path) {
     case '/dashboard': return true;
     case '/jobs': return hasPermission(role, 'view_assigned_jobs');
     case '/schedule': return hasPermission(role, 'view_schedules');
-    case '/customers': case '/leads': case '/reports': return canSeeOrgWideData(role) || role === 'manager';
+    case '/customers': case '/leads': case '/estimates': case '/reports': return canSeeOrgWideData(role) || role === 'manager';
     case '/invoices': return canSeeOrgWideData(role);
     case '/people': case '/team': return canViewTeam(role);
     case '/settings': case '/settings/account': case '/settings/notifications': case '/settings/privacy': case '/settings/branding': return canManageOrganizationSettings(role) || role === 'manager' || role === 'employee' || role === 'viewer';
@@ -90,84 +57,25 @@ function canAccessSettingsPathByRole(role: UserRole, path: string): boolean {
 }
 
 export function requiredPlanForNavHref(href: string): EverittosPlan | null {
-  const path = navPath(href);
-  const fromRouteTable = minimumPlanForPath(path);
-  if (fromRouteTable) return fromRouteTable;
-  switch (path) {
-    case '/workflows': return 'growth';
-    case '/automations': return 'business';
-    case '/knowledge': case '/proposals': case '/bookings': return 'pro';
-    default: return null;
-  }
+  const path = navPath(href); const fromRouteTable = minimumPlanForPath(path); if (fromRouteTable) return fromRouteTable;
+  switch (path) { case '/workflows': return 'growth'; case '/automations': return 'business'; case '/knowledge': case '/proposals': case '/bookings': return 'pro'; default: return null; }
 }
-
 function planFeatureBlocksNav(href: string, plan: EverittosPlan): EverittosPlan | null {
-  const normalized = normalizePlan(plan);
-  const path = navPath(href);
-  const limits = limitsForPlan(normalized);
+  const normalized = normalizePlan(plan); const path = navPath(href); const limits = limitsForPlan(normalized);
   if ((path === '/people' || path === '/team' || path === '/settings/people' || path === '/settings/team') && !hasTeamManagement(normalized)) return 'business';
-  if (path === '/workflows' && !limits.workflowCustomization) return 'growth';
-  if (path === '/automations' && !limits.aiAccess) return 'business';
-  if (path === '/activity' && !limits.activityLog) return 'business';
-  if (path === '/bookings' && !limits.bookings) return 'pro';
-  if (path === '/portal/client' && !limits.clientPortal) return 'growth';
-  if (path === '/portal/contractor' && !limits.contractorPortal) return 'growth';
-  return null;
+  if (path === '/workflows' && !limits.workflowCustomization) return 'growth'; if (path === '/automations' && !limits.aiAccess) return 'business'; if (path === '/activity' && !limits.activityLog) return 'business'; if (path === '/bookings' && !limits.bookings) return 'pro'; if (path === '/portal/client' && !limits.clientPortal) return 'growth'; if (path === '/portal/contractor' && !limits.contractorPortal) return 'growth'; return null;
 }
-
 export function resolveNavItem(role: UserRole, plan: EverittosPlan, href: string): NavItemResolution {
-  if (!canShowNavHref(role, href)) return { visible: false, accessible: false };
-  const path = navPath(href);
-  if ((isClientRole(role) && (path === CLIENT_PORTAL_HOME || path.startsWith(`${CLIENT_PORTAL_HOME}/`) || isPortalPersonalSettingsPath(path))) || (isContractorRole(role) && (path === CONTRACTOR_PORTAL_HOME || path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) || path.startsWith('/jobs/') || isPortalPersonalSettingsPath(path)))) return { visible: true, accessible: true };
-  const normalized = normalizePlan(plan);
-  const requiredFromRoute = requiredPlanForNavHref(href);
-  const requiredFromFeature = planFeatureBlocksNav(href, normalized);
-  let requiredPlan = requiredFromRoute;
-  if (requiredFromFeature && (!requiredPlan || planRank(requiredFromFeature) > planRank(requiredPlan))) requiredPlan = requiredFromFeature;
-  if (requiredPlan && !meetsMinimumPlan(normalized, requiredPlan)) return { visible: true, accessible: false, requiredPlan };
-  return { visible: true, accessible: true };
+  if (!canShowNavHref(role, href)) return { visible:false, accessible:false }; const path=navPath(href);
+  if ((isClientRole(role) && (path === CLIENT_PORTAL_HOME || path.startsWith(`${CLIENT_PORTAL_HOME}/`) || isPortalPersonalSettingsPath(path))) || (isContractorRole(role) && (path === CONTRACTOR_PORTAL_HOME || path.startsWith(`${CONTRACTOR_PORTAL_HOME}/`) || path.startsWith('/jobs/') || isPortalPersonalSettingsPath(path)))) return { visible:true, accessible:true };
+  const normalized=normalizePlan(plan); const requiredFromRoute=requiredPlanForNavHref(href); const requiredFromFeature=planFeatureBlocksNav(href,normalized); let requiredPlan=requiredFromRoute;
+  if (requiredFromFeature && (!requiredPlan || planRank(requiredFromFeature)>planRank(requiredPlan))) requiredPlan=requiredFromFeature;
+  if (requiredPlan && !meetsMinimumPlan(normalized,requiredPlan)) return { visible:true, accessible:false, requiredPlan }; return { visible:true, accessible:true };
 }
-
-export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPlan): boolean { return resolveNavItem(role, plan, href).accessible; }
-export function canAccessSettingsPath(role: UserRole, path: string, plan: EverittosPlan): boolean { return path.startsWith('/settings') && canAccessNavHref(role, path, plan); }
-
-export function billingUpgradeHref(requiredPlan: EverittosPlan, featureLabel?: string): string {
-  const params = new URLSearchParams({ upgrade: requiredPlan, reason: 'plan' });
-  if (featureLabel) params.set('detail', `${planShortBadgeName(requiredPlan)} plan required for ${featureLabel}.`);
-  return `/settings/billing?${params.toString()}`;
-}
-
-export function isNavLinkActive(pathname: string, href: string): boolean {
-  const path = pathname.split('?')[0];
-  const target = navPath(href);
-  if (target === '/settings') return path === '/settings';
-  if (target === '/dashboard') return path === '/dashboard';
-  if (target === '/people' || target === '/team') return path === '/people' || path.startsWith('/people/') || path === '/team' || path.startsWith('/team/') || path === '/workers' || path.startsWith('/workers/');
-  if (target === '/settings/people' || target === '/settings/team') return path === '/settings/people' || path.startsWith('/settings/people/') || path === '/settings/team' || path.startsWith('/settings/team/');
-  return path === target || path.startsWith(`${target}/`);
-}
-
-export function settingsLinksForRole(role: UserRole, plan: EverittosPlan): SettingsNavLink[] {
-  void plan;
-  if (isClientRole(role) || isContractorRole(role)) return PORTAL_SETTINGS_LINKS;
-  if (role === 'manager' || role === 'employee' || role === 'viewer') return SETTINGS_NAV_LINKS.filter((link) => ['/settings/account', '/settings/notifications', '/settings/privacy'].includes(link.href));
-  return SETTINGS_NAV_LINKS.filter((link) => {
-    if (link.href === '/settings/billing') return canManageBilling(role);
-    if (link.href === '/settings' || link.href === '/settings/branding') return canManageOrganizationSettings(role);
-    if (link.href === '/terms' || link.href.startsWith('/settings/privacy') || link.href === '/settings/account' || link.href === '/settings/notifications') return true;
-    return false;
-  });
-}
-
-export function primaryNavHrefsForRole(role: UserRole): string[] {
-  if (isClientRole(role)) return ['/portal/client', '/portal/client?tab=jobs', '/portal/client/settings'];
-  if (isContractorRole(role)) return ['/portal/contractor', '/portal/contractor#jobs', '/portal/contractor#schedule', '/portal/contractor#earnings', '/portal/contractor/settings'];
-  if (role === 'manager') return ['/dashboard', '/customers', '/jobs', '/schedule', '/people', '/invoices', '/expenses', '/settings'];
-  if (canSeeOrgWideData(role)) return ['/dashboard', '/customers', '/jobs', '/schedule', '/people', '/invoices', '/expenses', '/settings'];
-  return ['/dashboard', '/jobs', '/schedule', '/settings'];
-}
-
-export function appNavItemsForRole(role: UserRole, plan: EverittosPlan) {
-  const allowed = new Set(primaryNavHrefsForRole(role).map((href) => href.split('?')[0].split('#')[0]));
-  return APP_NAV_LINKS.map((link) => ({ ...link, resolution: resolveNavItem(role, plan, link.href) })).filter((link) => link.resolution.visible && allowed.has(navPath(link.href))) as Array<(typeof APP_NAV_LINKS)[number] & { resolution: NavItemResolution; href: AppNavHref }>;
-}
+export function canAccessNavHref(role: UserRole, href: string, plan: EverittosPlan): boolean { return resolveNavItem(role,plan,href).accessible; }
+export function canAccessSettingsPath(role: UserRole, path: string, plan: EverittosPlan): boolean { return path.startsWith('/settings') && canAccessNavHref(role,path,plan); }
+export function billingUpgradeHref(requiredPlan: EverittosPlan, featureLabel?: string): string { const params=new URLSearchParams({upgrade:requiredPlan,reason:'plan'}); if(featureLabel) params.set('detail',`${planShortBadgeName(requiredPlan)} plan required for ${featureLabel}.`); return `/settings/billing?${params.toString()}`; }
+export function isNavLinkActive(pathname:string,href:string):boolean { const path=pathname.split('?')[0]; const target=navPath(href); if(target==='/settings') return path==='/settings'; if(target==='/dashboard') return path==='/dashboard'; if(target==='/people'||target==='/team') return path==='/people'||path.startsWith('/people/')||path==='/team'||path.startsWith('/team/')||path==='/workers'||path.startsWith('/workers/'); if(target==='/settings/people'||target==='/settings/team') return path==='/settings/people'||path.startsWith('/settings/people/')||path==='/settings/team'||path.startsWith('/settings/team/'); return path===target||path.startsWith(`${target}/`); }
+export function settingsLinksForRole(role:UserRole,plan:EverittosPlan):SettingsNavLink[]{ void plan; if(isClientRole(role)||isContractorRole(role)) return PORTAL_SETTINGS_LINKS; if(role==='manager'||role==='employee'||role==='viewer') return SETTINGS_NAV_LINKS.filter((link)=>['/settings/account','/settings/notifications','/settings/privacy'].includes(link.href)); return SETTINGS_NAV_LINKS.filter((link)=>{ if(link.href==='/settings/billing') return canManageBilling(role); if(link.href==='/settings'||link.href==='/settings/branding') return canManageOrganizationSettings(role); if(link.href==='/terms'||link.href.startsWith('/settings/privacy')||link.href==='/settings/account'||link.href==='/settings/notifications') return true; return false; }); }
+export function primaryNavHrefsForRole(role:UserRole):string[]{ if(isClientRole(role)) return ['/portal/client','/portal/client?tab=jobs','/portal/client/settings']; if(isContractorRole(role)) return ['/portal/contractor','/portal/contractor#jobs','/portal/contractor#schedule','/portal/contractor#earnings','/portal/contractor/settings']; if(role==='manager') return ['/dashboard','/leads','/estimates','/customers','/jobs','/schedule','/people','/invoices','/expenses','/settings']; if(canSeeOrgWideData(role)) return ['/dashboard','/leads','/estimates','/customers','/jobs','/schedule','/people','/invoices','/expenses','/settings']; return ['/dashboard','/jobs','/schedule','/settings']; }
+export function appNavItemsForRole(role:UserRole,plan:EverittosPlan){ const allowed=new Set(primaryNavHrefsForRole(role).map((href)=>href.split('?')[0].split('#')[0])); return APP_NAV_LINKS.map((link)=>({...link,resolution:resolveNavItem(role,plan,link.href)})).filter((link)=>link.resolution.visible&&allowed.has(navPath(link.href))) as Array<(typeof APP_NAV_LINKS)[number]&{resolution:NavItemResolution;href:AppNavHref}>; }
