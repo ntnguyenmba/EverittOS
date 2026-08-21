@@ -24,7 +24,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname() || '/';
   const hideUpgradeCta = pathname.startsWith('/settings/billing');
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const workspacePlan = useWorkspacePlanOptional();
   const normalized = normalizePlan(workspacePlan?.plan ?? plan);
   const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
@@ -64,6 +64,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const showUpgrade = !hideUpgradeCta && !isPaidEverittosPlan(normalized) && canManageBilling(role);
   const showViewPlans = !hideUpgradeCta && isPaidEverittosPlan(normalized) && canManageBilling(role);
   const isOwnerDashboard = pathname === '/dashboard' && role === 'owner';
+  const languageLabel = locale === 'es' ? 'Idioma' : locale === 'vi' ? 'Ngôn ngữ' : 'Language';
 
   return (
     <aside className={isOwnerDashboard ? 'sidebar sidebar-owner-dashboard' : 'sidebar'} aria-label="App navigation">
@@ -83,8 +84,11 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
           showViewPlans={showViewPlans}
           billingActive={pathname.startsWith('/settings/billing')}
         />
-        <div className="sidebar-footer-actions">
-          <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
+        <div className="sidebar-footer-actions sidebar-footer-actions-stacked">
+          <div className="sidebar-language-field">
+            <span className="sidebar-language-label">{languageLabel}</span>
+            <LanguageSwitcher id="sidebar-language" variant="compact" className="sidebar-language-compact" />
+          </div>
           <button className="btn btn-sm sidebar-logout" type="button" onClick={logout}>
             {t('ux.logOut')}
           </button>
