@@ -4,6 +4,8 @@ import { fetchOrganizationContextWithRepair } from '@/lib/workspace-server';
 import { canShowNavHref } from '@/lib/nav-access';
 import { defaultPathForRole } from '@/lib/role-routes';
 import { normalizeRole } from '@/lib/roles';
+import { QuotesInputPolish } from './quotes-input-polish';
+import './quotes-market-polish.css';
 
 export default async function PricingHelperLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabase();
@@ -20,5 +22,10 @@ export default async function PricingHelperLayout({ children }: { children: Reac
     redirect(defaultPathForRole(role, '/dashboard'));
   }
 
-  return children;
+  return (
+    <>
+      <QuotesInputPolish />
+      {children}
+    </>
+  );
 }
