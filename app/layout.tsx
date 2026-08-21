@@ -80,6 +80,7 @@ import './notification-settings-layout-fix.css';
 import './final-release-polish.css';
 import './owner-job-card-mobile-alignment.css';
 import './jobs-filter-mobile-alignment.css';
+import './job-guidance-editorial.css';
 
 const manrope = Manrope({
   subsets: ['latin', 'vietnamese'],
@@ -99,19 +100,10 @@ export const metadata: Metadata = {
   title: 'EverittOS | Run Your Service Business',
   description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.',
   manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    title: 'EverittOS',
-    statusBarStyle: 'default'
-  },
-  other: {
-    'mobile-web-app-capable': 'yes'
-  },
+  appleWebApp: { capable: true, title: 'EverittOS', statusBarStyle: 'default' },
+  other: { 'mobile-web-app-capable': 'yes' },
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '512x512' }
-    ],
+    icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
     apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
     shortcut: '/favicon.ico'
   }
@@ -121,45 +113,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-
   return (
-    <html
-      lang={initialLocale}
-      data-locale={initialLocale}
-      data-deployment={deployment}
-      className={manrope.variable}
-    >
+    <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}>
       <body className={manrope.className} data-locale={initialLocale}>
-        <SupabaseRuntimeConfig />
-        <PwaRegistration />
-        <MobileDocumentFlags />
-        <NativeAppProvider />
-        <AppConnectivityBanner />
-        <NetworkStatusBanner />
-        <PwaUpdatePrompt />
-        <SuppressVercelToolbar />
+        <SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar />
         <LocaleProvider initialLocale={initialLocale}>
-          <JobFinanceWordingAndCustomerRate />
-          <CreateFormCancelControls />
-          <DashboardTodayCountFix />
-          <ContractorJobPayVisibility />
-          <OwnerTopPerformerMetric />
-          <ExpensesListEnhancer />
-          <ToastProvider>
-            <LocaleSync />
-            <SessionGuard>
-              <ActivityHeartbeat />
-              <WorkspacePlanProvider>
-                <WorkspaceBootstrap />
-                <SkipToMain />
-                <SiteChrome />
-                <ContractorStaticSections />
-                {children}
-                <AnalyticsGate />
-                <CookieConsentBanner />
-              </WorkspacePlanProvider>
-            </SessionGuard>
-          </ToastProvider>
+          <JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><DashboardTodayCountFix /><ContractorJobPayVisibility /><OwnerTopPerformerMetric /><ExpensesListEnhancer />
+          <ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider>
         </LocaleProvider>
       </body>
     </html>
