@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     scheme: 'EverittOS',
-    contentInset: 'automatic'
+    contentInset: 'never'
   },
   android: {
     allowMixedContent: false,
@@ -37,7 +37,8 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#24302B'
+      overlaysWebView: true,
+      backgroundColor: '#00000000'
     }
   }
 };
