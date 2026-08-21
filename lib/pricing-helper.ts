@@ -1,0 +1,37 @@
+export type PricingHelperSettings = {
+  currency: string;
+  ownerHourlyCost: number;
+  workerHourlyCost: number;
+  desiredMargin: number;
+  rangeLowFactor: number;
+  rangeHighFactor: number;
+  minimumCharge: number;
+  minimumSimilarJobs: number;
+  sizeTolerancePct: number;
+  bedroomTolerance: number;
+  bathroomTolerance: number;
+  marketContextEnabled: boolean;
+  marketContext?: { low?: number; high?: number; source?: string; updatedAt?: string };
+  rules: {
+    baseHoursPer1000Sqft: number;
+    bedroomHours: number;
+    bathroomHours: number;
+    serviceMultipliers: Record<string, number>;
+    conditionMultipliers: Record<string, number>;
+    frequencyMultipliers: Record<string, number>;
+    addOns: Record<string, { hours?: number; cost?: number }>;
+  };
+};
+
+export type PricingJobInput = { serviceType:string; squareFeet:number; bedrooms:number; bathrooms:number; condition:string; frequency:string; addOns:string[]; ownerHours?:number; workerHours?:number; };
+export type SimilarJob = { id:string; date?:string|null; price:number; serviceType?:string|null; squareFeet?:number|null; bedrooms?:number|null; bathrooms?:number|null; condition?:string|null; frequency?:string|null; };
+
+export const DEFAULT_PRICING_HELPER_SETTINGS: PricingHelperSettings = {
+  currency:'USD', ownerHourlyCost:0, workerHourlyCost:0, desiredMargin:35, rangeLowFactor:0.9, rangeHighFactor:1.15, minimumCharge:0, minimumSimilarJobs:2, sizeTolerancePct:25, bedroomTolerance:1, bathroomTolerance:1, marketContextEnabled:false,
+  rules:{ baseHoursPer1000Sqft:1.5, bedroomHours:0.2, bathroomHours:0.35, serviceMultipliers:{standard:1,deep:1.45,'move-out':1.6,'move-in':1.5,'post-construction':1.8}, conditionMultipliers:{light:0.85,average:1,heavy:1.4,'post-construction':1.7}, frequencyMultipliers:{'one-time':1,weekly:0.9,'bi-weekly':0.94,monthly:0.98}, addOns:{oven:{hours:0.5},refrigerator:{hours:0.5},windows:{hours:1},laundry:{hours:0.5}} }
+};
+const n=(v:unknown,f=0)=>Number.isFinite(Number(v))?Number(v):f;
+const key=(v:unknown)=>String(v||'').trim().toLowerCase();
+export function normalizePricingHelperSettings(raw:unknown):PricingHelperSettings { const r=(raw&&typeof raw==='object'?raw:{}) as Record<string,any>; const rules={...DEFAULT_PRICING_HELPER_SETTINGS.rules,...(r.rules||{})}; return {...DEFAULT_PRICING_HELPER_SETTINGS,currency:String(r.currency||'USD'),ownerHourlyCost:n(r.owner_hourly_cost??r.ownerHourlyCost),workerHourlyCost:n(r.worker_hourly_cost??r.workerHourlyCost),desiredMargin:n(r.desired_margin??r.desiredMargin,35),rangeLowFactor:n(r.range_low_factor??r.rangeLowFactor,.9),rangeHighFactor:n(r.range_high_factor??r.rangeHighFactor,1.15),minimumCharge:n(r.minimum_charge??r.minimumCharge),minimumSimilarJobs:n(r.minimum_similar_jobs??r.minimumSimilarJobs,2),sizeTolerancePct:n(r.size_tolerance_pct??r.sizeTolerancePct,25),bedroomTolerance:n(r.bedroom_tolerance??r.bedroomTolerance,1),bathroomTolerance:n(r.bathroom_tolerance??r.bathroomTolerance,1),marketContextEnabled:Boolean(r.market_context_enabled??r.marketContextEnabled),marketContext:r.market_context??r.marketContext,rules:{...rules,serviceMultipliers:{...DEFAULT_PRICING_HELPER_SETTINGS.rules.serviceMultipliers,...(rules.serviceMultipliers||{})},conditionMultipliers:{...DEFAULT_PRICING_HELPER_SETTINGS.rules.conditionMultipliers,...(rules.conditionMultipliers||{})},frequencyMultipliers:{...DEFAULT_PRICING_HELPER_SETTINGS.rules.frequencyMultipliers,...(rules.frequencyMultipliers||{})},addOns:{...DEFAULT_PRICING_HELPER_SETTINGS.rules.addOns,...(rules.addOns||{})}}}; }
+export function calculatePricingHelper(settings:PricingHelperSettings,input:PricingJobInput,similarJobs:SimilarJob[]=[],candidatePrice?:number){ const sqft=Math.max(0,n(input.squareFeet)); let base=Math.max(.5,(sqft/1000)*settings.rules.baseHoursPer1000Sqft + Math.max(0,n(input.bedrooms)-1)*settings.rules.bedroomHours + Math.max(0,n(input.bathrooms)-1)*settings.rules.bathroomHours); base*=settings.rules.serviceMultipliers[key(input.serviceType)]||1; base*=settings.rules.conditionMultipliers[key(input.condition)]||1; let addonHours=0,addonCost=0; for(const addon of input.addOns||[]){const rule=settings.rules.addOns[key(addon)]; if(rule){addonHours+=n(rule.hours);addonCost+=n(rule.cost);}} const totalHours=Math.max(.5,base+addonHours); const ownerHours=input.ownerHours===undefined?0:Math.max(0,n(input.ownerHours)); const workerHours=input.workerHours===undefined?totalHours:Math.max(0,n(input.workerHours)); const laborCost=ownerHours*settings.ownerHourlyCost+workerHours*settings.workerHourlyCost+addonCost; const margin=Math.min(.94,Math.max(0,settings.desiredMargin/100)); let target=margin<1?laborCost/(1-margin):laborCost; target*=settings.rules.frequencyMultipliers[key(input.frequency)]||1; target=Math.max(settings.minimumCharge,target); const low=Math.round(Math.max(settings.minimumCharge,target*settings.rangeLowFactor)); const high=Math.round(Math.max(low,target*settings.rangeHighFactor)); const matching=similarJobs.filter(j=>key(j.serviceType)===key(input.serviceType) && (!sqft||!j.squareFeet||Math.abs(n(j.squareFeet)-sqft)<=sqft*(settings.sizeTolerancePct/100)) && (j.bedrooms==null||Math.abs(n(j.bedrooms)-n(input.bedrooms))<=settings.bedroomTolerance) && (j.bathrooms==null||Math.abs(n(j.bathrooms)-n(input.bathrooms))<=settings.bathroomTolerance)); const historicalAverage=matching.length>=settings.minimumSimilarJobs?matching.reduce((s,j)=>s+j.price,0)/matching.length:null; const price=n(candidatePrice,Math.round((low+high)/2)); const estimatedMargin=price>0?(1-laborCost/price)*100:null; return {baseHours:base,addOnHours:addonHours,totalHours,laborCost,targetPrice:target,low,high,midpoint:Math.round((low+high)/2),historicalAverage:historicalAverage==null?null:Math.round(historicalAverage),matchingJobs:matching.slice(0,5),candidatePrice:price,estimatedMargin:estimatedMargin==null?null:Math.round(estimatedMargin)}; }
+export function money(value:number,currency='USD'){try{return new Intl.NumberFormat(undefined,{style:'currency',currency,maximumFractionDigits:0}).format(value);}catch{return `${currency} ${Math.round(value)}`;}}
