@@ -47,6 +47,8 @@ export async function POST(request: Request, context: RouteContext) {
     value(payload, ['Frequency']) ? `Frequency: ${value(payload, ['Frequency'])}` : null,
     value(payload, ['Add-ons']) ? `Add-ons: ${value(payload, ['Add-ons'])}` : null,
     estimateRange ? `Estimated range: ${estimateRange}` : null,
+    estimate ? `Estimate midpoint: ${estimate.midpoint}` : null,
+    estimate ? `Estimate currency: ${estimate.currency}` : null,
     value(payload, ['Notes', 'Message', 'message'])
   ].filter(Boolean).join('\n');
 
