@@ -1,6 +1,6 @@
 /* Safe-area support for installed PWA and Capacitor shells only.
-   Native Capacitor already receives the OS status-bar inset, so do not add the
-   top safe area a second time. Standalone PWAs still need env() safe areas. */
+   Native apps draw behind the status bar, so the page background reaches the
+   top edge while the actual header controls remain inside the safe area. */
 
 @supports (padding: env(safe-area-inset-top)) {
   html[data-native-app='true'] body,
@@ -12,9 +12,9 @@
     padding-right: 0 !important;
   }
 
-  /* Capacitor: keep the header close to the system status bar without a blank band. */
+  /* Capacitor: no separate blank strip above the app chrome. */
   html[data-native-app='true'] .dashboard-shell-header {
-    padding-top: 8px !important;
+    padding-top: max(4px, env(safe-area-inset-top)) !important;
   }
 
   html[data-native-app='true'] .app-shell-header,
