@@ -15,13 +15,14 @@ export type NavSectionDef = {
 };
 
 /**
- * Keep the everyday owner navigation focused on the work service businesses
- * do most often. Advanced and secondary tools still exist and remain
- * reachable from their contextual screens and Settings, but they do not
- * compete for attention in the main menu.
+ * Keep everyday owner navigation focused on the work service businesses do
+ * most often. Leads and Estimates are first-class workflow steps because new
+ * requests need to be visible before they become Jobs.
  */
 const PRIMARY_NAV: NavLinkDef[] = [
   { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Leads', href: '/leads' },
+  { label: 'Estimates', href: '/estimates' },
   { label: 'Customers', href: '/customers' },
   { label: 'Jobs', href: '/jobs' },
   { label: 'Schedule', href: '/schedule' },
@@ -55,7 +56,6 @@ export const SECONDARY_APP_ROUTES = [
   '/workflows',
   '/notifications',
   '/proposals',
-  '/estimates',
   '/invoices',
   '/expenses',
   '/bookkeeping',
@@ -69,7 +69,6 @@ export const SECONDARY_APP_ROUTES = [
   '/inventory',
   '/routes',
   '/reports',
-  '/leads',
   '/analytics',
   '/activity',
   '/portal/client',
