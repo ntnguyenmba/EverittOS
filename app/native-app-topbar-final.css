@@ -1,13 +1,12 @@
 /* Native iOS/Android top bar.
    Web and installed-PWA layouts stay unchanged. Native apps let the OS own
    the status-bar height, then render one compact full-width app bar directly
-   below it. This avoids oversized env(safe-area-inset-top) padding on devices
-   with camera cutouts while preserving the current EverittOS visual system. */
+   below it. */
 
 html[data-native-app='true'] .dashboard-shell-header {
   position: sticky !important;
   top: 0 !important;
-  z-index: 60 !important;
+  z-index: 100 !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -17,10 +16,14 @@ html[data-native-app='true'] .dashboard-shell-header {
   backdrop-filter: blur(18px) !important;
   -webkit-backdrop-filter: blur(18px) !important;
   box-sizing: border-box !important;
+  pointer-events: auto !important;
+  isolation: isolate !important;
 }
 
 html[data-native-app='true'] .dashboard-shell-header .mobile-nav,
 html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal {
+  position: relative !important;
+  z-index: 101 !important;
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -30,10 +33,13 @@ html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal 
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  pointer-events: auto !important;
 }
 
 html[data-native-app='true'] .dashboard-shell-header .mobile-nav-bar,
 html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal .mobile-nav-bar {
+  position: relative !important;
+  z-index: 102 !important;
   width: 100% !important;
   max-width: none !important;
   min-height: 58px !important;
@@ -44,14 +50,36 @@ html[data-native-app='true'] .dashboard-shell-header .mobile-nav-focused-portal 
   background: transparent !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
+  pointer-events: auto !important;
+}
+
+html[data-native-app='true'] .mobile-nav-bar-actions,
+html[data-native-app='true'] .mobile-nav-language,
+html[data-native-app='true'] .mobile-nav-menu-btn {
+  position: relative !important;
+  z-index: 104 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+html[data-native-app='true'] .mobile-nav-menu-btn {
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+html[data-native-app='true'] .mobile-nav-overlay-portal {
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+}
+
+html[data-native-app='true'] .mobile-nav-drawer {
+  position: relative !important;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
 }
 
 html[data-native-app='true'] .dashboard-shell > .main {
   padding-top: 12px !important;
-}
-
-html[data-native-app='true'] .mobile-nav-menu-btn {
-  box-shadow: none !important;
 }
 
 @media (max-width: 480px) {
