@@ -19,7 +19,7 @@ export function JobCard({ job }: { job: SupabaseJobCard }) {
   const created = job.created_at ? new Date(job.created_at).toLocaleString() : 'Just created';
 
   return (
-    <Link href={'/jobs/' + job.id} target="_blank" rel="noopener noreferrer" className="card" style={{ display: 'block' }}>
+    <Link href={'/jobs/' + job.id} className="card" style={{ display: 'block' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <h3>{job.title}</h3>
         <StatusPill status={status} />
