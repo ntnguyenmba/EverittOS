@@ -8,7 +8,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import { dispatchAndroidBackPress, registerAndroidBackHandler } from '@/lib/platform/android-back';
 import { deepLinkToAppPath } from '@/lib/platform/deep-links';
-import { classifyNavigationTarget, handleNavigationClick } from '@/lib/platform';
+import { handleNavigationClick } from '@/lib/platform';
 import { pingActivityHeartbeat } from '@/lib/activity-heartbeat';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { supabase } from '@/lib/supabase';
@@ -123,13 +123,14 @@ export function NativeAppProvider() {
     });
 
     function onDocumentClick(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
       const target = event.target as HTMLElement | null;
       const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
       if (!anchor) return;
 
       const href = anchor.getAttribute('href') || '';
-      const classification = classifyNavigationTarget(href, window.location.origin);
-      if (classification === 'internal') return;
+      if (!href || href.startsWith('#')) return;
 
       event.preventDefault();
       void handleNavigationClick(href, window.location.origin, (path) => router.push(path));
