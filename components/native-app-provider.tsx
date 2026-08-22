@@ -8,7 +8,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import { dispatchAndroidBackPress, registerAndroidBackHandler } from '@/lib/platform/android-back';
 import { deepLinkToAppPath } from '@/lib/platform/deep-links';
-import { handleNavigationClick } from '@/lib/platform';
+import { classifyNavigationTarget, handleNavigationClick } from '@/lib/platform';
 import { pingActivityHeartbeat } from '@/lib/activity-heartbeat';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { supabase } from '@/lib/supabase';
@@ -34,17 +34,18 @@ async function refreshSessionAfterResume(): Promise<void> {
   }
 }
 
-/** Wires Capacitor lifecycle, deep links, Android back, and trusted navigation in native shells. */
+/** Keeps EverittOS navigation in-app and prevents internal web links opening needless tabs. */
 export function NativeAppProvider() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isNativePlatform()) return;
-
+    const native = isNativePlatform();
     let disposed = false;
     const listeners: Array<{ remove: () => Promise<void> | void }> = [];
 
     async function initNativeShell() {
+      if (!native) return;
+
       try {
         await SplashScreen.hide();
       } catch {
@@ -65,17 +66,13 @@ export function NativeAppProvider() {
       }
 
       const appState = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-        if (isActive) {
-          void refreshSessionAfterResume();
-        }
+        if (isActive) void refreshSessionAfterResume();
       });
       listeners.push(appState);
 
       const urlOpen = await CapacitorApp.addListener('appUrlOpen', (event) => {
         const path = deepLinkToAppPath(event.url);
-        if (path) {
-          router.push(path);
-        }
+        if (path) router.push(path);
       });
       listeners.push(urlOpen);
 
@@ -98,29 +95,33 @@ export function NativeAppProvider() {
 
     void initNativeShell();
 
-    const unregisterModalBack = registerAndroidBackHandler({
-      id: 'modal-overlay',
-      priority: 100,
-      handle: () => {
-        const closeButtons = document.querySelectorAll<HTMLElement>('[data-mobile-back-close]');
-        const visible = Array.from(closeButtons).find((el) => el.offsetParent !== null);
-        if (!visible) return false;
-        visible.click();
-        return true;
-      }
-    });
+    const unregisterModalBack = native
+      ? registerAndroidBackHandler({
+          id: 'modal-overlay',
+          priority: 100,
+          handle: () => {
+            const closeButtons = document.querySelectorAll<HTMLElement>('[data-mobile-back-close]');
+            const visible = Array.from(closeButtons).find((el) => el.offsetParent !== null);
+            if (!visible) return false;
+            visible.click();
+            return true;
+          }
+        })
+      : () => {};
 
-    const unregisterNavBack = registerAndroidBackHandler({
-      id: 'mobile-nav-drawer',
-      priority: 90,
-      handle: () => {
-        const drawer = document.querySelector<HTMLElement>('.mobile-nav-drawer.open, .mobile-nav-panel.open');
-        if (!drawer) return false;
-        const close = document.querySelector<HTMLElement>('.mobile-nav-close, [data-mobile-nav-close]');
-        close?.click();
-        return true;
-      }
-    });
+    const unregisterNavBack = native
+      ? registerAndroidBackHandler({
+          id: 'mobile-nav-drawer',
+          priority: 90,
+          handle: () => {
+            const drawer = document.querySelector<HTMLElement>('.mobile-nav-drawer.open, .mobile-nav-panel.open');
+            if (!drawer) return false;
+            const close = document.querySelector<HTMLElement>('.mobile-nav-close, [data-mobile-nav-close]');
+            close?.click();
+            return true;
+          }
+        })
+      : () => {};
 
     function onDocumentClick(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -132,7 +133,13 @@ export function NativeAppProvider() {
       const href = anchor.getAttribute('href') || '';
       if (!href || href.startsWith('#')) return;
 
+      const classification = classifyNavigationTarget(href, window.location.origin);
+
+      if (!native && classification !== 'internal') return;
+
       event.preventDefault();
+      anchor.removeAttribute('target');
+      anchor.removeAttribute('rel');
       void handleNavigationClick(href, window.location.origin, (path) => router.push(path));
     }
 
@@ -143,9 +150,7 @@ export function NativeAppProvider() {
       unregisterModalBack();
       unregisterNavBack();
       document.removeEventListener('click', onDocumentClick, true);
-      for (const listener of listeners) {
-        void listener.remove();
-      }
+      for (const listener of listeners) void listener.remove();
     };
   }, [router]);
 
