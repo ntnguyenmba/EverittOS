@@ -34,6 +34,17 @@ async function refreshSessionAfterResume(): Promise<void> {
   }
 }
 
+function stripInternalNewTabTargets(root: ParentNode = document) {
+  const anchors = root.querySelectorAll<HTMLAnchorElement>('a[href][target="_blank"]');
+  for (const anchor of anchors) {
+    const href = anchor.getAttribute('href') || '';
+    if (!href || href.startsWith('#')) continue;
+    if (classifyNavigationTarget(href, window.location.origin) !== 'internal') continue;
+    anchor.removeAttribute('target');
+    anchor.removeAttribute('rel');
+  }
+}
+
 /** Keeps EverittOS navigation in-app and prevents internal web links opening needless tabs. */
 export function NativeAppProvider() {
   const router = useRouter();
@@ -42,6 +53,18 @@ export function NativeAppProvider() {
     const native = isNativePlatform();
     let disposed = false;
     const listeners: Array<{ remove: () => Promise<void> | void }> = [];
+
+    stripInternalNewTabTargets();
+    const targetObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (!(node instanceof HTMLElement)) continue;
+          if (node.matches('a[href][target="_blank"]')) stripInternalNewTabTargets(node.parentNode || document);
+          else stripInternalNewTabTargets(node);
+        }
+      }
+    });
+    targetObserver.observe(document.body, { childList: true, subtree: true });
 
     async function initNativeShell() {
       if (!native) return;
@@ -134,12 +157,13 @@ export function NativeAppProvider() {
       if (!href || href.startsWith('#')) return;
 
       const classification = classifyNavigationTarget(href, window.location.origin);
-
       if (!native && classification !== 'internal') return;
 
       event.preventDefault();
-      anchor.removeAttribute('target');
-      anchor.removeAttribute('rel');
+      if (classification === 'internal') {
+        anchor.removeAttribute('target');
+        anchor.removeAttribute('rel');
+      }
       void handleNavigationClick(href, window.location.origin, (path) => router.push(path));
     }
 
@@ -147,6 +171,7 @@ export function NativeAppProvider() {
 
     return () => {
       disposed = true;
+      targetObserver.disconnect();
       unregisterModalBack();
       unregisterNavBack();
       document.removeEventListener('click', onDocumentClick, true);
