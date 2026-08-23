@@ -7,6 +7,7 @@ import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/a
 import { parseNaturalAskEverittQuery } from '@/lib/ask-everitt/natural-query';
 import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
+import { runStructuredNaturalQuery } from '@/lib/ask-everitt/structured-query';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
@@ -165,9 +166,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const directResult = natural.intent === 'next_job' || isNextJobQuestion(prompt)
+    const structuredResult = await runStructuredNaturalQuery(
+      supabase,
+      org.organizationId,
+      user.id,
+      prompt,
+      locale
+    );
+
+    const directResult = structuredResult || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
       ? await queryNextJob(supabase, org.organizationId, locale)
-      : null;
+      : null);
+
     const searchResult = directResult || await runAskEverittSearchEngine(
       supabase,
       org.organizationId,
@@ -188,8 +198,6 @@ export async function POST(request: Request) {
 
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
-    // Cheaper plans never spend AI credits. If the question contains a business-record
-    // intent, gracefully answer it with structured search instead of showing an AI wall.
     if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) {
       return runStructuredSearch();
     }
