@@ -125,9 +125,36 @@ function makeCancel(onClick: () => void) {
 
 function addAfter(target: HTMLButtonElement, onClick: () => void) {
   const parent = target.parentElement;
-  if (!parent || parent.querySelector('[data-create-cancel="true"]')) return;
+  const existing = parent?.querySelector<HTMLButtonElement>('[data-create-cancel="true"]');
+  if (!parent) return null;
+  if (existing) return existing;
   const cancel = makeCancel(onClick);
   target.insertAdjacentElement('afterend', cancel);
+  return cancel;
+}
+
+function compactExpensesFormSpacing() {
+  if (window.location.pathname !== '/expenses') return;
+
+  const filterBar = document.querySelector<HTMLElement>('.finance-filter-bar');
+  if (!filterBar) return;
+
+  const parent = filterBar.parentElement;
+  const formBlock = document.querySelector<HTMLElement>('.finance-form-block');
+  const cancel = document.querySelector<HTMLButtonElement>('.finance-form-block [data-create-cancel="true"]');
+
+  if (formBlock) formBlock.style.marginBottom = '0px';
+  if (cancel) cancel.style.marginBottom = '0px';
+
+  if (parent && formBlock) {
+    const parentStyle = window.getComputedStyle(parent);
+    const rawGap = parentStyle.rowGap && parentStyle.rowGap !== 'normal' ? parentStyle.rowGap : parentStyle.gap;
+    const gap = Number.parseFloat(rawGap || '0') || 0;
+    const desiredGap = 14;
+    filterBar.style.marginTop = gap > desiredGap ? `${desiredGap - gap}px` : `${desiredGap}px`;
+  } else {
+    filterBar.style.marginTop = '14px';
+  }
 }
 
 function setReactInputValue(input: HTMLInputElement, value: string) {
@@ -199,6 +226,7 @@ export function CreateFormCancelControls() {
             else window.location.assign('/expenses');
           });
         }
+        compactExpensesFormSpacing();
       }
 
       const inviteEmail = document.querySelector<HTMLInputElement>('#invite-email');
@@ -236,12 +264,14 @@ export function CreateFormCancelControls() {
     localeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
     const jobTitleSyncTimer = window.setInterval(syncJobTitleFromAddress, 250);
     window.addEventListener('popstate', apply);
+    window.addEventListener('resize', apply);
 
     return () => {
       observer.disconnect();
       localeObserver.disconnect();
       window.clearInterval(jobTitleSyncTimer);
       window.removeEventListener('popstate', apply);
+      window.removeEventListener('resize', apply);
     };
   }, []);
 
