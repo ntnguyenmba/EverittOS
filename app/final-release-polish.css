@@ -136,14 +136,32 @@ textarea {
     min-width: 0;
   }
 
-  /* Expenses: keep the header actions compact and visually grouped on phones. */
+  /* Expenses: keep header actions and filters visually connected on phones. */
+  .expenses-page-active .page-header {
+    margin-bottom: 10px !important;
+    padding-bottom: 0 !important;
+  }
+
+  .expenses-page-active .page-header-action {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .expenses-page-active .page-header-action > div {
+    margin-bottom: 0 !important;
+  }
+
   .finance-filter-bar {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: center !important;
     gap: 14px !important;
-    margin-top: 18px !important;
+    margin-top: 8px !important;
     margin-bottom: 18px !important;
+  }
+
+  .expenses-page-active .page-header + .finance-filter-bar {
+    margin-top: 8px !important;
   }
 
   .finance-filter-bar > .btn {
@@ -165,7 +183,6 @@ textarea {
     margin-top: 0 !important;
   }
 }
-
 
 /* Keep active navigation labels readable on every light selected surface. */
 .sidebar .nav-item.active,
@@ -190,7 +207,6 @@ textarea {
   color: inherit !important;
   opacity: 1 !important;
 }
-
 
 /* Compact desktop navigation: preserve page space and avoid light-on-light active rows. */
 @media (min-width: 1024px) {
@@ -371,7 +387,6 @@ textarea {
   background: #36566d !important;
   color: #ffffff !important;
 }
-
 
 /* Client portal navigation removes the remaining warm gold accent. */
 .client-dashboard-shell .contractor-nav a[aria-current='page'] {
