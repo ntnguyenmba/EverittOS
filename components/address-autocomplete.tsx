@@ -119,7 +119,7 @@ export function AddressAutocomplete({ id, label, value, disabled, required, plac
     if (event.key === 'Escape') { if (open) { event.preventDefault(); setOpen(false); setActiveIndex(-1); } return; }
     if (!open) return;
     if (event.key === 'ArrowDown') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index + 1) % suggestions.length); }
-    else if (event.key === 'ArrowUp') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1); }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1)); }
     else if (event.key === 'Enter' && activeIndex >= 0 && suggestions[activeIndex]) { event.preventDefault(); applySuggestion(suggestions[activeIndex]); }
   }
 
