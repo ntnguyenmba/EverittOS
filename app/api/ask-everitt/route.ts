@@ -7,6 +7,7 @@ import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/a
 import { parseNaturalAskEverittQuery } from '@/lib/ask-everitt/natural-query';
 import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
+import { buildSmartAskSuggestions } from '@/lib/ask-everitt/smart-suggestions';
 import { runStructuredNaturalQuery } from '@/lib/ask-everitt/structured-query';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
@@ -183,6 +184,15 @@ export async function POST(request: Request) {
       org.organizationId,
       natural.searchQuery || prompt
     );
+
+    if (searchResult.results.length === 0) {
+      searchResult.suggestions = await buildSmartAskSuggestions(
+        supabase,
+        org.organizationId,
+        locale,
+        pageContext
+      );
+    }
 
     await recordAiUsage(admin, searchUsageEvent({
       workspaceId: org.organizationId,
