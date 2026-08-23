@@ -9,6 +9,7 @@ import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
 import { buildSmartAskSuggestions } from '@/lib/ask-everitt/smart-suggestions';
 import { runStructuredNaturalQuery } from '@/lib/ask-everitt/structured-query';
+import { runStructuredNaturalQueryV2 } from '@/lib/ask-everitt/structured-query-v2';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
@@ -167,7 +168,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const structuredResult = await runStructuredNaturalQuery(
+    const structuredV2 = await runStructuredNaturalQueryV2(
       supabase,
       org.organizationId,
       user.id,
@@ -175,7 +176,15 @@ export async function POST(request: Request) {
       locale
     );
 
-    const directResult = structuredResult || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
+    const structuredFallback = structuredV2 ? null : await runStructuredNaturalQuery(
+      supabase,
+      org.organizationId,
+      user.id,
+      prompt,
+      locale
+    );
+
+    const directResult = structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
       ? await queryNextJob(supabase, org.organizationId, locale)
       : null);
 
