@@ -93,31 +93,38 @@ export function RequestCreateForm({ onCreated, redirectTo = '/leads' }: RequestC
   }
 
   return (
-    <div className="card form">
-      <h3 className="card-title-sm">Request details</h3>
+    <div className="card form request-create-form" style={{ gap: '18px' }}>
+      <h3 className="card-title-sm" style={{ margin: '0 0 4px' }}>Request details</h3>
+
       <input className="input" placeholder="Name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       <input className="input" placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input className="input" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       <input className="input" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-      <label>Assign to</label>
-      <select className="input" value={assignedTo} disabled={teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
-        <option value="">Unassigned</option>
-        {teamOptions.map((member) => (
-          <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
-        ))}
-      </select>
-      <label className="auth-field">
-        <span>How they found you</span>
-        <select className="input" value={requestSource} onChange={(e) => setRequestSource(e.target.value)}>
+
+      <div className="form-group" style={{ gap: '8px' }}>
+        <label htmlFor="request-assigned-to">Assign to</label>
+        <select id="request-assigned-to" className="input" value={assignedTo} disabled={teamOptionsLoading} onChange={(e) => setAssignedTo(e.target.value)}>
+          <option value="">Unassigned</option>
+          {teamOptions.map((member) => (
+            <option key={member.userId} value={member.userId}>{member.label} - {member.role}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group" style={{ gap: '8px' }}>
+        <label htmlFor="request-source">How they found you</label>
+        <select id="request-source" className="input" value={requestSource} onChange={(e) => setRequestSource(e.target.value)}>
           {LEAD_SOURCE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
         </select>
-      </label>
+      </div>
+
       <textarea className="input" rows={4} placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      <button type="button" className="btn btn-primary" disabled={saving} onClick={() => void saveRequest()}>
+
+      <button type="button" className="btn btn-primary" style={{ marginTop: '4px' }} disabled={saving} onClick={() => void saveRequest()}>
         {saving ? FEEDBACK.loading : 'Save request'}
       </button>
     </div>
