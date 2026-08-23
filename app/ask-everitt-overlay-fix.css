@@ -1,6 +1,8 @@
 /* Keep Ask Everitt above every app shell/header layer and make its input reachable on all viewports. */
 .everitt-cmd-overlay {
-  z-index: 5000 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
   min-height: 100dvh;
   height: 100dvh;
   padding:
@@ -10,9 +12,28 @@
     max(16px, env(safe-area-inset-left));
   align-items: flex-start;
   overflow: hidden;
+  pointer-events: auto !important;
+}
+
+/* The mobile header and main content are separate stacking contexts. Lift the main only while Ask Everitt is open. */
+body:has(.everitt-cmd-overlay) .dashboard-shell > .main,
+body:has(.everitt-cmd-overlay) .main {
+  z-index: 2147482999 !important;
+}
+
+body:has(.everitt-cmd-overlay) .dashboard-shell-mobile,
+body:has(.everitt-cmd-overlay) .mobile-nav,
+body:has(.everitt-cmd-overlay) .mobile-nav-bar {
+  z-index: 1 !important;
+}
+
+body:has(.everitt-cmd-overlay) {
+  overflow: hidden !important;
 }
 
 .everitt-cmd-palette {
+  position: relative !important;
+  z-index: 2147483001 !important;
   width: min(680px, 100%);
   max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 32px));
   margin: 0 auto;
@@ -20,26 +41,28 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   isolation: isolate;
+  pointer-events: auto !important;
 }
 
 .everitt-cmd-bar {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 6;
   background: var(--surface);
+  padding-top: 2px;
 }
 
 .everitt-cmd-input {
   min-width: 0;
-  min-height: 48px;
+  min-height: 52px;
   font-size: 16px;
-  pointer-events: auto;
+  pointer-events: auto !important;
   touch-action: manipulation;
 }
 
 .everitt-cmd-close {
-  z-index: 4;
-  pointer-events: auto;
+  z-index: 8;
+  pointer-events: auto !important;
 }
 
 /* The tagline already explains how Ask Everitt works, so do not repeat it in the footer. */
@@ -47,16 +70,91 @@
   display: none !important;
 }
 
+/* Expenses mobile rhythm. This file is loaded last so older release CSS cannot override it. */
+@media (max-width: 640px) {
+  .expenses-page-active .app-page-content > .page-header,
+  .expenses-page-active .app-page-content > .page-header-wrap {
+    margin-top: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .expenses-page-active .page-head,
+  .expenses-page-active .page-header {
+    gap: 10px !important;
+  }
+
+  .expenses-page-active .page-actions,
+  .expenses-page-active .page-head .page-actions,
+  .expenses-page-active .page-header .page-actions {
+    gap: 10px !important;
+    margin-top: 8px !important;
+  }
+
+  .expenses-page-active .finance-filter-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin: 16px 0 18px !important;
+  }
+
+  .expenses-page-active .finance-filter-bar > .btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+
+  .expenses-page-active .finance-filter-bar > strong {
+    display: block !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    line-height: 1.2 !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  .expenses-page-active .finance-filter-panel {
+    margin-top: 0 !important;
+  }
+
+  /* Bookkeeping has a nested page main. Keep range controls and metric cards compact on phones. */
+  .dashboard-shell .main > main > .inline-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin: 12px 0 20px !important;
+    width: 100% !important;
+  }
+
+  .dashboard-shell .main > main > .inline-actions > .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .main > main > div > section[style*='grid-template-columns'] {
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .dashboard-shell .main > main > div > section[style*='grid-template-columns'] > .card {
+    min-height: 104px !important;
+    padding: 18px 20px !important;
+    gap: 10px !important;
+  }
+}
+
 @media (max-width: 900px) {
   .everitt-cmd-overlay {
-    padding-top: max(12px, env(safe-area-inset-top));
-    padding-right: 12px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    padding-left: 12px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: 10px;
   }
 
   .everitt-cmd-palette {
-    max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+    max-height: calc(100dvh - max(20px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 20px));
     border-radius: 18px;
   }
 }
