@@ -46,6 +46,13 @@ export type AskEverittSearchGroup = {
   results: AskEverittSearchRecord[];
 };
 
+export type AskEverittSuggestion = {
+  id: string;
+  label: string;
+  prompt: string;
+  count?: number;
+};
+
 export type AskEverittSearchResponse = {
   mode: 'search';
   summary: string;
@@ -54,6 +61,7 @@ export type AskEverittSearchResponse = {
   metrics?: AskEverittMetric[];
   sourcesUsed?: string[];
   noResultsHint?: string;
+  suggestions?: AskEverittSuggestion[];
 };
 
 export type AskEverittAiPrefetchedContext = {
