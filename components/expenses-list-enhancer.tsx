@@ -69,15 +69,17 @@ export function ExpensesListEnhancer() {
         font-weight: 700;
       }
 
+      /* Expenses is a compact working page. Keep its controls together instead of
+         spreading the header, filters and total across the background. */
       .expenses-page-active .page-header {
-        margin-top: 34px !important;
-        margin-bottom: 28px !important;
-        row-gap: 20px !important;
+        margin-top: 18px !important;
+        margin-bottom: 14px !important;
+        row-gap: 12px !important;
       }
 
       .expenses-page-active .page-header-text {
         display: grid !important;
-        gap: 14px !important;
+        gap: 8px !important;
       }
 
       .expenses-page-active .page-header h1,
@@ -86,30 +88,33 @@ export function ExpensesListEnhancer() {
       }
 
       .expenses-page-active .page-header .page-subtitle {
-        line-height: 1.5 !important;
+        line-height: 1.45 !important;
       }
 
       .expenses-page-active .page-header-action {
-        margin-top: 4px !important;
+        margin-top: 0 !important;
       }
 
       .expenses-page-active .finance-filter-bar {
-        margin-top: 28px !important;
+        margin-top: 10px !important;
+        margin-bottom: 16px !important;
+        min-height: 48px;
+        align-items: center !important;
       }
 
       @media (max-width: 640px) {
         .expenses-page-active .page-header {
-          margin-top: 44px !important;
-          margin-bottom: 32px !important;
-          row-gap: 24px !important;
+          margin-top: 18px !important;
+          margin-bottom: 14px !important;
+          row-gap: 12px !important;
         }
 
         .expenses-page-active .page-header-text {
-          gap: 18px !important;
+          gap: 8px !important;
         }
 
         .expenses-page-active .page-header-action {
-          margin-top: 6px !important;
+          margin-top: 0 !important;
         }
 
         .expenses-page-active .page-header-action > * {
@@ -117,8 +122,8 @@ export function ExpensesListEnhancer() {
         }
 
         .expenses-page-active .finance-filter-bar {
-          margin-top: 32px !important;
-          margin-bottom: 24px !important;
+          margin-top: 10px !important;
+          margin-bottom: 16px !important;
         }
       }
     `}</style>
