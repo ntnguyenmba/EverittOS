@@ -10,6 +10,9 @@ export type NaturalAskIntent =
   | 'expenses_month'
   | 'leads_followup'
   | 'leads_month'
+  | 'requests_waiting_estimate'
+  | 'open_estimates'
+  | 'worker_availability'
   | 'inactive_customers'
   | 'top_worker'
   | 'reviews'
@@ -41,40 +44,54 @@ function canonicalizeLanguage(text: string): string {
 
   const replacements: Array<[RegExp, string]> = [
     // Spanish
-    [/\b(trabajos?|trabajo)\b/gi, 'jobs'],
-    [/\b(clientes?|cliente)\b/gi, 'customers'],
-    [/\b(trabajadores?|trabajador|equipo)\b/gi, 'workers'],
-    [/\b(facturas?|factura)\b/gi, 'invoices'],
+    [/\b(trabajos?|trabajo|citas?|servicios?)\b/gi, 'jobs'],
+    [/\b(clientes?|cliente|propietarios?)\b/gi, 'customers'],
+    [/\b(trabajadores?|trabajador|empleados?|técnicos?|tecnicos?|equipo|personal)\b/gi, 'workers'],
+    [/\b(facturas?|factura|pagos?)\b/gi, 'invoices'],
+    [/\b(estimaciones?|presupuestos?|cotizaciones?|propuestas?)\b/gi, 'estimates'],
+    [/\b(solicitudes?|solicitud|consultas?|consulta|prospectos?|prospecto|clientes potenciales)\b/gi, 'leads'],
+    [/\b(agenda|calendario|disponibilidad)\b/gi, 'schedule'],
     [/\b(ingresos?|ventas)\b/gi, 'revenue'],
     [/\b(gastos?|gasto)\b/gi, 'expenses'],
-    [/\b(prospectos?|prospecto|clientes potenciales)\b/gi, 'leads'],
     [/\b(hoy)\b/gi, 'today'],
     [/\b(mañana)\b/gi, 'tomorrow'],
     [/\b(esta semana)\b/gi, 'this week'],
+    [/\b(próxima semana|proxima semana)\b/gi, 'next week'],
+    [/\b(semana pasada)\b/gi, 'last week'],
     [/\b(este mes)\b/gi, 'this month'],
+    [/\b(mes pasado)\b/gi, 'last month'],
     [/\b(próximo|próxima|siguiente)\b/gi, 'next'],
     [/\b(vencid[oa]s?|atrasad[oa]s?)\b/gi, 'overdue'],
     [/\b(sin pagar|no pagad[oa]s?|pendientes? de pago)\b/gi, 'unpaid'],
     [/\b(deben|debe|adeudan|adeuda)\b/gi, 'owe'],
     [/\b(seguimiento)\b/gi, 'follow up'],
+    [/\b(libre|libres|disponible|disponibles)\b/gi, 'free'],
+    [/\b(sin asignar)\b/gi, 'unassigned'],
 
     // Vietnamese
-    [/\b(công việc|việc làm)\b/gi, 'jobs'],
-    [/\b(khách hàng)\b/gi, 'customers'],
-    [/\b(nhân viên|người làm|đội ngũ)\b/gi, 'workers'],
-    [/\b(hóa đơn)\b/gi, 'invoices'],
+    [/\b(công việc|việc làm|lịch hẹn|dịch vụ)\b/gi, 'jobs'],
+    [/\b(khách hàng|chủ nhà)\b/gi, 'customers'],
+    [/\b(nhân viên|người làm|đội ngũ|kỹ thuật viên)\b/gi, 'workers'],
+    [/\b(hóa đơn|thanh toán)\b/gi, 'invoices'],
+    [/\b(ước tính|báo giá|đề xuất)\b/gi, 'estimates'],
+    [/\b(khách tiềm năng|yêu cầu|truy vấn)\b/gi, 'leads'],
+    [/\b(lịch làm việc|lịch|khả dụng)\b/gi, 'schedule'],
     [/\b(doanh thu|thu nhập)\b/gi, 'revenue'],
     [/\b(chi phí)\b/gi, 'expenses'],
-    [/\b(khách tiềm năng)\b/gi, 'leads'],
     [/\b(hôm nay)\b/gi, 'today'],
     [/\b(ngày mai)\b/gi, 'tomorrow'],
     [/\b(tuần này)\b/gi, 'this week'],
+    [/\b(tuần sau)\b/gi, 'next week'],
+    [/\b(tuần trước)\b/gi, 'last week'],
     [/\b(tháng này)\b/gi, 'this month'],
+    [/\b(tháng trước)\b/gi, 'last month'],
     [/\b(tiếp theo|sắp tới)\b/gi, 'next'],
     [/\b(quá hạn|trễ hạn)\b/gi, 'overdue'],
     [/\b(chưa thanh toán|chưa trả)\b/gi, 'unpaid'],
     [/\b(nợ)\b/gi, 'owe'],
-    [/\b(theo dõi)\b/gi, 'follow up']
+    [/\b(theo dõi)\b/gi, 'follow up'],
+    [/\b(rảnh)\b/gi, 'free'],
+    [/\b(chưa phân công)\b/gi, 'unassigned']
   ];
 
   for (const [pattern, replacement] of replacements) q = q.replace(pattern, replacement);
@@ -137,6 +154,18 @@ export function parseNaturalAskEverittQuery(input: string): NaturalAskQuery {
     return make('customers who owe money', 'customers_owe');
   }
 
+  if (/\b(open|pending|sent|draft|big|large)?\s*estimates?\b|\bestimates?\b.*\b(open|pending|sent|draft|this week|this month|over|above)\b/.test(q)) {
+    return make(original, 'open_estimates');
+  }
+
+  if (/\b(leads?|requests?)\b.*\b(waiting|need|needs|pending)\b.*\bestimate\b|\bwaiting for (?:an )?estimate\b/.test(q)) {
+    return make(original, 'requests_waiting_estimate');
+  }
+
+  if (/\bwho(?:'s| is)?\s+free\b|\bfree\s+(?:workers?|staff|team)\b|\b(worker|workers|staff|team)\b.*\bavailability\b/.test(q)) {
+    return make(original, 'worker_availability');
+  }
+
   if (/\b(revenue|income|sales|money made|made|earned|earnings)\b.*\b(this month|month)\b|\b(this month|month)\b.*\b(revenue|income|sales|earned|made)\b/.test(q)) {
     return make('revenue this month', 'revenue_month');
   }
@@ -149,12 +178,12 @@ export function parseNaturalAskEverittQuery(input: string): NaturalAskQuery {
     return make('leads that need follow up', 'leads_followup');
   }
 
-  if (/\b(new|recent|how many)\b.*\bleads?\b.*\b(this month|month)\b|\bleads?\b.*\b(this month|month)\b/.test(q)) {
-    return make('leads this month', 'leads_month');
+  if (/\b(new|recent|how many)\b.*\bleads?\b.*\b(this month|month|this week|week)\b|\bleads?\b.*\b(this month|month|this week|week)\b/.test(q)) {
+    return make(original, 'leads_month');
   }
 
-  if (/\b(customers?|clients?)\b.*\b(inactive|not booked|haven't booked|have not booked|no booking)\b|\b(inactive)\b.*\b(customers?|clients?)\b/.test(q)) {
-    return make('customers who have not booked in 90 days', 'inactive_customers');
+  if (/\b(customers?|clients?)\b.*\b(inactive|not booked|haven't booked|have not booked|no booking|no jobs|no activity)\b|\b(inactive)\b.*\b(customers?|clients?)\b/.test(q)) {
+    return make(original, 'inactive_customers');
   }
 
   if (/\b(top|best|most jobs|highest)\b.*\b(worker|crew|employee|team member)\b|\b(worker|crew|employee)\b.*\b(most|top|best)\b/.test(q)) {
@@ -176,7 +205,7 @@ export function parseNaturalAskEverittQuery(input: string): NaturalAskQuery {
   const named = extractNamedLookup(original);
   if (named) return make(named.query, named.intent);
 
-  const recordWords = /\b(customer|client|job|work|lead|worker|crew|schedule|booking|appointment|invoice|expense|revenue|review|photo|form|template|sop|document|note)\b/i;
+  const recordWords = /\b(customer|client|job|work|lead|request|worker|crew|team|schedule|calendar|availability|booking|appointment|invoice|bill|payment|estimate|quote|proposal|expense|revenue|review|photo|form|template|sop|document|note)\b/i;
   if (recordWords.test(q)) return make(original, 'generic_records');
 
   return {
