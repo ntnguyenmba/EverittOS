@@ -135,6 +135,35 @@ textarea {
   .info-card {
     min-width: 0;
   }
+
+  /* Expenses: keep the header actions compact and visually grouped on phones. */
+  .finance-filter-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-top: 18px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .finance-filter-bar > .btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+  }
+
+  .finance-filter-bar > strong {
+    display: block !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    text-align: right !important;
+  }
+
+  .finance-filter-panel {
+    margin-top: 0 !important;
+  }
 }
 
 
