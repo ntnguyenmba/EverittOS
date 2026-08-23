@@ -133,30 +133,6 @@ function addAfter(target: HTMLButtonElement, onClick: () => void) {
   return cancel;
 }
 
-function compactExpensesFormSpacing() {
-  if (window.location.pathname !== '/expenses') return;
-
-  const filterBar = document.querySelector<HTMLElement>('.finance-filter-bar');
-  const cancel = document.querySelector<HTMLButtonElement>('.page-header-action [data-create-cancel="true"]');
-  if (!filterBar || !cancel) return;
-
-  filterBar.style.transform = '';
-  filterBar.style.marginBottom = '';
-
-  window.requestAnimationFrame(() => {
-    const cancelBottom = cancel.getBoundingClientRect().bottom;
-    const filterTop = filterBar.getBoundingClientRect().top;
-    const desiredGap = 14;
-    const currentGap = filterTop - cancelBottom;
-    const excess = Math.max(0, currentGap - desiredGap);
-
-    if (excess > 0) {
-      filterBar.style.transform = `translateY(-${excess}px)`;
-      filterBar.style.marginBottom = `-${excess}px`;
-    }
-  });
-}
-
 function setReactInputValue(input: HTMLInputElement, value: string) {
   if (input.value === value) return;
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
@@ -212,23 +188,6 @@ export function CreateFormCancelControls() {
         if (saveCustomer) addAfter(saveCustomer, () => window.history.length > 1 ? window.history.back() : window.location.assign('/customers'));
       }
 
-      if (path === '/expenses') {
-        const saveExpense = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find((button) => {
-          const text = buttonText(button);
-          return text === 'save expense' || text === 'add expense' || text === 'update expense' || text === 'close';
-        });
-        if (saveExpense) {
-          addAfter(saveExpense, () => {
-            const close = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-              (button) => buttonText(button) === 'close'
-            );
-            if (close && close !== saveExpense) close.click();
-            else window.location.assign('/expenses');
-          });
-        }
-        compactExpensesFormSpacing();
-      }
-
       const inviteEmail = document.querySelector<HTMLInputElement>('#invite-email');
       if (inviteEmail) {
         const inviteSection = inviteEmail.closest('.settings-card');
@@ -264,14 +223,12 @@ export function CreateFormCancelControls() {
     localeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
     const jobTitleSyncTimer = window.setInterval(syncJobTitleFromAddress, 250);
     window.addEventListener('popstate', apply);
-    window.addEventListener('resize', apply);
 
     return () => {
       observer.disconnect();
       localeObserver.disconnect();
       window.clearInterval(jobTitleSyncTimer);
       window.removeEventListener('popstate', apply);
-      window.removeEventListener('resize', apply);
     };
   }, []);
 
