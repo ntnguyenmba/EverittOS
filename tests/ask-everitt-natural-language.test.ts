@@ -61,6 +61,20 @@ describe('Ask Everitt natural language parser', () => {
     assert.equal(count?.timeRange?.relative, 'this_week');
   });
 
+  it('keeps estimates requests and availability on structured search', () => {
+    const estimates = parseNaturalAskEverittQuery('Show open estimates this month');
+    assert.equal(estimates.intent, 'open_estimates');
+    assert.equal(estimates.preferSearch, true);
+
+    const waiting = parseNaturalAskEverittQuery('Which requests are waiting for an estimate?');
+    assert.equal(waiting.intent, 'requests_waiting_estimate');
+    assert.equal(waiting.preferSearch, true);
+
+    const availability = parseNaturalAskEverittQuery('Who is free tomorrow?');
+    assert.equal(availability.intent, 'worker_availability');
+    assert.equal(availability.preferSearch, true);
+  });
+
   it('canonicalizes Spanish record questions without AI', () => {
     const spanish = parseAskFilter('¿Qué trabajos tengo mañana?');
     assert.equal(spanish?.entity, 'job');
@@ -69,6 +83,14 @@ describe('Ask Everitt natural language parser', () => {
     const invoices = parseAskFilter('Facturas sin pagar');
     assert.equal(invoices?.entity, 'invoice');
     assert.equal(invoices?.isPaid, false);
+
+    const quotes = parseNaturalAskEverittQuery('Cotizaciones abiertas este mes');
+    assert.equal(quotes.intent, 'open_estimates');
+    assert.equal(quotes.preferSearch, true);
+
+    const free = parseNaturalAskEverittQuery('¿Quién está libre mañana?');
+    assert.equal(free.intent, 'worker_availability');
+    assert.equal(free.preferSearch, true);
   });
 
   it('canonicalizes Vietnamese record questions without AI', () => {
@@ -79,6 +101,14 @@ describe('Ask Everitt natural language parser', () => {
     const free = parseAskFilter('Nhân viên nào rảnh thứ năm?');
     assert.equal(free?.entity, 'worker');
     assert.equal(free?.timeRange?.dayOfWeek, 4);
+
+    const quotes = parseNaturalAskEverittQuery('Báo giá đang mở tháng này');
+    assert.equal(quotes.intent, 'open_estimates');
+    assert.equal(quotes.preferSearch, true);
+
+    const requests = parseNaturalAskEverittQuery('Yêu cầu nào đang chờ báo giá?');
+    assert.equal(requests.hasRecordIntent, true);
+    assert.equal(requests.preferSearch, true);
   });
 
   it('keeps business record questions on records-first search', () => {
