@@ -26,8 +26,6 @@ body:has(.pricing-helper-layout) .pricing-helper-inputs {
   transform: none !important;
 }
 
-/* A legacy summary-card rule still places this card roughly one spacing unit lower
-   on wide screens. Pull only the desktop Quotes summary card onto the same top line. */
 body:has(.pricing-helper-layout) .pricing-helper-summary {
   grid-column: 2 !important;
   min-height: 0 !important;
@@ -125,21 +123,19 @@ body:has(.pricing-helper-layout) .pricing-helper-summary {
 }
 
 .unified-job-form .muted {
-  color: color-mix(in srgb, var(--text) 68%, var(--surface) 32%) !important;
+  color: color-mix(in srgb, var(--text) 76%, var(--surface) 24%) !important;
 }
 
-/* Customer price is the section immediately before the worker assignment section. */
 .unified-job-form > .job-create-section:has(+ .job-create-section #assigned-to) {
   border-width: 2px !important;
-  border-color: color-mix(in srgb, var(--accent, #243f53) 62%, var(--line) 38%) !important;
-  background: color-mix(in srgb, var(--surface) 94%, var(--accent, #243f53) 6%) !important;
+  border-color: color-mix(in srgb, var(--accent, #243f53) 68%, var(--line) 32%) !important;
+  background: color-mix(in srgb, var(--surface) 93%, var(--accent, #243f53) 7%) !important;
 }
 
-/* Worker assignment/pay gets its own clearly separate visual block. */
 .unified-job-form > .job-create-section:has(#assigned-to) {
   border-width: 2px !important;
-  border-color: color-mix(in srgb, var(--text) 42%, var(--line) 58%) !important;
-  background: color-mix(in srgb, var(--surface) 92%, var(--text) 8%) !important;
+  border-color: color-mix(in srgb, var(--text) 50%, var(--line) 50%) !important;
+  background: color-mix(in srgb, var(--surface) 91%, var(--text) 9%) !important;
 }
 
 .unified-job-form > .job-create-section:has(#assigned-to) .segmented-control {
@@ -148,11 +144,10 @@ body:has(.pricing-helper-layout) .pricing-helper-summary {
 
 .unified-job-form > .job-create-section:has(#assigned-to) .segmented-control .btn:not(.btn-primary) {
   background: var(--surface) !important;
-  border-color: color-mix(in srgb, var(--line) 65%, var(--text) 35%) !important;
+  border-color: color-mix(in srgb, var(--line) 56%, var(--text) 44%) !important;
   color: var(--text) !important;
 }
 
-/* One unmistakable save action. Any accidental secondary submit control stays hidden. */
 .unified-job-form button[type='submit']:not(.unified-job-save) {
   display: none !important;
 }
@@ -167,24 +162,42 @@ body:has(.pricing-helper-layout) .pricing-helper-summary {
   box-shadow: 0 3px 10px rgba(18, 31, 40, .12) !important;
 }
 
-/* Secondary create-job choices should never compete visually with Save. */
 .unified-job-form .job-customer-mode button,
 .unified-job-form button.btn:not(.btn-primary),
 .unified-job-form a.btn:not(.btn-primary) {
   box-shadow: none !important;
 }
 
-/* App-wide readability pass without changing layout or role-specific content. */
+/* App-wide readability: keep the current visual system but make text, borders and controls less muted. */
 body {
-  --readability-border: color-mix(in srgb, var(--line) 72%, var(--text) 28%);
+  --readability-border: color-mix(in srgb, var(--line) 60%, var(--text) 40%);
+}
+
+.main,
+.app-page-content,
+.dashboard-main,
+.portal-main,
+.card,
+.settings-card,
+.finance-list-card,
+.client-summary-card,
+.record-card,
+.metric-card,
+.snapshot-card {
+  color: var(--text) !important;
 }
 
 .card,
 .settings-card,
 .finance-list-card,
 .client-summary-card,
+.record-card,
+.metric-card,
+.snapshot-card,
 details,
-fieldset {
+fieldset,
+.table-card,
+.jobs-table-card {
   border-color: var(--readability-border) !important;
 }
 
@@ -198,14 +211,25 @@ textarea {
 .input,
 input.input,
 select.input,
-textarea.input {
-  border-color: color-mix(in srgb, var(--line) 66%, var(--text) 34%) !important;
+textarea.input,
+.language-switcher-select {
+  border-color: color-mix(in srgb, var(--line) 54%, var(--text) 46%) !important;
+  background-color: var(--surface) !important;
+}
+
+.input:focus,
+input.input:focus,
+select.input:focus,
+textarea.input:focus,
+.language-switcher-select:focus {
+  border-color: color-mix(in srgb, var(--accent, #243f53) 74%, var(--text) 26%) !important;
+  outline-color: color-mix(in srgb, var(--accent, #243f53) 70%, transparent) !important;
 }
 
 .input::placeholder,
 input::placeholder,
 textarea::placeholder {
-  color: color-mix(in srgb, var(--text) 52%, var(--surface) 48%) !important;
+  color: color-mix(in srgb, var(--text) 62%, var(--surface) 38%) !important;
   opacity: 1 !important;
 }
 
@@ -216,21 +240,73 @@ textarea::placeholder {
 .card h4,
 .settings-card h2,
 .settings-card h3,
-.page-header h1 {
+.page-header h1,
+.page-header h2,
+.section-title,
+.table-card th,
+table th {
   color: var(--text) !important;
 }
 
 .muted,
 .text-muted,
 .secondary-text,
-.helper-text {
-  color: color-mix(in srgb, var(--text) 66%, var(--surface) 34%) !important;
+.helper-text,
+.jobs-row-time,
+.jobs-secondary,
+.finance-metric-label,
+.dashboard-revenue-metric-label,
+.sidebar-language-label {
+  color: color-mix(in srgb, var(--text) 76%, var(--surface) 24%) !important;
+  opacity: 1 !important;
+}
+
+.status,
+.badge,
+.pill,
+.chip {
+  border-color: color-mix(in srgb, var(--line) 58%, var(--text) 42%) !important;
 }
 
 .btn,
 button,
 a.btn {
   font-weight: 650;
+}
+
+.btn:not(.btn-primary),
+button:not(.btn-primary):not(.everitt-cmd-trigger):not(.mobile-nav-toggle):not(.jobs-menu-trigger) {
+  border-color: color-mix(in srgb, var(--line) 58%, var(--text) 42%);
+}
+
+.sidebar,
+.mobile-nav-drawer,
+.mobile-nav-panel {
+  color: var(--text) !important;
+}
+
+.sidebar a,
+.sidebar button,
+.mobile-nav-drawer a,
+.mobile-nav-drawer button,
+.mobile-nav-panel a,
+.mobile-nav-panel button {
+  color: var(--text) !important;
+}
+
+.sidebar a[aria-current='page'],
+.sidebar .active,
+.mobile-nav-drawer a[aria-current='page'],
+.mobile-nav-panel a[aria-current='page'] {
+  font-weight: 750 !important;
+}
+
+.table-card td,
+table td,
+.list-row,
+.record-card p,
+.card p {
+  color: color-mix(in srgb, var(--text) 92%, var(--surface) 8%);
 }
 
 @media (max-width: 820px) {
