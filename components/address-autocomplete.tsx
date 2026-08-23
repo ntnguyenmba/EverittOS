@@ -20,7 +20,7 @@ type FetchState = 'idle' | 'loading' | 'empty' | 'error' | 'ready';
 
 const CLIENT_CACHE = new Map<string, { expiresAt: number; suggestions: AddressSuggestion[] }>();
 const CLIENT_CACHE_TTL = 1000 * 60 * 2;
-const CLIENT_CACHE_VERSION = 'v5';
+const CLIENT_CACHE_VERSION = 'v6';
 
 function cacheKey(query: string): string {
   return `${CLIENT_CACHE_VERSION}:${query.trim().toLowerCase()}`;
@@ -119,7 +119,7 @@ export function AddressAutocomplete({ id, label, value, disabled, required, plac
     if (event.key === 'Escape') { if (open) { event.preventDefault(); setOpen(false); setActiveIndex(-1); } return; }
     if (!open) return;
     if (event.key === 'ArrowDown') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index + 1) % suggestions.length); }
-    else if (event.key === 'ArrowUp') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1)); }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); if (suggestions.length) setActiveIndex((index) => (index <= 0 ? suggestions.length - 1 : index - 1); }
     else if (event.key === 'Enter' && activeIndex >= 0 && suggestions[activeIndex]) { event.preventDefault(); applySuggestion(suggestions[activeIndex]); }
   }
 
@@ -138,7 +138,8 @@ export function AddressAutocomplete({ id, label, value, disabled, required, plac
           {state === 'loading' ? <p className="muted" style={{ padding: '10px 12px', margin: 0 }}>Searching addresses…</p> : null}
           {suggestions.map((suggestion, index) => (
             <button key={suggestion.id} id={`${listboxId}-option-${index}`} type="button" role="option" aria-selected={index === activeIndex} className="address-autocomplete-option" style={{ display: 'block', width: '100%', padding: '10px 12px', border: 0, borderBottom: '1px solid var(--line)', background: index === activeIndex ? 'var(--surface-subtle)' : 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer' }} onMouseDown={(event) => event.preventDefault()} onMouseEnter={() => setActiveIndex(index)} onClick={() => applySuggestion(suggestion)}>
-              <strong style={{ display: 'block' }}>{suggestion.label}</strong><span className="muted" style={{ fontSize: '0.9em' }}>{suggestion.detail}</span>
+              <strong style={{ display: 'block' }}>{suggestion.formattedAddress}</strong>
+              <span className="muted" style={{ fontSize: '0.9em' }}>{suggestion.detail}</span>
             </button>
           ))}
           <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={useTypedAddress} style={{ display: 'block', width: '100%', padding: '12px', border: 0, background: 'var(--surface-subtle)', color: 'inherit', textAlign: 'left', cursor: 'pointer' }}>
