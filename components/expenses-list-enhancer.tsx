@@ -1,32 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-
-const PAGE_SIZE = 10;
 
 export function ExpensesListEnhancer() {
   const pathname = usePathname();
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    if (pathname !== '/expenses') return;
-    setVisibleCount(PAGE_SIZE);
-  }, [pathname]);
+    const isExpensesPage = pathname === '/expenses';
+    document.body.classList.toggle('expenses-page-active', isExpensesPage);
 
-  useEffect(() => {
-    if (pathname !== '/expenses') return;
+    if (!isExpensesPage) return;
 
     let frame = 0;
     const apply = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const cards = Array.from(document.querySelectorAll<HTMLElement>('.finance-expense-list .finance-list-card'));
-        setTotalCount(cards.length);
 
-        cards.forEach((card, index) => {
-          card.style.display = index < visibleCount ? '' : 'none';
+        cards.forEach((card) => {
+          card.style.display = '';
 
           const tags = card.querySelector<HTMLElement>('.finance-tags');
           if (!tags) return;
@@ -54,53 +47,39 @@ export function ExpensesListEnhancer() {
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      document.body.classList.remove('expenses-page-active');
       document.querySelectorAll<HTMLElement>('.finance-expense-list .finance-list-card').forEach((card) => {
         card.style.display = '';
       });
     };
-  }, [pathname, visibleCount]);
-
-  if (pathname !== '/expenses' || totalCount <= PAGE_SIZE) return null;
+  }, [pathname]);
 
   return (
-    <>
-      <div className="expenses-list-more-control">
-        <span>Showing {Math.min(visibleCount, totalCount)} / {totalCount}</span>
-        {visibleCount < totalCount ? (
-          <button type="button" className="btn" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
-            Show 10 more
-          </button>
-        ) : null}
-      </div>
-      <style jsx global>{`
-        .expense-unassigned-badge {
-          display: inline-flex;
-          align-items: center;
-          min-height: 28px;
-          padding: 4px 9px;
-          margin-right: 8px;
-          border: 1px solid rgba(158, 83, 58, 0.28);
-          border-radius: 999px;
-          background: rgba(255, 249, 246, 0.96);
-          color: #7a4937;
-          font-weight: 700;
+    <style jsx global>{`
+      .expense-unassigned-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 9px;
+        margin-right: 8px;
+        border: 1px solid rgba(158, 83, 58, 0.28);
+        border-radius: 999px;
+        background: rgba(255, 249, 246, 0.96);
+        color: #7a4937;
+        font-weight: 700;
+      }
+
+      .expenses-page-active .app-page-content > .page-header,
+      .expenses-page-active .app-page-content > .page-header-wrap {
+        margin-top: 20px !important;
+      }
+
+      @media (max-width: 640px) {
+        .expenses-page-active .app-page-content > .page-header,
+        .expenses-page-active .app-page-content > .page-header-wrap {
+          margin-top: 24px !important;
         }
-        .expenses-list-more-control {
-          display: grid;
-          gap: 8px;
-          margin-top: 14px;
-          color: #66727c;
-        }
-        .expenses-list-more-control .btn {
-          width: 100%;
-          min-height: 48px;
-        }
-        @media (min-width: 721px) {
-          .expenses-list-more-control .btn {
-            width: fit-content;
-          }
-        }
-      `}</style>
-    </>
+      }
+    `}</style>
   );
 }
