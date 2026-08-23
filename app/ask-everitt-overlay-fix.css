@@ -1,0 +1,68 @@
+/* Keep Ask Everitt above every app shell/header layer and make its input reachable on all viewports. */
+.everitt-cmd-overlay {
+  z-index: 5000 !important;
+  min-height: 100dvh;
+  height: 100dvh;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.everitt-cmd-palette {
+  width: min(680px, 100%);
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 32px));
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+}
+
+.everitt-cmd-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+}
+
+.everitt-cmd-input {
+  min-width: 0;
+  min-height: 48px;
+  font-size: 16px;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.everitt-cmd-close {
+  z-index: 4;
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  .everitt-cmd-overlay {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-right: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: 12px;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+    border-radius: 18px;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .everitt-cmd-overlay {
+    min-height: 100vh;
+    height: 100vh;
+  }
+
+  .everitt-cmd-palette {
+    max-height: calc(100vh - 32px);
+  }
+}
