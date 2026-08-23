@@ -137,24 +137,24 @@ function compactExpensesFormSpacing() {
   if (window.location.pathname !== '/expenses') return;
 
   const filterBar = document.querySelector<HTMLElement>('.finance-filter-bar');
-  if (!filterBar) return;
+  const cancel = document.querySelector<HTMLButtonElement>('.page-header-action [data-create-cancel="true"]');
+  if (!filterBar || !cancel) return;
 
-  const parent = filterBar.parentElement;
-  const formBlock = document.querySelector<HTMLElement>('.finance-form-block');
-  const cancel = document.querySelector<HTMLButtonElement>('.finance-form-block [data-create-cancel="true"]');
+  filterBar.style.transform = '';
+  filterBar.style.marginBottom = '';
 
-  if (formBlock) formBlock.style.marginBottom = '0px';
-  if (cancel) cancel.style.marginBottom = '0px';
-
-  if (parent && formBlock) {
-    const parentStyle = window.getComputedStyle(parent);
-    const rawGap = parentStyle.rowGap && parentStyle.rowGap !== 'normal' ? parentStyle.rowGap : parentStyle.gap;
-    const gap = Number.parseFloat(rawGap || '0') || 0;
+  window.requestAnimationFrame(() => {
+    const cancelBottom = cancel.getBoundingClientRect().bottom;
+    const filterTop = filterBar.getBoundingClientRect().top;
     const desiredGap = 14;
-    filterBar.style.marginTop = gap > desiredGap ? `${desiredGap - gap}px` : `${desiredGap}px`;
-  } else {
-    filterBar.style.marginTop = '14px';
-  }
+    const currentGap = filterTop - cancelBottom;
+    const excess = Math.max(0, currentGap - desiredGap);
+
+    if (excess > 0) {
+      filterBar.style.transform = `translateY(-${excess}px)`;
+      filterBar.style.marginBottom = `-${excess}px`;
+    }
+  });
 }
 
 function setReactInputValue(input: HTMLInputElement, value: string) {
@@ -215,14 +215,14 @@ export function CreateFormCancelControls() {
       if (path === '/expenses') {
         const saveExpense = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find((button) => {
           const text = buttonText(button);
-          return text === 'save expense' || text === 'add expense' || text === 'update expense';
+          return text === 'save expense' || text === 'add expense' || text === 'update expense' || text === 'close';
         });
         if (saveExpense) {
           addAfter(saveExpense, () => {
             const close = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
               (button) => buttonText(button) === 'close'
             );
-            if (close) close.click();
+            if (close && close !== saveExpense) close.click();
             else window.location.assign('/expenses');
           });
         }
