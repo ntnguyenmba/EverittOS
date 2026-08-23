@@ -69,15 +69,56 @@ export function ExpensesListEnhancer() {
         font-weight: 700;
       }
 
-      .expenses-page-active .app-page-content > .page-header,
-      .expenses-page-active .app-page-content > .page-header-wrap {
-        margin-top: 20px !important;
+      .expenses-page-active .page-header {
+        margin-top: 34px !important;
+        margin-bottom: 28px !important;
+        row-gap: 20px !important;
+      }
+
+      .expenses-page-active .page-header-text {
+        display: grid !important;
+        gap: 14px !important;
+      }
+
+      .expenses-page-active .page-header h1,
+      .expenses-page-active .page-header .page-subtitle {
+        margin: 0 !important;
+      }
+
+      .expenses-page-active .page-header .page-subtitle {
+        line-height: 1.5 !important;
+      }
+
+      .expenses-page-active .page-header-action {
+        margin-top: 4px !important;
+      }
+
+      .expenses-page-active .finance-filter-bar {
+        margin-top: 28px !important;
       }
 
       @media (max-width: 640px) {
-        .expenses-page-active .app-page-content > .page-header,
-        .expenses-page-active .app-page-content > .page-header-wrap {
-          margin-top: 24px !important;
+        .expenses-page-active .page-header {
+          margin-top: 44px !important;
+          margin-bottom: 32px !important;
+          row-gap: 24px !important;
+        }
+
+        .expenses-page-active .page-header-text {
+          gap: 18px !important;
+        }
+
+        .expenses-page-active .page-header-action {
+          margin-top: 6px !important;
+        }
+
+        .expenses-page-active .page-header-action > * {
+          margin: 0 !important;
+        }
+
+        .expenses-page-active .finance-filter-bar {
+          margin-top: 32px !important;
+          margin-bottom: 24px !important;
         }
       }
     `}</style>
