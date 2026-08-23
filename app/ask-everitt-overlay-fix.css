@@ -42,6 +42,11 @@
   pointer-events: auto;
 }
 
+/* The tagline already explains how Ask Everitt works, so do not repeat it in the footer. */
+.everitt-cmd-footer {
+  display: none !important;
+}
+
 @media (max-width: 900px) {
   .everitt-cmd-overlay {
     padding-top: max(12px, env(safe-area-inset-top));
