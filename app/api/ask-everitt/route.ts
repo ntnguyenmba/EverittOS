@@ -4,6 +4,7 @@ import { assertAskEverittSearchAccess, searchUsageEvent } from '@/lib/ask-everit
 import { detectAskEverittMode } from '@/lib/ask-everitt-intent';
 import { formatPrefetchedContextForAi, prefetchAskEverittContextForAi } from '@/lib/ask-everitt/ai-prefetch';
 import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/ask-everitt/localize';
+import { parseNaturalAskEverittQuery } from '@/lib/ask-everitt/natural-query';
 import { runAskEverittSearchEngine } from '@/lib/ask-everitt/search-engine';
 import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
@@ -132,48 +133,31 @@ const BUSINESS_DATA_RULES = `Use current workspace data as the source of truth. 
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: 'Unauthorized', code: 'unauthorized' }, { status: 401 });
 
   const admin = createAdminSupabase();
-  if (!admin) {
-    return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
-  }
+  if (!admin) return NextResponse.json({ error: 'Server not configured', code: 'not_configured' }, { status: 503 });
 
   const body = (await request.json()) as { prompt?: string; forceMode?: 'search' | 'ai'; locale?: string };
   const prompt = body.prompt?.trim();
   const locale = normalizeAskLocale(body.locale);
-  if (!prompt) {
-    return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
-  }
+  if (!prompt) return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
 
   const org = await fetchOrganizationContextForUser(supabase, user.id);
-  if (!org) {
-    return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
-  }
-
-  if (isClientRole(org.role)) {
-    return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
-  }
+  if (!org) return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
+  if (isClientRole(org.role)) return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
 
   const { plan } = await resolveOrganizationPlan(supabase, user.id);
-  const mode = body.forceMode || detectAskEverittMode(prompt);
+  const natural = parseNaturalAskEverittQuery(prompt);
+  const detectedMode = detectAskEverittMode(prompt);
+  const mode = body.forceMode || (natural.preferSearch ? 'search' : detectedMode);
   const pageContext = currentPageContext(request);
   const contextualPrompt = pageAwarePrompt(prompt, pageContext);
 
-  if (mode === 'search') {
-    const searchAccess = await assertAskEverittSearchAccess(
-      admin,
-      user.id,
-      org.role,
-      org.organizationId,
-      plan
-    );
+  async function runStructuredSearch() {
+    const searchAccess = await assertAskEverittSearchAccess(admin, user.id, org.role, org.organizationId, plan);
     if (!searchAccess.ok) {
       return NextResponse.json(
         { error: searchAccess.message, code: searchAccess.code, mode: 'search' },
@@ -181,13 +165,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const directResult = isNextJobQuestion(prompt)
+    const directResult = natural.intent === 'next_job' || isNextJobQuestion(prompt)
       ? await queryNextJob(supabase, org.organizationId, locale)
       : null;
+    const searchResult = directResult || await runAskEverittSearchEngine(
+      supabase,
+      org.organizationId,
+      natural.searchQuery || prompt
+    );
 
-    // Search only the user's words. Page context is useful for AI reasoning, but appending it
-    // to a record search turns natural questions into impossible literal search strings.
-    const searchResult = directResult || await runAskEverittSearchEngine(supabase, org.organizationId, prompt);
     await recordAiUsage(admin, searchUsageEvent({
       workspaceId: org.organizationId,
       userId: user.id,
@@ -198,44 +184,41 @@ export async function POST(request: Request) {
     return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
+  if (mode === 'search') return runStructuredSearch();
+
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
-    const status =
-      gate.code === 'plan_required' || gate.code === 'subscription_inactive'
-        ? 403
-        : gate.code === 'rate_limited' ||
-            gate.code === 'everittteam_budget_exhausted' ||
-            gate.code === 'staff_daily_limit' ||
-            gate.code === 'staff_monthly_limit'
-          ? 429
-          : 503;
-    return NextResponse.json(
-      {
-        error: gate.message,
-        code: gate.code,
-        mode: 'ai',
-        searchAvailable: true,
-        locked: gate.code === 'plan_required',
-        requiredPlan: gate.requiredPlan || 'business'
-      },
-      { status }
-    );
+    // Cheaper plans never spend AI credits. If the question contains a business-record
+    // intent, gracefully answer it with structured search instead of showing an AI wall.
+    if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) {
+      return runStructuredSearch();
+    }
+
+    const status = gate.code === 'plan_required' || gate.code === 'subscription_inactive'
+      ? 403
+      : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted' || gate.code === 'staff_daily_limit' || gate.code === 'staff_monthly_limit'
+        ? 429
+        : 503;
+
+    return NextResponse.json({
+      error: gate.message,
+      code: gate.code,
+      mode: 'ai',
+      searchAvailable: true,
+      locked: gate.code === 'plan_required',
+      requiredPlan: gate.requiredPlan || 'business'
+    }, { status });
   }
 
   const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, contextualPrompt);
   const dataContext = formatPrefetchedContextForAi(prefetched);
-
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
-  const messages: AiChatMessage[] = [
-    {
-      role: 'user',
-      content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
-    }
-  ];
-  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, {
-    feature: 'ask_everitt'
-  });
+  const messages: AiChatMessage[] = [{
+    role: 'user',
+    content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
+  }];
 
+  const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, { feature: 'ask_everitt' });
   if (!result.ok) {
     return NextResponse.json(
       { error: result.message, code: result.code, mode: 'ai', searchAvailable: true },
