@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AI_ACTION_SYSTEM_HINT, parseProposedAction } from '@/lib/ai-actions';
 import { assertAskEverittSearchAccess, searchUsageEvent } from '@/lib/ask-everitt-access';
+import { runContextAwareAskQuery } from '@/lib/ask-everitt/context-query';
 import { detectAskEverittMode } from '@/lib/ask-everitt-intent';
 import { formatPrefetchedContextForAi, prefetchAskEverittContextForAi } from '@/lib/ask-everitt/ai-prefetch';
 import { localizeAskEverittSearchResponse, type AskEverittLocale } from '@/lib/ask-everitt/localize';
@@ -169,7 +170,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const structuredV3 = await runStructuredNaturalQueryV3(
+    const contextualStructured = await runContextAwareAskQuery(
+      supabase,
+      org.organizationId,
+      prompt,
+      locale,
+      pageContext
+    );
+
+    const structuredV3 = contextualStructured ? null : await runStructuredNaturalQueryV3(
       supabase,
       org.organizationId,
       user.id,
@@ -177,7 +186,7 @@ export async function POST(request: Request) {
       locale
     );
 
-    const structuredV2 = structuredV3 ? null : await runStructuredNaturalQueryV2(
+    const structuredV2 = contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(
       supabase,
       org.organizationId,
       user.id,
@@ -185,7 +194,7 @@ export async function POST(request: Request) {
       locale
     );
 
-    const structuredFallback = structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(
+    const structuredFallback = contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(
       supabase,
       org.organizationId,
       user.id,
@@ -193,7 +202,7 @@ export async function POST(request: Request) {
       locale
     );
 
-    const directResult = structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
+    const directResult = contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
       ? await queryNextJob(supabase, org.organizationId, locale)
       : null);
 
