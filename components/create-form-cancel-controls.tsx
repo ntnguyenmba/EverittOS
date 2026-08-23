@@ -23,12 +23,48 @@ function addAfter(target: HTMLButtonElement, onClick: () => void) {
   target.insertAdjacentElement('afterend', cancel);
 }
 
+function setReactInputValue(input: HTMLInputElement, value: string) {
+  if (input.value === value) return;
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function findJobTitleInput() {
+  const labels = Array.from(document.querySelectorAll<HTMLLabelElement>('.unified-job-form label'));
+  const label = labels.find((item) => item.textContent?.trim().toLowerCase().startsWith('job title'));
+  if (!label) return null;
+  const section = label.closest<HTMLElement>('.job-create-section');
+  const input = section?.querySelector<HTMLInputElement>('input');
+  return input ? { input, section } : null;
+}
+
+function syncJobTitleFromAddress() {
+  if (window.location.pathname !== '/jobs/new') return;
+
+  const addressInput = document.querySelector<HTMLInputElement>('#job-address');
+  const titleField = findJobTitleInput();
+  if (!addressInput || !titleField) return;
+
+  const fullAddress = addressInput.value.trim();
+  if (fullAddress) setReactInputValue(titleField.input, fullAddress);
+
+  titleField.input.required = false;
+  titleField.input.setAttribute('aria-hidden', 'true');
+  titleField.input.tabIndex = -1;
+  if (titleField.section) {
+    titleField.section.style.display = 'none';
+    titleField.section.setAttribute('aria-hidden', 'true');
+  }
+}
+
 export function CreateFormCancelControls() {
   useEffect(() => {
     const apply = () => {
       const path = window.location.pathname;
 
       if (path === '/jobs/new') {
+        syncJobTitleFromAddress();
         const createJob = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
           (button) => buttonText(button) === 'create job'
         );
@@ -86,10 +122,12 @@ export function CreateFormCancelControls() {
     apply();
     const observer = new MutationObserver(apply);
     observer.observe(document.body, { childList: true, subtree: true });
+    const jobTitleSyncTimer = window.setInterval(syncJobTitleFromAddress, 250);
     window.addEventListener('popstate', apply);
 
     return () => {
       observer.disconnect();
+      window.clearInterval(jobTitleSyncTimer);
       window.removeEventListener('popstate', apply);
     };
   }, []);
