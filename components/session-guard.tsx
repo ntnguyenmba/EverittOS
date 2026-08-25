@@ -16,9 +16,28 @@ const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchst
 const TOUCH_INTERVAL_MS = 60_000;
 const MOUSEMOVE_THROTTLE_MS = 2_000;
 const COUNTDOWN_INTERVAL_MS = 1000;
+const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client';
+
+function readLastActivity(): number {
+  if (typeof window === 'undefined') return Date.now();
+  const stored = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY);
+  const parsed = stored ? Number(stored) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
+}
+
+function storeLastActivity(timestamp: number) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp));
+}
+
+function clearLastActivity() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY);
+}
 
 async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
   clearTabSessionId();
+  clearLastActivity();
   try {
     await fetch('/api/auth/sign-out', { method: 'POST', keepalive: true });
   } catch {
@@ -142,10 +161,26 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
   }, [clearTimers, closeWarning]);
 
   const recordActivity = useCallback(() => {
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    storeLastActivity(now);
     scheduleIdleTimers();
     void touchSession();
   }, [scheduleIdleTimers, touchSession]);
+
+  const checkIdleBeforeResume = useCallback(() => {
+    const persisted = readLastActivity();
+    lastActivityRef.current = persisted;
+    if (Date.now() - persisted >= sessionIdleTimeoutMs()) {
+      void signOutToLogin(
+        'idle',
+        'You were signed out after a period of inactivity. Sign in again to continue.'
+      );
+      return false;
+    }
+    scheduleIdleTimers();
+    return true;
+  }, [scheduleIdleTimers]);
 
   const handleStaySignedIn = useCallback(() => {
     recordActivity();
@@ -177,14 +212,13 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
         if (!storedTabId) {
           const tabSessionId = await requestTabSession();
           if (tabSessionId) storeTabSessionId(tabSessionId);
-          // A missing tab-session ID must never override a valid Supabase login.
         }
 
         if (cancelled) return;
 
-        lastActivityRef.current = Date.now();
-        scheduleIdleTimers();
-        void touchSession();
+        const persisted = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY);
+        if (persisted && !checkIdleBeforeResume()) return;
+        recordActivity();
       } finally {
         checkingRef.current = false;
       }
@@ -202,20 +236,28 @@ export function SessionGuard({ children }: { children?: ReactNode }) {
     };
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') recordActivity();
+      if (document.visibilityState === 'visible' && checkIdleBeforeResume()) {
+        recordActivity();
+      }
+    };
+
+    const onPageShow = () => {
+      if (checkIdleBeforeResume()) recordActivity();
     };
 
     ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity, { passive: true }));
     document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', onPageShow);
 
     return () => {
       cancelled = true;
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity));
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', onPageShow);
       clearTimers();
       closeWarning();
     };
-  }, [pathname, recordActivity, scheduleIdleTimers, touchSession, clearTimers, closeWarning]);
+  }, [pathname, recordActivity, scheduleIdleTimers, touchSession, clearTimers, closeWarning, checkIdleBeforeResume]);
 
   return (
     <>
