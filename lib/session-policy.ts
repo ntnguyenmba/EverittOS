@@ -14,7 +14,7 @@ export function sessionIdleWarningBeforeMs(): number {
 
 /** Web defaults to 30 minutes; the installed app keeps its trusted-device session for 30 days. */
 export function sessionIdleTimeoutMs(): number {
-  if (typeof document !== 'undefined' && document.documentElement.classList.contains('native-app')) {
+  if (typeof document !== 'undefined' && document.documentElement.dataset.nativeApp === 'true') {
     return 30 * 24 * 60 * 60 * 1000;
   }
   const raw = process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES || process.env.SESSION_IDLE_TIMEOUT_MINUTES;
