@@ -45,7 +45,7 @@
 
 .login-origin-story p {
   margin: 0;
-  color: #40586a;
+  color: #31495b;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.55;
@@ -65,12 +65,14 @@
 
 .auth-tech-card:has(.login-origin-story) .auth-card-subtitle {
   margin-bottom: 8px;
+  color: #263f51;
   font-size: 16px;
   font-weight: 700;
   line-height: 1.45;
 }
 
 .auth-tech-card:has(.login-origin-story) .auth-card-description {
+  color: #3d5364;
   font-size: 13.5px;
   font-weight: 500;
   line-height: 1.68;
@@ -106,6 +108,12 @@
 .auth-tech-card:has(.login-origin-story) .input,
 .auth-tech-card:has(.login-origin-story) .btn { min-height: 50px; }
 
+.auth-tech-card:has(.login-origin-story) .input::placeholder {
+  color: #566b7b !important;
+  opacity: 1 !important;
+  font-weight: 500;
+}
+
 .auth-tech-card:has(.login-origin-story) .auth-links {
   margin-top: 14px;
   gap: 14px;
@@ -113,6 +121,7 @@
 
 .auth-tech-card:has(.login-origin-story) .auth-legal-note {
   margin-top: 14px;
+  color: #526777;
   font-size: 12px;
   line-height: 1.4;
 }
