@@ -36,6 +36,7 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
   const { t, locale } = useTranslation();
   const normalized = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
+  const bookkeepingLabel = locale === 'es' ? 'Contabilidad' : locale === 'vi' ? 'Sổ sách' : 'Bookkeeping';
 
   if (isClientRole(normalizedRole)) {
     const links = [
@@ -62,7 +63,7 @@ export function AppNavItems({ plan, role, unread = 0, linkClassName = '', locked
 
   return <nav className="app-nav" aria-label={t('ux.mobileNavLabel')}>
     {items.map(({ label, href, resolution }) => <NavLinkRow key={href} href={href} label={navLabel(href, t, label, locale)} accessible={resolution.accessible} requiredPlan={resolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} />)}
-    {showBookkeeping ? <NavLinkRow href="/bookkeeping" label="Bookkeeping" accessible={bookkeepingResolution.accessible} requiredPlan={bookkeepingResolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} /> : null}
+    {showBookkeeping ? <NavLinkRow href="/bookkeeping" label={bookkeepingLabel} accessible={bookkeepingResolution.accessible} requiredPlan={bookkeepingResolution.requiredPlan} pathname={pathname} linkClassName={linkClassName} lockedClassName={lockedClassName} onNavigate={onNavigate} /> : null}
     {unread > 0 ? <Link href="/notifications" className={`nav-item nav-item-notifications${isNavLinkActive(pathname, '/notifications') ? ' active' : ''} ${linkClassName}`} onClick={onNavigate}><span className="nav-item-label">{t('nav.notifications')}</span><span className="nav-unread-chip">{unread}</span></Link> : null}
   </nav>;
 }
