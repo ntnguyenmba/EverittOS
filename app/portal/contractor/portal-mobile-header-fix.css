@@ -4,7 +4,8 @@
   .contractor-mobile-header .contractor-mobile-brand-logo { display:inline-flex!important;align-items:center!important;gap:10px!important;width:auto!important;max-width:calc(100vw - 36px)!important;height:48px!important;margin:0!important;padding:0!important;color:#173044!important;text-decoration:none!important; }
   .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-image { width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;flex:0 0 34px!important;border-radius:9px!important;object-fit:cover!important; }
   .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-name,
-  .client-dashboard-shell .brand-logo-name { min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#173044!important;font-family:var(--font-ui)!important;font-size:20px!important;line-height:1!important;font-weight:750!important;letter-spacing:-.025em!important; }
+  .client-dashboard-shell .contractor-mobile-brand-logo .brand-logo-name,
+  .client-dashboard-shell .brand-logo-name { min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#173044!important;font-family:var(--font-manrope),Manrope,system-ui,-apple-system,BlinkMacSystemFont,sans-serif!important;font-size:20px!important;line-height:1!important;font-weight:700!important;font-style:normal!important;letter-spacing:-.02em!important;text-transform:none!important; }
   .client-dashboard-shell .brand-logo { display:inline-flex!important;align-items:center!important;gap:10px!important; }
   .client-dashboard-shell .brand-logo .brand-logo-image { width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;border-radius:9px!important;object-fit:cover!important; }
   .contractor-dashboard-shell > .contractor-main { padding:18px 18px calc(92px + env(safe-area-inset-bottom))!important; }
