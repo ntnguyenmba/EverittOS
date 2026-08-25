@@ -36,21 +36,21 @@ const copy = {
   en: {
     today: 'Today', week: 'This week', month: 'This month', year: 'This year', all: 'All', timePeriod: 'Time period',
     upcoming: 'Upcoming jobs', completed: 'Completed jobs', current: 'Upcoming', past: 'Completed',
-    noUpcoming: 'No upcoming jobs.', noCompleted: 'No completed jobs.',
+    noUpcoming: 'No appointments yet.', noCompleted: 'No completed appointments yet.',
     jobTotal: 'Job total', paid: 'Paid', balanceDue: 'Balance due', status: 'Status', dateNotSet: 'Schedule pending',
     statuses: { scheduled: 'scheduled', completed: 'completed', complete: 'completed', finished: 'completed', done: 'completed', cancelled: 'cancelled', canceled: 'cancelled' }
   },
   es: {
     today: 'Hoy', week: 'Esta semana', month: 'Este mes', year: 'Este año', all: 'Todo', timePeriod: 'Período',
     upcoming: 'Próximos trabajos', completed: 'Trabajos terminados', current: 'Próximos', past: 'Terminados',
-    noUpcoming: 'No hay trabajos próximos.', noCompleted: 'No hay trabajos terminados.',
+    noUpcoming: 'Aún no hay citas.', noCompleted: 'Aún no hay citas terminadas.',
     jobTotal: 'Total del trabajo', paid: 'Pagado', balanceDue: 'Saldo pendiente', status: 'Estado', dateNotSet: 'Horario pendiente',
     statuses: { scheduled: 'programado', completed: 'terminado', complete: 'terminado', finished: 'terminado', done: 'terminado', cancelled: 'cancelado', canceled: 'cancelado' }
   },
   vi: {
     today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Tất cả', timePeriod: 'Khoảng thời gian',
     upcoming: 'Công việc sắp tới', completed: 'Công việc đã xong', current: 'Sắp tới', past: 'Đã xong',
-    noUpcoming: 'Không có công việc sắp tới.', noCompleted: 'Không có công việc đã xong.',
+    noUpcoming: 'Chưa có lịch hẹn.', noCompleted: 'Chưa có lịch hẹn đã hoàn thành.',
     jobTotal: 'Tổng công việc', paid: 'Đã thanh toán', balanceDue: 'Số còn lại', status: 'Trạng thái', dateNotSet: 'Lịch đang chờ',
     statuses: { scheduled: 'đã lên lịch', completed: 'đã xong', complete: 'đã xong', finished: 'đã xong', done: 'đã xong', cancelled: 'đã hủy', canceled: 'đã hủy' }
   }
@@ -126,10 +126,12 @@ export default function ClientPortalJobsPage() {
   const [range, setRange] = useState<TimeRange>('month');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [empty, setEmpty] = useState(false);
   const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     async function load() {
+      setEmpty(false);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push(`/login?next=${encodeURIComponent(clientPortalJobsPath())}`);
@@ -155,11 +157,14 @@ export default function ClientPortalJobsPage() {
       }
       const jobRows = payload.jobs || [];
       if (jobRows.length === 0) {
-        setMessage(t('portal.client.noSharedMessage'));
+        setMessage('');
+        setEmpty(true);
         setLoading(false);
         return;
       }
       setJobs(jobRows);
+      setMessage('');
+      setEmpty(false);
       setLoading(false);
     }
     void load();
@@ -199,14 +204,7 @@ export default function ClientPortalJobsPage() {
     const location = cityState(job.address);
     const hasCharges = job.jobTotal != null;
     return (
-      <Link
-        key={job.id}
-        href={clientPortalJobsPath(job.id)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="client-job-card simplified-job-card"
-        aria-label={job.title}
-      >
+      <Link key={job.id} href={clientPortalJobsPath(job.id)} className="client-job-card simplified-job-card" aria-label={job.title}>
         <div className="client-job-card-main">
           <h3>{job.title}</h3>
           {date || time ? <p className="client-job-secondary">{[date, time].filter(Boolean).join(' · ')}</p> : null}
@@ -216,17 +214,9 @@ export default function ClientPortalJobsPage() {
           {job.status ? <span className={`status-badge portal-status-${normalizedStatus(job)}`}>{statusLabel(job)}</span> : null}
           {hasCharges ? (
             <p className="portal-finance-line">
-              <span>
-                {c.jobTotal}{' '}
-                <strong className="portal-finance-amount">{formatMoney(job.jobTotal, localeCode)}</strong>
-              </span>
-              <span>
-                {c.paid} <strong>{formatMoney(job.paid, localeCode)}</strong>
-              </span>
-              <span>
-                {c.balanceDue}{' '}
-                <strong className="portal-finance-amount">{formatMoney(job.balanceDue, localeCode)}</strong>
-              </span>
+              <span>{c.jobTotal} <strong className="portal-finance-amount">{formatMoney(job.jobTotal, localeCode)}</strong></span>
+              <span>{c.paid} <strong>{formatMoney(job.paid, localeCode)}</strong></span>
+              <span>{c.balanceDue} <strong className="portal-finance-amount">{formatMoney(job.balanceDue, localeCode)}</strong></span>
             </p>
           ) : null}
         </div>
@@ -253,22 +243,16 @@ export default function ClientPortalJobsPage() {
             <button key={item} type="button" className={range === item ? 'is-active' : ''} onClick={() => setRange(item)}>{c[item]}</button>
           ))}
         </div>
-        <ExportMenu
-          endpoint="/api/exports/portal/client/jobs"
-          query={{ range }}
-          locale={locale}
-          labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
-          disabled={loading || Boolean(message)}
-          onError={(err) => setExportError(err || exportCopy.exportFailed)}
-          onSuccess={(format) => setExportError(format === 'share' ? '' : '')}
-        />
+        <ExportMenu endpoint="/api/exports/portal/client/jobs" query={{ range }} locale={locale} labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }} disabled={loading || Boolean(message) || empty} onError={(err) => setExportError(err || exportCopy.exportFailed)} onSuccess={() => setExportError('')} />
       </div>
 
       <PortalClientNav active="appointments" overviewHref={CLIENT_PORTAL_HOME} appointmentsHref={clientPortalJobsPath()} accountHref={CLIENT_SETTINGS_PATH} />
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
 
-      {message ? (
-        <div className="card" role="status"><h3>{t('portal.client.noSharedTitle')}</h3><p>{message}</p></div>
+      {empty ? (
+        <div className="card client-empty-state" role="status"><p>{c.noUpcoming}</p></div>
+      ) : message ? (
+        <div className="card" role="alert"><p>{message}</p></div>
       ) : (
         <>
           <div className="role-summary-grid">
