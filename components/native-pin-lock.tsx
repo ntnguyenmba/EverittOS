@@ -10,20 +10,41 @@ const copy = {
   vi: { title: 'Chào mừng trở lại', body: 'Nhập mã PIN 4 số để mở EverittOS.', placeholder: 'PIN', unlock: 'Mở EverittOS', wrong: 'Mã PIN không đúng.', account: 'Đăng nhập bằng tài khoản' }
 } as const;
 
+type PinLocale = keyof typeof copy;
+
+function currentLocale(): PinLocale {
+  if (typeof document === 'undefined') return 'en';
+  const value = `${document.documentElement.lang || ''} ${document.documentElement.dataset.locale || ''} ${document.body?.dataset.locale || ''}`.toLowerCase();
+  if (value.includes('es')) return 'es';
+  if (value.includes('vi')) return 'vi';
+  return 'en';
+}
+
 export function NativePinLock() {
   const [native, setNative] = useState(false);
   const [locked, setLocked] = useState(false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [locale, setLocale] = useState<'en' | 'es' | 'vi'>('en');
+  const [locale, setLocale] = useState<PinLocale>('en');
 
   useEffect(() => {
     const isNative = isNativePlatform();
     setNative(isNative);
     if (!isNative) return;
-    const htmlLocale = document.documentElement.lang;
-    setLocale(htmlLocale.startsWith('es') ? 'es' : htmlLocale.startsWith('vi') ? 'vi' : 'en');
+    setLocale(currentLocale());
     setLocked(nativePinIsEnabled());
+
+    const syncLocale = () => setLocale(currentLocale());
+    window.addEventListener('everittos:locale-changed', syncLocale);
+    window.addEventListener('storage', syncLocale);
+    const observer = new MutationObserver(syncLocale);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'data-locale'] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
+    return () => {
+      window.removeEventListener('everittos:locale-changed', syncLocale);
+      window.removeEventListener('storage', syncLocale);
+      observer.disconnect();
+    };
   }, []);
 
   if (!native || !locked) return null;
