@@ -132,13 +132,15 @@
     max-width: none !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    justify-items: center !important;
   }
 
   .auth-tech-page .auth-tech-header {
     width: calc(100% - 28px) !important;
     max-width: calc(100% - 28px) !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    justify-self: center !important;
   }
 
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
@@ -146,11 +148,11 @@
     max-width: min(520px, calc(100% - 28px)) !important;
     margin-top: 18px !important;
     margin-bottom: 18px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     padding: 22px 20px !important;
     border-radius: 20px;
-    justify-self: stretch !important;
+    justify-self: center !important;
     position: relative !important;
     left: auto !important;
     right: auto !important;
@@ -197,10 +199,11 @@
     max-width: calc(100% - 28px) !important;
     margin-top: 16px !important;
     margin-bottom: 14px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     padding: 20px 18px !important;
     border-radius: 18px;
+    justify-self: center !important;
   }
 
   .auth-tech-card:has(.login-origin-story) .auth-card-subtitle { font-size: 15px; }
