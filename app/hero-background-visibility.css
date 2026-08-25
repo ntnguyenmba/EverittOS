@@ -1,0 +1,7 @@
+/* Slightly stronger hero artwork while keeping content readable across all roles and subpages. */
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background {
+  background-image: linear-gradient(rgba(244,247,248,.72), rgba(244,247,248,.78)), url('/hero.jpg') !important;
+  filter: grayscale(58%) saturate(62%) contrast(92%) !important;
+}
