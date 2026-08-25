@@ -1,234 +1,52 @@
-/* EverittOS unified visual refresh: denser, clearer, consistent across owner/worker/client. */
+/* EverittOS unified visual refresh. */
 .everitt-bottom-nav { display: none; }
+.dashboard-shell,.dashboard-shell.role-portal-shell { background:#f3f5f6!important; }
+.dashboard-shell-background,.role-portal-shell .dashboard-shell-background { background:#f3f5f6!important;opacity:1!important;filter:none!important;transform:none!important; }
+.dashboard-shell-overlay,.role-portal-shell .dashboard-shell-overlay { background:transparent!important; }
+.dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card,.dashboard-shell .job-card,.dashboard-shell .record-card,.dashboard-shell .dashboard-revenue-metric { background:#fff!important;border-color:#d9dfe3!important;box-shadow:0 1px 3px rgba(24,44,59,.06)!important; }
 
-/* Remove the faded-photo treatment everywhere inside the authenticated app. */
-.dashboard-shell,
-.dashboard-shell.role-portal-shell { background: #f3f5f6 !important; }
-.dashboard-shell-background,
-.role-portal-shell .dashboard-shell-background {
-  background: #f3f5f6 !important;
-  opacity: 1 !important;
-  filter: none !important;
-  transform: none !important;
+.native-pin-lock { position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:#f3f5f6;color:#172b3a; }
+.native-pin-card { width:min(100%,390px);padding:30px 24px;border:1px solid #d9dfe3;border-radius:18px;background:#fff;box-shadow:0 14px 40px rgba(24,44,59,.12);text-align:center; }
+.native-pin-mark { width:50px;height:50px;margin:0 auto 18px;display:grid;place-items:center;border-radius:14px;background:#243f53;color:#fff;font-size:25px;font-weight:800; }
+.native-pin-card h1 { margin:0;font-size:28px;line-height:1.1; }
+.native-pin-card > p { margin:10px 0 20px;color:#5d6b74; }
+.native-pin-card input { width:150px;min-height:52px;margin:0 auto 14px;display:block;border:1px solid #9eabb3;border-radius:10px;background:#fff;color:#172b3a;text-align:center;font-size:24px;letter-spacing:10px; }
+.native-pin-card .btn { width:100%;min-height:48px; }
+.native-pin-card .native-pin-error { margin:0 0 12px;color:#9a2d2d;font-size:14px; }
+.native-pin-account { margin-top:14px;border:0;background:transparent;color:#35556a;text-decoration:underline;font:inherit; }
+
+@media (max-width:1279px) {
+.dashboard-shell-header { padding:0!important;background:#fff!important;border-bottom:1px solid #d9dfe3; }
+.dashboard-shell-header .mobile-nav,.dashboard-shell-header .mobile-nav-bar { border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;backdrop-filter:none!important; }
+.dashboard-shell-header .mobile-nav-bar { min-height:58px!important;padding:7px 16px!important; }
+.dashboard-shell>.main { padding:10px 12px calc(92px + env(safe-area-inset-bottom))!important; }
+.dashboard-shell .app-page-top,.dashboard-shell .app-page-content,.dashboard-shell>.main>footer { width:100%!important; }
+.dashboard-shell .app-page-content { padding-top:4px!important; }
+.dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card,.dashboard-shell .job-card,.dashboard-shell .record-card,.dashboard-shell .dashboard-revenue-metric { border:1px solid #d9dfe3!important;border-radius:12px!important;background:#fff!important;box-shadow:0 1px 2px rgba(24,44,59,.05)!important; }
+.dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card { padding:16px!important; }
+.dashboard-shell h1 { font-size:clamp(25px,6.5vw,32px)!important;line-height:1.08!important; }
+.dashboard-shell h2 { font-size:clamp(20px,5.2vw,25px)!important;line-height:1.15!important; }
+.dashboard-shell h3 { font-size:18px!important;line-height:1.2!important; }
+.dashboard-shell p,.dashboard-shell label,.dashboard-shell input,.dashboard-shell select,.dashboard-shell button { font-size:16px; }
+.dashboard-shell .metric-grid,.dashboard-shell .role-summary-grid,.dashboard-shell .dashboard-revenue-grid,.dashboard-shell .role-dashboard>.stats-grid,.dashboard-shell .field-dashboard>.stats-grid { grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important; }
+.dashboard-shell .metric-grid>.card,.dashboard-shell .role-summary-card,.dashboard-shell .dashboard-revenue-grid>.card,.dashboard-shell .dashboard-revenue-metric { min-height:92px!important;padding:13px!important; }
+.dashboard-home .dashboard-operations { margin-bottom:14px!important; }
+.dashboard-home .dashboard-revenue-grid { gap:10px!important; }
+.dashboard-home .dashboard-revenue-metric .muted { display:none!important; }
+.dashboard-home .dashboard-revenue-metric-label { font-size:13px!important;line-height:1.25!important; }
+.dashboard-home .dashboard-revenue-metric-value { margin-top:6px!important;font-size:clamp(24px,7vw,32px)!important;line-height:1!important; }
+.dashboard-shell .btn,.dashboard-shell button,.dashboard-shell select,.dashboard-shell input { min-height:44px; }
+.dashboard-shell .button-row,.dashboard-shell .role-dashboard-topbar,.dashboard-shell .portal-client-nav { gap:8px!important; }
+.role-portal-shell .portal-client-nav,.role-portal-contractor .contractor-portal-actions,.native-mobile-controls { display:none!important; }
+.dashboard-shell .section,.dashboard-shell section,.dashboard-shell .stack { scroll-margin-top:70px; }
+.dashboard-shell>.main>footer { margin-top:20px!important;padding:18px 0 12px!important;border-top:1px solid #d9dfe3; }
+.everitt-bottom-nav { position:fixed;left:0;right:0;bottom:0;z-index:900;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));min-height:62px;padding:5px max(6px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));border-top:1px solid #d6dde1;background:rgba(255,255,255,.98);box-shadow:0 -2px 10px rgba(24,44,59,.07);backdrop-filter:blur(14px); }
+.everitt-bottom-nav-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }.everitt-bottom-nav-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.everitt-bottom-nav-item { min-width:0;min-height:52px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#64737d;text-decoration:none;-webkit-tap-highlight-color:transparent; }
+.everitt-bottom-nav-icon { height:25px;display:inline-flex;align-items:center;justify-content:center; }
+.everitt-bottom-nav-label { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:10.5px;line-height:1.1;font-weight:650; }
+.everitt-bottom-nav-item.is-active { color:#243f53; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon { position:relative; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon::after { content:'';position:absolute;left:50%;bottom:-4px;width:18px;height:2px;border-radius:999px;background:#243f53;transform:translateX(-50%); }
+body.mobile-nav-open .everitt-bottom-nav { visibility:hidden; }
 }
-.dashboard-shell-overlay,
-.role-portal-shell .dashboard-shell-overlay { background: transparent !important; }
-
-/* Keep cards crisp on web and app instead of translucent. */
-.dashboard-shell .card,
-.dashboard-shell .role-summary-card,
-.dashboard-shell .client-job-card,
-.dashboard-shell .job-card,
-.dashboard-shell .record-card,
-.dashboard-shell .dashboard-revenue-metric {
-  background: #ffffff !important;
-  border-color: #d9dfe3 !important;
-  box-shadow: 0 1px 3px rgba(24, 44, 59, 0.06) !important;
-}
-
-@media (max-width: 1279px) {
-  .dashboard-shell-header {
-    padding: 0 !important;
-    background: #ffffff !important;
-    border-bottom: 1px solid #d9dfe3;
-  }
-
-  .dashboard-shell-header .mobile-nav,
-  .dashboard-shell-header .mobile-nav-bar {
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    background: #ffffff !important;
-    backdrop-filter: none !important;
-  }
-
-  .dashboard-shell-header .mobile-nav-bar {
-    min-height: 58px !important;
-    padding: 7px 16px !important;
-  }
-
-  .dashboard-shell > .main {
-    padding: 10px 12px calc(92px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .dashboard-shell .app-page-top,
-  .dashboard-shell .app-page-content,
-  .dashboard-shell > .main > footer { width: 100% !important; }
-
-  .dashboard-shell .app-page-content { padding-top: 4px !important; }
-
-  .dashboard-shell .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .client-job-card,
-  .dashboard-shell .job-card,
-  .dashboard-shell .record-card,
-  .dashboard-shell .dashboard-revenue-metric {
-    border: 1px solid #d9dfe3 !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-    box-shadow: 0 1px 2px rgba(24, 44, 59, 0.05) !important;
-  }
-
-  .dashboard-shell .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .client-job-card { padding: 16px !important; }
-
-  .dashboard-shell h1 { font-size: clamp(25px, 6.5vw, 32px) !important; line-height: 1.08 !important; }
-  .dashboard-shell h2 { font-size: clamp(20px, 5.2vw, 25px) !important; line-height: 1.15 !important; }
-  .dashboard-shell h3 { font-size: 18px !important; line-height: 1.2 !important; }
-  .dashboard-shell p,
-  .dashboard-shell label,
-  .dashboard-shell input,
-  .dashboard-shell select,
-  .dashboard-shell button { font-size: 16px; }
-
-  .dashboard-shell .metric-grid,
-  .dashboard-shell .role-summary-grid,
-  .dashboard-shell .dashboard-revenue-grid,
-  .dashboard-shell .role-dashboard > .stats-grid,
-  .dashboard-shell .field-dashboard > .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  .dashboard-shell .metric-grid > .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .dashboard-revenue-grid > .card,
-  .dashboard-shell .dashboard-revenue-metric {
-    min-height: 92px !important;
-    padding: 13px !important;
-  }
-
-  /* Dashboard should read like a compact app home, not a long report. */
-  .dashboard-home .dashboard-operations { margin-bottom: 14px !important; }
-  .dashboard-home .dashboard-revenue-grid { gap: 10px !important; }
-  .dashboard-home .dashboard-revenue-metric .muted { display: none !important; }
-  .dashboard-home .dashboard-revenue-metric-label {
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-  }
-  .dashboard-home .dashboard-revenue-metric-value {
-    margin-top: 6px !important;
-    font-size: clamp(24px, 7vw, 32px) !important;
-    line-height: 1 !important;
-  }
-  .dashboard-home section[aria-label='Money overview'] > div:first-child {
-    margin-bottom: 10px !important;
-  }
-  .dashboard-home section[aria-label='Money overview'] > div:last-of-type {
-    margin-top: 10px !important;
-  }
-
-  .dashboard-shell .btn,
-  .dashboard-shell button,
-  .dashboard-shell select,
-  .dashboard-shell input { min-height: 44px; }
-
-  .dashboard-shell .button-row,
-  .dashboard-shell .role-dashboard-topbar,
-  .dashboard-shell .portal-client-nav { gap: 8px !important; }
-
-  /* Bottom navigation already covers the primary portal destinations on phones. */
-  .role-portal-shell .portal-client-nav,
-  .role-portal-contractor .contractor-portal-actions { display: none !important; }
-
-  /* Remove older floating language/menu controls that compete with the new app chrome. */
-  .native-mobile-controls { display: none !important; }
-
-  .dashboard-shell .section,
-  .dashboard-shell section,
-  .dashboard-shell .stack { scroll-margin-top: 70px; }
-
-  .dashboard-shell > .main > footer {
-    margin-top: 20px !important;
-    padding: 18px 0 12px !important;
-    border-top: 1px solid #d9dfe3;
-  }
-
-  .everitt-bottom-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 900;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    min-height: 62px;
-    padding: 5px max(6px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
-    border-top: 1px solid #d6dde1;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 -2px 10px rgba(24, 44, 59, 0.07);
-    backdrop-filter: blur(14px);
-  }
-
-  .everitt-bottom-nav-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .everitt-bottom-nav-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-  .everitt-bottom-nav-item {
-    min-width: 0;
-    min-height: 52px;
-    padding: 4px 2px 3px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    color: #64737d;
-    text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .everitt-bottom-nav-icon {
-    height: 25px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .everitt-bottom-nav-label {
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: center;
-    font-size: 10.5px;
-    line-height: 1.1;
-    font-weight: 650;
-  }
-
-  .everitt-bottom-nav-item.is-active { color: #243f53; }
-  .everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon { position: relative; }
-  .everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: -4px;
-    width: 18px;
-    height: 2px;
-    border-radius: 999px;
-    background: #243f53;
-    transform: translateX(-50%);
-  }
-
-  body.mobile-nav-open .everitt-bottom-nav { visibility: hidden; }
-}
-
-@media (max-width: 560px) {
-  .dashboard-shell .metric-grid,
-  .dashboard-shell .role-summary-grid,
-  .dashboard-shell .dashboard-revenue-grid,
-  .dashboard-shell .role-dashboard > .stats-grid,
-  .dashboard-shell .field-dashboard > .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .dashboard-shell .metric-grid > .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .dashboard-revenue-grid > .card,
-  .dashboard-shell .dashboard-revenue-metric { min-width: 0 !important; }
-}
-
-@media (min-width: 1280px) {
-  .everitt-bottom-nav { display: none !important; }
-  .dashboard-shell > .main { background: #f3f5f6 !important; }
-}
+@media(max-width:560px){.dashboard-shell .metric-grid,.dashboard-shell .role-summary-grid,.dashboard-shell .dashboard-revenue-grid,.dashboard-shell .role-dashboard>.stats-grid,.dashboard-shell .field-dashboard>.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.dashboard-shell .metric-grid>.card,.dashboard-shell .role-summary-card,.dashboard-shell .dashboard-revenue-grid>.card,.dashboard-shell .dashboard-revenue-metric{min-width:0!important}}
+@media(min-width:1280px){.everitt-bottom-nav{display:none!important}.dashboard-shell>.main{background:#f3f5f6!important}}
