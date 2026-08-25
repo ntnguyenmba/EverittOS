@@ -1,0 +1,68 @@
+/* Final mobile portal header alignment with the owner app shell. */
+@media (max-width: 760px) {
+  .contractor-dashboard-shell > .contractor-mobile-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    width: 100% !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    padding: 8px max(18px, env(safe-area-inset-right)) 8px max(18px, env(safe-area-inset-left)) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    background: #ffffff !important;
+    border: 0 !important;
+    border-bottom: 1px solid #d9dfe3 !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 36px) !important;
+    min-width: 0 !important;
+    height: 48px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #173044 !important;
+    text-decoration: none !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-image {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    max-width: 34px !important;
+    max-height: 34px !important;
+    flex: 0 0 34px !important;
+    border-radius: 9px !important;
+    object-fit: cover !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    color: #173044 !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    font-weight: 750 !important;
+    letter-spacing: -0.025em !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-main {
+    padding-top: 18px !important;
+  }
+
+  .contractor-main .contractor-portal-hero {
+    margin-top: 0 !important;
+  }
+}
