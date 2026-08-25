@@ -42,12 +42,15 @@
 .dashboard-shell>.main>footer { margin-top:20px!important;padding:18px 0 12px!important;border-top:1px solid #d9dfe3; }
 .everitt-bottom-nav { position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));min-height:62px;padding:5px max(6px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));border-top:1px solid #d6dde1;background:#fff;box-shadow:0 -2px 10px rgba(24,44,59,.07);pointer-events:auto!important; }
 .everitt-bottom-nav-4 { grid-template-columns:repeat(4,minmax(0,1fr)); }.everitt-bottom-nav-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
-.everitt-bottom-nav-item { position:relative;z-index:1;min-width:0;min-height:52px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#64737d;text-decoration:none;-webkit-tap-highlight-color:transparent;pointer-events:auto!important;touch-action:manipulation;cursor:pointer; }
-.everitt-bottom-nav-button { appearance:none!important;-webkit-appearance:none!important;width:100%!important;height:auto!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#64737d!important;font:inherit!important; }
-.everitt-bottom-nav-button:active { background:#f1f4f5!important; }
+.everitt-bottom-nav-item { position:relative;z-index:1;min-width:0;min-height:52px;margin:1px 3px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:12px;color:#64737d;text-decoration:none;-webkit-tap-highlight-color:transparent;pointer-events:auto!important;touch-action:manipulation;cursor:pointer;transition:background-color .16s ease,color .16s ease; }
+.everitt-bottom-nav-button { appearance:none!important;-webkit-appearance:none!important;width:auto!important;height:auto!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#64737d!important;font:inherit!important; }
+.everitt-bottom-nav-button:active { background:#eef2f4!important; }
 .everitt-bottom-nav-icon { height:25px;display:inline-flex;align-items:center;justify-content:center;pointer-events:none; }
 .everitt-bottom-nav-label { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:10.5px;line-height:1.1;font-weight:650;pointer-events:none; }
-.everitt-bottom-nav-item.is-active { color:#243f53; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon { position:relative; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon::after { content:'';position:absolute;left:50%;bottom:-4px;width:18px;height:2px;border-radius:999px;background:#243f53;transform:translateX(-50%); }
+/* Active state is a soft filled tile, never an underline. This applies to owner, worker and client navigation. */
+.everitt-bottom-nav-item.is-active { background:#e7eef2!important;color:#203f52!important; }
+.everitt-bottom-nav-item.is-active .everitt-bottom-nav-label { font-weight:800; }
+.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon::after { content:none!important;display:none!important; }
 body.mobile-nav-open .everitt-bottom-nav { visibility:hidden;pointer-events:none!important; }
 /* More opens from the bottom instead of a second side navigation. */
 .mobile-nav-overlay-portal { align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,31,42,.42)!important; }
