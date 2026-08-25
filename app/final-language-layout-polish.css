@@ -113,6 +113,36 @@ textarea,
   text-overflow: ellipsis;
 }
 
+/* Keep language controls balanced, readable, and away from viewport edges everywhere. */
+.language-switcher-compact {
+  flex: 0 0 auto;
+  width: auto !important;
+  max-width: min(9.5rem, 38vw);
+}
+
+.language-switcher-compact .language-switcher-select {
+  width: clamp(7.75rem, 14vw, 9.5rem) !important;
+  min-width: 7.75rem !important;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 2.25rem 0 0.9rem;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 650;
+}
+
+.auth-tech-header,
+.app-page-top,
+.portal-header,
+.mobile-header,
+.nav-header,
+.topbar,
+.app-header {
+  padding-left: max(4px, env(safe-area-inset-left));
+  padding-right: max(4px, env(safe-area-inset-right));
+}
+
 /* Prevent cards, tables, and dialog content from creating horizontal page scroll. */
 .card,
 .panel,
@@ -196,10 +226,25 @@ textarea,
     min-width: 0;
   }
 
-  .language-switcher,
-  .language-switcher-select {
+  .language-switcher:not(.language-switcher-compact),
+  .language-switcher:not(.language-switcher-compact) .language-switcher-select {
     width: 100% !important;
     min-width: 0 !important;
+  }
+
+  .language-switcher-compact {
+    width: auto !important;
+    max-width: min(8.75rem, 42vw);
+  }
+
+  .language-switcher-compact .language-switcher-select {
+    width: min(8.5rem, 42vw) !important;
+    min-width: 7.25rem !important;
+    height: 42px;
+    min-height: 42px;
+    padding-left: 0.8rem;
+    padding-right: 2rem;
+    font-size: 14px;
   }
 
   th,
