@@ -26,6 +26,9 @@ export function getBrowserSupabase(): BrowserClient {
     const { url, anonKey } = resolveBrowserConfig();
     browserClient = createBrowserClient<any>(url, anonKey, {
       auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
         experimental: { passkey: true }
       }
     });
