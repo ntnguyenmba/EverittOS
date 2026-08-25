@@ -17,6 +17,8 @@
 .dashboard-shell-header { padding:0!important;background:#fff!important;border-bottom:1px solid #d9dfe3; }
 .dashboard-shell-header .mobile-nav,.dashboard-shell-header .mobile-nav-bar { border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;backdrop-filter:none!important; }
 .dashboard-shell-header .mobile-nav-bar { min-height:58px!important;padding:7px 16px!important; }
+/* The bottom bar is the mobile navigation. Keep the top bar brand-only, with no second menu control. */
+.dashboard-shell-header .mobile-nav-bar-actions { display:none!important; }
 .dashboard-shell>.main { padding:10px 12px calc(92px + env(safe-area-inset-bottom))!important; }
 .dashboard-shell .app-page-top,.dashboard-shell .app-page-content,.dashboard-shell>.main>footer { width:100%!important; }
 .dashboard-shell .app-page-content { padding-top:4px!important; }
@@ -47,6 +49,13 @@
 .everitt-bottom-nav-label { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:10.5px;line-height:1.1;font-weight:650;pointer-events:none; }
 .everitt-bottom-nav-item.is-active { color:#243f53; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon { position:relative; }.everitt-bottom-nav-item.is-active .everitt-bottom-nav-icon::after { content:'';position:absolute;left:50%;bottom:-4px;width:18px;height:2px;border-radius:999px;background:#243f53;transform:translateX(-50%); }
 body.mobile-nav-open .everitt-bottom-nav { visibility:hidden;pointer-events:none!important; }
+/* More opens from the bottom instead of a second side navigation. */
+.mobile-nav-overlay-portal { align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,31,42,.42)!important; }
+.mobile-nav-drawer { width:100%!important;max-width:760px!important;height:auto!important;max-height:78dvh!important;border:0!important;border-top:1px solid #c7d2da!important;border-radius:22px 22px 0 0!important;background:#f7f9fa!important;box-shadow:0 -18px 55px rgba(10,28,40,.22)!important;overflow:hidden!important; }
+.mobile-nav-drawer-head { min-height:64px!important;padding:12px 18px!important; }
+.mobile-nav-panel { padding:10px 14px 16px!important; }
+.mobile-nav-drawer-link { min-height:46px!important;margin:2px 0!important;padding:10px 12px!important;border-radius:10px!important; }
+.mobile-nav-drawer-footer { padding:12px 16px max(14px,env(safe-area-inset-bottom))!important; }
 }
-@media(max-width:560px){.dashboard-shell .metric-grid,.dashboard-shell .role-summary-grid,.dashboard-shell .dashboard-revenue-grid,.dashboard-shell .role-dashboard>.stats-grid,.dashboard-shell .field-dashboard>.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.dashboard-shell .metric-grid>.card,.dashboard-shell .role-summary-card,.dashboard-shell .dashboard-revenue-grid>.card,.dashboard-shell .dashboard-revenue-metric{min-width:0!important}}
+@media(max-width:560px){.dashboard-shell .metric-grid,.dashboard-shell .role-summary-grid,.dashboard-shell .dashboard-revenue-grid,.dashboard-shell .role-dashboard>.stats-grid,.dashboard-shell .field-dashboard>.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.dashboard-shell .metric-grid>.card,.dashboard-shell .role-summary-card,.dashboard-shell .dashboard-revenue-grid>.card,.dashboard-shell .dashboard-revenue-metric{min-width:0!important}.mobile-nav-drawer{max-height:82dvh!important}}
 @media(min-width:1280px){.everitt-bottom-nav{display:none!important}.dashboard-shell>.main{background:#f3f5f6!important}}
