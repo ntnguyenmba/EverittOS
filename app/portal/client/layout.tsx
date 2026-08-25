@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { PortalShellNav } from '@/components/portal/portal-shell-nav';
 import { LOCALE_COOKIE_NAME, normalizeLocale, type Locale } from '@/lib/i18n/config';
 import '../contractor/contractor-minimal.css';
+import '../contractor/portal-mobile-header-fix.css';
 
 type ClientLayoutProps = { children: ReactNode };
 const copy: Record<Locale, { appointments: string; settings: string; navAria: string; subtitle: string; roleNote: string }> = {
