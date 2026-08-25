@@ -1,0 +1,26 @@
+/* Desktop auth contrast only. No layout, spacing, sizing, or positioning changes. */
+@media (min-width: 761px) {
+  .auth-tech-card .auth-title,
+  .auth-tech-card .auth-card-subtitle,
+  .auth-tech-card .auth-field label,
+  .auth-tech-card .password-field label,
+  .auth-tech-card .auth-password-toggle {
+    color: #172433 !important;
+  }
+
+  .auth-tech-card .auth-card-description,
+  .auth-tech-card .auth-methods-note,
+  .auth-tech-card .auth-legal-note {
+    color: #344b5c !important;
+    opacity: 1 !important;
+  }
+
+  .auth-tech-card .input {
+    color: #172433 !important;
+  }
+
+  .auth-tech-card .input::placeholder {
+    color: #667785 !important;
+    opacity: 1 !important;
+  }
+}
