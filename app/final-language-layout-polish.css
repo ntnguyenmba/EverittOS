@@ -127,7 +127,6 @@ textarea,
   font-weight: 650;
 }
 
-/* Login/signup header: use the same visual width as the auth card so the logo and language control feel intentional, not pinned to the viewport edges. */
 .auth-tech-header {
   width: min(450px, calc(100% - 28px)) !important;
   margin-left: auto !important;
@@ -303,5 +302,55 @@ textarea,
   h2,
   .section-title {
     font-size: clamp(1.25rem, 7vw, 1.65rem);
+  }
+}
+
+/* Auth header final visual treatment: stack and center rather than forcing mismatched controls onto opposite edges. */
+.auth-tech-header {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+}
+
+.auth-tech-header .brand-logo {
+  margin: 0 !important;
+}
+
+.auth-tech-header .auth-shell-language {
+  margin: 0 !important;
+}
+
+.auth-tech-header .language-switcher-compact {
+  max-width: 7.75rem !important;
+}
+
+.auth-tech-header .language-switcher-compact .language-switcher-select {
+  width: 7.75rem !important;
+  min-width: 7.75rem !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding-left: 0.75rem !important;
+  padding-right: 1.9rem !important;
+  border-radius: 11px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+@media (max-width: 640px) {
+  .auth-tech-header {
+    gap: 8px !important;
+  }
+
+  .auth-tech-header .language-switcher-compact .language-switcher-select {
+    width: 7.25rem !important;
+    min-width: 7.25rem !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 13px !important;
   }
 }
