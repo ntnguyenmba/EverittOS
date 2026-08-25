@@ -9,6 +9,7 @@ import { PortalShellNav } from '@/components/portal/portal-shell-nav';
 import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import { getContractorLayoutCopy } from '@/lib/i18n/ui-chrome-copy';
 import './contractor-minimal.css';
+import './portal-mobile-header-fix.css';
 
 type ContractorLayoutProps = { children: ReactNode };
 
@@ -27,11 +28,9 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
   return (
     <div className="dashboard-shell contractor-dashboard-shell">
       <div className="contractor-background" aria-hidden="true" />
-
       <div className="dashboard-shell-mobile contractor-mobile-header">
         <BrandLogo href="/portal/contractor" size={34} showName className="contractor-mobile-brand-logo" />
       </div>
-
       <aside className="sidebar contractor-sidebar" aria-label={c.navAria}>
         <div className="contractor-sidebar-inner">
           <Link className="contractor-brand" href="/portal/contractor">
@@ -43,7 +42,6 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
           <PortalShellNav links={contractorLinks} />
         </div>
       </aside>
-
       <main id="main-content" className="main contractor-main">
         {children}
         <AppFooter />
