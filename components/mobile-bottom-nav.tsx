@@ -15,6 +15,7 @@ import { CLIENT_PORTAL_HOME, CONTRACTOR_PORTAL_HOME } from '@/lib/portal-access'
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 const HIDDEN_PREFIXES = ['/login', '/signup', '/auth', '/onboarding', '/pricing', '/privacy', '/terms', '/cookies', '/disclaimer', '/security', '/book'];
+const PORTAL_VISIBLE_JOBS = 10;
 const bottomCopy = {
   en: { home: 'Home', jobs: 'Jobs', customers: 'Customers', calendar: 'Calendar', more: 'More', workspace: 'Workspace', language: 'Language', logout: 'Log out', close: 'Close', showAll: 'Show all jobs', showLess: 'Show fewer jobs' },
   es: { home: 'Inicio', jobs: 'Trabajos', customers: 'Clientes', calendar: 'Calendario', more: 'Más', workspace: 'Espacio de trabajo', language: 'Idioma', logout: 'Cerrar sesión', close: 'Cerrar', showAll: 'Mostrar todos los trabajos', showLess: 'Mostrar menos trabajos' },
@@ -56,41 +57,55 @@ export function MobileBottomNav() {
 
   useEffect(() => {
     if (!mounted) return;
-    let expanded = false;
+    const cleanup: Array<() => void> = [];
+
+    const wireList = (list: HTMLElement, selector: string, key: string) => {
+      if (list.dataset.everittListWired === key) return;
+      list.dataset.everittListWired = key;
+      let expanded = false;
+      const rows = Array.from(list.querySelectorAll<HTMLElement>(selector));
+      if (rows.length <= PORTAL_VISIBLE_JOBS) return;
+
+      const applyRows = () => rows.forEach((row, index) => { row.style.display = expanded || index < PORTAL_VISIBLE_JOBS ? '' : 'none'; });
+      applyRows();
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn portal-list-toggle';
+      button.textContent = bc.showAll;
+      const onClick = () => {
+        expanded = !expanded;
+        applyRows();
+        button.textContent = expanded ? bc.showLess : bc.showAll;
+      };
+      button.addEventListener('click', onClick);
+      list.insertAdjacentElement('afterend', button);
+      cleanup.push(() => button.removeEventListener('click', onClick));
+    };
+
     const apply = () => {
       if (isContractorRole(role)) {
-        const list = document.querySelector<HTMLElement>('.role-portal-contractor .job-visits-list');
-        if (list) {
-          const rows = Array.from(list.querySelectorAll<HTMLElement>(':scope > .portal-job-row'));
-          rows.forEach((row, index) => { row.style.display = expanded || index < 2 ? '' : 'none'; });
-          let button = list.parentElement?.querySelector<HTMLButtonElement>('.portal-list-toggle');
-          if (rows.length > 2 && !button) {
-            button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn portal-list-toggle';
-            button.addEventListener('click', () => {
-              expanded = !expanded;
-              rows.forEach((row, index) => { row.style.display = expanded || index < 2 ? '' : 'none'; });
-              if (button) button.textContent = expanded ? bc.showLess : bc.showAll;
-            });
-            list.insertAdjacentElement('afterend', button);
-          }
-          if (button) button.textContent = expanded ? bc.showLess : bc.showAll;
-        }
+        document.querySelectorAll<HTMLElement>('.job-visits-list').forEach((list, index) => wireList(list, ':scope > .portal-job-row', `worker-${index}`));
       }
       if (isClientRole(role)) {
-        document.querySelectorAll<HTMLDetailsElement>('.role-portal-client details.portal-dashboard-section').forEach((section) => {
+        document.querySelectorAll<HTMLDetailsElement>('details.portal-dashboard-section').forEach((section, index) => {
           if (!section.dataset.everittCollapsed) {
             section.open = false;
             section.dataset.everittCollapsed = '1';
           }
+          const list = section.querySelector<HTMLElement>('.client-job-card-list');
+          if (list) wireList(list, ':scope > .client-job-card', `client-${index}`);
         });
       }
     };
+
     apply();
     const observer = new MutationObserver(apply);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cleanup.forEach((fn) => fn());
+    };
   }, [mounted, role, bc.showAll, bc.showLess]);
 
   const excludeHrefs = useMemo(() => isClientRole(role) ? [CLIENT_PORTAL_HOME] : isContractorRole(role) ? [CONTRACTOR_PORTAL_HOME] : ['/dashboard', '/jobs', '/customers', '/schedule'], [role]);
