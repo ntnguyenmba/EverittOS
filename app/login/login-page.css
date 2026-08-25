@@ -16,7 +16,6 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-self: center;
   border-radius: 22px;
   overflow: hidden;
 }
@@ -119,14 +118,30 @@
 }
 
 @media (max-width: 760px) {
+  .auth-tech-page .auth-tech-shell {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .auth-tech-page .auth-tech-header {
+    width: calc(100% - 28px) !important;
+    max-width: calc(100% - 28px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    width: min(520px, calc(100vw - 28px)) !important;
-    max-width: min(520px, calc(100vw - 28px)) !important;
-    margin: 18px 0 !important;
+    width: min(520px, calc(100% - 28px)) !important;
+    max-width: min(520px, calc(100% - 28px)) !important;
+    margin-top: 18px !important;
+    margin-bottom: 18px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     padding: 22px 20px !important;
     border-radius: 20px;
-    justify-self: center !important;
-    align-self: start;
+    justify-self: stretch !important;
     position: relative !important;
     left: auto !important;
     right: auto !important;
@@ -169,12 +184,14 @@
 
 @media (max-width: 520px) {
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
-    width: calc(100vw - 28px) !important;
-    max-width: calc(100vw - 28px) !important;
-    margin: 16px 0 14px !important;
+    width: calc(100% - 28px) !important;
+    max-width: calc(100% - 28px) !important;
+    margin-top: 16px !important;
+    margin-bottom: 14px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     padding: 20px 18px !important;
     border-radius: 18px;
-    justify-self: center !important;
   }
 
   .auth-tech-card:has(.login-origin-story) .auth-card-subtitle { font-size: 15px; }
@@ -191,7 +208,6 @@
   .auth-tech-page .auth-tech-card:has(.login-origin-story) {
     width: min(500px, calc(100vw - 64px));
     padding: 28px;
-    justify-self: center;
   }
 }
 
