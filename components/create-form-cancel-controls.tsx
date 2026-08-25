@@ -16,7 +16,8 @@ function currentLocale() {
 const JOB_CREATE_TRANSLATIONS = {
   es: {
     'Cancel': 'Cancelar',
-    'Create Job': 'Crear trabajo',
+    'Save Job': 'Guardar trabajo',
+    'Create Job': 'Guardar trabajo',
     'More options': 'Más opciones',
     'Customer price': 'Precio del cliente',
     'This is what the customer will pay for this job.': 'Esto es lo que el cliente pagará por este trabajo.',
@@ -47,7 +48,8 @@ const JOB_CREATE_TRANSLATIONS = {
   },
   vi: {
     'Cancel': 'Hủy',
-    'Create Job': 'Tạo công việc',
+    'Save Job': 'Lưu công việc',
+    'Create Job': 'Lưu công việc',
     'More options': 'Tùy chọn khác',
     'Customer price': 'Giá khách hàng',
     'This is what the customer will pay for this job.': 'Đây là số tiền khách hàng sẽ trả cho công việc này.',
@@ -149,15 +151,18 @@ function findJobTitleInput() {
   return input ? { input, section } : null;
 }
 
-function syncJobTitleFromAddress() {
+function syncOptionalJobTitle() {
   if (window.location.pathname !== '/jobs/new') return;
-
-  const addressInput = document.querySelector<HTMLInputElement>('#job-address');
   const titleField = findJobTitleInput();
-  if (!addressInput || !titleField) return;
+  if (!titleField) return;
 
-  const fullAddress = addressInput.value.trim();
-  if (fullAddress) setReactInputValue(titleField.input, fullAddress);
+  const address = document.querySelector<HTMLInputElement>('#job-address')?.value.trim() || '';
+  const customer = document.querySelector<HTMLInputElement>('#customer-name')?.value.trim() || '';
+  const fallback = address || customer || 'Job';
+  if (!titleField.input.value.trim() || titleField.input.dataset.autoTitle === 'true') {
+    setReactInputValue(titleField.input, fallback);
+    titleField.input.dataset.autoTitle = 'true';
+  }
 
   titleField.input.required = false;
   titleField.input.setAttribute('aria-hidden', 'true');
@@ -168,23 +173,48 @@ function syncJobTitleFromAddress() {
   }
 }
 
+function simplifyJobSaveActions() {
+  if (window.location.pathname !== '/jobs/new') return;
+  const form = document.querySelector<HTMLFormElement>('.unified-job-form');
+  if (!form) return;
+
+  const buttons = Array.from(form.querySelectorAll<HTMLButtonElement>('button'));
+  const primary = buttons.find((button) => button.type === 'submit' && button.classList.contains('unified-job-save'))
+    || buttons.find((button) => buttonText(button) === 'create job');
+
+  if (primary) {
+    primary.textContent = currentLocale() === 'es' ? 'Guardar trabajo' : currentLocale() === 'vi' ? 'Lưu công việc' : 'Save Job';
+  }
+
+  buttons.forEach((button) => {
+    if (button === primary) return;
+    const text = buttonText(button);
+    const duplicateSave = button.type === 'submit' || text === 'save' || text === 'save job' || text === 'guardar' || text === 'lưu';
+    if (duplicateSave) {
+      button.style.display = 'none';
+      button.setAttribute('aria-hidden', 'true');
+      button.tabIndex = -1;
+    }
+  });
+}
+
 export function CreateFormCancelControls() {
   useEffect(() => {
     const apply = () => {
       const path = window.location.pathname;
 
       if (path === '/jobs/new') {
-        syncJobTitleFromAddress();
-        const createJob = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-          (button) => buttonText(button) === 'create job' || buttonText(button) === 'crear trabajo' || buttonText(button) === 'tạo công việc'
-        );
-        if (createJob) addAfter(createJob, () => window.history.length > 1 ? window.history.back() : window.location.assign('/jobs'));
+        syncOptionalJobTitle();
+        simplifyJobSaveActions();
+        const saveJob = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find((button) => {
+          const text = buttonText(button);
+          return text === 'save job' || text === 'guardar trabajo' || text === 'lưu công việc';
+        });
+        if (saveJob) addAfter(saveJob, () => window.history.length > 1 ? window.history.back() : window.location.assign('/jobs'));
       }
 
       if (path === '/customers/new') {
-        const saveCustomer = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-          (button) => buttonText(button) === 'save customer'
-        );
+        const saveCustomer = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find((button) => buttonText(button) === 'save customer');
         if (saveCustomer) addAfter(saveCustomer, () => window.history.length > 1 ? window.history.back() : window.location.assign('/customers'));
       }
 
@@ -221,7 +251,10 @@ export function CreateFormCancelControls() {
     const localeObserver = new MutationObserver(apply);
     localeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'data-locale'] });
     localeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
-    const jobTitleSyncTimer = window.setInterval(syncJobTitleFromAddress, 250);
+    const jobTitleSyncTimer = window.setInterval(() => {
+      syncOptionalJobTitle();
+      simplifyJobSaveActions();
+    }, 250);
     window.addEventListener('popstate', apply);
 
     return () => {
