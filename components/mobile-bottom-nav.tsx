@@ -10,6 +10,13 @@ import { CLIENT_PORTAL_HOME, CLIENT_PORTAL_SETTINGS, CONTRACTOR_PORTAL_HOME, CON
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 const HIDDEN_PREFIXES = ['/login', '/signup', '/auth', '/onboarding', '/pricing', '/privacy', '/terms', '/cookies', '/disclaimer', '/security', '/book'];
+const OPEN_MENU_EVENT = 'everittos:open-mobile-menu';
+
+const bottomCopy = {
+  en: { home: 'Home', jobs: 'Jobs', customers: 'Customers', calendar: 'Calendar', more: 'More' },
+  es: { home: 'Inicio', jobs: 'Trabajos', customers: 'Clientes', calendar: 'Calendario', more: 'Más' },
+  vi: { home: 'Trang chủ', jobs: 'Công việc', customers: 'Khách hàng', calendar: 'Lịch', more: 'Thêm' }
+} as const;
 
 function Icon({ name }: { name: 'home' | 'jobs' | 'customers' | 'calendar' | 'more' | 'money' | 'account' }) {
   const common = { width: 23, height: 23, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
@@ -33,6 +40,7 @@ export function MobileBottomNav() {
   const { t, locale } = useTranslation();
   const workspace = useWorkspacePlanOptional();
   const role = normalizeRole(workspace?.role);
+  const bc = bottomCopy[locale] || bottomCopy.en;
 
   if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
   if (!workspace?.plan && !workspace?.role) return null;
@@ -41,25 +49,32 @@ export function MobileBottomNav() {
     ? [
         { href: CLIENT_PORTAL_HOME, label: t('portal.common.overview'), icon: 'home' as const },
         { href: `${CLIENT_PORTAL_HOME}?tab=jobs`, label: t('portal.common.appointments'), icon: 'jobs' as const },
-        { href: CLIENT_PORTAL_SETTINGS, label: t('portal.common.account'), icon: 'account' as const }
+        { href: CLIENT_PORTAL_SETTINGS, label: t('portal.common.account'), icon: 'account' as const },
+        { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
       ]
     : isContractorRole(role)
       ? [
           { href: CONTRACTOR_PORTAL_HOME, label: t('portal.contractor.nav.dashboard'), icon: 'home' as const },
           { href: `${CONTRACTOR_PORTAL_HOME}#current-jobs`, label: t('portal.contractor.nav.jobs'), icon: 'jobs' as const },
           { href: `${CONTRACTOR_PORTAL_HOME}#history`, label: t('portal.contractor.nav.earnings'), icon: 'money' as const },
-          { href: CONTRACTOR_PORTAL_SETTINGS, label: t('portal.contractor.nav.settings'), icon: 'account' as const }
+          { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
         ]
       : [
-          { href: dashboardPathForRole(role), label: navLabel('/dashboard', t, 'Home', locale), icon: 'home' as const },
-          { href: '/jobs', label: navLabel('/jobs', t, 'Jobs', locale), icon: 'jobs' as const },
-          { href: '/customers', label: navLabel('/customers', t, 'Customers', locale), icon: 'customers' as const },
-          { href: '/schedule', label: navLabel('/schedule', t, 'Calendar', locale), icon: 'calendar' as const },
-          { href: '/settings', label: navLabel('/settings', t, 'More', locale), icon: 'more' as const }
+          { href: dashboardPathForRole(role), label: bc.home, icon: 'home' as const },
+          { href: '/jobs', label: navLabel('/jobs', t, bc.jobs, locale), icon: 'jobs' as const },
+          { href: '/customers', label: navLabel('/customers', t, bc.customers, locale), icon: 'customers' as const },
+          { href: '/schedule', label: navLabel('/schedule', t, bc.calendar, locale), icon: 'calendar' as const },
+          { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
         ];
 
   return <nav className={`everitt-bottom-nav everitt-bottom-nav-${links.length}`} aria-label={t('ux.mobileNavLabel')}>
     {links.map((item) => {
+      if ('menu' in item && item.menu) {
+        return <button key="more" type="button" className="everitt-bottom-nav-item everitt-bottom-nav-button" onClick={() => window.dispatchEvent(new Event(OPEN_MENU_EVENT))}>
+          <span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span>
+          <span className="everitt-bottom-nav-label">{item.label}</span>
+        </button>;
+      }
       const active = activeFor(pathname, item.href);
       return <Link key={item.href} href={item.href} className={`everitt-bottom-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}>
         <span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span>
