@@ -13,7 +13,7 @@ export type DashboardFinanceCopy = {
 };
 
 const ranges: Record<Locale, Record<DashboardDateRange, string>> = {
-  en: { today: 'Today', week: 'This week', month: 'This month', quarter: 'This quarter', ytd: 'YTD', year: 'This year', last_year: 'Last year', all_time: 'All time' },
+  en: { today: 'Today', week: 'This week', month: 'This month', quarter: 'This quarter', ytd: 'Year to date', year: 'This year', last_year: 'Last year', all_time: 'All time' },
   es: { today: 'Hoy', week: 'Esta semana', month: 'Este mes', quarter: 'Este trimestre', ytd: 'Año hasta hoy', year: 'Este año', last_year: 'El año pasado', all_time: 'Todo el tiempo' },
   vi: { today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', quarter: 'Quý này', ytd: 'Từ đầu năm đến nay', year: 'Năm nay', last_year: 'Năm trước', all_time: 'Toàn thời gian' }
 };
