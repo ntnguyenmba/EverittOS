@@ -305,52 +305,94 @@ textarea,
   }
 }
 
-/* Auth header final visual treatment: stack and center rather than forcing mismatched controls onto opposite edges. */
-.auth-tech-header {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 10px !important;
-  width: auto !important;
-  max-width: none !important;
-  min-height: 0 !important;
-}
-
-.auth-tech-header .brand-logo {
-  margin: 0 !important;
-}
-
-.auth-tech-header .auth-shell-language {
-  margin: 0 !important;
-}
-
-.auth-tech-header .language-switcher-compact {
-  max-width: 7.75rem !important;
-}
-
-.auth-tech-header .language-switcher-compact .language-switcher-select {
-  width: 7.75rem !important;
-  min-width: 7.75rem !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  padding-left: 0.75rem !important;
-  padding-right: 1.9rem !important;
-  border-radius: 11px !important;
-  font-size: 14px !important;
-  font-weight: 650 !important;
-}
-
-@media (max-width: 640px) {
-  .auth-tech-header {
-    gap: 8px !important;
+/* Mobile and native-app auth polish. */
+@media (max-width: 760px) {
+  html body .auth-tech-page .auth-tech-shell {
+    padding-left: max(22px, env(safe-area-inset-left)) !important;
+    padding-right: max(22px, env(safe-area-inset-right)) !important;
   }
 
-  .auth-tech-header .language-switcher-compact .language-switcher-select {
-    width: 7.25rem !important;
-    min-width: 7.25rem !important;
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .brand-logo,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .auth-shell-language {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    justify-self: auto !important;
+    margin: 0 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .auth-shell-language {
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact,
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact .language-switcher-select {
+    width: 116px !important;
+    min-width: 116px !important;
+    max-width: 116px !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-header .language-switcher-compact .language-switcher-select {
     height: 38px !important;
     min-height: 38px !important;
+    padding-left: 12px !important;
+    padding-right: 30px !important;
+    border-radius: 11px !important;
     font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-shell .auth-tech-card {
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+    padding: 26px 20px !important;
+    border-radius: 22px !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-title,
+  html body .auth-tech-page .auth-tech-card .auth-card-subtitle,
+  html body .auth-tech-page .auth-tech-card .auth-field label,
+  html body .auth-tech-page .auth-tech-card .password-field label {
+    color: #172433 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-card-description,
+  html body .auth-tech-page .auth-tech-card .auth-methods-note,
+  html body .auth-tech-page .auth-tech-card .auth-legal-note {
+    color: #344b5c !important;
+    opacity: 1 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .input {
+    color: #172433 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .input::placeholder {
+    color: #667785 !important;
+    opacity: 1 !important;
+  }
+
+  html body .auth-tech-page .auth-tech-card .auth-password-toggle {
+    color: #172433 !important;
   }
 }
