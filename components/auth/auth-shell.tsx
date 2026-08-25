@@ -7,7 +7,6 @@ import { useTranslation } from '@/components/locale-provider';
 type AuthShellProps = {
   title: string;
   children: ReactNode;
-  /** Signup uses an explicit consent checkbox; skip the duplicate continuing note. */
   hideContinuingLegalNote?: boolean;
 };
 
@@ -26,7 +25,6 @@ const authIntroCopy = {
   }
 };
 
-/** Centered authentication layout with the original EverittOS background image. */
 export function AuthShell({ title, children, hideContinuingLegalNote = false }: AuthShellProps) {
   const { locale } = useTranslation();
   const intro = authIntroCopy[locale] || authIntroCopy.en;
@@ -46,9 +44,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
 
         <section className="auth-tech-card" aria-labelledby="auth-page-title">
           <div className="auth-card-heading">
-            <h1 id="auth-page-title" className="auth-title">
-              {title}
-            </h1>
+            <h1 id="auth-page-title" className="auth-title">{title}</h1>
             <p className="auth-card-subtitle">{intro.subtitle}</p>
             <p className="auth-card-description">{intro.description}</p>
           </div>
@@ -94,6 +90,7 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         .auth-tech-shell {
+          --auth-column-width: 450px;
           position: relative;
           z-index: 1;
           min-height: 100svh;
@@ -103,13 +100,28 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           padding: clamp(18px, 4vw, 42px);
         }
 
+        .auth-tech-header,
+        .auth-tech-card {
+          width: min(var(--auth-column-width), calc(100vw - 56px)) !important;
+          max-width: min(var(--auth-column-width), calc(100vw - 56px)) !important;
+          box-sizing: border-box;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+
         .auth-tech-header {
-          width: min(1120px, 100%);
-          margin: 0 auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
+          padding: 0 !important;
+          min-height: 44px;
+        }
+
+        .auth-tech-header .brand-logo {
+          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
         }
 
         .auth-tech-header .brand-logo,
@@ -118,9 +130,15 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
           text-shadow: 0 2px 18px rgba(10, 24, 34, 0.32);
         }
 
+        .auth-tech-language {
+          flex: 0 0 auto;
+          margin: 0;
+        }
+
         .auth-tech-language select,
         .auth-tech-language button {
-          min-height: 44px;
+          height: 44px !important;
+          min-height: 44px !important;
           border: 1px solid rgba(255, 255, 255, 0.62);
           background: rgba(255, 255, 255, 0.94);
           color: #1e3445;
@@ -130,8 +148,8 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         .auth-tech-card {
-          width: min(450px, 100%);
-          margin: clamp(28px, 7vh, 74px) auto;
+          margin-top: clamp(28px, 7vh, 74px) !important;
+          margin-bottom: clamp(28px, 7vh, 74px) !important;
           padding: clamp(30px, 4.5vw, 42px);
           border: 1px solid rgba(255, 255, 255, 0.85);
           border-radius: 26px;
@@ -366,16 +384,19 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
             padding: 16px 14px 20px;
           }
 
+          .auth-tech-header,
+          .auth-tech-card {
+            width: calc(100vw - 56px) !important;
+            max-width: calc(100vw - 56px) !important;
+          }
+
           .auth-tech-header {
             gap: 12px;
           }
 
-          .auth-tech-header .brand-logo-name {
-            font-size: 20px;
-          }
-
           .auth-tech-card {
-            margin: 24px auto;
+            margin-top: 24px !important;
+            margin-bottom: 24px !important;
             padding: 25px 22px;
             border-radius: 22px;
           }
@@ -412,8 +433,8 @@ export function AuthShell({ title, children, hideContinuingLegalNote = false }: 
         }
 
         @media (min-width: 641px) and (max-width: 1024px) {
-          .auth-tech-card {
-            width: min(470px, 100%);
+          .auth-tech-shell {
+            --auth-column-width: 470px;
           }
 
           .auth-tech-background {
