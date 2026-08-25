@@ -10,7 +10,6 @@ main,
   min-width: 0;
 }
 
-/* Let translated labels wrap naturally instead of clipping or forcing wide pages. */
 button,
 .btn,
 a.btn,
@@ -39,7 +38,6 @@ a.btn,
   text-align: center;
 }
 
-/* Keep compact icon actions compact while text actions can grow. */
 .icon-button,
 .action-feedback-dismiss,
 .mobile-nav-toggle,
@@ -60,7 +58,6 @@ a.btn,
   min-width: 0;
 }
 
-/* Helper copy should look secondary, not disabled or washed out. */
 .muted,
 .help-text,
 .field-help,
@@ -95,7 +92,6 @@ a.btn,
   opacity: 1;
 }
 
-/* Long translated select options and inputs stay within their containers. */
 select,
 input,
 textarea,
@@ -113,7 +109,6 @@ textarea,
   text-overflow: ellipsis;
 }
 
-/* Keep language controls balanced, readable, and away from viewport edges everywhere. */
 .language-switcher-compact {
   flex: 0 0 auto;
   width: auto !important;
@@ -132,7 +127,33 @@ textarea,
   font-weight: 650;
 }
 
-.auth-tech-header,
+/* Login/signup header: use the same visual width as the auth card so the logo and language control feel intentional, not pinned to the viewport edges. */
+.auth-tech-header {
+  width: min(450px, calc(100% - 28px)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  min-height: 44px;
+  align-items: center;
+}
+
+.auth-tech-header .brand-logo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.auth-tech-header .auth-shell-language {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.auth-tech-header .language-switcher-compact .language-switcher-select {
+  height: 44px;
+  min-height: 44px;
+}
+
 .app-page-top,
 .portal-header,
 .mobile-header,
@@ -143,7 +164,6 @@ textarea,
   padding-right: max(4px, env(safe-area-inset-right));
 }
 
-/* Prevent cards, tables, and dialog content from creating horizontal page scroll. */
 .card,
 .panel,
 .stat,
@@ -166,7 +186,6 @@ textarea,
   overflow-wrap: anywhere;
 }
 
-/* Reports were retired from the product. Hide the remaining legacy report card on job details. */
 .job-detail-shell > section.card:has(a[href$='/report']) {
   display: none !important;
 }
@@ -245,6 +264,15 @@ textarea,
     padding-left: 0.8rem;
     padding-right: 2rem;
     font-size: 14px;
+  }
+
+  .auth-tech-header {
+    width: min(450px, calc(100% - 28px)) !important;
+  }
+
+  .auth-tech-header .language-switcher-compact .language-switcher-select {
+    height: 42px;
+    min-height: 42px;
   }
 
   th,
