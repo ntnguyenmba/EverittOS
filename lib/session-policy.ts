@@ -12,10 +12,12 @@ export function sessionIdleWarningBeforeMs(): number {
   return minutes * 60 * 1000;
 }
 
-/** Default: 30 minutes of inactivity signs the user out. */
+/** Web defaults to 30 minutes; the installed app keeps its trusted-device session for 30 days. */
 export function sessionIdleTimeoutMs(): number {
-  const raw =
-    process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES || process.env.SESSION_IDLE_TIMEOUT_MINUTES;
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('native-app')) {
+    return 30 * 24 * 60 * 60 * 1000;
+  }
+  const raw = process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES || process.env.SESSION_IDLE_TIMEOUT_MINUTES;
   const minutes = raw ? parseInt(raw, 10) : 30;
   if (!Number.isFinite(minutes) || minutes < 1) return 30 * 60 * 1000;
   return minutes * 60 * 1000;
@@ -30,9 +32,7 @@ export function sessionIdleWarningBeforeMinutes(): number {
 }
 
 export function createTabSessionId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -47,31 +47,8 @@ export function touchActivityTimestamp(now = Date.now()): string {
   return new Date(now).toISOString();
 }
 
-/** Routes where session enforcement should not run (auth flows stay usable). */
-export const SESSION_EXEMPT_PREFIXES = [
-  '/',
-  '/login',
-  '/signup',
-  '/forgot-password',
-  '/reset-password',
-  '/confirm-email',
-  '/auth/callback',
-  '/api/auth/reset-session',
-  '/privacy',
-  '/terms',
-  '/refund-policy',
-  '/pricing',
-  '/cookies',
-  '/disclaimer',
-  '/security',
-  '/docs/api',
-  '/api/auth/login',
-  '/api/auth/reset-password',
-  '/api/auth/config'
-] as const;
+export const SESSION_EXEMPT_PREFIXES = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/confirm-email', '/auth/callback', '/api/auth/reset-session', '/privacy', '/terms', '/refund-policy', '/pricing', '/cookies', '/disclaimer', '/security', '/docs/api', '/api/auth/login', '/api/auth/reset-password', '/api/auth/config'] as const;
 
 export function isSessionExemptPath(pathname: string): boolean {
-  return SESSION_EXEMPT_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
+  return SESSION_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
