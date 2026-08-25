@@ -1,4 +1,4 @@
-/* Desktop auth contrast only. No layout, spacing, sizing, or positioning changes. */
+/* Desktop auth contrast plus header alignment. Keep all other desktop layout unchanged. */
 @media (min-width: 761px) {
   .auth-tech-card .auth-title,
   .auth-tech-card .auth-card-subtitle,
@@ -22,5 +22,25 @@
   .auth-tech-card .input::placeholder {
     color: #667785 !important;
     opacity: 1 !important;
+  }
+
+  .auth-tech-header {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: min(450px, calc(100% - 28px)) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 0 !important;
+  }
+
+  .auth-tech-header .brand-logo,
+  .auth-tech-header .auth-shell-language {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 !important;
   }
 }
