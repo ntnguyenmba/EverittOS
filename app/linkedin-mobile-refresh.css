@@ -1,0 +1,136 @@
+/* EverittOS mobile visual refresh: denser, clearer, unified across owner/worker/client. */
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .dashboard-shell.role-portal-shell {
+    background: #f3f5f6 !important;
+  }
+
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background {
+    background: #f3f5f6 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .dashboard-shell-overlay,
+  .role-portal-shell .dashboard-shell-overlay {
+    background: transparent !important;
+  }
+
+  .dashboard-shell-header {
+    padding: 0 !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #d9dfe3;
+  }
+
+  .dashboard-shell-header .mobile-nav,
+  .dashboard-shell-header .mobile-nav-bar {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-bar {
+    min-height: 58px !important;
+    padding: 7px 16px !important;
+  }
+
+  .dashboard-shell > .main {
+    padding: 10px 12px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .dashboard-shell .app-page-top,
+  .dashboard-shell .app-page-content,
+  .dashboard-shell > .main > footer {
+    width: 100% !important;
+  }
+
+  .dashboard-shell .app-page-content {
+    padding-top: 4px !important;
+  }
+
+  .dashboard-shell .card,
+  .dashboard-shell .role-summary-card,
+  .dashboard-shell .client-job-card,
+  .dashboard-shell .job-card,
+  .dashboard-shell .record-card {
+    border: 1px solid #d9dfe3 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(24, 44, 59, 0.05) !important;
+  }
+
+  .dashboard-shell .card,
+  .dashboard-shell .role-summary-card,
+  .dashboard-shell .client-job-card {
+    padding: 16px !important;
+  }
+
+  .dashboard-shell h1 { font-size: clamp(26px, 7vw, 34px) !important; line-height: 1.08 !important; }
+  .dashboard-shell h2 { font-size: clamp(20px, 5.4vw, 26px) !important; line-height: 1.15 !important; }
+  .dashboard-shell h3 { font-size: 18px !important; line-height: 1.2 !important; }
+  .dashboard-shell p,
+  .dashboard-shell label,
+  .dashboard-shell input,
+  .dashboard-shell select,
+  .dashboard-shell button { font-size: 16px; }
+
+  .dashboard-shell .metric-grid,
+  .dashboard-shell .role-summary-grid,
+  .dashboard-shell .dashboard-revenue-grid,
+  .dashboard-shell .role-dashboard > .stats-grid,
+  .dashboard-shell .field-dashboard > .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-shell .metric-grid > .card,
+  .dashboard-shell .role-summary-card,
+  .dashboard-shell .dashboard-revenue-grid > .card {
+    min-height: 104px !important;
+    padding: 14px !important;
+  }
+
+  .dashboard-shell .btn,
+  .dashboard-shell button,
+  .dashboard-shell select,
+  .dashboard-shell input {
+    min-height: 44px;
+  }
+
+  .dashboard-shell .button-row,
+  .dashboard-shell .role-dashboard-topbar,
+  .dashboard-shell .portal-client-nav {
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .section,
+  .dashboard-shell section,
+  .dashboard-shell .stack {
+    scroll-margin-top: 70px;
+  }
+
+  .dashboard-shell > .main > footer {
+    margin-top: 22px !important;
+    padding-bottom: 14px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-shell .metric-grid,
+  .dashboard-shell .role-summary-grid,
+  .dashboard-shell .dashboard-revenue-grid,
+  .dashboard-shell .role-dashboard > .stats-grid,
+  .dashboard-shell .field-dashboard > .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell .metric-grid > .card,
+  .dashboard-shell .role-summary-card,
+  .dashboard-shell .dashboard-revenue-grid > .card {
+    min-width: 0 !important;
+  }
+}
