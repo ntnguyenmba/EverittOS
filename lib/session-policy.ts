@@ -12,11 +12,8 @@ export function sessionIdleWarningBeforeMs(): number {
   return minutes * 60 * 1000;
 }
 
-/** Web defaults to 30 minutes; the installed app keeps its trusted-device session for 30 days. */
+/** All clients, including installed iOS/Android apps, use the same inactivity timeout (default 30 minutes). */
 export function sessionIdleTimeoutMs(): number {
-  if (typeof document !== 'undefined' && document.documentElement.dataset.nativeApp === 'true') {
-    return 30 * 24 * 60 * 60 * 1000;
-  }
   const raw = process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MINUTES || process.env.SESSION_IDLE_TIMEOUT_MINUTES;
   const minutes = raw ? parseInt(raw, 10) : 30;
   if (!Number.isFinite(minutes) || minutes < 1) return 30 * 60 * 1000;
