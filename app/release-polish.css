@@ -8,6 +8,9 @@
   --eo-border: rgba(36, 63, 83, 0.15);
   --eo-surface: rgba(252, 253, 253, 0.97);
   --eo-primary: #3f586a;
+  --eo-primary-hover: #314a5b;
+  --eo-input-bg: #ffffff;
+  --eo-row-hover: rgba(63, 88, 106, 0.045);
 }
 
 .dashboard-shell .app-page-content {
@@ -46,10 +49,15 @@
 .dashboard-shell p,
 .dashboard-shell li,
 .dashboard-shell td,
-.dashboard-shell th {
+.dashboard-shell th,
+.dashboard-shell label {
   color: var(--eo-text);
   font-size: 0.98rem;
   line-height: 1.55;
+}
+
+.dashboard-shell label {
+  font-weight: 650;
 }
 
 .dashboard-shell .muted,
@@ -77,10 +85,139 @@
   padding: clamp(18px, 2vw, 24px) !important;
 }
 
+.dashboard-shell .input,
+.dashboard-shell input:not([type='checkbox']):not([type='radio']),
+.dashboard-shell select,
+.dashboard-shell textarea {
+  min-height: 44px !important;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(36, 63, 83, 0.22) !important;
+  border-radius: 12px !important;
+  background: var(--eo-input-bg) !important;
+  color: var(--eo-text) !important;
+  font: inherit;
+  font-size: 0.98rem !important;
+  line-height: 1.4;
+  padding: 10px 12px !important;
+}
+
+.dashboard-shell textarea {
+  min-height: 112px !important;
+}
+
+.dashboard-shell input::placeholder,
+.dashboard-shell textarea::placeholder {
+  color: #73838c !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .input:focus,
+.dashboard-shell input:focus,
+.dashboard-shell select:focus,
+.dashboard-shell textarea:focus {
+  outline: 2px solid rgba(63, 88, 106, 0.2) !important;
+  outline-offset: 1px;
+  border-color: rgba(63, 88, 106, 0.52) !important;
+}
+
+.dashboard-shell .btn,
+.dashboard-shell button:not(.unstyled-button) {
+  min-height: 42px;
+  border-radius: 11px !important;
+  font: inherit;
+  font-size: 0.94rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell .btn.btn-primary {
+  background: var(--eo-primary) !important;
+  border-color: var(--eo-primary) !important;
+  color: #ffffff !important;
+}
+
+.dashboard-shell .btn-primary:hover,
+.dashboard-shell .btn.btn-primary:hover {
+  background: var(--eo-primary-hover) !important;
+  border-color: var(--eo-primary-hover) !important;
+}
+
+.dashboard-shell .btn:not(.btn-primary) {
+  background: #f8fafb;
+  border-color: rgba(36, 63, 83, 0.18);
+  color: var(--eo-text);
+}
+
+.dashboard-shell .btn:disabled,
+.dashboard-shell button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dashboard-shell .button-row,
+.dashboard-shell .inline-actions {
+  gap: 10px !important;
+}
+
 .dashboard-shell .metric-grid,
 .dashboard-shell .dashboard-revenue-grid,
 .dashboard-shell .role-summary-grid {
   gap: 14px !important;
+}
+
+.dashboard-shell table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--eo-text);
+}
+
+.dashboard-shell thead th {
+  background: #f4f7f8 !important;
+  color: #3c5361 !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+  text-align: left;
+  border-bottom: 1px solid var(--eo-border) !important;
+}
+
+.dashboard-shell th,
+.dashboard-shell td {
+  padding: 12px 14px !important;
+  vertical-align: middle;
+}
+
+.dashboard-shell tbody tr:hover,
+.dashboard-shell .list-row:hover {
+  background: var(--eo-row-hover) !important;
+}
+
+.dashboard-shell .list-row {
+  padding: 14px 16px !important;
+}
+
+.dashboard-shell [aria-current='page'],
+.dashboard-shell .is-active,
+.dashboard-shell .active {
+  font-weight: 700;
+}
+
+.dashboard-shell nav a[aria-current='page'],
+.dashboard-shell .portal-client-nav a[aria-current='page'] {
+  background: rgba(63, 88, 106, 0.12) !important;
+  color: var(--eo-primary) !important;
+  border-color: rgba(63, 88, 106, 0.22) !important;
+}
+
+.dashboard-shell .status-badge,
+.dashboard-shell .badge,
+.dashboard-shell .eyebrow {
+  color: var(--eo-text) !important;
+  background: #eef3f5 !important;
+  border: 1px solid rgba(36, 63, 83, 0.14) !important;
 }
 
 @media (max-width: 900px) {
@@ -93,6 +230,11 @@
   .dashboard-shell .dashboard-revenue-grid,
   .dashboard-shell .role-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell .button-row,
+  .dashboard-shell .inline-actions {
+    flex-wrap: wrap !important;
   }
 }
 
@@ -113,5 +255,22 @@
   .dashboard-shell .role-summary-grid {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+  }
+
+  .dashboard-shell .btn,
+  .dashboard-shell button:not(.unstyled-button),
+  .dashboard-shell .input,
+  .dashboard-shell input:not([type='checkbox']):not([type='radio']),
+  .dashboard-shell select {
+    min-height: 44px !important;
+  }
+
+  .dashboard-shell table {
+    font-size: 0.92rem;
+  }
+
+  .dashboard-shell th,
+  .dashboard-shell td {
+    padding: 10px 11px !important;
   }
 }
