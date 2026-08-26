@@ -1,17 +1,17 @@
-/* Stronger hero artwork while keeping content readable across all roles and subpages. */
+/* Keep the shared architectural hero clearly visible across every role and subpage. */
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-background {
-  background-image: linear-gradient(rgba(228,235,239,.46), rgba(228,235,239,.54)), url('/hero.jpg') !important;
-  filter: grayscale(38%) saturate(76%) contrast(102%) brightness(92%) !important;
+  background-image: linear-gradient(rgba(222,230,234,.32), rgba(222,230,234,.40)), url('/hero.jpg') !important;
+  filter: grayscale(32%) saturate(82%) contrast(105%) brightness(91%) !important;
 }
 
-/* Keep the image visible without sacrificing text contrast on smaller screens. */
+/* Mobile gets only a little more wash so labels remain readable without hiding the artwork. */
 @media (max-width: 720px) {
   .dashboard-shell-background,
   .role-portal-shell .dashboard-shell-background,
   .contractor-background {
-    background-image: linear-gradient(rgba(230,237,241,.52), rgba(230,237,241,.60)), url('/hero.jpg') !important;
-    filter: grayscale(42%) saturate(72%) contrast(100%) brightness(92%) !important;
+    background-image: linear-gradient(rgba(225,233,237,.38), rgba(225,233,237,.46)), url('/hero.jpg') !important;
+    filter: grayscale(36%) saturate(78%) contrast(103%) brightness(91%) !important;
   }
 }
