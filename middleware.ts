@@ -21,6 +21,7 @@ import { defaultPathForRole } from '@/lib/role-routes';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { resolveOnboardingAccessState } from '@/lib/onboarding-access';
+import { resolveWorkspaceDeletionState } from '@/lib/workspace-access';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
 import {
   fetchProfileByUserId,
@@ -202,22 +203,13 @@ export async function middleware(request: NextRequest) {
     return disabledRedirect;
   }
 
-  const organizationId = profile?.organization_id || null;
-  let resolvedOrgId = organizationId;
-  if (!resolvedOrgId) {
-    const { data: membership } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).eq('active', true).limit(1).maybeSingle();
-    resolvedOrgId = membership?.organization_id || null;
-  }
-
-  if (resolvedOrgId && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
-    const { data: org } = await supabase.from('organizations').select('deleted_at, owner_user_id, deletion_scheduled_at').eq('id', resolvedOrgId).maybeSingle();
-    if (org?.deleted_at && org.owner_user_id !== user.id) {
-      await supabase.auth.signOut();
-      const login = new URL('/login', request.url);
-      login.searchParams.set('reason', 'workspace_deleted');
-      login.searchParams.set('detail', 'This workspace is scheduled for deletion and is no longer available.');
-      return redirectWithCookies(login, supabaseResponse);
-    }
+  const workspace = await resolveWorkspaceDeletionState(supabase, user.id, profile?.organization_id);
+  if (workspace.blocked && !pathname.startsWith('/login') && !pathname.startsWith('/api/auth')) {
+    await supabase.auth.signOut();
+    const login = new URL('/login', request.url);
+    login.searchParams.set('reason', 'workspace_deleted');
+    login.searchParams.set('detail', 'This workspace is scheduled for deletion and is no longer available.');
+    return redirectWithCookies(login, supabaseResponse);
   }
 
   let role = normalizeRole(profile?.role || 'owner');
