@@ -207,6 +207,14 @@
   color: var(--eo-text);
 }
 
+.dashboard-shell .table-wrap,
+.dashboard-shell .table-container,
+.dashboard-shell .data-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .dashboard-shell thead th {
   background: #f4f7f8 !important;
   color: #3c5361 !important;
@@ -230,6 +238,37 @@
 
 .dashboard-shell .list-row {
   padding: 14px 16px !important;
+}
+
+.dashboard-shell details {
+  border-radius: 12px;
+}
+
+.dashboard-shell details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.dashboard-shell details[open] > summary {
+  margin-bottom: 12px;
+}
+
+.dashboard-shell img,
+.dashboard-shell video,
+.dashboard-shell canvas,
+.dashboard-shell iframe {
+  max-width: 100%;
+}
+
+.dashboard-shell pre,
+.dashboard-shell code,
+.dashboard-shell .long-text,
+.dashboard-shell .break-word {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .dashboard-shell [aria-current='page'],
