@@ -290,6 +290,41 @@
   border-bottom-right-radius: var(--record-card-radius) !important;
 }
 
+/* Jobs controls should sit directly on the page, not inside another white frame. */
+.jobs-shell-minimal .jobs-filter-tabs,
+.jobs-shell-minimal .jobs-advanced-filters,
+.jobs-shell-minimal .jobs-table-card,
+.jobs-shell-minimal .jobs-mobile-table-wrap {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.jobs-shell-minimal .jobs-filter-tabs {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.jobs-shell-minimal .jobs-advanced-filters {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.jobs-shell-minimal .jobs-filter-tab {
+  border: 1px solid rgba(72, 91, 104, 0.16) !important;
+  background: rgba(244, 248, 250, 0.88) !important;
+}
+
+.jobs-shell-minimal .jobs-filter-tab-active {
+  border-color: rgba(58, 79, 94, 0.32) !important;
+  background: #ffffff !important;
+  box-shadow: 0 7px 18px rgba(27, 45, 60, 0.1) !important;
+}
+
+.jobs-shell-minimal .jobs-advanced-filters .jobs-filter-control select {
+  background: #ffffff !important;
+}
+
 /* Remove group-level white panels so records float directly on the page background. */
 .card:has(> .finance-expense-list),
 .card:has(.finance-expense-list),
