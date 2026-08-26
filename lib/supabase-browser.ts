@@ -4,6 +4,7 @@ import {
   buildTimeSupabaseUrl,
   readRuntimeConfigFromDom
 } from '@/lib/supabase-config';
+import { retryUpload } from '@/lib/upload-retry';
 
 type BrowserClient = any;
 
@@ -19,6 +20,28 @@ function resolveBrowserConfig(): { url: string; anonKey: string } {
   };
 }
 
+function installPhotoUploadRetry(client: BrowserClient) {
+  const storage = client?.storage;
+  if (!storage || storage.__everittPhotoRetryInstalled) return;
+
+  const originalFrom = storage.from.bind(storage);
+  storage.from = (bucket: string) => {
+    const bucketApi = originalFrom(bucket);
+    if (bucket !== 'job-photos' || !bucketApi?.upload) return bucketApi;
+
+    const originalUpload = bucketApi.upload.bind(bucketApi);
+    bucketApi.upload = (...args: unknown[]) =>
+      retryUpload(
+        () => originalUpload(...args),
+        (result: { error?: unknown } | null | undefined) => result?.error,
+        { attempts: 3, baseDelayMs: 700 }
+      );
+    return bucketApi;
+  };
+
+  storage.__everittPhotoRetryInstalled = true;
+}
+
 let browserClient: BrowserClient | undefined;
 
 export function getBrowserSupabase(): BrowserClient {
@@ -32,6 +55,7 @@ export function getBrowserSupabase(): BrowserClient {
         experimental: { passkey: true }
       }
     });
+    installPhotoUploadRetry(browserClient);
   }
   return browserClient;
 }
