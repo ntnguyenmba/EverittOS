@@ -10,6 +10,7 @@ import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { isClientRole, isContractorRole, normalizeRole, type UserRole } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/components/locale-provider';
+import { JobPrefillBridge } from './job-prefill-bridge';
 import styles from './job-form-simplify.module.css';
 
 type MembershipResponse = {
@@ -70,6 +71,7 @@ export default function NewJobPage() {
       <PageHeader title={t('dashboard.newJob')} />
       <div className={styles.formWrap}>
         <Suspense fallback={<p className="loading-state">{t('common.loading')}</p>}>
+          <JobPrefillBridge />
           <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
           <JobContractorOptions />
         </Suspense>
