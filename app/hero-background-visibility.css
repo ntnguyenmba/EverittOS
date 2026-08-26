@@ -2,16 +2,16 @@
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-background {
-  background-image: linear-gradient(rgba(222,230,234,.32), rgba(222,230,234,.40)), url('/hero.jpg') !important;
-  filter: grayscale(32%) saturate(82%) contrast(105%) brightness(91%) !important;
+  background-image: linear-gradient(rgba(214,224,229,.18), rgba(214,224,229,.26)), url('/hero.jpg') !important;
+  filter: grayscale(10%) saturate(96%) contrast(108%) brightness(95%) !important;
 }
 
-/* Mobile gets only a little more wash so labels remain readable without hiding the artwork. */
+/* Mobile keeps a touch more wash for labels while preserving the richer login-like image. */
 @media (max-width: 720px) {
   .dashboard-shell-background,
   .role-portal-shell .dashboard-shell-background,
   .contractor-background {
-    background-image: linear-gradient(rgba(225,233,237,.38), rgba(225,233,237,.46)), url('/hero.jpg') !important;
-    filter: grayscale(36%) saturate(78%) contrast(103%) brightness(91%) !important;
+    background-image: linear-gradient(rgba(218,228,233,.26), rgba(218,228,233,.34)), url('/hero.jpg') !important;
+    filter: grayscale(14%) saturate(92%) contrast(106%) brightness(95%) !important;
   }
 }
