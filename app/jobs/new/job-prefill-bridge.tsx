@@ -33,24 +33,25 @@ export function JobPrefillBridge() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams.get('source') !== 'quotes') return;
+    const source = searchParams.get('source');
+    if (source !== 'quotes' && source !== 'assistant') return;
 
-    const title = searchParams.get('title') || '';
-    const notes = searchParams.get('notes') || '';
-    const clientIncome = searchParams.get('client_income') || '';
+    const title = searchParams.get('title') || searchParams.get('service') || '';
+    const notes = searchParams.get('notes') || searchParams.get('scope') || '';
+    const clientIncome = searchParams.get('client_income') || searchParams.get('price') || '';
     if (!title && !notes && !clientIncome) return;
 
     let attempts = 0;
     const apply = () => {
       attempts += 1;
       const root = document.querySelector('.unified-job-form') || document;
-      const titleControl = controlForLabel(root, ['job title', 'title', 'título', 'tiêu đề']);
-      const notesControl = controlForLabel(root, ['notes', 'notas', 'ghi chú']);
+      const titleControl = controlForLabel(root, ['job title', 'title', 'service', 'título', 'servicio', 'tiêu đề', 'dịch vụ']);
+      const notesControl = controlForLabel(root, ['notes', 'scope', 'notas', 'alcance', 'ghi chú', 'phạm vi']);
       const incomeControl = controlForLabel(root, ['client income', 'customer price', 'revenue', 'ingreso', 'precio', 'doanh thu', 'giá khách']);
 
       if (title && titleControl && !titleControl.value) setReactValue(titleControl, title);
       if (notes && notesControl && !notesControl.value) setReactValue(notesControl, notes);
-      if (clientIncome && incomeControl && !incomeControl.value) setReactValue(incomeControl, clientIncome);
+      if (clientIncome && incomeControl && !incomeControl.value) setReactValue(incomeControl, clientIncome.replace(/[^0-9.-]/g, ''));
 
       const complete = (!title || Boolean(titleControl)) && (!notes || Boolean(notesControl)) && (!clientIncome || Boolean(incomeControl));
       if (!complete && attempts < 20) window.setTimeout(apply, 120);
