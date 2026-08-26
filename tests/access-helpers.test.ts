@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveOnboardingAccessState } from '@/lib/onboarding-access';
 import { resolveWorkspaceDeletionState } from '@/lib/workspace-access';
+import { resolveMiddlewareClientRepair, shouldAttemptMiddlewareClientRepair } from '@/lib/middleware-client-repair';
 
 function onboardingClient(row: Record<string, unknown> | null) {
   return {
@@ -126,4 +127,42 @@ test('deleted workspace does not block its owner', async () => {
     'org-1'
   );
   assert.deepEqual(state, { organizationId: 'org-1', blocked: false });
+});
+
+test('client repair is attempted only on relevant owner or client paths', () => {
+  assert.equal(shouldAttemptMiddlewareClientRepair('owner', '/dashboard'), true);
+  assert.equal(shouldAttemptMiddlewareClientRepair('client', '/portal/client/jobs'), true);
+  assert.equal(shouldAttemptMiddlewareClientRepair('owner', '/jobs'), false);
+  assert.equal(shouldAttemptMiddlewareClientRepair('contractor', '/dashboard'), true);
+});
+
+test('middleware client repair converts repaired owner into client and redirects from dashboard', async () => {
+  const supabase = {
+    rpc: async () => ({ data: { ok: true, skipped: false, role: 'client' } })
+  };
+  const result = await resolveMiddlewareClientRepair(supabase, 'user-1', 'owner', '/dashboard');
+  assert.deepEqual(result, { role: 'client', repaired: true, redirectToClientJobs: true });
+});
+
+test('middleware client repair leaves protected roles unchanged', async () => {
+  let called = false;
+  const supabase = {
+    rpc: async () => {
+      called = true;
+      return { data: { ok: true, skipped: false, role: 'client' } };
+    }
+  };
+  const result = await resolveMiddlewareClientRepair(supabase, 'user-1', 'contractor', '/dashboard');
+  assert.equal(called, false);
+  assert.deepEqual(result, { role: 'contractor', repaired: false, redirectToClientJobs: false });
+});
+
+test('middleware client repair fails open when RPC is unavailable', async () => {
+  const supabase = {
+    rpc: async () => {
+      throw new Error('rpc unavailable');
+    }
+  };
+  const result = await resolveMiddlewareClientRepair(supabase, 'user-1', 'owner', '/dashboard');
+  assert.deepEqual(result, { role: 'owner', repaired: false, redirectToClientJobs: false });
 });
