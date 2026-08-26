@@ -32,94 +32,14 @@ import { isDemoFeatureEnabled } from '@/lib/demo-guard';
 import { isLegacyMarketingAppPath, MARKETING_SITE_URL } from '@/lib/marketing-site';
 import { postAuthRedirectPath, shouldRedirectToOnboarding } from '@/lib/post-auth-redirect';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
-
-const AUTH_PREFIXES = [
-  '/dashboard',
-  '/jobs',
-  '/workers',
-  '/people',
-  '/settings',
-  '/customers',
-  '/crm',
-  '/schedule',
-  '/onboarding',
-  '/team',
-  '/teams',
-  '/activity',
-  '/analytics',
-  '/notifications',
-  '/billing',
-  '/workflows',
-  '/portal',
-  '/admin',
-  '/forms',
-  '/templates',
-  '/reviews',
-  '/leads',
-  '/services',
-  '/bookings',
-  '/invoices',
-  '/photos',
-  '/reports',
-  '/expenses',
-  '/projects',
-  '/knowledge',
-  '/automations',
-  '/clients',
-  '/proposals',
-  '/inventory',
-  '/routes',
-  '/messages',
-  '/estimates',
-  '/my-work',
-  '/contractor-pay',
-  '/staffing',
-  '/operations'
-];
-
-const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'];
-
-const PUBLIC_API_PREFIXES = [
-  '/api/auth/login',
-  '/api/auth/signup',
-  '/api/auth/reset-password',
-  '/api/auth/reset-session',
-  '/api/auth/update-password',
-  '/api/auth/config',
-  '/api/auth/setup',
-  '/api/auth/session',
-  '/api/auth/sign-out',
-  '/api/auth/signup-rate-limit',
-  '/api/stripe/webhook',
-  '/api/stripe/router',
-  '/api/stripe/capabilities',
-  '/api/public/reports',
-  '/api/webhooks/apple',
-  '/api/webhooks/google-play',
-  '/api/team/accept',
-  '/api/forms/public',
-  '/api/book'
-];
-
-function isPublicApiPath(pathname: string) {
-  return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
-function isSessionApiPath(pathname: string) {
-  return pathname.startsWith('/api/') && !pathname.startsWith('/api/v1/') && !isPublicApiPath(pathname);
-}
-
-const ROLE_BLOCKED_PREFIXES: { prefix: string; permission: 'view_team' | 'manage_billing' | 'view_all_org_data' }[] = [
-  { prefix: '/people', permission: 'view_team' },
-  { prefix: '/team', permission: 'view_team' },
-  { prefix: '/settings/people', permission: 'view_team' },
-  { prefix: '/settings/team', permission: 'view_team' },
-  { prefix: '/settings/billing', permission: 'manage_billing' }
-];
-
-function isProtectedPath(pathname: string) {
-  return AUTH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
+import {
+  ROLE_BLOCKED_PREFIXES,
+  isLoggedOutOnlyPath,
+  isProtectedPath,
+  isSessionApiPath,
+  matchedMainNavPath,
+  pathMatchesPrefix
+} from '@/lib/middleware-route-policy';
 
 function redirectWithCookies(url: URL, source: NextResponse) {
   const redirect = NextResponse.redirect(url);
@@ -215,7 +135,7 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies(new URL('/login', request.url), supabaseResponse);
   }
 
-  if (user && AUTH_ONLY_WHEN_LOGGED_OUT.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+  if (user && isLoggedOutOnlyPath(pathname)) {
     const profileRead = await fetchProfileByUserId(supabase, user.id);
     const onboarding = await resolveOnboardingState(supabase, profileRead.profile?.organization_id);
     const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped);
@@ -319,14 +239,10 @@ export async function middleware(request: NextRequest) {
   const userPlan = profile ? normalizePlan(await resolveProfilePlan(supabase, user.id, profile)) : 'free';
   const subscriptionStatus = profile ? await resolveProfileSubscriptionStatus(supabase, user.id, profile) : 'free';
 
-  // Invite acceptance must work for free personal accounts before they become clients/contractors.
-  // Skip subscription, plan, and /team permission gates entirely for this path.
   if (isTeamInviteAcceptPath(pathname)) {
     return supabaseResponse;
   }
 
-  // Backward-compat: repair stuck client invitees on portal/billing/dashboard entry points.
-  // SQL function skips managers/contractors and real business owners.
   const shouldAttemptClientRepair =
     isClientRole(role) ||
     pathname.startsWith('/portal/client') ||
@@ -353,7 +269,6 @@ export async function middleware(request: NextRequest) {
       if (repaired) {
         role = repairedRole;
       }
-      // Pull repaired clients off billing/pricing/owner dashboard immediately.
       if (
         isClientRole(role) &&
         repaired &&
@@ -393,7 +308,6 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Subscription/paywall checks apply only to owner/manager (and other org staff) accounts.
   if (subscriptionBlocksPaidAccess(userPlan, subscriptionStatus)) {
     const billing = new URL('/settings/billing', request.url);
     billing.searchParams.set('reason', 'subscription');
@@ -404,7 +318,7 @@ export async function middleware(request: NextRequest) {
   }
 
   for (const rule of ROLE_BLOCKED_PREFIXES) {
-    if ((pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) && !hasPermission(role, rule.permission)) {
+    if (pathMatchesPrefix(pathname, rule.prefix) && !hasPermission(role, rule.permission)) {
       return roleBlockedRedirect(
         request,
         supabaseResponse,
@@ -422,45 +336,7 @@ export async function middleware(request: NextRequest) {
     return redirectWithCookies(new URL(fallback, request.url), supabaseResponse);
   }
 
-  const mainNavPaths = [
-    '/dashboard',
-    '/jobs',
-    '/customers',
-    '/crm',
-    '/projects',
-    '/schedule',
-    '/knowledge',
-    '/automations',
-    '/clients',
-    '/forms',
-    '/templates',
-    '/reviews',
-    '/services',
-    '/bookings',
-    '/leads',
-    '/workers',
-    '/people',
-    '/team',
-    '/teams',
-    '/activity',
-    '/analytics',
-    '/workflows',
-    '/notifications',
-    '/proposals',
-    '/invoices',
-    '/photos',
-    '/reports',
-    '/expenses',
-    '/inventory',
-    '/routes',
-    '/messages',
-    '/estimates',
-    '/my-work',
-    '/contractor-pay',
-    '/staffing',
-    '/operations'
-  ];
-  const matchedNav = mainNavPaths.find((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const matchedNav = matchedMainNavPath(pathname);
   if (matchedNav && !canAccessNavHref(role, matchedNav, userPlan)) {
     return roleBlockedRedirect(
       request,
@@ -537,6 +413,8 @@ export const config = {
     '/contractor-pay/:path*',
     '/staffing/:path*',
     '/operations/:path*',
+    '/assistant',
+    '/assistant/:path*',
     '/book/:path*',
     '/f/:path*',
     '/login',
