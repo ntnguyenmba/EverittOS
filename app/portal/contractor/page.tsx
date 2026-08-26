@@ -7,6 +7,7 @@ import { ExportMenu } from '@/components/export-menu';
 import { useTranslation } from '@/components/locale-provider';
 import { contractorJobDetailPath } from '@/lib/contractor-job-access';
 import { getExportCopy } from '@/lib/i18n/export-copy';
+import { readWorkerJobCache, saveWorkerJobCache } from '@/lib/worker-job-cache';
 import { supabase } from '@/lib/supabase';
 import { performClientLogout } from '@/lib/client-logout';
 
@@ -45,11 +46,12 @@ type AuthResult = { data: { user: { id: string; email?: string | null } | null }
 type LoadState = 'loading' | 'ready' | 'error';
 
 const LOAD_TIMEOUT_MS = 10000;
+const EMPTY_TOTALS: PortalTotals = { assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 };
 
 const copy = {
   en: {
     contractor: 'Worker', dashboard: 'Your work', goodMorning: 'Good morning', goodAfternoon: 'Good afternoon', goodEvening: 'Good evening', upcomingHeadline: 'upcoming jobs', upcomingHeadlineOne: 'upcoming job', jobs: 'Jobs', schedule: 'Schedule', earnings: 'Earnings', settings: 'Settings', signOut: 'Sign out', signingOut: 'Signing out...',
-    loadingTitle: 'Loading your worker dashboard...', loadingBody: 'This should take only a few seconds.', errorTitle: 'The worker dashboard could not load', errorSafe: 'No jobs, payments, or earnings were changed.', tryAgain: 'Try again',
+    loadingTitle: 'Loading your worker dashboard...', loadingBody: 'This should take only a few seconds.', errorTitle: 'The worker dashboard could not load', errorSafe: 'No jobs, payments, or earnings were changed.', tryAgain: 'Try again', offline: 'Connection unavailable. Showing the last saved job list from this device.',
     assignedJobs: 'Assigned jobs', upcomingJobs: 'Upcoming jobs', completedJobs: 'Completed jobs', totalEarnings: 'Total earnings', paidToYou: 'Paid to you', stillOwed: 'Still owed',
     job: 'Job', customer: 'Customer', noJobs: 'No assigned jobs yet.', dateNotSet: 'Schedule pending', scheduleBody: 'Your upcoming assigned jobs appear above in date order.', paid: 'paid', stillOwedLower: 'still owed', earningsBody: 'Earnings are calculated only from worker payment records linked to your worker profile.',
     yourPay: 'Your pay', payNotRecorded: 'Pay details pending', nextUp: 'Next job', openJob: 'Open job',
@@ -58,7 +60,7 @@ const copy = {
   },
   es: {
     contractor: 'Trabajador', dashboard: 'Tu trabajo', goodMorning: 'Buenos días', goodAfternoon: 'Buenas tardes', goodEvening: 'Buenas noches', upcomingHeadline: 'trabajos próximos', upcomingHeadlineOne: 'trabajo próximo', jobs: 'Trabajos', schedule: 'Horario', earnings: 'Ganancias', settings: 'Configuración', signOut: 'Cerrar sesión', signingOut: 'Cerrando sesión...',
-    loadingTitle: 'Cargando tu panel de trabajador...', loadingBody: 'Esto solo debería tardar unos segundos.', errorTitle: 'No se pudo cargar el panel del trabajador', errorSafe: 'No se cambiaron trabajos, pagos ni ganancias.', tryAgain: 'Intentar de nuevo',
+    loadingTitle: 'Cargando tu panel de trabajador...', loadingBody: 'Esto solo debería tardar unos segundos.', errorTitle: 'No se pudo cargar el panel del trabajador', errorSafe: 'No se cambiaron trabajos, pagos ni ganancias.', tryAgain: 'Intentar de nuevo', offline: 'No hay conexión. Se muestra la última lista de trabajos guardada en este dispositivo.',
     assignedJobs: 'Trabajos asignados', upcomingJobs: 'Próximos trabajos', completedJobs: 'Trabajos terminados', totalEarnings: 'Ganancias totales', paidToYou: 'Pagado a ti', stillOwed: 'Pendiente de pago',
     job: 'Trabajo', customer: 'Cliente', noJobs: 'Aún no hay trabajos asignados.', dateNotSet: 'Horario pendiente', scheduleBody: 'Tus próximos trabajos asignados aparecen arriba en orden de fecha.', paid: 'pagado', stillOwedLower: 'pendiente', earningsBody: 'Las ganancias se calculan solo con los registros de pago vinculados a tu perfil de trabajador.',
     yourPay: 'Tu pago', payNotRecorded: 'Detalles de pago pendientes', nextUp: 'Próximo trabajo', openJob: 'Abrir trabajo',
@@ -67,7 +69,7 @@ const copy = {
   },
   vi: {
     contractor: 'Nhân viên', dashboard: 'Công việc của bạn', goodMorning: 'Chào buổi sáng', goodAfternoon: 'Chào buổi chiều', goodEvening: 'Chào buổi tối', upcomingHeadline: 'công việc sắp tới', upcomingHeadlineOne: 'công việc sắp tới', jobs: 'Công việc', schedule: 'Lịch', earnings: 'Thu nhập', settings: 'Cài đặt', signOut: 'Đăng xuất', signingOut: 'Đang đăng xuất...',
-    loadingTitle: 'Đang tải bảng điều khiển nhân viên...', loadingBody: 'Quá trình này chỉ mất vài giây.', errorTitle: 'Không thể tải bảng điều khiển nhân viên', errorSafe: 'Không có công việc, khoản thanh toán hoặc thu nhập nào bị thay đổi.', tryAgain: 'Thử lại',
+    loadingTitle: 'Đang tải bảng điều khiển nhân viên...', loadingBody: 'Quá trình này chỉ mất vài giây.', errorTitle: 'Không thể tải bảng điều khiển nhân viên', errorSafe: 'Không có công việc, khoản thanh toán hoặc thu nhập nào bị thay đổi.', tryAgain: 'Thử lại', offline: 'Không có kết nối. Đang hiển thị danh sách công việc được lưu gần nhất trên thiết bị này.',
     assignedJobs: 'Công việc được giao', upcomingJobs: 'Công việc sắp tới', completedJobs: 'Công việc đã xong', totalEarnings: 'Tổng thu nhập', paidToYou: 'Đã trả cho bạn', stillOwed: 'Còn phải trả',
     job: 'Công việc', customer: 'Khách hàng', noJobs: 'Chưa có công việc được giao.', dateNotSet: 'Lịch đang chờ', scheduleBody: 'Các công việc sắp tới của bạn được hiển thị phía trên theo thứ tự ngày.', paid: 'đã trả', stillOwedLower: 'còn phải trả', earningsBody: 'Thu nhập chỉ được tính từ các hồ sơ thanh toán được liên kết với hồ sơ nhân viên của bạn.',
     yourPay: 'Tiền công của bạn', payNotRecorded: 'Chi tiết tiền công đang chờ', nextUp: 'Công việc tiếp theo', openJob: 'Mở công việc',
@@ -102,11 +104,12 @@ export default function ContractorPortalPage() {
   const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US';
   const [state, setState] = useState<LoadState>('loading');
   const [error, setError] = useState('');
+  const [offlineNotice, setOfflineNotice] = useState('');
   const [exportError, setExportError] = useState('');
   const [exportNotice, setExportNotice] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [jobs, setJobs] = useState<JobRow[]>([]);
-  const [totals, setTotals] = useState<PortalTotals>({ assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
+  const [totals, setTotals] = useState<PortalTotals>(EMPTY_TOTALS);
   const [signingOut, setSigningOut] = useState(false);
 
   const jobDate = useCallback((job: JobRow) => {
@@ -124,26 +127,44 @@ export default function ContractorPortalPage() {
   const load = useCallback(async () => {
     setState('loading');
     setError('');
+    setOfflineNotice('');
+    let localUserId = '';
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      localUserId = sessionData.session?.user?.id || '';
       const auth = (await withTimeout(supabase.auth.getUser(), c.sessionTimeout)) as AuthResult;
       const user = auth.data.user;
       if (auth.error || !user) { router.replace('/login?next=%2Fportal%2Fcontractor'); return; }
+      localUserId = user.id;
       const response = (await withTimeout(fetch('/api/portal/contractor/jobs', { cache: 'no-store' }), c.jobsTimeout)) as Response;
       if (response.status === 401) { router.replace('/login?next=%2Fportal%2Fcontractor'); return; }
       const payload = (await response.json().catch(() => ({}))) as PortalDashboardResponse;
       if (!response.ok) throw new Error(payload.error || c.loadFailed);
-      setWorkerName(payload.workerName || user.email || c.contractor);
+      const nextName = payload.workerName || user.email || c.contractor;
+      const nextJobs = payload.jobs || [];
+      const nextTotals = payload.totals || EMPTY_TOTALS;
+      setWorkerName(nextName);
       if (payload.notLinked) {
         setJobs([]);
-        setTotals({ assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
+        setTotals(EMPTY_TOTALS);
         setError(c.notLinked);
         setState('error');
         return;
       }
-      setJobs(payload.jobs || []);
-      setTotals(payload.totals || { assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
+      setJobs(nextJobs);
+      setTotals(nextTotals);
+      saveWorkerJobCache(user.id, { workerName: nextName, jobs: nextJobs, totals: nextTotals });
       setState('ready');
     } catch (cause) {
+      const cached = localUserId ? readWorkerJobCache(localUserId) : null;
+      if (cached) {
+        setWorkerName(cached.workerName);
+        setJobs(cached.jobs);
+        setTotals(cached.totals);
+        setOfflineNotice(c.offline);
+        setState('ready');
+        return;
+      }
       setError(cause instanceof Error ? cause.message : c.loadFailed);
       setState('error');
     }
@@ -196,13 +217,14 @@ export default function ContractorPortalPage() {
             endpoint="/api/exports/portal/contractor/jobs"
             locale={locale}
             labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
-            disabled={state === 'loading'}
+            disabled={state === 'loading' || Boolean(offlineNotice)}
             onError={(message) => { setExportNotice(''); setExportError(message || exportCopy.exportFailed); }}
             onSuccess={(format) => { setExportError(''); setExportNotice(format === 'share' ? exportCopy.shareSent : ''); }}
           />
           <button type="button" className="btn contractor-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
         </nav>
       </header>
+      {offlineNotice ? <div className="card" role="status" style={{ marginBottom: 14 }}><strong>{offlineNotice}</strong> <button type="button" className="btn" onClick={() => void load()}>{c.tryAgain}</button></div> : null}
       {exportError ? <p className="auth-message auth-message-error">{exportError}</p> : null}
       {exportNotice ? <p className="muted">{exportNotice}</p> : null}
 
