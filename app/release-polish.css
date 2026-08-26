@@ -1,0 +1,14 @@
+/*
+ * EverittOS sell-ready styling entry point.
+ *
+ * During the core SaaS sales sprint, put new shared visual fixes here instead
+ * of creating another root-level CSS patch file. Existing legacy styles remain
+ * untouched until the product-critical flows are stable and verified.
+ *
+ * Priorities before cosmetic refactors:
+ * 1. Quotes -> Job conversion
+ * 2. Job Assistant -> structured work packet
+ * 3. Lead -> Job -> Invoice/Payment flow
+ * 4. Worker Today/Next Job flow
+ * 5. Reliability, offline job data, and photo recovery
+ */
