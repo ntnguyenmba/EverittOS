@@ -106,6 +106,10 @@
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
   align-items: stretch !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Reference layout: information on the left, actions on the right. */
@@ -260,10 +264,15 @@
 }
 
 /* Jobs keep their current data, but each job reads as a separate floating slab. */
+.jobs-operations-table,
+.jobs-operations-table tbody {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 .jobs-operations-table {
   border-collapse: separate !important;
   border-spacing: 0 14px !important;
-  background: transparent !important;
 }
 
 .jobs-operations-table tbody > .jobs-operations-row {
@@ -281,19 +290,66 @@
   border-bottom-right-radius: var(--record-card-radius) !important;
 }
 
-/* Remove outer list boxes so records float individually over the page background. */
+/* Remove group-level white panels so records float directly on the page background. */
 .card:has(> .finance-expense-list),
+.card:has(.finance-expense-list),
 .card:has(> .customer-list),
+.card:has(.customer-list),
 .card:has(> .customers-list),
+.card:has(.customers-list),
 .card:has(> .team-list),
+.card:has(.team-list),
 .card:has(> .worker-list),
+.card:has(.worker-list),
 .card:has(> .contractor-list),
+.card:has(.contractor-list),
 .card:has(> .record-list),
-.card:has(> .entity-list) {
+.card:has(.record-list),
+.card:has(> .entity-list),
+.card:has(.entity-list),
+.card:has(> .portal-job-list),
+.card:has(.portal-job-list),
+.card:has(> .jobs-operations-table),
+.card:has(.jobs-operations-table),
+.panel:has(.finance-expense-list),
+.panel:has(.customer-list),
+.panel:has(.customers-list),
+.panel:has(.team-list),
+.panel:has(.worker-list),
+.panel:has(.contractor-list),
+.panel:has(.record-list),
+.panel:has(.entity-list),
+.panel:has(.portal-job-list),
+.panel:has(.jobs-operations-table),
+.portal-dashboard-section:has(.portal-job-list),
+.portal-dashboard-section:has(.record-list),
+.role-dashboard-section:has(.portal-job-list),
+.role-dashboard-section:has(.record-list),
+.list-panel:has(.record-card),
+.list-panel:has(.finance-list-card),
+.list-panel:has(.team-member-card),
+.list-panel:has(.customer-card) {
   padding: 0 !important;
   border: 0 !important;
+  border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Keep headings and controls above a freed list readable without rebuilding a white wrapper. */
+.card:has(.finance-expense-list) > :not(.finance-expense-list),
+.card:has(.customer-list) > :not(.customer-list),
+.card:has(.customers-list) > :not(.customers-list),
+.card:has(.team-list) > :not(.team-list),
+.card:has(.worker-list) > :not(.worker-list),
+.card:has(.contractor-list) > :not(.contractor-list),
+.card:has(.record-list) > :not(.record-list),
+.card:has(.entity-list) > :not(.entity-list),
+.card:has(.portal-job-list) > :not(.portal-job-list),
+.card:has(.jobs-operations-table) > :not(.jobs-operations-table) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* Tablet and narrow desktop. */
