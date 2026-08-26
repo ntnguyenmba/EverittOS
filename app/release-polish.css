@@ -325,6 +325,107 @@
   font-size: 0.86rem !important;
 }
 
+.dashboard-shell .filters,
+.dashboard-shell .filter-row,
+.dashboard-shell .filter-bar,
+.dashboard-shell .toolbar,
+.dashboard-shell .page-toolbar {
+  display: flex !important;
+  align-items: end !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-shell .filters > *,
+.dashboard-shell .filter-row > *,
+.dashboard-shell .filter-bar > *,
+.dashboard-shell .toolbar > *,
+.dashboard-shell .page-toolbar > * {
+  min-width: 0;
+}
+
+.dashboard-shell .record-card,
+.dashboard-shell .job-card,
+.dashboard-shell .customer-card,
+.dashboard-shell .invoice-card,
+.dashboard-shell .quote-card,
+.dashboard-shell .lead-card,
+.dashboard-shell .portal-job-row {
+  border: 1px solid var(--eo-border) !important;
+  border-radius: 16px !important;
+  background: var(--eo-surface) !important;
+  color: var(--eo-text) !important;
+  box-shadow: 0 5px 18px rgba(36, 63, 83, 0.045) !important;
+}
+
+.dashboard-shell .record-card:hover,
+.dashboard-shell .job-card:hover,
+.dashboard-shell .customer-card:hover,
+.dashboard-shell .invoice-card:hover,
+.dashboard-shell .quote-card:hover,
+.dashboard-shell .lead-card:hover,
+.dashboard-shell .portal-job-row:hover {
+  border-color: rgba(36, 63, 83, 0.23) !important;
+  box-shadow: 0 7px 22px rgba(36, 63, 83, 0.065) !important;
+}
+
+.dashboard-shell .empty-state,
+.dashboard-shell .loading-state,
+.dashboard-shell .error-state,
+.dashboard-shell [data-state='empty'],
+.dashboard-shell [data-state='loading'],
+.dashboard-shell [data-state='error'] {
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--eo-muted) !important;
+  line-height: 1.55 !important;
+}
+
+.dashboard-shell .empty-state,
+.dashboard-shell [data-state='empty'] {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 22px !important;
+  border: 1px dashed rgba(36, 63, 83, 0.22) !important;
+  border-radius: 14px !important;
+  background: rgba(248, 250, 251, 0.82) !important;
+}
+
+.dashboard-shell [role='dialog'],
+.dashboard-shell .modal,
+.dashboard-shell .dialog,
+.dashboard-shell .drawer,
+.dashboard-shell .sheet {
+  color: var(--eo-text) !important;
+}
+
+.dashboard-shell [role='dialog'] .card,
+.dashboard-shell .modal-content,
+.dashboard-shell .dialog-content,
+.dashboard-shell .drawer-content,
+.dashboard-shell .sheet-content {
+  border: 1px solid var(--eo-border) !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 22px 60px rgba(25, 45, 58, 0.18) !important;
+}
+
+.dashboard-shell .section,
+.dashboard-shell section + section {
+  scroll-margin-top: 90px;
+}
+
+.dashboard-shell .card + .card,
+.dashboard-shell .card + section,
+.dashboard-shell section + .card {
+  margin-top: 14px;
+}
+
 @media (max-width: 900px) {
   .dashboard-shell .app-page-content {
     padding-inline: max(16px, env(safe-area-inset-left), env(safe-area-inset-right)) !important;
@@ -366,6 +467,14 @@
 
   .dashboard-shell .app-footer {
     padding-inline: max(16px, env(safe-area-inset-left), env(safe-area-inset-right)) !important;
+  }
+
+  .dashboard-shell .filters > *,
+  .dashboard-shell .filter-row > *,
+  .dashboard-shell .filter-bar > *,
+  .dashboard-shell .toolbar > *,
+  .dashboard-shell .page-toolbar > * {
+    flex: 1 1 180px;
   }
 }
 
@@ -423,5 +532,30 @@
 
   .dashboard-shell .app-footer-links {
     gap: 8px 14px !important;
+  }
+
+  .dashboard-shell .filters,
+  .dashboard-shell .filter-row,
+  .dashboard-shell .filter-bar,
+  .dashboard-shell .toolbar,
+  .dashboard-shell .page-toolbar {
+    align-items: stretch !important;
+  }
+
+  .dashboard-shell .filters > *,
+  .dashboard-shell .filter-row > *,
+  .dashboard-shell .filter-bar > *,
+  .dashboard-shell .toolbar > *,
+  .dashboard-shell .page-toolbar > * {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .dashboard-shell [role='dialog'] .card,
+  .dashboard-shell .modal-content,
+  .dashboard-shell .dialog-content,
+  .dashboard-shell .drawer-content,
+  .dashboard-shell .sheet-content {
+    border-radius: 16px !important;
   }
 }
