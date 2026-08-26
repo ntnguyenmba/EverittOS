@@ -1,0 +1,291 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/page-header';
+import { useTranslation } from '@/components/locale-provider';
+import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
+import { normalizeRole, type UserRole } from '@/lib/roles';
+import { supabase } from '@/lib/supabase';
+
+type Locale = 'en' | 'es' | 'vi';
+type FollowUpType = 'confirmation' | 'reminder' | 'complete' | 'review' | 'payment' | 'recurring';
+
+const copy = {
+  en: {
+    title: 'Assistant',
+    sub: 'Turn messy job notes into a usable scope, worker checklist, supplies list, and customer message.',
+    notes: 'Customer text or job notes',
+    notesHint: 'Paste a text, email, or rough notes here. Keep names, dates, access details, and special requests if they matter.',
+    build: 'Build job packet',
+    clear: 'Clear',
+    scope: 'Scope',
+    checklist: 'Worker checklist',
+    supplies: 'Likely supplies',
+    worker: 'Worker instructions',
+    customer: 'Customer summary',
+    copy: 'Copy',
+    copied: 'Copied',
+    editHint: 'Review and edit before sending or assigning. The operator always controls the final wording.',
+    noNotes: 'Add job notes first.',
+    followups: 'Customer follow-ups',
+    followupSub: 'Create a ready-to-send message without starting from a blank screen.',
+    customerName: 'Customer name',
+    jobType: 'Service',
+    jobDate: 'Date / time',
+    amount: 'Amount due',
+    generate: 'Create message',
+    types: {
+      confirmation: 'Appointment confirmation',
+      reminder: 'Appointment reminder',
+      complete: 'Job complete',
+      review: 'Review request',
+      payment: 'Payment reminder',
+      recurring: 'Recurring service reminder',
+    },
+  },
+  es: {
+    title: 'Asistente',
+    sub: 'Convierte notas desordenadas en alcance, lista de trabajo, suministros y mensaje para el cliente.',
+    notes: 'Texto del cliente o notas del trabajo',
+    notesHint: 'Pega aquí un texto, correo o notas. Conserva nombres, fechas, acceso y solicitudes especiales importantes.',
+    build: 'Crear paquete de trabajo',
+    clear: 'Borrar',
+    scope: 'Alcance',
+    checklist: 'Lista del trabajador',
+    supplies: 'Suministros probables',
+    worker: 'Instrucciones para el trabajador',
+    customer: 'Resumen para el cliente',
+    copy: 'Copiar',
+    copied: 'Copiado',
+    editHint: 'Revisa y edita antes de enviar o asignar. El operador siempre controla el texto final.',
+    noNotes: 'Primero agrega notas del trabajo.',
+    followups: 'Seguimiento al cliente',
+    followupSub: 'Crea un mensaje listo para enviar sin empezar desde cero.',
+    customerName: 'Nombre del cliente',
+    jobType: 'Servicio',
+    jobDate: 'Fecha / hora',
+    amount: 'Monto pendiente',
+    generate: 'Crear mensaje',
+    types: {
+      confirmation: 'Confirmación de cita',
+      reminder: 'Recordatorio de cita',
+      complete: 'Trabajo terminado',
+      review: 'Solicitud de reseña',
+      payment: 'Recordatorio de pago',
+      recurring: 'Recordatorio de servicio recurrente',
+    },
+  },
+  vi: {
+    title: 'Trợ lý',
+    sub: 'Biến ghi chú lộn xộn thành phạm vi công việc, danh sách việc, vật tư và tin nhắn cho khách.',
+    notes: 'Tin nhắn khách hàng hoặc ghi chú công việc',
+    notesHint: 'Dán tin nhắn, email hoặc ghi chú vào đây. Giữ lại tên, ngày giờ, thông tin vào nhà và yêu cầu đặc biệt quan trọng.',
+    build: 'Tạo gói công việc',
+    clear: 'Xóa',
+    scope: 'Phạm vi',
+    checklist: 'Danh sách việc cho nhân viên',
+    supplies: 'Vật tư có thể cần',
+    worker: 'Hướng dẫn cho nhân viên',
+    customer: 'Tóm tắt cho khách hàng',
+    copy: 'Sao chép',
+    copied: 'Đã sao chép',
+    editHint: 'Kiểm tra và chỉnh sửa trước khi gửi hoặc giao việc. Người điều hành luôn quyết định nội dung cuối cùng.',
+    noNotes: 'Hãy thêm ghi chú công việc trước.',
+    followups: 'Tin nhắn theo dõi khách hàng',
+    followupSub: 'Tạo tin nhắn sẵn để gửi mà không phải bắt đầu từ đầu.',
+    customerName: 'Tên khách hàng',
+    jobType: 'Dịch vụ',
+    jobDate: 'Ngày / giờ',
+    amount: 'Số tiền còn thiếu',
+    generate: 'Tạo tin nhắn',
+    types: {
+      confirmation: 'Xác nhận lịch hẹn',
+      reminder: 'Nhắc lịch hẹn',
+      complete: 'Hoàn thành công việc',
+      review: 'Xin đánh giá',
+      payment: 'Nhắc thanh toán',
+      recurring: 'Nhắc dịch vụ định kỳ',
+    },
+  },
+} as const;
+
+const supplyRules: Array<{ terms: string[]; label: Record<Locale, string> }> = [
+  { terms: ['glass', 'window', 'mirror'], label: { en: 'Glass cleaner and microfiber cloths', es: 'Limpiavidrios y paños de microfibra', vi: 'Nước lau kính và khăn microfiber' } },
+  { terms: ['floor', 'mop', 'tile'], label: { en: 'Floor cleaner and mop supplies', es: 'Limpiador de pisos y suministros para trapear', vi: 'Nước lau sàn và dụng cụ lau sàn' } },
+  { terms: ['bath', 'toilet', 'shower'], label: { en: 'Bathroom cleaner and disinfectant', es: 'Limpiador de baño y desinfectante', vi: 'Nước vệ sinh phòng tắm và khử trùng' } },
+  { terms: ['kitchen', 'oven', 'stove', 'grease'], label: { en: 'Kitchen degreaser and surface cleaner', es: 'Desengrasante y limpiador de superficies', vi: 'Nước tẩy dầu mỡ và lau bề mặt bếp' } },
+  { terms: ['baseboard', 'dust', 'ceiling fan'], label: { en: 'Dusters and detail cloths', es: 'Plumeros y paños de detalle', vi: 'Chổi phủi bụi và khăn lau chi tiết' } },
+  { terms: ['trash', 'garbage'], label: { en: 'Trash bags', es: 'Bolsas de basura', vi: 'Túi rác' } },
+  { terms: ['linen', 'laundry', 'bed', 'sheet'], label: { en: 'Laundry and linen supplies', es: 'Suministros de lavandería y ropa de cama', vi: 'Đồ giặt và vật tư khăn ga' } },
+  { terms: ['carpet', 'rug', 'vacuum'], label: { en: 'Vacuum and carpet supplies', es: 'Aspiradora y suministros para alfombra', vi: 'Máy hút bụi và dụng cụ làm thảm' } },
+];
+
+function cleanLines(value: string) {
+  return value
+    .replace(/\r/g, '\n')
+    .split(/\n|(?<=[.!?])\s+/)
+    .map((line) => line.replace(/^[-•*\d.)\s]+/, '').trim())
+    .filter((line) => line.length > 2)
+    .slice(0, 18);
+}
+
+function sentence(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function buildPacket(notes: string, locale: Locale) {
+  const lines = cleanLines(notes);
+  const lower = notes.toLowerCase();
+  const supplies = supplyRules.filter((rule) => rule.terms.some((term) => lower.includes(term))).map((rule) => rule.label[locale]);
+  if (!supplies.length) supplies.push(locale === 'es' ? 'Suministros estándar para el servicio' : locale === 'vi' ? 'Vật tư tiêu chuẩn cho dịch vụ' : 'Standard supplies for the service');
+  const scope = lines.slice(0, 6).map(sentence).join(' ');
+  const checklist = lines.map((line) => line.replace(/^(please|pls|can you|need to|needs to)\s+/i, '').trim());
+  const accessLines = lines.filter((line) => /code|key|door|gate|lock|access|entry|parking|arrive|before|after|thermostat|photo|picture|damage|call|text/i.test(line));
+  const workerIntro = locale === 'es' ? 'Completa el alcance indicado y documenta cualquier problema antes de salir.' : locale === 'vi' ? 'Hoàn thành đúng phạm vi và ghi lại mọi vấn đề trước khi rời đi.' : 'Complete the listed scope and document any issue before leaving.';
+  const customerIntro = locale === 'es' ? 'Confirmamos el siguiente alcance:' : locale === 'vi' ? 'Chúng tôi xác nhận phạm vi công việc sau:' : 'We have the following scope noted:';
+  return {
+    scope: scope || notes.trim(),
+    checklist,
+    supplies,
+    worker: [workerIntro, ...accessLines.map(sentence)].join(' '),
+    customer: `${customerIntro} ${lines.slice(0, 5).map(sentence).join(' ')}`.trim(),
+  };
+}
+
+function followUpMessage(locale: Locale, type: FollowUpType, name: string, service: string, date: string, amount: string) {
+  const who = name.trim() || (locale === 'es' ? 'Hola' : locale === 'vi' ? 'Chào bạn' : 'Hi');
+  const job = service.trim() || (locale === 'es' ? 'servicio' : locale === 'vi' ? 'dịch vụ' : 'service');
+  const when = date.trim();
+  const due = amount.trim();
+  if (locale === 'es') {
+    const messages: Record<FollowUpType, string> = {
+      confirmation: `${who}, confirmamos tu ${job}${when ? ` para ${when}` : ''}. Si cambia algo con el acceso o el alcance, avísanos antes de la cita.`,
+      reminder: `${who}, recordatorio de tu ${job}${when ? ` el ${when}` : ''}. Por favor confirma que el acceso estará disponible y avísanos si cambió algo.`,
+      complete: `${who}, tu ${job} está terminado. Gracias por confiar en nosotros. Si ves algo que necesite atención, responde a este mensaje.`,
+      review: `${who}, gracias por elegirnos para tu ${job}. Si quedaste satisfecho, agradeceríamos mucho una reseña sobre tu experiencia.`,
+      payment: `${who}, recordatorio de que${due ? ` queda un saldo de ${due}` : ' queda un saldo pendiente'} por tu ${job}. Si ya pagaste, puedes ignorar este mensaje. Gracias.`,
+      recurring: `${who}, es hora de programar tu próximo ${job}. Responde con el día que prefieres y confirmaremos disponibilidad.`,
+    };
+    return messages[type];
+  }
+  if (locale === 'vi') {
+    const messages: Record<FollowUpType, string> = {
+      confirmation: `${who}, chúng tôi xác nhận ${job}${when ? ` vào ${when}` : ''}. Nếu thông tin vào nhà hoặc phạm vi công việc thay đổi, vui lòng báo trước lịch hẹn.`,
+      reminder: `${who}, nhắc bạn về lịch ${job}${when ? ` vào ${when}` : ''}. Vui lòng xác nhận có thể vào địa điểm và báo nếu có thay đổi.`,
+      complete: `${who}, ${job} đã hoàn thành. Cảm ơn bạn đã tin tưởng chúng tôi. Nếu có điểm nào cần xem lại, hãy trả lời tin nhắn này.`,
+      review: `${who}, cảm ơn bạn đã chọn chúng tôi cho ${job}. Nếu bạn hài lòng, chúng tôi rất trân trọng một đánh giá về trải nghiệm của bạn.`,
+      payment: `${who}, xin nhắc${due ? ` số tiền còn lại là ${due}` : ' vẫn còn khoản thanh toán chưa hoàn tất'} cho ${job}. Nếu bạn đã thanh toán, vui lòng bỏ qua tin nhắn này. Cảm ơn bạn.`,
+      recurring: `${who}, đã đến lúc lên lịch ${job} tiếp theo. Hãy trả lời ngày bạn muốn và chúng tôi sẽ xác nhận lịch trống.`,
+    };
+    return messages[type];
+  }
+  const messages: Record<FollowUpType, string> = {
+    confirmation: `${who}, your ${job}${when ? ` is confirmed for ${when}` : ' is confirmed'}. If anything changes with access or scope, please let us know before the appointment.`,
+    reminder: `${who}, a reminder about your ${job}${when ? ` on ${when}` : ''}. Please confirm access will be available and let us know if anything has changed.`,
+    complete: `${who}, your ${job} is complete. Thank you for trusting us. If you notice anything that needs attention, reply to this message.`,
+    review: `${who}, thank you for choosing us for your ${job}. If you were happy with the work, we would appreciate a review about your experience.`,
+    payment: `${who}, a reminder that${due ? ` ${due} remains due` : ' there is an outstanding balance'} for your ${job}. If you already paid, please disregard this message. Thank you.`,
+    recurring: `${who}, it is time to schedule your next ${job}. Reply with the day you prefer and we will confirm availability.`,
+  };
+  return messages[type];
+}
+
+function ResultCard({ title, value, list, copyLabel, copiedLabel }: { title: string; value?: string; list?: string[]; copyLabel: string; copiedLabel: string }) {
+  const [copied, setCopied] = useState(false);
+  const text = value || (list || []).map((item) => `• ${item}`).join('\n');
+  async function copyText() {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  }
+  return <article className="card" style={{ height: '100%' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+      <h3 style={{ margin: 0 }}>{title}</h3>
+      <button type="button" className="btn" onClick={() => void copyText()}>{copied ? copiedLabel : copyLabel}</button>
+    </div>
+    {list ? <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7 }}>{list.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul> : <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{value}</p>}
+  </article>;
+}
+
+export default function AssistantPage() {
+  const router = useRouter();
+  const { locale } = useTranslation();
+  const activeLocale = (locale === 'es' || locale === 'vi' ? locale : 'en') as Locale;
+  const c = copy[activeLocale];
+  const [plan, setPlan] = useState<EverittosPlan>('free');
+  const [role, setRole] = useState<UserRole>('owner');
+  const [notes, setNotes] = useState('');
+  const [builtNotes, setBuiltNotes] = useState('');
+  const [followType, setFollowType] = useState<FollowUpType>('confirmation');
+  const [customerName, setCustomerName] = useState('');
+  const [jobType, setJobType] = useState('');
+  const [jobDate, setJobDate] = useState('');
+  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState('');
+  const [messageCopied, setMessageCopied] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/login'); return; }
+      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle();
+      setPlan(normalizePlan(profile?.plan));
+      setRole(normalizeRole(profile?.role));
+    })();
+  }, [router]);
+
+  const packet = useMemo(() => builtNotes ? buildPacket(builtNotes, activeLocale) : null, [builtNotes, activeLocale]);
+
+  async function copyMessage() {
+    if (!message) return;
+    await navigator.clipboard.writeText(message);
+    setMessageCopied(true);
+    window.setTimeout(() => setMessageCopied(false), 1400);
+  }
+
+  return <AppShell plan={plan} role={role}>
+    <PageHeader title={c.title} subtitle={c.sub} />
+
+    <section className="card" style={{ marginBottom: 18 }}>
+      <label htmlFor="job-assistant-notes" style={{ display: 'block', fontWeight: 700, marginBottom: 8 }}>{c.notes}</label>
+      <textarea id="job-assistant-notes" className="input" rows={8} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={c.notesHint} style={{ resize: 'vertical', minHeight: 180 }} />
+      <div className="button-row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+        <button type="button" className="btn btn-primary" onClick={() => setBuiltNotes(notes.trim())} disabled={!notes.trim()}>{c.build}</button>
+        <button type="button" className="btn" onClick={() => { setNotes(''); setBuiltNotes(''); }}>{c.clear}</button>
+      </div>
+      <p className="muted" style={{ marginBottom: 0, marginTop: 12 }}>{c.editHint}</p>
+    </section>
+
+    {packet ? <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14, marginBottom: 24 }}>
+      <ResultCard title={c.scope} value={packet.scope} copyLabel={c.copy} copiedLabel={c.copied} />
+      <ResultCard title={c.checklist} list={packet.checklist} copyLabel={c.copy} copiedLabel={c.copied} />
+      <ResultCard title={c.supplies} list={packet.supplies} copyLabel={c.copy} copiedLabel={c.copied} />
+      <ResultCard title={c.worker} value={packet.worker} copyLabel={c.copy} copiedLabel={c.copied} />
+      <ResultCard title={c.customer} value={packet.customer} copyLabel={c.copy} copiedLabel={c.copied} />
+    </section> : null}
+
+    <section className="card">
+      <h2 style={{ marginTop: 0, marginBottom: 6 }}>{c.followups}</h2>
+      <p className="muted" style={{ marginTop: 0 }}>{c.followupSub}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 12 }}>
+        <div><label>{c.customerName}</label><input className="input" value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></div>
+        <div><label>{c.jobType}</label><input className="input" value={jobType} onChange={(event) => setJobType(event.target.value)} /></div>
+        <div><label>{c.jobDate}</label><input className="input" value={jobDate} onChange={(event) => setJobDate(event.target.value)} /></div>
+        <div><label>{c.amount}</label><input className="input" value={amount} onChange={(event) => setAmount(event.target.value)} /></div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) auto', gap: 12, alignItems: 'end', marginTop: 14 }}>
+        <div><label>{c.followups}</label><select className="input" value={followType} onChange={(event) => setFollowType(event.target.value as FollowUpType)}>{(Object.keys(c.types) as FollowUpType[]).map((type) => <option key={type} value={type}>{c.types[type]}</option>)}</select></div>
+        <button type="button" className="btn btn-primary" onClick={() => setMessage(followUpMessage(activeLocale, followType, customerName, jobType, jobDate, amount))}>{c.generate}</button>
+      </div>
+      {message ? <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border, #d9d9d9)' }}>
+        <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{message}</p>
+        <button type="button" className="btn" onClick={() => void copyMessage()}>{messageCopied ? c.copied : c.copy}</button>
+      </div> : null}
+    </section>
+  </AppShell>;
+}
