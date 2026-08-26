@@ -20,6 +20,7 @@ import {
 import { defaultPathForRole } from '@/lib/role-routes';
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
+import { resolveOnboardingAccessState } from '@/lib/onboarding-access';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
 import {
   fetchProfileByUserId,
@@ -58,22 +59,6 @@ function roleBlockedRedirect(
 ) {
   const destination = defaultPathForRole(role, '/dashboard');
   return redirectWithCookies(new URL(destination, request.url), source);
-}
-
-async function resolveOnboardingState(
-  supabase: ReturnType<typeof createServerClient>,
-  organizationId: string | null | undefined
-): Promise<{ completed: boolean; skipped: boolean }> {
-  if (!organizationId) return { completed: true, skipped: false };
-  const { data } = await supabase
-    .from('organization_settings')
-    .select('onboarding_completed, onboarding_skipped')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-  return {
-    completed: Boolean(data?.onboarding_completed),
-    skipped: Boolean(data?.onboarding_skipped)
-  };
 }
 
 export async function middleware(request: NextRequest) {
@@ -128,7 +113,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/') {
     if (user) {
       const profileRead = await fetchProfileByUserId(supabase, user.id);
-      const onboarding = await resolveOnboardingState(supabase, profileRead.profile?.organization_id);
+      const onboarding = await resolveOnboardingAccessState(supabase, profileRead.profile?.organization_id);
       const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped);
       return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
     }
@@ -137,7 +122,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && isLoggedOutOnlyPath(pathname)) {
     const profileRead = await fetchProfileByUserId(supabase, user.id);
-    const onboarding = await resolveOnboardingState(supabase, profileRead.profile?.organization_id);
+    const onboarding = await resolveOnboardingAccessState(supabase, profileRead.profile?.organization_id);
     const destination = postAuthRedirectPath(profileRead.profile?.role, '/dashboard', onboarding.completed, onboarding.skipped);
     return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
   }
@@ -178,7 +163,7 @@ export async function middleware(request: NextRequest) {
   const profileRead = await fetchProfileByUserId(supabase, user.id);
   const profile = profileRead.profile;
 
-  const onboarding = await resolveOnboardingState(supabase, profile?.organization_id);
+  const onboarding = await resolveOnboardingAccessState(supabase, profile?.organization_id);
   if (shouldRedirectToOnboarding(profile?.role, onboarding.completed, pathname) && pathname !== '/onboarding' && !pathname.startsWith('/onboarding/')) {
     return redirectWithCookies(new URL('/onboarding', request.url), supabaseResponse);
   }
