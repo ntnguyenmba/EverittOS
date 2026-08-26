@@ -42,7 +42,6 @@ type PortalTotals = {
 };
 
 type AuthResult = { data: { user: { id: string; email?: string | null } | null }; error: { message?: string } | null };
-
 type LoadState = 'loading' | 'ready' | 'error';
 
 const LOAD_TIMEOUT_MS = 10000;
@@ -81,14 +80,8 @@ function withTimeout<T>(promise: PromiseLike<T>, timeoutMessage: string): Promis
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => reject(new Error(timeoutMessage)), LOAD_TIMEOUT_MS);
     Promise.resolve(promise).then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      }
+      (value) => { window.clearTimeout(timer); resolve(value); },
+      (error) => { window.clearTimeout(timer); reject(error); }
     );
   });
 }
@@ -113,29 +106,15 @@ export default function ContractorPortalPage() {
   const [exportNotice, setExportNotice] = useState('');
   const [workerName, setWorkerName] = useState('');
   const [jobs, setJobs] = useState<JobRow[]>([]);
-  const [totals, setTotals] = useState<PortalTotals>({
-    assigned: 0,
-    upcoming: 0,
-    completed: 0,
-    total: 0,
-    paid: 0,
-    owed: 0
-  });
+  const [totals, setTotals] = useState<PortalTotals>({ assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
   const [signingOut, setSigningOut] = useState(false);
 
   const jobDate = useCallback((job: JobRow) => {
     const value = job.scheduledStart || job.startDate || job.dueDate || job.completedAt;
     if (!value) return '';
     const date = new Date(value.includes('T') ? value : `${value}T12:00:00`);
-    return Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleString(localeCode, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          ...(value.includes('T') ? { hour: 'numeric', minute: '2-digit' } : {})
-        });
-  }, [c.dateNotSet, localeCode]);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(localeCode, { month: 'short', day: 'numeric', year: 'numeric', ...(value.includes('T') ? { hour: 'numeric', minute: '2-digit' } : {}) });
+  }, [localeCode]);
 
   const statusLabel = useCallback((value: string | null) => {
     const key = normalizedStatus(value) as keyof typeof c.status;
@@ -145,28 +124,14 @@ export default function ContractorPortalPage() {
   const load = useCallback(async () => {
     setState('loading');
     setError('');
-
     try {
       const auth = (await withTimeout(supabase.auth.getUser(), c.sessionTimeout)) as AuthResult;
       const user = auth.data.user;
-      if (auth.error || !user) {
-        router.replace('/login?next=%2Fportal%2Fcontractor');
-        return;
-      }
-
-      const response = (await withTimeout(
-        fetch('/api/portal/contractor/jobs', { cache: 'no-store' }),
-        c.jobsTimeout
-      )) as Response;
-      if (response.status === 401) {
-        router.replace('/login?next=%2Fportal%2Fcontractor');
-        return;
-      }
+      if (auth.error || !user) { router.replace('/login?next=%2Fportal%2Fcontractor'); return; }
+      const response = (await withTimeout(fetch('/api/portal/contractor/jobs', { cache: 'no-store' }), c.jobsTimeout)) as Response;
+      if (response.status === 401) { router.replace('/login?next=%2Fportal%2Fcontractor'); return; }
       const payload = (await response.json().catch(() => ({}))) as PortalDashboardResponse;
-      if (!response.ok) {
-        throw new Error(payload.error || c.loadFailed);
-      }
-
+      if (!response.ok) throw new Error(payload.error || c.loadFailed);
       setWorkerName(payload.workerName || user.email || c.contractor);
       if (payload.notLinked) {
         setJobs([]);
@@ -175,11 +140,8 @@ export default function ContractorPortalPage() {
         setState('error');
         return;
       }
-
       setJobs(payload.jobs || []);
-      setTotals(
-        payload.totals || { assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 }
-      );
+      setTotals(payload.totals || { assigned: 0, upcoming: 0, completed: 0, total: 0, paid: 0, owed: 0 });
       setState('ready');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : c.loadFailed);
@@ -187,26 +149,15 @@ export default function ContractorPortalPage() {
     }
   }, [c, router]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  const sortedJobs = useMemo(
-    () => [...jobs].sort((a, b) => String(a.scheduledStart || a.startDate || '').localeCompare(String(b.scheduledStart || b.startDate || ''))),
-    [jobs]
-  );
-
+  const sortedJobs = useMemo(() => [...jobs].sort((a, b) => String(a.scheduledStart || a.startDate || '').localeCompare(String(b.scheduledStart || b.startDate || ''))), [jobs]);
   const firstName = String(workerName || '').trim().split(/\s+/)[0] || '';
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? c.goodMorning : currentHour < 18 ? c.goodAfternoon : c.goodEvening;
   const operationalHeadline = state === 'ready' && firstName ? `${greeting}, ${firstName}` : c.dashboard;
-  const operationalSubhead = state === 'ready'
-    ? `${totals.upcoming} ${totals.upcoming === 1 ? c.upcomingHeadlineOne : c.upcomingHeadline}`
-    : '';
-  const nextJob = sortedJobs.find((job) => {
-    const status = normalizedStatus(job.status);
-    return !['completed', 'complete', 'done', 'finished', 'closed', 'cancelled', 'canceled'].includes(status);
-  });
+  const operationalSubhead = state === 'ready' ? `${totals.upcoming} ${totals.upcoming === 1 ? c.upcomingHeadlineOne : c.upcomingHeadline}` : '';
+  const nextJob = sortedJobs.find((job) => !['completed', 'complete', 'done', 'finished', 'closed', 'cancelled', 'canceled'].includes(normalizedStatus(job.status)));
 
   async function signOut() {
     if (signingOut) return;
@@ -233,7 +184,7 @@ export default function ContractorPortalPage() {
               <strong>{nextJob.title || c.job}</strong>
               <span>{[jobDate(nextJob), nextJob.customerName, nextJob.address].filter(Boolean).join(' · ')}</span>
             </div>
-            <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)} target="_blank" rel="noopener noreferrer">{c.openJob}</Link>
+            <Link className="btn btn-primary" href={contractorJobDetailPath(nextJob.id)}>{c.openJob}</Link>
           </div>
         ) : null}
         <nav className="button-row contractor-portal-actions">
@@ -246,14 +197,8 @@ export default function ContractorPortalPage() {
             locale={locale}
             labels={{ export: exportCopy.downloadMyJobs, csv: exportCopy.downloadMyJobsCsv, pdf: exportCopy.downloadMyJobsPdf }}
             disabled={state === 'loading'}
-            onError={(message) => {
-              setExportNotice('');
-              setExportError(message || exportCopy.exportFailed);
-            }}
-            onSuccess={(format) => {
-              setExportError('');
-              setExportNotice(format === 'share' ? exportCopy.shareSent : '');
-            }}
+            onError={(message) => { setExportNotice(''); setExportError(message || exportCopy.exportFailed); }}
+            onSuccess={(format) => { setExportError(''); setExportNotice(format === 'share' ? exportCopy.shareSent : ''); }}
           />
           <button type="button" className="btn contractor-signout" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? c.signingOut : c.signOut}</button>
         </nav>
@@ -288,25 +233,17 @@ export default function ContractorPortalPage() {
             {sortedJobs.length ? (
               <div className="job-visits-list">
                 {sortedJobs.map((job) => (
-                  <article key={job.id} className="list-row portal-job-row open-in-new-tab-card">
-                    <Link href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer" className="record-card-overlay-link" aria-label={`Open ${job.title || c.job} in a new tab`}><span className="record-card-overlay-label">Open {job.title || c.job} in a new tab</span></Link>
+                  <article key={job.id} className="list-row portal-job-row">
+                    <Link href={contractorJobDetailPath(job.id)} className="record-card-overlay-link" aria-label={`${c.openJob}: ${job.title || c.job}`}><span className="record-card-overlay-label">{c.openJob}: {job.title || c.job}</span></Link>
                     <div>
-                      <Link href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer">
-                        <strong>{job.title || c.job}</strong>
-                      </Link>
+                      <Link href={contractorJobDetailPath(job.id)}><strong>{job.title || c.job}</strong></Link>
                       {jobDate(job) ? <p className="muted portal-job-date" style={{ margin: '5px 0 0' }}>{jobDate(job)}</p> : null}
                       <p style={{ margin: '5px 0 0' }}>{job.customerName || c.customer}{job.address ? ` · ${job.address}` : ''}</p>
-                      <Link className="portal-job-open" href={contractorJobDetailPath(job.id)} target="_blank" rel="noopener noreferrer">{c.openJob}</Link>
+                      <Link className="portal-job-open" href={contractorJobDetailPath(job.id)}>{c.openJob}</Link>
                     </div>
                     <div className="portal-job-finance">
                       <span className={`status-badge portal-status-${normalizedStatus(job.status)}`}>{statusLabel(job.status)}</span>
-                      {job.payAmount == null ? (
-                        <span className="portal-finance-empty">{c.payNotRecorded}</span>
-                      ) : (
-                        <strong className="portal-finance-amount">
-                          {c.yourPay}: {money(job.payAmount, localeCode)}
-                        </strong>
-                      )}
+                      {job.payAmount == null ? <span className="portal-finance-empty">{c.payNotRecorded}</span> : <strong className="portal-finance-amount">{c.yourPay}: {money(job.payAmount, localeCode)}</strong>}
                     </div>
                   </article>
                 ))}
@@ -315,12 +252,7 @@ export default function ContractorPortalPage() {
           </section>
 
           <section id="schedule" className="card contractor-content-card"><h3 style={{ marginTop: 0 }}>{c.schedule}</h3><p className="muted">{c.scheduleBody}</p></section>
-
-          <section id="earnings" className="card contractor-content-card">
-            <h3 style={{ marginTop: 0 }}>{c.earnings}</h3>
-            <p><strong>{money(totals.paid, localeCode)}</strong> {c.paid} · <strong>{money(totals.owed, localeCode)}</strong> {c.stillOwedLower}</p>
-            <p className="muted">{c.earningsBody}</p>
-          </section>
+          <section id="earnings" className="card contractor-content-card"><h3 style={{ marginTop: 0 }}>{c.earnings}</h3><p><strong>{money(totals.paid, localeCode)}</strong> {c.paid} · <strong>{money(totals.owed, localeCode)}</strong> {c.stillOwedLower}</p><p className="muted">{c.earningsBody}</p></section>
         </>
       ) : null}
     </div>
