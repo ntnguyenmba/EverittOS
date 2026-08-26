@@ -70,6 +70,9 @@ export default function AssistantPage() {
     const params=new URLSearchParams();
     params.set('source','assistant');
     if(jobType.trim()) params.set('service',jobType.trim());
+    if(customerName.trim()) params.set('customer_name',customerName.trim());
+    if(jobDate.trim()) params.set('job_date',jobDate.trim());
+    if(amount.trim()) params.set('price',amount.trim());
     params.set('scope',packet.scope);
     params.set('notes',[packet.scope,packet.worker,packet.checklist.length?`Checklist:\n${packet.checklist.map((item)=>`- ${item}`).join('\n')}`:'',packet.supplies.length?`Supplies:\n${packet.supplies.map((item)=>`- ${item}`).join('\n')}`:''].filter(Boolean).join('\n\n'));
     router.push(`/jobs/new?${params.toString()}`);
