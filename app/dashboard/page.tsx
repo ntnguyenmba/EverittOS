@@ -48,7 +48,9 @@ const dashboardCopy = {
     myJobs: 'My jobs',
     schedule: 'Schedule',
     newJob: 'New Job',
-    newCustomer: 'New Customer'
+    newCustomer: 'New Customer',
+    quotes: 'Quotes',
+    assistant: 'Assistant'
   },
   es: {
     todaysWork: 'Trabajo de hoy',
@@ -64,7 +66,9 @@ const dashboardCopy = {
     myJobs: 'Mis trabajos',
     schedule: 'Calendario',
     newJob: 'Nuevo trabajo',
-    newCustomer: 'Nuevo cliente'
+    newCustomer: 'Nuevo cliente',
+    quotes: 'Cotizaciones',
+    assistant: 'Asistente'
   },
   vi: {
     todaysWork: 'Công việc hôm nay',
@@ -80,7 +84,9 @@ const dashboardCopy = {
     myJobs: 'Công việc của tôi',
     schedule: 'Lịch',
     newJob: 'Công việc mới',
-    newCustomer: 'Khách hàng mới'
+    newCustomer: 'Khách hàng mới',
+    quotes: 'Báo giá',
+    assistant: 'Trợ lý'
   }
 } as const;
 
@@ -282,7 +288,6 @@ export default function DashboardPage() {
       pipeline_stage: string | null;
     }>;
 
-    // Count every valid job scheduled today; keep the team count limited to active work.
     const todayJobs = filterValidJobsInPeriod(jobs, 'today');
     const todayActiveJobs = todayJobs.filter(
       (job) => !isCompletedLikeStatus(String(job.status || ''))
@@ -344,7 +349,7 @@ export default function DashboardPage() {
   const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan);
   const showFinance = ownerView && canAccessFinancials(role, plan);
   const showOperations = (ownerView || managerView) && !staffView;
-  const openLeadsHref = ops.singleOpenLeadId ? `/customers/${ops.singleOpenLeadId}` : '/customers?stage=leads';
+  const openLeadsHref = ops.singleOpenLeadId ? `/leads/${ops.singleOpenLeadId}` : '/leads';
 
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
@@ -366,7 +371,7 @@ export default function DashboardPage() {
               {canLink('/schedule') ? <SimpleStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
               {canViewTeam(role) && canLink('/people') ? <SimpleStat label={c.teamWorkingToday} value={ops.teamWorkingToday} href="/people" /> : null}
               {canLink('/jobs') ? <SimpleStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
-              {canLink('/leads') || canLink('/customers') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href={openLeadsHref} /> : null}
+              {canLink('/leads') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href={openLeadsHref} /> : null}
             </div>
           </section>
         ) : null}
@@ -389,6 +394,8 @@ export default function DashboardPage() {
         {showOperations ? (
           <div className="inline-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
             {canLink('/jobs') ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
+            {canLink('/pricing-helper') ? <Link className="btn" href="/pricing-helper">{c.quotes}</Link> : null}
+            {canLink('/assistant') ? <Link className="btn" href="/assistant">{c.assistant}</Link> : null}
             {canLink('/customers') ? <Link className="btn" href="/customers/new">{c.newCustomer}</Link> : null}
           </div>
         ) : null}
