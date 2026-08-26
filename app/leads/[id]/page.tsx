@@ -18,9 +18,9 @@ import { supabase } from '@/lib/supabase';
 
 type PageProps = { params: Promise<{ id: string }> };
 const copy = {
-  en: { loading:'Loading request...', notFound:'Request not found.', back:'Back to requests', approve:'Approve & create job', convert:'Convert to job', booking:'Create booking', range:'Estimated starting range', note:'The suggested midpoint becomes the customer price. You can change it from the job.', creating:'Creating job...', created:'Job created.', failed:'Unable to create job.' },
-  es: { loading:'Cargando solicitud...', notFound:'Solicitud no encontrada.', back:'Volver a solicitudes', approve:'Aprobar y crear trabajo', convert:'Convertir en trabajo', booking:'Crear reserva', range:'Rango estimado inicial', note:'El punto medio sugerido se convierte en el precio del cliente. Puedes cambiarlo desde el trabajo.', creating:'Creando trabajo...', created:'Trabajo creado.', failed:'No se pudo crear el trabajo.' },
-  vi: { loading:'Đang tải yêu cầu...', notFound:'Không tìm thấy yêu cầu.', back:'Quay lại yêu cầu', approve:'Duyệt và tạo công việc', convert:'Chuyển thành công việc', booking:'Tạo lịch đặt', range:'Khoảng giá ước tính ban đầu', note:'Mức giữa của khoảng giá sẽ trở thành giá khách hàng. Bạn có thể thay đổi trong công việc.', creating:'Đang tạo công việc...', created:'Đã tạo công việc.', failed:'Không thể tạo công việc.' }
+  en: { loading:'Loading request...', notFound:'Request not found.', back:'Back to requests', approve:'Approve & create job', convert:'Convert to job', assistant:'Build job packet', booking:'Create booking', range:'Estimated starting range', note:'The suggested midpoint becomes the customer price. You can change it from the job.', creating:'Creating job...', created:'Job created.', failed:'Unable to create job.' },
+  es: { loading:'Cargando solicitud...', notFound:'Solicitud no encontrada.', back:'Volver a solicitudes', approve:'Aprobar y crear trabajo', convert:'Convertir en trabajo', assistant:'Crear paquete de trabajo', booking:'Crear reserva', range:'Rango estimado inicial', note:'El punto medio sugerido se convierte en el precio del cliente. Puedes cambiarlo desde el trabajo.', creating:'Creando trabajo...', created:'Trabajo creado.', failed:'No se pudo crear el trabajo.' },
+  vi: { loading:'Đang tải yêu cầu...', notFound:'Không tìm thấy yêu cầu.', back:'Quay lại yêu cầu', approve:'Duyệt và tạo công việc', convert:'Chuyển thành công việc', assistant:'Tạo gói công việc', booking:'Tạo lịch đặt', range:'Khoảng giá ước tính ban đầu', note:'Mức giữa của khoảng giá sẽ trở thành giá khách hàng. Bạn có thể thay đổi trong công việc.', creating:'Đang tạo công việc...', created:'Đã tạo công việc.', failed:'Không thể tạo công việc.' }
 } as const;
 
 function noteValue(notes: string | null | undefined, label: string) {
@@ -35,6 +35,22 @@ function bookingHrefForLead(lead: CustomerRecord) {
   if (lead.notes) p.set('notes', lead.notes);
   p.set('service', 'Request follow-up');
   return `/bookings?${p.toString()}`;
+}
+
+function assistantHrefForLead(lead: CustomerRecord) {
+  const p = new URLSearchParams();
+  p.set('customer', customerDisplayName(lead));
+  const service = noteValue(lead.notes, 'Service');
+  if (service) p.set('service', service);
+  const notes = [
+    `Customer: ${customerDisplayName(lead)}`,
+    lead.phone ? `Phone: ${lead.phone}` : '',
+    lead.email ? `Email: ${lead.email}` : '',
+    customerDisplayAddress(lead, '') ? `Address: ${customerDisplayAddress(lead, '')}` : '',
+    lead.notes || ''
+  ].filter(Boolean).join('\n');
+  if (notes) p.set('notes', notes);
+  return `/assistant?${p.toString()}`;
 }
 
 export default function LeadDetailPage({ params }: PageProps) {
@@ -109,6 +125,7 @@ export default function LeadDetailPage({ params }: PageProps) {
   }
 
   const bookingHref = lead ? bookingHrefForLead(lead) : '/bookings';
+  const assistantHref = lead ? assistantHrefForLead(lead) : '/assistant';
   const estimateRange = noteValue(lead?.notes, 'Estimated range');
 
   if (loading) return <AppShell plan={plan} role={role}><div className="card">{c.loading}</div></AppShell>;
@@ -119,6 +136,7 @@ export default function LeadDetailPage({ params }: PageProps) {
       <div className="page-header-text"><h1>{customerDisplayName(lead)}</h1><p className="page-subtitle">{leadSourceLabel(lead.lead_source)} · {leadPipelineLabel(lead.pipeline_stage)}</p></div>
       <div className="page-header-action inline-actions">
         {canManage ? <button className="btn btn-primary" type="button" disabled={creating} onClick={() => void createJob()}>{creating ? c.creating : estimateRange ? c.approve : c.convert}</button> : null}
+        {canManage ? <Link className="btn" href={assistantHref}>{c.assistant}</Link> : null}
         <Link className="btn" href={bookingHref}>{c.booking}</Link><Link className="btn" href="/leads">{c.back}</Link>
       </div>
     </header>
