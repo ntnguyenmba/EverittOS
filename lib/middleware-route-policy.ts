@@ -1,5 +1,5 @@
 export const AUTH_PREFIXES = [
-  '/dashboard','/jobs','/workers','/people','/settings','/customers','/crm','/schedule','/onboarding','/team','/teams','/activity','/analytics','/notifications','/billing','/workflows','/portal','/admin','/forms','/templates','/reviews','/leads','/services','/bookings','/invoices','/photos','/reports','/expenses','/projects','/knowledge','/automations','/clients','/proposals','/inventory','/routes','/messages','/estimates','/my-work','/contractor-pay','/staffing','/operations','/assistant'
+  '/dashboard','/jobs','/workers','/people','/settings','/customers','/crm','/schedule','/onboarding','/team','/teams','/activity','/analytics','/notifications','/billing','/workflows','/portal','/admin','/forms','/templates','/reviews','/leads','/services','/bookings','/invoices','/photos','/reports','/expenses','/bookkeeping','/projects','/knowledge','/automations','/clients','/proposals','/inventory','/routes','/messages','/estimates','/pricing-helper','/my-work','/contractor-pay','/staffing','/operations','/assistant'
 ] as const;
 
 export const AUTH_ONLY_WHEN_LOGGED_OUT = ['/login', '/signup'] as const;
@@ -17,7 +17,7 @@ export const ROLE_BLOCKED_PREFIXES: ReadonlyArray<{ prefix: string; permission: 
 ];
 
 export const MAIN_NAV_PATHS = [
-  '/dashboard','/jobs','/customers','/crm','/projects','/schedule','/knowledge','/automations','/clients','/forms','/templates','/reviews','/services','/bookings','/leads','/workers','/people','/team','/teams','/activity','/analytics','/workflows','/notifications','/proposals','/invoices','/photos','/reports','/expenses','/inventory','/routes','/messages','/estimates','/my-work','/contractor-pay','/staffing','/operations','/assistant'
+  '/dashboard','/jobs','/customers','/crm','/projects','/schedule','/knowledge','/automations','/clients','/forms','/templates','/reviews','/services','/bookings','/leads','/workers','/people','/team','/teams','/activity','/analytics','/workflows','/notifications','/proposals','/invoices','/photos','/reports','/expenses','/bookkeeping','/inventory','/routes','/messages','/estimates','/pricing-helper','/my-work','/contractor-pay','/staffing','/operations','/assistant'
 ] as const;
 
 export function pathMatchesPrefix(pathname: string, prefix: string) {
