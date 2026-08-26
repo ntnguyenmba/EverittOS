@@ -291,6 +291,65 @@
   font-weight: 700 !important;
 }
 
+/* Remove every remaining parent frame around record groups. Entries should float directly on the shared page background. */
+.card:has(> .customer-card-row),
+.card:has(.customer-card-row),
+.card:has(> .customer-card-list),
+.card:has(.customer-card-list),
+.card:has(> .team-member-list),
+.card:has(.team-member-list),
+.card:has(> .client-job-card-list),
+.card:has(.client-job-card-list),
+.card:has(> .finance-expense-list),
+.card:has(.finance-expense-list),
+.card:has(> .worker-list),
+.card:has(.worker-list),
+.card:has(> .contractor-list),
+.card:has(.contractor-list),
+.card:has(> .record-list),
+.card:has(.record-list),
+.card:has(> .jobs-operations-table),
+.card:has(.jobs-operations-table),
+.panel:has(.customer-card-row),
+.panel:has(.team-member-list),
+.panel:has(.client-job-card-list),
+.panel:has(.finance-expense-list),
+.panel:has(.worker-list),
+.panel:has(.contractor-list),
+.panel:has(.record-list),
+.panel:has(.jobs-operations-table),
+.role-dashboard-section:has(.client-job-card-list),
+.role-dashboard-section:has(.record-list),
+.portal-dashboard-section:has(.client-job-card-list),
+.portal-dashboard-section:has(.record-list),
+.schedule-views > section:has(article.card),
+.list-panel:has(.customer-card-row),
+.list-panel:has(.team-member-card),
+.list-panel:has(.client-job-card),
+.list-panel:has(.finance-list-card),
+.list-panel:has(.worker-card),
+.list-panel:has(.record-card) {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.customer-card-list,
+.team-member-list,
+.client-job-card-list,
+.finance-expense-list,
+.worker-list,
+.contractor-list,
+.record-list {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
 @media (max-width: 680px) {
   .customer-card-row,
   .client-job-card,
