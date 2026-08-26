@@ -22,6 +22,7 @@ import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { resolveOnboardingAccessState } from '@/lib/onboarding-access';
 import { resolveWorkspaceDeletionState } from '@/lib/workspace-access';
+import { resolveMiddlewareClientRepair } from '@/lib/middleware-client-repair';
 import { subscriptionBlocksPaidAccess } from '@/lib/subscription-access';
 import {
   fetchProfileByUserId,
@@ -220,45 +221,10 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const shouldAttemptClientRepair =
-    isClientRole(role) ||
-    pathname.startsWith('/portal/client') ||
-    pathname === '/dashboard' ||
-    pathname.startsWith('/settings/billing') ||
-    pathname === '/billing' ||
-    pathname.startsWith('/pricing');
-
-  if ((role === 'owner' || isClientRole(role)) && shouldAttemptClientRepair) {
-    try {
-      const { data: repairResult } = await supabase.rpc('repair_client_portal_access_for_user', {
-        p_user_id: user.id
-      });
-      const repairedRole =
-        repairResult && typeof repairResult === 'object'
-          ? normalizeRole((repairResult as { role?: string }).role)
-          : role;
-      const repaired = Boolean(
-        repairResult &&
-          typeof repairResult === 'object' &&
-          (repairResult as { ok?: boolean }).ok &&
-          !(repairResult as { skipped?: boolean }).skipped
-      );
-      if (repaired) {
-        role = repairedRole;
-      }
-      if (
-        isClientRole(role) &&
-        repaired &&
-        (pathname.startsWith('/settings/billing') ||
-          pathname === '/billing' ||
-          pathname.startsWith('/pricing') ||
-          pathname === '/dashboard')
-      ) {
-        return redirectWithCookies(new URL(clientPortalJobsPath(), request.url), supabaseResponse);
-      }
-    } catch {
-      // RPC may be unavailable until migration is applied; continue with current role.
-    }
+  const repair = await resolveMiddlewareClientRepair(supabase, user.id, role, pathname);
+  role = repair.role;
+  if (repair.redirectToClientJobs) {
+    return redirectWithCookies(new URL(clientPortalJobsPath(), request.url), supabaseResponse);
   }
 
   if (isClientRole(role)) {
