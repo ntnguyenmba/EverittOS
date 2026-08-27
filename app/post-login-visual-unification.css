@@ -9,7 +9,6 @@
   filter: grayscale(2%) saturate(100%) contrast(106%) brightness(98%) !important;
 }
 
-/* Shared premium floating-card language. */
 .dashboard-home .card,
 .dashboard-home .panel,
 .dashboard-home .stat,
@@ -29,7 +28,7 @@
   backdrop-filter: blur(14px) !important;
 }
 
-/* Never wrap role content in a big white slab. */
+/* Remove all oversized role wrappers so every card floats directly over the hero like Owner. */
 .contractor-main .contractor-content-card,
 .contractor-main .portal-dashboard-section,
 .contractor-main .client-jobs-list,
@@ -39,13 +38,81 @@
 .contractor-main .list-group,
 .contractor-main .role-dashboard-minimal,
 .contractor-main .contractor-dashboard,
-.contractor-main .client-portal-jobs {
+.contractor-main .client-portal-jobs,
+.contractor-main .client-portal-job-detail,
+.contractor-main .client-portal-settings,
+.role-portal-contractor .contractor-portal-hero {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.role-portal-contractor .contractor-portal-hero::before {
+  display: none !important;
+}
+
+/* Worker hero becomes an open heading area, just like Owner. */
+.role-portal-contractor .contractor-portal-hero {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+.role-portal-contractor .contractor-role-label {
+  margin: 0 0 6px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #344b5c !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  letter-spacing: .08em !important;
+}
+
+.role-portal-contractor .contractor-portal-hero h1,
+.role-portal-client h1 {
+  margin: 0 !important;
+  color: #172433 !important;
+  font-size: clamp(32px, 6vw, 46px) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -.045em !important;
+}
+
+.role-portal-contractor .contractor-worker-name {
+  margin: 6px 0 0 !important;
+  color: #344b5c !important;
+}
+
+/* Role actions should not create another giant card. */
+.role-portal-shell .contractor-portal-actions,
+.role-portal-client .portal-client-nav {
+  margin: 0 !important;
+  padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-/* Owner: remove the awkward void below Welcome back. */
+/* Individual worker/client panels use the same width and rhythm as Owner cards. */
+.role-portal-contractor .contractor-metrics,
+.role-portal-client .role-summary-grid,
+.contractor-main .client-job-card-list {
+  gap: 14px !important;
+}
+
+.role-portal-contractor .contractor-metric,
+.role-portal-client .role-summary-card,
+.contractor-main .simplified-job-card,
+.contractor-main .client-job-card {
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-left: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
 .today-page.dashboard-home {
   gap: 14px !important;
 }
@@ -66,7 +133,6 @@
   margin-top: 0 !important;
 }
 
-/* Stronger post-login typography to match login contrast. */
 .dashboard-home h1,
 .dashboard-home h2,
 .dashboard-home h3,
@@ -89,7 +155,6 @@
   opacity: 1 !important;
 }
 
-/* Keep controls substantial like the login fields and buttons. */
 .dashboard-home .btn,
 .contractor-main .btn,
 .dashboard-home select,
@@ -108,11 +173,18 @@
     filter: grayscale(3%) saturate(100%) contrast(105%) brightness(98%) !important;
   }
 
-  .today-page.dashboard-home {
+  .today-page.dashboard-home,
+  .contractor-main > .contractor-dashboard,
+  .contractor-main > .client-portal-jobs,
+  .contractor-main > .client-portal-job-detail,
+  .contractor-main > .client-portal-settings {
     gap: 12px !important;
   }
 
-  .today-page.dashboard-home .dashboard-revenue-grid {
+  .today-page.dashboard-home .dashboard-revenue-grid,
+  .role-portal-contractor .contractor-metrics,
+  .role-portal-client .role-summary-grid,
+  .contractor-main .client-job-card-list {
     gap: 12px !important;
   }
 
@@ -127,15 +199,19 @@
   .contractor-main .list-row,
   .contractor-main .job-row,
   .contractor-main .contractor-job-row,
-  .contractor-main .client-job-row {
+  .contractor-main .client-job-row,
+  .role-portal-contractor .contractor-metric,
+  .contractor-main .simplified-job-card {
     border-radius: 18px !important;
     box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
   }
 
-  .contractor-main > .contractor-dashboard,
-  .contractor-main > .client-portal-jobs,
-  .contractor-main > .client-portal-job-detail,
-  .contractor-main > .client-portal-settings {
-    gap: 12px !important;
+  .role-portal-contractor .contractor-portal-hero {
+    padding: 0 !important;
+  }
+
+  .role-portal-shell .contractor-portal-actions {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 10px !important;
   }
 }
