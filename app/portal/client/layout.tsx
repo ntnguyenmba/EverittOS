@@ -11,6 +11,7 @@ import '../contractor/contractor-minimal.css';
 import '../contractor/portal-mobile-header-fix.css';
 import '../contractor/portal-owner-visual-parity.css';
 import '../contractor/portal-final-hero-match.css';
+import '../contractor/portal-owner-card-match.css';
 
 type ClientLayoutProps = { children: ReactNode };
 const copy: Record<Locale, { appointments: string; settings: string; navAria: string; subtitle: string; roleNote: string }> = {
@@ -30,7 +31,8 @@ export default async function ClientLayout({ children }: ClientLayoutProps) {
 
   return (
     <div className="dashboard-shell contractor-dashboard-shell client-dashboard-shell">
-      <div className="contractor-background" aria-hidden="true" />
+      <div className="dashboard-shell-background contractor-background" aria-hidden="true" />
+      <div className="dashboard-shell-overlay contractor-overlay" aria-hidden="true" />
 
       <div className="dashboard-shell-mobile contractor-mobile-header">
         <BrandLogo href="/portal/client/jobs" size={34} showName className="contractor-mobile-brand-logo" />
