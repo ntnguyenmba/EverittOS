@@ -10,6 +10,7 @@ import { LOCALE_COOKIE_NAME, normalizeLocale } from '@/lib/i18n/config';
 import { getContractorLayoutCopy } from '@/lib/i18n/ui-chrome-copy';
 import './contractor-minimal.css';
 import './portal-mobile-header-fix.css';
+import './portal-owner-visual-parity.css';
 
 type ContractorLayoutProps = { children: ReactNode };
 
