@@ -134,50 +134,73 @@
   -webkit-backdrop-filter: blur(14px) !important;
 }
 
-/* Client period/export controls: compact, balanced, and consistent with Owner. */
+/* Client period/export controls: no wrapper card, just two small floating controls. */
 .client-main .role-dashboard-topbar {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  display: flex !important;
   align-items: center !important;
-  gap: 12px !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  width: auto !important;
   margin: 0 0 14px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .client-main .client-period-select {
+  flex: 0 0 auto !important;
+  width: 178px !important;
   min-width: 0 !important;
   margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .client-main .client-period-select select {
-  width: 100% !important;
-  min-height: 46px !important;
-  padding: 0 44px 0 16px !important;
-  border: 1px solid rgba(36,63,83,.18) !important;
-  border-radius: 12px !important;
-  background: rgba(255,255,255,.94) !important;
-  color: #172433 !important;
-  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
-  font-size: 15px !important;
-  font-weight: 650 !important;
-}
-
-.client-main .role-dashboard-topbar > :last-child,
-.client-main .role-dashboard-topbar > :last-child button,
-.client-main .role-dashboard-topbar > :last-child .btn {
-  min-height: 46px !important;
-  white-space: nowrap !important;
-}
-
-.client-main .role-dashboard-topbar > :last-child button,
-.client-main .role-dashboard-topbar > :last-child .btn {
-  padding: 0 18px !important;
+  width: 178px !important;
+  min-height: 44px !important;
+  padding: 0 38px 0 14px !important;
   border: 1px solid rgba(36,63,83,.16) !important;
   border-radius: 12px !important;
   background: rgba(255,255,255,.94) !important;
   color: #172433 !important;
-  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
-  font-size: 15px !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.07) !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+.client-main .role-dashboard-topbar > :last-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.client-main .role-dashboard-topbar > :last-child button,
+.client-main .role-dashboard-topbar > :last-child .btn {
+  width: auto !important;
+  min-width: 146px !important;
+  min-height: 44px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(36,63,83,.16) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  color: #172433 !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.07) !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
 }
 
 @media (max-width: 760px) {
@@ -218,16 +241,18 @@
   }
 
   .client-main .role-dashboard-topbar {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
   }
 
-  .client-main .role-dashboard-topbar > * {
-    width: 100% !important;
+  .client-main .client-period-select,
+  .client-main .client-period-select select {
+    width: 154px !important;
   }
 
   .client-main .role-dashboard-topbar > :last-child button,
   .client-main .role-dashboard-topbar > :last-child .btn {
-    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 13px !important;
   }
 }
