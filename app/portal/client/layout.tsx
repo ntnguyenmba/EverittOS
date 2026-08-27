@@ -12,6 +12,7 @@ import '../contractor/portal-mobile-header-fix.css';
 import '../contractor/portal-owner-visual-parity.css';
 import '../contractor/portal-final-hero-match.css';
 import '../contractor/portal-owner-card-match.css';
+import './client-floating-controls-final.css';
 
 type ClientLayoutProps = { children: ReactNode };
 const copy: Record<Locale, { appointments: string; settings: string; navAria: string; subtitle: string; roleNote: string }> = {
