@@ -134,6 +134,52 @@
   -webkit-backdrop-filter: blur(14px) !important;
 }
 
+/* Client period/export controls: compact, balanced, and consistent with Owner. */
+.client-main .role-dashboard-topbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 0 0 14px !important;
+}
+
+.client-main .client-period-select {
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.client-main .client-period-select select {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 44px 0 16px !important;
+  border: 1px solid rgba(36,63,83,.18) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  color: #172433 !important;
+  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+}
+
+.client-main .role-dashboard-topbar > :last-child,
+.client-main .role-dashboard-topbar > :last-child button,
+.client-main .role-dashboard-topbar > :last-child .btn {
+  min-height: 46px !important;
+  white-space: nowrap !important;
+}
+
+.client-main .role-dashboard-topbar > :last-child button,
+.client-main .role-dashboard-topbar > :last-child .btn {
+  padding: 0 18px !important;
+  border: 1px solid rgba(36,63,83,.16) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  color: #172433 !important;
+  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
 @media (max-width: 760px) {
   .contractor-main .contractor-next-job,
   .contractor-main .metric-grid > .card,
@@ -169,5 +215,19 @@
   .contractor-main .contractor-portal-actions,
   .contractor-main .portal-client-nav {
     gap: 10px !important;
+  }
+
+  .client-main .role-dashboard-topbar {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .client-main .role-dashboard-topbar > * {
+    width: 100% !important;
+  }
+
+  .client-main .role-dashboard-topbar > :last-child button,
+  .client-main .role-dashboard-topbar > :last-child .btn {
+    width: 100% !important;
   }
 }
