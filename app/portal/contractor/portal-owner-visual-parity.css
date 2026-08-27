@@ -37,9 +37,7 @@
 .contractor-main .card,
 .contractor-main .settings-card,
 .contractor-main .role-summary-card,
-.contractor-main .client-job-card,
-.contractor-main .contractor-content-card,
-.contractor-main .portal-dashboard-section {
+.contractor-main .client-job-card {
   position: relative;
   border: 1px solid var(--portal-border) !important;
   border-radius: 18px !important;
@@ -47,6 +45,22 @@
   box-shadow:
     0 1px 1px rgba(36, 63, 83, 0.025),
     0 10px 28px rgba(36, 63, 83, 0.055) !important;
+}
+
+/* Section wrappers stay transparent so entries float individually like Owner. */
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .client-jobs-list,
+.contractor-main .contractor-jobs-list,
+.contractor-main .jobs-list,
+.contractor-main .list,
+.contractor-main .list-group {
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .contractor-main header.card {
@@ -122,21 +136,27 @@
   letter-spacing: -0.035em;
 }
 
-.contractor-main .contractor-content-card,
-.contractor-main .portal-dashboard-section,
-.contractor-main .settings-card {
-  margin-top: 0 !important;
-  padding: 24px !important;
-}
-
+/* Every worker/client record gets its own floating card instead of living inside a white slab. */
 .contractor-main .list-row,
+.contractor-main .job-row,
+.contractor-main .contractor-job-row,
+.contractor-main .client-job-row,
 .contractor-main .client-job-card {
-  border-color: var(--portal-border) !important;
+  display: block;
+  margin: 0 0 12px !important;
+  padding: 18px 20px !important;
+  border: 1px solid var(--portal-border) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.985) !important;
+  box-shadow: 0 8px 22px rgba(36, 63, 83, 0.05) !important;
 }
 
-.contractor-main .client-job-card {
-  margin-top: 0 !important;
-  padding: 20px !important;
+.contractor-main .list-row:last-child,
+.contractor-main .job-row:last-child,
+.contractor-main .contractor-job-row:last-child,
+.contractor-main .client-job-row:last-child,
+.contractor-main .client-job-card:last-child {
+  margin-bottom: 0 !important;
 }
 
 .contractor-main .btn {
@@ -275,17 +295,18 @@
 
   .contractor-main .metric-grid .card,
   .contractor-main .role-summary-card,
-  .contractor-main .contractor-content-card,
-  .contractor-main .portal-dashboard-section,
-  .contractor-main .settings-card,
-  .contractor-main .client-job-card {
+  .contractor-main .settings-card {
     border-radius: 16px !important;
   }
 
-  .contractor-main .contractor-content-card,
-  .contractor-main .portal-dashboard-section,
-  .contractor-main .settings-card {
-    padding: 20px !important;
+  .contractor-main .list-row,
+  .contractor-main .job-row,
+  .contractor-main .contractor-job-row,
+  .contractor-main .client-job-row,
+  .contractor-main .client-job-card {
+    margin-bottom: 10px !important;
+    padding: 17px !important;
+    border-radius: 15px !important;
   }
 
   .contractor-main .contractor-portal-actions,
