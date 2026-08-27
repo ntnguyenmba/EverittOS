@@ -1,0 +1,38 @@
+/* Final portal-only override: match Owner hero clarity exactly and remove residual portal wash. */
+.contractor-dashboard-shell,
+.client-dashboard-shell,
+.contractor-main,
+.client-main {
+  background: transparent !important;
+}
+
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  opacity: 1 !important;
+  background-image: linear-gradient(rgba(231,236,240,.12), rgba(231,236,240,.18)), url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  filter: grayscale(3%) saturate(100%) contrast(105%) brightness(98%) !important;
+  backdrop-filter: none !important;
+}
+
+.contractor-dashboard-shell::before,
+.contractor-dashboard-shell::after,
+.client-dashboard-shell::before,
+.client-dashboard-shell::after,
+.contractor-main::before,
+.contractor-main::after,
+.client-main::before,
+.client-main::after {
+  content: none !important;
+  display: none !important;
+}
+
+@media (min-width: 761px) {
+  .contractor-dashboard-shell .contractor-background,
+  .client-dashboard-shell .contractor-background {
+    background-image: linear-gradient(rgba(231,236,240,.10), rgba(231,236,240,.16)), url('/hero.jpg') !important;
+    filter: grayscale(2%) saturate(100%) contrast(106%) brightness(98%) !important;
+  }
+}
