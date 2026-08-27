@@ -1,4 +1,4 @@
-/* Final portal-only override: cool the shared hero to the same blue-gray family as Owner. */
+/* Final portal-only override: keep Worker and Client hero sharp after CSS/hydration. */
 .contractor-dashboard-shell,
 .client-dashboard-shell,
 .contractor-main,
@@ -9,16 +9,14 @@
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
   opacity: 1 !important;
-  background-color: #dfe8ee !important;
-  background-image:
-    linear-gradient(rgba(205,219,228,.20), rgba(214,225,232,.24)),
-    url('/hero.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-blend-mode: color, normal !important;
-  filter: grayscale(18%) saturate(82%) contrast(112%) brightness(96%) !important;
+  background: #dfe8ee url('/hero.jpg') center / cover no-repeat !important;
+  background-blend-mode: normal !important;
+  filter: none !important;
+  -webkit-filter: none !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 .contractor-dashboard-shell::before,
@@ -31,14 +29,4 @@
 .client-main::after {
   content: none !important;
   display: none !important;
-}
-
-@media (min-width: 761px) {
-  .contractor-dashboard-shell .contractor-background,
-  .client-dashboard-shell .contractor-background {
-    background-image:
-      linear-gradient(rgba(205,219,228,.16), rgba(214,225,232,.20)),
-      url('/hero.jpg') !important;
-    filter: grayscale(14%) saturate(86%) contrast(112%) brightness(97%) !important;
-  }
 }
