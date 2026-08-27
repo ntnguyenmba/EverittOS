@@ -13,7 +13,9 @@
 }
 
 .contractor-dashboard-shell .contractor-background {
-  background: var(--portal-bg) !important;
+  background:
+    linear-gradient(180deg, rgba(246, 248, 250, 0.94) 0%, rgba(246, 248, 250, 0.97) 36%, #f6f8fa 72%),
+    radial-gradient(circle at 72% 8%, rgba(72, 102, 122, 0.09), transparent 34%) !important;
 }
 
 .contractor-main {
@@ -35,15 +37,34 @@
 .contractor-main .client-job-card,
 .contractor-main .contractor-content-card,
 .contractor-main .portal-dashboard-section {
+  position: relative;
   border: 1px solid var(--portal-border) !important;
   border-radius: 18px !important;
-  background: var(--portal-surface) !important;
-  box-shadow: 0 10px 28px rgba(36, 63, 83, 0.055) !important;
+  background: rgba(255, 255, 255, 0.985) !important;
+  box-shadow:
+    0 1px 1px rgba(36, 63, 83, 0.025),
+    0 10px 28px rgba(36, 63, 83, 0.055) !important;
 }
 
 .contractor-main header.card {
   margin: 0 !important;
   padding: 28px 30px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+}
+
+.contractor-main header.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(40, 93, 120, 0.035), transparent 52%);
+}
+
+.contractor-main header.card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .contractor-main header.card h1,
@@ -206,9 +227,10 @@
 }
 
 .contractor-mobile-header {
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid var(--portal-border) !important;
   box-shadow: 0 4px 16px rgba(36, 63, 83, 0.04) !important;
+  backdrop-filter: blur(10px);
 }
 
 .contractor-mobile-header .brand-logo,
@@ -217,6 +239,12 @@
 }
 
 @media (max-width: 760px) {
+  .contractor-dashboard-shell .contractor-background {
+    background:
+      linear-gradient(180deg, rgba(246, 248, 250, 0.95) 0%, rgba(246, 248, 250, 0.985) 38%, #f6f8fa 74%),
+      radial-gradient(circle at 50% 0%, rgba(72, 102, 122, 0.075), transparent 38%) !important;
+  }
+
   .contractor-dashboard-shell > .contractor-main {
     padding: 18px 16px 92px !important;
   }
