@@ -37,6 +37,7 @@ import './release-polish.css';
 import './unified-record-cards.css';
 import './final-record-card-consistency.css';
 import './hero-background-visibility.css';
+import './post-login-visual-unification.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
@@ -78,13 +79,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ActivityHeartbeat />
               <WorkspacePlanProvider>
                 <WorkspaceBootstrap />
-                <SkipToMain />
-                <SiteChrome />
-                <ContractorStaticSections />
-                {children}
-                <MobileBottomNav />
-                <AnalyticsGate />
-                <CookieConsentBanner />
+                  <SkipToMain />
+                  <SiteChrome />
+                  <ContractorStaticSections />
+                  {children}
+                  <MobileBottomNav />
+                  <AnalyticsGate />
+                  <CookieConsentBanner />
+                </WorkspaceBootstrap>
               </WorkspacePlanProvider>
             </SessionGuard>
           </ToastProvider>
