@@ -78,15 +78,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <SessionGuard>
               <ActivityHeartbeat />
               <WorkspacePlanProvider>
-                <WorkspaceBootstrap>
-                  <SkipToMain />
-                  <SiteChrome />
-                  <ContractorStaticSections />
-                  {children}
-                  <MobileBottomNav />
-                  <AnalyticsGate />
-                  <CookieConsentBanner />
-                </WorkspaceBootstrap>
+                <WorkspaceBootstrap />
+                <SkipToMain />
+                <SiteChrome />
+                <ContractorStaticSections />
+                {children}
+                <MobileBottomNav />
+                <AnalyticsGate />
+                <CookieConsentBanner />
               </WorkspacePlanProvider>
             </SessionGuard>
           </ToastProvider>
