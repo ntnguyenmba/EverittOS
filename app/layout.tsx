@@ -55,45 +55,43 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={initialLocale}
       data-locale={initialLocale}
       data-deployment={deployment}
-      suppressHydrationWarning
+      className={manrope.variable}
     >
-      <body className={manrope.variable}>
+      <body className={manrope.className} data-locale={initialLocale}>
         <SupabaseRuntimeConfig />
+        <PwaRegistration />
+        <MobileDocumentFlags />
+        <NativeAppProvider />
+        <NativePinLock />
+        <AppConnectivityBanner />
+        <NetworkStatusBanner />
+        <PwaUpdatePrompt />
         <SuppressVercelToolbar />
-        <NativeAppProvider>
-          <MobileDocumentFlags />
-          <PwaRegistration />
-          <PwaUpdatePrompt />
-          <NetworkStatusBanner />
-          <AppConnectivityBanner />
-          <SkipToMain />
-          <SiteChrome />
-          <LocaleProvider initialLocale={initialLocale}>
+        <LocaleProvider initialLocale={initialLocale}>
+          <JobFinanceWordingAndCustomerRate />
+          <CreateFormCancelControls />
+          <DashboardTodayCountFix />
+          <ContractorJobPayVisibility />
+          <OwnerTopPerformerMetric />
+          <ExpensesListEnhancer />
+          <AskEverittQuickClear />
+          <ToastProvider>
             <LocaleSync />
-            <ToastProvider>
-              <SessionGuard>
-                <WorkspacePlanProvider>
-                  <WorkspaceBootstrap>
-                    <ActivityHeartbeat />
-                    <NativePinLock />
-                    <ContractorStaticSections />
-                    <JobFinanceWordingAndCustomerRate />
-                    <CreateFormCancelControls />
-                    <DashboardTodayCountFix />
-                    <ContractorJobPayVisibility />
-                    <OwnerTopPerformerMetric />
-                    <ExpensesListEnhancer />
-                    <AskEverittQuickClear />
-                    {children}
-                    <MobileBottomNav />
-                    <AnalyticsGate />
-                    <CookieConsentBanner />
-                  </WorkspaceBootstrap>
-                </WorkspacePlanProvider>
-              </SessionGuard>
-            </ToastProvider>
-          </LocaleProvider>
-        </NativeAppProvider>
+            <SessionGuard>
+              <ActivityHeartbeat />
+              <WorkspacePlanProvider>
+                <WorkspaceBootstrap />
+                <SkipToMain />
+                <SiteChrome />
+                <ContractorStaticSections />
+                {children}
+                <MobileBottomNav />
+                <AnalyticsGate />
+                <CookieConsentBanner />
+              </WorkspacePlanProvider>
+            </SessionGuard>
+          </ToastProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
