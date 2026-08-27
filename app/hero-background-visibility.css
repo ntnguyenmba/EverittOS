@@ -1,17 +1,22 @@
-/* Keep the shared architectural hero clearly visible across every role and subpage. */
+/* Shared architectural hero treatment for Owner, Worker, Client, and subpages. */
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-background {
-  background-image: linear-gradient(rgba(214,224,229,.18), rgba(214,224,229,.26)), url('/hero.jpg') !important;
-  filter: grayscale(10%) saturate(96%) contrast(108%) brightness(95%) !important;
+  background-image: linear-gradient(rgba(214,224,229,.10), rgba(214,224,229,.16)), url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  filter: grayscale(4%) saturate(100%) contrast(106%) brightness(98%) !important;
 }
 
-/* Mobile keeps a touch more wash for labels while preserving the richer login-like image. */
 @media (max-width: 720px) {
   .dashboard-shell-background,
   .role-portal-shell .dashboard-shell-background,
   .contractor-background {
-    background-image: linear-gradient(rgba(218,228,233,.26), rgba(218,228,233,.34)), url('/hero.jpg') !important;
-    filter: grayscale(14%) saturate(92%) contrast(106%) brightness(95%) !important;
+    background-image: linear-gradient(rgba(218,228,233,.14), rgba(218,228,233,.20)), url('/hero.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    filter: grayscale(6%) saturate(98%) contrast(105%) brightness(98%) !important;
   }
 }
