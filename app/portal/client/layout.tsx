@@ -10,6 +10,7 @@ import { LOCALE_COOKIE_NAME, normalizeLocale, type Locale } from '@/lib/i18n/con
 import '../contractor/contractor-minimal.css';
 import '../contractor/portal-mobile-header-fix.css';
 import '../contractor/portal-owner-visual-parity.css';
+import '../contractor/portal-final-hero-match.css';
 
 type ClientLayoutProps = { children: ReactNode };
 const copy: Record<Locale, { appointments: string; settings: string; navAria: string; subtitle: string; roleNote: string }> = {
