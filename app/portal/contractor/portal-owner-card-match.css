@@ -1,0 +1,108 @@
+/* Match Worker and Client dashboard surfaces to the Owner dashboard card language. */
+.contractor-main .card,
+.contractor-main .role-summary-card,
+.contractor-main .contractor-metric,
+.contractor-main .client-job-card,
+.contractor-main .simplified-job-card,
+.contractor-main .list-row,
+.contractor-main .job-row,
+.contractor-main .contractor-job-row,
+.contractor-main .client-job-row {
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-left: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* Remove the boxed dashboard shell so cards float directly over the hero like Owner. */
+.contractor-main .contractor-dashboard,
+.contractor-main .client-portal-jobs,
+.contractor-main .client-portal-job-detail,
+.contractor-main .client-portal-settings,
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .contractor-portal-actions,
+.contractor-main .portal-client-nav,
+.contractor-main .client-jobs-list,
+.contractor-main .contractor-jobs-list {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Dashboard action choices should read like Owner controls, not giant outlined boxes. */
+.contractor-main .contractor-portal-actions,
+.contractor-main .portal-client-nav {
+  gap: 12px !important;
+}
+
+.contractor-main .contractor-portal-actions .btn,
+.contractor-main .contractor-portal-actions a,
+.contractor-main .portal-client-nav .btn,
+.contractor-main .portal-client-nav a {
+  min-height: 48px !important;
+  padding: 12px 16px !important;
+  border: 1px solid rgba(36,63,83,.16) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.92) !important;
+  color: #172433 !important;
+  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
+  font-weight: 700 !important;
+}
+
+.contractor-main .contractor-portal-actions .btn-primary,
+.contractor-main .contractor-portal-actions .is-active,
+.contractor-main .portal-client-nav .btn-primary,
+.contractor-main .portal-client-nav a[aria-current='page'] {
+  border-color: #3f586a !important;
+  background: #3f586a !important;
+  color: #fff !important;
+}
+
+/* Keep metric cards compact and spaced like Owner. */
+.contractor-main .metric-grid,
+.contractor-main .role-summary-grid,
+.contractor-main .contractor-metrics,
+.contractor-main .client-job-card-list {
+  gap: 14px !important;
+}
+
+.contractor-main .metric-grid > .card,
+.contractor-main .role-summary-card,
+.contractor-main .contractor-metric {
+  min-height: 132px !important;
+  padding: 22px !important;
+}
+
+@media (max-width: 760px) {
+  .contractor-main .card,
+  .contractor-main .role-summary-card,
+  .contractor-main .contractor-metric,
+  .contractor-main .client-job-card,
+  .contractor-main .simplified-job-card,
+  .contractor-main .list-row,
+  .contractor-main .job-row,
+  .contractor-main .contractor-job-row,
+  .contractor-main .client-job-row {
+    border-radius: 18px !important;
+    box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
+  }
+
+  .contractor-main .metric-grid,
+  .contractor-main .role-summary-grid,
+  .contractor-main .contractor-metrics,
+  .contractor-main .client-job-card-list {
+    gap: 12px !important;
+  }
+
+  .contractor-main .contractor-portal-actions,
+  .contractor-main .portal-client-nav {
+    gap: 10px !important;
+  }
+}
