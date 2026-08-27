@@ -9,6 +9,17 @@
   filter: grayscale(2%) saturate(100%) contrast(106%) brightness(98%) !important;
 }
 
+/* Worker and Client need the same image presence as Owner, without the extra portal wash. */
+.contractor-dashboard-shell {
+  background: transparent !important;
+}
+
+.contractor-dashboard-shell .contractor-background {
+  opacity: 1 !important;
+  background-image: linear-gradient(rgba(231,236,240,.05), rgba(231,236,240,.10)), url('/hero.jpg') !important;
+  filter: grayscale(0%) saturate(102%) contrast(108%) brightness(99%) !important;
+}
+
 .dashboard-home .card,
 .dashboard-home .panel,
 .dashboard-home .stat,
@@ -28,7 +39,6 @@
   backdrop-filter: blur(14px) !important;
 }
 
-/* Remove all oversized role wrappers so every card floats directly over the hero like Owner. */
 .contractor-main .contractor-content-card,
 .contractor-main .portal-dashboard-section,
 .contractor-main .client-jobs-list,
@@ -52,7 +62,6 @@
   display: none !important;
 }
 
-/* Worker hero becomes an open heading area, just like Owner. */
 .role-portal-contractor .contractor-portal-hero {
   padding: 0 !important;
   margin: 0 !important;
@@ -84,7 +93,6 @@
   color: #344b5c !important;
 }
 
-/* Role actions should not create another giant card. */
 .role-portal-shell .contractor-portal-actions,
 .role-portal-client .portal-client-nav {
   margin: 0 !important;
@@ -94,7 +102,6 @@
   box-shadow: none !important;
 }
 
-/* Individual worker/client panels use the same width and rhythm as Owner cards. */
 .role-portal-contractor .contractor-metrics,
 .role-portal-client .role-summary-grid,
 .contractor-main .client-job-card-list {
@@ -167,10 +174,14 @@
 
 @media (max-width: 760px) {
   .dashboard-shell-background,
-  .role-portal-shell .dashboard-shell-background,
-  .contractor-dashboard-shell .contractor-background {
+  .role-portal-shell .dashboard-shell-background {
     background-image: linear-gradient(rgba(231,236,240,.12), rgba(231,236,240,.18)), url('/hero.jpg') !important;
     filter: grayscale(3%) saturate(100%) contrast(105%) brightness(98%) !important;
+  }
+
+  .contractor-dashboard-shell .contractor-background {
+    background-image: linear-gradient(rgba(231,236,240,.06), rgba(231,236,240,.11)), url('/hero.jpg') !important;
+    filter: grayscale(0%) saturate(102%) contrast(107%) brightness(99%) !important;
   }
 
   .today-page.dashboard-home,
