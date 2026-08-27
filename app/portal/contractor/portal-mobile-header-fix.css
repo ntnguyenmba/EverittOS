@@ -1,57 +1,160 @@
-/* Shared worker and client mobile treatment aligned with the owner shell. */
-@media (max-width: 760px) {
-  .contractor-dashboard-shell > .contractor-mobile-header { position:sticky!important;top:0!important;z-index:50!important;width:100%!important;min-height:64px!important;height:64px!important;padding:8px max(18px,env(safe-area-inset-right)) 8px max(18px,env(safe-area-inset-left))!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;background:#fff!important;border:0!important;border-bottom:1px solid #d9dfe3!important;box-shadow:none!important;box-sizing:border-box!important;overflow:hidden!important; }
-  .contractor-mobile-header .contractor-mobile-brand-logo { display:inline-flex!important;align-items:center!important;gap:10px!important;width:auto!important;max-width:calc(100vw - 36px)!important;height:48px!important;margin:0!important;padding:0!important;color:#173044!important;text-decoration:none!important; }
-  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-image { width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;flex:0 0 34px!important;border-radius:9px!important;object-fit:cover!important; }
+/* Shared Worker and Client header treatment matched to the Owner mobile/tablet shell. */
+@media (max-width: 1279px) {
+  .contractor-dashboard-shell > .contractor-mobile-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: calc(100% - max(40px, env(safe-area-inset-left) + env(safe-area-inset-right))) !important;
+    max-width: 1240px !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    margin: 10px auto 0 !important;
+    padding: 9px 14px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(37,54,74,.13) !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 8px 24px rgba(37,54,74,.08) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo,
+  .client-dashboard-shell .contractor-mobile-brand-logo {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 72px) !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #173044 !important;
+    text-decoration: none !important;
+  }
+
+  .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-image,
+  .client-dashboard-shell .contractor-mobile-brand-logo .brand-logo-image,
+  .client-dashboard-shell .brand-logo .brand-logo-image {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    flex: 0 0 34px !important;
+    border-radius: 9px !important;
+    object-fit: cover !important;
+  }
+
   .contractor-mobile-header .contractor-mobile-brand-logo .brand-logo-name,
   .client-dashboard-shell .contractor-mobile-brand-logo .brand-logo-name,
-  .client-dashboard-shell .brand-logo-name { min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#173044!important;font-family:var(--font-manrope),Manrope,system-ui,-apple-system,BlinkMacSystemFont,sans-serif!important;font-size:20px!important;line-height:1!important;font-weight:700!important;font-style:normal!important;letter-spacing:-.02em!important;text-transform:none!important; }
-  .client-dashboard-shell .brand-logo { display:inline-flex!important;align-items:center!important;gap:10px!important; }
-  .client-dashboard-shell .brand-logo .brand-logo-image { width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;border-radius:9px!important;object-fit:cover!important; }
-  .contractor-dashboard-shell > .contractor-main { padding:18px 18px calc(92px + env(safe-area-inset-bottom))!important; }
+  .client-dashboard-shell .brand-logo-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    color: #173044 !important;
+    font-family: var(--font-manrope), Manrope, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    font-style: normal !important;
+    letter-spacing: -.02em !important;
+    text-transform: none !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-main {
+    padding-top: 14px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .contractor-dashboard-shell > .contractor-mobile-header {
+    width: calc(100% - 40px) !important;
+    margin-top: 10px !important;
+  }
+
+  .contractor-dashboard-shell > .contractor-main {
+    padding: 14px 18px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
 
   .contractor-dashboard-shell .contractor-portal-hero > .contractor-role-label,
   .contractor-dashboard-shell .contractor-portal-hero > h1,
-  .contractor-dashboard-shell .contractor-portal-hero > .contractor-worker-name { display:none!important; }
-  .contractor-main .contractor-portal-hero { margin:0 0 16px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important; }
-  .contractor-dashboard-shell .contractor-next-job { margin:0!important;padding:18px!important;border:1px solid #d9dfe3!important;border-radius:16px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 4px 14px rgba(24,44,59,.07)!important; }
+  .contractor-dashboard-shell .contractor-portal-hero > .contractor-worker-name {
+    display: none !important;
+  }
 
-  /* Remove large outer containers so each worker job reads as its own floating card. */
+  .contractor-main .contractor-portal-hero {
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .contractor-dashboard-shell .contractor-next-job {
+    margin: 0 !important;
+    padding: 18px !important;
+    border: 1px solid rgba(36,63,83,.10) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 10px 24px rgba(18,40,56,.075) !important;
+  }
+
   .contractor-dashboard-shell .contractor-content-card:has(.job-visits-list),
-  .contractor-dashboard-shell section:has(> .job-visits-list) { margin:0 0 18px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important; }
-  .contractor-dashboard-shell .contractor-content-card:has(.job-visits-list) > h2,
-  .contractor-dashboard-shell section:has(> .job-visits-list) > h2 { margin:0 0 12px!important;padding:0 2px!important;color:#1f3443!important;font-size:20px!important; }
-  .contractor-dashboard-shell .job-visits-list { display:grid!important;gap:16px!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important; }
-  .contractor-dashboard-shell .job-visits-list > .portal-job-row { display:grid!important;grid-template-columns:1fr!important;gap:12px!important;margin:0!important;padding:18px!important;border:1px solid #d9dfe3!important;border-radius:16px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 4px 14px rgba(24,44,59,.07)!important;overflow:hidden!important; }
-  .contractor-dashboard-shell .job-visits-list > .portal-job-row + .portal-job-row { border-top:1px solid #d9dfe3!important; }
-  .contractor-dashboard-shell .portal-job-main,
-  .contractor-dashboard-shell .portal-job-finance { padding:0!important;margin:0!important;border:0!important;background:transparent!important; }
-  .contractor-dashboard-shell .portal-job-finance { display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:9px!important; }
-  .contractor-dashboard-shell .portal-list-toggle { width:100%!important;margin:14px 0 0!important;min-height:46px!important;border:1px solid #ccd6dc!important;border-radius:12px!important;background:#fff!important;color:#243f53!important; }
+  .contractor-dashboard-shell section:has(> .job-visits-list) {
+    margin: 0 0 18px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
 
-  .client-dashboard-shell .client-portal-jobs { display:grid!important;gap:16px!important;color:#1f3443!important;font-family:inherit!important; }
-  .client-dashboard-shell .role-dashboard-topbar { display:flex!important;align-items:center!important;gap:10px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important; }
-  .client-dashboard-shell .client-period-select { flex:1 1 auto!important;min-width:0!important; }
-  .client-dashboard-shell .client-period-select select { width:100%!important;min-height:48px!important;padding:9px 38px 9px 14px!important;border:1px solid #aebbc4!important;border-radius:11px!important;background:#fff!important;color:#243f53!important;font:inherit!important;font-size:15px!important;font-weight:650!important; }
-  .client-dashboard-shell .role-dashboard-topbar .export-menu { flex:0 0 auto!important;width:auto!important;margin:0!important; }
-  .client-dashboard-shell .role-dashboard-topbar .export-menu .btn,.client-dashboard-shell .role-dashboard-topbar > button { width:auto!important;min-height:48px!important;padding:9px 14px!important;border:1px solid #d3dde3!important;border-radius:11px!important;background:#fff!important;color:#243f53!important;font-size:14px!important;font-weight:700!important; }
-  .client-dashboard-shell .portal-client-nav,.client-dashboard-shell .client-sign-out,.client-dashboard-shell .sign-out,.client-dashboard-shell button[data-action='sign-out'],.client-dashboard-shell a[href*='logout'] { display:none!important; }
-  .client-dashboard-shell .role-summary-grid { display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;margin:0!important; }
-  .client-dashboard-shell .role-summary-card { min-height:104px!important;margin:0!important;padding:17px!important;border-radius:15px!important; }
-  .client-dashboard-shell .role-summary-card strong { display:block!important;color:#173044!important;font-size:30px!important;line-height:1!important;letter-spacing:-.035em!important; }
-  .client-dashboard-shell .role-summary-card span { display:block!important;margin-top:8px!important;color:#62727d!important;font-size:14px!important;font-weight:650!important; }
+  .contractor-dashboard-shell .job-visits-list {
+    display: grid !important;
+    gap: 16px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
 
-  /* Client section shell stays light so appointment cards float independently. */
-  .client-dashboard-shell .portal-dashboard-section { margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important; }
-  .client-dashboard-shell .portal-dashboard-section > summary { min-height:48px!important;padding:12px 14px!important;border:1px solid #d9dfe3!important;border-radius:14px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 3px 10px rgba(36,63,83,.05)!important; }
-  .client-dashboard-shell .portal-dashboard-section > summary h2 { color:#1f3443!important;font-size:20px!important;letter-spacing:-.02em!important; }
-  .client-dashboard-shell .client-job-card-list { display:grid!important;gap:16px!important;padding-top:14px!important;background:transparent!important; }
-  .client-dashboard-shell .client-job-card { display:grid!important;gap:12px!important;margin:0!important;padding:18px!important;border:1px solid rgba(36,63,83,.14)!important;border-radius:16px!important;background:rgba(255,255,255,.96)!important;color:#1f3443!important;box-shadow:0 4px 14px rgba(36,63,83,.07)!important;text-decoration:none!important; }
-  .client-dashboard-shell .client-job-card h3 { margin:0!important;color:#1f3443!important;font-size:18px!important;line-height:1.25!important;letter-spacing:-.015em!important; }
-  .client-dashboard-shell .client-job-secondary { margin:5px 0 0!important;color:#62727d!important;font-size:15px!important;line-height:1.45!important; }
-  .client-dashboard-shell .client-job-card-meta { display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:10px!important; }
-  .client-dashboard-shell .portal-finance-line { width:100%!important;margin:0!important;color:#526674!important;font-size:14px!important;line-height:1.55!important; }
-  .client-dashboard-shell .card[role='status'] { margin:0!important;padding:18px!important;border-radius:16px!important; }
-  .client-dashboard-shell .card[role='status'] p { margin:0!important;color:#62727d!important;line-height:1.55!important; }
-  .client-dashboard-shell .client-empty-state { box-shadow:none!important;border:1px solid rgba(36,63,83,.1)!important;background:#fff!important; }
+  .contractor-dashboard-shell .job-visits-list > .portal-job-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    border: 1px solid rgba(36,63,83,.10) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 10px 24px rgba(18,40,56,.075) !important;
+  }
+
+  .client-dashboard-shell .client-portal-jobs {
+    display: grid !important;
+    gap: 16px !important;
+    color: #1f3443 !important;
+    font-family: inherit !important;
+  }
+
+  .client-dashboard-shell .role-summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 12px !important;
+    margin: 0 !important;
+  }
+
+  .client-dashboard-shell .portal-dashboard-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
 }
