@@ -78,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <SessionGuard>
               <ActivityHeartbeat />
               <WorkspacePlanProvider>
-                <WorkspaceBootstrap />
+                <WorkspaceBootstrap>
                   <SkipToMain />
                   <SiteChrome />
                   <ContractorStaticSections />
