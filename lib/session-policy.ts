@@ -44,8 +44,9 @@ export function touchActivityTimestamp(now = Date.now()): string {
   return new Date(now).toISOString();
 }
 
-export const SESSION_EXEMPT_PREFIXES = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/confirm-email', '/auth/callback', '/api/auth/reset-session', '/privacy', '/terms', '/refund-policy', '/pricing', '/cookies', '/disclaimer', '/security', '/docs/api', '/api/auth/login', '/api/auth/reset-password', '/api/auth/config'] as const;
+export const SESSION_EXEMPT_PREFIXES = ['/login', '/signup', '/forgot-password', '/reset-password', '/confirm-email', '/auth/callback', '/api/auth/reset-session', '/privacy', '/terms', '/refund-policy', '/pricing', '/cookies', '/disclaimer', '/security', '/docs/api', '/api/auth/login', '/api/auth/reset-password', '/api/auth/config'] as const;
 
 export function isSessionExemptPath(pathname: string): boolean {
+  if (pathname === '/') return true;
   return SESSION_EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
