@@ -1,7 +1,7 @@
-/* Final cross-role visual lock: Owner, Worker and Client use the same header and control language. */
+/* Final cross-role visual lock: Owner, Worker and Client use one header and one control language. */
 
-/* Same mobile/tablet header shell in every signed-in role. */
 @media (max-width: 1279px) {
+  /* Outer header containers are layout-only and must never draw a second frame. */
   .dashboard-shell-header,
   .contractor-dashboard-shell > .contractor-mobile-header {
     position: sticky !important;
@@ -14,18 +14,28 @@
     margin: 0 !important;
     padding: 10px max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)) !important;
     background: transparent !important;
+    background-color: transparent !important;
     border: 0 !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
+    outline: 0 !important;
     overflow: visible !important;
     box-sizing: border-box !important;
   }
 
   .dashboard-shell-header .mobile-nav,
   .contractor-dashboard-shell > .contractor-mobile-header {
-    border: 0 !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
     background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
   }
 
+  /* Only the actual visible header surface gets a frame. */
   .dashboard-shell-header .mobile-nav-bar,
   .contractor-dashboard-shell > .contractor-mobile-header > .contractor-mobile-brand-logo {
     width: min(1240px, 100%) !important;
@@ -40,6 +50,17 @@
     border-radius: 16px !important;
     background: rgba(255,255,255,.94) !important;
     box-shadow: 0 8px 24px rgba(37,54,74,.08) !important;
+    outline: 0 !important;
+  }
+
+  .dashboard-shell-header .mobile-nav-bar::before,
+  .dashboard-shell-header .mobile-nav-bar::after,
+  .contractor-dashboard-shell > .contractor-mobile-header::before,
+  .contractor-dashboard-shell > .contractor-mobile-header::after,
+  .contractor-dashboard-shell > .contractor-mobile-header > .contractor-mobile-brand-logo::before,
+  .contractor-dashboard-shell > .contractor-mobile-header > .contractor-mobile-brand-logo::after {
+    display: none !important;
+    content: none !important;
   }
 
   .dashboard-shell-header .mobile-nav-bar {
@@ -78,7 +99,6 @@
   }
 }
 
-/* Shared control typography, height, radius, border and color. Width may vary by purpose. */
 .dashboard-home .btn,
 .dashboard-home button,
 .dashboard-home select,
@@ -124,7 +144,6 @@
   box-shadow: 0 8px 22px rgba(18,40,56,.10) !important;
 }
 
-/* Same core text colors and sizing hierarchy across role views. */
 .dashboard-home,
 .contractor-main,
 .client-main {
@@ -162,7 +181,6 @@
   opacity: 1 !important;
 }
 
-/* Keep Sign out visually secondary but on the same typographic system. */
 .client-main .contractor-signout,
 .contractor-main .contractor-signout {
   min-height: 44px !important;
