@@ -1,0 +1,141 @@
+/* Unify authenticated Owner, Worker, and Client views with the visual promise of the login page. */
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-dashboard-shell .contractor-background {
+  background-image: linear-gradient(rgba(231,236,240,.10), rgba(231,236,240,.16)), url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  filter: grayscale(2%) saturate(100%) contrast(106%) brightness(98%) !important;
+}
+
+/* Shared premium floating-card language. */
+.dashboard-home .card,
+.dashboard-home .panel,
+.dashboard-home .stat,
+.dashboard-home .dashboard-revenue-metric,
+.contractor-main .card,
+.contractor-main .settings-card,
+.contractor-main .role-summary-card,
+.contractor-main .client-job-card,
+.contractor-main .list-row,
+.contractor-main .job-row,
+.contractor-main .contractor-job-row,
+.contractor-main .client-job-row {
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+/* Never wrap role content in a big white slab. */
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .client-jobs-list,
+.contractor-main .contractor-jobs-list,
+.contractor-main .jobs-list,
+.contractor-main .list,
+.contractor-main .list-group,
+.contractor-main .role-dashboard-minimal,
+.contractor-main .contractor-dashboard,
+.contractor-main .client-portal-jobs {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Owner: remove the awkward void below Welcome back. */
+.today-page.dashboard-home {
+  gap: 14px !important;
+}
+
+.today-page.dashboard-home > .page-head,
+.today-page.dashboard-home > header {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.today-page.dashboard-home .dashboard-operations {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.today-page.dashboard-home .dashboard-revenue-grid {
+  gap: 14px !important;
+  margin-top: 0 !important;
+}
+
+/* Stronger post-login typography to match login contrast. */
+.dashboard-home h1,
+.dashboard-home h2,
+.dashboard-home h3,
+.dashboard-home strong,
+.contractor-main h1,
+.contractor-main h2,
+.contractor-main h3,
+.contractor-main strong,
+.contractor-main label {
+  color: #172433 !important;
+}
+
+.dashboard-home p,
+.dashboard-home .muted,
+.contractor-main p,
+.contractor-main .muted,
+.contractor-main .meta,
+.contractor-main .secondary-text {
+  color: #344b5c !important;
+  opacity: 1 !important;
+}
+
+/* Keep controls substantial like the login fields and buttons. */
+.dashboard-home .btn,
+.contractor-main .btn,
+.dashboard-home select,
+.contractor-main select,
+.dashboard-home input,
+.contractor-main input {
+  min-height: 46px;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-dashboard-shell .contractor-background {
+    background-image: linear-gradient(rgba(231,236,240,.12), rgba(231,236,240,.18)), url('/hero.jpg') !important;
+    filter: grayscale(3%) saturate(100%) contrast(105%) brightness(98%) !important;
+  }
+
+  .today-page.dashboard-home {
+    gap: 12px !important;
+  }
+
+  .today-page.dashboard-home .dashboard-revenue-grid {
+    gap: 12px !important;
+  }
+
+  .dashboard-home .card,
+  .dashboard-home .panel,
+  .dashboard-home .stat,
+  .dashboard-home .dashboard-revenue-metric,
+  .contractor-main .card,
+  .contractor-main .settings-card,
+  .contractor-main .role-summary-card,
+  .contractor-main .client-job-card,
+  .contractor-main .list-row,
+  .contractor-main .job-row,
+  .contractor-main .contractor-job-row,
+  .contractor-main .client-job-row {
+    border-radius: 18px !important;
+    box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
+  }
+
+  .contractor-main > .contractor-dashboard,
+  .contractor-main > .client-portal-jobs,
+  .contractor-main > .client-portal-job-detail,
+  .contractor-main > .client-portal-settings {
+    gap: 12px !important;
+  }
+}
