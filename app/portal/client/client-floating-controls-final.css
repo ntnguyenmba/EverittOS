@@ -1,19 +1,31 @@
 /* Final client-only polish for mobile/tablet/desktop. */
-.client-main .role-dashboard-topbar {
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
   gap: 10px !important;
-  width: auto !important;
-  margin: 0 0 14px !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 0 16px !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
 }
 
-.client-main .client-period-select {
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar::before,
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar::after {
+  display: none !important;
+  content: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .client-period-select {
   flex: 0 0 auto !important;
   width: 160px !important;
   margin: 0 !important;
@@ -23,7 +35,7 @@
   box-shadow: none !important;
 }
 
-.client-main .client-period-select select {
+#main-content.client-main .client-portal-jobs .client-period-select select {
   width: 160px !important;
   height: 44px !important;
   min-height: 44px !important;
@@ -37,22 +49,25 @@
   font-weight: 650 !important;
 }
 
-.client-main .role-dashboard-topbar > :last-child {
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child {
   flex: 0 0 auto !important;
   width: auto !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+  border-radius: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
 }
 
-.client-main .role-dashboard-topbar > :last-child button,
-.client-main .role-dashboard-topbar > :last-child .btn {
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child button,
+#main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child .btn {
   width: auto !important;
   min-width: 148px !important;
   height: 44px !important;
   min-height: 44px !important;
+  margin: 0 !important;
   padding: 0 15px !important;
   border: 1px solid rgba(36,63,83,.15) !important;
   border-radius: 12px !important;
@@ -64,32 +79,42 @@
   white-space: nowrap !important;
 }
 
-.client-main .portal-client-nav {
+#main-content.client-main .client-portal-jobs .portal-client-nav {
   display: flex !important;
   justify-content: flex-end !important;
-  width: 100% !important;
-  margin: 0 0 14px !important;
+  width: fit-content !important;
+  margin: 0 0 16px auto !important;
   padding: 0 !important;
   border: 0 !important;
+  border-radius: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.client-main .portal-client-nav .contractor-signout {
+#main-content.client-main .client-portal-jobs .portal-client-nav::before,
+#main-content.client-main .client-portal-jobs .portal-client-nav::after {
+  display: none !important;
+  content: none !important;
+}
+
+#main-content.client-main .client-portal-jobs .portal-client-nav .contractor-signout {
   width: auto !important;
   min-width: 0 !important;
   min-height: 40px !important;
   padding: 8px 12px !important;
   border: 0 !important;
   border-radius: 10px !important;
-  background: rgba(255,255,255,.82) !important;
+  background: rgba(255,255,255,.84) !important;
   color: #526979 !important;
-  box-shadow: none !important;
+  box-shadow: 0 6px 18px rgba(18,40,56,.05) !important;
   font-size: 13px !important;
   font-weight: 650 !important;
 }
 
-.client-main .client-empty-state {
+#main-content.client-main .client-portal-jobs .client-empty-state {
   margin: 0 !important;
   padding: 22px !important;
   border: 1px solid rgba(255,255,255,.76) !important;
@@ -98,23 +123,23 @@
   box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
 }
 
-.client-main .client-empty-state p {
+#main-content.client-main .client-portal-jobs .client-empty-state p {
   margin: 0 !important;
 }
 
 @media (max-width: 760px) {
-  .client-main .role-dashboard-topbar {
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar {
     gap: 8px !important;
-    flex-wrap: nowrap !important;
+    width: 100% !important;
   }
 
-  .client-main .client-period-select,
-  .client-main .client-period-select select {
+  #main-content.client-main .client-portal-jobs .client-period-select,
+  #main-content.client-main .client-portal-jobs .client-period-select select {
     width: 148px !important;
   }
 
-  .client-main .role-dashboard-topbar > :last-child button,
-  .client-main .role-dashboard-topbar > :last-child .btn {
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child button,
+  #main-content.client-main .client-portal-jobs .role-dashboard-topbar > :last-child .btn {
     min-width: 0 !important;
     padding: 0 12px !important;
   }
