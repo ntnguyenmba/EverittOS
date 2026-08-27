@@ -39,6 +39,7 @@ import './final-record-card-consistency.css';
 import './hero-background-visibility.css';
 import './post-login-visual-unification.css';
 import './post-login-surface-consistency.css';
+import './final-cross-role-header-controls.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
@@ -54,43 +55,45 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={initialLocale}
       data-locale={initialLocale}
       data-deployment={deployment}
-      className={manrope.variable}
+      suppressHydrationWarning
     >
-      <body className={manrope.className} data-locale={initialLocale}>
+      <body className={manrope.variable}>
         <SupabaseRuntimeConfig />
-        <PwaRegistration />
-        <MobileDocumentFlags />
-        <NativeAppProvider />
-        <NativePinLock />
-        <AppConnectivityBanner />
-        <NetworkStatusBanner />
-        <PwaUpdatePrompt />
         <SuppressVercelToolbar />
-        <LocaleProvider initialLocale={initialLocale}>
-          <JobFinanceWordingAndCustomerRate />
-          <CreateFormCancelControls />
-          <DashboardTodayCountFix />
-          <ContractorJobPayVisibility />
-          <OwnerTopPerformerMetric />
-          <ExpensesListEnhancer />
-          <AskEverittQuickClear />
-          <ToastProvider>
+        <NativeAppProvider>
+          <MobileDocumentFlags />
+          <PwaRegistration />
+          <PwaUpdatePrompt />
+          <NetworkStatusBanner />
+          <AppConnectivityBanner />
+          <SkipToMain />
+          <SiteChrome />
+          <LocaleProvider initialLocale={initialLocale}>
             <LocaleSync />
-            <SessionGuard>
-              <ActivityHeartbeat />
-              <WorkspacePlanProvider>
-                <WorkspaceBootstrap />
-                <SkipToMain />
-                <SiteChrome />
-                <ContractorStaticSections />
-                {children}
-                <MobileBottomNav />
-                <AnalyticsGate />
-                <CookieConsentBanner />
-              </WorkspacePlanProvider>
-            </SessionGuard>
-          </ToastProvider>
-        </LocaleProvider>
+            <ToastProvider>
+              <SessionGuard>
+                <WorkspacePlanProvider>
+                  <WorkspaceBootstrap>
+                    <ActivityHeartbeat />
+                    <NativePinLock />
+                    <ContractorStaticSections />
+                    <JobFinanceWordingAndCustomerRate />
+                    <CreateFormCancelControls />
+                    <DashboardTodayCountFix />
+                    <ContractorJobPayVisibility />
+                    <OwnerTopPerformerMetric />
+                    <ExpensesListEnhancer />
+                    <AskEverittQuickClear />
+                    {children}
+                    <MobileBottomNav />
+                    <AnalyticsGate />
+                    <CookieConsentBanner />
+                  </WorkspaceBootstrap>
+                </WorkspacePlanProvider>
+              </SessionGuard>
+            </ToastProvider>
+          </LocaleProvider>
+        </NativeAppProvider>
       </body>
     </html>
   );
