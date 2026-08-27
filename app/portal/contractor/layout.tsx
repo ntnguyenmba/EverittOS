@@ -11,6 +11,7 @@ import { getContractorLayoutCopy } from '@/lib/i18n/ui-chrome-copy';
 import './contractor-minimal.css';
 import './portal-mobile-header-fix.css';
 import './portal-owner-visual-parity.css';
+import './portal-final-hero-match.css';
 
 type ContractorLayoutProps = { children: ReactNode };
 
