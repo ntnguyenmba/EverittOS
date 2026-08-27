@@ -1,33 +1,17 @@
-/* Match Worker and Client dashboard surfaces to the Owner dashboard card language. */
-.contractor-main .card,
-.contractor-main .role-summary-card,
-.contractor-main .contractor-metric,
-.contractor-main .client-job-card,
-.contractor-main .simplified-job-card,
-.contractor-main .list-row,
-.contractor-main .job-row,
-.contractor-main .contractor-job-row,
-.contractor-main .client-job-row {
-  border: 1px solid rgba(255,255,255,.76) !important;
-  border-left: 1px solid rgba(255,255,255,.76) !important;
-  border-radius: 20px !important;
-  background: rgba(255,255,255,.94) !important;
-  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-}
+/* Worker and Client dashboards: every meaningful surface floats independently like Owner. */
 
-/* Remove the boxed dashboard shell so cards float directly over the hero like Owner. */
+/* Never allow a giant white dashboard wrapper. */
 .contractor-main .contractor-dashboard,
 .contractor-main .client-portal-jobs,
 .contractor-main .client-portal-job-detail,
 .contractor-main .client-portal-settings,
 .contractor-main .contractor-content-card,
 .contractor-main .portal-dashboard-section,
-.contractor-main .contractor-portal-actions,
-.contractor-main .portal-client-nav,
 .contractor-main .client-jobs-list,
-.contractor-main .contractor-jobs-list {
+.contractor-main .contractor-jobs-list,
+.contractor-main .job-visits-list,
+.contractor-main .contractor-portal-actions,
+.contractor-main .portal-client-nav {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -36,23 +20,58 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Dashboard action choices should read like Owner controls, not giant outlined boxes. */
+/* The Worker hero itself must stay open, not become the tall white box seen in the screenshot. */
+.contractor-main .contractor-portal-hero.card,
+.contractor-main header.contractor-portal-hero.card {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+}
+
+.contractor-main .contractor-portal-hero.card::before,
+.contractor-main .contractor-portal-hero.card::after {
+  display: none !important;
+}
+
+/* Next job is its own floating card. */
+.contractor-main .contractor-next-job {
+  margin-top: 16px !important;
+  padding: 22px !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* Navigation actions float as individual controls, never inside a surrounding panel. */
 .contractor-main .contractor-portal-actions,
 .contractor-main .portal-client-nav {
+  margin-top: 14px !important;
+  padding: 0 !important;
   gap: 12px !important;
 }
 
 .contractor-main .contractor-portal-actions .btn,
 .contractor-main .contractor-portal-actions a,
+.contractor-main .contractor-portal-actions button,
 .contractor-main .portal-client-nav .btn,
-.contractor-main .portal-client-nav a {
+.contractor-main .portal-client-nav a,
+.contractor-main .portal-client-nav button {
   min-height: 48px !important;
   padding: 12px 16px !important;
   border: 1px solid rgba(36,63,83,.16) !important;
   border-radius: 12px !important;
-  background: rgba(255,255,255,.92) !important;
+  background: rgba(255,255,255,.94) !important;
   color: #172433 !important;
-  box-shadow: 0 6px 18px rgba(18,40,56,.055) !important;
+  box-shadow: 0 8px 22px rgba(18,40,56,.07) !important;
   font-weight: 700 !important;
 }
 
@@ -65,23 +84,59 @@
   color: #fff !important;
 }
 
-/* Keep metric cards compact and spaced like Owner. */
+/* Every metric is a separate Owner-style floating card. */
 .contractor-main .metric-grid,
 .contractor-main .role-summary-grid,
 .contractor-main .contractor-metrics,
 .contractor-main .client-job-card-list {
+  display: grid !important;
   gap: 14px !important;
+  padding: 0 !important;
+  margin: 18px 0 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .contractor-main .metric-grid > .card,
 .contractor-main .role-summary-card,
-.contractor-main .contractor-metric {
-  min-height: 132px !important;
+.contractor-main .contractor-metric,
+.contractor-main .client-job-card,
+.contractor-main .simplified-job-card,
+.contractor-main .list-row,
+.contractor-main .job-row,
+.contractor-main .contractor-job-row,
+.contractor-main .client-job-row,
+.contractor-main .portal-job-row {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
   padding: 22px !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-left: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* Jobs, Schedule and Earnings sections also float as independent cards. */
+.contractor-main section.contractor-content-card {
+  margin-top: 16px !important;
+  padding: 22px !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 16px 40px rgba(18,40,56,.10) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
 }
 
 @media (max-width: 760px) {
-  .contractor-main .card,
+  .contractor-main .contractor-next-job,
+  .contractor-main .metric-grid > .card,
   .contractor-main .role-summary-card,
   .contractor-main .contractor-metric,
   .contractor-main .client-job-card,
@@ -89,7 +144,9 @@
   .contractor-main .list-row,
   .contractor-main .job-row,
   .contractor-main .contractor-job-row,
-  .contractor-main .client-job-row {
+  .contractor-main .client-job-row,
+  .contractor-main .portal-job-row,
+  .contractor-main section.contractor-content-card {
     border-radius: 18px !important;
     box-shadow: 0 12px 30px rgba(18,40,56,.09) !important;
   }
@@ -98,7 +155,15 @@
   .contractor-main .role-summary-grid,
   .contractor-main .contractor-metrics,
   .contractor-main .client-job-card-list {
+    grid-template-columns: 1fr !important;
     gap: 12px !important;
+    margin-top: 14px !important;
+  }
+
+  .contractor-main .metric-grid > .card,
+  .contractor-main .role-summary-card,
+  .contractor-main .contractor-metric {
+    padding: 20px !important;
   }
 
   .contractor-main .contractor-portal-actions,
