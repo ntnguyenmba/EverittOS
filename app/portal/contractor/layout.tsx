@@ -29,7 +29,8 @@ export default async function ContractorLayout({ children }: ContractorLayoutPro
 
   return (
     <div className="dashboard-shell contractor-dashboard-shell">
-      <div className="contractor-background" aria-hidden="true" />
+      <div className="dashboard-shell-background contractor-background" aria-hidden="true" />
+      <div className="dashboard-shell-overlay contractor-overlay" aria-hidden="true" />
       <div className="dashboard-shell-mobile contractor-mobile-header">
         <BrandLogo href="/portal/contractor" size={34} showName className="contractor-mobile-brand-logo" />
       </div>
