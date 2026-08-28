@@ -1,4 +1,21 @@
-/* Signed-in EverittOS canvas: architectural wallpaper with readable free-floating work surfaces. */
+/* Signed-in EverittOS canvas: one wallpaper, one paper, one ink system. */
+:root {
+  --paper: rgba(255, 252, 249, 0.94);
+  --paper-solid: #fffcf9;
+  --ink: #132433;
+  --ink-2: #31495b;
+  --ink-3: #526777;
+  --line: rgba(19, 36, 51, 0.14);
+  --accent: #285d78;
+  --accent-strong: #285d78;
+  --surface: var(--paper);
+  --card: var(--paper);
+  --sidebar-bg: var(--paper);
+  --text: var(--ink);
+  --text-secondary: var(--ink-2);
+  --muted: var(--ink-3);
+}
+
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
@@ -11,20 +28,10 @@
 .contractor-background,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
-  background:
-    linear-gradient(180deg, rgba(239,243,244,.28) 0%, rgba(230,236,239,.24) 100%),
-    url('/hero.jpg') center / cover no-repeat !important;
-  background-image:
-    linear-gradient(180deg, rgba(239,243,244,.28) 0%, rgba(230,236,239,.24) 100%),
-    url('/hero.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
+  background: linear-gradient(180deg,rgba(239,243,244,.28),rgba(230,236,239,.24)),url('/hero.jpg') center/cover no-repeat !important;
   opacity: 1 !important;
   filter: saturate(.68) contrast(.94) brightness(.96) !important;
-  -webkit-filter: saturate(.68) contrast(.94) brightness(.96) !important;
   transform: none !important;
-  transition: none !important;
 }
 
 .dashboard-shell-overlay,
@@ -34,10 +41,8 @@
 .client-dashboard-shell .contractor-overlay {
   background: rgba(241,244,245,.12) !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
-/* The app content itself stays open so records float over the shared canvas. */
 .dashboard-shell > .main,
 .dashboard-shell .main,
 .dashboard-shell .app-page-content,
@@ -49,53 +54,59 @@
 .client-main {
   background: transparent !important;
   background-color: transparent !important;
-  background-image: none !important;
 }
 
-/* Desktop navigation is a floating warm-white rail, not a blue slab. */
 .dashboard-shell > .sidebar {
   align-self: start !important;
   height: calc(100vh - 32px) !important;
   margin: 16px 0 16px 16px !important;
-  padding: 18px 14px 16px !important;
-  border: 1px solid rgba(48,61,70,.16) !important;
+  border: 1px solid rgba(255,255,255,.50) !important;
   border-radius: 20px !important;
-  background: rgba(250,250,247,.92) !important;
-  box-shadow: 0 18px 48px rgba(31,43,51,.13) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+  background: var(--paper) !important;
+  box-shadow: 0 18px 48px rgba(9,24,35,.13) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
 }
 
+.dashboard-shell > .sidebar a,
+.dashboard-shell > .sidebar a.nav-item,
 .dashboard-shell > .sidebar .nav-item,
-.dashboard-shell > .sidebar a.nav-item {
-  color: #26343d !important;
+.dashboard-shell > .sidebar .nav-item *,
+.dashboard-shell > .sidebar a.nav-item * {
+  color: var(--ink) !important;
 }
 
 .dashboard-shell > .sidebar .nav-item:hover,
 .dashboard-shell > .sidebar a.nav-item:hover {
-  background: rgba(255,255,255,.72) !important;
-  color: #172433 !important;
+  background: rgba(19,36,51,.045) !important;
 }
 
 .dashboard-shell > .sidebar .nav-item.active,
-.dashboard-shell > .sidebar a.nav-item.active {
-  background: rgba(255,255,255,.92) !important;
-  color: #172433 !important;
-  border-left-color: #6f7b73 !important;
-  box-shadow: 0 7px 20px rgba(31,43,51,.08) !important;
+.dashboard-shell > .sidebar a.nav-item.active,
+.dashboard-shell > .sidebar a[aria-current='page'] {
+  background: rgba(19,36,51,.08) !important;
+  color: var(--ink) !important;
+  border-left-color: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-shell > .sidebar .nav-item.active *,
+.dashboard-shell > .sidebar a.nav-item.active *,
+.dashboard-shell > .sidebar a[aria-current='page'] * {
+  color: var(--ink) !important;
 }
 
 .dashboard-shell > .sidebar .nav-unread-chip {
-  background: #e6e9e5 !important;
-  color: #26343d !important;
+  background: rgba(19,36,51,.08) !important;
+  color: var(--ink) !important;
 }
 
-/* Readable floating controls and records use the same warm neutral surface. */
+.dashboard-shell .everitt-cmd-trigger,
 .dashboard-shell .workspace-switcher,
 .dashboard-shell .workspace-select,
 .dashboard-shell .language-switcher-select,
-.dashboard-shell select,
 .dashboard-shell input,
+.dashboard-shell select,
 .dashboard-shell textarea,
 .contractor-main input,
 .contractor-main select,
@@ -103,80 +114,20 @@
 .client-main input,
 .client-main select,
 .client-main textarea {
-  background-color: rgba(252,252,249,.96) !important;
-  border-color: rgba(48,61,70,.20) !important;
-  color: #172433 !important;
+  background: var(--paper) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 10px 26px rgba(9,24,35,.08) !important;
 }
 
-.dashboard-shell .everitt-cmd-trigger {
-  background: rgba(252,252,249,.94) !important;
-  border: 1px solid rgba(48,61,70,.20) !important;
-  color: #172433 !important;
-  box-shadow: 0 12px 30px rgba(31,43,51,.11) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+.dashboard-shell .everitt-cmd-trigger,
+.dashboard-shell .everitt-cmd-trigger * {
+  color: var(--ink) !important;
 }
 
-.dashboard-shell .everitt-cmd-trigger *,
-.dashboard-shell .everitt-cmd-trigger input,
-.dashboard-shell .everitt-cmd-trigger button {
-  color: #172433 !important;
-}
-
-.dashboard-shell h1,
-.dashboard-shell h2,
-.dashboard-shell h3,
-.dashboard-shell strong,
-.dashboard-shell .page-title,
-.dashboard-shell .page-head h1,
-.contractor-main h1,
-.client-main h1 {
-  color: #14212b !important;
-  text-shadow: 0 1px 0 rgba(255,255,255,.72);
-}
-
-.dashboard-shell p,
-.dashboard-shell .page-head p,
-.dashboard-shell .muted,
-.dashboard-shell .meta,
-.contractor-main p,
-.contractor-main .muted,
-.client-main p,
-.client-main .muted {
-  color: #34434c !important;
-  opacity: 1 !important;
-}
-
-.dashboard-shell .page-head,
-.contractor-main .page-head,
-.client-main .page-head {
-  max-width: 42rem;
-  padding: 4px 0 12px;
-  background: transparent !important;
-}
-
-/* Group wrappers disappear; each real record remains its own floating surface. */
-.dashboard-shell .card:has(.customer-list),
-.dashboard-shell .card:has(.customers-list),
-.dashboard-shell .card:has(.team-member-list),
-.dashboard-shell .card:has(.team-list),
-.dashboard-shell .card:has(.worker-list),
-.dashboard-shell .card:has(.contractor-list),
-.dashboard-shell .card:has(.record-list),
-.dashboard-shell .card:has(.entity-list),
-.dashboard-shell .card:has(.portal-job-list),
-.dashboard-shell .card:has(.jobs-operations-table),
-.dashboard-shell .team-directory-card,
-.contractor-main .client-jobs-list,
-.contractor-main .contractor-jobs-list,
-.contractor-main .jobs-list,
-.contractor-main .list-group {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .stat,
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-card,
 .dashboard-shell .customer-list-card,
@@ -191,26 +142,78 @@
 .dashboard-shell .dashboard-desk-card,
 .dashboard-shell .dashboard-next-job,
 .dashboard-shell .role-summary-card,
+.contractor-main .card,
 .contractor-main .client-job-card,
 .contractor-main .contractor-job-row,
 .contractor-main .job-row,
 .contractor-main .list-row,
+.client-main .card,
 .client-main .client-job-card {
-  background: rgba(252,252,249,.94) !important;
-  border: 1px solid rgba(48,61,70,.18) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 14px 34px rgba(31,43,51,.12) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: var(--paper) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 28px 70px rgba(9,24,35,.18) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.dashboard-shell h1,
+.dashboard-shell h2,
+.dashboard-shell h3,
+.dashboard-shell strong,
+.contractor-main h1,
+.contractor-main h2,
+.contractor-main h3,
+.client-main h1,
+.client-main h2,
+.client-main h3 {
+  color: var(--ink) !important;
+}
+
+.dashboard-shell p,
+.dashboard-shell label,
+.dashboard-shell .muted,
+.dashboard-shell .meta,
+.contractor-main p,
+.contractor-main label,
+.contractor-main .muted,
+.client-main p,
+.client-main label,
+.client-main .muted {
+  color: var(--ink-2) !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .btn,
+.contractor-main .btn,
+.client-main .btn {
+  background: var(--paper-solid) !important;
+  border: 1px solid var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.dashboard-shell .btn.btn-primary,
+.dashboard-shell button[type='submit'],
+.contractor-main .btn.btn-primary,
+client-main .btn.btn-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+.dashboard-shell .btn.btn-primary *,
+.dashboard-shell button[type='submit'] *,
+.contractor-main .btn.btn-primary *,
+.client-main .btn.btn-primary * {
+  color: #fff !important;
 }
 
 @media (max-width:1279px) {
   .dashboard-shell,
   .contractor-dashboard-shell,
   .client-dashboard-shell,
-  .role-portal-shell {
-    background-attachment: scroll !important;
-  }
+  .role-portal-shell { background-attachment: scroll !important; }
 }
 
 @media (max-width:760px) {
@@ -223,15 +226,6 @@
   .contractor-background,
   .contractor-dashboard-shell .contractor-background,
   .client-dashboard-shell .contractor-background {
-    background: linear-gradient(180deg,rgba(239,243,244,.34),rgba(230,236,239,.30)),url('/hero.jpg') 56% center / cover no-repeat !important;
-    background-image: linear-gradient(180deg,rgba(239,243,244,.34),rgba(230,236,239,.30)),url('/hero.jpg') !important;
-    background-size: cover !important;
-    background-position: 56% center !important;
-    background-repeat: no-repeat !important;
-  }
-
-  .dashboard-shell-overlay,
-  .role-portal-shell .dashboard-shell-overlay {
-    background: rgba(241,244,245,.18) !important;
+    background: linear-gradient(180deg,rgba(239,243,244,.34),rgba(230,236,239,.30)),url('/hero.jpg') 56% center/cover no-repeat !important;
   }
 }
