@@ -29,6 +29,33 @@ type MenuPosition = {
   width: number;
 };
 
+const menuButtonStyle = {
+  appearance: 'none' as const,
+  WebkitAppearance: 'none' as const,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  width: '100%',
+  minWidth: 0,
+  maxWidth: '100%',
+  margin: 0,
+  padding: '12px 14px',
+  border: 0,
+  borderRadius: 8,
+  background: 'transparent',
+  boxSizing: 'border-box' as const,
+  color: 'var(--text, #142635)',
+  font: 'inherit',
+  fontWeight: 600,
+  lineHeight: 1.2,
+  textAlign: 'left' as const,
+  textIndent: 0,
+  whiteSpace: 'normal' as const,
+  overflow: 'visible',
+  transform: 'none',
+  cursor: 'pointer'
+};
+
 function queryRecord(query: ExportMenuProps['query']): Record<string, string> {
   const params = new URLSearchParams();
   if (query instanceof URLSearchParams) {
@@ -118,7 +145,7 @@ export function ExportMenu({
       const desiredWidth = shareOpen ? 260 : 190;
       const availableWidth = Math.max(0, window.innerWidth - viewportPadding * 2);
       const width = Math.min(desiredWidth, availableWidth);
-      const preferredLeft = rect.right - width;
+      const preferredLeft = rect.left;
       const maxLeft = Math.max(viewportPadding, window.innerWidth - width - viewportPadding);
       const left = Math.min(Math.max(viewportPadding, preferredLeft), maxLeft);
       setMenuPosition({ left, top: rect.bottom + 4, width });
@@ -236,8 +263,7 @@ export function ExportMenu({
           <button
             type="button"
             role="menuitem"
-            className="btn"
-            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
+            style={menuButtonStyle}
             disabled={isDisabled}
             onClick={() => void runExport('csv')}
           >
@@ -246,8 +272,7 @@ export function ExportMenu({
           <button
             type="button"
             role="menuitem"
-            className="btn"
-            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
+            style={menuButtonStyle}
             disabled={isDisabled}
             onClick={() => void runExport('pdf')}
           >
@@ -256,8 +281,7 @@ export function ExportMenu({
           <button
             type="button"
             role="menuitem"
-            className="btn"
-            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
+            style={menuButtonStyle}
             disabled={isDisabled}
             onClick={() => {
               setShareOpen(true);
