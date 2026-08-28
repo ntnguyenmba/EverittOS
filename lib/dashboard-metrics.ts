@@ -473,7 +473,6 @@ export function calculateOutstandingBreakdown(input: { invoices: InvoiceMetricRo
   const invoicedJobIds = collectibleInvoicedJobIds(input.invoices);
   const collectedByJob = sumJobPaymentsByJobId(input.jobPayments);
   const paidByInvoice = new Map<string, number>();
-  const useLedger = Array.isArray(input.invoicePayments);
   for (const row of input.invoicePayments || []) {
     const invoiceId = String(row.invoice_id || '');
     const amount = num(row.amount);
@@ -493,7 +492,8 @@ export function calculateOutstandingBreakdown(input: { invoices: InvoiceMetricRo
     if (!isCollectibleInvoice(inv)) continue;
     const invoiceId = String(inv.id || '');
     const jobId = inv.job_id ? String(inv.job_id) : '';
-    const paidRaw = useLedger ? paidByInvoice.get(invoiceId) || 0 : num(inv.amount_paid);
+    const hasLedgerPayments = paidByInvoice.has(invoiceId);
+    const paidRaw = hasLedgerPayments ? paidByInvoice.get(invoiceId) || 0 : num(inv.amount_paid);
     const directCredit = jobId ? unmigratedDirectByJob.get(jobId) || 0 : 0;
     if (jobId && directCredit > 0) unmigratedDirectByJob.set(jobId, 0);
     const paidTowardInvoice = Number((paidRaw + directCredit).toFixed(2));
