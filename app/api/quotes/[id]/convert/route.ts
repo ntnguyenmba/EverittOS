@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireWorkspaceSession } from '@/lib/workspace-api-auth';
 import { workspaceScopedFields } from '@/lib/workspace-server';
 import { isMissingSchemaError } from '@/lib/supabase-schema-errors';
+import { enforcePlanForUser } from '@/lib/plan-enforce-server';
+import { logWorkspaceActivity } from '@/lib/activity-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +27,11 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ ok: true, job: { id: quote.job_id }, reused: true });
   }
 
+  const planCheck = await enforcePlanForUser(ctx.supabase, ctx.userId, 'jobs');
+  if (!planCheck.allowed) {
+    return NextResponse.json({ error: planCheck.message || 'Plan limit reached.' }, { status: 403 });
+  }
+
   const insert = {
     ...workspaceScopedFields(ctx.workspace, ctx.userId),
     title: quote.service_type || 'Quoted service',
@@ -45,7 +52,10 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     quote_frequency: quote.frequency || null,
     quote_add_ons: Array.isArray(quote.add_ons) ? quote.add_ons : [],
     quote_labor_hours: quote.labor_hours ?? null,
-    quote_source_request: quote.source_request || null
+    quote_price: Number(quote.price) || 0,
+    quote_currency: quote.currency || 'USD',
+    quote_source_request: quote.source_request || null,
+    quote_created_at: quote.created_at || new Date().toISOString()
   };
 
   const { data: job, error: jobError } = await ctx.supabase
@@ -72,6 +82,16 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     await ctx.supabase.from('jobs').delete().eq('id', job.id).eq('organization_id', ctx.workspace.organizationId);
     return NextResponse.json({ error: 'Could not finish quote conversion.' }, { status: 400 });
   }
+
+  await logWorkspaceActivity(
+    ctx.workspace.organizationId,
+    ctx.userId,
+    'job',
+    job.id,
+    'job_created_from_quote',
+    `Job created from quote: ${quote.service_type || 'Quoted service'}`,
+    { quoteId: quote.id, price: Number(quote.price) || 0, currency: quote.currency || 'USD' }
+  );
 
   return NextResponse.json({ ok: true, job });
 }
