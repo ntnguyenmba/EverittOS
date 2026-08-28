@@ -126,6 +126,7 @@
 
 .quote-flow-card strong { font-size: 17px; line-height: 1.25; }
 .quote-flow-card p { margin: 5px 0 0; color: #52616d; font-size: 14px; line-height: 1.45; }
+.quote-flow-card .quote-flow-error { color: #9b2c2c; font-weight: 650; }
 .quote-flow-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .quote-flow-primary { flex: 0 0 auto; }
 
