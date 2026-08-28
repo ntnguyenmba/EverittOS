@@ -45,7 +45,11 @@ const dashboardCopy = {
     myJobs: 'My jobs',
     schedule: 'Schedule',
     newJob: 'New Job',
-    quotes: 'Quotes'
+    quotes: 'Quotes',
+    nextJob: 'Next job',
+    noUpcomingJob: 'No upcoming job',
+    quotesWaiting: 'Quotes waiting',
+    moneyLate: 'Money late'
   },
   es: {
     todaysWork: 'Trabajo de hoy',
@@ -60,7 +64,11 @@ const dashboardCopy = {
     myJobs: 'Mis trabajos',
     schedule: 'Calendario',
     newJob: 'Nuevo trabajo',
-    quotes: 'Cotizaciones'
+    quotes: 'Cotizaciones',
+    nextJob: 'Próximo trabajo',
+    noUpcomingJob: 'No hay trabajo próximo',
+    quotesWaiting: 'Cotizaciones pendientes',
+    moneyLate: 'Dinero atrasado'
   },
   vi: {
     todaysWork: 'Công việc hôm nay',
@@ -75,7 +83,11 @@ const dashboardCopy = {
     myJobs: 'Công việc của tôi',
     schedule: 'Lịch',
     newJob: 'Công việc mới',
-    quotes: 'Báo giá'
+    quotes: 'Báo giá',
+    nextJob: 'Công việc tiếp theo',
+    noUpcomingJob: 'Không có công việc sắp tới',
+    quotesWaiting: 'Báo giá đang chờ',
+    moneyLate: 'Tiền quá hạn'
   }
 } as const;
 
@@ -173,12 +185,70 @@ function PriorityStat({ label, value, href }: { label: string; value: number; hr
   );
 }
 
+function OwnerDeskCard({ label, value, detail, href }: { label: string; value: string; detail?: string; href: string }) {
+  return (
+    <Link href={href} className="dashboard-revenue-metric is-primary owner-desk-card" style={{ minHeight: 120, textDecoration: 'none' }}>
+      <span className="dashboard-revenue-metric-label">{label}</span>
+      <strong className="dashboard-revenue-metric-value">{value}</strong>
+      {detail ? <span className="muted" style={{ marginTop: 8 }}>{detail}</span> : null}
+    </Link>
+  );
+}
+
+type DashboardJob = JobCountRow & {
+  id: string;
+  title?: string | null;
+  customer_name?: string | null;
+  address?: string | null;
+  assigned_to?: string | null;
+  scheduled_start?: string | null;
+  start_date?: string | null;
+  due_date?: string | null;
+  is_skipped?: boolean | null;
+};
+
+type NextJob = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
 type OpsCounts = {
   todayJobs: number;
   needsAttention: number;
   openLeads: number;
   singleOpenLeadId: string | null;
+  quotesWaiting: number;
+  nextJob: NextJob | null;
 };
+
+function jobDateValue(job: DashboardJob) {
+  const value = job.scheduled_start || job.start_date || job.due_date || '';
+  if (!value) return null;
+  const parsed = new Date(value.length === 10 ? `${value}T12:00:00` : value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatNextJobDetail(job: DashboardJob, locale: string) {
+  const value = jobDateValue(job);
+  const date = value
+    ? new Intl.DateTimeFormat(locale, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        ...(job.scheduled_start ? { hour: 'numeric', minute: '2-digit' } : {})
+      }).format(value)
+    : '';
+  return [date, job.customer_name, job.address].filter(Boolean).join(' · ');
+}
+
+function formatMoney(value: number, locale: string) {
+  return new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  }).format(Number.isFinite(value) ? value : 0);
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -190,7 +260,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, singleOpenLeadId: null });
+  const [ops, setOps] = useState<OpsCounts>({
+    todayJobs: 0,
+    needsAttention: 0,
+    openLeads: 0,
+    singleOpenLeadId: null,
+    quotesWaiting: 0,
+    nextJob: null
+  });
 
   async function loadDashboard() {
     setLoading(true);
@@ -238,14 +315,21 @@ export default function DashboardPage() {
     const today = formatLocalDate(new Date());
     const ownerFinance = canAccessFinancials(nextRole, nextPlan);
 
-    const [nextRevenue, jobsResult, customersResult] = await Promise.all([
+    const quotesTask = organizationId
+      ? withTimeout(
+          supabase.from('quotes').select('id, status').eq('organization_id', organizationId).in('status', ['draft', 'shared']),
+          { data: [], error: null }
+        )
+      : Promise.resolve({ data: [], error: null });
+
+    const [nextRevenue, jobsResult, customersResult, quotesResult] = await Promise.all([
       ownerFinance
         ? withTimeout(fetchDashboardRevenueMetrics(supabase, organizationId), { ...emptyRevenue, loadFailed: true })
         : Promise.resolve(emptyRevenue),
       withTimeout(
         supabase
           .from('jobs')
-          .select('id, status, start_date, due_date, scheduled_start, completed_at, created_at, assigned_to, is_skipped, recurring_series_id, occurrence_date')
+          .select('id, title, customer_name, address, status, start_date, due_date, scheduled_start, completed_at, created_at, assigned_to, is_skipped, recurring_series_id, occurrence_date')
           .eq(scopeColumn, scopeValue)
           .limit(5000),
         { data: [], error: new Error('Jobs timed out') }
@@ -253,14 +337,15 @@ export default function DashboardPage() {
       withTimeout(
         supabase.from('customers').select('id, record_type, pipeline_stage').eq(scopeColumn, scopeValue).limit(10000),
         { data: [], error: new Error('Customers timed out') }
-      )
+      ),
+      quotesTask
     ]);
 
-    const jobs = (jobsResult.data || []) as Array<JobCountRow & { assigned_to?: string | null }>;
+    const jobs = (jobsResult.data || []) as DashboardJob[];
     const customers = (customersResult.data || []) as Array<{ id: string; record_type: string | null; pipeline_stage: string | null }>;
     const todayJobs = filterValidJobsInPeriod(jobs, 'today');
     const activeJobs = jobs.filter(
-      (job) => !['completed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) && !job.is_skipped
+      (job) => !['completed', 'complete', 'done', 'finished', 'closed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) && !job.is_skipped
     );
     const needsAttention = activeJobs.filter((job) => {
       const status = String(job.status || '').toLowerCase();
@@ -270,13 +355,27 @@ export default function DashboardPage() {
     const openLeadRows = customers.filter(
       (row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
     );
+    const nextJobRow = activeJobs
+      .filter((job) => {
+        const date = jobDateValue(job);
+        return date && formatLocalDate(date) >= today;
+      })
+      .sort((a, b) => (jobDateValue(a)?.getTime() || Number.MAX_SAFE_INTEGER) - (jobDateValue(b)?.getTime() || Number.MAX_SAFE_INTEGER))[0] || null;
 
     setRevenue(nextRevenue);
     setOps({
       todayJobs: todayJobs.length,
       needsAttention,
       openLeads: openLeadRows.length,
-      singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null
+      singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null,
+      quotesWaiting: Array.isArray(quotesResult.data) ? quotesResult.data.length : 0,
+      nextJob: nextJobRow
+        ? {
+            id: nextJobRow.id,
+            title: String(nextJobRow.title || nextJobRow.customer_name || c.nextJob),
+            detail: formatNextJobDetail(nextJobRow, locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US')
+          }
+        : null
     });
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
     setLoading(false);
@@ -325,8 +424,25 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        {showOperations ? (
+        {ownerView ? (
           <section aria-label={c.today} className="dashboard-operations owner-priority-strip">
+            <div className="dashboard-revenue-grid">
+              <OwnerDeskCard
+                label={c.nextJob}
+                value={ops.nextJob?.title || c.noUpcomingJob}
+                detail={ops.nextJob?.detail}
+                href={ops.nextJob ? `/jobs/${ops.nextJob.id}` : '/schedule'}
+              />
+              {canLink('/pricing-helper') ? (
+                <OwnerDeskCard label={c.quotesWaiting} value={String(ops.quotesWaiting)} href="/pricing-helper" />
+              ) : null}
+              {showFinance ? (
+                <OwnerDeskCard label={c.moneyLate} value={formatMoney(Number(revenue.overdueAmount || 0), locale)} href="/dashboard/details?metric=late" />
+              ) : null}
+            </div>
+          </section>
+        ) : showOperations ? (
+          <section aria-label={c.today} className="dashboard-operations">
             <div className="dashboard-revenue-grid">
               {canLink('/schedule') ? <PriorityStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
               {canLink('/jobs') ? <PriorityStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
