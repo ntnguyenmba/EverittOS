@@ -1,25 +1,63 @@
-.job-payment-modal-backdrop {
-  align-items: center !important;
-  overflow-y: auto;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px));
+.job-detail-shell .job-financials-card,
+.job-detail-shell .job-financials-section {
+  overflow: visible !important;
 }
 
-.job-payment-modal {
-  width: min(100%, 520px);
-  max-height: calc(100dvh - 40px);
-  margin: auto 0;
-  overflow-y: auto;
+.job-detail-shell .job-payment-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  overflow-y: auto !important;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px)) !important;
+  background: rgba(15, 23, 42, 0.52) !important;
+}
+
+.job-detail-shell .job-payment-modal {
+  position: relative !important;
+  z-index: 10000 !important;
+  width: min(calc(100vw - 32px), 520px) !important;
+  max-width: 520px !important;
+  max-height: calc(100dvh - 40px) !important;
+  margin: auto !important;
+  overflow-y: auto !important;
   overscroll-behavior: contain;
+  background: var(--surface, #ffffff) !important;
 }
 
 @media (max-width: 720px) {
-  .job-payment-modal-backdrop {
+  .job-detail-shell .job-payment-modal-backdrop {
     align-items: flex-start !important;
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-top: max(16px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(96px, calc(16px + env(safe-area-inset-bottom, 0px))) !important;
   }
 
-  .job-payment-modal {
-    max-height: calc(100dvh - 32px);
-    margin: 0;
+  .job-detail-shell .job-payment-modal {
+    width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 112px) !important;
+    margin: 0 auto !important;
+    overflow-y: auto !important;
+    border-radius: 22px;
+  }
+
+  .job-payment-modal .finance-form-block,
+  .job-payment-modal .compact-finance-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .job-payment-modal .input,
+  .job-payment-modal textarea,
+  .job-payment-modal select,
+  .job-payment-modal .btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 }
