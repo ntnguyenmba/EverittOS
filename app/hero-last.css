@@ -1,0 +1,60 @@
+/* Last signed-in canvas rule. This intentionally wins over all legacy shell CSS. */
+.dashboard-shell,
+.dashboard-shell-background,
+.role-portal-shell,
+.role-portal-shell .dashboard-shell-background,
+.contractor-dashboard-shell,
+.client-dashboard-shell,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background: url('/hero.jpg') center center / cover no-repeat fixed !important;
+  background-color: #dfe5e7 !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: saturate(.8) contrast(.97) brightness(1.01) !important;
+  -webkit-filter: saturate(.8) contrast(.97) brightness(1.01) !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: rgba(247,245,239,.24) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.dashboard-shell .app-page-content,
+.dashboard-shell .dashboard-home,
+.dashboard-shell .today-page,
+.dashboard-shell .portal-page,
+.dashboard-shell .authenticated-portal,
+.contractor-main,
+.client-main {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .dashboard-shell-background,
+  .role-portal-shell,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .contractor-background {
+    background-attachment: scroll !important;
+    background-position: center top !important;
+  }
+}
