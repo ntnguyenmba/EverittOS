@@ -44,7 +44,6 @@ import './native-app-readability-2026.css';
 import './contractor-field-mode.css';
 import './quote-workspace.css';
 import './role-home-structure.css';
-import './signed-in-canvas.css';
 import './hero-last.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
