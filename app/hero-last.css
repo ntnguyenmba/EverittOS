@@ -1,0 +1,36 @@
+/* Last visual word: cool white paper on hero.jpg. No beige wash. */
+.dashboard-shell,
+.dashboard-shell.role-portal-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell {
+  background: #e8eef2 url('/hero.jpg') center / cover no-repeat fixed !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background:
+    linear-gradient(180deg, rgba(248, 251, 253, 0.34), rgba(248, 251, 253, 0.34)),
+    url('/hero.jpg') center / cover no-repeat !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay {
+  background: transparent !important;
+}
+
+.dashboard-shell > .sidebar,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .owner-home-sheet,
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .jobs-advanced-filters {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #132433 !important;
+}
