@@ -17,697 +17,110 @@ import type { UserRole } from '@/lib/roles';
 
 const text = {
   en: {
-    title: 'Quotes',
-    sub: 'Use your costs and past jobs to set a price. You always choose the final number.',
-    pasteTitle: 'Paste Request',
-    pasteHelp: 'Paste the customer text. EverittOS will fill the quote details for you.',
-    pastePlaceholder: 'Example: Need 3/2 Airbnb turnover Friday, 1850 sqft, Dallas, laundry + fridge',
-    fillQuote: 'Fill quote',
-    detected: 'Detected extras',
-    service: 'Service type',
-    serviceHint: 'Choose a service or type your own',
-    size: 'Job size / quantity',
-    unit: 'Unit',
-    beds: 'Primary units',
-    baths: 'Extra units / add-ons',
-    condition: 'Condition / complexity',
-    conditionHint: 'Choose one or type your own',
-    frequency: 'Frequency',
-    frequencyHint: 'Choose one or type your own',
-    advanced: 'Advanced',
-    laborHours: 'Estimated labor hours',
-    worker: 'Worker pay / hour',
-    owner: 'Your labor cost / hour',
-    margin: 'Desired margin %',
-    calc: 'Suggested range',
-    history: 'Your similar jobs averaged',
-    none: 'Not enough similar past jobs yet.',
-    costBased: 'Suggested range is based only on your costs and margin.',
-    try: 'Try a price',
-    marginAt: 'Margin',
-    details: 'How this was calculated',
-    hours: 'Estimated labor',
-    cost: 'Total labor cost',
-    final: 'Final price you choose',
-    save: 'Save as defaults',
-    template: 'Save as template',
-    useTemplate: 'Use template…',
-    market: 'Market context',
-    marketHelp: 'Optional. This never changes your suggested price.',
-    country: 'Country or market',
-    countryHint: 'Type a country, for example Vietnam, Germany, or Brazil.',
-    source: 'Source',
-    updated: 'Updated',
-    localRange: 'Local observed range',
-    noRange: 'No trustworthy local customer-price range is available yet.',
-    note: 'Based only on your costs and your own past jobs. You always choose the final price.',
-    units: {
-      'square-feet': 'sq ft',
-      hours: 'hours',
-      rooms: 'rooms',
-      items: 'items',
-      loads: 'loads',
-      'linear-feet': 'linear ft',
-      acres: 'acres',
-      properties: 'properties',
-      vehicles: 'vehicles',
-      units: 'units',
-    },
+    title: 'Quotes', sub: 'Use your costs and past jobs to set a price. You always choose the final number.',
+    pasteTitle: 'Paste Request', pasteHelp: 'Paste the customer text. EverittOS will fill the quote details for you.',
+    pastePlaceholder: 'Example: Need lawn mowing for 0.5 acre Friday, or 3/2 Airbnb turnover, 1850 sqft, laundry + fridge', fillQuote: 'Fill quote', detected: 'Detected extras',
+    service: 'Service type', serviceHint: 'Choose a service or type your own', size: 'Job size / quantity', unit: 'Unit', beds: 'Primary units', baths: 'Extra units / add-ons', condition: 'Condition / complexity', conditionHint: 'Choose one or type your own', frequency: 'Frequency', frequencyHint: 'Choose one or type your own', advanced: 'Advanced', laborHours: 'Estimated labor hours', worker: 'Worker pay / hour', owner: 'Your labor cost / hour', margin: 'Desired margin %', calc: 'Suggested range', history: 'Your similar jobs averaged', none: 'Not enough similar past jobs yet.', costBased: 'Suggested range is based only on your costs and margin.', try: 'Try a price', marginAt: 'Margin', details: 'How this was calculated', hours: 'Estimated labor', cost: 'Total labor cost', final: 'Final price you choose', save: 'Save as defaults', template: 'Save as template', useTemplate: 'Use template…', market: 'Market context', marketHelp: 'Optional. This never changes your suggested price.', country: 'Country or market', countryHint: 'Type a country, for example Vietnam, Germany, or Brazil.', source: 'Source', updated: 'Updated', localRange: 'Local observed range', noRange: 'No trustworthy local customer-price range is available yet.', note: 'Based only on your costs and your own past jobs. You always choose the final price.',
+    units: { 'square-feet': 'sq ft', hours: 'hours', rooms: 'rooms', items: 'items', loads: 'loads', 'linear-feet': 'linear ft', acres: 'acres', properties: 'properties', vehicles: 'vehicles', units: 'units' },
   },
   es: {
-    title: 'Cotizaciones',
-    sub: 'Usa tus costos y trabajos anteriores para fijar un precio. Tú siempre eliges el número final.',
-    pasteTitle: 'Pegar solicitud',
-    pasteHelp: 'Pega el mensaje del cliente. EverittOS completará los datos de la cotización.',
-    pastePlaceholder: 'Ejemplo: Limpieza Airbnb 3/2 el viernes, 1850 pies², Dallas, ropa + refrigerador',
-    fillQuote: 'Completar cotización',
-    detected: 'Extras detectados',
-    service: 'Tipo de servicio',
-    serviceHint: 'Elige un servicio o escribe el tuyo',
-    size: 'Tamaño / cantidad del trabajo',
-    unit: 'Unidad',
-    beds: 'Unidades principales',
-    baths: 'Unidades adicionales / extras',
-    condition: 'Condición / complejidad',
-    conditionHint: 'Elige una opción o escribe la tuya',
-    frequency: 'Frecuencia',
-    frequencyHint: 'Elige una opción o escribe la tuya',
-    advanced: 'Avanzado',
-    laborHours: 'Horas de trabajo estimadas',
-    worker: 'Pago del trabajador / hora',
-    owner: 'Tu costo de trabajo / hora',
-    margin: 'Margen deseado %',
-    calc: 'Rango sugerido',
-    history: 'Promedio de trabajos similares',
-    none: 'Aún no hay suficientes trabajos similares.',
-    costBased: 'El rango sugerido se basa solo en tus costos y margen.',
-    try: 'Probar un precio',
-    marginAt: 'Margen',
-    details: 'Cómo se calculó',
-    hours: 'Trabajo estimado',
-    cost: 'Costo laboral total',
-    final: 'Precio final que eliges',
-    save: 'Guardar como valores predeterminados',
-    template: 'Guardar como plantilla',
-    useTemplate: 'Usar plantilla…',
-    market: 'Contexto del mercado',
-    marketHelp: 'Opcional. Esto nunca cambia tu precio sugerido.',
-    country: 'País o mercado',
-    countryHint: 'Escribe un país, por ejemplo Vietnam, Alemania o Brasil.',
-    source: 'Fuente',
-    updated: 'Actualizado',
-    localRange: 'Rango local observado',
-    noRange: 'Aún no hay un rango local confiable de precios al cliente.',
-    note: 'Basado solo en tus costos y tus propios trabajos. Tú siempre eliges el precio final.',
-    units: {
-      'square-feet': 'pies²',
-      hours: 'horas',
-      rooms: 'habitaciones',
-      items: 'artículos',
-      loads: 'cargas',
-      'linear-feet': 'pies lineales',
-      acres: 'acres',
-      properties: 'propiedades',
-      vehicles: 'vehículos',
-      units: 'unidades',
-    },
+    title: 'Cotizaciones', sub: 'Usa tus costos y trabajos anteriores para fijar un precio. Tú siempre eliges el número final.',
+    pasteTitle: 'Pegar solicitud', pasteHelp: 'Pega el mensaje del cliente. EverittOS completará los datos de la cotización.',
+    pastePlaceholder: 'Ejemplo: cortar césped de 0.5 acre el viernes, o limpieza Airbnb 3/2, 1850 pies², ropa + refrigerador', fillQuote: 'Completar cotización', detected: 'Extras detectados',
+    service: 'Tipo de servicio', serviceHint: 'Elige un servicio o escribe el tuyo', size: 'Tamaño / cantidad del trabajo', unit: 'Unidad', beds: 'Unidades principales', baths: 'Unidades adicionales / extras', condition: 'Condición / complejidad', conditionHint: 'Elige una opción o escribe la tuya', frequency: 'Frecuencia', frequencyHint: 'Elige una opción o escribe la tuya', advanced: 'Avanzado', laborHours: 'Horas de trabajo estimadas', worker: 'Pago del trabajador / hora', owner: 'Tu costo de trabajo / hora', margin: 'Margen deseado %', calc: 'Rango sugerido', history: 'Promedio de trabajos similares', none: 'Aún no hay suficientes trabajos similares.', costBased: 'El rango sugerido se basa solo en tus costos y margen.', try: 'Probar un precio', marginAt: 'Margen', details: 'Cómo se calculó', hours: 'Trabajo estimado', cost: 'Costo laboral total', final: 'Precio final que eliges', save: 'Guardar como valores predeterminados', template: 'Guardar como plantilla', useTemplate: 'Usar plantilla…', market: 'Contexto del mercado', marketHelp: 'Opcional. Esto nunca cambia tu precio sugerido.', country: 'País o mercado', countryHint: 'Escribe un país, por ejemplo Vietnam, Alemania o Brasil.', source: 'Fuente', updated: 'Actualizado', localRange: 'Rango local observado', noRange: 'Aún no hay un rango local confiable de precios al cliente.', note: 'Basado solo en tus costos y tus propios trabajos. Tú siempre eliges el precio final.',
+    units: { 'square-feet': 'pies²', hours: 'horas', rooms: 'habitaciones', items: 'artículos', loads: 'cargas', 'linear-feet': 'pies lineales', acres: 'acres', properties: 'propiedades', vehicles: 'vehículos', units: 'unidades' },
   },
   vi: {
-    title: 'Báo giá',
-    sub: 'Dùng chi phí và công việc trước đây để đặt giá. Bạn luôn chọn con số cuối cùng.',
-    pasteTitle: 'Dán yêu cầu',
-    pasteHelp: 'Dán tin nhắn của khách. EverittOS sẽ tự điền thông tin báo giá.',
-    pastePlaceholder: 'Ví dụ: Cần dọn Airbnb 3 phòng/2 phòng tắm thứ Sáu, 1850 ft², Dallas, giặt đồ + tủ lạnh',
-    fillQuote: 'Điền báo giá',
-    detected: 'Phần thêm đã nhận ra',
-    service: 'Loại dịch vụ',
-    serviceHint: 'Chọn dịch vụ hoặc nhập dịch vụ riêng',
-    size: 'Quy mô / số lượng công việc',
-    unit: 'Đơn vị',
-    beds: 'Đơn vị chính',
-    baths: 'Đơn vị bổ sung / thêm',
-    condition: 'Tình trạng / độ phức tạp',
-    conditionHint: 'Chọn hoặc nhập tùy ý',
-    frequency: 'Tần suất',
-    frequencyHint: 'Chọn hoặc nhập tùy ý',
-    advanced: 'Nâng cao',
-    laborHours: 'Số giờ công ước tính',
-    worker: 'Tiền công nhân viên / giờ',
-    owner: 'Chi phí công của bạn / giờ',
-    margin: 'Biên lợi nhuận mong muốn %',
-    calc: 'Khoảng giá gợi ý',
-    history: 'Công việc tương tự trung bình',
-    none: 'Chưa đủ công việc tương tự để tính trung bình.',
-    costBased: 'Khoảng giá gợi ý chỉ dựa trên chi phí và biên lợi nhuận của bạn.',
-    try: 'Thử một mức giá',
-    marginAt: 'Biên lợi nhuận',
-    details: 'Cách tính',
-    hours: 'Giờ công ước tính',
-    cost: 'Tổng chi phí lao động',
-    final: 'Giá cuối cùng bạn chọn',
-    save: 'Lưu làm mặc định',
-    template: 'Lưu làm mẫu',
-    useTemplate: 'Dùng mẫu…',
-    market: 'Thông tin thị trường',
-    marketHelp: 'Tùy chọn. Phần này không thay đổi giá gợi ý của bạn.',
-    country: 'Quốc gia hoặc thị trường',
-    countryHint: 'Nhập quốc gia, ví dụ Việt Nam, Đức hoặc Brazil.',
-    source: 'Nguồn',
-    updated: 'Cập nhật',
-    localRange: 'Khoảng giá địa phương quan sát được',
-    noRange: 'Chưa có khoảng giá khách hàng địa phương đủ đáng tin cậy.',
-    note: 'Chỉ dựa trên chi phí và công việc trước đây của bạn. Bạn luôn chọn giá cuối cùng.',
-    units: {
-      'square-feet': 'ft²',
-      hours: 'giờ',
-      rooms: 'phòng',
-      items: 'món',
-      loads: 'chuyến',
-      'linear-feet': 'feet dài',
-      acres: 'mẫu Anh',
-      properties: 'bất động sản',
-      vehicles: 'xe',
-      units: 'đơn vị',
-    },
+    title: 'Báo giá', sub: 'Dùng chi phí và công việc trước đây để đặt giá. Bạn luôn chọn con số cuối cùng.',
+    pasteTitle: 'Dán yêu cầu', pasteHelp: 'Dán tin nhắn của khách. EverittOS sẽ tự điền thông tin báo giá.',
+    pastePlaceholder: 'Ví dụ: cắt cỏ 0.5 mẫu thứ Sáu, hoặc dọn Airbnb 3/2, 1850 ft², giặt đồ + tủ lạnh', fillQuote: 'Điền báo giá', detected: 'Phần thêm đã nhận ra',
+    service: 'Loại dịch vụ', serviceHint: 'Chọn dịch vụ hoặc nhập dịch vụ riêng', size: 'Quy mô / số lượng công việc', unit: 'Đơn vị', beds: 'Đơn vị chính', baths: 'Đơn vị bổ sung / thêm', condition: 'Tình trạng / độ phức tạp', conditionHint: 'Chọn hoặc nhập tùy ý', frequency: 'Tần suất', frequencyHint: 'Chọn hoặc nhập tùy ý', advanced: 'Nâng cao', laborHours: 'Số giờ công ước tính', worker: 'Tiền công nhân viên / giờ', owner: 'Chi phí công của bạn / giờ', margin: 'Biên lợi nhuận mong muốn %', calc: 'Khoảng giá gợi ý', history: 'Công việc tương tự trung bình', none: 'Chưa đủ công việc tương tự để tính trung bình.', costBased: 'Khoảng giá gợi ý chỉ dựa trên chi phí và biên lợi nhuận của bạn.', try: 'Thử một mức giá', marginAt: 'Biên lợi nhuận', details: 'Cách tính', hours: 'Giờ công ước tính', cost: 'Tổng chi phí lao động', final: 'Giá cuối cùng bạn chọn', save: 'Lưu làm mặc định', template: 'Lưu làm mẫu', useTemplate: 'Dùng mẫu…', market: 'Thông tin thị trường', marketHelp: 'Tùy chọn. Phần này không thay đổi giá gợi ý của bạn.', country: 'Quốc gia hoặc thị trường', countryHint: 'Nhập quốc gia, ví dụ Việt Nam, Đức hoặc Brazil.', source: 'Nguồn', updated: 'Cập nhật', localRange: 'Khoảng giá địa phương quan sát được', noRange: 'Chưa có khoảng giá khách hàng địa phương đủ đáng tin cậy.', note: 'Chỉ dựa trên chi phí và công việc trước đây của bạn. Bạn luôn chọn giá cuối cùng.',
+    units: { 'square-feet': 'ft²', hours: 'giờ', rooms: 'phòng', items: 'món', loads: 'chuyến', 'linear-feet': 'feet dài', acres: 'mẫu Anh', properties: 'bất động sản', vehicles: 'xe', units: 'đơn vị' },
   },
 } as const;
 
 const serviceOptions = [
-  { en: 'Residential cleaning', es: 'Limpieza residencial', vi: 'Vệ sinh nhà ở' },
-  { en: 'Commercial cleaning', es: 'Limpieza comercial', vi: 'Vệ sinh thương mại' },
-  { en: 'Deep cleaning', es: 'Limpieza profunda', vi: 'Vệ sinh sâu' },
-  { en: 'Move-in cleaning', es: 'Limpieza de entrada', vi: 'Vệ sinh khi chuyển vào' },
-  { en: 'Move-out cleaning', es: 'Limpieza de salida', vi: 'Vệ sinh khi chuyển đi' },
-  { en: 'Post-construction cleaning', es: 'Limpieza después de construcción', vi: 'Vệ sinh sau xây dựng' },
-  { en: 'Airbnb / vacation rental cleaning', es: 'Limpieza de Airbnb / alquiler vacacional', vi: 'Vệ sinh Airbnb / nhà cho thuê nghỉ dưỡng' },
-  { en: 'Office cleaning', es: 'Limpieza de oficinas', vi: 'Vệ sinh văn phòng' },
-  { en: 'Window cleaning', es: 'Limpieza de ventanas', vi: 'Vệ sinh cửa sổ' },
-  { en: 'Carpet cleaning', es: 'Limpieza de alfombras', vi: 'Giặt thảm' },
-  { en: 'Upholstery cleaning', es: 'Limpieza de tapicería', vi: 'Vệ sinh bọc ghế' },
-  { en: 'Pressure washing', es: 'Lavado a presión', vi: 'Rửa áp lực' },
-  { en: 'Power washing', es: 'Lavado a presión potente', vi: 'Rửa áp lực cao' },
-  { en: 'Gutter cleaning', es: 'Limpieza de canaletas', vi: 'Vệ sinh máng xối' },
-  { en: 'Roof cleaning', es: 'Limpieza de techos', vi: 'Vệ sinh mái nhà' },
-  { en: 'Pool cleaning', es: 'Limpieza de piscinas', vi: 'Vệ sinh hồ bơi' },
-  { en: 'Pool maintenance', es: 'Mantenimiento de piscinas', vi: 'Bảo trì hồ bơi' },
-  { en: 'Lawn mowing', es: 'Corte de césped', vi: 'Cắt cỏ' },
-  { en: 'Lawn care', es: 'Cuidado del césped', vi: 'Chăm sóc sân cỏ' },
-  { en: 'Landscaping', es: 'Paisajismo', vi: 'Cảnh quan' },
-  { en: 'Tree trimming', es: 'Poda de árboles', vi: 'Tỉa cây' },
-  { en: 'Tree removal', es: 'Retiro de árboles', vi: 'Đốn cây' },
-  { en: 'Leaf removal', es: 'Retiro de hojas', vi: 'Dọn lá' },
-  { en: 'Snow removal', es: 'Retiro de nieve', vi: 'Dọn tuyết' },
-  { en: 'Irrigation / sprinkler service', es: 'Riego / aspersores', vi: 'Tưới tiêu / vòi phun' },
-  { en: 'Pest control', es: 'Control de plagas', vi: 'Kiểm soát côn trùng' },
-  { en: 'Junk removal', es: 'Retiro de basura', vi: 'Dọn đồ phế thải' },
-  { en: 'Hauling', es: 'Acarreo', vi: 'Vận chuyển đồ' },
-  { en: 'Dumpster service', es: 'Servicio de contenedor', vi: 'Dịch vụ thùng rác lớn' },
-  { en: 'Moving', es: 'Mudanzas', vi: 'Chuyển nhà' },
-  { en: 'Packing / unpacking', es: 'Empaque / desempaque', vi: 'Đóng gói / tháo gói' },
-  { en: 'Furniture assembly', es: 'Montaje de muebles', vi: 'Lắp ráp nội thất' },
-  { en: 'Handyman', es: 'Mantenimiento general', vi: 'Thợ sửa chữa đa năng' },
-  { en: 'General property maintenance', es: 'Mantenimiento general de propiedad', vi: 'Bảo trì bất động sản tổng quát' },
-  { en: 'Home repair', es: 'Reparación del hogar', vi: 'Sửa chữa nhà' },
-  { en: 'Appliance repair', es: 'Reparación de electrodomésticos', vi: 'Sửa thiết bị gia dụng' },
-  { en: 'Plumbing', es: 'Plomería', vi: 'Hệ thống ống nước' },
-  { en: 'Electrical', es: 'Electricidad', vi: 'Điện' },
-  { en: 'HVAC', es: 'Climatización HVAC', vi: 'Điều hòa HVAC' },
-  { en: 'Painting', es: 'Pintura', vi: 'Sơn' },
-  { en: 'Drywall', es: 'Panel de yeso', vi: 'Vách thạch cao' },
-  { en: 'Carpentry', es: 'Carpintería', vi: 'Mộc' },
-  { en: 'Flooring', es: 'Pisos', vi: 'Sàn' },
-  { en: 'Tile work', es: 'Azulejos', vi: 'Ốp lát' },
-  { en: 'Roofing', es: 'Techos', vi: 'Mái nhà' },
-  { en: 'Siding', es: 'Revestimiento exterior', vi: 'Ốp ngoài nhà' },
-  { en: 'Fence installation / repair', es: 'Instalación / reparación de cercas', vi: 'Lắp đặt / sửa hàng rào' },
-  { en: 'Deck / patio work', es: 'Trabajo de terraza / patio', vi: 'Sàn ngoài trời / sân hiên' },
-  { en: 'Concrete / masonry', es: 'Concreto / albañilería', vi: 'Bê tông / xây masonry' },
-  { en: 'Garage door service', es: 'Servicio de puerta de garaje', vi: 'Dịch vụ cửa garage' },
-  { en: 'Locksmith', es: 'Cerrajería', vi: 'Thợ khóa' },
-  { en: 'Property inspection', es: 'Inspección de propiedad', vi: 'Kiểm tra bất động sản' },
-  { en: 'Home watch', es: 'Supervisión de vivienda', vi: 'Trông coi nhà' },
-  { en: 'Property management', es: 'Administración de propiedades', vi: 'Quản lý bất động sản' },
-  { en: 'Make-ready / turnover service', es: 'Preparación / cambio de ocupante', vi: 'Chuẩn bị / chuyển lượt nhà' },
-  { en: 'Restoration', es: 'Restauración', vi: 'Phục hồi' },
-  { en: 'Water damage restoration', es: 'Restauración por daños de agua', vi: 'Phục hồi thiệt hại do nước' },
-  { en: 'Mold remediation', es: 'Remediación de moho', vi: 'Xử lý nấm mốc' },
-  { en: 'Fire damage restoration', es: 'Restauración por daños de incendio', vi: 'Phục hồi thiệt hại do cháy' },
-  { en: 'Auto detailing', es: 'Detallado de autos', vi: 'Chăm sóc chi tiết xe' },
-  { en: 'Mobile mechanic', es: 'Mecánico móvil', vi: 'Thợ máy lưu động' },
-  { en: 'Photography', es: 'Fotografía', vi: 'Nhiếp ảnh' },
-  { en: 'Videography', es: 'Videografía', vi: 'Quay phim' },
-  { en: 'Consulting', es: 'Consultoría', vi: 'Tư vấn' },
-  { en: 'Other / custom', es: 'Otro / personalizado', vi: 'Khác / tùy chỉnh' },
+  { en:'Residential cleaning',es:'Limpieza residencial',vi:'Vệ sinh nhà ở' }, { en:'Commercial cleaning',es:'Limpieza thương mại',vi:'Vệ sinh thương mại' }, { en:'Deep cleaning',es:'Limpieza profunda',vi:'Vệ sinh sâu' }, { en:'Move-in cleaning',es:'Limpieza de entrada',vi:'Vệ sinh khi chuyển vào' }, { en:'Move-out cleaning',es:'Limpieza de salida',vi:'Vệ sinh khi chuyển đi' }, { en:'Post-construction cleaning',es:'Limpieza después de construcción',vi:'Vệ sinh sau xây dựng' }, { en:'Airbnb / vacation rental cleaning',es:'Limpieza de Airbnb / alquiler vacacional',vi:'Vệ sinh Airbnb / nhà cho thuê nghỉ dưỡng' }, { en:'Office cleaning',es:'Limpieza de oficinas',vi:'Vệ sinh văn phòng' }, { en:'Window cleaning',es:'Limpieza de ventanas',vi:'Vệ sinh cửa sổ' }, { en:'Carpet cleaning',es:'Limpieza de alfombras',vi:'Giặt thảm' }, { en:'Upholstery cleaning',es:'Limpieza de tapicería',vi:'Vệ sinh bọc ghế' }, { en:'Pressure washing',es:'Lavado a presión',vi:'Rửa áp lực' }, { en:'Power washing',es:'Lavado a presión potente',vi:'Rửa áp lực cao' }, { en:'Gutter cleaning',es:'Limpieza de canaletas',vi:'Vệ sinh máng xối' }, { en:'Roof cleaning',es:'Limpieza de techos',vi:'Vệ sinh mái nhà' }, { en:'Pool cleaning',es:'Limpieza de piscinas',vi:'Vệ sinh hồ bơi' }, { en:'Pool maintenance',es:'Mantenimiento de piscinas',vi:'Bảo trì hồ bơi' }, { en:'Lawn mowing',es:'Corte de césped',vi:'Cắt cỏ' }, { en:'Lawn care',es:'Cuidado del césped',vi:'Chăm sóc sân cỏ' }, { en:'Landscaping',es:'Paisajismo',vi:'Cảnh quan' }, { en:'Tree trimming',es:'Poda de árboles',vi:'Tỉa cây' }, { en:'Tree removal',es:'Retiro de árboles',vi:'Đốn cây' }, { en:'Leaf removal',es:'Retiro de hojas',vi:'Dọn lá' }, { en:'Snow removal',es:'Retiro de nieve',vi:'Dọn tuyết' }, { en:'Irrigation / sprinkler service',es:'Riego / aspersores',vi:'Tưới tiêu / vòi phun' }, { en:'Pest control',es:'Control de plagas',vi:'Kiểm soát côn trùng' }, { en:'Junk removal',es:'Retiro de basura',vi:'Dọn đồ phế thải' }, { en:'Hauling',es:'Acarreo',vi:'Vận chuyển đồ' }, { en:'Dumpster service',es:'Servicio de contenedor',vi:'Dịch vụ thùng rác lớn' }, { en:'Moving',es:'Mudanzas',vi:'Chuyển nhà' }, { en:'Packing / unpacking',es:'Empaque / desempaque',vi:'Đóng gói / tháo gói' }, { en:'Furniture assembly',es:'Montaje de muebles',vi:'Lắp ráp nội thất' }, { en:'Handyman',es:'Mantenimiento general',vi:'Thợ sửa chữa đa năng' }, { en:'General property maintenance',es:'Mantenimiento general de propiedad',vi:'Bảo trì bất động sản tổng quát' }, { en:'Home repair',es:'Reparación del hogar',vi:'Sửa chữa nhà' }, { en:'Appliance repair',es:'Reparación de electrodomésticos',vi:'Sửa thiết bị gia dụng' }, { en:'Plumbing',es:'Plomería',vi:'Hệ thống ống nước' }, { en:'Electrical',es:'Electricidad',vi:'Điện' }, { en:'HVAC',es:'Climatización HVAC',vi:'Điều hòa HVAC' }, { en:'Painting',es:'Pintura',vi:'Sơn' }, { en:'Drywall',es:'Panel de yeso',vi:'Vách thạch cao' }, { en:'Carpentry',es:'Carpintería',vi:'Mộc' }, { en:'Flooring',es:'Pisos',vi:'Sàn' }, { en:'Tile work',es:'Azulejos',vi:'Ốp lát' }, { en:'Roofing',es:'Techos',vi:'Mái nhà' }, { en:'Siding',es:'Revestimiento exterior',vi:'Ốp ngoài nhà' }, { en:'Fence installation / repair',es:'Instalación / reparación de cercas',vi:'Lắp đặt / sửa hàng rào' }, { en:'Deck / patio work',es:'Trabajo de terraza / patio',vi:'Sàn ngoài trời / sân hiên' }, { en:'Concrete / masonry',es:'Concreto / albañilería',vi:'Bê tông / xây masonry' }, { en:'Garage door service',es:'Servicio de puerta de garaje',vi:'Dịch vụ cửa garage' }, { en:'Locksmith',es:'Cerrajería',vi:'Thợ khóa' }, { en:'Property inspection',es:'Inspección de propiedad',vi:'Kiểm tra bất động sản' }, { en:'Home watch',es:'Supervisión de vivienda',vi:'Trông coi nhà' }, { en:'Property management',es:'Administración de propiedades',vi:'Quản lý bất động sản' }, { en:'Make-ready / turnover service',es:'Preparación / cambio de ocupante',vi:'Chuẩn bị / chuyển lượt nhà' }, { en:'Restoration',es:'Restauración',vi:'Phục hồi' }, { en:'Water damage restoration',es:'Restauración por daños de agua',vi:'Phục hồi thiệt hại do nước' }, { en:'Mold remediation',es:'Remediación de moho',vi:'Xử lý nấm mốc' }, { en:'Fire damage restoration',es:'Restauración por daños de incendio',vi:'Phục hồi thiệt hại do cháy' }, { en:'Auto detailing',es:'Detallado de autos',vi:'Chăm sóc chi tiết xe' }, { en:'Mobile mechanic',es:'Mecánico móvil',vi:'Thợ máy lưu động' }, { en:'Photography',es:'Fotografía',vi:'Nhiếp ảnh' }, { en:'Videography',es:'Videografía',vi:'Quay phim' }, { en:'Consulting',es:'Consultoría',vi:'Tư vấn' }, { en:'Other / custom',es:'Otro / personalizado',vi:'Khác / tùy chỉnh' },
 ] as const;
 
-const conditionOptions = {
-  en: [
-    { value: 'Light / simple', label: 'Light / simple' },
-    { value: 'Average / standard', label: 'Average / standard' },
-    { value: 'Heavy / complex', label: 'Heavy / complex' },
-    { value: 'Very heavy / specialty', label: 'Very heavy / specialty' },
-    { value: 'Emergency / rush', label: 'Emergency / rush' },
-    { value: 'Other / custom', label: 'Other / custom' },
-  ],
-  es: [
-    { value: 'Light / simple', label: 'Ligero / simple' },
-    { value: 'Average / standard', label: 'Promedio / estándar' },
-    { value: 'Heavy / complex', label: 'Pesado / complejo' },
-    { value: 'Very heavy / specialty', label: 'Muy pesado / especializado' },
-    { value: 'Emergency / rush', label: 'Emergencia / urgente' },
-    { value: 'Other / custom', label: 'Otro / personalizado' },
-  ],
-  vi: [
-    { value: 'Light / simple', label: 'Nhẹ / đơn giản' },
-    { value: 'Average / standard', label: 'Trung bình / tiêu chuẩn' },
-    { value: 'Heavy / complex', label: 'Nặng / phức tạp' },
-    { value: 'Very heavy / specialty', label: 'Rất nặng / chuyên biệt' },
-    { value: 'Emergency / rush', label: 'Khẩn cấp / gấp' },
-    { value: 'Other / custom', label: 'Khác / tùy chỉnh' },
-  ],
-} as const;
+const conditionOptions = { en:[{value:'Light / simple',label:'Light / simple'},{value:'Average / standard',label:'Average / standard'},{value:'Heavy / complex',label:'Heavy / complex'},{value:'Very heavy / specialty',label:'Very heavy / specialty'},{value:'Emergency / rush',label:'Emergency / rush'},{value:'Other / custom',label:'Other / custom'}], es:[{value:'Light / simple',label:'Ligero / simple'},{value:'Average / standard',label:'Promedio / estándar'},{value:'Heavy / complex',label:'Pesado / complejo'},{value:'Very heavy / specialty',label:'Muy pesado / especializado'},{value:'Emergency / rush',label:'Emergencia / urgente'},{value:'Other / custom',label:'Otro / personalizado'}], vi:[{value:'Light / simple',label:'Nhẹ / đơn giản'},{value:'Average / standard',label:'Trung bình / tiêu chuẩn'},{value:'Heavy / complex',label:'Nặng / phức tạp'},{value:'Very heavy / specialty',label:'Rất nặng / chuyên biệt'},{value:'Emergency / rush',label:'Khẩn cấp / gấp'},{value:'Other / custom',label:'Khác / tùy chỉnh'}] } as const;
+const frequencyOptions = { en:[{value:'One-time',label:'One-time'},{value:'Daily',label:'Daily'},{value:'Weekly',label:'Weekly'},{value:'Every 2 weeks',label:'Every 2 weeks'},{value:'Monthly',label:'Monthly'},{value:'Quarterly',label:'Quarterly'},{value:'Seasonal',label:'Seasonal'},{value:'On demand',label:'On demand'},{value:'Other / custom',label:'Other / custom'}], es:[{value:'One-time',label:'Una vez'},{value:'Daily',label:'Diario'},{value:'Weekly',label:'Semanal'},{value:'Every 2 weeks',label:'Cada 2 semanas'},{value:'Monthly',label:'Mensual'},{value:'Quarterly',label:'Trimestral'},{value:'Seasonal',label:'Estacional'},{value:'On demand',label:'Según demanda'},{value:'Other / custom',label:'Otro / personalizado'}], vi:[{value:'One-time',label:'Một lần'},{value:'Daily',label:'Hàng ngày'},{value:'Weekly',label:'Hàng tuần'},{value:'Every 2 weeks',label:'Mỗi 2 tuần'},{value:'Monthly',label:'Hàng tháng'},{value:'Quarterly',label:'Hàng quý'},{value:'Seasonal',label:'Theo mùa'},{value:'On demand',label:'Theo yêu cầu'},{value:'Other / custom',label:'Khác / tùy chỉnh'}] } as const;
+const unitKeys = ['square-feet','hours','rooms','items','loads','linear-feet','acres','properties','vehicles','units'] as const;
 
-const frequencyOptions = {
-  en: [
-    { value: 'One-time', label: 'One-time' },
-    { value: 'Daily', label: 'Daily' },
-    { value: 'Weekly', label: 'Weekly' },
-    { value: 'Every 2 weeks', label: 'Every 2 weeks' },
-    { value: 'Monthly', label: 'Monthly' },
-    { value: 'Quarterly', label: 'Quarterly' },
-    { value: 'Seasonal', label: 'Seasonal' },
-    { value: 'On demand', label: 'On demand' },
-    { value: 'Other / custom', label: 'Other / custom' },
-  ],
-  es: [
-    { value: 'One-time', label: 'Una vez' },
-    { value: 'Daily', label: 'Diario' },
-    { value: 'Weekly', label: 'Semanal' },
-    { value: 'Every 2 weeks', label: 'Cada 2 semanas' },
-    { value: 'Monthly', label: 'Mensual' },
-    { value: 'Quarterly', label: 'Trimestral' },
-    { value: 'Seasonal', label: 'Estacional' },
-    { value: 'On demand', label: 'Según demanda' },
-    { value: 'Other / custom', label: 'Otro / personalizado' },
-  ],
-  vi: [
-    { value: 'One-time', label: 'Một lần' },
-    { value: 'Daily', label: 'Hàng ngày' },
-    { value: 'Weekly', label: 'Hàng tuần' },
-    { value: 'Every 2 weeks', label: 'Mỗi 2 tuần' },
-    { value: 'Monthly', label: 'Hàng tháng' },
-    { value: 'Quarterly', label: 'Hàng quý' },
-    { value: 'Seasonal', label: 'Theo mùa' },
-    { value: 'On demand', label: 'Theo yêu cầu' },
-    { value: 'Other / custom', label: 'Khác / tùy chỉnh' },
-  ],
-} as const;
+function unitForService(service:string){ const s=service.toLowerCase(); if(/junk|hauling|dumpster/.test(s))return'loads'; if(/moving|packing|handyman|repair|plumbing|electrical|hvac|locksmith|consulting|photography|videography/.test(s))return'hours'; if(/lawn|landscap|tree|leaf|snow|irrigation/.test(s))return'acres'; if(/auto|vehicle|mechanic/.test(s))return'vehicles'; if(/property management|home watch|inspection/.test(s))return'properties'; if(/furniture/.test(s))return'items'; if(/fence|gutter/.test(s))return'linear-feet'; return'square-feet'; }
+function noteNum(notes:string|undefined,label:string){return Number(notes?.match(new RegExp(`${label}:\\s*([0-9.]+)`,'i'))?.[1]||0)||null;}
+function noteText(notes:string|undefined,label:string){return notes?.match(new RegExp(`${label}:\\s*([^\\n]+)`,'i'))?.[1]?.trim()||null;}
+function serviceLabel(value:string,locale:'en'|'es'|'vi'){const match=serviceOptions.find(item=>item.en===value||item.es===value||item.vi===value);return match?match[locale]:value;}
+function serviceCanonical(value:string){const match=serviceOptions.find(item=>item.en===value||item.es===value||item.vi===value);return match?.en||value;}
+function optionLabel<T extends readonly {value:string;label:string}[]>(options:T,value:string){return options.find(item=>item.value===value)?.label||value;}
 
-const unitKeys = ['square-feet', 'hours', 'rooms', 'items', 'loads', 'linear-feet', 'acres', 'properties', 'vehicles', 'units'] as const;
-
-function unitForService(service: string) {
-  const s = service.toLowerCase();
-  if (/junk|hauling|dumpster/.test(s)) return 'loads';
-  if (/moving|packing|handyman|repair|plumbing|electrical|hvac|locksmith|consulting|photography|videography/.test(s)) return 'hours';
-  if (/lawn|landscap|tree|leaf|snow|irrigation/.test(s)) return 'acres';
-  if (/auto|vehicle|mechanic/.test(s)) return 'vehicles';
-  if (/property management|home watch|inspection/.test(s)) return 'properties';
-  if (/furniture/.test(s)) return 'items';
-  if (/fence|gutter/.test(s)) return 'linear-feet';
-  return 'square-feet';
+function detectService(s:string){
+  const rules:[RegExp,string][]=[
+    [/water damage|flood restoration|water restoration|daño de agua|ngập nước/,'Water damage restoration'], [/mold|mould|moho|nấm mốc/,'Mold remediation'], [/fire damage|smoke damage|incendio|cháy/,'Fire damage restoration'], [/restoration|restauración|phục hồi/,'Restoration'],
+    [/airbnb|vacation rental|short[- ]?term|turnover clean|turn over clean|str\b/,'Airbnb / vacation rental cleaning'], [/make[- ]?ready|unit turn|apartment turn|turnover service/,'Make-ready / turnover service'], [/move[- ]?out|move out/,'Move-out cleaning'], [/move[- ]?in|move in/,'Move-in cleaning'], [/post[- ]?construction|construction clean/,'Post-construction cleaning'], [/deep clean/,'Deep cleaning'], [/office clean|commercial clean/,'Commercial cleaning'], [/window clean/,'Window cleaning'], [/carpet clean|carpet shampoo/,'Carpet cleaning'], [/upholstery|sofa clean|couch clean/,'Upholstery cleaning'],
+    [/pressure wash/,'Pressure washing'], [/power wash/,'Power washing'], [/gutter/,'Gutter cleaning'], [/roof clean/,'Roof cleaning'], [/pool maintenance|pool service/,'Pool maintenance'], [/pool clean/,'Pool cleaning'],
+    [/lawn mow|mow lawn|grass cut|corte de césped|cắt cỏ/,'Lawn mowing'], [/lawn care|yard care/,'Lawn care'], [/landscap/,'Landscaping'], [/tree trim|prun(e|ing) tree|poda de árbol|tỉa cây/,'Tree trimming'], [/tree removal|remove tree|đốn cây/,'Tree removal'], [/leaf removal|remove leaves|dọn lá/,'Leaf removal'], [/snow removal|plow snow/,'Snow removal'], [/irrigation|sprinkler/,'Irrigation / sprinkler service'], [/pest control|exterminator|termite|rodent/,'Pest control'],
+    [/junk removal|trash removal|debris removal/,'Junk removal'], [/hauling|haul away/,'Hauling'], [/dumpster/,'Dumpster service'], [/moving service|need movers|move furniture/,'Moving'], [/packing|unpacking/,'Packing / unpacking'], [/furniture assembly|assemble furniture|ikea assembly/,'Furniture assembly'],
+    [/garage door/,'Garage door service'], [/locksmith|rekey|lock change/,'Locksmith'], [/appliance repair|washer repair|dryer repair|refrigerator repair|dishwasher repair/,'Appliance repair'], [/plumb|leak|toilet|faucet|water heater/,'Plumbing'], [/electrician|electrical|outlet|breaker|light fixture/,'Electrical'], [/hvac|air condition|a\/c repair|furnace|heater repair/,'HVAC'], [/drywall|sheetrock/,'Drywall'], [/carpentry|carpenter/,'Carpentry'], [/flooring|floor install|floor repair/,'Flooring'], [/tile work|tile install|grout/,'Tile work'], [/roofing|roof repair|roof replace/,'Roofing'], [/siding/,'Siding'], [/fence/,'Fence installation / repair'], [/deck|patio/,'Deck / patio work'], [/concrete|masonry|brick work/,'Concrete / masonry'], [/painting|paint house|paint room/,'Painting'], [/handyman/,'Handyman'], [/home repair|property repair/,'Home repair'], [/property maintenance|maintenance service/,'General property maintenance'],
+    [/property inspection|home inspection/,'Property inspection'], [/home watch|house watch/,'Home watch'], [/property management/,'Property management'], [/auto detail|car detail/,'Auto detailing'], [/mobile mechanic|mechanic come|car repair/,'Mobile mechanic'], [/photograph|photo shoot/,'Photography'], [/videograph|video shoot/,'Videography'], [/consulting|consultant/,'Consulting'],
+    [/office|commercial/,'Commercial cleaning'], [/clean|limpieza|vệ sinh|dọn/,'Residential cleaning'],
+  ];
+  return rules.find(([re])=>re.test(s))?.[1]||'Other / custom';
 }
 
-function noteNum(notes: string | undefined, label: string) {
-  return Number(notes?.match(new RegExp(`${label}:\\s*([0-9.]+)`, 'i'))?.[1] || 0) || null;
+function parseRequest(raw:string){
+  const s=raw.trim().toLowerCase();
+  const serviceType=detectService(s);
+  const sizeUnit=unitForService(serviceType);
+  const sqft=s.match(/([0-9][0-9,]{2,6})\s*(?:sq\.?\s*ft|sqft|square\s*feet|ft²)/i);
+  const acres=s.match(/(\d+(?:\.\d+)?)\s*(?:acre|acres|mẫu)/i);
+  const hours=s.match(/(\d+(?:\.\d+)?)\s*(?:hour|hours|hr|hrs|giờ|hora|horas)\b/i);
+  const loads=s.match(/(\d+(?:\.\d+)?)\s*(?:load|loads|truckload|trailer load)\b/i);
+  const linear=s.match(/([0-9][0-9,]*)\s*(?:linear\s*(?:ft|feet)|lin\.?\s*ft)\b/i);
+  const vehicles=s.match(/(\d+)\s*(?:car|cars|vehicle|vehicles|truck|trucks)\b/i);
+  const items=s.match(/(\d+)\s*(?:item|items|piece|pieces)\b/i);
+  const properties=s.match(/(\d+)\s*(?:property|properties|home|homes|house|houses|unit|units)\b/i);
+  let size=1;
+  if(sizeUnit==='square-feet'&&sqft)size=Number(sqft[1].replace(/,/g,''));
+  else if(sizeUnit==='acres'&&acres)size=Number(acres[1]);
+  else if(sizeUnit==='hours'&&hours)size=Number(hours[1]);
+  else if(sizeUnit==='loads'&&loads)size=Number(loads[1]);
+  else if(sizeUnit==='linear-feet'&&linear)size=Number(linear[1].replace(/,/g,''));
+  else if(sizeUnit==='vehicles'&&vehicles)size=Number(vehicles[1]);
+  else if(sizeUnit==='items'&&items)size=Number(items[1]);
+  else if(sizeUnit==='properties'&&properties)size=Number(properties[1]);
+  const slash=s.match(/(?:^|\s)(\d{1,2})\s*\/\s*(\d{1,2}(?:\.5)?)(?:\s|$)/);
+  const bed=s.match(/(\d{1,2})\s*(?:bed(?:room)?s?|bd|br)\b/i);
+  const bath=s.match(/(\d{1,2}(?:\.5)?)\s*(?:bath(?:room)?s?|ba)\b/i);
+  const addOns:string[]=[];
+  if(/laundry|linens?|sheets?|giặt|ropa/.test(s))addOns.push('laundry');
+  if(/fridge clean|refrigerator clean|clean fridge|clean refrigerator|tủ lạnh|refrigerador/.test(s))addOns.push('refrigerator');
+  if(/oven clean|clean oven|stove clean|lò nướng|horno/.test(s))addOns.push('oven');
+  if(/window clean|clean windows|cửa sổ|ventanas/.test(s))addOns.push('windows');
+  let condition='Average / standard';
+  if(/same[- ]?day|rush|urgent|emergency|asap|today|hôm nay|khẩn|urgente/.test(s))condition='Emergency / rush';
+  else if(/very dirty|extremely dirty|heavy|trashed|severe|major damage|rất bẩn|muy sucio/.test(s))condition='Heavy / complex';
+  let frequency='One-time';
+  if(/every\s*2\s*weeks|every other week|bi[- ]?weekly|cada 2 semanas|mỗi 2 tuần/.test(s))frequency='Every 2 weeks';
+  else if(/weekly|every week|semanal|hàng tuần/.test(s))frequency='Weekly';
+  else if(/monthly|every month|mensual|hàng tháng/.test(s))frequency='Monthly';
+  else if(/daily|every day|diario|hàng ngày/.test(s))frequency='Daily';
+  return{serviceType,squareFeet:size,sizeUnit,bedrooms:slash?Number(slash[1]):bed?Number(bed[1]):0,bathrooms:slash?Number(slash[2]):bath?Number(bath[1]):0,condition,frequency,addOns};
 }
 
-function noteText(notes: string | undefined, label: string) {
-  return notes?.match(new RegExp(`${label}:\\s*([^\\n]+)`, 'i'))?.[1]?.trim() || null;
-}
-
-function serviceLabel(value: string, locale: 'en' | 'es' | 'vi') {
-  const match = serviceOptions.find((item) => item.en === value || item.es === value || item.vi === value);
-  return match ? match[locale] : value;
-}
-
-function serviceCanonical(value: string) {
-  const match = serviceOptions.find((item) => item.en === value || item.es === value || item.vi === value);
-  return match?.en || value;
-}
-
-function optionLabel<T extends readonly { value: string; label: string }[]>(options: T, value: string) {
-  return options.find((item) => item.value === value)?.label || value;
-}
-
-function parseRequest(raw: string) {
-  const value = raw.trim();
-  const s = value.toLowerCase();
-  let serviceType = 'Residential cleaning';
-  if (/airbnb|vacation rental|short[- ]?term|turnover|turn over|str\b/.test(s)) serviceType = 'Airbnb / vacation rental cleaning';
-  else if (/move[- ]?out|move out/.test(s)) serviceType = 'Move-out cleaning';
-  else if (/move[- ]?in|move in/.test(s)) serviceType = 'Move-in cleaning';
-  else if (/post[- ]?construction|construction clean/.test(s)) serviceType = 'Post-construction cleaning';
-  else if (/deep clean/.test(s)) serviceType = 'Deep cleaning';
-  else if (/office|commercial/.test(s)) serviceType = 'Commercial cleaning';
-
-  const sizeMatch = s.match(/([0-9][0-9,]{2,5})\s*(?:sq\.?\s*ft|sqft|square\s*feet|ft²)/i);
-  const slashMatch = s.match(/(?:^|\s)(\d{1,2})\s*\/\s*(\d{1,2})(?:\s|$)/);
-  const bedMatch = s.match(/(\d{1,2})\s*(?:bed(?:room)?s?|bd|br)\b/i);
-  const bathMatch = s.match(/(\d{1,2}(?:\.5)?)\s*(?:bath(?:room)?s?|ba)\b/i);
-
-  const addOns: string[] = [];
-  if (/laundry|linens?|sheets?|giặt|ropa/.test(s)) addOns.push('laundry');
-  if (/fridge|refrigerator|tủ lạnh|refrigerador/.test(s)) addOns.push('refrigerator');
-  if (/oven|stove|lò nướng|horno/.test(s)) addOns.push('oven');
-  if (/windows?|cửa sổ|ventanas?/.test(s)) addOns.push('windows');
-
-  let condition = 'Average / standard';
-  if (/same[- ]?day|rush|urgent|emergency|asap|today|hôm nay|khẩn|urgente/.test(s)) condition = 'Emergency / rush';
-  else if (/very dirty|extremely dirty|heavy|trashed|rất bẩn|muy sucio/.test(s)) condition = 'Heavy / complex';
-
-  let frequency = 'One-time';
-  if (/every\s*2\s*weeks|every other week|bi[- ]?weekly|cada 2 semanas|mỗi 2 tuần/.test(s)) frequency = 'Every 2 weeks';
-  else if (/weekly|every week|semanal|hàng tuần/.test(s)) frequency = 'Weekly';
-  else if (/monthly|every month|mensual|hàng tháng/.test(s)) frequency = 'Monthly';
-  else if (/daily|every day|diario|hàng ngày/.test(s)) frequency = 'Daily';
-
-  return {
-    serviceType,
-    squareFeet: sizeMatch ? Number(sizeMatch[1].replace(/,/g, '')) : 1,
-    sizeUnit: 'square-feet',
-    bedrooms: slashMatch ? Number(slashMatch[1]) : bedMatch ? Number(bedMatch[1]) : 0,
-    bathrooms: slashMatch ? Number(slashMatch[2]) : bathMatch ? Number(bathMatch[1]) : 0,
-    condition,
-    frequency,
-    addOns,
-  };
-}
-
-export default function PricingHelperPage() {
-  const { locale } = useTranslation();
-  const c = text[locale];
-  const [settings, setSettings] = useState<PricingHelperSettings>(DEFAULT_PRICING_HELPER_SETTINGS);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [marketSources, setMarketSources] = useState<MarketSource[]>([]);
-  const [countryText, setCountryText] = useState('United States');
-  const [requestText, setRequestText] = useState('');
-  const [input, setInput] = useState({
-    serviceType: '',
-    squareFeet: 1,
-    sizeUnit: 'square-feet',
-    bedrooms: 0,
-    bathrooms: 0,
-    condition: '',
-    frequency: '',
-    addOns: [] as string[],
-    workerHours: undefined as number | undefined,
-  });
-  const [serviceText, setServiceText] = useState('');
-  const [conditionText, setConditionText] = useState('');
-  const [frequencyText, setFrequencyText] = useState('');
-  const [price, setPrice] = useState(0);
-
-  useEffect(() => {
-    fetch('/api/pricing-helper')
-      .then((r) => r.json())
-      .then((j) => {
-        const next = normalizePricingHelperSettings(j.settings);
-        setSettings(next);
-        setCountryText(resolveMarketCountry(next.marketCountryCode).label);
-        setJobs(j.jobs || []);
-        setTemplates(j.templates || []);
-        setMarketSources(j.marketSources || []);
-      });
-  }, []);
-
-  useEffect(() => {
-    setServiceText(serviceLabel(input.serviceType, locale));
-    setConditionText(optionLabel(conditionOptions[locale], input.condition));
-    setFrequencyText(optionLabel(frequencyOptions[locale], input.frequency));
-  }, [locale, input.serviceType, input.condition, input.frequency]);
-
-  const history = useMemo<SimilarJob[]>(
-    () =>
-      jobs
-        .map((j) => ({
-          id: j.id,
-          date: j.completed_at || j.created_at,
-          price: Number(j.final_amount || j.revenue_amount || 0),
-          serviceType: j.job_type || noteText(j.notes, 'Service'),
-          squareFeet: noteNum(j.notes, 'Approx. sq ft') || noteNum(j.notes, 'Job size'),
-          sizeUnit: noteText(j.notes, 'Size unit'),
-          bedrooms: noteNum(j.notes, 'Bedrooms') || noteNum(j.notes, 'Primary units'),
-          bathrooms: noteNum(j.notes, 'Bathrooms') || noteNum(j.notes, 'Extra units'),
-          condition: noteText(j.notes, 'Condition'),
-          frequency: noteText(j.notes, 'Frequency'),
-        }))
-        .filter((j) => j.price > 0),
-    [jobs],
-  );
-
-  const result = useMemo(() => calculatePricingHelper(settings, input, history, price || undefined), [settings, input, history, price]);
-  const canShowRange = Boolean(input.serviceType.trim()) && result.laborCost > 0;
-
-  useEffect(() => {
-    if (!price && canShowRange && result.midpoint) setPrice(result.midpoint);
-  }, [canShowRange, result.midpoint, price]);
-
-  const setN = (k: 'squareFeet' | 'bedrooms' | 'bathrooms', v: string) => setInput((x) => ({ ...x, [k]: Number(v) || 0 }));
-
-  function fillFromRequest() {
-    if (!requestText.trim()) return;
-    const parsed = parseRequest(requestText);
-    setInput((current) => ({ ...current, ...parsed, workerHours: undefined }));
-    setPrice(0);
-  }
-
-  async function save(next = settings) {
-    const r = await fetch('/api/pricing-helper', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(next),
-    });
-    const j = await r.json();
-    if (j.marketSources) setMarketSources(j.marketSources);
-  }
-
-  async function applyCountry() {
-    const country = resolveMarketCountry(countryText);
-    const next = { ...settings, marketCountryCode: country.code, currency: country.currency };
-    setSettings(next);
-    setCountryText(country.label);
-    await save(next);
-  }
-
-  async function saveTemplate() {
-    const name = window.prompt(locale === 'vi' ? 'Tên mẫu' : locale === 'es' ? 'Nombre de plantilla' : 'Template name');
-    if (!name) return;
-    await fetch('/api/pricing-helper', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...input,
-        name,
-        desiredMargin: settings.desiredMargin,
-        notes: `Size unit: ${input.sizeUnit}${input.workerHours !== undefined ? `\nEstimated labor hours: ${input.workerHours}` : ''}`,
-      }),
-    });
-  }
-
-  const primary = marketSources.find((source) => source.low != null && source.high != null);
-  const unitLabel = c.units[input.sizeUnit as keyof typeof c.units] || c.units.units;
-
-  return (
-    <AppShell plan={'business' as EverittosPlan} role={'owner' as UserRole}>
-      <header className="page-header">
-        <div>
-          <h1>{c.title}</h1>
-          <p className="page-subtitle">{c.sub}</p>
-        </div>
-      </header>
-
-      <div className="pricing-helper-layout">
-        <section className="card pricing-helper-inputs">
-          <div style={{ marginBottom: '1.25rem' }}>
-            <p className="eyebrow">{c.pasteTitle}</p>
-            <p className="muted">{c.pasteHelp}</p>
-            <textarea
-              className="input"
-              rows={4}
-              value={requestText}
-              placeholder={c.pastePlaceholder}
-              onChange={(e) => setRequestText(e.target.value)}
-            />
-            <div className="inline-actions" style={{ marginTop: '.75rem' }}>
-              <button className="btn btn-primary" type="button" disabled={!requestText.trim()} onClick={fillFromRequest}>
-                {c.fillQuote}
-              </button>
-              {input.addOns.length ? <span className="muted">{c.detected}: {input.addOns.join(', ')}</span> : null}
-            </div>
-          </div>
-
-          <div className="form-grid">
-            <label>
-              {c.service}
-              <input
-                className="input"
-                type="text"
-                list="pricing-service-options"
-                value={serviceText}
-                placeholder={c.serviceHint}
-                onChange={(e) => {
-                  const shown = e.target.value;
-                  const canonical = serviceCanonical(shown);
-                  setServiceText(shown);
-                  setInput((x) => ({ ...x, serviceType: canonical, sizeUnit: unitForService(canonical) }));
-                }}
-              />
-              <datalist id="pricing-service-options">
-                {serviceOptions.map((service) => <option key={service.en} value={service[locale]} />)}
-              </datalist>
-            </label>
-            <label>
-              {c.size} ({unitLabel})
-              <input className="input" type="number" min="0" inputMode="decimal" value={input.squareFeet} onChange={(e) => setN('squareFeet', e.target.value)} />
-            </label>
-            <label>
-              {c.condition}
-              <input
-                className="input"
-                type="text"
-                list="pricing-condition-options"
-                value={conditionText}
-                placeholder={c.conditionHint}
-                onChange={(e) => {
-                  const shown = e.target.value;
-                  const match = conditionOptions[locale].find((item) => item.label === shown);
-                  setConditionText(shown);
-                  setInput((x) => ({ ...x, condition: match?.value || shown }));
-                }}
-              />
-              <datalist id="pricing-condition-options">
-                {conditionOptions[locale].map((item) => <option key={item.value} value={item.label} />)}
-              </datalist>
-            </label>
-            <label>
-              {c.frequency}
-              <input
-                className="input"
-                type="text"
-                list="pricing-frequency-options"
-                value={frequencyText}
-                placeholder={c.frequencyHint}
-                onChange={(e) => {
-                  const shown = e.target.value;
-                  const match = frequencyOptions[locale].find((item) => item.label === shown);
-                  setFrequencyText(shown);
-                  setInput((x) => ({ ...x, frequency: match?.value || shown }));
-                }}
-              />
-              <datalist id="pricing-frequency-options">
-                {frequencyOptions[locale].map((item) => <option key={item.value} value={item.label} />)}
-              </datalist>
-            </label>
-          </div>
-
-          <details className="pricing-advanced">
-            <summary>{c.advanced}</summary>
-            <div className="form-grid">
-              <label>
-                {c.unit}
-                <select className="input" value={input.sizeUnit} onChange={(e) => setInput((x) => ({ ...x, sizeUnit: e.target.value }))}>
-                  {unitKeys.map((unit) => <option key={unit} value={unit}>{c.units[unit]}</option>)}
-                </select>
-              </label>
-              <label>{c.beds}<input className="input" type="number" min="0" inputMode="numeric" value={input.bedrooms} onChange={(e) => setN('bedrooms', e.target.value)} /></label>
-              <label>{c.baths}<input className="input" type="number" min="0" inputMode="numeric" value={input.bathrooms} onChange={(e) => setN('bathrooms', e.target.value)} /></label>
-              <label>{c.laborHours}<input className="input" type="number" min="0" step="0.25" inputMode="decimal" value={input.workerHours ?? ''} placeholder={result.totalHours.toFixed(1)} onChange={(e) => setInput((x) => ({ ...x, workerHours: e.target.value === '' ? undefined : Number(e.target.value) || 0 }))} /></label>
-              <label>{c.worker}<input className="input" type="number" min="0" inputMode="decimal" value={settings.workerHourlyCost} onChange={(e) => setSettings((s) => ({ ...s, workerHourlyCost: Number(e.target.value) || 0 }))} /></label>
-              <label>{c.owner}<input className="input" type="number" min="0" inputMode="decimal" value={settings.ownerHourlyCost} onChange={(e) => setSettings((s) => ({ ...s, ownerHourlyCost: Number(e.target.value) || 0 }))} /></label>
-              <label>{c.margin}<input className="input" type="number" min="0" max="94" inputMode="decimal" value={settings.desiredMargin} onChange={(e) => setSettings((s) => ({ ...s, desiredMargin: Number(e.target.value) || 0 }))} /></label>
-            </div>
-            <div className="inline-actions">
-              <button className="btn" onClick={() => void save()}>{c.save}</button>
-              <button className="btn" onClick={() => void saveTemplate()}>{c.template}</button>
-              {templates.length ? (
-                <select
-                  className="input"
-                  defaultValue=""
-                  onChange={(e) => {
-                    const t = templates.find((x) => x.id === e.target.value);
-                    if (t) {
-                      setInput((x) => ({
-                        ...x,
-                        serviceType: t.service_type || x.serviceType,
-                        squareFeet: Number(t.square_feet) || x.squareFeet,
-                        sizeUnit: noteText(t.notes, 'Size unit') || unitForService(t.service_type || x.serviceType),
-                        bedrooms: Number(t.bedrooms) || x.bedrooms,
-                        bathrooms: Number(t.bathrooms) || x.bathrooms,
-                        condition: t.condition || x.condition,
-                        frequency: t.frequency || x.frequency,
-                        addOns: t.add_ons || [],
-                        workerHours: noteNum(t.notes, 'Estimated labor hours') ?? x.workerHours,
-                      }));
-                    }
-                  }}
-                >
-                  <option value="">{c.useTemplate}</option>
-                  {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              ) : null}
-            </div>
-          </details>
-        </section>
-
-        <section className="card pricing-helper-summary">
-          <p className="eyebrow">{c.calc}</p>
-          {canShowRange ? (
-            <>
-              <h2>{money(result.low, settings.currency)} – {money(result.high, settings.currency)}</h2>
-              {result.historicalAverage !== null ? (
-                <p><strong>{c.history}</strong> {money(result.historicalAverage, settings.currency)}</p>
-              ) : (
-                <>
-                  <p className="muted">{c.none}</p>
-                  <p className="muted">{c.costBased}</p>
-                </>
-              )}
-              <label>{c.try}<input className="input" type="number" inputMode="decimal" value={price || ''} onChange={(e) => setPrice(Number(e.target.value) || 0)} /></label>
-              <p><strong>{c.marginAt}:</strong> {result.estimatedMargin ?? 0}%</p>
-              <label className="pricing-final">{c.final}<input className="input" type="number" inputMode="decimal" value={price || ''} onChange={(e) => setPrice(Number(e.target.value) || 0)} /></label>
-              <details>
-                <summary>{c.details}</summary>
-                <p>{c.hours}: {result.totalHours.toFixed(1)}h</p>
-                <p>{c.cost}: {money(result.laborCost, settings.currency)}</p>
-                {result.matchingJobs.map((j) => <p key={j.id}>{j.date ? new Date(j.date).toLocaleDateString() : ''} · {money(j.price, settings.currency)}</p>)}
-              </details>
-            </>
-          ) : (
-            <>
-              <p className="muted">{c.none}</p>
-              <p className="muted">{c.costBased}</p>
-            </>
-          )}
-          <p className="muted">{c.note}</p>
-          <details className="pricing-market">
-            <summary>{c.market}</summary>
-            <p className="muted">{c.marketHelp}</p>
-            <div className="pricing-market-body">
-              <label>
-                {c.country}
-                <input className="input" type="text" value={countryText} placeholder={c.countryHint} onChange={(e) => setCountryText(e.target.value)} onBlur={() => void applyCountry()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void applyCountry(); } }} />
-              </label>
-              {primary ? (
-                <>
-                  <p className="pricing-market-range"><strong>{c.localRange}:</strong> {money(primary.low!, primary.currency)} – {money(primary.high!, primary.currency)}</p>
-                  <p className="pricing-source">{c.source}: <a href={primary.url} target="_blank" rel="noreferrer">{primary.source}</a>{primary.updatedAt ? ` · ${c.updated}: ${primary.updatedAt}` : ''}</p>
-                </>
-              ) : <p className="muted">{c.noRange}</p>}
-            </div>
-          </details>
-        </section>
-      </div>
-    </AppShell>
-  );
+export default function PricingHelperPage(){
+  const{locale}=useTranslation(); const c=text[locale];
+  const[settings,setSettings]=useState<PricingHelperSettings>(DEFAULT_PRICING_HELPER_SETTINGS); const[jobs,setJobs]=useState<any[]>([]); const[templates,setTemplates]=useState<any[]>([]); const[marketSources,setMarketSources]=useState<MarketSource[]>([]); const[countryText,setCountryText]=useState('United States'); const[requestText,setRequestText]=useState('');
+  const[input,setInput]=useState({serviceType:'',squareFeet:1,sizeUnit:'square-feet',bedrooms:0,bathrooms:0,condition:'',frequency:'',addOns:[]as string[],workerHours:undefined as number|undefined}); const[serviceText,setServiceText]=useState(''); const[conditionText,setConditionText]=useState(''); const[frequencyText,setFrequencyText]=useState(''); const[price,setPrice]=useState(0);
+  useEffect(()=>{fetch('/api/pricing-helper').then(r=>r.json()).then(j=>{const next=normalizePricingHelperSettings(j.settings);setSettings(next);setCountryText(resolveMarketCountry(next.marketCountryCode).label);setJobs(j.jobs||[]);setTemplates(j.templates||[]);setMarketSources(j.marketSources||[]);});},[]);
+  useEffect(()=>{setServiceText(serviceLabel(input.serviceType,locale));setConditionText(optionLabel(conditionOptions[locale],input.condition));setFrequencyText(optionLabel(frequencyOptions[locale],input.frequency));},[locale,input.serviceType,input.condition,input.frequency]);
+  const history=useMemo<SimilarJob[]>(()=>jobs.map(j=>({id:j.id,date:j.completed_at||j.created_at,price:Number(j.final_amount||j.revenue_amount||0),serviceType:j.job_type||noteText(j.notes,'Service'),squareFeet:noteNum(j.notes,'Approx. sq ft')||noteNum(j.notes,'Job size'),sizeUnit:noteText(j.notes,'Size unit'),bedrooms:noteNum(j.notes,'Bedrooms')||noteNum(j.notes,'Primary units'),bathrooms:noteNum(j.notes,'Bathrooms')||noteNum(j.notes,'Extra units'),condition:noteText(j.notes,'Condition'),frequency:noteText(j.notes,'Frequency')})).filter(j=>j.price>0),[jobs]);
+  const result=useMemo(()=>calculatePricingHelper(settings,input,history,price||undefined),[settings,input,history,price]); const canShowRange=Boolean(input.serviceType.trim())&&result.laborCost>0;
+  useEffect(()=>{if(!price&&canShowRange&&result.midpoint)setPrice(result.midpoint);},[canShowRange,result.midpoint,price]); const setN=(k:'squareFeet'|'bedrooms'|'bathrooms',v:string)=>setInput(x=>({...x,[k]:Number(v)||0}));
+  function fillFromRequest(){if(!requestText.trim())return;const parsed=parseRequest(requestText);setInput(current=>({...current,...parsed,workerHours:undefined}));setPrice(0);}
+  async function save(next=settings){const r=await fetch('/api/pricing-helper',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(next)});const j=await r.json();if(j.marketSources)setMarketSources(j.marketSources);}
+  async function applyCountry(){const country=resolveMarketCountry(countryText);const next={...settings,marketCountryCode:country.code,currency:country.currency};setSettings(next);setCountryText(country.label);await save(next);}
+  async function saveTemplate(){const name=window.prompt(locale==='vi'?'Tên mẫu':locale==='es'?'Nombre de plantilla':'Template name');if(!name)return;await fetch('/api/pricing-helper',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...input,name,desiredMargin:settings.desiredMargin,notes:`Size unit: ${input.sizeUnit}${input.workerHours!==undefined?`\nEstimated labor hours: ${input.workerHours}`:''}`})});}
+  const primary=marketSources.find(source=>source.low!=null&&source.high!=null); const unitLabel=c.units[input.sizeUnit as keyof typeof c.units]||c.units.units;
+  return <AppShell plan={'business'as EverittosPlan} role={'owner'as UserRole}><header className="page-header"><div><h1>{c.title}</h1><p className="page-subtitle">{c.sub}</p></div></header><div className="pricing-helper-layout"><section className="card pricing-helper-inputs"><div style={{marginBottom:'1.25rem'}}><p className="eyebrow">{c.pasteTitle}</p><p className="muted">{c.pasteHelp}</p><textarea className="input" rows={4} value={requestText} placeholder={c.pastePlaceholder} onChange={e=>setRequestText(e.target.value)}/><div className="inline-actions" style={{marginTop:'.75rem'}}><button className="btn btn-primary" type="button" disabled={!requestText.trim()} onClick={fillFromRequest}>{c.fillQuote}</button>{input.addOns.length?<span className="muted">{c.detected}: {input.addOns.join(', ')}</span>:null}</div></div><div className="form-grid"><label>{c.service}<input className="input" type="text" list="pricing-service-options" value={serviceText} placeholder={c.serviceHint} onChange={e=>{const shown=e.target.value;const canonical=serviceCanonical(shown);setServiceText(shown);setInput(x=>({...x,serviceType:canonical,sizeUnit:unitForService(canonical)}));}}/><datalist id="pricing-service-options">{serviceOptions.map(service=><option key={service.en} value={service[locale]}/>)}</datalist></label><label>{c.size} ({unitLabel})<input className="input" type="number" min="0" inputMode="decimal" value={input.squareFeet} onChange={e=>setN('squareFeet',e.target.value)}/></label><label>{c.condition}<input className="input" type="text" list="pricing-condition-options" value={conditionText} placeholder={c.conditionHint} onChange={e=>{const shown=e.target.value;const match=conditionOptions[locale].find(item=>item.label===shown);setConditionText(shown);setInput(x=>({...x,condition:match?.value||shown}));}}/><datalist id="pricing-condition-options">{conditionOptions[locale].map(item=><option key={item.value} value={item.label}/>)}</datalist></label><label>{c.frequency}<input className="input" type="text" list="pricing-frequency-options" value={frequencyText} placeholder={c.frequencyHint} onChange={e=>{const shown=e.target.value;const match=frequencyOptions[locale].find(item=>item.label===shown);setFrequencyText(shown);setInput(x=>({...x,frequency:match?.value||shown}));}}/><datalist id="pricing-frequency-options">{frequencyOptions[locale].map(item=><option key={item.value} value={item.label}/>)}</datalist></label></div><details className="pricing-advanced"><summary>{c.advanced}</summary><div className="form-grid"><label>{c.unit}<select className="input" value={input.sizeUnit} onChange={e=>setInput(x=>({...x,sizeUnit:e.target.value}))}>{unitKeys.map(unit=><option key={unit} value={unit}>{c.units[unit]}</option>)}</select></label><label>{c.beds}<input className="input" type="number" min="0" inputMode="numeric" value={input.bedrooms} onChange={e=>setN('bedrooms',e.target.value)}/></label><label>{c.baths}<input className="input" type="number" min="0" inputMode="numeric" value={input.bathrooms} onChange={e=>setN('bathrooms',e.target.value)}/></label><label>{c.laborHours}<input className="input" type="number" min="0" step="0.25" inputMode="decimal" value={input.workerHours??''} placeholder={result.totalHours.toFixed(1)} onChange={e=>setInput(x=>({...x,workerHours:e.target.value===''?undefined:Number(e.target.value)||0}))}/></label><label>{c.worker}<input className="input" type="number" min="0" inputMode="decimal" value={settings.workerHourlyCost} onChange={e=>setSettings(s=>({...s,workerHourlyCost:Number(e.target.value)||0}))}/></label><label>{c.owner}<input className="input" type="number" min="0" inputMode="decimal" value={settings.ownerHourlyCost} onChange={e=>setSettings(s=>({...s,ownerHourlyCost:Number(e.target.value)||0}))}/></label><label>{c.margin}<input className="input" type="number" min="0" max="94" inputMode="decimal" value={settings.desiredMargin} onChange={e=>setSettings(s=>({...s,desiredMargin:Number(e.target.value)||0}))}/></label></div><div className="inline-actions"><button className="btn" onClick={()=>void save()}>{c.save}</button><button className="btn" onClick={()=>void saveTemplate()}>{c.template}</button>{templates.length?<select className="input" defaultValue="" onChange={e=>{const t=templates.find(x=>x.id===e.target.value);if(t)setInput(x=>({...x,serviceType:t.service_type||x.serviceType,squareFeet:Number(t.square_feet)||x.squareFeet,sizeUnit:noteText(t.notes,'Size unit')||unitForService(t.service_type||x.serviceType),bedrooms:Number(t.bedrooms)||x.bedrooms,bathrooms:Number(t.bathrooms)||x.bathrooms,condition:t.condition||x.condition,frequency:t.frequency||x.frequency,addOns:t.add_ons||[],workerHours:noteNum(t.notes,'Estimated labor hours')??x.workerHours}));}}><option value="">{c.useTemplate}</option>{templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select>:null}</div></details></section><section className="card pricing-helper-summary"><p className="eyebrow">{c.calc}</p>{canShowRange?<><h2>{money(result.low,settings.currency)} – {money(result.high,settings.currency)}</h2>{result.historicalAverage!==null?<p><strong>{c.history}</strong> {money(result.historicalAverage,settings.currency)}</p>:<><p className="muted">{c.none}</p><p className="muted">{c.costBased}</p></>}<label>{c.try}<input className="input" type="number" inputMode="decimal" value={price||''} onChange={e=>setPrice(Number(e.target.value)||0)}/></label><p><strong>{c.marginAt}:</strong> {result.estimatedMargin??0}%</p><label className="pricing-final">{c.final}<input className="input" type="number" inputMode="decimal" value={price||''} onChange={e=>setPrice(Number(e.target.value)||0)}/></label><details><summary>{c.details}</summary><p>{c.hours}: {result.totalHours.toFixed(1)}h</p><p>{c.cost}: {money(result.laborCost,settings.currency)}</p>{result.matchingJobs.map(j=><p key={j.id}>{j.date?new Date(j.date).toLocaleDateString():''} · {money(j.price,settings.currency)}</p>)}</details></>:<><p className="muted">{c.none}</p><p className="muted">{c.costBased}</p></>}<p className="muted">{c.note}</p><details className="pricing-market"><summary>{c.market}</summary><p className="muted">{c.marketHelp}</p><div className="pricing-market-body"><label>{c.country}<input className="input" type="text" value={countryText} placeholder={c.countryHint} onChange={e=>setCountryText(e.target.value)} onBlur={()=>void applyCountry()} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();void applyCountry();}}}/></label>{primary?<><p className="pricing-market-range"><strong>{c.localRange}:</strong> {money(primary.low!,primary.currency)} – {money(primary.high!,primary.currency)}</p><p className="pricing-source">{c.source}: <a href={primary.url} target="_blank" rel="noreferrer">{primary.source}</a>{primary.updatedAt?` · ${c.updated}: ${primary.updatedAt}`:''}</p></>:<p className="muted">{c.noRange}</p>}</div></details></section></div></AppShell>;
 }
