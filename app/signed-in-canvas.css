@@ -1,11 +1,11 @@
-/* Signed-in EverittOS: one hero room, one readable wash, every role and view. */
+/* Signed-in EverittOS: visible architectural hero, readable work surfaces, floating records. */
 .dashboard-shell,
-contractor-dashboard-shell,
+.contractor-dashboard-shell,
 .client-dashboard-shell,
 .role-portal-shell {
   background:
-    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
-    url('/hero.jpg') center / cover fixed no-repeat !important;
+    linear-gradient(180deg, rgba(237, 242, 244, 0.34), rgba(232, 238, 241, 0.28)),
+    url('/hero.jpg') center / cover no-repeat !important;
   background-color: #edf2f4 !important;
 }
 
@@ -15,17 +15,17 @@ contractor-dashboard-shell,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
   background:
-    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
+    linear-gradient(180deg, rgba(237, 242, 244, 0.34), rgba(232, 238, 241, 0.28)),
     url('/hero.jpg') center / cover no-repeat !important;
   background-image:
-    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
+    linear-gradient(180deg, rgba(237, 242, 244, 0.34), rgba(232, 238, 241, 0.28)),
     url('/hero.jpg') !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   opacity: 1 !important;
-  filter: saturate(0.72) contrast(0.98) brightness(1.01) !important;
-  -webkit-filter: saturate(0.72) contrast(0.98) brightness(1.01) !important;
+  filter: saturate(0.82) contrast(0.98) brightness(1.01) !important;
+  -webkit-filter: saturate(0.82) contrast(0.98) brightness(1.01) !important;
   transform: none !important;
   transition: none !important;
 }
@@ -49,17 +49,24 @@ contractor-dashboard-shell,
 
 .dashboard-shell .page-head p,
 .dashboard-shell .muted,
-.contractor-main .muted,
+contractor-main .muted,
 .client-main .muted {
   color: #344b5c !important;
   opacity: 1 !important;
 }
 
+/* Headings get their own light reading strip so the photo can stay visible. */
 .dashboard-shell .page-head,
 .contractor-main .page-head,
 .client-main .page-head {
-  max-width: 42rem;
-  padding: 4px 0 12px;
+  width: fit-content;
+  max-width: min(42rem, 100%);
+  padding: 12px 16px 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 14px;
+  background: rgba(237, 242, 244, 0.82) !important;
+  box-shadow: 0 8px 24px rgba(27, 45, 60, 0.07);
+  backdrop-filter: none !important;
 }
 
 .dashboard-shell input,
@@ -75,6 +82,7 @@ contractor-dashboard-shell,
   color: #172433 !important;
 }
 
+/* Structural wrappers stay transparent. */
 .dashboard-shell .team-directory-card,
 .dashboard-shell .card:has(> .customer-list),
 .dashboard-shell .card:has(.customer-list),
@@ -101,7 +109,7 @@ contractor-dashboard-shell,
 .contractor-main .contractor-content-card,
 .contractor-main .portal-dashboard-section,
 .contractor-main .client-jobs-list,
-.contractor-main .contractor-jobs-list,
+contractor-main .contractor-jobs-list,
 .contractor-main .jobs-list,
 .contractor-main .list,
 .contractor-main .list-group,
@@ -127,6 +135,7 @@ contractor-dashboard-shell,
   box-shadow: none !important;
 }
 
+/* Individual records float as separate white cards. */
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-card,
 .dashboard-shell .customer-list-card,
@@ -172,10 +181,20 @@ contractor-dashboard-shell,
   .dashboard-shell,
   .contractor-dashboard-shell,
   .client-dashboard-shell,
-  .role-portal-shell {
+  .role-portal-shell,
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-background,
+  .contractor-dashboard-shell .contractor-background,
+  .client-dashboard-shell .contractor-background {
     background:
-      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
+      linear-gradient(180deg, rgba(237, 242, 244, 0.42), rgba(232, 238, 241, 0.36)),
       url('/hero.jpg') 56% center / cover no-repeat !important;
+    background-image:
+      linear-gradient(180deg, rgba(237, 242, 244, 0.42), rgba(232, 238, 241, 0.36)),
+      url('/hero.jpg') !important;
+    background-size: cover !important;
+    background-position: 56% center !important;
   }
 
   .dashboard-shell-background,
@@ -183,16 +202,16 @@ contractor-dashboard-shell,
   .contractor-background,
   .contractor-dashboard-shell .contractor-background,
   .client-dashboard-shell .contractor-background {
-    background:
-      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
-      url('/hero.jpg') 56% center / cover no-repeat !important;
-    background-image:
-      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
-      url('/hero.jpg') !important;
-    background-size: cover !important;
-    background-position: 56% center !important;
-    filter: saturate(0.66) contrast(0.96) brightness(1.02) !important;
-    -webkit-filter: saturate(0.66) contrast(0.96) brightness(1.02) !important;
+    filter: saturate(0.76) contrast(0.97) brightness(1.02) !important;
+    -webkit-filter: saturate(0.76) contrast(0.97) brightness(1.02) !important;
+  }
+
+  .dashboard-shell .page-head,
+  .contractor-main .page-head,
+  .client-main .page-head {
+    width: auto;
+    padding: 10px 12px 12px !important;
+    background: rgba(237, 242, 244, 0.86) !important;
   }
 
   .dashboard-shell .team-directory-card {
