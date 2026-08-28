@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/feedback/use-app-feedback';
 import { useTranslation } from '@/components/locale-provider';
@@ -24,8 +25,14 @@ type OutboundHubProps = {
   forceNew?: boolean;
   paymentFilter?: InvoicePaymentFilter;
   focusOutstanding?: boolean;
+  returnTo?: string;
   footer?: React.ReactNode;
 };
+
+function safeReturnPath(value?: string): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '';
+  return value;
+}
 
 export function OutboundHub({
   docType,
@@ -38,8 +45,10 @@ export function OutboundHub({
   forceNew = false,
   paymentFilter = 'all',
   focusOutstanding = false,
+  returnTo,
   footer
 }: OutboundHubProps) {
+  const router = useRouter();
   const { locale } = useTranslation();
   const billingCopy = getBillingOpsCopy(locale);
   const appFeedback = useAppFeedback();
@@ -48,6 +57,7 @@ export function OutboundHub({
   const [loading, setLoading] = useState(true);
   const [schemaReady, setSchemaReady] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const resolvedReturnTo = safeReturnPath(returnTo);
 
   const autosave = useOutboundAutosave({
     docType,
@@ -100,6 +110,10 @@ export function OutboundHub({
         return;
       }
       appFeedback.sent();
+      if (resolvedReturnTo) {
+        router.replace(resolvedReturnTo);
+        return;
+      }
       setTab('sent');
       void loadDocuments();
     } catch (err) {
@@ -130,6 +144,10 @@ export function OutboundHub({
       return;
     }
     appFeedback.sent();
+    if (resolvedReturnTo) {
+      router.replace(resolvedReturnTo);
+      return;
+    }
     setTab('sent');
     void loadDocuments();
   }
