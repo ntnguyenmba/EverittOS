@@ -153,6 +153,33 @@
   cursor: pointer;
 }
 
+/* Create Job is the only save-style action on this screen. Other controls are visibly secondary. */
+.formWrap :global(.unified-job-form button[type='submit']) {
+  order: 30;
+  min-height: 52px;
+  width: 100%;
+  margin-top: 18px;
+  border-radius: 12px;
+  background: #3f586a !important;
+  border-color: #3f586a !important;
+  color: #fff !important;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.formWrap :global(.unified-job-form button[type='button']:not(.job-customer-mode button):not(.segmented-control .btn)) {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #3f586a !important;
+  border-color: rgba(37, 54, 74, 0.16) !important;
+  font-weight: 650 !important;
+}
+
+.formWrap :global(.unified-job-form .job-detail-actions),
+.formWrap :global(.unified-job-form .button-row) {
+  gap: 8px;
+}
+
 @media (max-width: 720px) {
   .formWrap :global(.card) {
     padding: 16px !important;
@@ -211,7 +238,7 @@
   }
 
   .formWrap :global(.unified-job-form button[type='submit']) {
-    min-height: 52px;
+    min-height: 54px;
     width: 100%;
     margin-top: 14px;
     font-size: 16px;
