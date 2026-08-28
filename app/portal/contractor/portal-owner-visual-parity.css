@@ -12,13 +12,11 @@
   background: var(--portal-bg) !important;
 }
 
-/* Use the exact same hero image treatment as Owner. */
+/* Worker and Client use the same readable signed-in paint canvas as Owner. */
 .contractor-dashboard-shell .contractor-background {
-  background-image: linear-gradient(rgba(214,224,229,.18), rgba(214,224,229,.26)), url('/hero.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  filter: grayscale(10%) saturate(96%) contrast(108%) brightness(95%) !important;
+  background: #edf2f4 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
 .contractor-main {
@@ -263,11 +261,9 @@
 
 @media (max-width: 720px) {
   .contractor-dashboard-shell .contractor-background {
-    background-image: linear-gradient(rgba(218,228,233,.26), rgba(218,228,233,.34)), url('/hero.jpg') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    filter: grayscale(14%) saturate(92%) contrast(106%) brightness(95%) !important;
+    background: #edf2f4 !important;
+    background-image: none !important;
+    filter: none !important;
   }
 }
 
