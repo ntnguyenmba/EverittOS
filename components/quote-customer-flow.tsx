@@ -31,6 +31,8 @@ const copy = {
     continueQuote: 'Continue to customer quote',
     quoteReady: 'Quote details added. Add the customer and email when you are ready to send.',
     createJob: 'Create job',
+    creatingJob: 'Creating job...',
+    createFailed: 'Could not create the job. Your quote is still saved.',
     backToQuotes: 'Back to Quotes'
   },
   es: {
@@ -39,6 +41,8 @@ const copy = {
     continueQuote: 'Continuar a cotización',
     quoteReady: 'Se agregaron los datos. Añade el cliente y el correo cuando quieras enviarla.',
     createJob: 'Crear trabajo',
+    creatingJob: 'Creando trabajo...',
+    createFailed: 'No se pudo crear el trabajo. La cotización sigue guardada.',
     backToQuotes: 'Volver a Cotizaciones'
   },
   vi: {
@@ -47,6 +51,8 @@ const copy = {
     continueQuote: 'Tiếp tục báo giá',
     quoteReady: 'Đã thêm thông tin báo giá. Thêm khách hàng và email khi sẵn sàng gửi.',
     createJob: 'Tạo công việc',
+    creatingJob: 'Đang tạo công việc...',
+    createFailed: 'Không thể tạo công việc. Báo giá vẫn được lưu.',
     backToQuotes: 'Quay lại Báo giá'
   }
 } as const;
@@ -58,10 +64,13 @@ export function QuoteCustomerFlow() {
   const { locale } = useTranslation();
   const c = copy[locale] || copy.en;
   const [quoteReady, setQuoteReady] = useState(false);
+  const [creatingJob, setCreatingJob] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   useEffect(() => {
     if (pathname !== '/estimates' || searchParams.get('from') !== 'quotes') {
       setQuoteReady(false);
+      setCreateError('');
       return;
     }
 
@@ -92,6 +101,43 @@ export function QuoteCustomerFlow() {
 
     apply();
   }, [pathname, searchParams]);
+
+  async function createJobFromQuote() {
+    if (creatingJob) return;
+    setCreatingJob(true);
+    setCreateError('');
+
+    const amountText = textValue('#estimate-amount') || searchParams.get('amount') || '';
+    const amount = Number(amountText);
+    const customerName = textValue('#estimate-recipient-name');
+    const customerEmail = textValue('#estimate-recipient-email');
+    const notes = textValue('#estimate-body') || searchParams.get('request') || '';
+    const service = searchParams.get('service') || 'Service job';
+
+    try {
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: service,
+          customer_name: customerName || null,
+          customer_email: customerEmail || null,
+          notes: notes || null,
+          status: 'new',
+          revenue_amount: Number.isFinite(amount) && amount >= 0 ? amount : null
+        })
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json?.error || c.createFailed);
+
+      const jobId = json?.job?.id || json?.id || json?.data?.id || '';
+      router.push(jobId ? `/jobs/${jobId}` : '/jobs');
+      router.refresh();
+    } catch (error) {
+      setCreateError(error instanceof Error && error.message ? error.message : c.createFailed);
+      setCreatingJob(false);
+    }
+  }
 
   if (pathname === '/pricing-helper') {
     return (
@@ -124,27 +170,19 @@ export function QuoteCustomerFlow() {
         <div>
           <strong>{c.customerQuote}</strong>
           <p>{quoteReady ? c.quoteReady : c.customerQuoteHint}</p>
+          {createError ? <p className="quote-flow-error" role="alert">{createError}</p> : null}
         </div>
         <div className="quote-flow-actions">
-          <button type="button" className="btn" onClick={() => router.push('/pricing-helper')}>
+          <button type="button" className="btn" disabled={creatingJob} onClick={() => router.push('/pricing-helper')}>
             {c.backToQuotes}
           </button>
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => {
-              const amount = textValue('#estimate-amount') || searchParams.get('amount') || '';
-              const customer = textValue('#estimate-recipient-name');
-              const notes = textValue('#estimate-body') || searchParams.get('request') || '';
-              const service = searchParams.get('service') || 'Service job';
-              const params = new URLSearchParams({ source: 'quotes', title: service });
-              if (amount) params.set('client_income', amount);
-              if (customer) params.set('customer_name', customer);
-              if (notes) params.set('notes', notes);
-              router.push(`/jobs/new?${params.toString()}`);
-            }}
+            disabled={creatingJob || !quoteReady}
+            onClick={() => void createJobFromQuote()}
           >
-            {c.createJob}
+            {creatingJob ? c.creatingJob : c.createJob}
           </button>
         </div>
       </div>
