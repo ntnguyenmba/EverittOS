@@ -65,94 +65,35 @@ export function MobileBottomNav() {
       let expanded = false;
       const rows = Array.from(list.querySelectorAll<HTMLElement>(selector));
       if (rows.length <= PORTAL_VISIBLE_JOBS) return;
-
       const applyRows = () => rows.forEach((row, index) => { row.style.display = expanded || index < PORTAL_VISIBLE_JOBS ? '' : 'none'; });
       applyRows();
-
       const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn portal-list-toggle';
-      button.textContent = bc.showAll;
-      const onClick = () => {
-        expanded = !expanded;
-        applyRows();
-        button.textContent = expanded ? bc.showLess : bc.showAll;
-      };
-      button.addEventListener('click', onClick);
-      list.insertAdjacentElement('afterend', button);
+      button.type = 'button'; button.className = 'btn portal-list-toggle'; button.textContent = bc.showAll;
+      const onClick = () => { expanded = !expanded; applyRows(); button.textContent = expanded ? bc.showLess : bc.showAll; };
+      button.addEventListener('click', onClick); list.insertAdjacentElement('afterend', button);
       cleanup.push(() => button.removeEventListener('click', onClick));
     };
 
     const apply = () => {
-      if (isContractorRole(role)) {
-        document.querySelectorAll<HTMLElement>('.job-visits-list').forEach((list, index) => wireList(list, ':scope > .portal-job-row', `worker-${index}`));
-      }
-      if (isClientRole(role)) {
-        document.querySelectorAll<HTMLDetailsElement>('details.portal-dashboard-section').forEach((section, index) => {
-          if (!section.dataset.everittCollapsed) {
-            section.open = false;
-            section.dataset.everittCollapsed = '1';
-          }
-          const list = section.querySelector<HTMLElement>('.client-job-card-list');
-          if (list) wireList(list, ':scope > .client-job-card', `client-${index}`));
-        });
-      }
+      if (isContractorRole(role)) document.querySelectorAll<HTMLElement>('.job-visits-list').forEach((list, index) => wireList(list, ':scope > .portal-job-row', `worker-${index}`));
+      if (isClientRole(role)) document.querySelectorAll<HTMLDetailsElement>('details.portal-dashboard-section').forEach((section, index) => { if (!section.dataset.everittCollapsed) { section.open = false; section.dataset.everittCollapsed = '1'; } const list = section.querySelector<HTMLElement>('.client-job-card-list'); if (list) wireList(list, ':scope > .client-job-card', `client-${index}`); });
     };
 
-    apply();
-    const observer = new MutationObserver(apply);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      observer.disconnect();
-      cleanup.forEach((fn) => fn());
-    };
+    apply(); const observer = new MutationObserver(apply); observer.observe(document.body, { childList: true, subtree: true });
+    return () => { observer.disconnect(); cleanup.forEach((fn) => fn()); };
   }, [mounted, role, bc.showAll, bc.showLess]);
 
-  const excludeHrefs = useMemo(() => isClientRole(role) ? [CLIENT_PORTAL_HOME] : isContractorRole(role) ? [CONTRACTOR_PORTAL_HOME] : ['/dashboard', '/jobs', '/customers', '/pricing-helper'], [role]);
+  const excludeHrefs = useMemo(() => isClientRole(role) ? [CLIENT_PORTAL_HOME] : isContractorRole(role) ? [CONTRACTOR_PORTAL_HOME] : ['/dashboard', '/jobs', '/customers', '/quotes'], [role]);
   if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
   if (!workspace?.plan && !workspace?.role) return null;
 
   const links = isClientRole(role)
-    ? [
-        { href: CLIENT_PORTAL_HOME, label: t('portal.common.overview'), icon: 'home' as const },
-        { href: `${CLIENT_PORTAL_HOME}?tab=jobs`, label: t('portal.common.appointments'), icon: 'jobs' as const },
-        { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
-      ]
+    ? [{ href: CLIENT_PORTAL_HOME, label: t('portal.common.overview'), icon: 'home' as const }, { href: `${CLIENT_PORTAL_HOME}?tab=jobs`, label: t('portal.common.appointments'), icon: 'jobs' as const }, { href: '#more', label: bc.more, icon: 'more' as const, menu: true }]
     : isContractorRole(role)
-      ? [
-          { href: CONTRACTOR_PORTAL_HOME, label: t('portal.contractor.nav.dashboard'), icon: 'home' as const },
-          { href: `${CONTRACTOR_PORTAL_HOME}#current-jobs`, label: t('portal.contractor.nav.jobs'), icon: 'jobs' as const },
-          { href: `${CONTRACTOR_PORTAL_HOME}#history`, label: t('portal.contractor.nav.earnings'), icon: 'money' as const },
-          { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
-        ]
-      : [
-          { href: dashboardPathForRole(role), label: bc.home, icon: 'home' as const },
-          { href: '/pricing-helper', label: bc.quotes, icon: 'quotes' as const },
-          { href: '/jobs', label: navLabel('/jobs', t, bc.jobs, locale), icon: 'jobs' as const },
-          { href: '/customers', label: navLabel('/customers', t, bc.customers, locale), icon: 'customers' as const },
-          { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
-        ];
+      ? [{ href: CONTRACTOR_PORTAL_HOME, label: t('portal.contractor.nav.dashboard'), icon: 'home' as const }, { href: `${CONTRACTOR_PORTAL_HOME}#current-jobs`, label: t('portal.contractor.nav.jobs'), icon: 'jobs' as const }, { href: `${CONTRACTOR_PORTAL_HOME}#history`, label: t('portal.contractor.nav.earnings'), icon: 'money' as const }, { href: '#more', label: bc.more, icon: 'more' as const, menu: true }]
+      : [{ href: dashboardPathForRole(role), label: bc.home, icon: 'home' as const }, { href: '/quotes', label: bc.quotes, icon: 'quotes' as const }, { href: '/jobs', label: navLabel('/jobs', t, bc.jobs, locale), icon: 'jobs' as const }, { href: '/customers', label: navLabel('/customers', t, bc.customers, locale), icon: 'customers' as const }, { href: '#more', label: bc.more, icon: 'more' as const, menu: true }];
 
-  const sheet = moreOpen && mounted ? createPortal(
-    <div className="everitt-more-overlay" onClick={() => setMoreOpen(false)}>
-      <section className="everitt-more-sheet" role="dialog" aria-modal="true" aria-label={bc.more} onClick={(e) => e.stopPropagation()}>
-        <div className="everitt-more-head"><strong>{bc.more}</strong><button type="button" className="everitt-more-close" onClick={() => setMoreOpen(false)}>{bc.close}</button></div>
-        <div className="everitt-more-links">{workspace?.plan ? <AppNavItems plan={workspace.plan} role={role} excludeHrefs={excludeHrefs} linkClassName="everitt-more-link" onNavigate={() => setMoreOpen(false)} /> : null}</div>
-        <div className="everitt-more-settings">
-          <div className="everitt-more-field"><span>{bc.workspace}</span><OrgSwitcher /></div>
-          <div className="everitt-more-field"><span>{bc.language}</span><LanguageSwitcher id="bottom-more-language" variant="drawer" /></div>
-          <button type="button" className="everitt-more-logout" onClick={async () => { setMoreOpen(false); const { performClientLogout } = await import('@/lib/client-logout'); await performClientLogout(router); }}>{bc.logout}</button>
-        </div>
-      </section>
-    </div>, document.body
-  ) : null;
+  const sheet = moreOpen && mounted ? createPortal(<div className="everitt-more-overlay" onClick={() => setMoreOpen(false)}><section className="everitt-more-sheet" role="dialog" aria-modal="true" aria-label={bc.more} onClick={(e) => e.stopPropagation()}><div className="everitt-more-head"><strong>{bc.more}</strong><button type="button" className="everitt-more-close" onClick={() => setMoreOpen(false)}>{bc.close}</button></div><div className="everitt-more-links">{workspace?.plan ? <AppNavItems plan={workspace.plan} role={role} excludeHrefs={excludeHrefs} linkClassName="everitt-more-link" onNavigate={() => setMoreOpen(false)} /> : null}</div><div className="everitt-more-settings"><div className="everitt-more-field"><span>{bc.workspace}</span><OrgSwitcher /></div><div className="everitt-more-field"><span>{bc.language}</span><LanguageSwitcher id="bottom-more-language" variant="drawer" /></div><button type="button" className="everitt-more-logout" onClick={async () => { setMoreOpen(false); const { performClientLogout } = await import('@/lib/client-logout'); await performClientLogout(router); }}>{bc.logout}</button></div></section></div>, document.body) : null;
 
-  return <>
-    <nav className={`everitt-bottom-nav everitt-bottom-nav-${links.length}`} aria-label={t('ux.mobileNavLabel')}>
-      {links.map((item) => 'menu' in item && item.menu
-        ? <button key="more" type="button" className={`everitt-bottom-nav-item everitt-bottom-nav-button${moreOpen ? ' is-active' : ''}`} onClick={() => setMoreOpen(true)}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></button>
-        : <Link key={item.href} href={item.href} className={`everitt-bottom-nav-item${activeFor(pathname, item.href) ? ' is-active' : ''}`} aria-current={activeFor(pathname, item.href) ? 'page' : undefined}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></Link>)}
-    </nav>
-    {sheet}
-  </>;
+  return <><nav className={`everitt-bottom-nav everitt-bottom-nav-${links.length}`} aria-label={t('ux.mobileNavLabel')}>{links.map((item) => 'menu' in item && item.menu ? <button key="more" type="button" className={`everitt-bottom-nav-item everitt-bottom-nav-button${moreOpen ? ' is-active' : ''}`} onClick={() => setMoreOpen(true)}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></button> : <Link key={item.href} href={item.href} className={`everitt-bottom-nav-item${activeFor(pathname, item.href) ? ' is-active' : ''}`} aria-current={activeFor(pathname, item.href) ? 'page' : undefined}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></Link>)}</nav>{sheet}</>;
 }
