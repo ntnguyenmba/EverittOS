@@ -1,0 +1,145 @@
+/* Mobile/native readability pass. Keep desktop density intact while making the installed app feel intentional. */
+@media (max-width: 760px) {
+  html[data-native-app='true'] body,
+  html[data-standalone='true'] body {
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html[data-native-app='true'] .dashboard-shell > .main,
+  html[data-standalone='true'] .dashboard-shell > .main {
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom)) !important;
+  }
+
+  html[data-native-app='true'] .dashboard-shell-header,
+  html[data-standalone='true'] .dashboard-shell-header {
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+  }
+
+  html[data-native-app='true'] .page-header h1,
+  html[data-standalone='true'] .page-header h1 {
+    font-size: clamp(30px, 9vw, 38px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  html[data-native-app='true'] .page-subtitle,
+  html[data-standalone='true'] .page-subtitle,
+  html[data-native-app='true'] .muted,
+  html[data-standalone='true'] .muted {
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    color: #52616d !important;
+  }
+
+  html[data-native-app='true'] .card,
+  html[data-standalone='true'] .card {
+    border-radius: 18px !important;
+    padding: 20px 18px !important;
+    box-shadow: 0 5px 18px rgba(36, 63, 83, 0.055) !important;
+  }
+
+  html[data-native-app='true'] .input,
+  html[data-native-app='true'] input,
+  html[data-native-app='true'] textarea,
+  html[data-native-app='true'] select,
+  html[data-standalone='true'] .input,
+  html[data-standalone='true'] input,
+  html[data-standalone='true'] textarea,
+  html[data-standalone='true'] select {
+    min-height: 50px !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+  }
+
+  html[data-native-app='true'] textarea,
+  html[data-standalone='true'] textarea {
+    min-height: 118px !important;
+  }
+
+  html[data-native-app='true'] .btn,
+  html[data-native-app='true'] button,
+  html[data-standalone='true'] .btn,
+  html[data-standalone='true'] button {
+    min-height: 48px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  html[data-native-app='true'] label,
+  html[data-standalone='true'] label {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+  }
+
+  html[data-native-app='true'] .eyebrow,
+  html[data-standalone='true'] .eyebrow {
+    font-size: 13px !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  html[data-native-app='true'] .pricing-helper-layout,
+  html[data-standalone='true'] .pricing-helper-layout {
+    gap: 14px !important;
+  }
+
+  html[data-native-app='true'] .pricing-helper-inputs,
+  html[data-native-app='true'] .pricing-helper-summary,
+  html[data-standalone='true'] .pricing-helper-inputs,
+  html[data-standalone='true'] .pricing-helper-summary {
+    padding: 20px 18px !important;
+  }
+
+  html[data-native-app='true'] .pricing-helper-summary h2,
+  html[data-standalone='true'] .pricing-helper-summary h2 {
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+  }
+
+  html[data-native-app='true'] .everitt-bottom-nav-label,
+  html[data-standalone='true'] .everitt-bottom-nav-label {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+  }
+}
+
+.quote-flow-card {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(1240px, calc(100% - 40px));
+  margin: 16px auto 0;
+  padding: 18px 20px;
+  border: 1px solid rgba(36, 63, 83, 0.14);
+  border-radius: 18px;
+  background: rgba(252, 253, 253, 0.97);
+  box-shadow: 0 8px 24px rgba(36, 63, 83, 0.07);
+  color: #243f53;
+}
+
+.quote-flow-card strong { font-size: 17px; line-height: 1.25; }
+.quote-flow-card p { margin: 5px 0 0; color: #52616d; font-size: 14px; line-height: 1.45; }
+.quote-flow-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.quote-flow-primary { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .quote-flow-card {
+    align-items: stretch;
+    flex-direction: column;
+    width: calc(100% - 32px);
+    margin-top: 12px;
+    padding: 18px;
+  }
+  .quote-flow-card strong { font-size: 18px; }
+  .quote-flow-card p { font-size: 15px; }
+  .quote-flow-card .btn,
+  .quote-flow-actions,
+  .quote-flow-actions .btn { width: 100%; }
+}
