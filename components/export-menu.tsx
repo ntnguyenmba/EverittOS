@@ -23,6 +23,12 @@ export type ExportMenuProps = {
   onSuccess?: (format: 'csv' | 'pdf' | 'share') => void;
 };
 
+type MenuPosition = {
+  left: number;
+  top: number;
+  width: number;
+};
+
 function queryRecord(query: ExportMenuProps['query']): Record<string, string> {
   const params = new URLSearchParams();
   if (query instanceof URLSearchParams) {
@@ -70,6 +76,7 @@ export function ExportMenu({
   const [email, setEmail] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [busy, setBusy] = useState<'csv' | 'pdf' | 'share-csv' | 'share-pdf' | null>(null);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
 
@@ -96,6 +103,35 @@ export function ExportMenu({
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+
+    function updateMenuPosition() {
+      const root = rootRef.current;
+      if (!root) return;
+      const rect = root.getBoundingClientRect();
+      const viewportPadding = 12;
+      const desiredWidth = shareOpen ? 260 : 190;
+      const availableWidth = Math.max(0, window.innerWidth - viewportPadding * 2);
+      const width = Math.min(desiredWidth, availableWidth);
+      const preferredLeft = rect.right - width;
+      const maxLeft = Math.max(viewportPadding, window.innerWidth - width - viewportPadding);
+      const left = Math.min(Math.max(viewportPadding, preferredLeft), maxLeft);
+      setMenuPosition({ left, top: rect.bottom + 4, width });
+    }
+
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [open, shareOpen]);
 
   async function runExport(format: 'csv' | 'pdf') {
     if (disabled || busy) return;
@@ -182,23 +218,26 @@ export function ExportMenu({
           id={menuId}
           role="menu"
           style={{
-            position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 4px)',
-            minWidth: shareOpen ? 240 : 160,
-            zIndex: 40,
+            position: 'fixed',
+            left: menuPosition?.left ?? 12,
+            top: menuPosition?.top ?? 0,
+            width: menuPosition?.width ?? 190,
+            maxWidth: 'calc(100vw - 24px)',
+            boxSizing: 'border-box',
+            zIndex: 1000,
             background: 'var(--surface, #fff)',
             border: '1px solid var(--border, #e4e1d8)',
             borderRadius: 10,
             boxShadow: '0 8px 24px rgba(36, 37, 34, 0.12)',
-            padding: 6
+            padding: 6,
+            overflow: 'hidden'
           }}
         >
           <button
             type="button"
             role="menuitem"
             className="btn"
-            style={{ width: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent' }}
+            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
             disabled={isDisabled}
             onClick={() => void runExport('csv')}
           >
@@ -208,7 +247,7 @@ export function ExportMenu({
             type="button"
             role="menuitem"
             className="btn"
-            style={{ width: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent' }}
+            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
             disabled={isDisabled}
             onClick={() => void runExport('pdf')}
           >
@@ -218,7 +257,7 @@ export function ExportMenu({
             type="button"
             role="menuitem"
             className="btn"
-            style={{ width: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent' }}
+            style={{ width: '100%', maxWidth: '100%', justifyContent: 'flex-start', border: 0, background: 'transparent', boxSizing: 'border-box' }}
             disabled={isDisabled}
             onClick={() => {
               setShareOpen(true);
@@ -229,7 +268,7 @@ export function ExportMenu({
           </button>
           {shareOpen ? (
             <form
-              style={{ display: 'grid', gap: 6, padding: 6 }}
+              style={{ display: 'grid', gap: 6, padding: 6, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               onSubmit={(event) => {
                 event.preventDefault();
                 void runShare('pdf');
@@ -247,6 +286,7 @@ export function ExportMenu({
                 aria-label={copy.emailAddress}
                 onChange={(event) => setEmail(event.target.value)}
                 disabled={isDisabled}
+                style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}
               />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" className="btn" disabled={isDisabled} onClick={() => void runShare('csv')}>
