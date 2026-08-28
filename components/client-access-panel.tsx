@@ -82,13 +82,13 @@ export function ClientAccessPanel({
       });
       const json = await res.json();
       if (!res.ok) {
-        setMessage(json.error || 'Unable to send invite.');
+        setMessage(json.error || 'Unable to enable client access.');
         return;
       }
-      setMessage(json.message || 'Invite sent.');
+      setMessage(json.message || 'Client access enabled.');
       await loadAccess();
     } catch {
-      setMessage('Unable to send invite.');
+      setMessage('Unable to enable client access.');
     } finally {
       setBusy(false);
     }
@@ -157,12 +157,12 @@ export function ClientAccessPanel({
     <div>
       <h3 style={{ marginTop: 0 }}>Customer portal</h3>
 
-      {loadingAccess ? <p className="muted">Checking status...</p> : null}
+      {loadingAccess ? <p className="muted">Checking client access...</p> : null}
 
       {!loadingAccess && primaryAccess ? (
         <div className="list-row">
           <div>
-            <strong>Status: Active</strong>
+            <strong>Client access enabled</strong>
             <p className="muted" style={{ margin: '4px 0 0' }}>
               {customerName || 'Customer'} can view this job online.
             </p>
@@ -185,14 +185,14 @@ export function ClientAccessPanel({
 
       {!loadingAccess && !primaryAccess && normalizedCustomerEmail ? (
         <div>
-          <strong>Status: Not invited</strong>
+          <strong>Client access not enabled</strong>
           <p className="muted" style={{ marginTop: 6 }}>
-            This customer cannot sign in yet. Send an invite so they can view jobs, photos, invoices, and receipts.
+            A customer email is available, but portal access has not been enabled yet.
           </p>
           <p className="muted">{normalizedCustomerEmail}</p>
           {canManage ? (
             <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void grantAccess(normalizedCustomerEmail)}>
-              {busy ? 'Sending...' : 'Send invite'}
+              {busy ? 'Enabling...' : 'Enable client access'}
             </button>
           ) : null}
         </div>
@@ -200,9 +200,9 @@ export function ClientAccessPanel({
 
       {!loadingAccess && !primaryAccess && !normalizedCustomerEmail ? (
         <div>
-          <strong>Status: Email needed</strong>
+          <strong>No customer email available</strong>
           <p className="muted" style={{ marginTop: 6 }}>
-            Add the customer email to send a portal invite. This does not block the job.
+            Add a customer email later if you want to enable portal access. This does not block the job.
           </p>
           {canManage ? (
             <div className="inline-actions" style={{ marginTop: 8 }}>
@@ -218,7 +218,7 @@ export function ClientAccessPanel({
                 }}
               />
               <button type="button" className="btn btn-primary" disabled={busy || !emailDraft.trim()} onClick={() => void saveEmailAndEnable()}>
-                {busy ? 'Sending...' : 'Save and send invite'}
+                {busy ? 'Enabling...' : 'Add email and enable access'}
               </button>
             </div>
           ) : null}
