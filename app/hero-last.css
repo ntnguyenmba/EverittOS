@@ -50,7 +50,6 @@
   pointer-events: auto !important;
 }
 
-/* Parent list shells become invisible so the photo shows between items. */
 .dashboard-shell .jobs-list-page,
 .dashboard-shell .jobs-page,
 .dashboard-shell .jobs-shell,
@@ -63,6 +62,8 @@
 .dashboard-shell .records-page,
 .dashboard-shell .list-page,
 .dashboard-shell .jobs-board,
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-mobile-table-wrap,
 .dashboard-shell .card:has(.job-card),
 .dashboard-shell .card:has(.expense-card),
 .dashboard-shell .card:has(.worker-card),
@@ -81,11 +82,11 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Each record is its own login-style floating sheet. */
 .dashboard-shell > .sidebar,
 .dashboard-shell .owner-home-sheet,
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .jobs-filter-panel,
 .dashboard-shell .job-card,
 .dashboard-shell .expense-card,
 .dashboard-shell .worker-card,
@@ -101,7 +102,6 @@
 .dashboard-shell .metric-card,
 .dashboard-shell form.card,
 .dashboard-shell .unified-job-form,
-.dashboard-shell .unified-job-form.card,
 .dashboard-shell .card.form {
   background: rgba(255, 255, 255, 0.975) !important;
   border: 1px solid rgba(255, 255, 255, 0.85) !important;
@@ -112,6 +112,14 @@
     0 2px 0 rgba(255, 255, 255, 0.9) inset !important;
   backdrop-filter: blur(18px) !important;
   -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .jobs-filter-panel,
+.jobs-shell-minimal .jobs-advanced-filters {
+  margin: 12px 0 !important;
+  padding: 16px 18px !important;
+  overflow: hidden !important;
 }
 
 .dashboard-shell .job-card + .job-card,
