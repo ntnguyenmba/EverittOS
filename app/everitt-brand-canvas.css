@@ -1,0 +1,79 @@
+/* EverittOS signed-in brand canvas.
+   One intentional source for the real-work hero and paper-over-image treatment. */
+
+.dashboard-shell,
+.dashboard-shell.role-portal-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell {
+  background-color: #dfe5e7 !important;
+  background-image: url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background-color: transparent !important;
+  background-image: url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: linear-gradient(90deg, rgba(246,247,246,.18) 0%, rgba(246,247,246,.28) 38%, rgba(246,247,246,.36) 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dashboard-shell > .main,
+.dashboard-shell .main,
+.dashboard-shell .app-page-content,
+.dashboard-shell .dashboard-home,
+.dashboard-shell .today-page,
+.dashboard-shell .portal-page,
+.dashboard-shell .authenticated-portal,
+.contractor-main,
+.client-main {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .stat,
+.dashboard-shell .role-summary-card,
+.dashboard-shell .client-job-card,
+.dashboard-shell .quote-compose,
+.dashboard-shell .quote-letter,
+.dashboard-shell .quote-row {
+  background: rgba(250, 251, 250, .94) !important;
+  border-color: rgba(36, 63, 83, .13) !important;
+  box-shadow: 0 12px 34px rgba(31, 49, 61, .08) !important;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .dashboard-shell.role-portal-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-background {
+    background-attachment: scroll !important;
+    background-position: center top !important;
+  }
+}
