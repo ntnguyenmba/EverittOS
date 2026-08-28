@@ -3,6 +3,17 @@
   min-width: 0;
 }
 
+.formWrap :global(.card) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.formWrap :global(.card > h3),
+.formWrap :global(.card > p.muted) {
+  display: none;
+}
+
 .formWrap :global(.unified-job-form) {
   display: flex;
   flex-direction: column;
@@ -11,13 +22,6 @@
   min-width: 0;
 }
 
-.formWrap :global(.unified-job-form) > h3,
-.formWrap :global(.unified-job-form) > p.muted {
-  display: none;
-}
-
-/* Mobile-first job creation order:
-   Customer -> property/address -> job + client pay -> schedule -> worker + pay -> optional details. */
 .formWrap :global(.unified-job-form > *) {
   order: 10;
   min-width: 0;
@@ -52,205 +56,166 @@
   order: 20;
 }
 
-.formWrap :global(.unified-job-form > .job-create-section) {
-  border-bottom: 1px solid rgba(37, 54, 74, 0.1);
+.formWrap :global(.job-create-section) {
+  min-width: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(37, 54, 74, 0.12);
 }
 
-.formWrap :global(.unified-job-form > .job-create-section > h4) {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
+.formWrap :global(.job-create-section > h4) {
+  margin: 0 0 12px;
+  color: #132433;
+  font-size: 1.05rem;
   line-height: 1.3;
-}
-
-.formWrap :global(.unified-job-form > .job-create-section > h4::after) {
-  display: none;
-  content: none;
-}
-
-/* One-time jobs can be created before schedule, worker, or worker pay are known. */
-.formWrap :global(.unified-job-form > .job-create-section:has(#recurrence-starts-on) > h4::after),
-.formWrap :global(.unified-job-form > .job-create-section:has(#assigned-to) > h4::after) {
-  display: inline-flex;
-  content: 'Optional';
-  margin-left: 8px;
-  padding: 3px 7px;
-  border: 1px solid rgba(37, 54, 74, 0.14);
-  border-radius: 999px;
-  color: #66727c;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1;
-  vertical-align: middle;
+  font-weight: 800;
 }
 
 .formWrap :global(.job-create-section > p.muted) {
-  margin-top: -0.25rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.82rem;
-  line-height: 1.35;
-}
-
-.formWrap :global(.job-create-section) {
-  min-width: 0;
-  padding-block: 1rem;
+  margin: -4px 0 12px;
+  color: #405766 !important;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .formWrap :global(.job-create-section label) {
-  font-weight: 650;
+  color: #193041 !important;
+  font-weight: 700;
 }
 
 .formWrap :global(.job-create-section .input) {
-  min-height: 46px;
+  min-height: 48px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
 .formWrap :global(.job-customer-mode) {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 14px;
 }
 
 .formWrap :global(.job-customer-mode button) {
-  flex: 1 1 9rem;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid rgba(37, 54, 74, 0.2);
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  margin: 0 !important;
+  padding: 11px 12px;
+  border: 1px solid rgba(37, 54, 74, 0.22);
   border-radius: 12px;
   background: #fff;
   color: #243f53;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 750;
+  text-align: center;
 }
 
 .formWrap :global(.job-customer-mode button[aria-pressed='true']) {
-  background: #243f53;
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff;
-  border-color: #243f53;
+  background: #285d78;
+  border-color: #285d78;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
 }
 
-.formWrap :global(.job-customer-mode button:focus-visible) {
-  outline: 2px solid #243f53;
-  outline-offset: 2px;
+.formWrap :global(.unified-job-form .button-row),
+.formWrap :global(.unified-job-form .job-detail-actions),
+.formWrap :global(.unified-job-form .inline-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px !important;
+}
+
+.formWrap :global(.unified-job-form .button-row .btn),
+.formWrap :global(.unified-job-form .job-detail-actions .btn),
+.formWrap :global(.unified-job-form .inline-actions .btn) {
+  margin: 0 !important;
+}
+
+.formWrap :global(.segmented-control) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px !important;
+  width: 100%;
+}
+
+.formWrap :global(.segmented-control .btn) {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
 }
 
 .formWrap :global(.unified-job-form > details) {
-  margin-top: 14px !important;
-  padding: 14px 0 0;
-  border-top: 1px solid rgba(37, 54, 74, 0.1);
+  margin-top: 16px !important;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(37, 54, 74, 0.12);
 }
 
 .formWrap :global(.unified-job-form > details > summary) {
-  min-height: 46px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   width: fit-content;
-  color: #3f586a;
-  font-weight: 700;
+  color: #285d78;
+  font-weight: 750;
   cursor: pointer;
 }
 
-/* Create Job is the only save-style action on this screen. Other controls are visibly secondary. */
 .formWrap :global(.unified-job-form button[type='submit']) {
   order: 30;
-  min-height: 52px;
+  min-height: 54px;
   width: 100%;
-  margin-top: 18px;
+  margin-top: 20px;
   border-radius: 12px;
-  background: #3f586a !important;
-  border-color: #3f586a !important;
+  background: #285d78 !important;
+  border-color: #285d78 !important;
   color: #fff !important;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .formWrap :global(.unified-job-form button[type='button']:not(.job-customer-mode button):not(.segmented-control .btn)) {
-  background: transparent !important;
   box-shadow: none !important;
-  color: #3f586a !important;
-  border-color: rgba(37, 54, 74, 0.16) !important;
-  font-weight: 650 !important;
-}
-
-.formWrap :global(.unified-job-form .job-detail-actions),
-.formWrap :global(.unified-job-form .button-row) {
-  gap: 8px;
+  color: #285d78 !important;
+  border-color: rgba(37, 54, 74, 0.18) !important;
+  font-weight: 700 !important;
 }
 
 @media (max-width: 720px) {
   .formWrap :global(.card) {
-    padding: 16px !important;
-    border-radius: 16px !important;
+    padding: 18px !important;
+    border-radius: 18px !important;
   }
 
   .formWrap :global(.job-create-section) {
-    padding-block: 0.8rem;
+    padding: 16px 0;
   }
 
   .formWrap :global(.job-create-section:first-of-type) {
-    padding-top: 0.25rem;
-  }
-
-  .formWrap :global(.job-customer-mode) {
-    flex-direction: column;
-  }
-
-  .formWrap :global(.job-customer-mode button) {
-    width: 100%;
-    flex-basis: auto;
-    min-height: 48px;
-  }
-
-  .formWrap :global(.job-create-section .input),
-  .formWrap :global(.job-create-section .btn),
-  .formWrap :global(.unified-job-form > details > summary) {
-    min-height: 48px;
+    padding-top: 4px;
   }
 
   .formWrap :global(.job-create-section .grid-2),
   .formWrap :global(.financials-summary-grid) {
     grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .formWrap :global(.segmented-control) {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px !important;
-    width: 100%;
-  }
-
-  .formWrap :global(.segmented-control .btn) {
-    width: 100%;
-    min-width: 0;
-    margin: 0 !important;
+    gap: 12px !important;
   }
 
   .formWrap :global(.client-summary-card) {
-    padding: 12px !important;
+    padding: 14px !important;
     overflow-wrap: anywhere;
-  }
-
-  .formWrap :global(.unified-job-form > details) {
-    margin-top: 10px !important;
-  }
-
-  .formWrap :global(.unified-job-form button[type='submit']) {
-    min-height: 54px;
-    width: 100%;
-    margin-top: 14px;
-    font-size: 16px;
   }
 }
 
 @media (max-width: 380px) {
-  .formWrap :global(.card) {
-    padding: 14px !important;
+  .formWrap :global(.job-customer-mode),
+  .formWrap :global(.segmented-control) {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .formWrap :global(.segmented-control) {
-    grid-template-columns: minmax(0, 1fr);
+  .formWrap :global(.card) {
+    padding: 16px !important;
   }
 }
