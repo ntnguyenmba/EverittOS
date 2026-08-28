@@ -18,6 +18,7 @@ import { NativeAppProvider } from '@/components/native-app-provider';
 import { NativePinLock } from '@/components/native-pin-lock';
 import { MobileDocumentFlags } from '@/components/mobile-document-flags';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
+import { QuoteCustomerFlow } from '@/components/quote-customer-flow';
 import { PwaRegistration } from '@/components/pwa-registration';
 import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
@@ -40,6 +41,7 @@ import './hero-background-visibility.css';
 import './post-login-visual-unification.css';
 import './post-login-surface-consistency.css';
 import './final-cross-role-header-controls.css';
+import './native-app-readability-2026.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
@@ -85,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <SiteChrome />
                 <ContractorStaticSections />
                 {children}
+                <QuoteCustomerFlow />
                 <MobileBottomNav />
                 <AnalyticsGate />
                 <CookieConsentBanner />
