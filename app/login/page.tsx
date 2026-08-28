@@ -20,6 +20,8 @@ import { isBrowserSupabaseMisconfigured } from '@/lib/supabase-config';
 import { PasskeySignInButton } from '@/components/passkey-sign-in-button';
 import './login-page.css';
 
+const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client';
+
 const loginCopy = {
   en: {
     title: 'Sign in',
@@ -91,6 +93,14 @@ const loginCopy = {
     configMessage: 'Xác thực chưa được cấu hình cho bản triển khai này. Hãy thiết lập biến môi trường Supabase và triển khai lại.'
   }
 };
+
+function resetActivityClock() {
+  try {
+    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(Date.now()));
+  } catch {
+    /* Storage can be unavailable in strict browser modes; login should still continue. */
+  }
+}
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -177,6 +187,7 @@ function LoginForm() {
             const setupParsed = await parseLoginApiResponse(setup.response, SETUP_API_PATH, setup.url, setup.method);
             if (setupParsed.ok) {
               const redirectTo = (setupParsed.json.redirectTo as string) || next;
+              resetActivityClock();
               window.location.assign(redirectTo);
               return;
             }
@@ -197,6 +208,7 @@ function LoginForm() {
         storeTabSessionId(json.tabSessionId);
       }
 
+      resetActivityClock();
       window.location.assign(redirectTo);
     } catch (err) {
       showError(parseFetchFailure(err, LOGIN_API_PATH, loginUrl, 'POST'));
