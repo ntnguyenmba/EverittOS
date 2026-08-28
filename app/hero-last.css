@@ -1,4 +1,4 @@
-/* Last visual word: cool white paper on hero.jpg. No beige wash. */
+/* Last visual word: cool white paper on hero.jpg. Decorative layers never steal clicks. */
 .dashboard-shell,
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
@@ -17,12 +17,33 @@
   opacity: 1 !important;
   filter: none !important;
   -webkit-filter: none !important;
+  pointer-events: none !important;
 }
 
 .dashboard-shell-overlay,
 .role-portal-shell .dashboard-shell-overlay,
 .contractor-overlay {
   background: transparent !important;
+  pointer-events: none !important;
+}
+
+.dashboard-shell > .sidebar,
+.dashboard-shell > .main,
+.dashboard-shell-header,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell a,
+.dashboard-shell button,
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.everitt-bottom-nav,
+.everitt-bottom-nav *,
+.everitt-more-overlay,
+.everitt-more-overlay *,
+.everitt-more-sheet,
+.everitt-more-sheet * {
+  pointer-events: auto !important;
 }
 
 .dashboard-shell > .sidebar,
@@ -32,5 +53,39 @@
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-advanced-filters {
   background: rgba(255, 255, 255, 0.96) !important;
+  color: #132433 !important;
+}
+
+.everitt-more-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 5000 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding: 16px 12px calc(88px + env(safe-area-inset-bottom)) !important;
+  background: rgba(19, 36, 51, 0.42) !important;
+}
+
+.everitt-more-sheet {
+  position: relative !important;
+  z-index: 5001 !important;
+  width: min(520px, 100%) !important;
+  max-height: min(72vh, 640px) !important;
+  overflow: auto !important;
+  background: #fff !important;
+  color: #132433 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 64px rgba(9, 24, 35, 0.22) !important;
+  padding: 16px !important;
+}
+
+.everitt-more-link,
+.everitt-more-sheet a,
+.everitt-more-sheet button {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding: 12px 10px !important;
   color: #132433 !important;
 }
