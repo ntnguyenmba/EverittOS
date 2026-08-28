@@ -27,6 +27,7 @@ function InvoicesPageContent() {
   const customerId = searchParams.get('customerId') || '';
   const invoiceId = searchParams.get('invoiceId') || '';
   const forceNew = searchParams.get('action') === 'new' || searchParams.get('forceNew') === '1';
+  const returnTo = searchParams.get('returnTo') || (jobId ? `/jobs/${jobId}` : '');
   const paymentParam = (searchParams.get('payment') || 'all').toLowerCase();
   const focusOutstanding = searchParams.get('focus') === 'outstanding';
   const paymentFilter =
@@ -78,6 +79,12 @@ function InvoicesPageContent() {
         ) : null}
       </header>
 
+      {jobId ? (
+        <div className="button-row" style={{ marginBottom: 14 }}>
+          <Link className="btn" href={`/jobs/${jobId}`}>Back to job</Link>
+        </div>
+      ) : null}
+
       <OutboundHub
         docType="invoice"
         canManage={canManage}
@@ -88,6 +95,7 @@ function InvoicesPageContent() {
         forceNew={forceNew}
         paymentFilter={paymentFilter}
         focusOutstanding={focusOutstanding}
+        returnTo={returnTo}
       />
 
       {!focusOutstanding ? <RecurringInvoicesPanel canManage={canManage} /> : null}
