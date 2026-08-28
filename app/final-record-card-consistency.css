@@ -9,26 +9,18 @@
   --record-card-gap: 16px;
 }
 
-/* Stronger architectural background, less milky wash. */
-.dashboard-shell .dashboard-shell-background {
-  opacity: 0.72 !important;
-  filter: saturate(0.74) contrast(1.02) brightness(0.82) !important;
-}
-
-.dashboard-shell .dashboard-shell-overlay {
-  background:
-    linear-gradient(90deg, rgba(224, 232, 237, 0.08), rgba(236, 241, 244, 0.24) 24%, rgba(236, 241, 244, 0.24) 76%, rgba(224, 232, 237, 0.08)),
-    linear-gradient(180deg, rgba(237, 242, 245, 0.08), rgba(219, 228, 233, 0.18)) !important;
-}
-
+/* Record-card styles do not alter the signed-in app canvas. */
+.dashboard-shell .dashboard-shell-background,
 .dashboard-shell.role-portal-shell .dashboard-shell-background {
-  background: #dfe7eb !important;
+  opacity: 1 !important;
+  background: #edf2f4 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
+.dashboard-shell .dashboard-shell-overlay,
 .dashboard-shell.role-portal-shell .dashboard-shell-overlay {
-  background:
-    radial-gradient(circle at 16% 4%, rgba(66, 89, 104, 0.08), transparent 34%),
-    linear-gradient(180deg, rgba(244, 247, 248, 0.36), rgba(215, 224, 229, 0.32)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16)) !important;
 }
 
 /* Individual record cards only. No data, flow, actions, or information changes. */
@@ -429,8 +421,10 @@
   }
 
   .dashboard-shell .dashboard-shell-background {
-    opacity: 0.62 !important;
-    background-position: 54% center !important;
+    opacity: 1 !important;
+    background: #edf2f4 !important;
+    background-image: none !important;
+    filter: none !important;
   }
 
   .finance-list-card,
