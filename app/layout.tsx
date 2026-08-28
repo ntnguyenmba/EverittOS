@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
-import { Cormorant_Garamond, Inter } from 'next/font/google';
+import { Manrope } from 'next/font/google';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 import { ToastProvider } from '@/components/feedback/toast-provider';
 import { LocaleProvider } from '@/components/locale-provider';
@@ -44,11 +44,9 @@ import './native-app-readability-2026.css';
 import './contractor-field-mode.css';
 import './quote-workspace.css';
 import './role-home-structure.css';
-import './hero-last.css';
-import './everitt-brand-canvas.css';
+import './signed-in-canvas.css';
 
-const inter = Inter({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700'], variable: '--font-inter', display: 'swap' });
-const cormorant = Cormorant_Garamond({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700'], variable: '--font-cormorant', display: 'swap' });
+const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
 export const metadata: Metadata = { title: 'EverittOS | Run Your Service Business', description: 'Manage requests, customers, jobs, schedules, photos, and payments in one simple workspace.', manifest: '/manifest.webmanifest', appleWebApp: { capable: true, title: 'EverittOS', statusBarStyle: 'default' }, other: { 'mobile-web-app-capable': 'yes' }, icons: { icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }], shortcut: '/favicon.ico' } };
 
@@ -56,5 +54,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={`${inter.variable} ${cormorant.variable}`}><body className={inter.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><DashboardTodayCountFix /><ContractorJobPayVisibility /><OwnerTopPerformerMetric /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<MobileBottomNav /><AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><DashboardTodayCountFix /><ContractorJobPayVisibility /><OwnerTopPerformerMetric /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<MobileBottomNav /><AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }
