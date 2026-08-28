@@ -1,4 +1,4 @@
-/* Signed-in app canvas only. Auth pages keep the architectural hero photography. */
+/* Signed-in EverittOS canvas: one architectural hero, one readable wash, every role/view. */
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
@@ -11,25 +11,41 @@
 .contractor-background,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
-  background: #edf2f4 !important;
-  background-image: none !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(237, 242, 244, 0.84) 0%,
+      rgba(232, 238, 241, 0.80) 100%
+    ),
+    url('/hero.jpg') center / cover no-repeat !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(237, 242, 244, 0.84) 0%,
+      rgba(232, 238, 241, 0.80) 100%
+    ),
+    url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   opacity: 1 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
+  filter: saturate(0.55) contrast(0.92) brightness(1.06) !important;
+  -webkit-filter: saturate(0.55) contrast(0.92) brightness(1.06) !important;
   transform: none !important;
   transition: none !important;
 }
 
+/* The wash lives with the image. Do not stack another page-wide blur/wash above it. */
 .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16)) !important;
+  background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Page chrome sits directly on the canvas, so keep it fully readable. */
+/* Page chrome sits on the washed canvas. */
 .dashboard-shell h1,
 .dashboard-shell .page-title,
 .dashboard-shell .page-head h1,
@@ -46,17 +62,94 @@
   opacity: 1 !important;
 }
 
-.dashboard-shell .card,
+.dashboard-shell .page-head,
+.contractor-main .page-head,
+.client-main .page-head {
+  max-width: 42rem;
+  padding: 4px 0 12px;
+}
+
+/* Inputs stay solid and readable. Group/list wrappers stay transparent so cards float. */
 .dashboard-shell input,
 .dashboard-shell select,
 .dashboard-shell textarea,
-.contractor-main .card,
 .contractor-main input,
 .contractor-main select,
 .contractor-main textarea,
-.client-main .card,
 .client-main input,
 .client-main select,
 .client-main textarea {
-  background-color: rgba(255, 255, 255, 0.96) !important;
+  background-color: #ffffff !important;
+  color: #172433 !important;
+}
+
+.dashboard-shell .card:has(.customer-list),
+.dashboard-shell .card:has(.customers-list),
+.dashboard-shell .card:has(.team-member-list),
+.dashboard-shell .card:has(.team-list),
+.dashboard-shell .card:has(.worker-list),
+.dashboard-shell .card:has(.contractor-list),
+.dashboard-shell .card:has(.record-list),
+.dashboard-shell .card:has(.entity-list),
+.dashboard-shell .card:has(.portal-job-list),
+.dashboard-shell .card:has(.jobs-operations-table),
+.dashboard-shell .team-directory-card,
+.contractor-main .client-jobs-list,
+.contractor-main .contractor-jobs-list,
+.contractor-main .jobs-list,
+.contractor-main .list-group {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Individual records are the floating objects, not their parent sections. */
+.dashboard-shell .team-member-card,
+.dashboard-shell .customer-card,
+.dashboard-shell .customer-list-card,
+.dashboard-shell .customers-list-card,
+.dashboard-shell .worker-card,
+.dashboard-shell .contractor-card,
+.dashboard-shell .record-card,
+.dashboard-shell .entity-card,
+.dashboard-shell .job-card,
+.dashboard-shell .expense-card,
+.dashboard-shell .jobs-operations-row,
+.contractor-main .client-job-card,
+.contractor-main .contractor-job-row,
+.contractor-main .job-row,
+.contractor-main .list-row,
+.client-main .client-job-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(72, 91, 104, 0.20) !important;
+  box-shadow: 0 14px 32px rgba(27, 45, 60, 0.11) !important;
+  backdrop-filter: none !important;
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-background,
+  .contractor-dashboard-shell .contractor-background,
+  .client-dashboard-shell .contractor-background {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(237, 242, 244, 0.87) 0%,
+        rgba(232, 238, 241, 0.84) 100%
+      ),
+      url('/hero.jpg') 56% center / cover no-repeat !important;
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(237, 242, 244, 0.87) 0%,
+        rgba(232, 238, 241, 0.84) 100%
+      ),
+      url('/hero.jpg') !important;
+    background-size: cover !important;
+    background-position: 56% center !important;
+    filter: saturate(0.50) contrast(0.92) brightness(1.07) !important;
+    -webkit-filter: saturate(0.50) contrast(0.92) brightness(1.07) !important;
+  }
 }
