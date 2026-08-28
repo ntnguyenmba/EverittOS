@@ -10,18 +10,6 @@
 }
 
 /* Record-card styles do not alter the signed-in app canvas. */
-.dashboard-shell .dashboard-shell-background,
-.dashboard-shell.role-portal-shell .dashboard-shell-background {
-  opacity: 1 !important;
-  background: #edf2f4 !important;
-  background-image: none !important;
-  filter: none !important;
-}
-
-.dashboard-shell .dashboard-shell-overlay,
-.dashboard-shell.role-portal-shell .dashboard-shell-overlay {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16)) !important;
-}
 
 /* Individual record cards only. No data, flow, actions, or information changes. */
 .jobs-operations-row,
@@ -175,7 +163,7 @@
 .team-member-card strong,
 .worker-card h3,
 .worker-card strong,
-.contractor-card h3,
+contractor-card h3,
 .contractor-card strong,
 .entity-card h3,
 .entity-card strong,
@@ -418,13 +406,6 @@
     --record-card-radius: 16px;
     --record-card-padding: 17px;
     --record-card-gap: 12px;
-  }
-
-  .dashboard-shell .dashboard-shell-background {
-    opacity: 1 !important;
-    background: #edf2f4 !important;
-    background-image: none !important;
-    filter: none !important;
   }
 
   .finance-list-card,
