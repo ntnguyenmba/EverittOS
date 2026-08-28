@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { AccessBlockedBanner } from '@/components/access-blocked-banner';
 import { AppShell } from '@/components/app-shell';
 import { useTranslation } from '@/components/locale-provider';
@@ -34,23 +34,36 @@ function formatNextJobDetail(job: DashboardJob, locale: string) { const value = 
 function todayTitle(locale: string) { const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US'; return new Intl.DateTimeFormat(localeCode, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()); }
 
 export default function DashboardPage() {
-  const router = useRouter(); const { t, locale } = useTranslation(); const c = dashboardCopy[locale];
-  const [plan, setPlan] = useState<EverittosPlan>('free'); const [role, setRole] = useState<UserRole>('owner'); const [ready, setReady] = useState(false); const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState(false); const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, singleOpenLeadId: null, nextJob: null });
+  const { t, locale } = useTranslation(); const c = dashboardCopy[locale];
+  const [plan, setPlan] = useState<EverittosPlan>('free'); const [role, setRole] = useState<UserRole>('owner'); const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState(false); const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, singleOpenLeadId: null, nextJob: null });
 
   async function loadDashboard() {
     setLoading(true); setLoadError(false);
+
+    /* The protected route has already passed the server auth boundary. Never
+       convert a slow browser Supabase handoff into a forced logout. */
     const auth = await withTimeout<{ data: { user: { id: string } | null }; error: Error | null }>(supabase.auth.getUser(), { data: { user: null }, error: new Error('Authentication timed out') });
-    const user = auth.data.user; if (!user) { router.replace('/login'); return; }
+    let userId = auth.data.user?.id || null;
+    if (!userId) {
+      const session = await withTimeout(supabase.auth.getSession(), { data: { session: null }, error: new Error('Session timed out') });
+      userId = session.data.session?.user?.id || null;
+    }
+
+    if (!userId) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+
     type ProfileRow = { plan?: string | null; role?: string | null };
     const [profileResult, organization] = await Promise.all([
-      withTimeout<{ data: ProfileRow | null; error: Error | null }>(supabase.from('profiles').select('plan, role').eq('id', user.id).maybeSingle(), { data: null, error: new Error('Profile timed out') }),
-      withTimeout(ensureOrganizationForUser(user.id), null)
+      withTimeout<{ data: ProfileRow | null; error: Error | null }>(supabase.from('profiles').select('plan, role').eq('id', userId).maybeSingle(), { data: null, error: new Error('Profile timed out') }),
+      withTimeout(ensureOrganizationForUser(userId), null)
     ]);
-    const nextPlan = normalizePlan(profileResult.data?.plan); const nextRole = normalizeRole(organization?.role || profileResult.data?.role);
-    if (isClientRole(nextRole)) { router.replace('/portal/client'); return; } if (isContractorRole(nextRole)) { router.replace('/portal/contractor'); return; }
-    setPlan(nextPlan); setRole(nextRole); setReady(true);
+    const nextPlan = normalizePlan(profileResult.data?.plan); const nextRole = normalizeRole(organization?.role || profileResult.data?.role || 'owner');
+    setPlan(nextPlan); setRole(nextRole);
 
-    const organizationId = organization?.organizationId || null; const scopeColumn = organizationId ? 'organization_id' : 'user_id'; const scopeValue = organizationId || user.id; const today = formatLocalDate(new Date());
+    const organizationId = organization?.organizationId || null; const scopeColumn = organizationId ? 'organization_id' : 'user_id'; const scopeValue = organizationId || userId; const today = formatLocalDate(new Date());
     const jobSelect = 'id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to, is_skipped';
     const [jobsResult, leadsResult] = await Promise.all([
       withTimeout(supabase.from('jobs').select(jobSelect).eq(scopeColumn, scopeValue).or(`scheduled_start.gte.${today},start_date.gte.${today},due_date.gte.${today}`).order('scheduled_start', { ascending: true, nullsFirst: false }).limit(40), { data: [], error: new Error('Jobs timed out') }),
@@ -63,11 +76,10 @@ export default function DashboardPage() {
     const openLeadRows = ((leadsResult.data || []) as Array<{ id: string; pipeline_stage: string | null }>).filter((row) => !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open'));
     const nextJobRow = activeJobs.filter((job) => { const date = jobDateValue(job); return date && formatLocalDate(date) >= today; }).sort((a, b) => (jobDateValue(a)?.getTime() || Number.MAX_SAFE_INTEGER) - (jobDateValue(b)?.getTime() || Number.MAX_SAFE_INTEGER))[0] || null;
     setOps({ todayJobs: todayJobs.length, needsAttention, openLeads: openLeadRows.length, singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null, nextJob: nextJobRow ? { id: nextJobRow.id, title: String(nextJobRow.title || nextJobRow.customer_name || c.nextJob), detail: formatNextJobDetail(nextJobRow, locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US') } : null });
-    setLoadError(Boolean(profileResult.error || jobsResult.error || leadsResult.error)); setLoading(false);
+    setLoadError(Boolean(auth.error || profileResult.error || jobsResult.error || leadsResult.error)); setLoading(false);
   }
 
   useEffect(() => { void loadDashboard(); }, []);
-  if (!ready) return <main className="today-page dashboard-home" aria-busy="true"><section style={{ padding: 24 }}><p className="loading-state" style={{ margin: 0 }}>{t('common.loading')}</p></section></main>;
   const staffView = isStaffRole(role); const ownerView = isAdminRole(role); const managerView = isManagerRole(role) && !ownerView; const canLink = (href: string) => canAccessNavHref(role, href.split('?')[0], plan); const showOperations = (ownerView || managerView) && !staffView; const openLeadsHref = ops.singleOpenLeadId ? `/leads/${ops.singleOpenLeadId}` : '/leads';
   return <AppShell plan={plan} role={role} showBackButton={false}><Suspense><DashboardAccessNotice /></Suspense><div className="today-page dashboard-home">
     {ownerView ? <section className="owner-home-sheet" aria-label={c.nextJob}><PageHeader title={todayTitle(locale)} /><div className="owner-home-primary"><span className="owner-home-kicker">{c.nextJob}</span><h2>{ops.nextJob?.title || c.noUpcomingJob}</h2>{ops.nextJob?.detail ? <p>{ops.nextJob.detail}</p> : null}<div className="owner-home-actions"><Link className="btn btn-primary" href={ops.nextJob ? `/jobs/${ops.nextJob.id}` : '/schedule'}>{ops.nextJob ? c.openJob : c.schedule}</Link>{canLink('/jobs') ? <Link className="btn" href="/jobs/new">{c.newJob}</Link> : null}</div></div>{loadError ? <div role="status" className="owner-load-note"><p className="muted">{c.loadError}</p><button className="btn btn-sm" type="button" onClick={() => void loadDashboard()} disabled={loading}>{loading ? c.loading : c.retry}</button></div> : null}</section> : <PageHeader title={staffView ? t('dashboard.myWork') : c.todaysWork} />}
