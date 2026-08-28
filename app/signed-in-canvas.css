@@ -1,9 +1,12 @@
 /* Signed-in EverittOS: one hero room, one readable wash, every role and view. */
 .dashboard-shell,
-.contractor-dashboard-shell,
+contractor-dashboard-shell,
 .client-dashboard-shell,
 .role-portal-shell {
-  background: #edf2f4 !important;
+  background:
+    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
+    url('/hero.jpg') center / cover fixed no-repeat !important;
+  background-color: #edf2f4 !important;
 }
 
 .dashboard-shell-background,
@@ -12,30 +15,21 @@
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
   background:
-    linear-gradient(
-      180deg,
-      rgba(237, 242, 244, 0.64) 0%,
-      rgba(232, 238, 241, 0.60) 100%
-    ),
+    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
     url('/hero.jpg') center / cover no-repeat !important;
   background-image:
-    linear-gradient(
-      180deg,
-      rgba(237, 242, 244, 0.64) 0%,
-      rgba(232, 238, 241, 0.60) 100%
-    ),
+    linear-gradient(180deg, rgba(237, 242, 244, 0.60), rgba(232, 238, 241, 0.56)),
     url('/hero.jpg') !important;
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   opacity: 1 !important;
-  filter: saturate(0.68) contrast(0.96) brightness(1.02) !important;
-  -webkit-filter: saturate(0.68) contrast(0.96) brightness(1.02) !important;
+  filter: saturate(0.72) contrast(0.98) brightness(1.01) !important;
+  -webkit-filter: saturate(0.72) contrast(0.98) brightness(1.01) !important;
   transform: none !important;
   transition: none !important;
 }
 
-/* The wash is built into the background. Never blur or wash the whole working page again. */
 .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
@@ -45,7 +39,6 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Titles and helper copy sit on the wash, never directly on a raw photograph. */
 .dashboard-shell h1,
 .dashboard-shell .page-title,
 .dashboard-shell .page-head h1,
@@ -69,7 +62,6 @@
   padding: 4px 0 12px;
 }
 
-/* Fields stay solid against the room. */
 .dashboard-shell input,
 .dashboard-shell select,
 .dashboard-shell textarea,
@@ -83,7 +75,6 @@
   color: #172433 !important;
 }
 
-/* Structural wrappers never become one giant white sheet. */
 .dashboard-shell .team-directory-card,
 .dashboard-shell .card:has(> .customer-list),
 .dashboard-shell .card:has(.customer-list),
@@ -123,7 +114,6 @@
   backdrop-filter: none !important;
 }
 
-/* Team heading, filters and actions sit directly on the washed room instead of inside a slab. */
 .dashboard-shell .team-directory-card {
   padding: 0 !important;
   overflow: visible !important;
@@ -137,7 +127,6 @@
   box-shadow: none !important;
 }
 
-/* Individual records are the floating white objects. */
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-card,
 .dashboard-shell .customer-list-card,
@@ -163,7 +152,6 @@
   backdrop-filter: none !important;
 }
 
-/* Preserve visible gutters so records never merge into one sheet. */
 .dashboard-shell .team-member-list,
 .dashboard-shell .customer-list,
 .dashboard-shell .customers-list,
@@ -181,29 +169,30 @@
 }
 
 @media (max-width: 760px) {
+  .dashboard-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .role-portal-shell {
+    background:
+      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
+      url('/hero.jpg') 56% center / cover no-repeat !important;
+  }
+
   .dashboard-shell-background,
   .role-portal-shell .dashboard-shell-background,
   .contractor-background,
   .contractor-dashboard-shell .contractor-background,
   .client-dashboard-shell .contractor-background {
     background:
-      linear-gradient(
-        180deg,
-        rgba(237, 242, 244, 0.70) 0%,
-        rgba(232, 238, 241, 0.67) 100%
-      ),
+      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
       url('/hero.jpg') 56% center / cover no-repeat !important;
     background-image:
-      linear-gradient(
-        180deg,
-        rgba(237, 242, 244, 0.70) 0%,
-        rgba(232, 238, 241, 0.67) 100%
-      ),
+      linear-gradient(180deg, rgba(237, 242, 244, 0.67), rgba(232, 238, 241, 0.63)),
       url('/hero.jpg') !important;
     background-size: cover !important;
     background-position: 56% center !important;
-    filter: saturate(0.62) contrast(0.95) brightness(1.03) !important;
-    -webkit-filter: saturate(0.62) contrast(0.95) brightness(1.03) !important;
+    filter: saturate(0.66) contrast(0.96) brightness(1.02) !important;
+    -webkit-filter: saturate(0.66) contrast(0.96) brightness(1.02) !important;
   }
 
   .dashboard-shell .team-directory-card {
