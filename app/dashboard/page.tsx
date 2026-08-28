@@ -253,10 +253,6 @@ export default function DashboardPage() {
             {canLink('/jobs') ? <Link className="btn" href="/jobs/new">{c.newJob}</Link> : null}
           </div>
         </div>
-        <div className="owner-home-facts">
-          {canLink('/quotes') ? <Link href="/quotes"><span>{c.quotesWaiting}</span><strong>{ops.quotesWaiting}</strong></Link> : null}
-          {showFinance ? <Link href="/bookkeeping"><span>{c.moneyLate}</span><strong>{formatMoney(Number(revenue.overdueAmount || 0), locale)}</strong></Link> : null}
-        </div>
       </section> : showOperations ? <section aria-label={c.todaysWork} className="dashboard-operations"><div className="dashboard-revenue-grid">
         {canLink('/schedule') ? <PriorityStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
         {canLink('/jobs') ? <PriorityStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
