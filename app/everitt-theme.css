@@ -1,13 +1,13 @@
 /* EverittOS refined brand theme
-   One paper, one ink, one Manrope UI system across every view. */
+   Cool login white, dark Everitt ink, one Manrope UI system across every view. */
 
 :root {
-  --paper: rgba(255, 252, 249, 0.96);
-  --paper-solid: #fffcf9;
+  --paper: rgba(255, 255, 255, 0.96);
+  --paper-solid: #ffffff;
   --ink: #132433;
   --ink-2: #31495b;
   --ink-3: #526777;
-  --bg: #fffcf9;
+  --bg: #ffffff;
   --surface: var(--paper-solid);
   --sidebar-bg: var(--paper-solid);
   --card: var(--paper-solid);
@@ -25,9 +25,9 @@
   --charcoal: #132433;
   --muted: #526777;
   --cool-grey: #526777;
-  --warm-white: var(--paper-solid);
-  --soft-white: var(--paper-solid);
-  --line: rgba(19, 36, 51, 0.14);
+  --warm-white: #ffffff;
+  --soft-white: #ffffff;
+  --line: #d5dee5;
   --hover: rgba(19, 36, 51, 0.05);
   --shadow-nav-active: none;
   --success: #3f6f5a;
