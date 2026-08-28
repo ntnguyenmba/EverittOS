@@ -8,6 +8,7 @@ import {
   recordJobPayment,
   updateJobPayment
 } from '@/lib/finance/job-payments';
+import { withTruthfulProfit } from '@/lib/finance/profit-math';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import { isValidUuid } from '@/lib/input-validation';
 import { sendJobPaymentReceipt } from '@/lib/outbound/send-job-payment-receipt';
@@ -32,6 +33,11 @@ function sameMoney(left: number, right: number) {
   return Math.abs(left - right) < 0.01;
 }
 
+async function truthfulProfitability(ctx: Awaited<ReturnType<typeof requireFinanceApiAccess>>, jobId: string) {
+  if (!ctx.ok) return null;
+  return withTruthfulProfit(await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId));
+}
+
 export async function GET(_request: Request, { params }: RouteParams) {
   const ctx = await requireFinanceApiAccess();
   if (!ctx.ok) {
@@ -49,7 +55,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 
   const [profitability, history] = await Promise.all([
-    fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId),
+    truthfulProfitability(ctx, jobId),
     fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId)
   ]);
 
@@ -90,12 +96,13 @@ export async function POST(request: Request, { params }: RouteParams) {
   const amount = Number(body.amount);
 
   const [before, historyBefore] = await Promise.all([
-    fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId),
+    truthfulProfitability(ctx, jobId),
     fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId)
   ]);
   const existing = historyBefore.payments.length === 1 ? historyBefore.payments[0] : null;
   const replaceQuotedPayment = Boolean(
     existing &&
+      before &&
       before.expectedAmount > 0 &&
       sameMoney(existing.amount, before.expectedAmount) &&
       !sameMoney(existing.amount, amount)
@@ -138,7 +145,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       }
     );
 
-    const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+    const profitability = await truthfulProfitability(ctx, jobId);
     const history = await fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId);
     return NextResponse.json({
       ok: true,
@@ -178,7 +185,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
   );
 
-  const profitability = await fetchJobProfitability(ctx.supabase, ctx.organizationId, jobId);
+  const profitability = await truthfulProfitability(ctx, jobId);
   const history = await fetchJobPaymentHistory(ctx.supabase, ctx.organizationId, jobId);
   const newestPayment = history.payments[0] || null;
   const receiptDelivery = newestPayment
