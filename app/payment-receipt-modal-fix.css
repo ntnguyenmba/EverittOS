@@ -17,45 +17,64 @@
   overflow-y: auto !important;
   padding: max(20px, env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px)) !important;
   background: rgba(15, 23, 42, 0.52) !important;
+  box-sizing: border-box !important;
+}
+
+.job-detail-shell .job-payment-modal,
+.job-detail-shell .job-payment-modal * {
+  box-sizing: border-box !important;
 }
 
 .job-detail-shell .job-payment-modal {
   position: relative !important;
   z-index: 10000 !important;
-  width: min(calc(100vw - 32px), 520px) !important;
+  width: min(100%, 520px) !important;
   max-width: 520px !important;
   max-height: calc(100dvh - 40px) !important;
   margin: auto !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
   background: var(--surface, #ffffff) !important;
 }
 
+.job-detail-shell .job-payment-modal .finance-form-block,
+.job-detail-shell .job-payment-modal .compact-finance-form,
+.job-detail-shell .job-payment-modal label,
+.job-detail-shell .job-payment-modal .input,
+.job-detail-shell .job-payment-modal input,
+.job-detail-shell .job-payment-modal textarea,
+.job-detail-shell .job-payment-modal select,
+.job-detail-shell .job-payment-modal .btn,
+.job-detail-shell .job-payment-modal button {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
 @media (max-width: 720px) {
   .job-detail-shell .job-payment-modal-backdrop {
     align-items: flex-start !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
     padding-top: max(16px, env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: max(96px, calc(16px + env(safe-area-inset-bottom, 0px))) !important;
+    padding-bottom: max(104px, calc(16px + env(safe-area-inset-bottom, 0px))) !important;
   }
 
   .job-detail-shell .job-payment-modal {
-    width: calc(100vw - 24px) !important;
-    max-height: calc(100dvh - 112px) !important;
-    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 120px) !important;
+    margin: 0 !important;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
-    border-radius: 22px;
+    border-radius: 20px;
   }
 
-  .job-payment-modal .finance-form-block,
-  .job-payment-modal .compact-finance-form {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .job-payment-modal .input,
-  .job-payment-modal textarea,
-  .job-payment-modal select,
-  .job-payment-modal .btn {
+  .job-detail-shell .job-payment-modal .finance-form-block,
+  .job-detail-shell .job-payment-modal .compact-finance-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
