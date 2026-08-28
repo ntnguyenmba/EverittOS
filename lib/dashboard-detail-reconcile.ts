@@ -1,4 +1,5 @@
 import type { DashboardDetailResult } from '@/lib/dashboard-metric-details';
+import { formatCurrency } from '@/lib/finance-format';
 
 export type CanonicalProfitMetrics = {
   expectedRevenue: number;
@@ -31,20 +32,21 @@ export function reconcileProfitDetail(
         ...section,
         formula: 'Job revenue for work in the selected period, based on each job service date.',
         total: expectedRevenue,
-        totalLabel: section.totalLabel.replace(/[-$0-9,.]+/, String(expectedRevenue))
+        totalLabel: formatCurrency(expectedRevenue)
       };
     }
     if (section.id === 'contractor') {
-      return { ...section, total: contractorPay };
+      return { ...section, total: contractorPay, totalLabel: formatCurrency(contractorPay) };
     }
     if (section.id === 'expenses') {
-      return { ...section, total: otherExpenses };
+      return { ...section, total: otherExpenses, totalLabel: formatCurrency(otherExpenses) };
     }
     if (section.id === 'profit') {
       return {
         ...section,
-        formula: `Job revenue ${expectedRevenue.toFixed(2)} - contractor costs ${contractorPay.toFixed(2)} - business expenses ${otherExpenses.toFixed(2)} = ${estimatedProfit.toFixed(2)}`,
-        total: estimatedProfit
+        formula: `Job revenue ${formatCurrency(expectedRevenue)} - contractor costs ${formatCurrency(contractorPay)} - business expenses ${formatCurrency(otherExpenses)} = ${formatCurrency(estimatedProfit)}`,
+        total: estimatedProfit,
+        totalLabel: formatCurrency(estimatedProfit)
       };
     }
     return section;
