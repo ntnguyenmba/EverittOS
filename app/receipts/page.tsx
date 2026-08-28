@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -25,6 +26,7 @@ function ReceiptsPageContent() {
   const paymentId = searchParams.get('paymentId') || '';
   const jobId = searchParams.get('jobId') || '';
   const customerId = searchParams.get('customerId') || '';
+  const returnTo = searchParams.get('returnTo') || (jobId ? `/jobs/${jobId}` : '');
   const [plan, setPlan] = useState<EverittosPlan>('free');
   const [role, setRole] = useState<UserRole>('owner');
   const [canManage, setCanManage] = useState(false);
@@ -66,6 +68,12 @@ function ReceiptsPageContent() {
         ) : null}
       </header>
 
+      {jobId ? (
+        <div className="button-row" style={{ marginBottom: 14 }}>
+          <Link className="btn" href={`/jobs/${jobId}`}>Back to job</Link>
+        </div>
+      ) : null}
+
       <OutboundHub
         docType="receipt"
         canManage={canManage}
@@ -74,6 +82,7 @@ function ReceiptsPageContent() {
         initialCustomerId={customerId}
         initialInvoiceId={invoiceId}
         initialPaymentId={paymentId}
+        returnTo={returnTo}
       />
     </AppShell>
   );
