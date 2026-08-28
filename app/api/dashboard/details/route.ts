@@ -15,6 +15,46 @@ export async function GET(request: Request) {
   const range = RANGES.has(rangeParam) ? rangeParam : 'month';
   try {
     const details = await fetchDashboardMetricDetails(ctx.supabase, ctx.organizationId, metricParam, range, localeParam);
+
+    if (metricParam === 'collected') {
+      const rows = details.sections.flatMap((section) => section.rows);
+      const rowTotal = Number(rows.reduce((sum, row) => sum + num(row.amount), 0).toFixed(2));
+      const reportedTotal = Number(num(details.total).toFixed(2));
+      const legacyDifference = Number(Math.max(0, reportedTotal - rowTotal).toFixed(2));
+
+      if (legacyDifference > 0) {
+        rows.push({
+          id: `legacy-received-${range}`,
+          title: 'Earlier recorded customer payments',
+          subtitle: 'Payment amount saved on an invoice before the payment ledger was introduced.',
+          meta: 'Customer payment',
+          amount: legacyDifference,
+          amountLabel: formatCurrency(legacyDifference),
+          href: '/invoices',
+          badge: 'Recorded payment'
+        });
+      }
+
+      details.formula = 'Money received = all customer payments recorded in the selected period. Invoice and direct job payments are combined so the detail total matches the dashboard.';
+      details.sections = reportedTotal > 0 || rows.length > 0
+        ? [{
+            id: 'customer-payments',
+            title: 'Customer payments received',
+            formula: 'All recorded customer payments in this period',
+            total: reportedTotal,
+            totalLabel: formatCurrency(reportedTotal),
+            rows
+          }]
+        : [{
+            id: 'customer-payments',
+            title: 'Customer payments received',
+            formula: 'No customer payments recorded in this period',
+            total: 0,
+            totalLabel: formatCurrency(0),
+            rows: []
+          }];
+    }
+
     if (metricParam === 'contractor-pay') {
       const [{ data: labor }, { data: jobs }] = await Promise.all([
         ctx.supabase.from('job_labor').select('id, job_id, worker_name, hours, hourly_cost, total_cost, payment_status, paid_at, created_at, payment_basis').eq('organization_id', ctx.organizationId).order('created_at', { ascending: false }),
