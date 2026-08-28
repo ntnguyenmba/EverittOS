@@ -62,6 +62,26 @@ export default function NewJobPage() {
     void load();
   }, [router]);
 
+  async function finishJobCreation(jobId: string) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('source') === 'quotes') {
+      const context = params.get('quote_context');
+      if (context) {
+        try {
+          const parsed = JSON.parse(context);
+          await fetch(`/api/jobs/${jobId}/quote-context`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsed)
+          });
+        } catch {
+          // The job is already saved. Never block the operator if optional quote history cannot be attached.
+        }
+      }
+    }
+    router.push(`/jobs/${jobId}`);
+  }
+
   if (!authorized) {
     return <p className="loading-state">{t('common.loading')}</p>;
   }
@@ -72,7 +92,7 @@ export default function NewJobPage() {
       <div className={styles.formWrap}>
         <Suspense fallback={<p className="loading-state">{t('common.loading')}</p>}>
           <JobPrefillBridge />
-          <JobCreator onJobCreated={(jobId) => router.push(`/jobs/${jobId}`)} />
+          <JobCreator onJobCreated={(jobId) => void finishJobCreation(jobId)} />
           <JobContractorOptions />
         </Suspense>
       </div>
