@@ -1,23 +1,4 @@
-/* Unify authenticated Owner, Worker, and Client views without reintroducing auth photography. */
-.dashboard-shell-background,
-.role-portal-shell .dashboard-shell-background,
-.contractor-dashboard-shell .contractor-background {
-  background: #edf2f4 !important;
-  background-image: none !important;
-  filter: none !important;
-}
-
-/* Worker and Client use the same signed-in paint canvas as Owner. */
-.contractor-dashboard-shell {
-  background: #edf2f4 !important;
-}
-
-.contractor-dashboard-shell .contractor-background {
-  opacity: 1 !important;
-  background: #edf2f4 !important;
-  background-image: none !important;
-  filter: none !important;
-}
+/* Unify authenticated Owner, Worker, and Client views while preserving the shared Everitt wallpaper. */
 
 .dashboard-home .card,
 .dashboard-home .panel,
@@ -172,14 +153,6 @@
 }
 
 @media (max-width: 760px) {
-  .dashboard-shell-background,
-  .role-portal-shell .dashboard-shell-background,
-  .contractor-dashboard-shell .contractor-background {
-    background: #edf2f4 !important;
-    background-image: none !important;
-    filter: none !important;
-  }
-
   .today-page.dashboard-home,
   .contractor-main > .contractor-dashboard,
   .contractor-main > .client-portal-jobs,
