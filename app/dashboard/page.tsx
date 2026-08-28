@@ -14,13 +14,11 @@ import {
   type DashboardRevenueMetrics,
   type JobCountRow
 } from '@/lib/dashboard-metrics';
-import { isCompletedLikeStatus } from '@/lib/recurring-jobs';
 import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canAccessFinancials } from '@/lib/finance-access';
 import { canAccessNavHref } from '@/lib/nav-access';
 import {
-  canViewTeam,
   isAdminRole,
   isClientRole,
   isContractorRole,
@@ -41,16 +39,13 @@ const dashboardCopy = {
     retry: 'Retry',
     today: 'Today',
     todaysJobs: "Today's Jobs",
-    teamWorkingToday: 'Team Working Today',
-    jobsNeedingAttention: 'Jobs Needing Attention',
+    jobsNeedingAttention: 'Needs Attention',
     openLeads: 'Open Leads',
     myWork: 'My work',
     myJobs: 'My jobs',
     schedule: 'Schedule',
     newJob: 'New Job',
-    newCustomer: 'New Customer',
-    quotes: 'Quotes',
-    assistant: 'Assistant'
+    quotes: 'Quotes'
   },
   es: {
     todaysWork: 'Trabajo de hoy',
@@ -59,16 +54,13 @@ const dashboardCopy = {
     retry: 'Reintentar',
     today: 'Hoy',
     todaysJobs: 'Trabajos de hoy',
-    teamWorkingToday: 'Equipo trabajando hoy',
-    jobsNeedingAttention: 'Trabajos que requieren atención',
+    jobsNeedingAttention: 'Necesita atención',
     openLeads: 'Prospectos abiertos',
     myWork: 'Mi trabajo',
     myJobs: 'Mis trabajos',
     schedule: 'Calendario',
     newJob: 'Nuevo trabajo',
-    newCustomer: 'Nuevo cliente',
-    quotes: 'Cotizaciones',
-    assistant: 'Asistente'
+    quotes: 'Cotizaciones'
   },
   vi: {
     todaysWork: 'Công việc hôm nay',
@@ -77,16 +69,13 @@ const dashboardCopy = {
     retry: 'Thử lại',
     today: 'Hôm nay',
     todaysJobs: 'Công việc hôm nay',
-    teamWorkingToday: 'Nhân sự làm việc hôm nay',
-    jobsNeedingAttention: 'Công việc cần chú ý',
+    jobsNeedingAttention: 'Cần chú ý',
     openLeads: 'Khách tiềm năng đang mở',
     myWork: 'Công việc của tôi',
     myJobs: 'Công việc của tôi',
     schedule: 'Lịch',
     newJob: 'Công việc mới',
-    newCustomer: 'Khách hàng mới',
-    quotes: 'Báo giá',
-    assistant: 'Trợ lý'
+    quotes: 'Báo giá'
   }
 } as const;
 
@@ -175,7 +164,7 @@ function DashboardAccessNotice() {
   return <AccessBlockedBanner title={mapped.title} message={mapped.message} details={params.get('detail') || mapped.details} />;
 }
 
-function SimpleStat({ label, value, href }: { label: string; value: number; href: string }) {
+function PriorityStat({ label, value, href }: { label: string; value: number; href: string }) {
   return (
     <Link href={href} className="dashboard-revenue-metric is-primary" style={{ minHeight: 120, textDecoration: 'none' }}>
       <span className="dashboard-revenue-metric-label">{label}</span>
@@ -189,7 +178,6 @@ type OpsCounts = {
   needsAttention: number;
   openLeads: number;
   singleOpenLeadId: string | null;
-  teamWorkingToday: number;
 };
 
 export default function DashboardPage() {
@@ -202,13 +190,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [revenue, setRevenue] = useState<DashboardRevenueMetrics>(emptyRevenue);
-  const [ops, setOps] = useState<OpsCounts>({
-    todayJobs: 0,
-    needsAttention: 0,
-    openLeads: 0,
-    singleOpenLeadId: null,
-    teamWorkingToday: 0
-  });
+  const [ops, setOps] = useState<OpsCounts>({ todayJobs: 0, needsAttention: 0, openLeads: 0, singleOpenLeadId: null });
 
   async function loadDashboard() {
     setLoading(true);
@@ -237,7 +219,6 @@ export default function DashboardPage() {
 
     const nextPlan = normalizePlan(profileResult.data?.plan);
     const nextRole = normalizeRole(organization?.role || profileResult.data?.role);
-
     if (isClientRole(nextRole)) {
       router.replace('/portal/client');
       return;
@@ -264,9 +245,7 @@ export default function DashboardPage() {
       withTimeout(
         supabase
           .from('jobs')
-          .select(
-            'id, status, start_date, due_date, scheduled_start, completed_at, created_at, assigned_to, is_skipped, recurring_series_id, occurrence_date'
-          )
+          .select('id, status, start_date, due_date, scheduled_start, completed_at, created_at, assigned_to, is_skipped, recurring_series_id, occurrence_date')
           .eq(scopeColumn, scopeValue)
           .limit(5000),
         { data: [], error: new Error('Jobs timed out') }
@@ -277,31 +256,16 @@ export default function DashboardPage() {
       )
     ]);
 
-    const jobs = (jobsResult.data || []) as Array<
-      JobCountRow & {
-        assigned_to?: string | null;
-      }
-    >;
-    const customers = (customersResult.data || []) as Array<{
-      id: string;
-      record_type: string | null;
-      pipeline_stage: string | null;
-    }>;
-
+    const jobs = (jobsResult.data || []) as Array<JobCountRow & { assigned_to?: string | null }>;
+    const customers = (customersResult.data || []) as Array<{ id: string; record_type: string | null; pipeline_stage: string | null }>;
     const todayJobs = filterValidJobsInPeriod(jobs, 'today');
-    const todayActiveJobs = todayJobs.filter(
-      (job) => !isCompletedLikeStatus(String(job.status || ''))
-    );
-    const todayJobsCount = todayJobs.length;
     const activeJobs = jobs.filter(
-      (job) =>
-        !['completed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) &&
-        !job.is_skipped
+      (job) => !['completed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) && !job.is_skipped
     );
     const needsAttention = activeJobs.filter((job) => {
       const status = String(job.status || '').toLowerCase();
       const due = (job.due_date || '').slice(0, 10);
-      return !job.assigned_to || status === 'new' || (due && due < today);
+      return !job.assigned_to || status === 'new' || Boolean(due && due < today);
     }).length;
     const openLeadRows = customers.filter(
       (row) => row.record_type === 'lead' && !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open')
@@ -309,11 +273,10 @@ export default function DashboardPage() {
 
     setRevenue(nextRevenue);
     setOps({
-      todayJobs: todayJobsCount,
+      todayJobs: todayJobs.length,
       needsAttention,
       openLeads: openLeadRows.length,
-      singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null,
-      teamWorkingToday: new Set(todayActiveJobs.map((job) => String(job.assigned_to || '').trim()).filter(Boolean)).size
+      singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null
     });
     setLoadError(Boolean(profileResult.error || jobsResult.error || customersResult.error || nextRevenue.loadFailed));
     setLoading(false);
@@ -321,9 +284,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void loadDashboard();
-    const onFocus = () => {
-      void loadDashboard();
-    };
+    const onFocus = () => void loadDashboard();
     const onVisible = () => {
       if (document.visibilityState === 'visible') void loadDashboard();
     };
@@ -354,7 +315,6 @@ export default function DashboardPage() {
   return (
     <AppShell plan={plan} role={role} showBackButton={false}>
       <Suspense><DashboardAccessNotice /></Suspense>
-
       <div className="today-page dashboard-home">
         <PageHeader title={staffView ? t('dashboard.myWork') : managerView ? c.todaysWork : t('dashboard.welcome')} />
 
@@ -366,12 +326,11 @@ export default function DashboardPage() {
         ) : null}
 
         {showOperations ? (
-          <section aria-label={c.today} className="dashboard-operations">
+          <section aria-label={c.today} className="dashboard-operations owner-priority-strip">
             <div className="dashboard-revenue-grid">
-              {canLink('/schedule') ? <SimpleStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
-              {canViewTeam(role) && canLink('/people') ? <SimpleStat label={c.teamWorkingToday} value={ops.teamWorkingToday} href="/people" /> : null}
-              {canLink('/jobs') ? <SimpleStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
-              {canLink('/leads') ? <SimpleStat label={c.openLeads} value={ops.openLeads} href={openLeadsHref} /> : null}
+              {canLink('/schedule') ? <PriorityStat label={c.todaysJobs} value={ops.todayJobs} href="/schedule" /> : null}
+              {canLink('/jobs') ? <PriorityStat label={c.jobsNeedingAttention} value={ops.needsAttention} href="/jobs?status=active" /> : null}
+              {canLink('/leads') ? <PriorityStat label={c.openLeads} value={ops.openLeads} href={openLeadsHref} /> : null}
             </div>
           </section>
         ) : null}
@@ -392,11 +351,9 @@ export default function DashboardPage() {
         ) : null}
 
         {showOperations ? (
-          <div className="inline-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+          <div className="inline-actions owner-primary-actions" style={{ marginTop: 28, justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
             {canLink('/jobs') ? <Link className="btn btn-primary" href="/jobs/new">{c.newJob}</Link> : null}
             {canLink('/pricing-helper') ? <Link className="btn" href="/pricing-helper">{c.quotes}</Link> : null}
-            {canLink('/assistant') ? <Link className="btn" href="/assistant">{c.assistant}</Link> : null}
-            {canLink('/customers') ? <Link className="btn" href="/customers/new">{c.newCustomer}</Link> : null}
           </div>
         ) : null}
       </div>
