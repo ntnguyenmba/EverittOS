@@ -1,9 +1,10 @@
-/* Last visual word: cool white paper on hero.jpg. Decorative layers never steal clicks. */
+/* Login-matched hero + floating records. Decorative layers never steal clicks. */
+
 .dashboard-shell,
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell {
-  background: #e8eef2 url('/hero.jpg') center / cover no-repeat fixed !important;
+  background: #e9eef2 url('/hero.jpg') center / cover no-repeat fixed !important;
 }
 
 .dashboard-shell-background,
@@ -11,19 +12,22 @@
 .contractor-background,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
-  background:
-    linear-gradient(180deg, rgba(248, 251, 253, 0.34), rgba(248, 251, 253, 0.34)),
-    url('/hero.jpg') center / cover no-repeat !important;
-  opacity: 1 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
+  background-image: url('/hero.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.62 !important;
+  filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
+  -webkit-filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
   pointer-events: none !important;
 }
 
 .dashboard-shell-overlay,
 .role-portal-shell .dashboard-shell-overlay,
 .contractor-overlay {
-  background: transparent !important;
+  background:
+    linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
+    linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3)) !important;
   pointer-events: none !important;
 }
 
@@ -46,14 +50,79 @@
   pointer-events: auto !important;
 }
 
+/* Parent list shells become invisible so the photo shows between items. */
+.dashboard-shell .jobs-list-page,
+.dashboard-shell .jobs-page,
+.dashboard-shell .jobs-shell,
+.dashboard-shell .jobs-shell-minimal,
+.dashboard-shell .people-page,
+.dashboard-shell .customers-page,
+.dashboard-shell .expenses-page,
+.dashboard-shell .quotes-page,
+.dashboard-shell .team-page,
+.dashboard-shell .records-page,
+.dashboard-shell .list-page,
+.dashboard-shell .jobs-board,
+.dashboard-shell .card:has(.job-card),
+.dashboard-shell .card:has(.expense-card),
+.dashboard-shell .card:has(.worker-card),
+.dashboard-shell .card:has(.team-member-card),
+.dashboard-shell .card:has(.customer-card),
+.dashboard-shell .card:has(.customer-list-card),
+.dashboard-shell .card:has(.record-card),
+.dashboard-shell .card:has(.list-row),
+.dashboard-shell .card:has(.quote-card),
+.dashboard-shell .panel:has(.card),
+.dashboard-shell .panel:has(.list-row) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Each record is its own login-style floating sheet. */
 .dashboard-shell > .sidebar,
-.dashboard-shell .card,
-.dashboard-shell .panel,
 .dashboard-shell .owner-home-sheet,
 .dashboard-shell .jobs-filter-tabs,
-.dashboard-shell .jobs-advanced-filters {
-  background: rgba(255, 255, 255, 0.96) !important;
+.dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .job-card,
+.dashboard-shell .expense-card,
+.dashboard-shell .worker-card,
+.dashboard-shell .team-member-card,
+.dashboard-shell .contractor-card,
+.dashboard-shell .customer-card,
+.dashboard-shell .customer-list-card,
+.dashboard-shell .record-card,
+.dashboard-shell .entity-card,
+.dashboard-shell .quote-card,
+.dashboard-shell .list-row,
+.dashboard-shell .stat,
+.dashboard-shell .metric-card,
+.dashboard-shell form.card,
+.dashboard-shell .unified-job-form,
+.dashboard-shell .unified-job-form.card,
+.dashboard-shell .card.form {
+  background: rgba(255, 255, 255, 0.975) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
   color: #132433 !important;
+  border-radius: 22px !important;
+  box-shadow:
+    0 34px 90px rgba(9, 24, 35, 0.18),
+    0 2px 0 rgba(255, 255, 255, 0.9) inset !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.dashboard-shell .job-card + .job-card,
+.dashboard-shell .expense-card + .expense-card,
+.dashboard-shell .worker-card + .worker-card,
+.dashboard-shell .team-member-card + .team-member-card,
+.dashboard-shell .customer-card + .customer-card,
+.dashboard-shell .list-row + .list-row,
+.dashboard-shell .record-card + .record-card,
+.dashboard-shell .quote-card + .quote-card {
+  margin-top: 12px !important;
 }
 
 .everitt-more-overlay {
@@ -73,7 +142,7 @@
   width: min(520px, 100%) !important;
   max-height: min(72vh, 640px) !important;
   overflow: auto !important;
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.975) !important;
   color: #132433 !important;
   border-radius: 22px !important;
   box-shadow: 0 24px 64px rgba(9, 24, 35, 0.22) !important;
