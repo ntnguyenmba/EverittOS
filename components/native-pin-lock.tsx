@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { isNativePlatform } from '@/lib/platform/detect';
 import { nativePinIsEnabled, verifyNativePin } from '@/lib/native-pin';
+import { authApiFetch } from '@/lib/auth-fetch';
 
 const copy = {
   en: { title: 'Welcome back', body: 'Enter your 4-digit PIN to open EverittOS.', placeholder: 'PIN', unlock: 'Open EverittOS', wrong: 'That PIN is not correct.', account: 'Use account sign-in' },
@@ -20,6 +21,11 @@ function currentLocale(): PinLocale {
   return 'en';
 }
 
+function forceAccountSignIn(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname === '/login' && new URLSearchParams(window.location.search).get('force') === '1';
+}
+
 export function NativePinLock() {
   const [native, setNative] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -32,7 +38,24 @@ export function NativePinLock() {
     setNative(isNative);
     if (!isNative) return;
     setLocale(currentLocale());
-    setLocked(nativePinIsEnabled());
+
+    let cancelled = false;
+    async function checkLock() {
+      if (forceAccountSignIn() || !nativePinIsEnabled()) {
+        if (!cancelled) setLocked(false);
+        return;
+      }
+
+      try {
+        const { response } = await authApiFetch('/api/auth/session', { method: 'GET' });
+        const json = await response.json().catch(() => null) as { authenticated?: boolean } | null;
+        if (!cancelled) setLocked(Boolean(response.ok && json?.authenticated));
+      } catch {
+        // Never let a stale PIN record block account sign-in when the server session is unavailable.
+        if (!cancelled) setLocked(false);
+      }
+    }
+    void checkLock();
 
     const syncLocale = () => setLocale(currentLocale());
     window.addEventListener('everittos:locale-changed', syncLocale);
@@ -41,6 +64,7 @@ export function NativePinLock() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'data-locale'] });
     observer.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
     return () => {
+      cancelled = true;
       window.removeEventListener('everittos:locale-changed', syncLocale);
       window.removeEventListener('storage', syncLocale);
       observer.disconnect();
@@ -70,7 +94,7 @@ export function NativePinLock() {
       <input aria-label={c.placeholder} inputMode="numeric" autoComplete="off" type="password" maxLength={4} pattern="[0-9]*" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} autoFocus />
       {error ? <p className="native-pin-error" role="alert">{error}</p> : null}
       <button className="btn btn-primary" type="submit" disabled={pin.length !== 4}>{c.unlock}</button>
-      <button className="native-pin-account" type="button" onClick={() => { window.location.assign('/login?force=1'); }}>{c.account}</button>
+      <button className="native-pin-account" type="button" onClick={() => { setLocked(false); window.location.assign('/login?force=1'); }}>{c.account}</button>
     </form>
   </div>;
 }
