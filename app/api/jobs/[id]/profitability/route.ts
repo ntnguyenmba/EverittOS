@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
 import { fetchJobPaymentHistory } from '@/lib/finance/job-payments';
+import { withTruthfulProfit } from '@/lib/finance/profit-math';
 import { fetchJobProfitability } from '@/lib/finance-server';
 import type { JobProfitability } from '@/lib/finance-types';
 import { isValidUuid } from '@/lib/input-validation';
@@ -35,19 +36,12 @@ function withPlannedExpenses(
   const effectiveNonLabor = actualNonLabor > 0 ? actualNonLabor : planned;
   const laborCost = Math.max(0, Number(profitability.laborCost || 0));
   const totalExpenses = Number((laborCost + effectiveNonLabor).toFixed(2));
-  const expectedAmount = Math.max(0, Number(profitability.expectedAmount || 0));
-  const collectedAmount = Math.max(0, Number(profitability.collectedAmount || 0));
-  const expectedProfit = Number((expectedAmount - totalExpenses).toFixed(2));
-  const collectedProfit = Number(Math.max(0, collectedAmount - totalExpenses).toFixed(2));
+  const adjusted = withTruthfulProfit({ ...profitability, totalExpenses });
 
   return {
-    ...profitability,
+    ...adjusted,
     materialCost: actualNonLabor > 0 ? Number(profitability.materialCost || 0) : 0,
     otherExpenses: actualNonLabor > 0 ? Number(profitability.otherExpenses || 0) : planned,
-    totalExpenses,
-    expectedProfit,
-    collectedProfit,
-    estimatedProfit: collectedAmount > 0 ? collectedProfit : expectedProfit,
     expectedAdditionalExpense: Number(planned.toFixed(2))
   };
 }
