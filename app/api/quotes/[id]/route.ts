@@ -12,6 +12,27 @@ function canUseQuotes(role: string | null | undefined) {
   return isAdminRole(normalizeRole(role));
 }
 
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const ctx = await requireWorkspaceSession();
+  if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
+  if (!canUseQuotes(ctx.workspace.role)) return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
+
+  const { id } = await context.params;
+  const { data, error } = await ctx.supabase
+    .from('quotes')
+    .select('*')
+    .eq('id', id)
+    .eq('organization_id', ctx.workspace.organizationId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingSchemaError(error)) return NextResponse.json({ error: 'Saved quotes are not ready yet.', code: 'schema_update_required' }, { status: 409 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (!data) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
+  return NextResponse.json({ quote: data });
+}
+
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const ctx = await requireWorkspaceSession();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error, code: ctx.code }, { status: ctx.status });
