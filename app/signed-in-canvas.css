@@ -1,4 +1,4 @@
-/* Signed-in EverittOS canvas: one architectural hero, one readable wash, every role/view. */
+/* Signed-in EverittOS: one hero room, one readable wash, every role and view. */
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
@@ -14,15 +14,15 @@
   background:
     linear-gradient(
       180deg,
-      rgba(237, 242, 244, 0.84) 0%,
-      rgba(232, 238, 241, 0.80) 100%
+      rgba(237, 242, 244, 0.78) 0%,
+      rgba(232, 238, 241, 0.74) 100%
     ),
     url('/hero.jpg') center / cover no-repeat !important;
   background-image:
     linear-gradient(
       180deg,
-      rgba(237, 242, 244, 0.84) 0%,
-      rgba(232, 238, 241, 0.80) 100%
+      rgba(237, 242, 244, 0.78) 0%,
+      rgba(232, 238, 241, 0.74) 100%
     ),
     url('/hero.jpg') !important;
   background-size: cover !important;
@@ -35,7 +35,7 @@
   transition: none !important;
 }
 
-/* The wash lives with the image. Do not stack another page-wide blur/wash above it. */
+/* The wash is built into the background. Never blur or wash the whole working page again. */
 .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
@@ -45,7 +45,7 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Page chrome sits on the washed canvas. */
+/* Titles and helper copy sit on the wash, never directly on a raw photograph. */
 .dashboard-shell h1,
 .dashboard-shell .page-title,
 .dashboard-shell .page-head h1,
@@ -69,7 +69,7 @@
   padding: 4px 0 12px;
 }
 
-/* Inputs stay solid and readable. Group/list wrappers stay transparent so cards float. */
+/* Fields stay solid against the room. */
 .dashboard-shell input,
 .dashboard-shell select,
 .dashboard-shell textarea,
@@ -83,28 +83,61 @@
   color: #172433 !important;
 }
 
-.dashboard-shell .card:has(.customer-list),
-.dashboard-shell .card:has(.customers-list),
-.dashboard-shell .card:has(.team-member-list),
-.dashboard-shell .card:has(.team-list),
-.dashboard-shell .card:has(.worker-list),
-.dashboard-shell .card:has(.contractor-list),
-.dashboard-shell .card:has(.record-list),
-.dashboard-shell .card:has(.entity-list),
-.dashboard-shell .card:has(.portal-job-list),
-.dashboard-shell .card:has(.jobs-operations-table),
+/* Structural wrappers never become one giant white sheet. */
 .dashboard-shell .team-directory-card,
+.dashboard-shell .card:has(> .customer-list),
+.dashboard-shell .card:has(.customer-list),
+.dashboard-shell .card:has(> .customers-list),
+.dashboard-shell .card:has(.customers-list),
+.dashboard-shell .card:has(> .team-member-list),
+.dashboard-shell .card:has(.team-member-list),
+.dashboard-shell .card:has(> .team-list),
+.dashboard-shell .card:has(.team-list),
+.dashboard-shell .card:has(> .worker-list),
+.dashboard-shell .card:has(.worker-list),
+.dashboard-shell .card:has(> .contractor-list),
+.dashboard-shell .card:has(.contractor-list),
+.dashboard-shell .card:has(> .record-list),
+.dashboard-shell .card:has(.record-list),
+.dashboard-shell .card:has(> .entity-list),
+.dashboard-shell .card:has(.entity-list),
+.dashboard-shell .card:has(> .portal-job-list),
+.dashboard-shell .card:has(.portal-job-list),
+.dashboard-shell .card:has(> .jobs-operations-table),
+.dashboard-shell .card:has(.jobs-operations-table),
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-mobile-table-wrap,
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
 .contractor-main .client-jobs-list,
 .contractor-main .contractor-jobs-list,
 .contractor-main .jobs-list,
-.contractor-main .list-group {
+.contractor-main .list,
+.contractor-main .list-group,
+.client-main .client-jobs-list,
+.client-main .list,
+.client-main .list-group {
   background: transparent !important;
-  border-color: transparent !important;
+  border: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
 
-/* Individual records are the floating objects, not their parent sections. */
+/* Team heading, filters and actions sit directly on the washed room instead of inside a slab. */
+.dashboard-shell .team-directory-card {
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.dashboard-shell .team-directory-header,
+.dashboard-shell .team-directory-filters,
+.dashboard-shell .team-directory-card .segmented-control {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Individual records are the floating white objects. */
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-card,
 .dashboard-shell .customer-list-card,
@@ -116,15 +149,35 @@
 .dashboard-shell .job-card,
 .dashboard-shell .expense-card,
 .dashboard-shell .jobs-operations-row,
+.dashboard-shell [data-record-card='true'],
 .contractor-main .client-job-card,
 .contractor-main .contractor-job-row,
 .contractor-main .job-row,
 .contractor-main .list-row,
-.client-main .client-job-card {
+.client-main .client-job-card,
+.client-main .list-row {
   background: rgba(255, 255, 255, 0.96) !important;
   border: 1px solid rgba(72, 91, 104, 0.20) !important;
+  border-radius: 18px !important;
   box-shadow: 0 14px 32px rgba(27, 45, 60, 0.11) !important;
   backdrop-filter: none !important;
+}
+
+/* Preserve visible gutters so records never merge into one sheet. */
+.dashboard-shell .team-member-list,
+.dashboard-shell .customer-list,
+.dashboard-shell .customers-list,
+.dashboard-shell .worker-list,
+.dashboard-shell .contractor-list,
+.dashboard-shell .record-list,
+.dashboard-shell .entity-list,
+.dashboard-shell .portal-job-list,
+.contractor-main .client-job-card-list,
+.contractor-main .contractor-jobs-list,
+.client-main .client-job-card-list {
+  display: grid !important;
+  gap: 14px !important;
+  background: transparent !important;
 }
 
 @media (max-width: 760px) {
@@ -136,20 +189,57 @@
     background:
       linear-gradient(
         180deg,
-        rgba(237, 242, 244, 0.87) 0%,
-        rgba(232, 238, 241, 0.84) 100%
+        rgba(237, 242, 244, 0.82) 0%,
+        rgba(232, 238, 241, 0.79) 100%
       ),
       url('/hero.jpg') 56% center / cover no-repeat !important;
     background-image:
       linear-gradient(
         180deg,
-        rgba(237, 242, 244, 0.87) 0%,
-        rgba(232, 238, 241, 0.84) 100%
+        rgba(237, 242, 244, 0.82) 0%,
+        rgba(232, 238, 241, 0.79) 100%
       ),
       url('/hero.jpg') !important;
     background-size: cover !important;
     background-position: 56% center !important;
     filter: saturate(0.50) contrast(0.92) brightness(1.07) !important;
     -webkit-filter: saturate(0.50) contrast(0.92) brightness(1.07) !important;
+  }
+
+  .dashboard-shell .team-directory-card {
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .team-member-list,
+  .dashboard-shell .customer-list,
+  .dashboard-shell .customers-list,
+  .dashboard-shell .worker-list,
+  .dashboard-shell .contractor-list,
+  .dashboard-shell .record-list,
+  .dashboard-shell .entity-list,
+  .dashboard-shell .portal-job-list,
+  .contractor-main .client-job-card-list,
+  .client-main .client-job-card-list {
+    gap: 12px !important;
+  }
+
+  .dashboard-shell .team-member-card,
+  .dashboard-shell .customer-card,
+  .dashboard-shell .customer-list-card,
+  .dashboard-shell .customers-list-card,
+  .dashboard-shell .worker-card,
+  .dashboard-shell .contractor-card,
+  .dashboard-shell .record-card,
+  .dashboard-shell .entity-card,
+  .dashboard-shell .job-card,
+  .dashboard-shell .expense-card,
+  .dashboard-shell .jobs-operations-row,
+  .contractor-main .client-job-card,
+  .contractor-main .contractor-job-row,
+  .contractor-main .job-row,
+  .contractor-main .list-row,
+  .client-main .client-job-card,
+  .client-main .list-row {
+    border-radius: 16px !important;
   }
 }
