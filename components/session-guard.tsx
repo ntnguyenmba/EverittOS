@@ -17,6 +17,7 @@ const TOUCH_INTERVAL_MS = 60_000;
 const MOUSEMOVE_THROTTLE_MS = 2_000;
 const COUNTDOWN_INTERVAL_MS = 1000;
 const LAST_ACTIVITY_STORAGE_KEY = 'everittos_last_activity_client';
+const INITIAL_SESSION_RETRY_DELAYS_MS = [150, 350, 700] as const;
 
 function readLastActivity(): number {
   if (typeof window === 'undefined') return Date.now();
@@ -33,6 +34,10 @@ function storeLastActivity(timestamp: number) {
 function clearLastActivity() {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY);
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
 
 async function signOutToLogin(reason: 'idle' | 'session', detail: string) {
@@ -52,10 +57,24 @@ async function getAuthenticatedUserWithRefresh() {
   if (first.data.user) return first.data.user;
 
   const refreshed = await supabase.auth.refreshSession();
-  if (!refreshed.data.session?.user) return null;
+  if (refreshed.data.session?.user) return refreshed.data.session.user;
 
-  const second = await supabase.auth.getUser();
-  return second.data.user || refreshed.data.session.user || null;
+  /*
+   * Password login is completed by a server route that writes the Supabase auth
+   * cookies onto its response. Immediately after window.location.assign(), the
+   * client Supabase instance can briefly initialize before that new cookie-backed
+   * session is visible. Do not turn that short handoff into a forced sign-out.
+   */
+  for (const delay of INITIAL_SESSION_RETRY_DELAYS_MS) {
+    await wait(delay);
+    const retry = await supabase.auth.getUser();
+    if (retry.data.user) return retry.data.user;
+
+    const session = await supabase.auth.getSession();
+    if (session.data.session?.user) return session.data.session.user;
+  }
+
+  return null;
 }
 
 async function requestTabSession() {
