@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode
 } from 'react';
@@ -110,15 +111,27 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
     ...emptyPlanState(),
     loading: true
   });
+  const refreshPromiseRef = useRef<Promise<void> | null>(null);
 
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
-    setState((prev) => ({
-      ...prev,
-      loading: options?.silent ? prev.loading : true,
-      error: null
-    }));
-    const next = await fetchWorkspacePlan();
-    setState(next);
+    if (refreshPromiseRef.current) return refreshPromiseRef.current;
+
+    const run = (async () => {
+      setState((prev) => ({
+        ...prev,
+        loading: options?.silent ? prev.loading : true,
+        error: null
+      }));
+      const next = await fetchWorkspacePlan();
+      setState(next);
+    })();
+
+    refreshPromiseRef.current = run;
+    try {
+      await run;
+    } finally {
+      if (refreshPromiseRef.current === run) refreshPromiseRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
