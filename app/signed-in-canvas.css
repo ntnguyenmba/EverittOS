@@ -1,12 +1,27 @@
-/* Signed-in EverittOS: visible architectural hero, transparent work canvas, floating records. */
+/* EverittOS signed-in system: the same architectural room as auth, with paper over the work. */
+:root {
+  --everitt-ink: #132433;
+  --everitt-ink-2: #31495b;
+  --everitt-ink-3: #526777;
+  --everitt-paper: rgba(255, 252, 249, 0.90);
+  --everitt-sheet: #fffcf9;
+  --everitt-line: #d5dee5;
+  --everitt-accent: #243f53;
+  --everitt-radius-sheet: 22px;
+  --everitt-radius-control: 12px;
+}
+
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
-.role-portal-shell {
-  background:
-    linear-gradient(180deg, rgba(237, 242, 244, 0.24), rgba(232, 238, 241, 0.18)),
-    url('/hero.jpg') center / cover no-repeat !important;
-  background-color: #edf2f4 !important;
+.role-portal-shell,
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background: url('/hero.jpg') center / cover fixed no-repeat !important;
+  background-color: #dfe5e7 !important;
 }
 
 .dashboard-shell-background,
@@ -14,18 +29,21 @@
 .contractor-background,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
-  background:
-    linear-gradient(180deg, rgba(237, 242, 244, 0.24), rgba(232, 238, 241, 0.18)),
-    url('/hero.jpg') center / cover no-repeat !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
   opacity: 1 !important;
-  filter: saturate(0.82) contrast(0.98) brightness(1.01) !important;
-  -webkit-filter: saturate(0.82) contrast(0.98) brightness(1.01) !important;
+  filter: saturate(0.72) contrast(0.94) brightness(1.02) !important;
+  -webkit-filter: saturate(0.72) contrast(0.94) brightness(1.02) !important;
 }
 
-/* Nothing in the authenticated content column is allowed to repaint the hero. */
+/* A warm paper veil protects the work column without erasing the room. */
+.dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: linear-gradient(90deg, rgba(244, 241, 236, 0.44), rgba(255, 252, 249, 0.70) 22%, rgba(255, 252, 249, 0.78) 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 .dashboard-shell > .main,
 .dashboard-shell .main,
 .dashboard-shell .app-page-content,
@@ -36,49 +54,80 @@
 .dashboard-shell .portal-page,
 .dashboard-shell .authenticated-portal,
 .contractor-main,
-.contractor-main > *,
-.client-main,
-.client-main > * {
+.client-main {
   background: transparent !important;
   background-color: transparent !important;
 }
 
-.dashboard-shell-overlay,
-.contractor-overlay,
-.contractor-dashboard-shell .contractor-overlay,
-.client-dashboard-shell .contractor-overlay {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* Sidebar is one quiet frosted sheet in the same room. */
+.dashboard-shell > .sidebar {
+  margin: 18px 0 18px 18px !important;
+  height: calc(100svh - 36px) !important;
+  padding: 22px 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.70) !important;
+  border-radius: var(--everitt-radius-sheet) !important;
+  background: rgba(255, 252, 249, 0.88) !important;
+  box-shadow: 0 18px 48px rgba(19, 36, 51, 0.12) !important;
+  backdrop-filter: blur(12px) saturate(0.9) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(0.9) !important;
+  overflow: auto !important;
 }
 
-/* Typography should feel like the login, not a dense admin product. */
+.dashboard-shell .sidebar-brand-auth-like {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 2px 20px !important;
+}
+
+.dashboard-shell .sidebar-language-compact {
+  width: auto !important;
+  min-width: 108px !important;
+  min-height: 42px !important;
+}
+
+.dashboard-shell .sidebar-nav a {
+  min-height: 46px !important;
+  border-radius: 12px !important;
+  color: var(--everitt-ink-2) !important;
+  font-weight: 650 !important;
+}
+
+.dashboard-shell .sidebar-nav a[aria-current='page'],
+.dashboard-shell .sidebar-nav a.is-active {
+  background: rgba(255, 252, 249, 0.96) !important;
+  color: var(--everitt-ink) !important;
+  box-shadow: inset 0 0 0 1px rgba(36, 63, 83, 0.10) !important;
+}
+
+/* Auth typography comes inward. */
 .dashboard-shell h1,
 .dashboard-shell .page-title,
 .dashboard-shell .page-head h1,
 .contractor-main h1,
 .client-main h1 {
-  color: #172433 !important;
-  font-size: clamp(28px, 2.4vw, 36px) !important;
+  color: var(--everitt-ink) !important;
+  font-size: clamp(28px, 2.2vw, 34px) !important;
   line-height: 1.08 !important;
-  font-weight: 700 !important;
+  font-weight: 750 !important;
   letter-spacing: -0.035em !important;
 }
 
 .dashboard-shell h2,
 .contractor-main h2,
 .client-main h2 {
-  color: #172433 !important;
-  font-size: clamp(20px, 1.6vw, 24px) !important;
+  color: var(--everitt-ink) !important;
+  font-size: clamp(20px, 1.5vw, 24px) !important;
   line-height: 1.18 !important;
-  font-weight: 700 !important;
+  font-weight: 750 !important;
   letter-spacing: -0.025em !important;
 }
 
 .dashboard-shell h3,
 .contractor-main h3,
 .client-main h3 {
-  color: #172433 !important;
+  color: var(--everitt-ink) !important;
   font-size: 18px !important;
   line-height: 1.25 !important;
   font-weight: 700 !important;
@@ -90,26 +139,27 @@
 .contractor-main .muted,
 .client-main p,
 .client-main .muted {
-  color: #344b5c !important;
+  color: var(--everitt-ink-2) !important;
   font-size: 15px !important;
   line-height: 1.5 !important;
+  font-weight: 500 !important;
   opacity: 1 !important;
 }
 
-/* Page headings sit directly on the room, like auth copy, with no corporate banner slab. */
 .dashboard-shell .page-head,
 .contractor-main .page-head,
 .client-main .page-head {
-  width: auto;
   max-width: 46rem;
-  padding: 4px 0 12px !important;
+  padding: 4px 0 14px !important;
   border: 0 !important;
-  border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-/* Forms remain crisp and readable. */
+/* Login controls are the only control language. */
+.dashboard-shell .btn,
+.contractor-main .btn,
+.client-main .btn,
 .dashboard-shell input,
 .dashboard-shell select,
 .dashboard-shell textarea,
@@ -119,13 +169,68 @@
 .client-main input,
 .client-main select,
 .client-main textarea {
-  background: rgba(255, 255, 255, 0.97) !important;
-  color: #172433 !important;
-  border: 1px solid rgba(36, 63, 83, 0.16) !important;
-  border-radius: 12px !important;
+  min-height: 46px !important;
+  border: 1px solid var(--everitt-line) !important;
+  border-radius: var(--everitt-radius-control) !important;
+  box-shadow: none !important;
 }
 
-/* Structural wrappers never become giant sheets. */
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.contractor-main input,
+.contractor-main select,
+.contractor-main textarea,
+.client-main input,
+.client-main select,
+.client-main textarea {
+  background: rgba(255, 252, 249, 0.98) !important;
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell .btn-primary,
+.contractor-main .btn-primary,
+.client-main .btn-primary {
+  background: var(--everitt-accent) !important;
+  border-color: var(--everitt-accent) !important;
+  color: #fff !important;
+}
+
+/* Ask Everitt is a launcher, not the hero of the home screen. */
+.dashboard-shell .everitt-cmd-trigger {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  margin: 0 0 18px auto !important;
+  padding: 0 !important;
+  border: 1px solid rgba(36, 63, 83, 0.16) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 252, 249, 0.94) !important;
+  color: var(--everitt-ink) !important;
+  box-shadow: 0 8px 20px rgba(19, 36, 51, 0.08) !important;
+  overflow: hidden !important;
+  font-size: 0 !important;
+}
+
+.dashboard-shell .everitt-cmd-trigger > * {
+  display: none !important;
+}
+
+.dashboard-shell .everitt-cmd-trigger::after {
+  content: '⌘K';
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--everitt-ink) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Structural wrappers disappear. The work itself is paper. */
 .dashboard-shell .team-directory-card,
 .dashboard-shell .jobs-table-card,
 .dashboard-shell .jobs-mobile-table-wrap,
@@ -158,24 +263,22 @@
 
 .dashboard-home .owner-money-details {
   padding: 0 !important;
-  overflow: visible !important;
 }
 
 .dashboard-home .owner-money-details > summary {
   width: fit-content;
-  min-height: 44px !important;
+  min-height: 46px !important;
   padding: 10px 14px !important;
-  border: 1px solid rgba(36, 63, 83, 0.16) !important;
-  border-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 20px rgba(18, 40, 56, 0.07) !important;
+  border: 1px solid var(--everitt-line) !important;
+  border-radius: var(--everitt-radius-control) !important;
+  background: rgba(255, 252, 249, 0.94) !important;
+  box-shadow: none !important;
 }
 
 .dashboard-home .owner-money-details-body {
-  padding: 16px 0 0 !important;
+  padding: 14px 0 0 !important;
 }
 
-/* Individual records and metrics are the floating white objects. */
 .dashboard-shell .team-member-card,
 .dashboard-shell .customer-card,
 .dashboard-shell .customer-list-card,
@@ -188,37 +291,17 @@
 .dashboard-shell .expense-card,
 .dashboard-shell .jobs-operations-row,
 .dashboard-shell [data-record-card='true'],
-.dashboard-home .dashboard-revenue-metric,
 .contractor-main .client-job-card,
 .contractor-main .contractor-job-row,
 .contractor-main .job-row,
 .contractor-main .list-row,
 .client-main .client-job-card,
 .client-main .list-row {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(72, 91, 104, 0.18) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 14px 32px rgba(27, 45, 60, 0.11) !important;
+  background: rgba(255, 252, 249, 0.96) !important;
+  border: 1px solid rgba(213, 222, 229, 0.94) !important;
+  border-radius: var(--everitt-radius-sheet) !important;
+  box-shadow: 0 12px 30px rgba(19, 36, 51, 0.08) !important;
   backdrop-filter: none !important;
-}
-
-.dashboard-home .dashboard-revenue-metric {
-  min-height: 118px !important;
-  padding: 18px 20px !important;
-}
-
-.dashboard-home .dashboard-revenue-metric-label {
-  font-size: 13px !important;
-  font-weight: 650 !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
-}
-
-.dashboard-home .dashboard-revenue-metric-value {
-  font-size: clamp(24px, 2.5vw, 34px) !important;
-  line-height: 1.05 !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.035em !important;
 }
 
 .dashboard-shell .team-member-list,
@@ -237,7 +320,70 @@
   background: transparent !important;
 }
 
-@media (max-width: 760px) {
+/* Owner home: one login-sized sheet containing the next work and two quiet facts. */
+.dashboard-home .owner-priority-strip {
+  width: min(680px, 100%) !important;
+  margin-top: 6px !important;
+}
+
+.dashboard-home .owner-priority-strip .dashboard-revenue-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  padding: 8px 28px 24px !important;
+  border: 1px solid rgba(213, 222, 229, 0.96) !important;
+  border-radius: var(--everitt-radius-sheet) !important;
+  background: rgba(255, 252, 249, 0.96) !important;
+  box-shadow: 0 18px 48px rgba(19, 36, 51, 0.12) !important;
+}
+
+.dashboard-home .owner-priority-strip .owner-desk-card {
+  min-height: auto !important;
+  padding: 16px 0 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-home .owner-priority-strip .owner-next-job-card {
+  grid-column: 1 / -1 !important;
+  padding: 20px 0 22px !important;
+  border-bottom: 1px solid var(--everitt-line) !important;
+}
+
+.dashboard-home .owner-priority-strip .owner-desk-card:not(.owner-next-job-card) + .owner-desk-card {
+  padding-left: 22px !important;
+  border-left: 1px solid var(--everitt-line) !important;
+}
+
+.dashboard-home .owner-priority-strip .dashboard-revenue-metric-label {
+  color: var(--everitt-ink-3) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard-home .owner-priority-strip .dashboard-revenue-metric-value {
+  margin-top: 6px !important;
+  color: var(--everitt-ink) !important;
+  font-size: 22px !important;
+  line-height: 1.18 !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.dashboard-home .owner-priority-strip .owner-next-job-card .dashboard-revenue-metric-value {
+  font-size: clamp(26px, 3vw, 34px) !important;
+}
+
+.dashboard-home .owner-primary-actions {
+  width: min(680px, 100%) !important;
+  margin-top: 16px !important;
+}
+
+@media (max-width: 1279px) {
   .dashboard-shell,
   .contractor-dashboard-shell,
   .client-dashboard-shell,
@@ -247,23 +393,35 @@
   .contractor-background,
   .contractor-dashboard-shell .contractor-background,
   .client-dashboard-shell .contractor-background {
-    background:
-      linear-gradient(180deg, rgba(237, 242, 244, 0.34), rgba(232, 238, 241, 0.28)),
-      url('/hero.jpg') 56% center / cover no-repeat !important;
-    background-size: cover !important;
-    background-position: 56% center !important;
+    background-attachment: scroll !important;
   }
 
+  .dashboard-shell-overlay {
+    background: rgba(255, 252, 249, 0.64) !important;
+  }
+}
+
+@media (max-width: 760px) {
   .dashboard-shell h1,
   .contractor-main h1,
   .client-main h1 {
     font-size: 28px !important;
   }
 
-  .dashboard-shell .page-head,
-  .contractor-main .page-head,
-  .client-main .page-head {
-    padding: 2px 0 10px !important;
+  .dashboard-home .owner-priority-strip .dashboard-revenue-grid {
+    grid-template-columns: 1fr !important;
+    padding: 6px 20px 20px !important;
+  }
+
+  .dashboard-home .owner-priority-strip .owner-desk-card:not(.owner-next-job-card) {
+    padding: 16px 0 0 !important;
+  }
+
+  .dashboard-home .owner-priority-strip .owner-desk-card:not(.owner-next-job-card) + .owner-desk-card {
+    margin-top: 16px !important;
+    padding-left: 0 !important;
+    border-left: 0 !important;
+    border-top: 1px solid var(--everitt-line) !important;
   }
 
   .dashboard-shell .team-member-list,
@@ -277,18 +435,5 @@
   .contractor-main .client-job-card-list,
   .client-main .client-job-card-list {
     gap: 12px !important;
-  }
-
-  .dashboard-home .dashboard-revenue-metric,
-  .dashboard-shell .team-member-card,
-  .dashboard-shell .customer-card,
-  .dashboard-shell .record-card,
-  .dashboard-shell .jobs-operations-row,
-  .contractor-main .client-job-card,
-  .contractor-main .contractor-job-row,
-  .contractor-main .list-row,
-  .client-main .client-job-card,
-  .client-main .list-row {
-    border-radius: 16px !important;
   }
 }
