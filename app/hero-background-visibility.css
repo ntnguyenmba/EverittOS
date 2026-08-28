@@ -1,15 +1,39 @@
-/* Signed-in shells use the shared Everitt canvas. Hero photography is reserved for auth. */
+/* Signed-in EverittOS uses the same real-work hero photography as the auth experience.
+   Keep this rule explicit so older shell gradients or cache order cannot erase it. */
+.dashboard-shell,
+.dashboard-shell-background,
+.role-portal-shell,
+.role-portal-shell .dashboard-shell-background,
+.contractor-dashboard-shell,
+.client-dashboard-shell,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background-color: #dfe5e7 !important;
+  background-image: url('/hero.jpg') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
-.contractor-background {
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
   opacity: 1 !important;
-  background: #edf2f4 !important;
-  background-image: none !important;
-  background-blend-mode: normal !important;
-  filter: none !important;
-  -webkit-filter: none !important;
+  filter: saturate(0.78) contrast(0.96) brightness(1.01) !important;
+  -webkit-filter: saturate(0.78) contrast(0.96) brightness(1.01) !important;
+  transform: none !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: linear-gradient(90deg, rgba(255,252,249,.16), rgba(255,252,249,.30) 24%, rgba(255,252,249,.40) 100%) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  transform: none !important;
-  transition: none !important;
 }
