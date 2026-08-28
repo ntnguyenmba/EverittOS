@@ -25,9 +25,7 @@ import { SupabaseRuntimeConfig } from '@/components/supabase-runtime-config';
 import { ContractorStaticSections } from '@/components/portal/contractor-static-sections';
 import { JobFinanceWordingAndCustomerRate } from '@/components/job-finance-wording-and-customer-rate';
 import { CreateFormCancelControls } from '@/components/create-form-cancel-controls';
-import { DashboardTodayCountFix } from '@/components/dashboard-today-count-fix';
 import { ContractorJobPayVisibility } from '@/components/contractor-job-pay-visibility';
-import { OwnerTopPerformerMetric } from '@/components/owner-top-performer-metric';
 import { ExpensesListEnhancer } from '@/components/expenses-list-enhancer';
 import { AskEverittQuickClear } from '@/components/ask-everitt-quick-clear';
 import { vercelDeploymentEnv } from '@/lib/deployment-env';
@@ -54,5 +52,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><DashboardTodayCountFix /><ContractorJobPayVisibility /><OwnerTopPerformerMetric /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<MobileBottomNav /><AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><ContractorJobPayVisibility /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<MobileBottomNav /><AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }
