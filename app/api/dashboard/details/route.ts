@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fetchDashboardMetricDetails, isDashboardDetailMetric } from '@/lib/dashboard-metric-details';
-import { buildJobOperationalDateMap, calculateOutstandingBreakdown, inRange, num, rangeBounds, type DashboardDateRange, type InvoiceMetricRow, type InvoicePaymentRow, type JobPaymentMetricRow, type JobRevenueRow } from '@/lib/dashboard-metrics';
+import { reconcileProfitDetail } from '@/lib/dashboard-detail-reconcile';
+import { buildJobOperationalDateMap, calculateOutstandingBreakdown, fetchDashboardRevenueMetrics, inRange, num, rangeBounds, type DashboardDateRange, type InvoiceMetricRow, type InvoicePaymentRow, type JobPaymentMetricRow, type JobRevenueRow } from '@/lib/dashboard-metrics';
 import { formatCurrency } from '@/lib/finance-format';
 import { formatLaborPaymentLabel } from '@/lib/job-labor-basis';
 import { requireFinanceApiAccess } from '@/lib/finance-api-auth';
@@ -14,7 +15,17 @@ export async function GET(request: Request) {
   if (!isDashboardDetailMetric(metricParam)) return NextResponse.json({ error: 'Unknown dashboard metric.' }, { status: 400 });
   const range = RANGES.has(rangeParam) ? rangeParam : 'month';
   try {
-    const details = await fetchDashboardMetricDetails(ctx.supabase, ctx.organizationId, metricParam, range, localeParam);
+    let details = await fetchDashboardMetricDetails(ctx.supabase, ctx.organizationId, metricParam, range, localeParam);
+
+    if (metricParam === 'estimated-profit') {
+      const metrics = await fetchDashboardRevenueMetrics(ctx.supabase, ctx.organizationId, range);
+      details = reconcileProfitDetail(details, {
+        expectedRevenue: metrics.expectedRevenue,
+        contractorPay: metrics.contractorPayThisMonth || 0,
+        otherExpenses: metrics.otherExpensesThisMonth || 0,
+        estimatedProfit: metrics.estimatedProfit
+      });
+    }
 
     if (metricParam === 'collected') {
       const rows = details.sections.flatMap((section) => section.rows);
@@ -80,7 +91,7 @@ export async function GET(request: Request) {
       const invoiceRows = selectedRows.filter((row) => row.sourceType === 'invoice'); const jobRows = selectedRows.filter((row) => row.sourceType === 'job'); const invoiceTotal = Number(invoiceRows.reduce((sum, row) => sum + row.amountOwed, 0).toFixed(2)); const jobTotal = Number(jobRows.reduce((sum, row) => sum + row.amountOwed, 0).toFixed(2)); const total = Number((invoiceTotal + jobTotal).toFixed(2));
       const toDetailRow = (row: (typeof selectedRows)[number]) => ({ id: row.id, title: row.customerName ? `${row.customerName} · ${row.title}` : row.title, subtitle: row.sourceType === 'invoice' ? `Invoice · Invoiced ${formatCurrency(row.expectedOrInvoiced)} · Paid ${formatCurrency(row.amountPaid)} · Owed ${formatCurrency(row.amountOwed)}` : `No invoice · Expected ${formatCurrency(row.expectedOrInvoiced)} · Paid ${formatCurrency(row.amountPaid)} · Owed ${formatCurrency(row.amountOwed)}`, amount: row.amountOwed, amountLabel: formatCurrency(row.amountOwed), href: row.href, badge: row.sourceType === 'invoice' ? 'Invoice' : 'No invoice' });
       details.total = total; details.formula = range === 'all_time' ? 'Still owed = all current unpaid customer balances.' : 'Still owed = current unpaid balances tied to work in the selected period.';
-      details.sections = [{ id: 'unpaid-invoices', title: 'Unpaid invoices', formula: 'Unpaid invoice balances tied to the selected period', total: invoiceTotal, totalLabel: formatCurrency(invoiceTotal), rows: invoiceRows.map(toDetailRow) }, { id: 'uninvoiced-jobs', title: 'Uninvoiced job balances', formula: 'Unpaid expected job balances tied to the selected period', total: jobTotal, totalLabel: formatCurrency(jobTotal), rows: jobRows.map(toDetailRow) }];
+      details.sections = [{ id: 'unpaid-invoices', title: 'Unpaid invoices', formula: 'Unpaid invoice balances tied to the selected period', total: invoiceTotal, totalLabel: formatCurrency(invoiceTotal), rows: invoiceRows.map(toDetailRow) }, { id: 'uninvoiced-jobs', title: 'Uninvoiced job balances', formula: 'Unpaid expected job balances tied to work in the selected period', total: jobTotal, totalLabel: formatCurrency(jobTotal), rows: jobRows.map(toDetailRow) }];
     }
     return NextResponse.json({ details });
   } catch (error) { const message = error instanceof Error ? error.message : 'Unable to load metric details.'; return NextResponse.json({ error: message }, { status: 500 }); }
