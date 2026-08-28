@@ -43,6 +43,7 @@ import './final-cross-role-header-controls.css';
 import './native-app-readability-2026.css';
 import './contractor-field-mode.css';
 import './quote-workspace.css';
+import './role-home-structure.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
