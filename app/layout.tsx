@@ -18,7 +18,6 @@ import { NativeAppProvider } from '@/components/native-app-provider';
 import { NativePinLock } from '@/components/native-pin-lock';
 import { MobileDocumentFlags } from '@/components/mobile-document-flags';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
-import { QuoteCustomerFlow } from '@/components/quote-customer-flow';
 import { PwaRegistration } from '@/components/pwa-registration';
 import { PwaUpdatePrompt } from '@/components/pwa-update-prompt';
 import { SuppressVercelToolbar } from '@/components/suppress-vercel-toolbar';
@@ -43,6 +42,7 @@ import './post-login-surface-consistency.css';
 import './final-cross-role-header-controls.css';
 import './native-app-readability-2026.css';
 import './contractor-field-mode.css';
+import './quote-workspace.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
@@ -52,51 +52,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const deployment = vercelDeploymentEnv();
   const cookieStore = await cookies();
   const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
-
-  return (
-    <html
-      lang={initialLocale}
-      data-locale={initialLocale}
-      data-deployment={deployment}
-      className={manrope.variable}
-    >
-      <body className={manrope.className} data-locale={initialLocale}>
-        <SupabaseRuntimeConfig />
-        <PwaRegistration />
-        <MobileDocumentFlags />
-        <NativeAppProvider />
-        <NativePinLock />
-        <AppConnectivityBanner />
-        <NetworkStatusBanner />
-        <PwaUpdatePrompt />
-        <SuppressVercelToolbar />
-        <LocaleProvider initialLocale={initialLocale}>
-          <JobFinanceWordingAndCustomerRate />
-          <CreateFormCancelControls />
-          <DashboardTodayCountFix />
-          <ContractorJobPayVisibility />
-          <OwnerTopPerformerMetric />
-          <ExpensesListEnhancer />
-          <AskEverittQuickClear />
-          <ToastProvider>
-            <LocaleSync />
-            <SessionGuard>
-              <ActivityHeartbeat />
-              <WorkspacePlanProvider>
-                <WorkspaceBootstrap />
-                <SkipToMain />
-                <SiteChrome />
-                <ContractorStaticSections />
-                {children}
-                <QuoteCustomerFlow />
-                <MobileBottomNav />
-                <AnalyticsGate />
-                <CookieConsentBanner />
-              </WorkspacePlanProvider>
-            </SessionGuard>
-          </ToastProvider>
-        </LocaleProvider>
-      </body>
-    </html>
-  );
+  return <html lang={initialLocale} data-locale={initialLocale} data-deployment={deployment} className={manrope.variable}><body className={manrope.className} data-locale={initialLocale}><SupabaseRuntimeConfig /><PwaRegistration /><MobileDocumentFlags /><NativeAppProvider /><NativePinLock /><AppConnectivityBanner /><NetworkStatusBanner /><PwaUpdatePrompt /><SuppressVercelToolbar /><LocaleProvider initialLocale={initialLocale}><JobFinanceWordingAndCustomerRate /><CreateFormCancelControls /><DashboardTodayCountFix /><ContractorJobPayVisibility /><OwnerTopPerformerMetric /><ExpensesListEnhancer /><AskEverittQuickClear /><ToastProvider><LocaleSync /><SessionGuard><ActivityHeartbeat /><WorkspacePlanProvider><WorkspaceBootstrap /><SkipToMain /><SiteChrome /><ContractorStaticSections />{children}<MobileBottomNav /><AnalyticsGate /><CookieConsentBanner /></WorkspacePlanProvider></SessionGuard></ToastProvider></LocaleProvider></body></html>;
 }
