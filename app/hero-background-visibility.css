@@ -1,9 +1,10 @@
-/* Shared architectural hero treatment for Owner, Worker, Client, and subpages. */
+/* Signed-in shells use the shared Everitt canvas. Hero photography is reserved for auth. */
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-background {
   opacity: 1 !important;
-  background: #dfe8ee url('/hero.jpg') center / cover no-repeat !important;
+  background: #edf2f4 !important;
+  background-image: none !important;
   background-blend-mode: normal !important;
   filter: none !important;
   -webkit-filter: none !important;
