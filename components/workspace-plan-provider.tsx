@@ -30,6 +30,8 @@ export type WorkspacePlanState = {
 };
 
 const WorkspacePlanContext = createContext<WorkspacePlanState | null>(null);
+const PLAN_REQUEST_TIMEOUT_MS = 3500;
+const STRIPE_RECOVERY_SESSION_KEY = 'everittos_stripe_recovery_checked';
 
 type WorkspacePlanResponse = {
   profilePlan?: string;
@@ -58,52 +60,50 @@ function emptyPlanState(error: string | null = null): Omit<WorkspacePlanState, '
 }
 
 async function requestWorkspacePlan(): Promise<Response> {
-  return fetch('/api/workspace/plan', {
-    cache: 'no-store',
-    credentials: 'same-origin'
-  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), PLAN_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch('/api/workspace/plan', {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
-async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>> {
-  let res = await requestWorkspacePlan();
-  if (res.status === 401) return emptyPlanState();
-
-  let json = (await res.json().catch(() => ({}))) as WorkspacePlanResponse;
-  if (!res.ok) return emptyPlanState(json.error || 'Unable to load workspace plan.');
-
-  const firstPlan = normalizePlan(json.organizationPlan || json.billingPlan || json.profilePlan || 'free');
-
-  // Recover Stripe subscriptions that were paid successfully but were not saved by an older webhook.
-  // The endpoint verifies directly with Stripe and never trusts a client-supplied plan.
-  if (firstPlan === 'free') {
-    const recovery = await fetch('/api/stripe/sync-current-user', {
-      method: 'POST',
-      credentials: 'same-origin'
-    }).catch(() => null);
-
-    if (recovery?.ok) {
-      res = await requestWorkspacePlan();
-      json = (await res.json().catch(() => ({}))) as WorkspacePlanResponse;
-      if (!res.ok) return emptyPlanState(json.error || 'Unable to refresh workspace plan.');
-    }
-  }
-
+function stateFromJson(json: WorkspacePlanResponse): Omit<WorkspacePlanState, 'refresh'> {
   const profilePlan = json.profilePlan ? normalizePlan(json.profilePlan) : null;
   const billingPlan = json.billingPlan ? normalizePlan(json.billingPlan) : profilePlan;
   const organizationPlan = json.organizationPlan ? normalizePlan(json.organizationPlan) : profilePlan;
-
   return {
     profilePlan,
     subscriptionStatus: json.subscriptionStatus ?? json.rawSubscriptionStatus ?? null,
     billingPlan,
     organizationPlan,
-    plan: organizationPlan ?? profilePlan,
+    plan: organizationPlan ?? profilePlan ?? 'free',
     role: normalizeRole(json.role || 'owner'),
     rawProfilePlan: json.rawProfilePlan ?? json.profilePlan ?? null,
     rawSubscriptionStatus: json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null,
     loading: false,
     error: null
   };
+}
+
+async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>> {
+  try {
+    const res = await requestWorkspacePlan();
+    if (res.status === 401) return emptyPlanState();
+    const json = (await res.json().catch(() => ({}))) as WorkspacePlanResponse;
+    if (!res.ok) return emptyPlanState(json.error || 'Unable to load workspace plan.');
+    return stateFromJson(json);
+  } catch (error) {
+    const message = error instanceof DOMException && error.name === 'AbortError'
+      ? 'Workspace plan request timed out.'
+      : 'Unable to load workspace plan.';
+    return { ...emptyPlanState(message), plan: 'free', role: 'owner' };
+  }
 }
 
 export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
@@ -115,17 +115,11 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
     if (refreshPromiseRef.current) return refreshPromiseRef.current;
-
     const run = (async () => {
-      setState((prev) => ({
-        ...prev,
-        loading: options?.silent ? prev.loading : true,
-        error: null
-      }));
+      setState((prev) => ({ ...prev, loading: options?.silent ? prev.loading : true, error: null }));
       const next = await fetchWorkspacePlan();
       setState(next);
     })();
-
     refreshPromiseRef.current = run;
     try {
       await run;
@@ -137,20 +131,12 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
 
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        void refresh();
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') void refresh({ silent: true });
     });
 
-    const refreshSilently = () => {
-      void refresh({ silent: true });
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') refreshSilently();
-    };
+    const refreshSilently = () => void refresh({ silent: true });
+    const onVisibilityChange = () => { if (document.visibilityState === 'visible') refreshSilently(); };
 
     window.addEventListener('everittos:workspace-plan-refresh', refreshSilently);
     window.addEventListener('focus', refreshSilently);
@@ -164,8 +150,28 @@ export function WorkspacePlanProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
-  const value = useMemo<WorkspacePlanState>(() => ({ ...state, refresh }), [state, refresh]);
+  useEffect(() => {
+    if (state.loading || state.plan !== 'free' || typeof window === 'undefined') return;
+    if (window.sessionStorage.getItem(STRIPE_RECOVERY_SESSION_KEY)) return;
+    window.sessionStorage.setItem(STRIPE_RECOVERY_SESSION_KEY, '1');
 
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), PLAN_REQUEST_TIMEOUT_MS);
+    void fetch('/api/stripe/sync-current-user', {
+      method: 'POST',
+      credentials: 'same-origin',
+      signal: controller.signal
+    }).then((response) => {
+      if (response.ok) void refresh({ silent: true });
+    }).catch(() => undefined).finally(() => window.clearTimeout(timer));
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [state.loading, state.plan, refresh]);
+
+  const value = useMemo<WorkspacePlanState>(() => ({ ...state, refresh }), [state, refresh]);
   return <WorkspacePlanContext.Provider value={value}>{children}</WorkspacePlanContext.Provider>;
 }
 
