@@ -1,9 +1,18 @@
-/* Login-matched hero + floating records. Decorative layers never steal clicks. */
+/* Everitt luxury: login hero, Manrope, floating sheets. Features unchanged. */
+
+html,
+body {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, sans-serif !important;
+  color: #132433 !important;
+  background: #e9eef2 !important;
+}
 
 .dashboard-shell,
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell {
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, sans-serif !important;
+  color: #132433 !important;
   background: #e9eef2 url('/hero.jpg') center / cover no-repeat fixed !important;
 }
 
@@ -50,6 +59,30 @@
   pointer-events: auto !important;
 }
 
+.dashboard-shell h1,
+.dashboard-shell .page-header h1,
+.dashboard-shell .page-head h1,
+.dashboard-shell .page-head h2 {
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  color: #132433 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.045em !important;
+  text-shadow: 0 8px 28px rgba(255, 255, 255, 0.55);
+}
+
+.dashboard-shell h2,
+.dashboard-shell h3,
+.dashboard-shell h4,
+.dashboard-shell label,
+.dashboard-shell .muted {
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+}
+
+.dashboard-shell .muted {
+  color: #526778 !important;
+}
+
+/* List pages are the photo. Individual records float. */
 .dashboard-shell .jobs-list-page,
 .dashboard-shell .jobs-page,
 .dashboard-shell .jobs-shell,
@@ -64,22 +97,19 @@
 .dashboard-shell .jobs-board,
 .dashboard-shell .jobs-table-card,
 .dashboard-shell .jobs-mobile-table-wrap,
+.dashboard-shell .today-page,
+.dashboard-shell .dashboard-home,
 .dashboard-shell .card:has(.job-card),
 .dashboard-shell .card:has(.expense-card),
 .dashboard-shell .card:has(.worker-card),
 .dashboard-shell .card:has(.team-member-card),
 .dashboard-shell .card:has(.customer-card),
-.dashboard-shell .card:has(.customer-list-card),
-.dashboard-shell .card:has(.record-card),
-.dashboard-shell .card:has(.list-row),
 .dashboard-shell .card:has(.quote-card),
-.dashboard-shell .panel:has(.card),
-.dashboard-shell .panel:has(.list-row) {
+.dashboard-shell .card:has(.list-row),
+.dashboard-shell .panel:has(.card) {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 .dashboard-shell > .sidebar,
@@ -87,6 +117,9 @@
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-advanced-filters,
 .dashboard-shell .jobs-filter-panel,
+.dashboard-shell .dashboard-shell-header,
+.dashboard-shell .ask-everitt-bar,
+.dashboard-shell .command-bar,
 .dashboard-shell .job-card,
 .dashboard-shell .expense-card,
 .dashboard-shell .worker-card,
@@ -102,7 +135,10 @@
 .dashboard-shell .metric-card,
 .dashboard-shell form.card,
 .dashboard-shell .unified-job-form,
-.dashboard-shell .card.form {
+.dashboard-shell .card.form,
+.dashboard-shell .card,
+.dashboard-shell .panel,
+.dashboard-shell .jobs-operations-row {
   background: rgba(255, 255, 255, 0.975) !important;
   border: 1px solid rgba(255, 255, 255, 0.85) !important;
   color: #132433 !important;
@@ -115,38 +151,93 @@
 }
 
 .dashboard-shell .jobs-advanced-filters,
-.dashboard-shell .jobs-filter-panel,
 .jobs-shell-minimal .jobs-advanced-filters {
   margin: 12px 0 !important;
   padding: 16px 18px !important;
   overflow: hidden !important;
 }
 
-.dashboard-shell .job-card + .job-card,
-.dashboard-shell .expense-card + .expense-card,
-.dashboard-shell .worker-card + .worker-card,
-.dashboard-shell .team-member-card + .team-member-card,
-.dashboard-shell .customer-card + .customer-card,
-.dashboard-shell .list-row + .list-row,
-.dashboard-shell .record-card + .record-card,
-.dashboard-shell .quote-card + .quote-card {
-  margin-top: 12px !important;
+.dashboard-shell .jobs-operations-table {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.dashboard-shell .jobs-operations-table thead {
+  display: none !important;
+}
+
+.dashboard-shell .jobs-operations-table,
+.dashboard-shell .jobs-operations-table tbody {
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.dashboard-shell .jobs-operations-row {
+  display: grid !important;
+  width: 100% !important;
+  padding: 16px 18px !important;
+  margin: 0 !important;
+}
+
+.dashboard-shell .input,
+.dashboard-shell input.input,
+.dashboard-shell select.input,
+.dashboard-shell textarea.input,
+.dashboard-shell select,
+.dashboard-shell input[type='text'],
+.dashboard-shell input[type='email'],
+.dashboard-shell input[type='search'],
+.dashboard-shell input[type='number'],
+.dashboard-shell input[type='date'],
+.dashboard-shell input[type='time'] {
+  min-height: 48px !important;
+  border: 1.5px solid #aebdca !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: #152838 !important;
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-shell .btn,
+.dashboard-shell button.btn,
+.dashboard-shell a.btn {
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  font-weight: 800 !important;
+}
+
+.dashboard-shell .btn-primary,
+.dashboard-shell a.btn-primary,
+.dashboard-shell button.btn-primary {
+  background: #285d78 !important;
+  border-color: #285d78 !important;
+  color: #fff !important;
+  box-shadow: 0 14px 30px rgba(40, 93, 120, 0.25) !important;
+}
+
+.everitt-bottom-nav {
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(18px) !important;
 }
 
 .everitt-more-overlay {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 5000 !important;
+  z-index: 2147483000 !important;
   display: flex !important;
   align-items: flex-end !important;
   justify-content: center !important;
   padding: 16px 12px calc(88px + env(safe-area-inset-bottom)) !important;
-  background: rgba(19, 36, 51, 0.42) !important;
+  background: rgba(19, 36, 51, 0.45) !important;
 }
 
 .everitt-more-sheet {
   position: relative !important;
-  z-index: 5001 !important;
+  z-index: 2147483001 !important;
   width: min(520px, 100%) !important;
   max-height: min(72vh, 640px) !important;
   overflow: auto !important;
@@ -155,14 +246,5 @@
   border-radius: 22px !important;
   box-shadow: 0 24px 64px rgba(9, 24, 35, 0.22) !important;
   padding: 16px !important;
-}
-
-.everitt-more-link,
-.everitt-more-sheet a,
-.everitt-more-sheet button {
-  display: block !important;
-  width: 100% !important;
-  text-align: left !important;
-  padding: 12px 10px !important;
-  color: #132433 !important;
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
 }
