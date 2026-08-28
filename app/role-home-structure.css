@@ -1,0 +1,123 @@
+/* Role-specific home structures. These styles support rendered components only; no nth-child hiding. */
+
+.owner-priority-strip .dashboard-revenue-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.owner-priority-strip .dashboard-revenue-grid > * {
+  display: flex !important;
+}
+
+.owner-desk-card {
+  min-height: 132px !important;
+  padding: 20px !important;
+}
+
+.owner-desk-card .dashboard-revenue-metric-value {
+  font-size: clamp(24px, 3vw, 34px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.owner-desk-card .muted {
+  display: block !important;
+  line-height: 1.45 !important;
+}
+
+.client-next-visit {
+  padding: 24px !important;
+  border-radius: 18px !important;
+}
+
+.client-next-visit .eyebrow {
+  margin: 0 0 8px !important;
+}
+
+.client-next-visit h1 {
+  margin: 0 !important;
+  font-size: clamp(28px, 5vw, 42px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.client-next-visit p {
+  margin: 9px 0 0 !important;
+}
+
+.client-next-visit .btn {
+  margin-top: 18px !important;
+}
+
+.client-visit-tools {
+  margin-top: 2px;
+}
+
+.contractor-more {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.contractor-more > summary {
+  min-height: 58px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.contractor-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.contractor-more[open] > summary {
+  border-bottom: 1px solid rgba(36, 63, 83, 0.12);
+}
+
+.contractor-more > section,
+.contractor-more > .button-row {
+  margin: 0;
+  padding: 18px;
+}
+
+.contractor-more > .button-row {
+  padding-top: 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .owner-priority-strip .dashboard-revenue-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .owner-desk-card {
+    min-height: 104px !important;
+    padding: 18px !important;
+  }
+
+  .owner-desk-card .dashboard-revenue-metric-value {
+    font-size: 25px !important;
+  }
+
+  .client-next-visit {
+    padding: 20px 18px !important;
+  }
+
+  .client-next-visit .btn {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .contractor-more > .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .contractor-more > .button-row > * {
+    width: 100%;
+  }
+}
