@@ -1,0 +1,62 @@
+/* Signed-in app canvas only. Auth pages keep the architectural hero photography. */
+.dashboard-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell,
+.role-portal-shell {
+  background: #edf2f4 !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background: #edf2f4 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Page chrome sits directly on the canvas, so keep it fully readable. */
+.dashboard-shell h1,
+.dashboard-shell .page-title,
+.dashboard-shell .page-head h1,
+.contractor-main h1,
+.client-main h1 {
+  color: #172433 !important;
+}
+
+.dashboard-shell .page-head p,
+.dashboard-shell .muted,
+.contractor-main .muted,
+.client-main .muted {
+  color: #344b5c !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .card,
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.contractor-main .card,
+.contractor-main input,
+.contractor-main select,
+.contractor-main textarea,
+.client-main .card,
+.client-main input,
+.client-main select,
+.client-main textarea {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
