@@ -1,23 +1,22 @@
-/* Unify authenticated Owner, Worker, and Client views with the visual promise of the login page. */
+/* Unify authenticated Owner, Worker, and Client views without reintroducing auth photography. */
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-dashboard-shell .contractor-background {
-  background-image: linear-gradient(rgba(231,236,240,.10), rgba(231,236,240,.16)), url('/hero.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  filter: grayscale(2%) saturate(100%) contrast(106%) brightness(98%) !important;
+  background: #edf2f4 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
-/* Worker and Client need the same image presence as Owner, without the extra portal wash. */
+/* Worker and Client use the same signed-in paint canvas as Owner. */
 .contractor-dashboard-shell {
-  background: transparent !important;
+  background: #edf2f4 !important;
 }
 
 .contractor-dashboard-shell .contractor-background {
   opacity: 1 !important;
-  background-image: linear-gradient(rgba(231,236,240,.05), rgba(231,236,240,.10)), url('/hero.jpg') !important;
-  filter: grayscale(0%) saturate(102%) contrast(108%) brightness(99%) !important;
+  background: #edf2f4 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
 .dashboard-home .card,
@@ -174,14 +173,11 @@
 
 @media (max-width: 760px) {
   .dashboard-shell-background,
-  .role-portal-shell .dashboard-shell-background {
-    background-image: linear-gradient(rgba(231,236,240,.12), rgba(231,236,240,.18)), url('/hero.jpg') !important;
-    filter: grayscale(3%) saturate(100%) contrast(105%) brightness(98%) !important;
-  }
-
+  .role-portal-shell .dashboard-shell-background,
   .contractor-dashboard-shell .contractor-background {
-    background-image: linear-gradient(rgba(231,236,240,.06), rgba(231,236,240,.11)), url('/hero.jpg') !important;
-    filter: grayscale(0%) saturate(102%) contrast(107%) brightness(99%) !important;
+    background: #edf2f4 !important;
+    background-image: none !important;
+    filter: none !important;
   }
 
   .today-page.dashboard-home,
