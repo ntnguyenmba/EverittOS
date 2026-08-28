@@ -1,10 +1,21 @@
-/* Everitt luxury on owner, client, and worker. Visual only. */
+/* Everitt luxury on owner, client, worker, and every signed-in workspace. Visual only. */
+
+:root {
+  --everitt-ink: #132433;
+  --everitt-muted: #526778;
+  --everitt-slate: #285d78;
+  --everitt-slate-dark: #1f4b61;
+  --everitt-line: #c7d2db;
+  --everitt-paper: rgba(255, 255, 255, 0.965);
+  --everitt-paper-soft: rgba(255, 255, 255, 0.91);
+  --everitt-shadow: 0 30px 80px rgba(9, 24, 35, 0.17);
+}
 
 html,
 body {
   font-family: var(--font-manrope), Manrope, ui-sans-serif, sans-serif !important;
-  color: #132433 !important;
-  background: #e9eef2 !important;
+  color: var(--everitt-ink) !important;
+  background: #dfe7ec !important;
 }
 
 .dashboard-shell,
@@ -12,8 +23,8 @@ body {
 .contractor-dashboard-shell,
 .client-dashboard-shell {
   font-family: var(--font-manrope), Manrope, ui-sans-serif, sans-serif !important;
-  color: #132433 !important;
-  background: #e9eef2 url('/hero.jpg') center / cover no-repeat fixed !important;
+  color: var(--everitt-ink) !important;
+  background: #dfe7ec url('/hero.jpg') center / cover no-repeat fixed !important;
 }
 
 .dashboard-shell-background,
@@ -25,9 +36,9 @@ body {
   background-size: cover !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  opacity: 0.62 !important;
-  filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
-  -webkit-filter: saturate(0.82) contrast(1.02) brightness(0.92) !important;
+  opacity: 0.64 !important;
+  filter: saturate(0.76) contrast(1.03) brightness(0.89) !important;
+  -webkit-filter: saturate(0.76) contrast(1.03) brightness(0.89) !important;
   pointer-events: none !important;
 }
 
@@ -35,8 +46,8 @@ body {
 .role-portal-shell .dashboard-shell-overlay,
 .contractor-overlay {
   background:
-    linear-gradient(115deg, rgba(20, 39, 53, 0.46), rgba(28, 52, 68, 0.16) 42%, rgba(236, 242, 246, 0.2)),
-    linear-gradient(180deg, rgba(17, 34, 47, 0.08), rgba(17, 34, 47, 0.3)) !important;
+    linear-gradient(112deg, rgba(17, 34, 47, 0.5), rgba(31, 63, 81, 0.16) 46%, rgba(226, 235, 240, 0.16)),
+    linear-gradient(180deg, rgba(17, 34, 47, 0.05), rgba(17, 34, 47, 0.32)) !important;
   pointer-events: none !important;
 }
 
@@ -63,6 +74,12 @@ body {
   pointer-events: auto !important;
 }
 
+.dashboard-shell .main,
+.contractor-dashboard-shell .main,
+.client-dashboard-shell .main {
+  background: transparent !important;
+}
+
 .dashboard-shell h1,
 .contractor-dashboard-shell h1,
 .client-dashboard-shell h1,
@@ -70,37 +87,74 @@ body {
 .contractor-dashboard-shell .page-header h1,
 .client-dashboard-shell .page-header h1 {
   font-family: var(--font-manrope), Manrope, sans-serif !important;
-  color: #132433 !important;
+  color: var(--everitt-ink) !important;
   font-weight: 800 !important;
   letter-spacing: -0.045em !important;
+  line-height: 1.04 !important;
+}
+
+.dashboard-shell h2,
+.dashboard-shell h3,
+.dashboard-shell h4,
+.dashboard-shell h5,
+.dashboard-shell h6,
+.contractor-dashboard-shell h2,
+.contractor-dashboard-shell h3,
+.contractor-dashboard-shell h4,
+.client-dashboard-shell h2,
+.client-dashboard-shell h3,
+.client-dashboard-shell h4 {
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  color: var(--everitt-ink) !important;
+  letter-spacing: -0.025em !important;
 }
 
 .dashboard-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell,
-.dashboard-shell h2,
-.dashboard-shell h3,
-.dashboard-shell h4,
+.dashboard-shell p,
 .dashboard-shell label,
-.contractor-dashboard-shell h2,
-.contractor-dashboard-shell h3,
+.dashboard-shell input,
+.dashboard-shell textarea,
+.dashboard-shell select,
+.dashboard-shell button,
+.dashboard-shell a,
+.contractor-dashboard-shell p,
 .contractor-dashboard-shell label,
-.client-dashboard-shell h2,
-.client-dashboard-shell h3,
-.client-dashboard-shell label {
+.contractor-dashboard-shell input,
+.contractor-dashboard-shell textarea,
+.contractor-dashboard-shell select,
+.contractor-dashboard-shell button,
+.client-dashboard-shell p,
+.client-dashboard-shell label,
+.client-dashboard-shell input,
+.client-dashboard-shell textarea,
+.client-dashboard-shell select,
+.client-dashboard-shell button {
   font-family: var(--font-manrope), Manrope, sans-serif !important;
 }
 
 .dashboard-shell .muted,
+.dashboard-shell .text-muted,
+.dashboard-shell .helper,
+.dashboard-shell .helper-text,
+.dashboard-shell .description,
 .contractor-dashboard-shell .muted,
-.client-dashboard-shell .muted {
-  color: #526778 !important;
+.contractor-dashboard-shell .text-muted,
+.client-dashboard-shell .muted,
+.client-dashboard-shell .text-muted {
+  color: var(--everitt-muted) !important;
 }
 
 .dashboard-shell .jobs-list-page,
 .dashboard-shell .jobs-table-card,
 .dashboard-shell .jobs-mobile-table-wrap,
 .dashboard-shell .today-page,
+.dashboard-shell .page-shell,
+.dashboard-shell .page-content,
+.dashboard-shell .content-shell,
+.dashboard-shell .content-area,
+.dashboard-shell .dashboard-content,
 .contractor-dashboard-shell .portal-dashboard,
 .client-dashboard-shell .portal-dashboard,
 .contractor-dashboard-shell .card:has(.portal-job-row),
@@ -110,12 +164,15 @@ body {
   box-shadow: none !important;
 }
 
+/* One floating sheet at a time: records and working surfaces use the same paper. */
 .dashboard-shell > .sidebar,
 .dashboard-shell .owner-home-sheet,
 .dashboard-shell .jobs-filter-tabs,
 .dashboard-shell .jobs-advanced-filters,
 .dashboard-shell .card,
 .dashboard-shell .panel,
+.dashboard-shell .surface,
+.dashboard-shell .sheet,
 .dashboard-shell .job-card,
 .dashboard-shell .jobs-operations-row,
 .dashboard-shell .quote-card,
@@ -123,23 +180,53 @@ body {
 .dashboard-shell .expense-card,
 .dashboard-shell .worker-card,
 .dashboard-shell .team-member-card,
+.dashboard-shell .settings-card,
+.dashboard-shell .report-card,
+.dashboard-shell .payment-card,
+.dashboard-shell .invoice-card,
+.dashboard-shell .lead-card,
+.dashboard-shell .request-card,
+.dashboard-shell .photo-card,
+.dashboard-shell .calendar-card,
+.dashboard-shell .booking-card,
+.dashboard-shell .automation-card,
+.dashboard-shell .activity-card,
+.dashboard-shell .stat-card,
+.dashboard-shell .metric-card,
+.dashboard-shell form:not(.unstyled),
 .contractor-dashboard-shell .card,
 .contractor-dashboard-shell .panel,
+.contractor-dashboard-shell .surface,
 .contractor-dashboard-shell .portal-job-row,
 .contractor-dashboard-shell .contractor-next-job,
 .client-dashboard-shell .card,
 .client-dashboard-shell .panel,
+.client-dashboard-shell .surface,
 .client-dashboard-shell .client-job-card,
 .client-dashboard-shell .portal-job-row {
-  background: rgba(255, 255, 255, 0.975) !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  color: #132433 !important;
+  background: var(--everitt-paper) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  color: var(--everitt-ink) !important;
   border-radius: 22px !important;
-  box-shadow:
-    0 34px 90px rgba(9, 24, 35, 0.18),
-    0 2px 0 rgba(255, 255, 255, 0.9) inset !important;
+  box-shadow: var(--everitt-shadow), 0 2px 0 rgba(255, 255, 255, 0.88) inset !important;
   backdrop-filter: blur(18px) !important;
   -webkit-backdrop-filter: blur(18px) !important;
+}
+
+/* Do not turn tiny inline forms or table filters into giant cards. */
+.dashboard-shell form.inline,
+.dashboard-shell form[data-inline='true'],
+.dashboard-shell td form,
+.dashboard-shell .card form,
+.dashboard-shell .panel form,
+.dashboard-shell .sheet form,
+.dashboard-shell .surface form {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .dashboard-shell .jobs-operations-table thead {
@@ -163,44 +250,229 @@ body {
   margin: 0 0 12px !important;
 }
 
+/* Inputs are restrained and readable, matching login. */
 .dashboard-shell .input,
+.dashboard-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.dashboard-shell textarea,
 .dashboard-shell select,
 .contractor-dashboard-shell .input,
+.contractor-dashboard-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.contractor-dashboard-shell textarea,
 .contractor-dashboard-shell select,
 .client-dashboard-shell .input,
+.client-dashboard-shell input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.client-dashboard-shell textarea,
 .client-dashboard-shell select {
   min-height: 48px !important;
   border: 1.5px solid #aebdca !important;
   border-radius: 12px !important;
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.98) !important;
   color: #152838 !important;
-  font-family: var(--font-manrope), Manrope, sans-serif !important;
   font-weight: 600 !important;
+  box-shadow: none !important;
 }
 
+.dashboard-shell textarea,
+.contractor-dashboard-shell textarea,
+.client-dashboard-shell textarea {
+  min-height: 112px !important;
+  line-height: 1.5 !important;
+}
+
+.dashboard-shell input::placeholder,
+.dashboard-shell textarea::placeholder,
+.contractor-dashboard-shell input::placeholder,
+.contractor-dashboard-shell textarea::placeholder,
+.client-dashboard-shell input::placeholder,
+.client-dashboard-shell textarea::placeholder {
+  color: #738695 !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell input:focus,
+.dashboard-shell textarea:focus,
+.dashboard-shell select:focus,
+.contractor-dashboard-shell input:focus,
+.contractor-dashboard-shell textarea:focus,
+.contractor-dashboard-shell select:focus,
+.client-dashboard-shell input:focus,
+.client-dashboard-shell textarea:focus,
+.client-dashboard-shell select:focus {
+  border-color: var(--everitt-slate) !important;
+  outline: 3px solid rgba(40, 93, 120, 0.14) !important;
+  outline-offset: 0 !important;
+}
+
+/* One strong action, quieter secondary actions. */
 .dashboard-shell .btn,
 .dashboard-shell a.btn,
+.dashboard-shell button,
 .contractor-dashboard-shell .btn,
 .contractor-dashboard-shell a.btn,
+.contractor-dashboard-shell button,
 .client-dashboard-shell .btn,
-.client-dashboard-shell a.btn {
+.client-dashboard-shell a.btn,
+.client-dashboard-shell button {
   min-height: 44px !important;
-  border-radius: 12px !important;
+  border-radius: 999px !important;
   font-family: var(--font-manrope), Manrope, sans-serif !important;
   font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .dashboard-shell .btn-primary,
+.dashboard-shell button[type='submit'],
 .contractor-dashboard-shell .btn-primary,
-.client-dashboard-shell .btn-primary {
-  background: #285d78 !important;
-  border-color: #285d78 !important;
+.contractor-dashboard-shell button[type='submit'],
+.client-dashboard-shell .btn-primary,
+.client-dashboard-shell button[type='submit'] {
+  background: var(--everitt-slate) !important;
+  border-color: var(--everitt-slate) !important;
   color: #fff !important;
+  box-shadow: 0 10px 24px rgba(26, 62, 82, 0.2) !important;
+}
+
+.dashboard-shell .btn-primary:hover,
+.dashboard-shell button[type='submit']:hover,
+.contractor-dashboard-shell .btn-primary:hover,
+.contractor-dashboard-shell button[type='submit']:hover,
+.client-dashboard-shell .btn-primary:hover,
+.client-dashboard-shell button[type='submit']:hover {
+  background: var(--everitt-slate-dark) !important;
+  border-color: var(--everitt-slate-dark) !important;
+}
+
+.dashboard-shell .btn-secondary,
+.dashboard-shell .btn-outline,
+.dashboard-shell .btn-ghost,
+.contractor-dashboard-shell .btn-secondary,
+.contractor-dashboard-shell .btn-outline,
+.contractor-dashboard-shell .btn-ghost,
+.client-dashboard-shell .btn-secondary,
+.client-dashboard-shell .btn-outline,
+.client-dashboard-shell .btn-ghost {
+  background: var(--everitt-paper-soft) !important;
+  border: 1px solid rgba(91, 112, 127, 0.28) !important;
+  color: var(--everitt-ink) !important;
+  box-shadow: none !important;
+}
+
+/* Tabs and filters read like a thin hotel-booking control, not an admin tray. */
+.dashboard-shell .tabs,
+.dashboard-shell .tab-list,
+.dashboard-shell .filter-tabs,
+.dashboard-shell .jobs-filter-tabs,
+.dashboard-shell .segmented-control,
+.contractor-dashboard-shell .tabs,
+.client-dashboard-shell .tabs {
+  padding: 6px !important;
+  gap: 4px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 16px 44px rgba(9, 24, 35, 0.12) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.dashboard-shell .tabs button,
+.dashboard-shell .tab-list button,
+.dashboard-shell .filter-tabs button,
+.dashboard-shell .jobs-filter-tabs button,
+.dashboard-shell .segmented-control button {
+  min-height: 38px !important;
+  padding-inline: 14px !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--everitt-muted) !important;
+}
+
+.dashboard-shell .tabs button[aria-selected='true'],
+.dashboard-shell .tab-list button[aria-selected='true'],
+.dashboard-shell .filter-tabs button[aria-selected='true'],
+.dashboard-shell .jobs-filter-tabs button[aria-selected='true'],
+.dashboard-shell .segmented-control button[aria-pressed='true'],
+.dashboard-shell .tabs .active,
+.dashboard-shell .tab-list .active,
+.dashboard-shell .filter-tabs .active,
+.dashboard-shell .jobs-filter-tabs .active {
+  background: var(--everitt-slate) !important;
+  color: #fff !important;
+}
+
+/* Tables retain all data but lose the heavy spreadsheet look. */
+.dashboard-shell table:not(.jobs-operations-table) {
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
+  background: transparent !important;
+}
+
+.dashboard-shell table:not(.jobs-operations-table) thead th {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--everitt-muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard-shell table:not(.jobs-operations-table) tbody tr {
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 34px rgba(9, 24, 35, 0.1) !important;
+}
+
+.dashboard-shell table:not(.jobs-operations-table) tbody td {
+  border-top: 1px solid rgba(180, 195, 206, 0.3) !important;
+  border-bottom: 1px solid rgba(180, 195, 206, 0.3) !important;
+  background: transparent !important;
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell table:not(.jobs-operations-table) tbody td:first-child {
+  border-left: 1px solid rgba(180, 195, 206, 0.3) !important;
+  border-radius: 16px 0 0 16px !important;
+}
+
+.dashboard-shell table:not(.jobs-operations-table) tbody td:last-child {
+  border-right: 1px solid rgba(180, 195, 206, 0.3) !important;
+  border-radius: 0 16px 16px 0 !important;
+}
+
+/* Header and navigation stay legible over the photography. */
+.dashboard-shell .sidebar,
+.dashboard-shell .dashboard-shell-header,
+.contractor-dashboard-shell .dashboard-shell-header,
+.client-dashboard-shell .dashboard-shell-header {
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell .sidebar a,
+.dashboard-shell .sidebar button {
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell .sidebar a:hover,
+.dashboard-shell .sidebar button:hover,
+.dashboard-shell .sidebar a[aria-current='page'],
+.dashboard-shell .sidebar .active {
+  background: rgba(40, 93, 120, 0.1) !important;
+  color: var(--everitt-slate-dark) !important;
 }
 
 .everitt-bottom-nav {
   font-family: var(--font-manrope), Manrope, sans-serif !important;
-  background: rgba(255, 255, 255, 0.94) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid rgba(133, 153, 168, 0.24) !important;
+  box-shadow: 0 -12px 36px rgba(9, 24, 35, 0.1) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.everitt-bottom-nav a,
+.everitt-bottom-nav button {
+  color: var(--everitt-ink) !important;
 }
 
 .everitt-more-overlay {
@@ -211,16 +483,67 @@ body {
   align-items: flex-end !important;
   justify-content: center !important;
   padding: 16px 12px 96px !important;
-  background: rgba(19, 36, 51, 0.45) !important;
+  background: rgba(19, 36, 51, 0.5) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .everitt-more-sheet {
   width: min(520px, 100%) !important;
   max-height: 72vh !important;
   overflow: auto !important;
-  background: #fff !important;
-  color: #132433 !important;
-  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: var(--everitt-ink) !important;
+  border-radius: 24px !important;
   padding: 16px !important;
   font-family: var(--font-manrope), Manrope, sans-serif !important;
+  box-shadow: 0 34px 90px rgba(9, 24, 35, 0.25) !important;
+}
+
+/* Modal and dialog language matches the rest of the app. */
+.dashboard-shell [role='dialog'],
+.contractor-dashboard-shell [role='dialog'],
+.client-dashboard-shell [role='dialog'],
+body > [role='dialog'] {
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  color: var(--everitt-ink) !important;
+}
+
+/* Mobile and native shells keep the photograph while remaining readable. */
+@media (max-width: 900px) {
+  .dashboard-shell,
+  .dashboard-shell.role-portal-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell {
+    background-attachment: scroll !important;
+  }
+
+  .dashboard-shell > .sidebar,
+  .dashboard-shell .card,
+  .dashboard-shell .panel,
+  .dashboard-shell .surface,
+  .dashboard-shell .sheet,
+  .contractor-dashboard-shell .card,
+  .client-dashboard-shell .card {
+    border-radius: 18px !important;
+    box-shadow: 0 18px 48px rgba(9, 24, 35, 0.15) !important;
+  }
+
+  .dashboard-shell .page-header,
+  .contractor-dashboard-shell .page-header,
+  .client-dashboard-shell .page-header {
+    gap: 12px !important;
+  }
+
+  .dashboard-shell table:not(.jobs-operations-table) {
+    border-spacing: 0 6px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell *,
+  .contractor-dashboard-shell *,
+  .client-dashboard-shell * {
+    scroll-behavior: auto !important;
+  }
 }
