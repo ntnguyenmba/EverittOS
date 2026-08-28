@@ -66,7 +66,7 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
           overflow-x: clip;
-          background: #dfe8ee;
+          background: #edf2f4;
         }
 
         .dashboard-shell-background {
@@ -74,10 +74,12 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           inset: 0;
           z-index: 0;
           pointer-events: none;
-          background: #dfe8ee url('/hero.jpg') center / cover no-repeat;
-          opacity: 0.58;
-          filter: saturate(0.74) contrast(0.98) brightness(0.86);
-          transform: scale(1.015);
+          background:
+            radial-gradient(circle at 88% 4%, rgba(80, 105, 121, 0.07), transparent 28%),
+            linear-gradient(180deg, #f7f9fa 0%, #edf2f4 54%, #e8eef1 100%);
+          opacity: 1;
+          filter: none;
+          transform: none;
         }
 
         .dashboard-shell-overlay {
@@ -85,26 +87,24 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background:
-            linear-gradient(90deg, rgba(221, 231, 238, 0.18), rgba(237, 242, 246, 0.5) 21%, rgba(237, 242, 246, 0.5) 79%, rgba(221, 231, 238, 0.18)),
-            linear-gradient(180deg, rgba(238, 243, 247, 0.22), rgba(221, 231, 238, 0.4));
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16));
         }
 
         .dashboard-shell.role-portal-shell {
-          background: #e8eef2;
+          background: #edf2f4;
         }
 
         .role-portal-shell .dashboard-shell-background {
-          background: #e8eef2;
+          background:
+            radial-gradient(circle at 88% 4%, rgba(80, 105, 121, 0.07), transparent 28%),
+            linear-gradient(180deg, #f7f9fa 0%, #edf2f4 54%, #e8eef1 100%);
           opacity: 1;
           filter: none;
           transform: none;
         }
 
         .role-portal-shell .dashboard-shell-overlay {
-          background:
-            radial-gradient(circle at 18% 6%, rgba(74, 101, 119, 0.1), transparent 34%),
-            linear-gradient(180deg, rgba(246, 249, 250, 0.72), rgba(222, 231, 236, 0.68));
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(226, 234, 238, 0.16));
         }
 
         .role-portal-shell .app-page-content {
@@ -410,21 +410,19 @@ export function AppShell({ plan, role, showBackButton = true, children }: AppShe
           }
 
           .dashboard-shell-background {
-            background-position: 56% center;
-            opacity: 0.44;
+            opacity: 1;
           }
 
           .dashboard-shell-overlay {
-            background: rgba(231, 238, 243, 0.61);
+            background: rgba(235, 241, 244, 0.2);
           }
 
           .role-portal-shell .dashboard-shell-background {
-            background: #e8eef2;
             opacity: 1;
           }
 
           .role-portal-shell .dashboard-shell-overlay {
-            background: rgba(232, 238, 242, 0.78);
+            background: rgba(235, 241, 244, 0.2);
           }
 
           .dashboard-shell .app-page-top {
