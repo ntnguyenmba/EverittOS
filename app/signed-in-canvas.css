@@ -1,9 +1,8 @@
-/* EverittOS signed-in system: the same architectural room as auth, with paper over the work. */
+/* EverittOS signed-in system: architectural room, restrained paper, readable controls. */
 :root {
   --everitt-ink: #132433;
   --everitt-ink-2: #31495b;
   --everitt-ink-3: #526777;
-  --everitt-paper: rgba(255, 252, 249, 0.90);
   --everitt-sheet: #fffcf9;
   --everitt-line: #d5dee5;
   --everitt-accent: #243f53;
@@ -30,15 +29,18 @@
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
   opacity: 1 !important;
-  filter: saturate(0.72) contrast(0.94) brightness(1.02) !important;
+  filter: saturate(0.78) contrast(0.96) brightness(1.01) !important;
+  -webkit-filter: saturate(0.78) contrast(0.96) brightness(1.01) !important;
 }
 
+/* Keep the room visible. The veil is only enough to protect reading, never enough to erase the hero. */
 .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
-  background: linear-gradient(90deg, rgba(244, 241, 236, 0.44), rgba(255, 252, 249, 0.70) 22%, rgba(255, 252, 249, 0.78) 100%) !important;
+  background: linear-gradient(90deg, rgba(255, 252, 249, 0.16), rgba(255, 252, 249, 0.30) 24%, rgba(255, 252, 249, 0.40) 100%) !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .dashboard-shell > .main,
@@ -53,99 +55,393 @@
 .contractor-main,
 .client-main {
   background: transparent !important;
+  background-color: transparent !important;
 }
 
+/* Sidebar is paper over the same room, not a bright admin rail. */
 .dashboard-shell > .sidebar {
   margin: 18px 0 18px 18px !important;
   height: calc(100svh - 36px) !important;
-  padding: 22px 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.70) !important;
+  padding: 20px 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
   border-radius: var(--everitt-radius-sheet) !important;
   background: rgba(255, 252, 249, 0.88) !important;
-  box-shadow: 0 18px 48px rgba(19, 36, 51, 0.12) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  box-shadow: 0 14px 38px rgba(19, 36, 51, 0.10) !important;
+  backdrop-filter: blur(10px) saturate(0.9) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(0.9) !important;
   overflow: auto !important;
 }
 
-.dashboard-shell .sidebar-brand-auth-like { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; padding: 0 2px 20px !important; }
-.dashboard-shell .sidebar-language-compact { width: auto !important; min-width: 108px !important; min-height: 42px !important; }
-.dashboard-shell .sidebar-nav a { min-height: 46px !important; border-radius: 12px !important; color: var(--everitt-ink-2) !important; font-weight: 650 !important; }
-.dashboard-shell .sidebar-nav a[aria-current='page'], .dashboard-shell .sidebar-nav a.is-active { background: rgba(255, 252, 249, 0.96) !important; color: var(--everitt-ink) !important; box-shadow: inset 0 0 0 1px rgba(36, 63, 83, 0.10) !important; }
-
-.dashboard-shell h1, .dashboard-shell .page-title, .dashboard-shell .page-head h1, .contractor-main h1, .client-main h1, .contractor-dashboard h1 {
-  color: var(--everitt-ink) !important; font-size: clamp(28px, 2.2vw, 34px) !important; line-height: 1.08 !important; font-weight: 750 !important; letter-spacing: -0.035em !important;
+.dashboard-shell .sidebar-brand-auth-like {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 2px 18px !important;
 }
-.dashboard-shell h2, .contractor-main h2, .client-main h2, .contractor-dashboard h2 { color: var(--everitt-ink) !important; font-size: clamp(20px, 1.5vw, 24px) !important; line-height: 1.18 !important; font-weight: 750 !important; letter-spacing: -0.025em !important; }
-.dashboard-shell h3, .contractor-main h3, .client-main h3 { color: var(--everitt-ink) !important; font-size: 18px !important; line-height: 1.25 !important; font-weight: 700 !important; }
-.dashboard-shell p, .dashboard-shell .muted, .contractor-main p, .contractor-main .muted, .client-main p, .client-main .muted, .contractor-dashboard p, .contractor-dashboard .muted { color: var(--everitt-ink-2) !important; font-size: 15px !important; line-height: 1.5 !important; font-weight: 500 !important; opacity: 1 !important; }
-.dashboard-shell .page-head, .contractor-main .page-head, .client-main .page-head { max-width: 46rem; padding: 4px 0 14px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
 
-.dashboard-shell .btn, .contractor-main .btn, .client-main .btn, .contractor-dashboard .btn,
-.dashboard-shell input, .dashboard-shell select, .dashboard-shell textarea, .contractor-main input, .contractor-main select, .contractor-main textarea, .client-main input, .client-main select, .client-main textarea {
-  min-height: 46px !important; border: 1px solid var(--everitt-line) !important; border-radius: var(--everitt-radius-control) !important; box-shadow: none !important;
+.dashboard-shell .sidebar-brand-auth-like .brand-logo,
+.dashboard-shell .sidebar-brand-auth-like .brand-logo-name,
+.dashboard-shell .sidebar-brand-auth-like a {
+  color: var(--everitt-ink) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
-.dashboard-shell input, .dashboard-shell select, .dashboard-shell textarea, .contractor-main input, .contractor-main select, .contractor-main textarea, .client-main input, .client-main select, .client-main textarea { background: rgba(255, 252, 249, 0.98) !important; color: var(--everitt-ink) !important; }
-.dashboard-shell .btn-primary, .contractor-main .btn-primary, .client-main .btn-primary, .contractor-dashboard .btn-primary { background: var(--everitt-accent) !important; border-color: var(--everitt-accent) !important; color: #fff !important; }
 
-.dashboard-shell .everitt-cmd-trigger { width: 48px !important; min-width: 48px !important; max-width: 48px !important; min-height: 44px !important; height: 44px !important; margin: 0 0 18px auto !important; padding: 0 !important; border: 1px solid rgba(36, 63, 83, 0.16) !important; border-radius: 12px !important; background: rgba(255, 252, 249, 0.94) !important; color: var(--everitt-ink) !important; box-shadow: 0 8px 20px rgba(19, 36, 51, 0.08) !important; overflow: hidden !important; font-size: 0 !important; }
+.dashboard-shell .sidebar-language-compact {
+  width: auto !important;
+  min-width: 108px !important;
+  min-height: 42px !important;
+  background: #fff !important;
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell .sidebar-nav a {
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  color: var(--everitt-ink-2) !important;
+  background: transparent !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-shell .sidebar-nav a *,
+.dashboard-shell .sidebar-nav a span {
+  color: inherit !important;
+}
+
+.dashboard-shell .sidebar-nav a[aria-current='page'],
+.dashboard-shell .sidebar-nav a.is-active {
+  background: rgba(255, 252, 249, 0.98) !important;
+  color: var(--everitt-ink) !important;
+  box-shadow: inset 3px 0 0 #d8b866, inset 0 0 0 1px rgba(36, 63, 83, 0.10) !important;
+}
+
+.dashboard-shell .sidebar-nav a[aria-current='page'] *,
+.dashboard-shell .sidebar-nav a.is-active * {
+  color: var(--everitt-ink) !important;
+  -webkit-text-fill-color: var(--everitt-ink) !important;
+}
+
+/* Match the quieter login scale. */
+.dashboard-shell h1,
+.dashboard-shell .page-title,
+.dashboard-shell .page-head h1,
+.contractor-main h1,
+.client-main h1,
+.contractor-dashboard h1 {
+  color: var(--everitt-ink) !important;
+  font-size: clamp(25px, 1.8vw, 30px) !important;
+  line-height: 1.12 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.dashboard-shell h2,
+.contractor-main h2,
+.client-main h2,
+.contractor-dashboard h2 {
+  color: var(--everitt-ink) !important;
+  font-size: clamp(19px, 1.35vw, 22px) !important;
+  line-height: 1.22 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.018em !important;
+}
+
+.dashboard-shell h3,
+.contractor-main h3,
+.client-main h3 {
+  color: var(--everitt-ink) !important;
+  font-size: 17px !important;
+  line-height: 1.28 !important;
+  font-weight: 650 !important;
+}
+
+.dashboard-shell p,
+.dashboard-shell .muted,
+.contractor-main p,
+.contractor-main .muted,
+.client-main p,
+.client-main .muted,
+.contractor-dashboard p,
+.contractor-dashboard .muted {
+  color: var(--everitt-ink-2) !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell .page-head,
+.contractor-main .page-head,
+.client-main .page-head {
+  max-width: 46rem;
+  padding: 4px 0 14px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Never allow bright text on bright controls. */
+.dashboard-shell .btn,
+.contractor-main .btn,
+.client-main .btn,
+.contractor-dashboard .btn,
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.contractor-main input,
+.contractor-main select,
+.contractor-main textarea,
+.client-main input,
+.client-main select,
+.client-main textarea {
+  min-height: 46px !important;
+  border: 1px solid var(--everitt-line) !important;
+  border-radius: var(--everitt-radius-control) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-shell .btn:not(.btn-primary),
+.contractor-main .btn:not(.btn-primary),
+.client-main .btn:not(.btn-primary),
+.contractor-dashboard .btn:not(.btn-primary) {
+  background: rgba(255, 252, 249, 0.97) !important;
+  color: var(--everitt-ink) !important;
+  -webkit-text-fill-color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea,
+.contractor-main input,
+.contractor-main select,
+.contractor-main textarea,
+.client-main input,
+.client-main select,
+.client-main textarea {
+  background: rgba(255, 252, 249, 0.99) !important;
+  color: var(--everitt-ink) !important;
+  -webkit-text-fill-color: var(--everitt-ink) !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell input::placeholder,
+.dashboard-shell textarea::placeholder,
+.contractor-main input::placeholder,
+contractor-main textarea::placeholder,
+.client-main input::placeholder,
+.client-main textarea::placeholder {
+  color: #627787 !important;
+  -webkit-text-fill-color: #627787 !important;
+  opacity: 1 !important;
+}
+
+.dashboard-shell select option,
+.contractor-main select option,
+.client-main select option {
+  background: #fff !important;
+  color: var(--everitt-ink) !important;
+}
+
+.dashboard-shell .btn-primary,
+contractor-main .btn-primary,
+.client-main .btn-primary,
+.contractor-dashboard .btn-primary {
+  background: var(--everitt-accent) !important;
+  border-color: var(--everitt-accent) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* Ask Everitt is a small control, never a full-width blank bar. */
+.dashboard-shell .everitt-cmd-trigger {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  margin: 0 0 18px auto !important;
+  padding: 0 !important;
+  border: 1px solid var(--everitt-line) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 252, 249, 0.96) !important;
+  color: var(--everitt-ink) !important;
+  box-shadow: 0 6px 16px rgba(19, 36, 51, 0.07) !important;
+  overflow: hidden !important;
+  font-size: 0 !important;
+}
+
 .dashboard-shell .everitt-cmd-trigger > * { display: none !important; }
-.dashboard-shell .everitt-cmd-trigger::after { content: '⌘K'; display: grid; place-items: center; width: 100%; height: 100%; color: var(--everitt-ink) !important; font-size: 12px !important; font-weight: 750 !important; }
+.dashboard-shell .everitt-cmd-trigger::after {
+  content: '⌘K';
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--everitt-ink) !important;
+  -webkit-text-fill-color: var(--everitt-ink) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
 
-/* One document is the home. */
+/* One primary sheet on role homes. */
 .dashboard-home .owner-home-sheet,
 .contractor-dashboard .contractor-portal-hero {
   width: min(680px, 100%) !important;
-  padding: 28px !important;
+  padding: 26px !important;
   border: 1px solid rgba(213, 222, 229, 0.96) !important;
   border-radius: var(--everitt-radius-sheet) !important;
   background: rgba(255, 252, 249, 0.96) !important;
-  box-shadow: 0 18px 48px rgba(19, 36, 51, 0.12) !important;
+  box-shadow: 0 14px 36px rgba(19, 36, 51, 0.10) !important;
 }
-.dashboard-home .owner-home-kicker, .contractor-dashboard .contractor-next-label { display: block; color: var(--everitt-ink-3) !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: 0.02em !important; text-transform: uppercase !important; }
-.dashboard-home .owner-home-primary h2 { margin: 7px 0 8px !important; font-size: clamp(26px, 3vw, 34px) !important; }
+
+.dashboard-home .owner-home-kicker,
+.contractor-dashboard .contractor-next-label {
+  display: block;
+  color: var(--everitt-ink-3) !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard-home .owner-home-primary h2 {
+  margin: 7px 0 8px !important;
+  font-size: clamp(22px, 2vw, 27px) !important;
+  font-weight: 700 !important;
+}
+
 .dashboard-home .owner-home-primary p { margin: 0 !important; }
-.dashboard-home .owner-home-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
-.dashboard-home .owner-home-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--everitt-line); }
+.dashboard-home .owner-home-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.dashboard-home .owner-home-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--everitt-line); }
 .dashboard-home .owner-home-facts a { display: grid; gap: 5px; color: var(--everitt-ink) !important; text-decoration: none; }
 .dashboard-home .owner-home-facts a + a { padding-left: 22px; border-left: 1px solid var(--everitt-line); }
-.dashboard-home .owner-home-facts span { color: var(--everitt-ink-3); font-size: 13px; font-weight: 650; }
-.dashboard-home .owner-home-facts strong { font-size: 20px; letter-spacing: -0.02em; }
+.dashboard-home .owner-home-facts span { color: var(--everitt-ink-3); font-size: 13px; font-weight: 600; }
+.dashboard-home .owner-home-facts strong { color: var(--everitt-ink) !important; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
 .dashboard-home .owner-load-note { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(680px, 100%); margin-bottom: 14px; }
 .dashboard-home .owner-load-note p { margin: 0; }
 
-/* Worker: the next job is the one primary paper sheet. The remaining list stays quiet below. */
 .contractor-dashboard .contractor-portal-hero { margin-bottom: 18px !important; }
-.contractor-dashboard .contractor-portal-hero > .eyebrow { margin-top: 0 !important; }
-.contractor-dashboard .contractor-next-job { margin-top: 22px !important; padding-top: 20px !important; border-top: 1px solid var(--everitt-line) !important; background: transparent !important; box-shadow: none !important; }
-.contractor-dashboard .contractor-next-job strong { display: block; margin-top: 6px; color: var(--everitt-ink); font-size: 24px; letter-spacing: -0.025em; }
+.contractor-dashboard .contractor-next-job { margin-top: 20px !important; padding-top: 18px !important; border-top: 1px solid var(--everitt-line) !important; background: transparent !important; box-shadow: none !important; }
+.contractor-dashboard .contractor-next-job strong { display: block; margin-top: 6px; color: var(--everitt-ink); font-size: 21px; font-weight: 700; letter-spacing: -0.018em; }
 .contractor-dashboard .contractor-next-job span:not(.contractor-next-label) { display: block; margin-top: 6px; color: var(--everitt-ink-2); font-size: 15px; }
-.contractor-dashboard .contractor-content-card { background: transparent !important; border: 0 !important; box-shadow: none !important; padding-left: 0 !important; padding-right: 0 !important; }
-.contractor-dashboard .job-visits-list { display: grid !important; gap: 12px !important; }
-.contractor-dashboard .portal-job-row { background: rgba(255, 252, 249, 0.96) !important; border: 1px solid var(--everitt-line) !important; border-radius: var(--everitt-radius-sheet) !important; box-shadow: 0 10px 28px rgba(19, 36, 51, 0.08) !important; }
-.contractor-dashboard .contractor-more { width: min(680px, 100%); background: rgba(255, 252, 249, 0.92) !important; border: 1px solid var(--everitt-line) !important; border-radius: var(--everitt-radius-control) !important; box-shadow: none !important; }
 
-/* Lists are transparent wrappers; records are the paper objects. */
-.dashboard-shell .team-directory-card, .dashboard-shell .jobs-table-card, .dashboard-shell .jobs-mobile-table-wrap,
-.dashboard-shell .card:has(.customer-list), .dashboard-shell .card:has(.customers-list), .dashboard-shell .card:has(.team-member-list), .dashboard-shell .card:has(.team-list), .dashboard-shell .card:has(.worker-list), .dashboard-shell .card:has(.contractor-list), .dashboard-shell .card:has(.record-list), .dashboard-shell .card:has(.entity-list), .dashboard-shell .card:has(.portal-job-list), .dashboard-shell .card:has(.jobs-operations-table),
-.contractor-main .contractor-content-card, .contractor-main .portal-dashboard-section, .contractor-main .client-jobs-list, .contractor-main .contractor-jobs-list, .contractor-main .jobs-list, .contractor-main .list, .contractor-main .list-group,
-.client-main .client-jobs-list, .client-main .list, .client-main .list-group {
-  background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important;
+/* Lists are transparent wrappers; records remain individual paper objects. */
+.dashboard-shell .team-directory-card,
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-mobile-table-wrap,
+.dashboard-shell .card:has(.customer-list),
+.dashboard-shell .card:has(.customers-list),
+.dashboard-shell .card:has(.team-member-list),
+.dashboard-shell .card:has(.team-list),
+.dashboard-shell .card:has(.worker-list),
+.dashboard-shell .card:has(.contractor-list),
+.dashboard-shell .card:has(.record-list),
+.dashboard-shell .card:has(.entity-list),
+.dashboard-shell .card:has(.portal-job-list),
+.dashboard-shell .card:has(.jobs-operations-table),
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .client-jobs-list,
+.contractor-main .contractor-jobs-list,
+.contractor-main .jobs-list,
+.contractor-main .list,
+.contractor-main .list-group,
+.client-main .client-jobs-list,
+.client-main .list,
+.client-main .list-group {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
-.dashboard-shell .team-member-card, .dashboard-shell .customer-card, .dashboard-shell .customer-list-card, .dashboard-shell .customers-list-card, .dashboard-shell .worker-card, .dashboard-shell .contractor-card, .dashboard-shell .record-card, .dashboard-shell .entity-card, .dashboard-shell .job-card, .dashboard-shell .expense-card, .dashboard-shell .jobs-operations-row, .dashboard-shell [data-record-card='true'],
-.contractor-main .client-job-card, .contractor-main .contractor-job-row, .contractor-main .job-row, .contractor-main .list-row, .client-main .client-job-card, .client-main .list-row {
-  background: rgba(255, 252, 249, 0.96) !important; border: 1px solid rgba(213, 222, 229, 0.94) !important; border-radius: var(--everitt-radius-sheet) !important; box-shadow: 0 12px 30px rgba(19, 36, 51, 0.08) !important; backdrop-filter: none !important;
+
+.dashboard-shell .team-member-card,
+.dashboard-shell .customer-card,
+.dashboard-shell .customer-list-card,
+.dashboard-shell .customers-list-card,
+.dashboard-shell .worker-card,
+.dashboard-shell .contractor-card,
+.dashboard-shell .record-card,
+.dashboard-shell .entity-card,
+.dashboard-shell .job-card,
+.dashboard-shell .expense-card,
+.dashboard-shell .jobs-operations-row,
+.dashboard-shell [data-record-card='true'],
+.contractor-main .client-job-card,
+.contractor-main .contractor-job-row,
+.contractor-main .job-row,
+contractor-main .list-row,
+.client-main .client-job-card,
+.client-main .list-row {
+  background: rgba(255, 252, 249, 0.96) !important;
+  border: 1px solid rgba(213, 222, 229, 0.94) !important;
+  border-radius: var(--everitt-radius-sheet) !important;
+  box-shadow: 0 10px 26px rgba(19, 36, 51, 0.08) !important;
+  backdrop-filter: none !important;
+  color: var(--everitt-ink) !important;
 }
-.dashboard-shell .team-member-list, .dashboard-shell .customer-list, .dashboard-shell .customers-list, .dashboard-shell .worker-list, .dashboard-shell .contractor-list, .dashboard-shell .record-list, .dashboard-shell .entity-list, .dashboard-shell .portal-job-list, .contractor-main .client-job-card-list, .contractor-main .contractor-jobs-list, .client-main .client-job-card-list { display: grid !important; gap: 14px !important; background: transparent !important; }
+
+.dashboard-shell .team-member-list,
+.dashboard-shell .customer-list,
+.dashboard-shell .customers-list,
+.dashboard-shell .worker-list,
+.dashboard-shell .contractor-list,
+.dashboard-shell .record-list,
+.dashboard-shell .entity-list,
+.dashboard-shell .portal-job-list,
+.contractor-main .client-job-card-list,
+contractor-main .contractor-jobs-list,
+.client-main .client-job-card-list {
+  display: grid !important;
+  gap: 14px !important;
+  background: transparent !important;
+}
 
 @media (max-width: 1279px) {
-  .dashboard-shell, .contractor-dashboard-shell, .client-dashboard-shell, .role-portal-shell, .dashboard-shell-background, .role-portal-shell .dashboard-shell-background, .contractor-background, .contractor-dashboard-shell .contractor-background, .client-dashboard-shell .contractor-background { background-attachment: scroll !important; }
-  .dashboard-shell-overlay { background: rgba(255, 252, 249, 0.64) !important; }
+  .dashboard-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .role-portal-shell,
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-background,
+  .contractor-dashboard-shell .contractor-background,
+  .client-dashboard-shell .contractor-background {
+    background-attachment: scroll !important;
+  }
+
+  .dashboard-shell-overlay,
+  .contractor-overlay,
+  .contractor-dashboard-shell .contractor-overlay,
+  .client-dashboard-shell .contractor-overlay {
+    background: rgba(255, 252, 249, 0.28) !important;
+  }
 }
 
 @media (max-width: 760px) {
-  .dashboard-shell h1, .contractor-main h1, .client-main h1, .contractor-dashboard h1 { font-size: 28px !important; }
-  .dashboard-home .owner-home-sheet, .contractor-dashboard .contractor-portal-hero { padding: 22px !important; }
+  .dashboard-shell h1,
+  .contractor-main h1,
+  .client-main h1,
+  .contractor-dashboard h1 {
+    font-size: 25px !important;
+  }
+
+  .dashboard-home .owner-home-sheet,
+  .contractor-dashboard .contractor-portal-hero {
+    padding: 21px !important;
+  }
+
   .dashboard-home .owner-home-facts { grid-template-columns: 1fr; }
   .dashboard-home .owner-home-facts a + a { margin-top: 14px; padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--everitt-line); }
-  .dashboard-shell .team-member-list, .dashboard-shell .customer-list, .dashboard-shell .customers-list, .dashboard-shell .worker-list, .dashboard-shell .contractor-list, .dashboard-shell .record-list, .dashboard-shell .entity-list, .dashboard-shell .portal-job-list, .contractor-main .client-job-card-list, .client-main .client-job-card-list { gap: 12px !important; }
+  .dashboard-shell .team-member-list,
+  .dashboard-shell .customer-list,
+  .dashboard-shell .customers-list,
+  .dashboard-shell .worker-list,
+  .dashboard-shell .contractor-list,
+  .dashboard-shell .record-list,
+  .dashboard-shell .entity-list,
+  .dashboard-shell .portal-job-list,
+  .contractor-main .client-job-card-list,
+  .client-main .client-job-card-list { gap: 12px !important; }
 }
