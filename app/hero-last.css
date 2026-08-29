@@ -1,4 +1,4 @@
-/* Signed-in backdrop matches login: raw cool hero, no wash, no beige. */
+/* Match mobile login: same photo + cool navy wash. No cream overlay. */
 .dashboard-shell,
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
@@ -14,7 +14,7 @@
 .client-dashboard-shell .contractor-background {
   background-color: transparent !important;
   background-image: url('/hero.jpg') !important;
-  background-position: center !important;
+  background-position: 56% center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   opacity: 1 !important;
@@ -22,6 +22,17 @@
   -webkit-filter: none !important;
   mix-blend-mode: normal !important;
   transform: none !important;
+  pointer-events: none !important;
+}
+
+/* Cool wash only — same as AuthShell mobile overlay. */
+.dashboard-shell-background::after,
+.contractor-background::after {
+  content: '' !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background: linear-gradient(180deg, rgba(18, 37, 50, 0.34), rgba(18, 37, 50, 0.48)) !important;
   pointer-events: none !important;
 }
 
@@ -33,12 +44,6 @@
   display: none !important;
   background: none !important;
   opacity: 0 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  mix-blend-mode: normal !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  pointer-events: none !important;
 }
 
 .dashboard-shell > .main,
