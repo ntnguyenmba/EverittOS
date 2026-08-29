@@ -1,4 +1,4 @@
-/* Final shared spacing system for every EverittOS signed-in view. */
+/* Final shared spacing and radius system for every EverittOS signed-in view. */
 :root {
   --eo-space-1: 6px;
   --eo-space-2: 10px;
@@ -6,182 +6,80 @@
   --eo-space-4: 18px;
   --eo-space-5: 22px;
   --eo-space-6: 28px;
+  --eo-radius-card: 18px;
+  --eo-radius-control: 12px;
+  --eo-radius-small: 10px;
 }
 
-.dashboard-shell .app-page-content {
-  padding-top: var(--eo-space-2) !important;
-  padding-bottom: var(--eo-space-6) !important;
-}
+.dashboard-shell .app-page-content { padding-top: var(--eo-space-2) !important; padding-bottom: var(--eo-space-6) !important; }
+.dashboard-shell .page-header,.dashboard-shell .role-dashboard-topbar,.dashboard-shell .contractor-portal-hero { margin-bottom: var(--eo-space-4) !important; }
+.dashboard-shell .page-header { gap: var(--eo-space-3) !important; }
+.dashboard-shell .page-header h1 { margin-bottom: var(--eo-space-1) !important; }
+.dashboard-shell .page-header-action,.dashboard-shell .button-row,.dashboard-shell .inline-actions,.dashboard-shell .filters,.dashboard-shell .filter-row,.dashboard-shell .filter-bar,.dashboard-shell .toolbar,.dashboard-shell .page-toolbar { gap: var(--eo-space-2) !important; }
+.dashboard-shell .metric-grid,.dashboard-shell .dashboard-revenue-grid,.dashboard-shell .role-summary-grid { gap: var(--eo-space-3) !important; }
 
-.dashboard-shell .page-header,
-.dashboard-shell .role-dashboard-topbar,
-.dashboard-shell .contractor-portal-hero {
-  margin-bottom: var(--eo-space-4) !important;
-}
-
-.dashboard-shell .page-header {
-  gap: var(--eo-space-3) !important;
-}
-
-.dashboard-shell .page-header h1 {
-  margin-bottom: var(--eo-space-1) !important;
-}
-
-.dashboard-shell .page-header-action,
-.dashboard-shell .button-row,
-.dashboard-shell .inline-actions,
-.dashboard-shell .filters,
-.dashboard-shell .filter-row,
-.dashboard-shell .filter-bar,
-.dashboard-shell .toolbar,
-.dashboard-shell .page-toolbar {
-  gap: var(--eo-space-2) !important;
-}
-
-.dashboard-shell .metric-grid,
-.dashboard-shell .dashboard-revenue-grid,
-.dashboard-shell .role-summary-grid {
-  gap: var(--eo-space-3) !important;
-}
-
+/* One restrained Everitt radius language. Large surfaces 18px, controls 12px, compact items 10px. */
 .dashboard-shell .card,
 .dashboard-shell .role-summary-card,
-.dashboard-shell .client-job-card {
-  padding: var(--eo-space-4) !important;
-}
-
-.dashboard-shell .card + .card,
-.dashboard-shell .card + section,
-.dashboard-shell section + .card,
-.dashboard-shell section + section {
-  margin-top: var(--eo-space-3) !important;
-}
-
-.dashboard-shell .list-row {
-  padding: 12px 14px !important;
-}
-
-.dashboard-shell th,
-.dashboard-shell td {
-  padding: 10px 12px !important;
-}
-
-.dashboard-shell details[open] > summary {
-  margin-bottom: var(--eo-space-2) !important;
-}
-
+.dashboard-shell .client-job-card,
+.dashboard-shell .dashboard-revenue-metric,
+.dashboard-shell .list-row,
+.dashboard-shell .auth-card,
+.dashboard-shell .modal,
+.dashboard-shell dialog,
+.dashboard-shell .filter-bar,
+.dashboard-shell .toolbar,
+.dashboard-shell .page-toolbar,
 .app-footer,
 .dashboard-shell .app-footer {
-  margin-top: var(--eo-space-5) !important;
-  padding-top: var(--eo-space-3) !important;
-  padding-bottom: var(--eo-space-3) !important;
+  border-radius: var(--eo-radius-card) !important;
 }
 
-.app-footer-links,
-.dashboard-shell .app-footer-links {
-  gap: 6px 18px !important;
+.dashboard-shell .btn,
+.dashboard-shell button:not(.unstyled-button),
+.dashboard-shell input:not([type='checkbox']):not([type='radio']),
+.dashboard-shell select,
+.dashboard-shell textarea,
+.dashboard-shell .input,
+.dashboard-shell details,
+.mobile-bottom-nav-item,
+.everitt-bottom-nav-item {
+  border-radius: var(--eo-radius-control) !important;
 }
 
-.app-footer-links a,
-.dashboard-shell .app-footer-links a {
-  min-height: 32px !important;
-  font-size: 14px !important;
+.dashboard-shell .badge,
+.dashboard-shell .status,
+.dashboard-shell .status-pill,
+.dashboard-shell .plan-badge {
+  border-radius: var(--eo-radius-small) !important;
 }
 
-.app-footer-copy,
-.dashboard-shell .app-footer-copy {
-  margin-top: 8px !important;
-}
+.dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card { padding: var(--eo-space-4) !important; }
+.dashboard-shell .card + .card,.dashboard-shell .card + section,.dashboard-shell section + .card,.dashboard-shell section + section { margin-top: var(--eo-space-3) !important; }
+.dashboard-shell .list-row { padding: 12px 14px !important; }
+.dashboard-shell th,.dashboard-shell td { padding: 10px 12px !important; }
+.dashboard-shell details[open] > summary { margin-bottom: var(--eo-space-2) !important; }
+.app-footer,.dashboard-shell .app-footer { margin-top: var(--eo-space-5) !important; padding-top: var(--eo-space-3) !important; padding-bottom: var(--eo-space-3) !important; overflow: hidden; }
+.app-footer-links,.dashboard-shell .app-footer-links { gap: 6px 18px !important; }
+.app-footer-links a,.dashboard-shell .app-footer-links a { min-height: 32px !important; font-size: 14px !important; }
+.app-footer-copy,.dashboard-shell .app-footer-copy { margin-top: 8px !important; }
 
 @media (max-width: 900px) {
-  .dashboard-shell .app-page-content {
-    padding-top: 8px !important;
-    padding-bottom: 22px !important;
-  }
-
-  .dashboard-shell .page-header,
-  .dashboard-shell .role-dashboard-topbar,
-  .dashboard-shell .contractor-portal-hero {
-    margin-bottom: 14px !important;
-  }
-
-  .dashboard-shell .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .client-job-card {
-    padding: 16px !important;
-  }
-
-  .dashboard-shell .card + .card,
-  .dashboard-shell .card + section,
-  .dashboard-shell section + .card,
-  .dashboard-shell section + section {
-    margin-top: 12px !important;
-  }
-
-  .app-footer,
-  .dashboard-shell .app-footer {
-    margin-top: 18px !important;
-    margin-bottom: calc(94px + env(safe-area-inset-bottom)) !important;
-    padding: 12px 14px 14px !important;
-  }
-
-  .app-footer-links,
-  .dashboard-shell .app-footer-links {
-    gap: 4px 12px !important;
-  }
+  .dashboard-shell .app-page-content { padding-top: 8px !important; padding-bottom: 22px !important; }
+  .dashboard-shell .page-header,.dashboard-shell .role-dashboard-topbar,.dashboard-shell .contractor-portal-hero { margin-bottom: 14px !important; }
+  .dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card { padding: 16px !important; }
+  .dashboard-shell .card + .card,.dashboard-shell .card + section,.dashboard-shell section + .card,.dashboard-shell section + section { margin-top: 12px !important; }
+  .app-footer,.dashboard-shell .app-footer { margin-top: 18px !important; margin-bottom: calc(94px + env(safe-area-inset-bottom)) !important; padding: 12px 14px 14px !important; }
+  .app-footer-links,.dashboard-shell .app-footer-links { gap: 4px 12px !important; }
 }
 
 @media (max-width: 560px) {
-  .dashboard-shell .app-page-content {
-    padding-inline: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)) !important;
-  }
-
-  .dashboard-shell .page-header {
-    gap: 10px !important;
-  }
-
-  .dashboard-shell .page-header-action,
-  .dashboard-shell .button-row,
-  .dashboard-shell .inline-actions,
-  .dashboard-shell .filters,
-  .dashboard-shell .filter-row,
-  .dashboard-shell .filter-bar,
-  .dashboard-shell .toolbar,
-  .dashboard-shell .page-toolbar {
-    gap: 8px !important;
-  }
-
-  .dashboard-shell .card,
-  .dashboard-shell .role-summary-card,
-  .dashboard-shell .client-job-card {
-    padding: 14px !important;
-  }
-
-  .app-footer,
-  .dashboard-shell .app-footer {
-    width: calc(100% - 24px) !important;
-    margin-top: 16px !important;
-    margin-bottom: calc(94px + env(safe-area-inset-bottom)) !important;
-    padding: 10px 12px 12px !important;
-  }
-
-  .app-footer-links,
-  .dashboard-shell .app-footer-links {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 2px 8px !important;
-    max-width: 340px !important;
-  }
-
-  .app-footer-links a,
-  .dashboard-shell .app-footer-links a {
-    min-height: 30px !important;
-    font-size: 14px !important;
-    line-height: 1.25 !important;
-  }
-
-  .app-footer-copy,
-  .dashboard-shell .app-footer-copy {
-    margin-top: 6px !important;
-    font-size: 13px !important;
-  }
+  .dashboard-shell .app-page-content { padding-inline: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)) !important; }
+  .dashboard-shell .page-header { gap: 10px !important; }
+  .dashboard-shell .page-header-action,.dashboard-shell .button-row,.dashboard-shell .inline-actions,.dashboard-shell .filters,.dashboard-shell .filter-row,.dashboard-shell .filter-bar,.dashboard-shell .toolbar,.dashboard-shell .page-toolbar { gap: 8px !important; }
+  .dashboard-shell .card,.dashboard-shell .role-summary-card,.dashboard-shell .client-job-card { padding: 14px !important; }
+  .app-footer,.dashboard-shell .app-footer { width: calc(100% - 24px) !important; margin-top: 16px !important; margin-bottom: calc(94px + env(safe-area-inset-bottom)) !important; padding: 10px 12px 12px !important; border-radius: 16px !important; }
+  .app-footer-links,.dashboard-shell .app-footer-links { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 2px 8px !important; max-width: 340px !important; }
+  .app-footer-links a,.dashboard-shell .app-footer-links a { min-height: 30px !important; font-size: 14px !important; line-height: 1.25 !important; }
+  .app-footer-copy,.dashboard-shell .app-footer-copy { margin-top: 6px !important; font-size: 13px !important; }
 }
