@@ -124,6 +124,65 @@
   -webkit-backdrop-filter: blur(16px) !important;
 }
 
+/* Structural wrappers never get their own white slab. The actual records/cards inside them float on the hero. */
+.dashboard-shell .jobs-table-card,
+.dashboard-shell .jobs-advanced-filters,
+.dashboard-shell .dashboard-revenue-grid,
+.dashboard-shell .metric-grid,
+.dashboard-shell .stats-grid,
+.dashboard-shell .team-command-grid,
+.dashboard-shell .role-summary-grid,
+.dashboard-shell .list-group,
+.dashboard-shell .jobs-list,
+.dashboard-shell .customer-list,
+.dashboard-shell .customers-list,
+.dashboard-shell .record-list,
+.dashboard-shell .cards-grid,
+.dashboard-shell .section-grid,
+.contractor-main .contractor-content-card,
+.contractor-main .portal-dashboard-section,
+.contractor-main .contractor-jobs-list,
+.contractor-main .job-visits-list,
+.client-main .client-upcoming-simple,
+.client-main .client-job-card-list,
+.client-main .client-jobs-list {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.contractor-main .contractor-content-card {
+  padding: 0 !important;
+}
+
+.contractor-main .contractor-content-card > h2,
+.client-main .client-section-heading {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* If a generic card is only acting as a container for a list/grid of real cards, remove the container paint. */
+.dashboard-shell .card:has(> .job-visits-list),
+.dashboard-shell .card:has(> .record-list),
+.dashboard-shell .card:has(> .cards-grid),
+.dashboard-shell .card:has(> .list-group),
+.dashboard-shell .card:has(> .jobs-list),
+.dashboard-shell .card:has(> .customers-list),
+.role-portal-shell .card:has(> .job-visits-list),
+.role-portal-shell .card:has(> .client-job-card-list) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
 .dashboard-shell > .sidebar {
   align-self: start !important;
   margin: 16px 0 16px 16px !important;
