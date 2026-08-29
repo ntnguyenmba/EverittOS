@@ -50,6 +50,7 @@ import './footer-bottom-nav-clearance.css';
 import './unified-spacing-final.css';
 import './jobs-mobile-editorial-final.css';
 import './app-wide-editorial-final.css';
+import './jobs-mobile-layout-hotfix.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
