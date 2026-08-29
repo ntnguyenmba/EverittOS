@@ -10,10 +10,7 @@ type AppPageContentProps = {
   className?: string;
 };
 
-/**
- * Shared signed-in canvas.
- * Ask Everitt is app chrome; every actual page child belongs to one white stage.
- */
+/** Ask Everitt floats as chrome; all page content lives in one white stage. */
 export function AppPageContent({ children, className }: AppPageContentProps) {
   const classes = className ? `app-page-content ${className}` : 'app-page-content';
   const items = Children.toArray(children);
@@ -41,6 +38,7 @@ export function AppPageContent({ children, className }: AppPageContentProps) {
         <JobGuidancePanel />
         <JobsListNextActionHints />
         {page}
+        <p className="app-stage-copyright">© {new Date().getFullYear()} Everitt Ventures</p>
       </div>
     </div>
   );
