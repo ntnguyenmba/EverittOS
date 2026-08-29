@@ -2,33 +2,34 @@
 .owner-home-sheet {
   width: min(560px, 100%);
   display: grid;
-  gap: 22px;
-  padding: 28px 30px !important;
+  gap: 16px;
+  padding: 22px 24px !important;
   background: rgba(255,255,255,.96) !important;
   border: 1px solid rgba(255,255,255,.72) !important;
-  border-radius: 22px !important;
-  box-shadow: 0 28px 70px rgba(9,24,35,.18) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 22px 56px rgba(9,24,35,.16) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 .owner-home-sheet .page-head,
-.owner-home-sheet .page-header { margin: 0 !important; padding: 0 0 18px !important; border-bottom: 1px solid rgba(19,36,51,.10); }
-.owner-home-sheet h1 { color: #132433 !important; font-weight: 800 !important; letter-spacing: -.045em !important; line-height: 1.06 !important; }
-.owner-home-primary { display: grid; gap: 8px; }
+.owner-home-sheet .page-header { margin: 0 !important; padding: 0 0 12px !important; border-bottom: 1px solid rgba(19,36,51,.10); }
+.owner-home-sheet h1 { color: #132433 !important; font-weight: 700 !important; font-size: clamp(25px,3vw,34px) !important; letter-spacing: -.035em !important; line-height: 1.08 !important; }
+.owner-home-primary { display: grid; gap: 6px; }
 .owner-home-kicker { color: #526777 !important; font-size: 14px; font-weight: 600; }
-.owner-home-primary h2 { margin: 0 !important; color: #132433 !important; font-size: clamp(23px,3vw,30px) !important; font-weight: 800 !important; letter-spacing: -.035em !important; line-height: 1.1 !important; }
-.owner-home-primary p { margin: 2px 0 0 !important; color: #526777 !important; line-height: 1.5 !important; }
-.owner-home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.owner-home-primary h2 { margin: 0 !important; color: #132433 !important; font-size: clamp(22px,3vw,28px) !important; font-weight: 700 !important; letter-spacing: -.03em !important; line-height: 1.12 !important; }
+.owner-home-primary p { margin: 2px 0 0 !important; color: #526777 !important; line-height: 1.45 !important; }
+.owner-home-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.owner-home-actions .btn { min-height: 44px !important; }
 .owner-home-actions .btn-primary { background: #285d78 !important; border-color: #285d78 !important; color: #fff !important; }
-.owner-home-actions .btn:not(.btn-primary) { background: #fff !important; border-color: #285d78 !important; color: #285d78 !important; }
-.owner-load-note { margin-top: 2px; padding-top: 16px; border-top: 1px solid rgba(19,36,51,.10); }
+.owner-home-actions .btn:not(.btn-primary) { background: #fff !important; border-color: rgba(40,93,120,.28) !important; color: #285d78 !important; }
+.owner-load-note { margin-top: 2px; padding-top: 12px; border-top: 1px solid rgba(19,36,51,.10); }
 
 .owner-priority-strip .dashboard-revenue-grid { grid-template-columns: minmax(0,1.7fr) repeat(2,minmax(0,.8fr)) !important; gap: 14px !important; align-items: stretch; }
 .owner-priority-strip .dashboard-revenue-grid > * { display: flex !important; }
 .owner-desk-card { min-height: 132px !important; padding: 20px !important; }
 .owner-desk-card .dashboard-revenue-metric-value { font-size: clamp(24px,3vw,34px) !important; line-height: 1.05 !important; letter-spacing: -.035em !important; }
 .owner-desk-card .muted { display: block !important; line-height: 1.45 !important; }
-.owner-next-job-card { min-height: 156px !important; padding: 22px 24px !important; border-radius: 22px !important; background: rgba(255,255,255,.96) !important; border: 1px solid rgba(255,255,255,.72) !important; box-shadow: 0 28px 70px rgba(9,24,35,.18) !important; flex-direction: column; justify-content: space-between; }
+.owner-next-job-card { min-height: 156px !important; padding: 22px 24px !important; border-radius: 18px !important; background: rgba(255,255,255,.96) !important; border: 1px solid rgba(255,255,255,.72) !important; box-shadow: 0 22px 56px rgba(9,24,35,.16) !important; flex-direction: column; justify-content: space-between; }
 .owner-next-job-card .dashboard-revenue-metric-value { max-width: 24ch; font-size: clamp(23px,2.5vw,31px) !important; line-height: 1.12 !important; letter-spacing: -.025em !important; }
 .owner-next-job-card .muted { max-width: 60ch; margin-top: 12px !important; }
 .owner-money-card .dashboard-revenue-metric-value { font-variant-numeric: tabular-nums; }
@@ -40,19 +41,11 @@
 
 .client-next-visit-paper,
 .contractor-portal-hero,
-.contractor-content-card {
-  background: rgba(255,255,255,.96) !important;
-  border: 1px solid rgba(255,255,255,.72) !important;
-  border-radius: 22px !important;
-  box-shadow: 0 28px 70px rgba(9,24,35,.18) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
+.contractor-content-card { background: rgba(255,255,255,.96) !important; border: 1px solid rgba(255,255,255,.72) !important; border-radius: 18px !important; box-shadow: 0 22px 56px rgba(9,24,35,.16) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .client-next-visit-paper { display: grid; grid-template-columns: minmax(0,.9fr) minmax(300px,1.1fr); gap: 34px; padding: 30px !important; }
 .client-next-visit-copy { align-self: center; }
 .client-next-visit-paper .eyebrow { margin: 0 0 8px !important; color: #526777 !important; }
-.client-next-visit-paper h1,
-.contractor-portal-hero h1 { color: #132433 !important; font-weight: 800 !important; letter-spacing: -.045em !important; }
+.client-next-visit-paper h1,.contractor-portal-hero h1 { color: #132433 !important; font-weight: 700 !important; letter-spacing: -.035em !important; }
 .client-next-visit-paper h1 { margin: 0 !important; max-width: 18ch; font-size: clamp(30px,5vw,44px) !important; line-height: 1.04 !important; }
 .client-next-visit-paper p { margin: 10px 0 0 !important; color: #31495b !important; }
 .client-next-visit-time { font-size: 17px; line-height: 1.45; color: #526777 !important; }
@@ -83,9 +76,13 @@
 .worker-job-link:hover strong,.worker-job-link:focus-visible strong { text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width:760px) {
-  .owner-home-sheet { width: 100%; padding: 22px 18px !important; border-radius: 20px !important; }
-  .owner-home-actions { display: grid; grid-template-columns: 1fr; }
-  .owner-home-actions > * { width: 100%; min-height: 50px; }
+  .owner-home-sheet { width: 100%; gap: 14px; padding: 18px 16px !important; border-radius: 18px !important; }
+  .owner-home-sheet .page-head,.owner-home-sheet .page-header { padding-bottom: 10px !important; }
+  .owner-home-sheet h1 { font-size: 27px !important; }
+  .owner-home-primary h2 { font-size: 23px !important; }
+  .owner-home-primary p { font-size: 15px !important; line-height: 1.4 !important; }
+  .owner-home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .owner-home-actions > * { width: 100%; min-height: 44px !important; }
   .owner-priority-strip .dashboard-revenue-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
   .owner-desk-card,.owner-next-job-card { min-height: 104px !important; padding: 18px !important; }
   .owner-desk-card .dashboard-revenue-metric-value,.owner-next-job-card .dashboard-revenue-metric-value { font-size: 25px !important; }
@@ -99,4 +96,8 @@
   .worker-job-link { grid-template-columns: 1fr; gap: 12px; }
   .contractor-more > .button-row { display: grid; grid-template-columns: 1fr; }
   .contractor-more > .button-row > * { width: 100%; }
+}
+
+@media (max-width:420px) {
+  .owner-home-actions { grid-template-columns: 1fr; }
 }
