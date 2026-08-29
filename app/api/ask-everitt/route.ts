@@ -17,7 +17,7 @@ import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
 import { recordAiUsage } from '@/lib/ai-usage-events';
 import { isClientRole, normalizeRole } from '@/lib/roles';
-import { fetchOrganizationContextForUser } from '@/lib/organization-server';
+import { fetchOrganizationContextForRequest } from '@/lib/organization-request';
 import { resolveOrganizationPlan } from '@/lib/organization-plan';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
   const locale = normalizeAskLocale(body.locale);
   if (!prompt) return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
 
-  const org = await fetchOrganizationContextForUser(supabase, user.id);
+  const org = await fetchOrganizationContextForRequest(supabase, user.id);
   if (!org) return NextResponse.json({ error: 'No active workspace found.', code: 'no_organization' }, { status: 403 });
   if (isClientRole(org.role)) return NextResponse.json({ error: 'Your role cannot use Ask Everitt.', code: 'permission_denied' }, { status: 403 });
 
@@ -170,64 +170,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const contextualStructured = await runContextAwareAskQuery(
-      supabase,
-      org.organizationId,
-      prompt,
-      locale,
-      pageContext
-    );
-
-    const structuredV3 = contextualStructured ? null : await runStructuredNaturalQueryV3(
-      supabase,
-      org.organizationId,
-      user.id,
-      prompt,
-      locale
-    );
-
-    const structuredV2 = contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(
-      supabase,
-      org.organizationId,
-      user.id,
-      prompt,
-      locale
-    );
-
-    const structuredFallback = contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(
-      supabase,
-      org.organizationId,
-      user.id,
-      prompt,
-      locale
-    );
-
-    const directResult = contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt)
-      ? await queryNextJob(supabase, org.organizationId, locale)
-      : null);
-
-    const searchResult = directResult || await runAskEverittSearchEngine(
-      supabase,
-      org.organizationId,
-      natural.searchQuery || prompt
-    );
+    const contextualStructured = await runContextAwareAskQuery(supabase, org.organizationId, prompt, locale, pageContext);
+    const structuredV3 = contextualStructured ? null : await runStructuredNaturalQueryV3(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredV2 = contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredFallback = contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(supabase, org.organizationId, user.id, prompt, locale);
+    const directResult = contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(supabase, org.organizationId, locale) : null);
+    const searchResult = directResult || await runAskEverittSearchEngine(supabase, org.organizationId, natural.searchQuery || prompt);
 
     if (searchResult.results.length === 0) {
-      searchResult.suggestions = await buildSmartAskSuggestions(
-        supabase,
-        org.organizationId,
-        locale,
-        pageContext
-      );
+      searchResult.suggestions = await buildSmartAskSuggestions(supabase, org.organizationId, locale, pageContext);
     }
 
-    await recordAiUsage(admin, searchUsageEvent({
-      workspaceId: org.organizationId,
-      userId: user.id,
-      userRole: normalizeRole(org.role),
-      prompt
-    }));
-
+    await recordAiUsage(admin, searchUsageEvent({ workspaceId: org.organizationId, userId: user.id, userRole: normalizeRole(org.role), prompt }));
     return NextResponse.json(localizeAskEverittSearchResponse(searchResult, locale));
   }
 
@@ -235,77 +189,22 @@ export async function POST(request: Request) {
 
   const gate = await verifyAiRequest(supabase, admin, user.id, { feature: 'ask_everitt' });
   if (!gate.ok) {
-    if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) {
-      return runStructuredSearch();
-    }
-
-    const status = gate.code === 'plan_required' || gate.code === 'subscription_inactive'
-      ? 403
-      : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted' || gate.code === 'staff_daily_limit' || gate.code === 'staff_monthly_limit'
-        ? 429
-        : 503;
-
-    return NextResponse.json({
-      error: gate.message,
-      code: gate.code,
-      mode: 'ai',
-      searchAvailable: true,
-      locked: gate.code === 'plan_required',
-      requiredPlan: gate.requiredPlan || 'business'
-    }, { status });
+    if ((gate.code === 'plan_required' || gate.code === 'subscription_inactive') && natural.hasRecordIntent) return runStructuredSearch();
+    const status = gate.code === 'plan_required' || gate.code === 'subscription_inactive' ? 403 : gate.code === 'rate_limited' || gate.code === 'everittteam_budget_exhausted' || gate.code === 'staff_daily_limit' || gate.code === 'staff_monthly_limit' ? 429 : 503;
+    return NextResponse.json({ error: gate.message, code: gate.code, mode: 'ai', searchAvailable: true, locked: gate.code === 'plan_required', requiredPlan: gate.requiredPlan || 'business' }, { status });
   }
 
   const prefetched = await prefetchAskEverittContextForAi(supabase, org.organizationId, contextualPrompt);
   const dataContext = formatPrefetchedContextForAi(prefetched);
   const orgContext = await buildOrganizationAiContext(admin, gate.org.organizationId);
-  const messages: AiChatMessage[] = [{
-    role: 'user',
-    content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}`
-  }];
-
+  const messages: AiChatMessage[] = [{ role: 'user', content: `${languageInstruction(locale)}\n\n${prompt}\n\n${pageContext ? `--- Current EverittOS page context ---\n${pageContext}\n\n` : ''}--- Workspace data (from Supabase, use as facts) ---\n${dataContext}` }];
   const result = await runAiChat(messages, `${AI_ACTION_SYSTEM_HINT}\n\n${languageInstruction(locale)}\n\n${BUSINESS_DATA_RULES}\n\n${orgContext}`, { feature: 'ask_everitt' });
-  if (!result.ok) {
-    return NextResponse.json(
-      { error: result.message, code: result.code, mode: 'ai', searchAvailable: true },
-      { status: result.code === 'rate_limited' ? 429 : 503 }
-    );
-  }
+
+  if (!result.ok) return NextResponse.json({ error: result.message, code: result.code, mode: 'ai', searchAvailable: true }, { status: result.code === 'rate_limited' ? 429 : 503 });
 
   const { cleanReply, action } = parseProposedAction(result.reply);
+  await logAiGeneration(admin, { organizationId: gate.org.organizationId, userId: user.id, prompt, response: cleanReply, model: result.model, feature: 'ask_everitt', usage: result.usage });
+  await recordAiUsage(admin, { workspaceId: gate.org.organizationId, userId: user.id, userRole: normalizeRole(gate.org.role), feature: 'ask_everitt', mode: 'ai', prompt, inputTokens: result.usage.promptTokens, outputTokens: result.usage.completionTokens, estimatedCost: result.usage.estimatedCostUsd });
 
-  await logAiGeneration(admin, {
-    organizationId: gate.org.organizationId,
-    userId: user.id,
-    prompt,
-    response: cleanReply,
-    model: result.model,
-    feature: 'ask_everitt',
-    usage: result.usage
-  });
-
-  await recordAiUsage(admin, {
-    workspaceId: gate.org.organizationId,
-    userId: user.id,
-    userRole: normalizeRole(gate.org.role),
-    feature: 'ask_everitt',
-    mode: 'ai',
-    prompt,
-    inputTokens: result.usage.promptTokens,
-    outputTokens: result.usage.completionTokens,
-    estimatedCost: result.usage.estimatedCostUsd
-  });
-
-  return NextResponse.json({
-    mode: 'ai',
-    reply: cleanReply,
-    model: result.model,
-    provider: result.provider,
-    action,
-    prefetchedSummary: prefetched.summary,
-    usage: {
-      monthlyUsed: gate.monthlyUsed + 1,
-      monthlyCap: gate.monthlyCap,
-      unlimited: gate.unlimited
-    }
-  });
+  return NextResponse.json({ mode: 'ai', reply: cleanReply, model: result.model, provider: result.provider, action, prefetchedSummary: prefetched.summary, usage: { monthlyUsed: gate.monthlyUsed + 1, monthlyCap: gate.monthlyCap, unlimited: gate.unlimited } });
 }
