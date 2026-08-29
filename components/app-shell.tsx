@@ -88,6 +88,15 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         .dashboard-shell .app-page-top,.dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
+        .dashboard-shell .language-switcher { display:grid; gap:5px; min-width:0; }
+        .dashboard-shell .language-switcher-label { display:block; line-height:1.25; }
+        .dashboard-shell .language-switcher-select { line-height:1.25; padding-left:12px; padding-right:32px; white-space:nowrap; }
+        .dashboard-shell .owner-home-primary { display:grid!important; gap:12px!important; }
+        .dashboard-shell .owner-home-primary > * { margin-top:0!important; margin-bottom:0!important; }
+        .dashboard-shell .owner-home-kicker { display:block!important; line-height:1.35!important; }
+        .dashboard-shell .owner-home-primary h2 { line-height:1.3!important; overflow-wrap:anywhere; }
+        .dashboard-shell .owner-home-primary p { line-height:1.55!important; overflow-wrap:anywhere; }
+        .dashboard-shell .owner-home-actions { display:flex!important; flex-wrap:wrap!important; gap:10px!important; padding-top:4px; }
         .role-portal-shell .btn,.role-portal-shell button,.role-portal-shell select { min-height: 44px; }
         .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#3f586a!important; border-color:#3f586a!important; color:#fff!important; }
         .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px!important; width:100%; }
