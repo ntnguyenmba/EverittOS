@@ -62,11 +62,30 @@
   line-height: 1 !important;
 }
 
-/* Copyright lives in More/About, not in the fixed operational footer. */
 .app-footer-copy,
 .dashboard-shell .app-footer-copy,
 .dashboard-shell .app-footer-copy.muted {
   display: none !important;
+}
+
+/* Mobile/tablet: the legal strip is shared chrome and always sits directly above the fixed tab bar. */
+@media (max-width: 1279px) {
+  .app-footer,
+  .dashboard-shell .app-footer {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 2147482000 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+  }
+
+  .dashboard-shell > .main {
+    padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 @media (max-width: 560px) {
