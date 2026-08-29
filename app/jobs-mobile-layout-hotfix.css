@@ -1,4 +1,4 @@
-/* Jobs viewport safety only. Visual alignment lives in jobs-filter-mobile-alignment.css. */
+/* Jobs viewport safety and final mobile control guard. Loaded last on purpose. */
 .jobs-list-page,
 .jobs-list-page * {
   box-sizing: border-box;
@@ -17,16 +17,134 @@
 }
 
 @media (max-width: 760px) {
-  .jobs-list-page {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+  .dashboard-shell .jobs-list-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
   }
 
-  .jobs-filter-summary,
-  .loading-state,
-  .auth-message {
-    width: 100%;
-    max-width: 100%;
+  /* Keep the title and its three actions on a clean, readable card. */
+  .dashboard-shell .jobs-list-page > .page-header {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    width: 100% !important;
+    padding: 18px !important;
+  }
+
+  .dashboard-shell .jobs-list-page > .page-header > div:first-child,
+  .dashboard-shell .jobs-list-page > .page-header h1 {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+
+  .dashboard-shell .jobs-header-actions,
+  .jobs-shell-minimal .jobs-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > *,
+  .jobs-shell-minimal .jobs-header-actions > * {
+    display: inline-flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 48px !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > * *,
+  .jobs-shell-minimal .jobs-header-actions > * * {
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :last-child,
+  .jobs-shell-minimal .jobs-header-actions > :last-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .dashboard-shell .jobs-filter-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .jobs-filter-tab,
+  .dashboard-shell .jobs-filter-tabs > .jobs-filter-tab:nth-child(5) {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 10px 8px !important;
+    writing-mode: horizontal-tb !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .dashboard-shell .jobs-filter-summary,
+  .dashboard-shell .loading-state,
+  .dashboard-shell .auth-message {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-shell .jobs-header-actions,
+  .jobs-shell-minimal .jobs-header-actions {
+    grid-template-columns: minmax(0,1fr) !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > :last-child,
+  .jobs-shell-minimal .jobs-header-actions > :last-child {
+    grid-column: 1 !important;
+  }
+
+  .dashboard-shell .jobs-filter-tabs {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    grid-template-columns: minmax(0,1fr) !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
+    grid-column: 1 !important;
   }
 }
