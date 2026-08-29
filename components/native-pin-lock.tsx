@@ -40,6 +40,8 @@ export function NativePinLock() {
     setLocale(currentLocale());
 
     let cancelled = false;
+    let wasBackgrounded = false;
+
     async function checkLock() {
       if (forceAccountSignIn() || !nativePinIsEnabled()) {
         if (!cancelled) setLocked(false);
@@ -55,11 +57,35 @@ export function NativePinLock() {
         if (!cancelled) setLocked(false);
       }
     }
+
+    function relockAfterResume() {
+      if (!wasBackgrounded || forceAccountSignIn()) return;
+      wasBackgrounded = false;
+      setPin('');
+      setError('');
+      void checkLock();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        wasBackgrounded = true;
+        return;
+      }
+      if (document.visibilityState === 'visible') relockAfterResume();
+    }
+
+    function handlePageHide() {
+      wasBackgrounded = true;
+    }
+
     void checkLock();
 
     const syncLocale = () => setLocale(currentLocale());
     window.addEventListener('everittos:locale-changed', syncLocale);
     window.addEventListener('storage', syncLocale);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', relockAfterResume);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     const observer = new MutationObserver(syncLocale);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'data-locale'] });
     observer.observe(document.body, { attributes: true, attributeFilter: ['data-locale'] });
@@ -67,6 +93,9 @@ export function NativePinLock() {
       cancelled = true;
       window.removeEventListener('everittos:locale-changed', syncLocale);
       window.removeEventListener('storage', syncLocale);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', relockAfterResume);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       observer.disconnect();
     };
   }, []);
