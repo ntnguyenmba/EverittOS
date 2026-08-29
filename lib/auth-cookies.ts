@@ -47,6 +47,18 @@ export function createSupabaseCookieAdapter(handlers: {
   };
 }
 
+/** Remove only Supabase auth-token cookies after the provider reports no valid user. */
+export function clearStaleSupabaseAuthCookies(
+  response: NextResponse,
+  cookies: Array<{ name: string; value?: string }>
+): void {
+  const cleared = sanitizeAuthCookieOptions();
+  for (const cookie of cookies) {
+    if (!/^sb-.*-auth-token(?:\.\d+)?$/.test(cookie.name)) continue;
+    response.cookies.set(cookie.name, '', { ...cleared, maxAge: 0 });
+  }
+}
+
 /** Activity markers remain session-scoped; only auth tokens need their provider lifetime. */
 export function sessionMarkerCookieOptions(): Record<string, unknown> {
   const secure = process.env.NODE_ENV === 'production';
