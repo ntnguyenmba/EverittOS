@@ -1,6 +1,6 @@
 /* Final signed-in readability and mobile chrome guard.
-   Keeps the Everitt hero visible, makes text readable everywhere, and prevents
-   legal/footer chrome from covering page content or actions. */
+   Keeps the Everitt hero visible, makes text readable everywhere, removes
+   nested card wrappers, and prevents legal/footer chrome from covering content. */
 
 .dashboard-shell-overlay,
 .role-portal-shell .dashboard-shell-overlay,
@@ -12,12 +12,36 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Empty/loading states are content, not structural wrappers. They always need
-   their own readable paper surface when shown over photography. */
+/* Structural wrappers around real cards/empty states must stay invisible. */
+.dashboard-shell .card:has(> .empty-state),
+.dashboard-shell .card:has(> .customer-card-row),
+.dashboard-shell .card:has(> .job-card),
+.dashboard-shell .card:has(> .record-card),
+.dashboard-shell .card:has(> .quote-card),
+.dashboard-shell .card:has(> .saved-quote-card),
+.role-portal-shell .card:has(> .empty-state),
+.contractor-main .card:has(> .empty-state),
+.client-main .card:has(> .empty-state) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+/* The real empty-state card is the only visible surface. Give text breathing room. */
 .dashboard-shell .empty-state.card,
 .role-portal-shell .empty-state.card,
 .contractor-main .empty-state.card,
 .client-main .empty-state.card {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  padding: 26px 28px !important;
   background: rgba(255, 255, 255, 0.97) !important;
   border: 1px solid #d5dee5 !important;
   border-radius: 18px !important;
@@ -38,6 +62,7 @@
   color: #132433 !important;
   opacity: 1 !important;
   text-shadow: none !important;
+  max-width: 100% !important;
 }
 
 .dashboard-shell .empty-state p,
@@ -45,6 +70,14 @@
 .contractor-main .empty-state p,
 .client-main .empty-state p {
   color: #405668 !important;
+}
+
+.dashboard-shell .empty-state-actions,
+.role-portal-shell .empty-state-actions,
+.contractor-main .empty-state-actions,
+.client-main .empty-state-actions {
+  width: 100% !important;
+  margin-top: 6px !important;
 }
 
 /* Do not let the legal strip become a second fixed bar. It belongs at the end
@@ -79,6 +112,13 @@
 }
 
 @media (max-width: 560px) {
+  .dashboard-shell .empty-state.card,
+  .role-portal-shell .empty-state.card,
+  .contractor-main .empty-state.card,
+  .client-main .empty-state.card {
+    padding: 22px 20px !important;
+  }
+
   .app-footer,
   .dashboard-shell .app-footer {
     width: 100% !important;
