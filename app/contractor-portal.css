@@ -1,3 +1,6 @@
+/* Worker and client presentation inside the shared signed-in stage.
+   This file must not create a second page surface or disable job interactions. */
+
 .contractor-dash-nav {
   display: flex;
   flex-wrap: wrap;
@@ -42,16 +45,29 @@
   content: '−';
 }
 
+/* Job/customer records are divider rows inside the one shared page card. */
 .contractor-job-card,
 .contractor-history-card,
 .client-job-card {
   position: relative;
-  border: 1px solid #dbe5e8 !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d5dee5 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: inherit;
   text-decoration: none;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.contractor-job-card:last-child,
+.contractor-history-card:last-child,
+.client-job-card:last-child {
+  border-bottom: 0 !important;
 }
 
 .contractor-job-card-display,
@@ -60,9 +76,8 @@
 .client-job-card {
   display: block;
   width: 100%;
-  padding: 20px !important;
-  border: 0;
-  background: transparent;
+  padding: 16px 0 !important;
+  background: transparent !important;
   color: inherit;
   text-align: left;
 }
@@ -82,7 +97,8 @@
 .client-job-card h3 {
   margin: 0 !important;
   color: #1f313b;
-  font-size: 1.08rem !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
   line-height: 1.3;
 }
 
@@ -90,11 +106,14 @@
 .contractor-history-card .muted,
 .client-job-secondary,
 .client-job-schedule span {
-  color: #71838d !important;
+  color: #526777 !important;
 }
 
 .contractor-job-card-display > div:first-child > .badge,
-.contractor-job-card > button > div:first-child > .badge {
+.contractor-job-card > button > div:first-child > .badge,
+.contractor-job-card .eyebrow,
+.contractor-history-card .eyebrow,
+.client-job-card .eyebrow {
   display: inline-flex !important;
   align-items: center;
   min-height: 30px;
@@ -102,9 +121,10 @@
   border: 1px solid #cad9e0;
   border-radius: 999px;
   background: #f3f7f9;
-  color: #405866;
-  font-size: 0.84rem;
-  font-weight: 600;
+  color: #405866 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0;
 }
 
 .contractor-job-card-display > .inline-actions,
@@ -113,45 +133,37 @@
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px !important;
-  margin-top: 18px !important;
+  margin-top: 14px !important;
 }
 
+/* Meta blocks are content, not another rounded white plate. */
 .contractor-job-card-display > .inline-actions .badge,
 .contractor-job-card > button > .inline-actions .badge,
 .contractor-history-card dl > div,
-.contractor-history-address {
+.contractor-history-address,
+.client-job-schedule {
   display: grid;
   gap: 5px;
   justify-items: start;
-  min-height: 66px;
-  padding: 12px 14px;
-  border: 1px solid #e1e9ec;
-  border-radius: 14px;
-  background: #fbfcfc;
+  min-height: 0;
+  margin-top: 10px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: #233845;
-  font-size: 0.95rem;
+  font-size: 15px;
   white-space: normal;
-}
-
-.contractor-job-card-display > .inline-actions .badge:nth-child(2),
-.contractor-job-card > button > .inline-actions .badge:nth-child(2),
-.contractor-history-card > div:first-child > strong {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: #1f313b;
-}
-
-.contractor-history-address {
-  margin-top: 12px;
 }
 
 .contractor-history-address .muted,
 .contractor-history-card dt {
-  color: #71838d !important;
-  font-size: 0.76rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  color: #526777 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .contractor-history-card dd {
@@ -160,34 +172,17 @@
   line-height: 1.45;
 }
 
-.contractor-job-card .eyebrow,
-.contractor-history-card .eyebrow,
-.client-job-card .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  margin: 0 0 8px !important;
-  padding: 5px 10px;
-  border: 1px solid #c7d9ee;
-  border-radius: 999px;
-  background: #edf5ff;
-  color: #405a78 !important;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
 .contractor-job-card > div[id^='contractor-job-'] {
-  padding: 14px 20px 18px !important;
-  border-top: 1px solid #e1e9ec !important;
-  background: #fbfcfc;
+  padding: 14px 0 16px !important;
+  border-top: 1px solid #d5dee5 !important;
+  background: transparent !important;
 }
 
 .client-job-card-list,
 .contractor-history-list {
   display: grid;
-  gap: 14px;
-  margin-top: 18px;
+  gap: 0;
+  margin-top: 16px;
 }
 
 .client-job-card-main {
@@ -199,41 +194,29 @@
   line-height: 1.45;
 }
 
-.client-job-schedule {
-  display: grid;
-  gap: 5px;
-  margin-top: 18px;
-  padding: 14px;
-  border: 1px solid #e1e9ec;
-  border-radius: 14px;
-  background: #fbfcfc;
-}
-
 .client-job-schedule strong {
   color: #233845;
-  font-size: 1rem;
+  font-size: 15px;
+  font-weight: 600;
 }
 
+/* Restore normal interaction. Worker/client job links and buttons must work. */
 .contractor-job-card,
 .contractor-job-card-display,
-.client-job-card {
-  cursor: default !important;
-}
-
+.client-job-card,
 .contractor-job-card > button,
 .contractor-job-card a,
 .contractor-history-card a,
 .client-job-card a,
 .client-job-card button {
-  pointer-events: none !important;
-  cursor: default !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .client-job-card:hover,
 .client-job-card:focus-visible,
 .contractor-job-card:focus-within {
-  border-color: #dbe5e8 !important;
-  box-shadow: 0 7px 22px rgba(35, 52, 63, 0.06);
+  background: rgba(40, 93, 120, 0.035) !important;
   outline: none;
 }
 
@@ -243,28 +226,16 @@
     margin: 12px 0 16px;
   }
 
-  .contractor-job-card,
-  .contractor-history-card,
-  .client-job-card {
-    margin-top: 12px !important;
-    border-radius: 16px !important;
-  }
-
   .contractor-job-card-display,
   .contractor-job-card > button,
   .contractor-history-card,
   .client-job-card {
-    padding: 18px !important;
+    padding: 14px 0 !important;
   }
 
   .contractor-job-card-display > .inline-actions,
   .contractor-job-card > button > .inline-actions,
   .contractor-history-card dl {
     grid-template-columns: 1fr !important;
-  }
-
-  .client-job-card-list,
-  .contractor-history-list {
-    gap: 12px;
   }
 }
