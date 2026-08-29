@@ -1,0 +1,71 @@
+/* Shared visual spacing for job cards and job detail packets across Owner, Worker, and Client views. */
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) {
+  --job-card-gap: 16px;
+  --job-card-small-gap: 10px;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card) :where(.inline-actions,.button-row,.actions,.jobs-actions,.contractor-photo-actions) {
+  gap: 12px !important;
+  margin-top: var(--job-card-gap) !important;
+}
+
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card) :where(.btn,button) + :where(p,.muted,.meta,.eyebrow,strong,small),
+.dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card) :where(p,.muted,.meta,.eyebrow,strong,small) + :where(.btn,button) {
+  margin-top: var(--job-card-small-gap) !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-packet-head {
+  margin-bottom: 18px !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-packet-details {
+  display: grid !important;
+  gap: 16px !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-block {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-block > p,
+.dashboard-shell .contractor-job-packet-card .contractor-job-pay > p {
+  margin: 0 !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-field-actions {
+  display: grid !important;
+  justify-items: start !important;
+  gap: 14px !important;
+  margin-top: 22px !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-primary-field-action {
+  margin: 0 !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-job-pay {
+  display: grid !important;
+  gap: 6px !important;
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid #d5dee5 !important;
+}
+
+.dashboard-shell .contractor-job-packet-card .contractor-finish-label {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-shell :where(.job-card,.contractor-job-card,.contractor-history-card,.client-job-card,.contractor-job-packet-card) {
+    --job-card-gap: 14px;
+    --job-card-small-gap: 9px;
+  }
+
+  .dashboard-shell .contractor-job-packet-card .contractor-field-actions,
+  .dashboard-shell .contractor-job-packet-card .contractor-job-pay {
+    margin-top: 20px !important;
+  }
+}
