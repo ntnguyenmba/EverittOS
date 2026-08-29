@@ -15,11 +15,10 @@ import { CLIENT_PORTAL_HOME, CONTRACTOR_PORTAL_HOME } from '@/lib/portal-access'
 import { isClientRole, isContractorRole, normalizeRole } from '@/lib/roles';
 
 const HIDDEN_PREFIXES = ['/login', '/signup', '/auth', '/onboarding', '/pricing', '/privacy', '/terms', '/cookies', '/disclaimer', '/security', '/book'];
-const PORTAL_VISIBLE_JOBS = 10;
 const bottomCopy = {
-  en: { home: 'Home', jobs: 'Jobs', customers: 'Customers', quotes: 'Quotes', more: 'More', workspace: 'Workspace', language: 'Language', logout: 'Log out', close: 'Close', showAll: 'Show all jobs', showLess: 'Show fewer jobs' },
-  es: { home: 'Inicio', jobs: 'Trabajos', customers: 'Clientes', quotes: 'Cotizar', more: 'Más', workspace: 'Espacio de trabajo', language: 'Idioma', logout: 'Cerrar sesión', close: 'Cerrar', showAll: 'Mostrar todos los trabajos', showLess: 'Mostrar menos trabajos' },
-  vi: { home: 'Trang chủ', jobs: 'Công việc', customers: 'Khách hàng', quotes: 'Báo giá', more: 'Thêm', workspace: 'Không gian làm việc', language: 'Ngôn ngữ', logout: 'Đăng xuất', close: 'Đóng', showAll: 'Hiện tất cả công việc', showLess: 'Hiện ít công việc hơn' }
+  en: { home: 'Home', jobs: 'Jobs', customers: 'Customers', quotes: 'Quotes', more: 'More', workspace: 'Workspace', language: 'Language', logout: 'Log out', close: 'Close' },
+  es: { home: 'Inicio', jobs: 'Trabajos', customers: 'Clientes', quotes: 'Cotizar', more: 'Más', workspace: 'Espacio de trabajo', language: 'Idioma', logout: 'Cerrar sesión', close: 'Cerrar' },
+  vi: { home: 'Trang chủ', jobs: 'Công việc', customers: 'Khách hàng', quotes: 'Báo giá', more: 'Thêm', workspace: 'Không gian làm việc', language: 'Ngôn ngữ', logout: 'Đăng xuất', close: 'Đóng' }
 } as const;
 
 function Icon({ name }: { name: 'home' | 'jobs' | 'customers' | 'quotes' | 'more' | 'money' }) {
@@ -43,7 +42,9 @@ export function MobileBottomNav() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const workspace = useWorkspacePlanOptional();
-  const role = normalizeRole(workspace?.role);
+  const pathRole = pathname.startsWith('/portal/contractor') ? 'contractor' : pathname.startsWith('/portal/client') ? 'client' : null;
+  const role = normalizeRole(pathRole ?? workspace?.role);
+  const plan = workspace?.plan ?? 'free';
   const bc = bottomCopy[locale] || bottomCopy.en;
   const [moreOpen, setMoreOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -64,7 +65,7 @@ export function MobileBottomNav() {
     [role]
   );
   if (HIDDEN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
-  if (!workspace?.plan && !workspace?.role) return null;
+  if (!pathRole && !workspace?.plan && !workspace?.role) return null;
 
   const links = isClientRole(role)
     ? [
@@ -75,8 +76,8 @@ export function MobileBottomNav() {
     : isContractorRole(role)
       ? [
           { href: CONTRACTOR_PORTAL_HOME, label: t('portal.contractor.nav.dashboard'), icon: 'home' as const },
-          { href: `${CONTRACTOR_PORTAL_HOME}#current-jobs`, label: t('portal.contractor.nav.jobs'), icon: 'jobs' as const },
-          { href: `${CONTRACTOR_PORTAL_HOME}#history`, label: t('portal.contractor.nav.earnings'), icon: 'money' as const },
+          { href: `${CONTRACTOR_PORTAL_HOME}#jobs`, label: t('portal.contractor.nav.jobs'), icon: 'jobs' as const },
+          { href: `${CONTRACTOR_PORTAL_HOME}#earnings`, label: t('portal.contractor.nav.earnings'), icon: 'money' as const },
           { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
         ]
       : [
@@ -87,103 +88,20 @@ export function MobileBottomNav() {
           { href: '#more', label: bc.more, icon: 'more' as const, menu: true }
         ];
 
-  const sheet =
-    moreOpen && mounted
-      ? createPortal(
-          <div
-            className="everitt-more-overlay"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 2147483000,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              padding: '16px 12px 96px',
-              background: 'rgba(19, 36, 51, 0.45)',
-              pointerEvents: 'auto'
-            }}
-            onClick={() => setMoreOpen(false)}
-          >
-            <section
-              className="everitt-more-sheet"
-              role="dialog"
-              aria-modal="true"
-              aria-label={bc.more}
-              style={{
-                position: 'relative',
-                zIndex: 2147483001,
-                width: 'min(520px, 100%)',
-                maxHeight: '72vh',
-                overflow: 'auto',
-                background: '#fff',
-                color: '#132433',
-                borderRadius: 22,
-                padding: 16,
-                pointerEvents: 'auto'
-              }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="everitt-more-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <strong>{bc.more}</strong>
-                <button type="button" className="everitt-more-close" onClick={() => setMoreOpen(false)}>
-                  {bc.close}
-                </button>
-              </div>
-              <div className="everitt-more-links">
-                {workspace?.plan ? (
-                  <AppNavItems plan={workspace.plan} role={role} excludeHrefs={excludeHrefs} linkClassName="everitt-more-link" onNavigate={() => setMoreOpen(false)} />
-                ) : null}
-              </div>
-              <div className="everitt-more-settings">
-                <div className="everitt-more-field">
-                  <span>{bc.workspace}</span>
-                  <OrgSwitcher />
-                </div>
-                <div className="everitt-more-field">
-                  <span>{bc.language}</span>
-                  <LanguageSwitcher id="bottom-more-language" variant="drawer" />
-                </div>
-                <button
-                  type="button"
-                  className="everitt-more-logout"
-                  onClick={async () => {
-                    setMoreOpen(false);
-                    const { performClientLogout } = await import('@/lib/client-logout');
-                    await performClientLogout(router);
-                  }}
-                >
-                  {bc.logout}
-                </button>
-              </div>
-            </section>
-          </div>,
-          document.body
-        )
-      : null;
+  const sheet = moreOpen && mounted ? createPortal(
+    <div className="everitt-more-overlay" style={{ position:'fixed', inset:0, zIndex:2147483000, display:'flex', alignItems:'flex-end', justifyContent:'center', padding:'16px 12px 96px', background:'rgba(19, 36, 51, 0.45)', pointerEvents:'auto' }} onClick={() => setMoreOpen(false)}>
+      <section className="everitt-more-sheet" role="dialog" aria-modal="true" aria-label={bc.more} style={{ position:'relative', zIndex:2147483001, width:'min(520px, 100%)', maxHeight:'72vh', overflow:'auto', background:'#fff', color:'#132433', borderRadius:22, padding:16, pointerEvents:'auto' }} onClick={(event) => event.stopPropagation()}>
+        <div className="everitt-more-head" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}><strong>{bc.more}</strong><button type="button" className="everitt-more-close" onClick={() => setMoreOpen(false)}>{bc.close}</button></div>
+        <div className="everitt-more-links"><AppNavItems plan={plan} role={role} excludeHrefs={excludeHrefs} linkClassName="everitt-more-link" onNavigate={() => setMoreOpen(false)} /></div>
+        <div className="everitt-more-settings">
+          <div className="everitt-more-field"><span>{bc.workspace}</span><OrgSwitcher /></div>
+          <div className="everitt-more-field"><span>{bc.language}</span><LanguageSwitcher id="bottom-more-language" variant="drawer" /></div>
+          <button type="button" className="everitt-more-logout" onClick={async () => { setMoreOpen(false); const { performClientLogout } = await import('@/lib/client-logout'); await performClientLogout(router); }}>{bc.logout}</button>
+        </div>
+      </section>
+    </div>, document.body) : null;
 
-  return (
-    <>
-      <nav className={`everitt-bottom-nav everitt-bottom-nav-${links.length}`} aria-label={t('ux.mobileNavLabel')}>
-        {links.map((item) =>
-          'menu' in item && item.menu ? (
-            <button key="more" type="button" className={`everitt-bottom-nav-item everitt-bottom-nav-button${moreOpen ? ' is-active' : ''}`} onClick={() => setMoreOpen(true)}>
-              <span className="everitt-bottom-nav-icon">
-                <Icon name={item.icon} />
-              </span>
-              <span className="everitt-bottom-nav-label">{item.label}</span>
-            </button>
-          ) : (
-            <Link key={item.href} href={item.href} className={`everitt-bottom-nav-item${activeFor(pathname, item.href) ? ' is-active' : ''}`} aria-current={activeFor(pathname, item.href) ? 'page' : undefined}>
-              <span className="everitt-bottom-nav-icon">
-                <Icon name={item.icon} />
-              </span>
-              <span className="everitt-bottom-nav-label">{item.label}</span>
-            </Link>
-          )
-        )}
-      </nav>
-      {sheet}
-    </>
-  );
+  return <><nav className={`everitt-bottom-nav everitt-bottom-nav-${links.length}`} aria-label={t('ux.mobileNavLabel')}>
+    {links.map((item) => 'menu' in item && item.menu ? <button key="more" type="button" className={`everitt-bottom-nav-item everitt-bottom-nav-button${moreOpen ? ' is-active' : ''}`} onClick={() => setMoreOpen(true)}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></button> : <Link key={item.href} href={item.href} className={`everitt-bottom-nav-item${activeFor(pathname, item.href) ? ' is-active' : ''}`} aria-current={activeFor(pathname, item.href) ? 'page' : undefined}><span className="everitt-bottom-nav-icon"><Icon name={item.icon} /></span><span className="everitt-bottom-nav-label">{item.label}</span></Link>)}
+  </nav>{sheet}</>;
 }
