@@ -103,7 +103,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const patch: Record<string, unknown> = {};
   if (revenueAmount !== undefined) patch.revenue_amount = revenueAmount;
-  if (body.revenue_notes !== undefined) patch.revenue_notes = body.revenue_notes?.trim() || null;
+  // revenue_notes is accepted for backward compatibility, but it is not a jobs table column.
+  // Job creation already saves the amount on the job itself, so attempting to persist this
+  // unsupported field could make a successfully-created job look like it failed.
   if (body.expected_contractor_cost !== undefined) {
     const value =
       body.expected_contractor_cost === null || body.expected_contractor_cost === ''
@@ -128,14 +130,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     patch.expected_expense_description = body.expected_expense_description?.trim() || null;
   }
 
-  const { error } = await ctx.supabase
-    .from('jobs')
-    .update(patch)
-    .eq('id', jobId)
-    .eq('organization_id', ctx.organizationId);
+  if (Object.keys(patch).length > 0) {
+    const { error } = await ctx.supabase
+      .from('jobs')
+      .update(patch)
+      .eq('id', jobId)
+      .eq('organization_id', ctx.organizationId);
 
-  if (error) {
-    return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
+    if (error) {
+      return NextResponse.json({ error: error.message || 'Unable to save job financials.' }, { status: 400 });
+    }
   }
 
   const updatedJob = await resolveJob(ctx, jobId);
