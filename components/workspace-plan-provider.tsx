@@ -83,7 +83,7 @@ function stateFromJson(json: WorkspacePlanResponse): Omit<WorkspacePlanState, 'r
     billingPlan,
     organizationPlan,
     plan: organizationPlan ?? profilePlan ?? 'free',
-    role: normalizeRole(json.role || 'owner'),
+    role: normalizeRole(json.role || 'employee'),
     rawProfilePlan: json.rawProfilePlan ?? json.profilePlan ?? null,
     rawSubscriptionStatus: json.rawSubscriptionStatus ?? json.subscriptionStatus ?? null,
     loading: false,
@@ -102,7 +102,7 @@ async function fetchWorkspacePlan(): Promise<Omit<WorkspacePlanState, 'refresh'>
     const message = error instanceof DOMException && error.name === 'AbortError'
       ? 'Workspace plan request timed out.'
       : 'Unable to load workspace plan.';
-    return { ...emptyPlanState(message), plan: 'free', role: 'owner' };
+    return { ...emptyPlanState(message), plan: 'free', role: 'employee' };
   }
 }
 
