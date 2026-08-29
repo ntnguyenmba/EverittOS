@@ -11,7 +11,7 @@ import { mapAccessError } from '@/lib/auth-errors';
 import { normalizePlan, type EverittosPlan } from '@/lib/everittos-plans';
 import { canAccessNavHref } from '@/lib/nav-access';
 import { isAdminRole, isClientRole, isContractorRole, isManagerRole, isStaffRole, normalizeRole, type UserRole } from '@/lib/roles';
-import { formatLocalDate } from '@/lib/schedule-times';
+import { formatLocalDate, localDateFromIso, localTimeFromIso } from '@/lib/schedule-times';
 import { ensureOrganizationForUser } from '@/lib/workspace-client';
 import { supabase } from '@/lib/supabase';
 
@@ -26,11 +26,37 @@ async function withTimeout<T>(task: PromiseLike<T>, fallback: T, timeoutMs = TIM
 function DashboardAccessNotice() { const params = useSearchParams(); const reason = params.get('reason'); if (!reason) return null; const mapped = mapAccessError(reason); return <AccessBlockedBanner title={mapped.title} message={mapped.message} details={params.get('detail') || mapped.details} />; }
 function PriorityStat({ label, value, href }: { label: string; value: number; href: string }) { return <Link href={href} className="dashboard-revenue-metric is-primary" style={{ textDecoration: 'none' }}><span className="dashboard-revenue-metric-label">{label}</span><strong className="dashboard-revenue-metric-value">{value}</strong></Link>; }
 
-type DashboardJob = { id: string; title?: string | null; customer_name?: string | null; address?: string | null; status?: string | null; assigned_to?: string | null; scheduled_start?: string | null; start_date?: string | null; due_date?: string | null; is_skipped?: boolean | null; };
+type DashboardJob = { id: string; title?: string | null; customer_name?: string | null; address?: string | null; status?: string | null; assigned_to?: string | null; scheduled_start?: string | null; start_date?: string | null; due_date?: string | null; timezone?: string | null; is_skipped?: boolean | null; };
 type NextJob = { id: string; title: string; detail: string };
 type OpsCounts = { todayJobs: number; needsAttention: number; openLeads: number; singleOpenLeadId: string | null; nextJob: NextJob | null };
-function jobDateValue(job: DashboardJob) { const value = job.scheduled_start || job.start_date || job.due_date || ''; if (!value) return null; const parsed = new Date(value.length === 10 ? `${value}T12:00:00` : value); return Number.isNaN(parsed.getTime()) ? null : parsed; }
-function formatNextJobDetail(job: DashboardJob, locale: string) { const value = jobDateValue(job); const date = value ? new Intl.DateTimeFormat(locale, { weekday: 'short', month: 'short', day: 'numeric', ...(job.scheduled_start ? { hour: 'numeric', minute: '2-digit' } : {}) }).format(value) : ''; return [date, job.customer_name, job.address].filter(Boolean).join(' · '); }
+
+function jobDateKey(job: DashboardJob) {
+  if (job.scheduled_start) return localDateFromIso(job.scheduled_start);
+  return String(job.start_date || job.due_date || '').slice(0, 10);
+}
+
+function jobSortKey(job: DashboardJob) {
+  const date = jobDateKey(job);
+  if (!date) return '9999-12-31T23:59';
+  const time = job.scheduled_start ? localTimeFromIso(job.scheduled_start) : '12:00';
+  return `${date}T${time || '12:00'}`;
+}
+
+function formatNextJobDetail(job: DashboardJob, locale: string) {
+  const dateKey = jobDateKey(job);
+  let date = '';
+  if (dateKey) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const timeKey = job.scheduled_start ? localTimeFromIso(job.scheduled_start) : '';
+    const [hour = 12, minute = 0] = timeKey ? timeKey.split(':').map(Number) : [12, 0];
+    const wallClockDate = new Date(year, month - 1, day, hour, minute);
+    if (!Number.isNaN(wallClockDate.getTime())) {
+      date = new Intl.DateTimeFormat(locale, { weekday: 'short', month: 'short', day: 'numeric', ...(job.scheduled_start ? { hour: 'numeric', minute: '2-digit' } : {}) }).format(wallClockDate);
+    }
+  }
+  return [date, job.customer_name, job.address].filter(Boolean).join(' · ');
+}
+
 function todayTitle(locale: string) { const localeCode = locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US'; return new Intl.DateTimeFormat(localeCode, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()); }
 
 export default function DashboardPage() {
@@ -64,17 +90,17 @@ export default function DashboardPage() {
     setPlan(nextPlan); setRole(nextRole);
 
     const organizationId = organization?.organizationId || null; const scopeColumn = organizationId ? 'organization_id' : 'user_id'; const scopeValue = organizationId || userId; const today = formatLocalDate(new Date());
-    const jobSelect = 'id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to, is_skipped';
+    const jobSelect = 'id, title, customer_name, address, status, start_date, due_date, scheduled_start, assigned_to, timezone, is_skipped';
     const [jobsResult, leadsResult] = await Promise.all([
       withTimeout(supabase.from('jobs').select(jobSelect).eq(scopeColumn, scopeValue).or(`scheduled_start.gte.${today},start_date.gte.${today},due_date.gte.${today}`).order('scheduled_start', { ascending: true, nullsFirst: false }).limit(40), { data: [], error: new Error('Jobs timed out') }),
       withTimeout(supabase.from('customers').select('id, pipeline_stage').eq(scopeColumn, scopeValue).eq('record_type', 'lead').limit(100), { data: [], error: new Error('Customers timed out') })
     ]);
     const jobs = (jobsResult.data || []) as DashboardJob[];
     const activeJobs = jobs.filter((job) => !['completed', 'complete', 'done', 'finished', 'closed', 'cancelled', 'canceled', 'draft', 'skipped'].includes(String(job.status || '').toLowerCase()) && !job.is_skipped);
-    const todayJobs = activeJobs.filter((job) => { const date = jobDateValue(job); return date ? formatLocalDate(date) === today : false; });
+    const todayJobs = activeJobs.filter((job) => jobDateKey(job) === today);
     const needsAttention = activeJobs.filter((job) => { const status = String(job.status || '').toLowerCase(); const due = (job.due_date || '').slice(0, 10); return !job.assigned_to || status === 'new' || Boolean(due && due < today); }).length;
     const openLeadRows = ((leadsResult.data || []) as Array<{ id: string; pipeline_stage: string | null }>).filter((row) => !['won', 'closed_lost', 'cancelled', 'lost'].includes(row.pipeline_stage || 'open'));
-    const nextJobRow = activeJobs.filter((job) => { const date = jobDateValue(job); return date && formatLocalDate(date) >= today; }).sort((a, b) => (jobDateValue(a)?.getTime() || Number.MAX_SAFE_INTEGER) - (jobDateValue(b)?.getTime() || Number.MAX_SAFE_INTEGER))[0] || null;
+    const nextJobRow = activeJobs.filter((job) => { const date = jobDateKey(job); return date && date >= today; }).sort((a, b) => jobSortKey(a).localeCompare(jobSortKey(b)))[0] || null;
     setOps({ todayJobs: todayJobs.length, needsAttention, openLeads: openLeadRows.length, singleOpenLeadId: openLeadRows.length === 1 ? openLeadRows[0].id : null, nextJob: nextJobRow ? { id: nextJobRow.id, title: String(nextJobRow.title || nextJobRow.customer_name || c.nextJob), detail: formatNextJobDetail(nextJobRow, locale === 'vi' ? 'vi-VN' : locale === 'es' ? 'es-US' : 'en-US') } : null });
     setLoadError(Boolean(auth.error || profileResult.error || jobsResult.error || leadsResult.error)); setLoading(false);
   }
