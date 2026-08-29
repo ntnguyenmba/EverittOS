@@ -4,7 +4,7 @@
   position: relative !important;
   z-index: 3 !important;
   width: min(calc(100% - 32px), 1180px) !important;
-  margin: 28px auto 0 !important;
+  margin: 14px auto 0 !important;
   padding: 20px 24px 22px !important;
   box-sizing: border-box !important;
   text-align: center !important;
@@ -65,8 +65,8 @@
   .app-footer,
   .dashboard-shell .app-footer {
     width: calc(100% - 28px) !important;
-    margin-top: 24px !important;
-    margin-bottom: calc(118px + env(safe-area-inset-bottom)) !important;
+    margin-top: 12px !important;
+    margin-bottom: 0 !important;
     padding: 18px 18px 20px !important;
   }
 
@@ -81,9 +81,7 @@
   .dashboard-shell .app-footer {
     width: calc(100% - 28px) !important;
     max-width: 520px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    margin-bottom: calc(132px + env(safe-area-inset-bottom)) !important;
+    margin: 10px auto 0 !important;
     padding: 18px 16px 20px !important;
   }
 
