@@ -1,35 +1,67 @@
-/* Everitt luxury across every signed-in view. Visual only, feature-safe. */
-:root{--everitt-ink:#132433;--everitt-muted:#405766;--everitt-slate:#285d78;--everitt-paper:rgba(255,255,255,.975)}
-html,body{font-family:var(--font-manrope),Manrope,ui-sans-serif,sans-serif!important;color:var(--everitt-ink)!important;background:#e9eef2!important}
-.dashboard-shell,.dashboard-shell.role-portal-shell,.contractor-dashboard-shell,.client-dashboard-shell{font-family:var(--font-manrope),Manrope,ui-sans-serif,sans-serif!important;color:var(--everitt-ink)!important;background:#e9eef2 url('/hero.jpg') center/cover no-repeat fixed!important}
-.dashboard-shell-background,.role-portal-shell .dashboard-shell-background,.contractor-background,.contractor-dashboard-shell .contractor-background,.client-dashboard-shell .contractor-background{background-image:url('/hero.jpg')!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;opacity:.58!important;filter:saturate(.78) contrast(1.02) brightness(.88)!important;pointer-events:none!important}
-.dashboard-shell-overlay,.role-portal-shell .dashboard-shell-overlay,.contractor-overlay{background:linear-gradient(115deg,rgba(20,39,53,.48),rgba(28,52,68,.2) 42%,rgba(236,242,246,.2)),linear-gradient(180deg,rgba(17,34,47,.1),rgba(17,34,47,.34))!important;pointer-events:none!important}
-.dashboard-shell>.sidebar,.dashboard-shell>.main,.contractor-dashboard-shell>.main,.client-dashboard-shell>.main,.dashboard-shell-header,.dashboard-shell .card,.contractor-dashboard-shell .card,.client-dashboard-shell .card,.dashboard-shell a,.dashboard-shell button,.contractor-dashboard-shell a,.contractor-dashboard-shell button,.client-dashboard-shell a,.client-dashboard-shell button,.everitt-bottom-nav,.everitt-bottom-nav *,.everitt-more-overlay,.everitt-more-overlay *,.everitt-more-sheet,.everitt-more-sheet *{pointer-events:auto!important}
-.dashboard-shell>.main,.contractor-dashboard-shell>.main,.client-dashboard-shell>.main,.dashboard-shell .app-page-content,.dashboard-shell .app-page-top{background:transparent!important}
-.dashboard-shell,.contractor-dashboard-shell,.client-dashboard-shell,.dashboard-shell h1,.dashboard-shell h2,.dashboard-shell h3,.dashboard-shell h4,.dashboard-shell label,.contractor-dashboard-shell h1,.contractor-dashboard-shell h2,.contractor-dashboard-shell h3,.contractor-dashboard-shell label,.client-dashboard-shell h1,.client-dashboard-shell h2,.client-dashboard-shell h3,.client-dashboard-shell label{font-family:var(--font-manrope),Manrope,sans-serif!important}
-.dashboard-shell h1,.contractor-dashboard-shell h1,.client-dashboard-shell h1{color:var(--everitt-ink)!important;font-weight:800!important;letter-spacing:-.04em!important}
-.dashboard-shell .muted,.contractor-dashboard-shell .muted,.client-dashboard-shell .muted,.dashboard-shell .page-subtitle,.contractor-dashboard-shell .page-subtitle,.client-dashboard-shell .page-subtitle{color:var(--everitt-muted)!important}
-.dashboard-shell .page-header,.contractor-dashboard-shell .page-header,.client-dashboard-shell .page-header{width:100%!important;box-sizing:border-box!important;align-items:flex-end!important;gap:18px!important;margin:0 0 22px!important;padding:20px 22px!important;background:rgba(255,255,255,.95)!important;border:1px solid rgba(255,255,255,.86)!important;border-radius:22px!important;box-shadow:0 22px 58px rgba(9,24,35,.16)!important;backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important}
-.dashboard-shell .page-header h1,.contractor-dashboard-shell .page-header h1,.client-dashboard-shell .page-header h1{margin:0 0 6px!important;color:var(--everitt-ink)!important;font-size:clamp(2rem,4vw,3.35rem)!important;line-height:1!important}
-.dashboard-shell .page-subtitle,.contractor-dashboard-shell .page-subtitle,.client-dashboard-shell .page-subtitle{max-width:700px!important;margin:0!important;font-size:1rem!important;line-height:1.5!important;font-weight:550!important}
-.dashboard-shell>.sidebar,.dashboard-shell .owner-home-sheet,.dashboard-shell .jobs-filter-tabs,.dashboard-shell .jobs-advanced-filters,.dashboard-shell .card,.dashboard-shell .panel,.dashboard-shell .job-card,.dashboard-shell .jobs-operations-row,.dashboard-shell .quote-card,.dashboard-shell .customer-card,.dashboard-shell .expense-card,.dashboard-shell .worker-card,.dashboard-shell .team-member-card,.dashboard-shell .settings-card,.dashboard-shell .report-card,.dashboard-shell .payment-card,.dashboard-shell .invoice-card,.dashboard-shell .lead-card,.dashboard-shell .request-card,.dashboard-shell .photo-card,.dashboard-shell .calendar-card,.dashboard-shell .booking-card,.dashboard-shell .automation-card,.dashboard-shell .activity-card,.dashboard-shell .empty-state,.dashboard-shell .toolbar-card,.dashboard-shell .table-card,.dashboard-shell .mobile-nav-bar,.dashboard-shell .outbound-document-row,.contractor-dashboard-shell .card,.contractor-dashboard-shell .panel,.contractor-dashboard-shell .portal-job-row,.contractor-dashboard-shell .contractor-next-job,.client-dashboard-shell .card,.client-dashboard-shell .panel,.client-dashboard-shell .client-job-card,.client-dashboard-shell .portal-job-row{background:var(--everitt-paper)!important;border:1px solid rgba(255,255,255,.85)!important;color:var(--everitt-ink)!important;border-radius:22px!important;box-shadow:0 28px 70px rgba(9,24,35,.16)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
-.dashboard-shell .card p,.dashboard-shell .panel p,.dashboard-shell .card label,.dashboard-shell .panel label,.contractor-dashboard-shell .card p,.contractor-dashboard-shell .card label,.client-dashboard-shell .card p,.client-dashboard-shell .card label{color:#334b5b!important}
-.dashboard-shell .card h2,.dashboard-shell .card h3,.dashboard-shell .card h4,.dashboard-shell .panel h2,.dashboard-shell .panel h3,.contractor-dashboard-shell .card h2,.contractor-dashboard-shell .card h3,.client-dashboard-shell .card h2,.client-dashboard-shell .card h3{color:var(--everitt-ink)!important}
-.dashboard-shell .input,.dashboard-shell select.input,.contractor-dashboard-shell .input,.contractor-dashboard-shell select.input,.client-dashboard-shell .input,.client-dashboard-shell select.input{min-height:48px!important;border:1.5px solid #aebdca!important;border-radius:12px!important;background:#fff!important;color:#152838!important;font-family:var(--font-manrope),Manrope,sans-serif!important;font-weight:600!important}
-.dashboard-shell .btn,.dashboard-shell a.btn,.contractor-dashboard-shell .btn,.contractor-dashboard-shell a.btn,.client-dashboard-shell .btn,.client-dashboard-shell a.btn{min-height:44px!important;border-radius:12px!important;font-family:var(--font-manrope),Manrope,sans-serif!important;font-weight:750!important}
-.dashboard-shell .btn-primary,.contractor-dashboard-shell .btn-primary,.client-dashboard-shell .btn-primary{background:var(--everitt-slate)!important;border-color:var(--everitt-slate)!important;color:#fff!important}
-.dashboard-shell .button-row,.dashboard-shell .inline-actions,.dashboard-shell .job-detail-actions,.contractor-dashboard-shell .button-row,.contractor-dashboard-shell .inline-actions,.client-dashboard-shell .button-row,.client-dashboard-shell .inline-actions{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:12px!important}
-.dashboard-shell .button-row>.btn,.dashboard-shell .inline-actions>.btn,.dashboard-shell .job-detail-actions>.btn,.contractor-dashboard-shell .button-row>.btn,.client-dashboard-shell .button-row>.btn{margin:0!important}
-.dashboard-shell .segmented-control,.contractor-dashboard-shell .segmented-control,.client-dashboard-shell .segmented-control{gap:10px!important;align-items:stretch!important}
-.dashboard-shell .segmented-control .btn,.contractor-dashboard-shell .segmented-control .btn,.client-dashboard-shell .segmented-control .btn{margin:0!important}
-.dashboard-shell .org-switcher-select,.dashboard-shell .language-switcher select,.dashboard-shell .app-page-top select,.contractor-dashboard-shell .app-page-top select,.client-dashboard-shell .app-page-top select{font-family:var(--font-manrope),Manrope,sans-serif!important;color:var(--everitt-ink)!important;background:rgba(255,255,255,.96)!important;border-color:rgba(90,111,126,.28)!important}
-.dashboard-shell .outbound-status-tabs{padding:5px!important;border-radius:999px!important;background:rgba(236,242,246,.94)!important;border-color:rgba(40,93,120,.12)!important}
-.dashboard-shell .outbound-status-tab{border-radius:999px!important;color:#405766!important;font-weight:700!important}
-.dashboard-shell .outbound-status-tab.active{background:var(--everitt-slate)!important;color:#fff!important;box-shadow:none!important}
-.everitt-bottom-nav{font-family:var(--font-manrope),Manrope,sans-serif!important;background:rgba(255,255,255,.96)!important;border-top-color:rgba(40,93,120,.14)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
-.everitt-more-overlay{position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex!important;align-items:flex-end!important;justify-content:center!important;padding:16px 12px 96px!important;background:rgba(19,36,51,.48)!important}
-.everitt-more-sheet{width:min(520px,100%)!important;max-height:72vh!important;overflow:auto!important;background:#fff!important;color:var(--everitt-ink)!important;border-radius:22px!important;padding:16px!important;font-family:var(--font-manrope),Manrope,sans-serif!important}
-@media(max-width:900px){.dashboard-shell,.dashboard-shell.role-portal-shell,.contractor-dashboard-shell,.client-dashboard-shell{background-attachment:scroll!important}.dashboard-shell .page-header,.contractor-dashboard-shell .page-header,.client-dashboard-shell .page-header{padding:18px!important;border-radius:18px!important;margin-bottom:16px!important}.dashboard-shell .page-header h1,.contractor-dashboard-shell .page-header h1,.client-dashboard-shell .page-header h1{font-size:clamp(1.9rem,8vw,2.65rem)!important}.dashboard-shell .card,.dashboard-shell .panel,.dashboard-shell .job-card,.dashboard-shell .quote-card,.dashboard-shell .customer-card,.contractor-dashboard-shell .card,.client-dashboard-shell .card{border-radius:18px!important;box-shadow:0 18px 48px rgba(9,24,35,.15)!important}.dashboard-shell .button-row,.dashboard-shell .inline-actions,.dashboard-shell .job-detail-actions,.contractor-dashboard-shell .button-row,.client-dashboard-shell .button-row{gap:10px!important}.dashboard-shell .button-row>.btn,.dashboard-shell .inline-actions>.btn,.dashboard-shell .job-detail-actions>.btn{flex:1 1 140px!important;justify-content:center!important}}
-/* Jobs mobile: compact, aligned, readable without changing filter behavior. */
-@media(max-width:700px){.jobs-shell-minimal .jobs-list-page{gap:14px!important}.jobs-shell-minimal .jobs-filter-tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;width:100%!important;padding:10px!important;overflow:visible!important;border-radius:20px!important}.jobs-shell-minimal .jobs-filter-tab{width:100%!important;min-width:0!important;min-height:46px!important;padding:10px 8px!important;margin:0!important;font-size:15px!important;text-align:center!important;white-space:normal!important}.jobs-shell-minimal .jobs-filter-tab:last-child:nth-child(odd){grid-column:1/-1!important}.jobs-shell-minimal .jobs-advanced-filters{display:grid!important;gap:14px!important;padding:18px!important;border-radius:20px!important}.jobs-shell-minimal .jobs-filter-heading{margin:0!important;padding:0!important;font-size:17px!important;line-height:1.25!important}.jobs-shell-minimal .jobs-filter-grid{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}.jobs-shell-minimal .jobs-filter-control{gap:7px!important;font-size:15px!important;line-height:1.2!important}.jobs-shell-minimal .jobs-filter-control select{width:100%!important;min-height:50px!important;padding:10px 14px!important;border-radius:12px!important;font-size:16px!important}.jobs-shell-minimal .jobs-clear-filters,.jobs-shell-minimal .jobs-advanced-filters>.btn{justify-self:start!important;margin:2px 0 0!important;min-height:46px!important;padding:10px 16px!important}.jobs-shell-minimal .jobs-operations-row{padding:18px!important;border-radius:20px!important}.jobs-shell-minimal .jobs-property-link{font-size:20px!important;line-height:1.22!important}.jobs-shell-minimal .jobs-secondary,.jobs-shell-minimal .jobs-row-time,.jobs-shell-minimal .jobs-photo-count{font-size:15px!important;line-height:1.4!important}.jobs-shell-minimal .jobs-col-date{padding-top:10px!important;margin-top:10px!important;border-top:1px solid rgba(37,54,74,.1)!important}.jobs-shell-minimal .jobs-col-date strong{font-size:17px!important}.jobs-shell-minimal .jobs-col-assigned{padding-top:8px!important}}
-@media(max-width:390px){.jobs-shell-minimal .jobs-filter-tabs{grid-template-columns:minmax(0,1fr)!important}.jobs-shell-minimal .jobs-filter-tab:last-child:nth-child(odd){grid-column:auto!important}.jobs-shell-minimal .jobs-advanced-filters{padding:16px!important}.jobs-shell-minimal .jobs-operations-row{padding:16px!important}}
+/* Canonical EverittOS backdrop only.
+   The hero is decoration, never a tinted canvas or a source of page chrome.
+   Stage, rows, controls, typography and footer layout are owned elsewhere. */
+
+.dashboard-shell,
+.dashboard-shell.role-portal-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell {
+  background-color: #dfe5e7 !important;
+  background-image: url('/hero.jpg') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background-color: transparent !important;
+  background-image: url('/hero.jpg') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  transform: none !important;
+  pointer-events: none !important;
+}
+
+.dashboard-shell-overlay,
+.role-portal-shell .dashboard-shell-overlay,
+.contractor-overlay,
+.contractor-dashboard-shell .contractor-overlay,
+.client-dashboard-shell .contractor-overlay {
+  background: transparent !important;
+  background-image: none !important;
+  opacity: 0 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+}
+
+.dashboard-shell > .main,
+.contractor-dashboard-shell > .main,
+.client-dashboard-shell > .main,
+.dashboard-shell .app-page-content,
+.dashboard-shell .app-page-top {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+@media (max-width: 1279px) {
+  .dashboard-shell,
+  .dashboard-shell.role-portal-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell {
+    background-attachment: scroll !important;
+  }
+}
