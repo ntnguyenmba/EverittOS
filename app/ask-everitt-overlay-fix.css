@@ -1,5 +1,12 @@
-/* Keep Ask Everitt above every app shell/header layer and make its input reachable on all viewports. */
+/* Keep Ask Everitt above every app shell/header layer and make its input reachable. */
+.everitt-cmd-trigger {
+  position: relative !important;
+  z-index: 8 !important;
+  pointer-events: auto !important;
+}
+
 .everitt-cmd-overlay {
+  display: flex !important;
   position: fixed !important;
   inset: 0 !important;
   z-index: 2147483000 !important;
@@ -13,9 +20,9 @@
   align-items: flex-start;
   overflow: hidden;
   pointer-events: auto !important;
+  background: rgba(18, 37, 50, 0.42) !important;
 }
 
-/* The mobile header and main content are separate stacking contexts. Lift the main only while Ask Everitt is open. */
 body:has(.everitt-cmd-overlay) .dashboard-shell > .main,
 body:has(.everitt-cmd-overlay) .main {
   z-index: 2147482999 !important;
@@ -42,13 +49,14 @@ body:has(.everitt-cmd-overlay) {
   -webkit-overflow-scrolling: touch;
   isolation: isolate;
   pointer-events: auto !important;
+  background: #fff !important;
 }
 
 .everitt-cmd-bar {
   position: sticky;
   top: 0;
   z-index: 6;
-  background: var(--surface);
+  background: var(--surface, #fff);
   padding-top: 2px;
 }
 
@@ -65,84 +73,8 @@ body:has(.everitt-cmd-overlay) {
   pointer-events: auto !important;
 }
 
-/* The tagline already explains how Ask Everitt works, so do not repeat it in the footer. */
 .everitt-cmd-footer {
   display: none !important;
-}
-
-/* Expenses mobile rhythm. This file is loaded last so older release CSS cannot override it. */
-@media (max-width: 640px) {
-  .expenses-page-active .app-page-content > .page-header,
-  .expenses-page-active .app-page-content > .page-header-wrap {
-    margin-top: 14px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .expenses-page-active .page-head,
-  .expenses-page-active .page-header {
-    gap: 10px !important;
-  }
-
-  .expenses-page-active .page-actions,
-  .expenses-page-active .page-head .page-actions,
-  .expenses-page-active .page-header .page-actions {
-    gap: 10px !important;
-    margin-top: 8px !important;
-  }
-
-  .expenses-page-active .finance-filter-bar {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    align-items: center !important;
-    gap: 12px !important;
-    margin: 16px 0 18px !important;
-  }
-
-  .expenses-page-active .finance-filter-bar > .btn {
-    width: 100% !important;
-    min-height: 48px !important;
-    margin: 0 !important;
-  }
-
-  .expenses-page-active .finance-filter-bar > strong {
-    display: block !important;
-    margin: 0 !important;
-    min-width: 0 !important;
-    line-height: 1.2 !important;
-    text-align: right !important;
-    white-space: nowrap !important;
-  }
-
-  .expenses-page-active .finance-filter-panel {
-    margin-top: 0 !important;
-  }
-
-  /* Bookkeeping has a nested page main. Keep range controls and metric cards compact on phones. */
-  .dashboard-shell .main > main > .inline-actions {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-    margin: 12px 0 20px !important;
-    width: 100% !important;
-  }
-
-  .dashboard-shell .main > main > .inline-actions > .btn {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 46px !important;
-    margin: 0 !important;
-  }
-
-  .dashboard-shell .main > main > div > section[style*='grid-template-columns'] {
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-  }
-
-  .dashboard-shell .main > main > div > section[style*='grid-template-columns'] > .card {
-    min-height: 104px !important;
-    padding: 18px 20px !important;
-    gap: 10px !important;
-  }
 }
 
 @media (max-width: 900px) {
