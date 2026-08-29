@@ -8,6 +8,9 @@
   --eo-app-radius: 18px;
   --eo-app-control-radius: 12px;
   --eo-app-shadow: 0 16px 40px rgba(9,24,35,.10);
+  --eo-page-gap: 18px;
+  --eo-section-gap: 16px;
+  --eo-footer-gap: 12px;
 }
 
 .dashboard-shell,
@@ -30,11 +33,51 @@
 .dashboard-shell .portal-page {
   width: min(100%, 1180px) !important;
   margin-inline: auto !important;
+  min-height: 0 !important;
+}
+
+/* One consistent vertical rhythm for every signed-in page. */
+.dashboard-shell .app-page-content {
+  padding-bottom: 0 !important;
+}
+
+.dashboard-shell .app-page-content > * + *,
+.dashboard-shell .today-page > * + *,
+.dashboard-shell .jobs-list-page > * + *,
+.dashboard-shell .customers-page > * + *,
+.dashboard-shell .quotes-page > * + *,
+.dashboard-shell .settings-page > * + *,
+.dashboard-shell .billing-page > * + *,
+.dashboard-shell .team-page > * + *,
+.dashboard-shell .reports-page > * + *,
+.dashboard-shell .expenses-page > * + *,
+.dashboard-shell .schedule-page > * + *,
+.dashboard-shell .assistant-page > * + *,
+.dashboard-shell .portal-page > * + *,
+.dashboard-shell .quote-workspace > * + * {
+  margin-top: var(--eo-page-gap) !important;
+}
+
+.dashboard-shell .app-page-content > :last-child,
+.dashboard-shell .today-page > :last-child,
+.dashboard-shell .jobs-list-page > :last-child,
+.dashboard-shell .customers-page > :last-child,
+.dashboard-shell .quotes-page > :last-child,
+.dashboard-shell .settings-page > :last-child,
+.dashboard-shell .billing-page > :last-child,
+.dashboard-shell .team-page > :last-child,
+.dashboard-shell .reports-page > :last-child,
+.dashboard-shell .expenses-page > :last-child,
+.dashboard-shell .schedule-page > :last-child,
+.dashboard-shell .assistant-page > :last-child,
+.dashboard-shell .portal-page > :last-child,
+.dashboard-shell .quote-workspace > :last-child {
+  margin-bottom: 0 !important;
 }
 
 .dashboard-shell .page-header {
   gap: 14px !important;
-  margin-bottom: 14px !important;
+  margin-bottom: 0 !important;
 }
 
 .dashboard-shell .page-header h1,
@@ -71,6 +114,40 @@
 .dashboard-shell small {
   color: var(--eo-app-muted) !important;
   opacity: 1 !important;
+}
+
+/* Standalone text must never sit directly on the hero photo. */
+.dashboard-shell .app-page-content > h2,
+.dashboard-shell .app-page-content > h3,
+.dashboard-shell .today-page > h2,
+.dashboard-shell .jobs-list-page > h2,
+.dashboard-shell .customers-page > h2,
+.dashboard-shell .quotes-page > h2,
+.dashboard-shell .settings-page > h2,
+.dashboard-shell .billing-page > h2,
+.dashboard-shell .team-page > h2,
+.dashboard-shell .reports-page > h2,
+.dashboard-shell .expenses-page > h2,
+.dashboard-shell .schedule-page > h2,
+.dashboard-shell .assistant-page > h2,
+.dashboard-shell .portal-page > h2,
+.dashboard-shell .quote-section-head {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-bottom: 0 !important;
+  padding: 8px 12px !important;
+  border: 1px solid var(--eo-app-line) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 8px 22px rgba(9,24,35,.08) !important;
+  color: var(--eo-app-ink) !important;
+}
+
+.dashboard-shell .quote-section-head h2,
+.dashboard-shell .quote-section-head h3,
+.dashboard-shell .quote-section-head p {
+  margin: 0 !important;
+  color: var(--eo-app-ink) !important;
 }
 
 .dashboard-shell .card,
@@ -182,7 +259,7 @@
 .dashboard-shell .card + section,
 .dashboard-shell section + .card,
 .dashboard-shell section + section {
-  margin-top: 12px !important;
+  margin-top: var(--eo-section-gap) !important;
 }
 
 .dashboard-shell .badge,
@@ -232,19 +309,48 @@
 
 .dashboard-shell .app-footer,
 .app-footer {
+  margin-top: var(--eo-footer-gap) !important;
+  margin-bottom: 0 !important;
   border-radius: 16px !important;
 }
 
+/* Quote-specific legacy spacing was the main source of the giant footer gap. */
+.dashboard-shell .quote-workspace {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  min-height: 0 !important;
+  gap: var(--eo-page-gap) !important;
+}
+
+.dashboard-shell .quote-saved {
+  margin-top: var(--eo-page-gap) !important;
+  margin-bottom: 0 !important;
+}
+
+.dashboard-shell .quote-list {
+  gap: var(--eo-section-gap) !important;
+}
+
 @media (max-width: 900px) {
+  :root {
+    --eo-page-gap: 16px;
+    --eo-section-gap: 14px;
+    --eo-footer-gap: 10px;
+  }
+
+  .dashboard-shell > .main {
+    padding-bottom: 12px !important;
+  }
+
   .dashboard-shell .app-page-content {
     padding-inline: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)) !important;
     padding-top: 8px !important;
-    padding-bottom: 20px !important;
+    padding-bottom: 0 !important;
   }
 
   .dashboard-shell .page-header {
     gap: 10px !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 0 !important;
   }
 
   .dashboard-shell .page-header-action {
@@ -274,7 +380,7 @@
   .dashboard-shell .page-toolbar,
   .dashboard-shell .button-row,
   .dashboard-shell .inline-actions {
-    gap: 8px !important;
+    gap: 10px !important;
   }
 
   .dashboard-shell .btn,
@@ -290,6 +396,16 @@
 }
 
 @media (max-width: 560px) {
+  :root {
+    --eo-page-gap: 16px;
+    --eo-section-gap: 14px;
+    --eo-footer-gap: 10px;
+  }
+
+  .dashboard-shell > .main {
+    padding-bottom: 8px !important;
+  }
+
   .dashboard-shell .page-header h1,
   .dashboard-shell .page-head h1,
   .dashboard-shell .dashboard-header h1 {
@@ -339,6 +455,10 @@
   .dashboard-shell .client-job-card,
   .dashboard-shell .portal-job-row {
     padding: 14px !important;
+  }
+
+  .dashboard-shell .quote-section-head {
+    padding: 7px 10px !important;
   }
 }
 
