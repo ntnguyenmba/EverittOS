@@ -2,7 +2,7 @@
 
 @media (max-width: 1100px), (hover: none) and (pointer: coarse) {
   .dashboard-shell .jobs-list-page {
-    gap: 20px !important;
+    gap: 22px !important;
   }
 
   .dashboard-shell .jobs-list-page > .page-header {
@@ -23,7 +23,7 @@
   .dashboard-shell .jobs-header-actions {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 12px !important;
+    gap: 14px !important;
     width: min(100%, 660px) !important;
     margin: 0 auto !important;
     align-items: stretch !important;
@@ -44,12 +44,13 @@
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     align-items: stretch !important;
-    gap: 10px !important;
-    width: 100% !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    width: min(100%, 560px) !important;
     min-height: 0 !important;
     height: auto !important;
-    margin: 0 !important;
-    padding: 10px !important;
+    margin: 0 auto !important;
+    padding: 12px !important;
     box-sizing: border-box !important;
     overflow: visible !important;
     white-space: normal !important;
@@ -62,7 +63,7 @@
     display: inline-flex !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 44px !important;
+    min-height: 46px !important;
     height: auto !important;
     margin: 0 !important;
     padding: 10px !important;
@@ -76,12 +77,14 @@
   }
 
   .dashboard-shell .jobs-advanced-filters {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     width: 100% !important;
     min-width: 0 !important;
     min-height: 0 !important;
     height: auto !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     background: transparent !important;
     border: 0 !important;
@@ -98,10 +101,11 @@
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     align-items: stretch !important;
+    justify-content: center !important;
     gap: 14px !important;
-    width: 100% !important;
+    width: min(100%, 560px) !important;
     min-width: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     overflow: visible !important;
   }
@@ -149,8 +153,10 @@
   }
 
   .dashboard-shell .jobs-advanced-filters > details {
-    margin: 12px 0 0 !important;
+    width: min(100%, 560px) !important;
+    margin: 14px auto 0 !important;
     padding: 0 !important;
+    text-align: center !important;
     border: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -163,7 +169,7 @@
     justify-content: center !important;
     width: auto !important;
     min-height: 44px !important;
-    margin: 0 8px 0 0 !important;
+    margin: 0 auto !important;
     padding: 9px 15px !important;
     border: 1px solid rgba(70,91,106,.22) !important;
     border-radius: 999px !important;
@@ -172,6 +178,10 @@
     font-size: 15px !important;
     font-weight: 800 !important;
     box-shadow: 0 8px 22px rgba(9,24,35,.08) !important;
+  }
+
+  .dashboard-shell .jobs-clear-filters {
+    margin-top: 14px !important;
   }
 
   .dashboard-shell .jobs-advanced-filters > details[open] {
@@ -218,7 +228,6 @@
     border-radius: 12px !important;
   }
 
-  /* The table shell is structural only. Individual job rows are the floating cards. */
   .dashboard-shell .jobs-table-card,
   .dashboard-shell .jobs-mobile-table-wrap,
   .dashboard-shell .jobs-operations-table,
@@ -264,15 +273,26 @@
   .dashboard-shell .jobs-header-actions {
     grid-template-columns: 1fr !important;
     width: min(100%, 230px) !important;
-    gap: 12px !important;
+    gap: 14px !important;
   }
 
-  .dashboard-shell .jobs-filter-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .dashboard-shell .jobs-filter-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: min(100%, 540px) !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: min(100%, 540px) !important;
+  }
 }
 
 @media (max-width: 390px) {
   .dashboard-shell .jobs-filter-tabs,
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid { grid-template-columns: 1fr !important; }
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    grid-template-columns: 1fr !important;
+    width: min(100%, 320px) !important;
+  }
+
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) { grid-column: auto !important; }
 }
