@@ -8,8 +8,8 @@
   .dashboard-shell .jobs-list-page > .page-header {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
+    align-items: flex-start !important;
+    text-align: left !important;
     gap: 16px !important;
   }
 
@@ -17,7 +17,7 @@
   .dashboard-shell .jobs-list-page > .page-header h1,
   .dashboard-shell .jobs-list-page > .page-header p {
     width: 100% !important;
-    text-align: center !important;
+    text-align: left !important;
   }
 
   .dashboard-shell .jobs-header-actions {
@@ -25,8 +25,9 @@
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 10px !important;
     width: 100% !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     align-items: stretch !important;
+    justify-content: start !important;
   }
 
   .dashboard-shell .jobs-header-actions > * {
@@ -41,15 +42,14 @@
     white-space: normal !important;
   }
 
-  /* No large white wrapper around status filters. Each pill floats on the hero. */
   .dashboard-shell .jobs-filter-tabs {
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     gap: 10px !important;
     width: min(100%, 560px) !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     border: 0 !important;
@@ -88,9 +88,9 @@
   .dashboard-shell .jobs-advanced-filters {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     width: 100% !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     border: 0 !important;
@@ -107,7 +107,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 12px !important;
     width: min(100%, 560px) !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
   }
@@ -156,9 +156,9 @@
 
   .dashboard-shell .jobs-advanced-filters > details {
     width: auto !important;
-    margin: 12px auto 0 !important;
+    margin: 12px 0 0 !important;
     padding: 0 !important;
-    text-align: center !important;
+    text-align: left !important;
     border: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -171,7 +171,7 @@
     justify-content: center !important;
     width: auto !important;
     min-height: 44px !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     padding: 9px 16px !important;
     border: 1px solid rgba(70,91,106,.22) !important;
     border-radius: 999px !important;
@@ -248,7 +248,7 @@
   .dashboard-shell .jobs-list-more {
     width: fit-content !important;
     max-width: 100% !important;
-    margin: 14px auto 0 !important;
+    margin: 14px 0 0 !important;
     padding: 10px 14px !important;
     border: 1px solid rgba(19,36,51,.12) !important;
     border-radius: 14px !important;
