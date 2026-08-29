@@ -17,7 +17,6 @@ body,
   font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif !important;
 }
 
-/* No extra trays around the floating stage. */
 .dashboard-shell .app-page-content,
 .dashboard-shell .app-page-top,
 .role-portal-shell .app-page-content,
@@ -59,7 +58,6 @@ body,
   opacity: 1 !important;
 }
 
-/* Never white type on white surfaces. */
 .dashboard-shell .app-page-stage a:not(.btn):not(.btn-primary) {
   color: var(--eo-accent) !important;
 }
@@ -92,7 +90,6 @@ body,
   border: 1px solid var(--eo-line) !important;
 }
 
-/* Equal secondary tiles. */
 .dashboard-shell .jobs-header-actions > :first-child,
 .dashboard-shell .jobs-header-actions > :nth-child(2) {
   width: 100% !important;
@@ -101,8 +98,13 @@ body,
   min-height: 48px !important;
 }
 
-.dashboard-shell .app-brand-chip,
-.dashboard-shell .app-wordmark-row,
-.dashboard-shell .signed-in-logo-row {
-  display: none !important;
+/* One small mark at the true top-left. Hide the duplicate in page chrome when the mobile header logo is showing. */
+@media (max-width: 1279px) {
+  .dashboard-shell-header .mobile-nav-top-logo {
+    display: inline-flex !important;
+  }
+
+  .dashboard-shell .app-page-top-logo {
+    display: none !important;
+  }
 }
