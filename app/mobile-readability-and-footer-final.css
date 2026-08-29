@@ -1,13 +1,41 @@
 /* Final signed-in readability and mobile chrome guard.
-   Keeps the Everitt hero visible, makes text readable everywhere, removes
-   nested card wrappers, and prevents legal/footer chrome from covering content. */
+   Keeps the Everitt hero visible and crisp, makes text readable everywhere,
+   removes nested card wrappers, and prevents legal/footer chrome from covering content. */
+
+/* Universal hero treatment: preserve the actual photo instead of washing it in beige/milk. */
+.dashboard-shell,
+.contractor-dashboard-shell,
+.client-dashboard-shell,
+.role-portal-shell {
+  background-color: #dfe5e7 !important;
+  background-image: url('/hero.jpg') !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+.dashboard-shell-background,
+.role-portal-shell .dashboard-shell-background,
+.contractor-background,
+.contractor-dashboard-shell .contractor-background,
+.client-dashboard-shell .contractor-background {
+  background-image: url('/hero.jpg') !important;
+  background-color: transparent !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  opacity: 1 !important;
+  filter: saturate(0.92) contrast(1.06) brightness(0.96) !important;
+  -webkit-filter: saturate(0.92) contrast(1.06) brightness(0.96) !important;
+  transform: none !important;
+}
 
 .dashboard-shell-overlay,
 .role-portal-shell .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
-  background: rgba(247, 249, 250, 0.62) !important;
+  background: rgba(239, 244, 246, 0.12) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -42,13 +70,13 @@
   min-width: 0 !important;
   box-sizing: border-box !important;
   padding: 26px 28px !important;
-  background: rgba(255, 255, 255, 0.97) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid #d5dee5 !important;
   border-radius: 18px !important;
   box-shadow: 0 14px 34px rgba(9, 24, 35, 0.11) !important;
   color: #132433 !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
 .dashboard-shell .empty-state h3,
@@ -83,6 +111,13 @@
 /* Do not let the legal strip become a second fixed bar. It belongs at the end
    of page content, while the primary mobile nav is the only fixed bottom UI. */
 @media (max-width: 1279px) {
+  .dashboard-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .role-portal-shell {
+    background-attachment: scroll !important;
+  }
+
   .app-footer,
   .dashboard-shell .app-footer {
     position: relative !important;
@@ -108,6 +143,20 @@
 
   .dashboard-shell .app-page-content {
     padding-bottom: 20px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell,
+  .contractor-dashboard-shell,
+  .client-dashboard-shell,
+  .role-portal-shell,
+  .dashboard-shell-background,
+  .role-portal-shell .dashboard-shell-background,
+  .contractor-background,
+  .contractor-dashboard-shell .contractor-background,
+  .client-dashboard-shell .contractor-background {
+    background-position: 56% center !important;
   }
 }
 
