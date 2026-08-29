@@ -98,7 +98,6 @@ body,
   min-height: 48px !important;
 }
 
-/* One small mark at the true top-left. Hide the duplicate in page chrome when the mobile header logo is showing. */
 @media (max-width: 1279px) {
   .dashboard-shell-header .mobile-nav-top-logo {
     display: inline-flex !important;
@@ -107,4 +106,37 @@ body,
   .dashboard-shell .app-page-top-logo {
     display: none !important;
   }
+}
+
+/* Keep status and pay as separate readable phrases. */
+.worker-job-link,
+.portal-job-row .worker-job-link {
+  display: block !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.portal-job-finance,
+.dashboard-shell .portal-job-finance,
+.client-job-card-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px 12px !important;
+  margin-top: 8px !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.portal-job-finance .status-badge,
+.portal-job-finance .portal-finance-empty,
+.portal-job-finance .portal-finance-amount,
+.portal-finance-sep {
+  display: inline-block !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+.portal-finance-sep {
+  color: var(--eo-muted) !important;
 }
