@@ -1,4 +1,4 @@
-/* V1 jobs list polish: keep every job and workflow, reduce visual overload. */
+/* V1 jobs list polish: free-floating records and compact filter controls. */
 
 .jobs-shell-minimal .jobs-list-page { display: grid; gap: 20px; }
 .jobs-shell-minimal .page-header { margin-bottom: 2px; }
@@ -14,7 +14,7 @@
 .jobs-shell-minimal .jobs-filter-summary { font-family: inherit !important; }
 
 .jobs-shell-minimal .jobs-filter-tabs {
-  display: flex; align-items: center; gap: 8px; padding: 7px; width: 100%; max-width: 100%; overflow-x: auto;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px; width: fit-content; max-width: 100%; overflow-x: auto;
   border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); scrollbar-width: none;
   box-shadow: 0 14px 36px rgba(9,24,35,.10); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
@@ -23,18 +23,20 @@
 .jobs-shell-minimal .jobs-filter-tab-active { background: var(--accent); color: #fff !important; box-shadow: none; }
 .jobs-shell-minimal .jobs-filter-tab-alert:not(.jobs-filter-tab-active) { color: #8a4b32; }
 
-.jobs-shell-minimal .jobs-advanced-filters { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); box-shadow: 0 18px 48px rgba(9,24,35,.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+/* Filters are a compact utility, not another full-width content card. */
+.jobs-shell-minimal .jobs-advanced-filters { display: grid; gap: 12px; width: min(760px, 100%); justify-self: start; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); box-shadow: 0 14px 36px rgba(9,24,35,.10); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .jobs-shell-minimal .jobs-filter-heading { color: var(--ink); font-size: 16px; font-weight: 700; }
-.jobs-shell-minimal .jobs-filter-grid { display: grid; grid-template-columns: repeat(3, minmax(170px, 1fr)); gap: 12px; }
+.jobs-shell-minimal .jobs-filter-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 10px; }
 .jobs-shell-minimal .jobs-filter-control { display: grid; gap: 6px; min-width: 0; color: var(--ink-2) !important; font-size: 14px; font-weight: 600; }
-.jobs-shell-minimal .jobs-filter-control select { width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--line) !important; border-radius: 11px; background: var(--paper-solid) !important; color: var(--ink) !important; font-size: 16px; font-weight: 400; box-shadow: none !important; }
+.jobs-shell-minimal .jobs-filter-control select { width: 100%; min-height: 44px; padding: 8px 11px; border: 1px solid var(--line) !important; border-radius: 11px; background: var(--paper-solid) !important; color: var(--ink) !important; font-size: 15px; font-weight: 400; box-shadow: none !important; }
 .jobs-shell-minimal .jobs-filter-control select:focus-visible { outline: 2px solid rgba(40,93,120,.32); outline-offset: 2px; }
 .jobs-shell-minimal .jobs-clear-filters { justify-self: start; }
 .jobs-shell-minimal .jobs-filter-summary { margin: -6px 0 0; font-size: 15px; color: var(--ink-2); }
 
-.jobs-shell-minimal .jobs-table-card { padding: 0 !important; overflow: hidden; border-radius: 22px; background: var(--paper) !important; }
+/* The table/card group has no parent white wrapper. Individual rows own the surface. */
+.jobs-shell-minimal .jobs-table-card { padding: 0 !important; overflow: visible; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .jobs-shell-minimal .jobs-mobile-table-wrap { max-height: min(68vh, 760px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
-.jobs-shell-minimal .jobs-operations-table { margin: 0; }
+.jobs-shell-minimal .jobs-operations-table { margin: 0; background: transparent !important; }
 .jobs-shell-minimal .jobs-operations-table thead { position: sticky; top: 0; z-index: 3; background: var(--paper-solid); }
 .jobs-shell-minimal .jobs-operations-table th { padding: 11px 14px; color: var(--ink-3); font-size: 13px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; border-bottom: 1px solid var(--line); }
 .jobs-shell-minimal .jobs-operations-table td { padding: 12px 14px; vertical-align: middle; }
@@ -55,8 +57,8 @@
   .jobs-shell-minimal .jobs-list-page { gap: 16px; }
   .jobs-shell-minimal .jobs-header-actions { width: 100%; }
   .jobs-shell-minimal .jobs-header-actions .btn-primary { flex: 1; }
-  .jobs-shell-minimal .jobs-filter-tabs { width: 100%; }
-  .jobs-shell-minimal .jobs-advanced-filters { padding: 15px; }
+  .jobs-shell-minimal .jobs-filter-tabs { width: fit-content; max-width: 100%; }
+  .jobs-shell-minimal .jobs-advanced-filters { width: 100%; padding: 15px; }
   .jobs-shell-minimal .jobs-mobile-table-wrap { max-height: none; overflow: visible; }
   .jobs-shell-minimal .jobs-operations-table thead { position: static; }
   .jobs-shell-minimal .jobs-operations-table tbody { display: grid; gap: 12px; }
