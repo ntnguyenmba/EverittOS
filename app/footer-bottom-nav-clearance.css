@@ -4,7 +4,8 @@
   .app-footer {
     position: relative;
     z-index: 1;
-    padding-bottom: calc(118px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 22px !important;
+    margin-bottom: calc(118px + env(safe-area-inset-bottom)) !important;
   }
 
   .dashboard-shell .app-footer-links,
@@ -21,6 +22,6 @@
 @media (max-width: 480px) {
   .dashboard-shell .app-footer,
   .app-footer {
-    padding-bottom: calc(124px + env(safe-area-inset-bottom)) !important;
+    margin-bottom: calc(132px + env(safe-area-inset-bottom)) !important;
   }
 }
