@@ -20,7 +20,7 @@ export function Sidebar({ plan, role: roleProp }: SidebarProps) {
   const pathname = usePathname() || '/';
   const workspacePlan = useWorkspacePlanOptional();
   const normalized = normalizePlan(workspacePlan?.plan ?? plan);
-  const resolvedRole = workspacePlan?.role ?? normalizeRole(roleProp);
+  const resolvedRole = roleProp != null ? normalizeRole(roleProp) : normalizeRole(workspacePlan?.role);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<UserRole>(resolvedRole);
 
