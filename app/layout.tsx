@@ -55,6 +55,7 @@ import './jobs-filter-mobile-alignment.css';
 import './jobs-mobile-layout-hotfix.css';
 import './footer-bottom-nav-clearance.css';
 import './mobile-readability-and-footer-final.css';
+import './login-match-visual.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
