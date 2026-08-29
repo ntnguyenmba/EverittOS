@@ -5,10 +5,27 @@
     gap: 14px !important;
   }
 
-  /* Status filters: one compact horizontal strip, never a tall grid. */
+  .dashboard-shell .jobs-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-shell .jobs-header-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
   .dashboard-shell .jobs-filter-tabs {
-    display: flex !important;
-    align-items: center !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
     gap: 8px !important;
     width: 100% !important;
     min-height: 0 !important;
@@ -16,40 +33,30 @@
     margin: 0 !important;
     padding: 8px !important;
     box-sizing: border-box !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    white-space: nowrap !important;
+    overflow: visible !important;
+    white-space: normal !important;
     border-radius: 18px !important;
     background: rgba(255,255,255,.96) !important;
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .dashboard-shell .jobs-filter-tabs::-webkit-scrollbar {
-    display: none !important;
   }
 
   .dashboard-shell .jobs-filter-tab,
   .dashboard-shell .jobs-filter-tabs > .jobs-filter-tab:nth-child(5) {
     display: inline-flex !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
-    min-width: 96px !important;
+    width: 100% !important;
+    min-width: 0 !important;
     min-height: 42px !important;
-    height: 42px !important;
+    height: auto !important;
     margin: 0 !important;
-    padding: 9px 15px !important;
+    padding: 9px 10px !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-    white-space: nowrap !important;
-    line-height: 1 !important;
+    white-space: normal !important;
+    line-height: 1.15 !important;
     border-radius: 999px !important;
     box-sizing: border-box !important;
-    grid-column: auto !important;
   }
 
-  /* Remove the large Filter jobs card entirely. */
   .dashboard-shell .jobs-advanced-filters {
     display: block !important;
     width: 100% !important;
@@ -71,33 +78,29 @@
     display: none !important;
   }
 
-  /* Main filters: compact chips that can be swiped horizontally. */
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 10px !important;
     width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
-    padding: 0 0 4px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid::-webkit-scrollbar {
-    display: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
 
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control {
     position: relative !important;
     display: block !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
+    width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
+    grid-column: 1 / -1 !important;
   }
 
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control > span {
@@ -114,25 +117,25 @@
 
   .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control select {
     display: block !important;
-    width: auto !important;
-    min-width: 142px !important;
-    max-width: 190px !important;
-    min-height: 44px !important;
-    height: 44px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 46px !important;
+    height: 46px !important;
     margin: 0 !important;
     padding: 8px 38px 8px 14px !important;
     box-sizing: border-box !important;
     border: 1px solid rgba(70,91,106,.24) !important;
-    border-radius: 999px !important;
+    border-radius: 14px !important;
     background: rgba(255,255,255,.97) !important;
     color: #132433 !important;
     font-size: 15px !important;
     font-weight: 700 !important;
-    box-shadow: 0 8px 22px rgba(9,24,35,.09) !important;
+    box-shadow: 0 8px 22px rgba(9,24,35,.08) !important;
   }
 
   .dashboard-shell .jobs-advanced-filters > details {
-    margin: 4px 0 0 !important;
+    margin: 8px 0 0 !important;
     padding: 0 !important;
     border: 0 !important;
     background: transparent !important;
@@ -150,14 +153,13 @@
     padding: 8px 14px !important;
     border: 1px solid rgba(70,91,106,.22) !important;
     border-radius: 999px !important;
-    background: rgba(255,255,255,.95) !important;
+    background: rgba(255,255,255,.97) !important;
     color: #285d78 !important;
     font-size: 15px !important;
     font-weight: 800 !important;
     box-shadow: 0 8px 22px rgba(9,24,35,.08) !important;
   }
 
-  /* Expanded secondary filters become one tidy sheet. */
   .dashboard-shell .jobs-advanced-filters > details[open] {
     margin-top: 10px !important;
     padding: 14px !important;
@@ -202,6 +204,23 @@
     border-radius: 12px !important;
   }
 
+  .dashboard-shell .jobs-list-more {
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin: 16px auto 0 !important;
+    padding: 10px 14px !important;
+    border: 1px solid rgba(19,36,51,.12) !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.94) !important;
+    box-shadow: 0 8px 22px rgba(9,24,35,.07) !important;
+  }
+
+  .dashboard-shell .jobs-list-more > .muted {
+    color: #17364a !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+  }
+
   .dashboard-shell .jobs-operations-row {
     padding: 18px !important;
     border-radius: 20px !important;
@@ -216,5 +235,30 @@
     padding-top: 10px !important;
     margin-top: 10px !important;
     border-top: 1px solid rgba(37,54,74,.10) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-shell .jobs-header-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-shell .jobs-filter-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-shell .jobs-filter-tabs,
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-shell .jobs-advanced-filters > .jobs-filter-grid > .jobs-filter-control:nth-child(3) {
+    grid-column: auto !important;
   }
 }
