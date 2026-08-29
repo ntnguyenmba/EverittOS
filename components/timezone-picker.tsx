@@ -19,6 +19,7 @@ const FALLBACK_TIMEZONES = [
   'America/New_York',
   'America/Phoenix',
   'America/Sao_Paulo',
+  'America/St_Johns',
   'America/Toronto',
   'America/Vancouver',
   'Asia/Bangkok',
@@ -40,6 +41,8 @@ const FALLBACK_TIMEZONES = [
   'Australia/Sydney',
   'Europe/Amsterdam',
   'Europe/Berlin',
+  'Europe/Helsinki',
+  'Europe/Istanbul',
   'Europe/London',
   'Europe/Madrid',
   'Europe/Paris',
@@ -52,10 +55,18 @@ type IntlWithSupportedValues = typeof Intl & {
   supportedValuesOf?: (key: 'timeZone') => string[];
 };
 
-function availableTimezones(): string[] {
+export function browserTimeZone(fallback = 'UTC'): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function availableTimezones(): string[] {
   try {
     const values = (Intl as IntlWithSupportedValues).supportedValuesOf?.('timeZone') || [];
-    return Array.from(new Set(['UTC', ...values])).sort((a, b) => a.localeCompare(b));
+    return Array.from(new Set(['UTC', ...values, ...FALLBACK_TIMEZONES])).sort((a, b) => a.localeCompare(b));
   } catch {
     return FALLBACK_TIMEZONES;
   }
@@ -67,33 +78,38 @@ function timezoneLabel(timezone: string): string {
 
 export function TimezonePicker({
   value,
-  onChange
+  onChange,
+  id = 'org-timezone',
+  disabled = false,
+  placeholder = 'Search city or region, for example America/Chicago'
 }: {
   value: string;
   onChange: (timezone: string) => void;
+  id?: string;
+  disabled?: boolean;
+  placeholder?: string;
 }) {
   const timezones = useMemo(availableTimezones, []);
+  const listId = `${id}-options`;
 
   return (
     <>
       <input
-        id="org-timezone"
+        id={id}
         className="input"
-        list="global-timezones"
+        list={listId}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Search city or region, for example America/Chicago"
+        placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
       />
-      <datalist id="global-timezones">
+      <datalist id={listId}>
         {timezones.map((timezone) => (
           <option key={timezone} value={timezone} label={timezoneLabel(timezone)} />
         ))}
       </datalist>
-      <p className="muted" style={{ marginTop: -6 }}>
-        Used for job times, daylight-saving changes, and calendar synchronization.
-      </p>
     </>
   );
 }
