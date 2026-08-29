@@ -12,6 +12,7 @@ import { buildSmartAskSuggestions } from '@/lib/ask-everitt/smart-suggestions';
 import { runStructuredNaturalQuery } from '@/lib/ask-everitt/structured-query';
 import { runStructuredNaturalQueryV2 } from '@/lib/ask-everitt/structured-query-v2';
 import { runStructuredNaturalQueryV3 } from '@/lib/ask-everitt/structured-query-v3';
+import { queryUnpaidInvoices } from '@/lib/ask-everitt/unpaid-invoices';
 import { buildOrganizationAiContext } from '@/lib/ai-context';
 import { verifyAiRequest } from '@/lib/ai-gate';
 import { logAiGeneration, runAiChat, type AiChatMessage } from '@/lib/ai-server';
@@ -170,11 +171,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const contextualStructured = await runContextAwareAskQuery(supabase, org.organizationId, prompt, locale, pageContext);
-    const structuredV3 = contextualStructured ? null : await runStructuredNaturalQueryV3(supabase, org.organizationId, user.id, prompt, locale);
-    const structuredV2 = contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(supabase, org.organizationId, user.id, prompt, locale);
-    const structuredFallback = contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(supabase, org.organizationId, user.id, prompt, locale);
-    const directResult = contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(supabase, org.organizationId, locale) : null);
+    const unpaidInvoices = natural.intent === 'unpaid_invoices'
+      ? await queryUnpaidInvoices(supabase, org.organizationId)
+      : null;
+    const contextualStructured = unpaidInvoices ? null : await runContextAwareAskQuery(supabase, org.organizationId, prompt, locale, pageContext);
+    const structuredV3 = unpaidInvoices || contextualStructured ? null : await runStructuredNaturalQueryV3(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredV2 = unpaidInvoices || contextualStructured || structuredV3 ? null : await runStructuredNaturalQueryV2(supabase, org.organizationId, user.id, prompt, locale);
+    const structuredFallback = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 ? null : await runStructuredNaturalQuery(supabase, org.organizationId, user.id, prompt, locale);
+    const directResult = unpaidInvoices || contextualStructured || structuredV3 || structuredV2 || structuredFallback || (natural.intent === 'next_job' || isNextJobQuestion(prompt) ? await queryNextJob(supabase, org.organizationId, locale) : null);
     const searchResult = directResult || await runAskEverittSearchEngine(supabase, org.organizationId, natural.searchQuery || prompt);
 
     if (searchResult.results.length === 0) {
