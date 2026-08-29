@@ -57,25 +57,52 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
       </main>
 
       <style jsx global>{`
-        .dashboard-shell { position: relative; isolation: isolate; min-height: 100svh; width: 100%; max-width: 100vw; display: grid; grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: 'side main'; overflow-x: clip; background: #edf2f4; }
-        .dashboard-shell-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(circle at 88% 4%, rgba(80,105,121,.07), transparent 28%), linear-gradient(180deg,#f7f9fa 0%,#edf2f4 54%,#e8eef1 100%); }
-        .dashboard-shell-overlay { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg,rgba(255,255,255,.18),rgba(226,234,238,.16)); }
+        .dashboard-shell {
+          position: relative;
+          isolation: isolate;
+          min-height: 100svh;
+          width: 100%;
+          max-width: 100vw;
+          display: grid;
+          grid-template-columns: 300px minmax(0, 1fr);
+          grid-template-areas: 'side main';
+          overflow-x: clip;
+          background: #e9eef2;
+        }
+        .dashboard-shell-background {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background-image: url('/hero.jpg');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          opacity: .62;
+          filter: saturate(.82) contrast(1.02) brightness(.92);
+          transform: scale(1.015);
+        }
+        .dashboard-shell-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background: linear-gradient(115deg,rgba(20,39,53,.46),rgba(28,52,68,.16) 42%,rgba(236,242,246,.2)),linear-gradient(180deg,rgba(17,34,47,.08),rgba(17,34,47,.3));
+        }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { grid-area: side; display: flex; }
         .dashboard-shell-header { display: none; }
-        .dashboard-shell > .main { grid-area: main; width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 28px clamp(20px,3vw,48px) 40px!important; box-sizing: border-box!important; overflow-x: clip!important; }
+        .dashboard-shell > .main { grid-area: main; width: 100%!important; max-width: 100%!important; min-width: 0!important; margin: 0!important; padding: 28px clamp(20px,3vw,48px) 40px!important; box-sizing: border-box!important; overflow-x: clip!important; background: transparent!important; }
         .dashboard-shell .app-page-top,.dashboard-shell .app-page-content,.dashboard-shell > .main > footer { min-width: 0!important; margin-left: auto!important; margin-right: auto!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content,.dashboard-shell .app-page-content > * { min-width: 0!important; max-width: 100%!important; box-sizing: border-box!important; }
         .dashboard-shell .app-page-content { container-type: inline-size; background: transparent!important; }
-        .role-portal-shell .card,.role-portal-shell .role-summary-card,.role-portal-shell .client-job-card { border: 1px solid rgba(36,63,83,.13)!important; border-radius: 16px!important; background: rgba(252,253,253,.97)!important; box-shadow: 0 10px 26px rgba(36,63,83,.07)!important; }
         .role-portal-shell .btn,.role-portal-shell button,.role-portal-shell select { min-height: 44px; }
         .role-portal-shell .btn.btn-primary,.role-portal-shell .role-period-filter button.is-active,.role-portal-shell .portal-client-nav a[aria-current='page'] { background:#3f586a!important; border-color:#3f586a!important; color:#fff!important; }
         .role-portal-shell .portal-client-nav { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px!important; width:100%; }
         .role-portal-shell .role-summary-grid { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:16px!important; }
         .role-portal-shell .metric-grid { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:16px!important; }
-        .role-portal-shell .role-summary-card,.role-portal-shell .metric-grid > .card { width:100%!important; min-width:0!important; margin:0!important; padding:22px!important; box-sizing:border-box!important; }
         @media(max-width:1279px){
-          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell-header .mobile-nav-bar{width:min(1240px,100%)!important;min-height:64px!important;margin:0 auto!important;padding:9px 14px!important;box-sizing:border-box!important;border:1px solid rgba(37,54,74,.13)!important;border-radius:16px!important;background:rgba(255,255,255,.94)!important;box-shadow:0 8px 24px rgba(37,54,74,.08)!important}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell .app-page-top{margin:0 auto 8px!important;padding:0!important}
+          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell .app-page-top{margin:0 auto 8px!important;padding:0!important}.dashboard-shell-overlay{background:linear-gradient(180deg,rgba(18,37,50,.34),rgba(18,37,50,.48))!important}.dashboard-shell-background{background-position:56% center!important}
         }
         @media(max-width:760px){.role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}.role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:480px){.role-portal-shell .portal-client-nav{grid-template-columns:minmax(0,1fr)}}
