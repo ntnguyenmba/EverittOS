@@ -17,11 +17,6 @@ import { supabase } from '@/lib/supabase';
 
 type MobileNavProps = { plan?: EverittosPlan | string | null; role?: UserRole | string | null };
 const OPEN_MENU_EVENT = 'everittos:open-mobile-menu';
-const MOBILE_NAV_MAX_WIDTH = 1279;
-
-function mobileNavAllowed() {
-  return typeof window !== 'undefined' && window.innerWidth <= MOBILE_NAV_MAX_WIDTH;
-}
 
 export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   const pathname = usePathname() || '/';
@@ -40,28 +35,22 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   useEffect(() => setRole(resolvedRole), [resolvedRole]);
   useEffect(() => { if (roleProp) setRole(normalizeRole(roleProp)); }, [roleProp]);
   useEffect(() => {
-    const openMenu = () => {
-      if (mobileNavAllowed()) setOpen(true);
-    };
+    const openMenu = () => setOpen(true);
     window.addEventListener(OPEN_MENU_EVENT, openMenu);
     return () => window.removeEventListener(OPEN_MENU_EVENT, openMenu);
   }, []);
   useEffect(() => {
-    const closeOnDesktop = () => {
-      if (!mobileNavAllowed()) setOpen(false);
+    const desktop = window.matchMedia('(min-width: 1280px)');
+    const closeOnDesktop = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) setOpen(false);
     };
-    closeOnDesktop();
-    window.addEventListener('resize', closeOnDesktop);
-    return () => window.removeEventListener('resize', closeOnDesktop);
+    closeOnDesktop(desktop);
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
   }, []);
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) { document.body.classList.remove('mobile-nav-open'); return; }
-    if (!mobileNavAllowed()) {
-      setOpen(false);
-      document.body.classList.remove('mobile-nav-open');
-      return;
-    }
     document.body.classList.add('mobile-nav-open');
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
@@ -81,7 +70,7 @@ export function MobileNav({ plan, role: roleProp }: MobileNavProps) {
   </div> : null;
 
   return <header className={`mobile-nav${isFocusedPortal ? ' mobile-nav-focused-portal' : ''}${open ? ' mobile-nav-open' : ''}`} aria-label={t('ux.mobileNavLabel')}>
-    {!native ? <div className="mobile-nav-bar"><BrandLogo href={homeHref} size={32} showName={false} className="mobile-nav-top-logo" /><div className="mobile-nav-bar-actions"><LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" /><button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : t('ux.mobileNavLabel')} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => { if (mobileNavAllowed()) setOpen((value) => !value); }}><span className="mobile-nav-menu-icon" aria-hidden="true" /></button></div></div> : null}
+    {!native ? <div className="mobile-nav-bar"><BrandLogo href={homeHref} size={32} showName={false} className="mobile-nav-top-logo" /><div className="mobile-nav-bar-actions"><LanguageSwitcher id="mobile-header-language" variant="compact" className="mobile-nav-language" /><button type="button" className="mobile-nav-menu-btn" aria-label={open ? t('common.close') : t('ux.mobileNavLabel')} aria-expanded={open} aria-controls="mobile-nav-panel" onClick={() => setOpen((value) => !value)}><span className="mobile-nav-menu-icon" aria-hidden="true" /></button></div></div> : null}
     {mounted ? createPortal(drawer, document.body) : null}
     <style>{`
       .mobile-nav{border-bottom:0;background:transparent}.mobile-nav-bar{min-height:52px;padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:14px;box-sizing:border-box;background:transparent!important;border:0!important;box-shadow:none!important}.mobile-nav-top-logo{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(9,24,35,.14)}.mobile-nav-top-logo .brand-logo-image{display:block;border-radius:8px}.mobile-nav-brand-logo{color:#173044}.mobile-nav-bar-actions{display:flex;align-items:center;gap:10px;margin-left:auto}.mobile-nav-language select,.mobile-nav-language button{min-height:44px;border:1px solid #c8d1d7;border-radius:14px;background:#fff;color:#243e51;font-weight:700}.mobile-nav-menu-btn{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d2dbe0;border-radius:14px;background:#fff;color:#173044;box-shadow:0 8px 24px rgba(9,24,35,.08);cursor:pointer}
