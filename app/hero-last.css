@@ -1,67 +1,41 @@
-/* Canonical EverittOS backdrop only.
-   The hero is decoration, never a tinted canvas or a source of page chrome.
-   Stage, rows, controls, typography and footer layout are owned elsewhere. */
-
+/* Signed-in backdrop mirrors AuthShell exactly. One image layer, one cool overlay. */
 .dashboard-shell,
 .dashboard-shell.role-portal-shell,
 .contractor-dashboard-shell,
 .client-dashboard-shell {
-  background-color: #dfe5e7 !important;
-  background-image: url('/hero.jpg') !important;
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
-  background-attachment: fixed !important;
+  background:#e9eef2!important;
+  background-image:none!important;
 }
-
 .dashboard-shell-background,
 .role-portal-shell .dashboard-shell-background,
 .contractor-background,
 .contractor-dashboard-shell .contractor-background,
 .client-dashboard-shell .contractor-background {
-  background-color: transparent !important;
-  background-image: url('/hero.jpg') !important;
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
-  opacity: 1 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  mix-blend-mode: normal !important;
-  transform: none !important;
-  pointer-events: none !important;
+  background-color:transparent!important;
+  background-image:url('/hero.jpg')!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  opacity:.62!important;
+  filter:saturate(.82) contrast(1.02) brightness(.92)!important;
+  -webkit-filter:saturate(.82) contrast(1.02) brightness(.92)!important;
+  mix-blend-mode:normal!important;
+  transform:scale(1.015)!important;
+  pointer-events:none!important;
 }
-
 .dashboard-shell-overlay,
 .role-portal-shell .dashboard-shell-overlay,
 .contractor-overlay,
 .contractor-dashboard-shell .contractor-overlay,
 .client-dashboard-shell .contractor-overlay {
-  background: transparent !important;
-  background-image: none !important;
-  opacity: 0 !important;
-  filter: none !important;
-  -webkit-filter: none !important;
-  mix-blend-mode: normal !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  pointer-events: none !important;
+  background:linear-gradient(115deg,rgba(20,39,53,.46),rgba(28,52,68,.16) 42%,rgba(236,242,246,.2)),linear-gradient(180deg,rgba(17,34,47,.08),rgba(17,34,47,.3))!important;
+  opacity:1!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  mix-blend-mode:normal!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  pointer-events:none!important;
 }
-
-.dashboard-shell > .main,
-.contractor-dashboard-shell > .main,
-.client-dashboard-shell > .main,
-.dashboard-shell .app-page-content,
-.dashboard-shell .app-page-top {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-@media (max-width: 1279px) {
-  .dashboard-shell,
-  .dashboard-shell.role-portal-shell,
-  .contractor-dashboard-shell,
-  .client-dashboard-shell {
-    background-attachment: scroll !important;
-  }
-}
+.dashboard-shell>.main,.contractor-dashboard-shell>.main,.client-dashboard-shell>.main,.dashboard-shell .app-page-content,.dashboard-shell .app-page-top{background:transparent!important;background-color:transparent!important}
+@media(max-width:1279px){.dashboard-shell-background,.role-portal-shell .dashboard-shell-background,.contractor-background,.contractor-dashboard-shell .contractor-background,.client-dashboard-shell .contractor-background{background-position:56% center!important}.dashboard-shell-overlay,.role-portal-shell .dashboard-shell-overlay,.contractor-overlay,.contractor-dashboard-shell .contractor-overlay,.client-dashboard-shell .contractor-overlay{background:linear-gradient(180deg,rgba(18,37,50,.34),rgba(18,37,50,.48))!important}}
