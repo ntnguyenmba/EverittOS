@@ -46,6 +46,7 @@ import './signed-in-canvas.css';
 import './hero-last.css';
 import './jobs-filter-mobile-alignment.css';
 import './footer-contrast-final.css';
+import './footer-bottom-nav-clearance.css';
 
 const manrope = Manrope({ subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#243F53' };
