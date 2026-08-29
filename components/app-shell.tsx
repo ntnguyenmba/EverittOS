@@ -24,7 +24,7 @@ type AppShellProps = {
 export function AppShell({ plan, role, showBackButton = true, className, children }: AppShellProps) {
   const workspacePlan = useWorkspacePlanOptional();
   const resolvedPlan = workspacePlan?.plan ?? (plan != null ? normalizePlan(plan) : null);
-  const resolvedRole = workspacePlan?.role ?? normalizeRole(role);
+  const resolvedRole = normalizeRole(role ?? workspacePlan?.role);
   const normalizedRole = normalizeRole(resolvedRole);
   const isClientPortal = isClientRole(normalizedRole);
   const isContractorPortal = isContractorRole(normalizedRole);
