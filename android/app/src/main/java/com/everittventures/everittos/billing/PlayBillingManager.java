@@ -31,6 +31,8 @@ import java.util.function.Consumer;
  * Pending purchases never unlock paid access on the client.
  */
 public final class PlayBillingManager implements PurchasesUpdatedListener {
+    private static final String MONTHLY_BASE_PLAN_ID = "monthly";
+
     public interface ProductInfo {
         String getProductId();
         String getTitle();
@@ -106,10 +108,10 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                 for (ProductDetails details : productDetailsList) {
                     productDetailsById.put(details.getProductId(), details);
                     String price = "";
-                    List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-                    if (offers != null && !offers.isEmpty()) {
+                    ProductDetails.SubscriptionOfferDetails monthlyOffer = findMonthlyOffer(details);
+                    if (monthlyOffer != null) {
                         List<ProductDetails.PricingPhase> phases =
-                                offers.get(0).getPricingPhases().getPricingPhaseList();
+                                monthlyOffer.getPricingPhases().getPricingPhaseList();
                         if (!phases.isEmpty()) {
                             price = phases.get(0).getFormattedPrice();
                         }
@@ -153,16 +155,16 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
     }
 
     private void launchLoadedPurchase(Activity activity, ProductDetails details, Consumer<String> onError) {
-        List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
-        if (offers == null || offers.isEmpty()) {
-            onError.accept("No offer available");
+        ProductDetails.SubscriptionOfferDetails monthlyOffer = findMonthlyOffer(details);
+        if (monthlyOffer == null) {
+            onError.accept("Monthly base plan is unavailable");
             return;
         }
 
         BillingFlowParams.ProductDetailsParams productDetailsParams =
                 BillingFlowParams.ProductDetailsParams.newBuilder()
                         .setProductDetails(details)
-                        .setOfferToken(offers.get(0).getOfferToken())
+                        .setOfferToken(monthlyOffer.getOfferToken())
                         .build();
         BillingFlowParams flowParams = BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(Collections.singletonList(productDetailsParams))
@@ -231,6 +233,19 @@ public final class PlayBillingManager implements PurchasesUpdatedListener {
                 listener.accept(payload);
             }
         }
+    }
+
+    @Nullable
+    private ProductDetails.SubscriptionOfferDetails findMonthlyOffer(ProductDetails details) {
+        List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+        if (offers == null || offers.isEmpty()) return null;
+
+        for (ProductDetails.SubscriptionOfferDetails offer : offers) {
+            if (MONTHLY_BASE_PLAN_ID.equals(offer.getBasePlanId())) {
+                return offer;
+            }
+        }
+        return null;
     }
 
     private void ensureReady(Runnable ready, Consumer<String> onError) {
