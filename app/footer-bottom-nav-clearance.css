@@ -1,13 +1,20 @@
 /* Unified EverittOS footer layout across desktop, tablet, mobile, PWA and native views. */
 .app-footer,
 .dashboard-shell .app-footer {
+  position: relative !important;
+  z-index: 3 !important;
   width: min(calc(100% - 32px), 1180px) !important;
   margin: 28px auto 0 !important;
   padding: 20px 24px 22px !important;
   box-sizing: border-box !important;
   text-align: center !important;
-  border-top: 1px solid rgba(19, 36, 51, 0.12) !important;
-  background: rgba(255, 255, 255, 0.95) !important;
+  color: #132433 !important;
+  border: 1px solid rgba(19, 36, 51, 0.12) !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 34px rgba(9, 24, 35, 0.10) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .app-footer-links,
@@ -31,19 +38,25 @@
   margin: 0 !important;
   padding: 2px 0 !important;
   color: #17364a !important;
+  -webkit-text-fill-color: #17364a !important;
+  opacity: 1 !important;
   font-size: 15px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   line-height: 1.35 !important;
   text-align: center !important;
   white-space: nowrap !important;
 }
 
 .app-footer-copy,
-.dashboard-shell .app-footer-copy {
+.dashboard-shell .app-footer-copy,
+.dashboard-shell .app-footer-copy.muted {
   width: 100% !important;
   margin: 12px auto 0 !important;
   color: #405767 !important;
+  -webkit-text-fill-color: #405767 !important;
+  opacity: 1 !important;
   font-size: 14px !important;
+  font-weight: 600 !important;
   line-height: 1.4 !important;
   text-align: center !important;
 }
@@ -66,9 +79,12 @@
 @media (max-width: 560px) {
   .app-footer,
   .dashboard-shell .app-footer {
-    width: calc(100% - 24px) !important;
+    width: calc(100% - 28px) !important;
+    max-width: 520px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     margin-bottom: calc(132px + env(safe-area-inset-bottom)) !important;
-    padding: 16px 14px 18px !important;
+    padding: 18px 16px 20px !important;
   }
 
   .app-footer-links,
@@ -83,6 +99,7 @@
   .dashboard-shell .app-footer-links a {
     width: 100% !important;
     min-width: 0 !important;
+    min-height: 44px !important;
     white-space: normal !important;
   }
 
