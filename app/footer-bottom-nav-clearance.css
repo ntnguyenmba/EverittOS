@@ -1,20 +1,25 @@
-/* Unified EverittOS footer layout across desktop, tablet, mobile, PWA and native views. */
+/* Shared legal strip for every signed-in role and view. */
 .app-footer,
 .dashboard-shell .app-footer {
   position: relative !important;
-  z-index: 3 !important;
-  width: min(calc(100% - 32px), 1180px) !important;
-  margin: 14px auto 0 !important;
-  padding: 20px 24px 22px !important;
+  z-index: 40 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  margin: 16px 0 0 !important;
+  padding: 0 16px !important;
   box-sizing: border-box !important;
-  text-align: center !important;
-  color: #132433 !important;
-  border: 1px solid rgba(19, 36, 51, 0.12) !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  box-shadow: 0 12px 34px rgba(9, 24, 35, 0.10) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #f3f5f7 !important;
+  box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  color: #243f53 !important;
 }
 
 .app-footer-links,
@@ -22,11 +27,12 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  flex-wrap: wrap !important;
-  gap: 10px 24px !important;
-  width: 100% !important;
-  margin: 0 auto !important;
-  text-align: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
 }
 
 .app-footer-links a,
@@ -34,82 +40,60 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  min-height: 38px !important;
+  min-height: 0 !important;
   margin: 0 !important;
-  padding: 2px 0 !important;
-  color: #17364a !important;
-  -webkit-text-fill-color: #17364a !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #243f53 !important;
+  -webkit-text-fill-color: #243f53 !important;
   opacity: 1 !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  line-height: 1.35 !important;
-  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
   white-space: nowrap !important;
 }
 
+.app-footer-links span,
+.dashboard-shell .app-footer-links span {
+  display: inline !important;
+  color: #71808b !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+/* Copyright lives in More/About, not in the fixed operational footer. */
 .app-footer-copy,
 .dashboard-shell .app-footer-copy,
 .dashboard-shell .app-footer-copy.muted {
-  width: 100% !important;
-  margin: 12px auto 0 !important;
-  color: #405767 !important;
-  -webkit-text-fill-color: #405767 !important;
-  opacity: 1 !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  line-height: 1.4 !important;
-  text-align: center !important;
-}
-
-@media (max-width: 900px) {
-  .app-footer,
-  .dashboard-shell .app-footer {
-    width: calc(100% - 28px) !important;
-    margin-top: 12px !important;
-    margin-bottom: 0 !important;
-    padding: 18px 18px 20px !important;
-  }
-
-  .app-footer-links,
-  .dashboard-shell .app-footer-links {
-    gap: 8px 18px !important;
-  }
+  display: none !important;
 }
 
 @media (max-width: 560px) {
   .app-footer,
   .dashboard-shell .app-footer {
-    width: calc(100% - 28px) !important;
-    max-width: 520px !important;
-    margin: 10px auto 0 !important;
-    padding: 18px 16px 20px !important;
+    padding: 0 12px !important;
   }
 
   .app-footer-links,
   .dashboard-shell .app-footer-links {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px 10px !important;
-    max-width: 360px !important;
+    gap: 6px !important;
   }
 
   .app-footer-links a,
   .dashboard-shell .app-footer-links a {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 44px !important;
-    white-space: normal !important;
-  }
-
-  .app-footer-copy,
-  .dashboard-shell .app-footer-copy {
-    margin-top: 10px !important;
+    font-size: 12px !important;
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 350px) {
   .app-footer-links,
   .dashboard-shell .app-footer-links {
-    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  .app-footer-links a,
+  .dashboard-shell .app-footer-links a {
+    font-size: 11px !important;
   }
 }
