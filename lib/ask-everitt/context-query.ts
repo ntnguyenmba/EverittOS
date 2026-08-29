@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildRecord, response } from '@/lib/ask-everitt/search-helpers';
+import { queryUnpaidInvoices } from '@/lib/ask-everitt/unpaid-invoices';
 import type { AskEverittSearchResponse } from '@/lib/ask-everitt/types';
 
 export type ContextAskLocale = 'en' | 'es' | 'vi';
@@ -145,49 +146,6 @@ async function customerEstimates(
   );
 }
 
-async function customerInvoices(
-  supabase: SupabaseClient,
-  orgId: string,
-  customerId: string,
-  locale: ContextAskLocale,
-  unpaidOnly: boolean
-): Promise<AskEverittSearchResponse | null> {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select('id, description, amount, amount_paid, status, due_date, created_at, customer_id')
-    .eq('organization_id', orgId)
-    .eq('customer_id', customerId)
-    .order('created_at', { ascending: false })
-    .limit(200);
-  if (error) return null;
-
-  let rows = data || [];
-  if (unpaidOnly) {
-    rows = rows.filter((invoice) => Math.max(0, Number(invoice.amount || 0) - Number(invoice.amount_paid || 0)) > 0 && !['paid', 'void', 'cancelled', 'canceled'].includes(String(invoice.status || '').toLowerCase()));
-  }
-
-  const results = rows.map((invoice) => {
-    const outstanding = Math.max(0, Number(invoice.amount || 0) - Number(invoice.amount_paid || 0));
-    return buildRecord('invoices', {
-      id: invoice.id,
-      type: 'invoice',
-      title: invoice.description || `Invoice $${Number(invoice.amount || 0).toFixed(2)}`,
-      subtitle: outstanding > 0 ? `$${outstanding.toFixed(2)} outstanding` : null,
-      status: invoice.status || null,
-      date: invoice.due_date || invoice.created_at?.slice?.(0, 10) || null,
-      href: '/invoices'
-    });
-  });
-
-  return response(
-    results.length
-      ? t(locale, `${results.length} ${unpaidOnly ? 'unpaid ' : ''}invoice${results.length === 1 ? '' : 's'} for this customer.`, `${results.length} factura${results.length === 1 ? '' : 's'} ${unpaidOnly ? 'sin pagar ' : ''}de este cliente.`, `Có ${results.length} hóa đơn${unpaidOnly ? ' chưa thanh toán' : ''} của khách hàng này.`)
-      : t(locale, unpaidOnly ? 'No unpaid invoices found for this customer.' : 'No invoices found for this customer.', unpaidOnly ? 'No se encontraron facturas sin pagar para este cliente.' : 'No se encontraron facturas para este cliente.', unpaidOnly ? 'Không tìm thấy hóa đơn chưa thanh toán cho khách hàng này.' : 'Không tìm thấy hóa đơn cho khách hàng này.'),
-    results,
-    { sourcesUsed: ['invoices', 'customers'] }
-  );
-}
-
 async function currentJob(
   supabase: SupabaseClient,
   orgId: string,
@@ -219,10 +177,14 @@ export async function runContextAwareAskQuery(
   const context = parsePageContext(pageContext);
   const q = normalize(rawQuery);
 
+  if (/\b(invoices?|bills?)\b/.test(q) && /\b(unpaid|outstanding|past due|overdue|not paid|owe)\b/.test(q) && !context.customerId) {
+    return queryUnpaidInvoices(supabase, orgId);
+  }
+
   if (context.customerId && /\b(this customer|customer)\b/.test(q)) {
     if (/\bnext\b.*\bjobs?\b|\bjobs?\b.*\bnext\b/.test(q)) return customerJobs(supabase, orgId, context.customerId, locale, true);
     if (/\bopen\b.*\bestimates?\b|\bestimates?\b.*\b(open|pending)\b/.test(q)) return customerEstimates(supabase, orgId, context.customerId, locale);
-    if (/\binvoices?\b/.test(q)) return customerInvoices(supabase, orgId, context.customerId, locale, /\b(unpaid|outstanding|overdue)\b/.test(q));
+    if (/\binvoices?\b/.test(q)) return queryUnpaidInvoices(supabase, orgId);
     if (/\bjobs?\b/.test(q)) return customerJobs(supabase, orgId, context.customerId, locale, false);
   }
 
