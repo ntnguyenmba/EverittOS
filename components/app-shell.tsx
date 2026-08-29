@@ -40,7 +40,6 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
   return (
     <div className={shellClass}>
       <div className="dashboard-shell-background" aria-hidden="true" />
-      <div className="dashboard-shell-overlay" aria-hidden="true" />
       <UnsavedChangesGuard />
       <AppNavigationTracker />
       <Sidebar plan={resolvedPlan} role={resolvedRole} />
@@ -67,7 +66,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           grid-template-columns: 300px minmax(0, 1fr);
           grid-template-areas: 'side main';
           overflow-x: clip;
-          background: #e9eef2;
+          background: #5b6b78;
         }
         .dashboard-shell-background {
           position: fixed;
@@ -78,16 +77,9 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          opacity: .62;
-          filter: saturate(.82) contrast(1.02) brightness(.92);
-          transform: scale(1.015);
-        }
-        .dashboard-shell-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          background: linear-gradient(115deg,rgba(20,39,53,.46),rgba(28,52,68,.16) 42%,rgba(236,242,246,.2)),linear-gradient(180deg,rgba(17,34,47,.08),rgba(17,34,47,.3));
+          opacity: 1;
+          filter: none;
+          transform: none;
         }
         .dashboard-shell > .sidebar,.dashboard-shell-header,.dashboard-shell > .main { position: relative; z-index: 2; }
         .dashboard-shell > .sidebar { grid-area: side; display: flex; }
@@ -102,7 +94,7 @@ export function AppShell({ plan, role, showBackButton = true, className, childre
         .role-portal-shell .role-summary-grid { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:16px!important; }
         .role-portal-shell .metric-grid { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:16px!important; }
         @media(max-width:1279px){
-          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell .app-page-top{margin:0 auto 8px!important;padding:0!important}.dashboard-shell-overlay{background:linear-gradient(180deg,rgba(18,37,50,.34),rgba(18,37,50,.48))!important}.dashboard-shell-background{background-position:56% center!important}
+          .dashboard-shell{display:block}.dashboard-shell>.sidebar{display:none!important}.dashboard-shell-header{position:sticky;top:0;z-index:42;display:block;width:100%;padding:10px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));box-sizing:border-box}.dashboard-shell>.main{width:100%!important;max-width:none!important;margin:0!important;padding:14px max(20px,env(safe-area-inset-right)) 32px max(20px,env(safe-area-inset-left))!important}.dashboard-shell .app-page-top{margin:0 auto 8px!important;padding:0!important}.dashboard-shell-background{background-position:56% center!important}
         }
         @media(max-width:760px){.role-portal-shell .metric-grid,.role-portal-shell .role-summary-grid{grid-template-columns:minmax(0,1fr)!important}.role-portal-shell .portal-client-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:480px){.role-portal-shell .portal-client-nav{grid-template-columns:minmax(0,1fr)}}
