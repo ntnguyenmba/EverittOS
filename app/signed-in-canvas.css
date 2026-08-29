@@ -101,9 +101,30 @@
   -webkit-text-fill-color: #fff !important;
 }
 
-/* Ask Everitt modal keeps its own readable surface. */
+/* Ask Everitt must stay above the shared page stage and receive pointer events. */
+.dashboard-shell .everitt-cmd-trigger,
+.role-portal-shell .everitt-cmd-trigger,
+.contractor-main .everitt-cmd-trigger {
+  position: relative !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  cursor: pointer !important;
+}
+
+/* Ask Everitt modal keeps its own readable surface and must sit over every app layer. */
 .everitt-cmd-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
   background: rgba(19,36,51,.36) !important;
+}
+
+.everitt-cmd-palette {
+  position: relative !important;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
 }
 
 .everitt-cmd-palette,
@@ -119,4 +140,10 @@
   background: #fff !important;
   color: var(--ink) !important;
   -webkit-text-fill-color: var(--ink) !important;
+}
+
+.everitt-cmd-palette button,
+.everitt-cmd-palette input,
+.everitt-cmd-palette a {
+  pointer-events: auto !important;
 }
